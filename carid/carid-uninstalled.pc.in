@@ -1,0 +1,10 @@
+prefix=
+exec_prefix=
+libdir=${pcfiledir}/carid/
+includedir=${pcfiledir}/
+
+Name: carid-@CARID_MAJORMINOR@ uninstalled
+Description: Dirac codec library
+Version: @VERSION@
+Libs: -L${libdir} -loil-@CARID_MAJORMINOR@ -lm
+Cflags: -I${includedir}

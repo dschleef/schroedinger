@@ -1,0 +1,18 @@
+2005-12-20  David Schleef  <ds@schleef.org>
+
+	* Makefile.am:
+	* autogen.sh:
+	* carid-uninstalled.pc.in:
+	* carid.pc.in:
+	* carid/Makefile.am:
+	* carid/carid.h:
+	* carid/caridarith.c:
+	* carid/caridarith.h:
+	* configure.ac:
+	* doc/Makefile.am:
+	* m4/as-compiler-flag.m4:
+	* m4/as-nano.m4:
+	* m4/ax_create_stdint_h.m4:
+	  Initial checkin
+
+
