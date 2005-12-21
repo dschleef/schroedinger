@@ -3,6 +3,8 @@
 #include "config.h"
 #endif
 
+#include <stdlib.h>
+#include <string.h>
 
 #include <carid/caridarith.h>
 
@@ -22,7 +24,7 @@ _carid_arith_division_factor_init (void)
   }
 }
 
-CaridArith
+CaridArith *
 carid_arith_new (void)
 {
   CaridArith *arith;
@@ -31,6 +33,8 @@ carid_arith_new (void)
   memset (arith, 0, sizeof(*arith));
 
   _carid_arith_division_factor_init();
+
+  return arith;
 }
 
 void
@@ -80,7 +84,7 @@ carid_arith_context_update (CaridArith *arith, int i, int value)
     arith->contexts[i].count0++;
   }
   if (arith->contexts[i].count0 + arith->contexts[i].count0 >= 1024) {
-    carid_arith_halve_counts (arith, i);
+    carid_arith_context_halve_counts (arith, i);
   }
 }
 
