@@ -33,7 +33,7 @@
 #define MIN_SIZE 2
 
 void
-dirac_deinterleave (int16_t *d_n, int16_t *s_n, int n)
+carid_deinterleave (int16_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
@@ -44,7 +44,7 @@ dirac_deinterleave (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-dirac_interleave (int16_t *d_n, int16_t *s_n, int n)
+carid_interleave (int16_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
@@ -55,7 +55,7 @@ dirac_interleave (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-dirac_lift_synth_haar (int16_t *i_n, int n)
+carid_lift_synth_haar (int16_t *i_n, int n)
 {
   int i;
 
@@ -68,7 +68,7 @@ dirac_lift_synth_haar (int16_t *i_n, int n)
 }
 
 void
-dirac_lift_split_haar (int16_t *i_n, int n)
+carid_lift_split_haar (int16_t *i_n, int n)
 {
   int i;
 
@@ -80,37 +80,8 @@ dirac_lift_split_haar (int16_t *i_n, int n)
   }
 }
 
-#if 0
 void
-dirac_lift_synth_daub97_ext (int16_t *i_n, int n)
-{
-  int i;
-
-  i_n[0] -= (1817 * (i_n[0] + i_n[1])) >> 12;
-  for(i=1;i<n/2;i++){
-    i_n[2*i] -= (1817 * (i_n[2*i-1] + i_n[2*i+1])) >> 12;
-  }
-
-  for(i=0;i<n/2-1;i++){
-    i_n[2*i+1] -= (3616 * (i_n[2*i] + i_n[2*i+2])) >> 12;
-  }
-  i_n[2*i+1] -= (3616 * (i_n[2*i] + i_n[n-1])) >> 12;
-
-  i_n[0] += (217 * (i_n[0] + i_n[1])) >> 12;
-  for(i=1;i<n/2;i++){
-    i_n[2*i] += (217 * (i_n[2*i-1] + i_n[2*i+1])) >> 12;
-  }
-
-  for(i=0;i<n/2 - 1;i++){
-    i_n[2*i+1] += (6497 * (i_n[2*i] + i_n[2*i+2])) >> 12;
-  }
-  i_n[2*i+1] += (6497 * (i_n[2*i] + i_n[n-1])) >> 12;
-
-}
-#endif
-
-void
-dirac_lift_synth_daub97_ext (int16_t *i_n, int n)
+carid_lift_synth_daub97_ext (int16_t *i_n, int n)
 {
   int i;
 
@@ -132,7 +103,7 @@ dirac_lift_synth_daub97_ext (int16_t *i_n, int n)
 }
 
 void
-dirac_lift_split_daub97_ext (int16_t *i_n, int n)
+carid_lift_split_daub97_ext (int16_t *i_n, int n)
 {
   int i;
 
@@ -155,20 +126,20 @@ dirac_lift_split_daub97_ext (int16_t *i_n, int n)
 }
 
 void
-dirac_iwt_daub97 (int16_t *i_n, int n)
+carid_iwt_daub97 (int16_t *i_n, int n)
 {
   int16_t tmp[256];
 
   while(n>=2) {
-    dirac_lift_split_daub97_ext (i_n, n);
-    dirac_deinterleave (tmp, i_n, n);
+    carid_lift_split_daub97_ext (i_n, n);
+    carid_deinterleave (tmp, i_n, n);
     memcpy(i_n,tmp,n*2);
     n>>=1;
   }
 }
 
 void
-dirac_iiwt_daub97 (int16_t *i_n, int n)
+carid_iiwt_daub97 (int16_t *i_n, int n)
 {
   int16_t tmp[256];
   int m;
@@ -176,14 +147,14 @@ dirac_iiwt_daub97 (int16_t *i_n, int n)
   m = 2;
   while(m<=n) {
     memcpy(tmp,i_n,m*2);
-    dirac_interleave (i_n, tmp, m);
-    dirac_lift_synth_daub97_ext (i_n, m);
+    carid_interleave (i_n, tmp, m);
+    carid_lift_synth_daub97_ext (i_n, m);
     m<<=1;
   }
 }
 
 void
-dirac_lift_split_approx97_ext (int16_t *i_n, int n)
+carid_lift_split_approx97_ext (int16_t *i_n, int n)
 {
   int i;
 
@@ -200,7 +171,7 @@ dirac_lift_split_approx97_ext (int16_t *i_n, int n)
 }
 
 void
-dirac_lift_synth_approx97_ext (int16_t *i_n, int n)
+carid_lift_synth_approx97_ext (int16_t *i_n, int n)
 {
   int i;
 
@@ -218,20 +189,20 @@ dirac_lift_synth_approx97_ext (int16_t *i_n, int n)
 }
 
 void
-dirac_iwt_approx97 (int16_t *i_n, int n)
+carid_iwt_approx97 (int16_t *i_n, int n)
 {
   int16_t tmp[256];
 
   while(n>=2) {
-    dirac_lift_split_approx97_ext (i_n, n);
-    dirac_deinterleave (tmp, i_n, n);
+    carid_lift_split_approx97_ext (i_n, n);
+    carid_deinterleave (tmp, i_n, n);
     memcpy(i_n,tmp,n*2);
     n>>=1;
   }
 }
 
 void
-dirac_iiwt_approx97 (int16_t *i_n, int n)
+carid_iiwt_approx97 (int16_t *i_n, int n)
 {
   int16_t tmp[256];
   int m;
@@ -239,14 +210,14 @@ dirac_iiwt_approx97 (int16_t *i_n, int n)
   m = 2;
   while(m<=n) {
     memcpy(tmp,i_n,m*2);
-    dirac_interleave (i_n, tmp, m);
-    dirac_lift_synth_approx97_ext (i_n, m);
+    carid_interleave (i_n, tmp, m);
+    carid_lift_synth_approx97_ext (i_n, m);
     m<<=1;
   }
 }
 
 void
-dirac_lift_split_53_ext (int16_t *i_n, int n)
+carid_lift_split_53_ext (int16_t *i_n, int n)
 {
   int i;
 
@@ -262,7 +233,7 @@ dirac_lift_split_53_ext (int16_t *i_n, int n)
 }
 
 void
-dirac_lift_synth_53_ext (int16_t *i_n, int n)
+carid_lift_synth_53_ext (int16_t *i_n, int n)
 {
   int i;
 
@@ -278,20 +249,20 @@ dirac_lift_synth_53_ext (int16_t *i_n, int n)
 }
 
 void
-dirac_iwt_5_3 (int16_t *i_n, int n)
+carid_iwt_5_3 (int16_t *i_n, int n)
 {
   int16_t tmp[256];
 
   while(n>=2) {
-    dirac_lift_split_53_ext (i_n, n);
-    dirac_deinterleave (tmp, i_n, n);
+    carid_lift_split_53_ext (i_n, n);
+    carid_deinterleave (tmp, i_n, n);
     memcpy(i_n,tmp,n*2);
     n>>=1;
   }
 }
 
 void
-dirac_iiwt_5_3 (int16_t *i_n, int n)
+carid_iiwt_5_3 (int16_t *i_n, int n)
 {
   int16_t tmp[256];
   int m;
@@ -299,15 +270,15 @@ dirac_iiwt_5_3 (int16_t *i_n, int n)
   m = 2;
   while(m<=n) {
     memcpy(tmp,i_n,m*2);
-    dirac_interleave (i_n, tmp, m);
-    dirac_lift_synth_53_ext (i_n, m);
+    carid_interleave (i_n, tmp, m);
+    carid_lift_synth_53_ext (i_n, m);
     m<<=1;
   }
 }
 
 
 void
-dirac_lift_split_135_ext (int16_t *i_n, int n)
+carid_lift_split_135_ext (int16_t *i_n, int n)
 {
   int i;
   int x;
@@ -337,7 +308,7 @@ dirac_lift_split_135_ext (int16_t *i_n, int n)
 
 
 void
-dirac_lift_synth_135_ext (int16_t *i_n, int n)
+carid_lift_synth_135_ext (int16_t *i_n, int n)
 {
   int i;
   int x;
@@ -365,20 +336,20 @@ dirac_lift_synth_135_ext (int16_t *i_n, int n)
 }
 
 void
-dirac_iwt_13_5 (int16_t *i_n, int n)
+carid_iwt_13_5 (int16_t *i_n, int n)
 {
   int16_t tmp[256];
 
   while(n>=MIN_SIZE) {
-    dirac_lift_split_135_ext (i_n, n);
-    dirac_deinterleave (tmp, i_n, n);
+    carid_lift_split_135_ext (i_n, n);
+    carid_deinterleave (tmp, i_n, n);
     memcpy(i_n,tmp,n*2);
     n>>=1;
   }
 }
 
 void
-dirac_iiwt_13_5 (int16_t *i_n, int n)
+carid_iiwt_13_5 (int16_t *i_n, int n)
 {
   int16_t tmp[256];
   int m;
@@ -386,8 +357,8 @@ dirac_iiwt_13_5 (int16_t *i_n, int n)
   m = MIN_SIZE;
   while(m<=n) {
     memcpy(tmp,i_n,m*2);
-    dirac_interleave (i_n, tmp, m);
-    dirac_lift_synth_135_ext (i_n, m);
+    carid_interleave (i_n, tmp, m);
+    carid_lift_synth_135_ext (i_n, m);
     m<<=1;
   }
 }
@@ -395,20 +366,20 @@ dirac_iiwt_13_5 (int16_t *i_n, int n)
 
 
 void
-dirac_lift_split (int type, int16_t *i_n, int n)
+carid_lift_split (int type, int16_t *i_n, int n)
 {
   switch (type) {
     case CARID_WAVELET_APPROX97:
-      dirac_lift_split_approx97_ext (i_n, n);
+      carid_lift_split_approx97_ext (i_n, n);
       break;
     case CARID_WAVELET_DAUB97:
-      dirac_lift_split_daub97_ext (i_n, n);
+      carid_lift_split_daub97_ext (i_n, n);
       break;
     case CARID_WAVELET_13_5:
-      dirac_lift_split_135_ext (i_n, n);
+      carid_lift_split_135_ext (i_n, n);
       break;
     case CARID_WAVELET_5_3:
-      dirac_lift_split_53_ext (i_n, n);
+      carid_lift_split_53_ext (i_n, n);
       break;
     default:
       printf("invalid type\n");
@@ -418,20 +389,20 @@ dirac_lift_split (int type, int16_t *i_n, int n)
 
 
 void
-dirac_lift_synth (int type, int16_t *i_n, int n)
+carid_lift_synth (int type, int16_t *i_n, int n)
 {
   switch (type) {
     case CARID_WAVELET_APPROX97:
-      dirac_lift_synth_approx97_ext (i_n, n);
+      carid_lift_synth_approx97_ext (i_n, n);
       break;
     case CARID_WAVELET_DAUB97:
-      dirac_lift_synth_daub97_ext (i_n, n);
+      carid_lift_synth_daub97_ext (i_n, n);
       break;
     case CARID_WAVELET_13_5:
-      dirac_lift_synth_135_ext (i_n, n);
+      carid_lift_synth_135_ext (i_n, n);
       break;
     case CARID_WAVELET_5_3:
-      dirac_lift_synth_53_ext (i_n, n);
+      carid_lift_synth_53_ext (i_n, n);
       break;
     default:
       printf("invalid type\n");
@@ -440,7 +411,7 @@ dirac_lift_synth (int type, int16_t *i_n, int n)
 }
 
 void
-dirac_iwt_2d (int type, int16_t *i_n, int n, int stride)
+carid_iwt_2d (int type, int16_t *i_n, int n, int stride)
 {
   int16_t tmp[256];
   int16_t tmp2[256];
@@ -452,8 +423,8 @@ dirac_iwt_2d (int type, int16_t *i_n, int n, int stride)
       for(j=0;j<n;j++) {
         tmp[j] = i_n[i*stride + j];
       }
-      dirac_lift_split (type, tmp, n);
-      dirac_deinterleave (tmp2, tmp, n);
+      carid_lift_split (type, tmp, n);
+      carid_deinterleave (tmp2, tmp, n);
       for(j=0;j<n;j++) {
         i_n[i*stride + j] = tmp2[j];
       }
@@ -462,8 +433,8 @@ dirac_iwt_2d (int type, int16_t *i_n, int n, int stride)
       for(j=0;j<n;j++) {
         tmp[j] = i_n[j*stride + i];
       }
-      dirac_lift_split (type, tmp, n);
-      dirac_deinterleave (tmp2, tmp, n);
+      carid_lift_split (type, tmp, n);
+      carid_deinterleave (tmp2, tmp, n);
       for(j=0;j<n;j++) {
         i_n[j*stride + i] = tmp2[j];
       }
@@ -474,7 +445,7 @@ dirac_iwt_2d (int type, int16_t *i_n, int n, int stride)
 }
 
 void
-dirac_iiwt_2d (int type, int16_t *i_n, int n, int stride)
+carid_iiwt_2d (int type, int16_t *i_n, int n, int stride)
 {
   int16_t tmp[256];
   int16_t tmp2[256];
@@ -488,8 +459,8 @@ dirac_iiwt_2d (int type, int16_t *i_n, int n, int stride)
       for(j=0;j<m;j++) {
         tmp[j] = i_n[j*stride + i];
       }
-      dirac_interleave (tmp2, tmp, m);
-      dirac_lift_synth (type, tmp2, m);
+      carid_interleave (tmp2, tmp, m);
+      carid_lift_synth (type, tmp2, m);
       for(j=0;j<m;j++) {
         i_n[j*stride + i] = tmp2[j];
       }
@@ -498,8 +469,8 @@ dirac_iiwt_2d (int type, int16_t *i_n, int n, int stride)
       for(j=0;j<m;j++) {
         tmp[j] = i_n[i*stride + j];
       }
-      dirac_interleave (tmp2, tmp, m);
-      dirac_lift_synth (type, tmp2, m);
+      carid_interleave (tmp2, tmp, m);
+      carid_lift_synth (type, tmp2, m);
       for(j=0;j<m;j++) {
         i_n[i*stride + j] = tmp2[j];
       }

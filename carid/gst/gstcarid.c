@@ -355,8 +355,6 @@ estimate_entropy (int16_t *src, int n)
 {
   int i;
   int sum = 0;
-  int min = src[0];
-  int max = src[0];
   unsigned int x;
   for(i=0;i<n;i++){
     x = abs(src[i]);
@@ -365,10 +363,7 @@ estimate_entropy (int16_t *src, int n)
     if (x&0xf0f0f0f0) sum+=4;
     if (x&0xcccccccc) sum+=2;
     if (x&0xaaaaaaaa) sum+=1;
-    if (src[i] < min) min = src[i];
-    if (src[i] > max) max = src[i];
   }
-  g_print("range = [%d,%d]\n", min, max);
   return sum;
 }
 

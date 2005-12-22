@@ -60,7 +60,7 @@ fi
 CARID_CFLAGS="$CARID_CFLAGS -I\$(top_srcdir)"
 AC_SUBST(CARID_CFLAGS)
 
-CARID_LIBS="\$(top_builddir)/carid/carid-$CARID_MAJORMINOR.la"
+CARID_LIBS="\$(top_builddir)/carid/libcarid-$CARID_MAJORMINOR.la"
 AC_SUBST(CARID_LIBS)
 
 ########################
@@ -112,9 +112,6 @@ GST_SET_ERROR_CFLAGS($GST_CVS)
 
 dnl define correct level for debugging messages
 GST_SET_LEVEL_DEFAULT($GST_CVS)
-
-dnl used in examples
-GST_DEFAULT_ELEMENTS
 
 dnl *** finalize CFLAGS, LDFLAGS, LIBS
 
