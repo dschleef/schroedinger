@@ -189,6 +189,7 @@ Makefile
 doc/Makefile
 carid/Makefile
 gst/Makefile
+testsuite/Makefile
 carid-uninstalled.pc
 carid.pc
 ])

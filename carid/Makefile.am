@@ -1,7 +1,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = doc carid gst
+SUBDIRS = doc carid gst testsuite
 
 EXTRA_DIST = COPYING autogen.sh gtk-doc.make
 

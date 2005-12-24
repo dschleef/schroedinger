@@ -1,3 +1,18 @@
+2005-12-23  David Schleef  <ds@schleef.org>
+
+	* Makefile.am:
+	* carid/caridarith.c:
+	* carid/caridarith.h:
+	* configure.ac:
+	* testsuite/Makefile.am:
+	* testsuite/ack.c:
+	* testsuite/arith.c:
+	* testsuite/arith_decode.c:
+	* testsuite/arith_encode.c:
+	* testsuite/codes.c:
+	* testsuite/test_file:
+	  Arithmetic coding plus tests.
+
 2005-12-22  David Schleef  <ds@schleef.org>
 
 	* carid/caridwavelet.c:
