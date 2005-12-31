@@ -6,8 +6,17 @@ lib_LTLIBRARIES = libcarid-@CARID_MAJORMINOR@.la
 libcarid_@CARID_MAJORMINOR@_la_SOURCES = \
 	carid-stdint.h \
 	carid.h \
+	carid.c \
 	caridarith.c \
 	caridarith.h \
+	caridbits.c \
+	caridbits.h \
+	cariddecoder.c \
+	cariddecoder.h \
+	caridencoder.c \
+	caridencoder.h \
+	caridbuffer.c \
+	caridbuffer.h \
 	caridwavelet.c \
 	caridwavelet.h
 

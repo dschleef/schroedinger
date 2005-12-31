@@ -1,3 +1,32 @@
+2005-12-31  David Schleef  <ds@schleef.org>
+
+	* carid/Makefile.am:
+	* carid/carid.c:
+	* carid/carid.h:
+	* carid/caridbits.c:
+	* carid/caridbits.h:
+	* carid/caridbuffer.c:
+	* carid/caridbuffer.h:
+	* carid/caridcoeff.c:
+	* carid/caridcoeff.h:
+	* carid/cariddecoder.c:
+	* carid/cariddecoder.h:
+	* carid/caridencoder.c:
+	* carid/caridencoder.h:
+	* carid/caridwavelet.c:
+	* carid/caridwavelet.h:
+	* gst/Makefile.am:
+	* gst/gstcarid.c:
+	* gst/gstcaridtoy.c:
+	* gst/gstwaveletvisualizer.c:
+	* play.py:
+	* testsuite/Makefile.am:
+	* testsuite/bits.c:
+	* testsuite/bits2.c:
+	* testsuite/wavelet.c:
+	* testsuite/wavelet2.c:
+	  I'm just making this shit up as I go.
+
 2005-12-23  David Schleef  <ds@schleef.org>
 
 	* Makefile.am:

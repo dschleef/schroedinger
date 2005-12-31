@@ -96,14 +96,12 @@ class VideoWidget(gtk.DrawingArea):
         self.set_size_request(640, 480)
         
         self.player = player
-        self.colorspace = gst.element_factory_make('ffmpegcolorspace')
-        self.imagesink = gst.element_factory_make('ximagesink')
-        self.compress = gst.element_factory_make('compress')
+        self.imagesink = gst.element_factory_make('xvimagesink')
+        self.caridtoy = gst.element_factory_make('caridtoy')
         self.bin = gst.Bin('bin')
-        self.bin.add(self.imagesink, self.colorspace, self.compress)
-        self.compress.link (self.colorspace)
-        self.colorspace.link (self.imagesink)
-        self.bin.add_pad(gst.GhostPad("sink", self.compress.get_pad("sink")))
+        self.bin.add(self.imagesink, self.caridtoy)
+        self.caridtoy.link (self.imagesink)
+        self.bin.add_pad(gst.GhostPad("sink", self.caridtoy.get_pad("sink")))
         self.player.set_video_sink(self.bin)
 
     def destroy_cb(self, da):
@@ -282,11 +280,11 @@ class PlayerWindow(gtk.Window):
     def hscale_value_changed_cb(self, hscale):
         value = hscale.get_value()
         print value
-        self.videowidget.compress.set_property ("level", int(value))
+        self.videowidget.caridtoy.set_property ("level", int(value))
 
     def combobox_changed_cb(self, combobox):
         value = combobox.get_active()
-        self.videowidget.compress.set_property ("wavelet-type", value)
+        self.videowidget.caridtoy.set_property ("wavelet-type", value)
 
 def main(args):
     w = PlayerWindow()
