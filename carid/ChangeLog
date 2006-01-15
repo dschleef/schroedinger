@@ -1,3 +1,27 @@
+2006-01-14  David Schleef  <ds@schleef.org>
+
+	* carid/Makefile.am:
+	* carid/carid.c:
+	* carid/carid.h:
+	* carid/caridbits.c:
+	* carid/caridbits.h:
+	* carid/caridcoeff.c:
+	* carid/caridcoeff.h:
+	* carid/cariddecoder.c:
+	* carid/cariddecoder.h:
+	* carid/caridencoder.c:
+	* carid/caridencoder.h:
+	* carid/caridwavelet.c:
+	* carid/caridwavelet.h:
+	* gst/gstcaridtoy.c:
+	* gst/gstwaveletvisualizer.c:
+	* play.py:
+	* testsuite/Makefile.am:
+	* testsuite/wavelet2.c:
+	  This checkin roughly has intra frame encoding/decoding
+	  working.  "Roughly" because I just made changes to liboil
+	  that breaks all of it.
+
 2005-12-31  David Schleef  <ds@schleef.org>
 
 	* carid/Makefile.am:

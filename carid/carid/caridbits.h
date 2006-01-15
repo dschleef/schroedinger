@@ -27,6 +27,9 @@ void carid_bits_free (CaridBits *bits);
 void carid_bits_decode_init (CaridBits *bits, CaridBuffer *buffer);
 void carid_bits_encode_init (CaridBits *bits, CaridBuffer *buffer);
 
+void carid_bits_sync (CaridBits *bits);
+void carid_bits_dumpbits (CaridBits *bits);
+
 void carid_bits_encode_bit (CaridBits *bits, int value);
 void carid_bits_encode_bits (CaridBits *bits, int value, int n);
 void carid_bits_encode_uu (CaridBits *bits, int value);

@@ -143,26 +143,26 @@ main (int argc, char *argv[])
   check_endpoints (CARID_WAVELET_DAUB97, 1);
   check_endpoints (CARID_WAVELET_DAUB97, 0);
 
-  //check_endpoints (CARID_WAVELET_APPROX97, 1);
-  //check_endpoints (CARID_WAVELET_APPROX97, 0);
+  check_endpoints (CARID_WAVELET_APPROX97, 1);
+  check_endpoints (CARID_WAVELET_APPROX97, 0);
 
   check_endpoints (CARID_WAVELET_5_3, 1);
   check_endpoints (CARID_WAVELET_5_3, 0);
 
-  //check_endpoints (CARID_WAVELET_13_5, 1);
-  //check_endpoints (CARID_WAVELET_13_5, 0);
+  check_endpoints (CARID_WAVELET_13_5, 1);
+  check_endpoints (CARID_WAVELET_13_5, 0);
   
 
   check_constant (CARID_WAVELET_DAUB97);
-  //check_constant (CARID_WAVELET_APPROX97);
+  check_constant (CARID_WAVELET_APPROX97);
   check_constant (CARID_WAVELET_5_3);
-  //check_constant (CARID_WAVELET_13_5);
+  check_constant (CARID_WAVELET_13_5);
 
 
   check_random (CARID_WAVELET_DAUB97);
-  //check_random (CARID_WAVELET_APPROX97);
+  check_random (CARID_WAVELET_APPROX97);
   check_random (CARID_WAVELET_5_3);
-  //check_random (CARID_WAVELET_13_5);
+  check_random (CARID_WAVELET_13_5);
 
 
   return 0;

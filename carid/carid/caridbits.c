@@ -6,8 +6,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <liboil/liboil.h>
 
 #include <carid/caridbits.h>
+#include <carid/carid.h>
 
 
 CaridBits *
@@ -37,10 +39,13 @@ carid_bits_decode_init (CaridBits *bits, CaridBuffer *buffer)
 void
 carid_bits_encode_init (CaridBits *bits, CaridBuffer *buffer)
 {
+  uint8_t value = 0;
+
   bits->buffer = buffer;
   bits->offset = 0;
 
-  memset (bits->buffer->data, 0, bits->buffer->length);
+  /* FIXME this should be done incrementally */
+  oil_splat_u8_ns (bits->buffer->data, &value, bits->buffer->length);
 }
 
 void
@@ -48,6 +53,25 @@ carid_bits_sync (CaridBits *bits)
 {
   bits->offset = (bits->offset + 7) & (~0x7);
 }
+
+void
+carid_bits_dumpbits (CaridBits *bits)
+{
+  char s[101];
+  CaridBits mybits;
+  int i;
+
+  memcpy (&mybits, bits, sizeof(*bits));
+
+  for(i=0;i<100;i++){
+    int bit = carid_bits_decode_bit (&mybits);
+    s[i] = bit ? '1' : '0';
+  }
+  s[101] = 0;
+
+  CARID_DEBUG ("dump bits %s", s);
+}
+
 
 
 void
@@ -310,5 +334,4 @@ int carid_bits_decode_se2gol (CaridBits *bits)
 
   return value;
 }
-
 

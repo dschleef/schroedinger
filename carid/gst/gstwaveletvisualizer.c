@@ -300,7 +300,7 @@ gst_waveletvisualizer_create (GstPushSrc * push_src,
   do_update (wv->components + 1, val);
   do_update (wv->components + 2, val);
 
-  carid_decoder_set_wavelet_type (wv->decoder, wv->wavelet_type);
+  wv->decoder->params.wavelet_filter_index = wv->wavelet_type;
 
   do_transform (wv->components + 0, wv->decoder, wv->tmpdata,
       GST_BUFFER_DATA (outbuf));
@@ -385,7 +385,8 @@ do_transform (GstWaveletvisualizerComponent *c, CaridDecoder *decoder,
   oil_memcpy(tmpdata, c->data, n*2);
 
   encoded_buffer = carid_buffer_new_with_data (tmpdata, c->width*c->height*2);
-  carid_decoder_set_size (decoder, c->width, c->height);
+  decoder->params.width = c->width;
+  decoder->params.height = c->height;
   decoded_buffer = carid_buffer_new_with_data (dest,
       c->width * c->height);
   carid_decoder_set_output_buffer (decoder, decoded_buffer);

@@ -286,9 +286,6 @@ gst_caridtoy_transform_ip (GstBaseTransform * base_transform,
   }
 
 
-  carid_decoder_set_size (compress->decoder, width, height);
-  carid_decoder_set_wavelet_type (compress->decoder, compress->wavelet_type);
-
   decoded_buffer = carid_buffer_new_with_data (GST_BUFFER_DATA (buf),
       GST_BUFFER_SIZE (buf));
   carid_decoder_set_output_buffer (compress->decoder, decoded_buffer);

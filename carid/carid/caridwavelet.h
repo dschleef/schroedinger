@@ -16,22 +16,22 @@ void carid_deinterleave_str (int16_t *d_n, int dstr, int16_t *s_n, int n);
 void carid_interleave (int16_t *d_n, int16_t *s_n, int n);
 void carid_interleave_str (int16_t *d_n, int16_t *s_n, int sstr, int n);
 
-void carid_lift_synth_haar (int16_t *i_n, int n);
-void carid_lift_split_haar (int16_t *i_n, int n);
-void carid_lift_split_daub97_ext (int16_t *d_n, int16_t *s_n, int n);
-void carid_lift_split_53_ext (int16_t *d_n, int16_t *s_n, int n);
-void carid_lift_split_53_ext_str (int16_t *d_n, int16_t *s_n, int sstr, int n);
-void carid_lift_split_approx97_ext (int16_t *i_n, int n);
-void carid_lift_split_135_ext (int16_t *i_n, int n);
+void carid_lift_split_daub97 (int16_t *d_n, int16_t *s_n, int n);
+void carid_lift_split_daub97_str (int16_t *d_n, int16_t *s_n, int sstr, int n);
+void carid_lift_split_53 (int16_t *d_n, int16_t *s_n, int n);
+void carid_lift_split_53_str (int16_t *d_n, int16_t *s_n, int sstr, int n);
+void carid_lift_split_approx97 (int16_t *d_n, int16_t *s_n, int n);
+void carid_lift_split_135 (int16_t *d_n, int16_t *s_n, int n);
 
 void carid_lift_split (int type, int16_t *dest, int16_t *src, int n);
 void carid_lift_split_str (int type, int16_t *dest, int16_t *src, int sstr, int n);
 
-void carid_lift_synth_daub97_ext (int16_t *d_n, int16_t *s_n, int n);
-void carid_lift_synth_53_ext (int16_t *d_n, int16_t *s_n, int n);
-void carid_lift_synth_53_ext_str (int16_t *d_n, int dstr, int16_t *s_n, int n);
-void carid_lift_synth_approx97_ext (int16_t *i_n, int n);
-void carid_lift_synth_135_ext (int16_t *i_n, int n);
+void carid_lift_synth_daub97 (int16_t *d_n, int16_t *s_n, int n);
+void carid_lift_synth_daub97_str (int16_t *d_n, int dstr, int16_t *s_n, int n);
+void carid_lift_synth_53 (int16_t *d_n, int16_t *s_n, int n);
+void carid_lift_synth_53_str (int16_t *d_n, int dstr, int16_t *s_n, int n);
+void carid_lift_synth_approx97 (int16_t *d_n, int16_t *s_n, int n);
+void carid_lift_synth_135 (int16_t *d_n, int16_t *s_n, int n);
 void carid_lift_synth (int type, int16_t *dest, int16_t *src, int n);
 void carid_lift_synth_str (int type, int16_t *dest, int dstr, int16_t *src, int n);
 

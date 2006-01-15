@@ -168,7 +168,7 @@ class PlayerWindow(gtk.Window):
         combobox.append_text("Approx 9,7")
         combobox.append_text("5,3")
         combobox.append_text("13,5")
-        combobox.set_active(0)
+        combobox.set_active(2)
         combobox.connect('changed', self.combobox_changed_cb)
         hbox.pack_start(combobox, False)
 

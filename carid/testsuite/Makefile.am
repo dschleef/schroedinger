@@ -1,6 +1,6 @@
 
 
-noinst_PROGRAMS = arith arith_encode arith_decode codes bits bits2 wavelet wavelet2
+noinst_PROGRAMS = arith arith_encode arith_decode codes bits bits2 wavelet wavelet2 tables
 
 
 arith_CFLAGS = $(CARID_CFLAGS)
@@ -34,6 +34,10 @@ wavelet_SOURCES = wavelet.c
 wavelet2_CFLAGS = $(CARID_CFLAGS)
 wavelet2_LDADD = $(CARID_LIBS)
 wavelet2_SOURCES = wavelet2.c
+
+tables_CFLAGS = 
+tables_LDADD = -lm
+tables_SOURCES = tables.c
 
 
 
