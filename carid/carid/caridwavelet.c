@@ -1,5 +1,5 @@
 
-#include <carid/caridwavelet.h>
+#include <carid/carid.h>
 #include <string.h>
 #include <stdio.h>
 #include <liboil/liboil.h>
@@ -9,7 +9,7 @@
 void
 carid_deinterleave (int16_t *d_n, int16_t *s_n, int n)
 {
-  oil_deinterleave (d_n, s_n, n);
+  oil_deinterleave (d_n, s_n, n/2);
 #if 0
   int i;
 
@@ -23,8 +23,6 @@ carid_deinterleave (int16_t *d_n, int16_t *s_n, int n)
 void
 carid_deinterleave_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 {
-  oil_deinterleave_str (d_n, dstr, s_n, n);
-#if 0
   int i;
 
   dstr>>=1;
@@ -32,14 +30,11 @@ carid_deinterleave_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
     d_n[i*dstr] = s_n[2*i];
     d_n[(n/2 + i)*dstr] = s_n[2*i + 1];
   }
-#endif
 }
 
 void
 carid_interleave_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 {
-  oil_interleave_str (d_n, s_n, sstr, n);
-#if 0
   int i;
 
   sstr>>=1;
@@ -47,13 +42,12 @@ carid_interleave_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
     d_n[2*i] = s_n[i*sstr];
     d_n[2*i + 1] = s_n[(n/2 + i)*sstr];
   }
-#endif
 }
 
 void
 carid_interleave (int16_t *d_n, int16_t *s_n, int n)
 {
-  oil_interleave (d_n, s_n, n);
+  oil_interleave (d_n, s_n, n/2);
 #if 0
   int i;
 
@@ -583,19 +577,19 @@ carid_lift_split (int type, int16_t *d_n, int16_t *s_n, int n)
 {
   switch (type) {
     case CARID_WAVELET_DAUB97:
-      oil_split_daub97 (d_n, s_n, n);
+      oil_split_daub97 (d_n, s_n, n/2);
       break;
     case CARID_WAVELET_APPROX97:
-      oil_split_approx97 (d_n, s_n, n);
+      oil_split_approx97 (d_n, s_n, n/2);
       break;
     case CARID_WAVELET_5_3:
-      oil_split_53 (d_n, s_n, n);
+      oil_split_53 (d_n, s_n, n/2);
       break;
     case CARID_WAVELET_13_5:
-      oil_split_135 (d_n, s_n, n);
+      oil_split_135 (d_n, s_n, n/2);
       break;
     default:
-      printf("invalid type\n");
+      CARID_ERROR("invalid type");
       break;
   }
 }
@@ -605,19 +599,19 @@ carid_lift_split_str (int type, int16_t *d_n, int16_t *s_n, int sstr, int n)
 {
   switch (type) {
     case CARID_WAVELET_DAUB97:
-      oil_split_daub97_str (d_n, s_n, sstr, n);
+      carid_lift_split_daub97_str (d_n, s_n, sstr, n);
       break;
     case CARID_WAVELET_APPROX97:
-      oil_split_approx97_str (d_n, s_n, sstr, n);
+      carid_lift_split_approx97_str (d_n, s_n, sstr, n);
       break;
     case CARID_WAVELET_5_3:
-      oil_split_53_str (d_n, s_n, sstr, n);
+      carid_lift_split_53_str (d_n, s_n, sstr, n);
       break;
     case CARID_WAVELET_13_5:
-      oil_split_135_str (d_n, s_n, sstr, n);
+      carid_lift_split_135_str (d_n, s_n, sstr, n);
       break;
     default:
-      printf("invalid type\n");
+      CARID_ERROR("invalid type");
       break;
   }
 }
@@ -627,19 +621,19 @@ carid_lift_synth (int type, int16_t *d_n, int16_t *s_n, int n)
 {
   switch (type) {
     case CARID_WAVELET_DAUB97:
-      oil_synth_daub97 (d_n, s_n, n);
+      oil_synth_daub97 (d_n, s_n, n/2);
       break;
     case CARID_WAVELET_APPROX97:
-      oil_synth_approx97 (d_n, s_n, n);
+      oil_synth_approx97 (d_n, s_n, n/2);
       break;
     case CARID_WAVELET_5_3:
-      oil_synth_53 (d_n, s_n, n);
+      oil_synth_53 (d_n, s_n, n/2);
       break;
     case CARID_WAVELET_13_5:
-      oil_synth_135 (d_n, s_n, n);
+      oil_synth_135 (d_n, s_n, n/2);
       break;
     default:
-      printf("invalid type\n");
+      CARID_ERROR("invalid type");
       break;
   }
 }
@@ -649,19 +643,19 @@ carid_lift_synth_str (int type, int16_t *d_n, int dstr, int16_t *s_n, int n)
 {
   switch (type) {
     case CARID_WAVELET_DAUB97:
-      oil_synth_daub97_str (d_n, dstr, s_n, n);
+      carid_lift_synth_daub97_str (d_n, dstr, s_n, n);
       break;
     case CARID_WAVELET_APPROX97:
-      oil_synth_approx97_str (d_n, dstr, s_n, n);
+      carid_lift_synth_approx97_str (d_n, dstr, s_n, n);
       break;
     case CARID_WAVELET_5_3:
-      oil_synth_53_str (d_n, dstr, s_n, n);
+      carid_lift_synth_53_str (d_n, dstr, s_n, n);
       break;
     case CARID_WAVELET_13_5:
-      oil_synth_135_str (d_n, dstr, s_n, n);
+      carid_lift_synth_135_str (d_n, dstr, s_n, n);
       break;
     default:
-      printf("invalid type\n");
+      CARID_ERROR("invalid type");
       break;
   }
 }
@@ -754,4 +748,85 @@ carid_iwt (int type, int16_t *i_n, int n)
   }
 }
 #endif
+
+void
+carid_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
+    int height, int16_t *tmp)
+{
+  int i;
+  int a;
+  int n;
+
+  stride >>= 1;
+  n = width/2;
+  switch (type) {
+    case CARID_WAVELET_5_3:
+      for(i=0;i<height;i+=2){
+        a = i+2;
+        if (a >= height) a = 2*height - 2 - a;
+        oil_lift_sub_shift1 (i_n + stride * (i+1), i_n + stride * (i+1),
+            i_n + stride * (i+0), i_n + stride * (a), width);
+        a = i-1;
+        if (a < 0) a = -a;
+        oil_lift_add_shift2 (i_n + stride * (i+0), i_n + stride * (i+0),
+            i_n + stride * (a), i_n + stride * (i+1), width);
+        if (i>=2) {
+          oil_split_53 (tmp, i_n + stride * (i-2), n);
+          oil_deinterleave (i_n + stride * (i-2), tmp, n);
+          oil_split_53 (tmp, i_n + stride * (i-1), n);
+          oil_deinterleave (i_n + stride * (i-1), tmp, n);
+        }
+      }
+      oil_split_53 (tmp, i_n + stride * (height-2), n);
+      oil_deinterleave (i_n + stride * (height-2), tmp, n);
+      oil_split_53 (tmp, i_n + stride * (height-1), n);
+      oil_deinterleave (i_n + stride * (height-1), tmp, n);
+
+      break;
+    default:
+      CARID_ERROR("invalid type");
+      break;
+  }
+}
+
+void
+carid_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int width,
+    int height, int16_t *tmp)
+{
+  int i;
+  int n;
+
+  CARID_ASSERT((height&1)==0);
+  CARID_ASSERT((width&1)==0);
+
+  stride >>= 1;
+  n = width/2;
+  switch (type) {
+    case CARID_WAVELET_5_3:
+      oil_interleave (tmp, i_n + stride * (0), n);
+      oil_synth_53 (i_n + stride * (0), tmp, n);
+      oil_interleave (tmp, i_n + stride * (1), n);
+      oil_synth_53 (i_n + stride * (1), tmp, n);
+      oil_lift_sub_shift2 (i_n + stride * (0), i_n + stride * (0),
+          i_n + stride * (1), i_n + stride * (1), width);
+      for(i=2;i<height;i+=2){
+        oil_interleave (tmp, i_n + stride * (i + 0), n);
+        oil_synth_53 (i_n + stride * (i + 0), tmp, n);
+        oil_interleave (tmp, i_n + stride * (i + 1), n);
+        oil_synth_53 (i_n + stride * (i + 1), tmp, n);
+        oil_lift_sub_shift2 (i_n + stride * (i+0), i_n + stride * (i+0),
+            i_n + stride * (i-1), i_n + stride * (i+1), width);
+        oil_lift_add_shift1 (i_n + stride * (i-1), i_n + stride * (i-1),
+            i_n + stride * (i-2), i_n + stride * (i), width);
+      }
+      i = height;
+      oil_lift_add_shift1 (i_n + stride * (i-1), i_n + stride * (i-1),
+          i_n + stride * (i-2), i_n + stride * (i-2), width);
+
+      break;
+    default:
+      CARID_ERROR("invalid type");
+      break;
+  }
+}
 

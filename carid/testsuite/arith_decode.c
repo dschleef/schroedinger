@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <carid/caridarith.h>
+#include <carid/carid.h>
 
 #define BUFFER_SIZE 10000
 uint8_t input_buffer[BUFFER_SIZE];
@@ -48,6 +48,8 @@ main (int argc, char *argv[])
   int n_bytes;
   int j;
 
+  carid_init();
+
   file = fopen("test_file_arith.out","r");
   n_bytes = fread (input_buffer, 1, BUFFER_SIZE, file);
   fclose (file);
@@ -57,7 +59,7 @@ main (int argc, char *argv[])
   a->data = input_buffer;
   a->size = BUFFER_SIZE;
 
-  carid_arith_encode_init (a);
+  carid_arith_decode_init (a);
   carid_arith_context_init (a, 0, 1, 1);
 
   i = 0;

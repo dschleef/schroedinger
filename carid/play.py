@@ -104,6 +104,8 @@ class VideoWidget(gtk.DrawingArea):
         self.bin.add_pad(gst.GhostPad("sink", self.caridtoy.get_pad("sink")))
         self.player.set_video_sink(self.bin)
 
+        self.caridtoy.set_property ("wavelet-type", 2)
+
     def destroy_cb(self, da):
         self.set_window_id(0L)
 

@@ -3,8 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <carid/caridbuffer.h>
-#include <carid/caridbits.h>
+#include <carid/carid.h>
 
 void
 dump_bits (CaridBits *bits)
@@ -29,6 +28,8 @@ main (int argc, char *argv[])
   CaridBits *bits;
   int value;
   int fail = 0;
+
+  carid_init();
 
   srand(time(NULL));
 

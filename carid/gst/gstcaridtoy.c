@@ -254,11 +254,15 @@ gst_caridtoy_transform_ip (GstBaseTransform * base_transform,
   carid_encoder_set_size (compress->encoder, width, height);
   carid_encoder_set_wavelet_type (compress->encoder, compress->wavelet_type);
 
+  compress->encoder->encoder_params.quant_index[6] = compress->level;
+
+  if (1) {
   input_buffer = carid_buffer_new_with_data (GST_BUFFER_DATA (buf),
       GST_BUFFER_SIZE (buf));
   encoded_buffer = carid_encoder_encode (compress->encoder, input_buffer);
   carid_buffer_unref (input_buffer);
 
+#if 0
   {
     int i;
     int j;
@@ -284,12 +288,36 @@ gst_caridtoy_transform_ip (GstBaseTransform * base_transform,
       }
     }
   }
+#endif
 
 
   decoded_buffer = carid_buffer_new_with_data (GST_BUFFER_DATA (buf),
       GST_BUFFER_SIZE (buf));
   carid_decoder_set_output_buffer (compress->decoder, decoded_buffer);
   carid_decoder_decode (compress->decoder, encoded_buffer);
+  } else {
+    int16_t *frame_data;
+    int16_t *tmp;
+
+    frame_data = g_malloc (width*height*2);
+    tmp = g_malloc (2048);
+    
+    oil_convert_s16_u8 (frame_data, GST_BUFFER_DATA(buf), width*height);
+    carid_wavelet_transform_2d (compress->wavelet_type,
+        frame_data, width*2, width, height, tmp);
+    carid_wavelet_transform_2d (compress->wavelet_type,
+        frame_data, width*2*2, width/2, height/2, tmp);
+
+
+    carid_wavelet_inverse_transform_2d (compress->wavelet_type,
+        frame_data, width*2*2, width/2, height/2, tmp);
+    carid_wavelet_inverse_transform_2d (compress->wavelet_type,
+        frame_data, width*2, width, height, tmp);
+    oil_convert_u8_s16 (GST_BUFFER_DATA(buf), frame_data, width*height);
+
+    g_free(frame_data);
+    g_free(tmp);
+  }
 
   return GST_FLOW_OK;
 }

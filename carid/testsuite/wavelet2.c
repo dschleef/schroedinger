@@ -11,6 +11,45 @@
 
 
 int
+check_output (int type, int split)
+{
+  int16_t *src;
+  int16_t *dest;
+  int i;
+  int n;
+  int ret = 1;
+
+  src = malloc (256 * 2);
+  dest = malloc (256 * 2);
+
+  for(n=2;n<16;n+=2) {
+    for(i=0;i<256;i++){
+      dest[i] = 100;
+      src[i] = 0;
+    }
+
+    if (split) {
+      carid_lift_split (type, dest + 10, src + 10, n);
+    } else {
+      carid_lift_synth (type, dest + 10, src + 10, n);
+    }
+
+    for(i=10;i<10+n;i++){
+      if (dest[i] != 0) {
+        printf("check_output failed type=%d, split=%d, n=%d, offset=%d\n",
+            type, split, n, i - 10);
+        ret = 0;
+        break;
+      }
+    }
+  }
+
+  free(src);
+  free(dest);
+  return ret;
+}
+
+int
 check_endpoints (int type, int split)
 {
   int16_t *src;
@@ -139,7 +178,20 @@ check_random (int type)
 int
 main (int argc, char *argv[])
 {
+  carid_init();
 
+  check_output (CARID_WAVELET_DAUB97, 1);
+  check_output (CARID_WAVELET_DAUB97, 0);
+
+  check_output (CARID_WAVELET_APPROX97, 1);
+  check_output (CARID_WAVELET_APPROX97, 0);
+
+  check_output (CARID_WAVELET_5_3, 1);
+  check_output (CARID_WAVELET_5_3, 0);
+
+  check_output (CARID_WAVELET_13_5, 1);
+  check_output (CARID_WAVELET_13_5, 0);
+  
   check_endpoints (CARID_WAVELET_DAUB97, 1);
   check_endpoints (CARID_WAVELET_DAUB97, 0);
 

@@ -50,5 +50,8 @@ void carid_iwt (int type, int16_t *d_n, int16_t *s_n, int n);
 void carid_wt_2d (int type, int16_t *i_n, int n, int stride);
 void carid_iwt_2d (int type, int16_t *i_n, int n, int stride);
 
+void carid_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width, int height, int16_t *tmp);
+void carid_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int width, int height, int16_t *tmp);
+
 #endif
 

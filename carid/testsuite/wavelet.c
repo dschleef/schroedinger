@@ -16,6 +16,8 @@ main (int argc, char *argv[])
 {
   int i;
 
+  carid_init();
+
   for(i=0;i<128;i++) {
     b1[i] = 16;
   }

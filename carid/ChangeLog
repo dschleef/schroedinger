@@ -1,3 +1,23 @@
+2006-01-16  David Schleef  <ds@schleef.org>
+
+	* carid/caridcoeff.c:
+	* carid/caridcoeff.h:
+	* carid/cariddecoder.c:
+	* carid/cariddecoder.h:
+	* carid/caridencoder.c:
+	* carid/caridencoder.h:
+	* carid/caridwavelet.c:
+	* carid/caridwavelet.h:
+	* gst/gstcaridtoy.c:
+	* play.py:
+	* testsuite/Makefile.am:
+	* testsuite/arith_decode.c:
+	* testsuite/bits.c:
+	* testsuite/bits2.c:
+	* testsuite/wavelet.c:
+	* testsuite/wavelet2.c:
+	  Ok, _now_ intra frame encoding/decoding works.
+
 2006-01-14  David Schleef  <ds@schleef.org>
 
 	* carid/Makefile.am:

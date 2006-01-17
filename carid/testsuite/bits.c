@@ -1,8 +1,7 @@
 
 #include <stdio.h>
 
-#include <carid/caridbuffer.h>
-#include <carid/caridbits.h>
+#include <carid/carid.h>
 
 void
 dump_bits (CaridBits *bits)
@@ -12,7 +11,7 @@ dump_bits (CaridBits *bits)
   for(i=0;i<bits->offset;i++){
     printf(" %d", (bits->buffer->data[(i>>3)] >> (7 - (i&7))) & 1);
   }
-  printf("\n");
+  printf(" (%d bits)\n", bits->offset);
 }
 
 
@@ -24,6 +23,8 @@ main (int argc, char *argv[])
   CaridBits *bits;
   int value;
   int fail = 0;
+
+  carid_init();
 
   bits = carid_bits_new();
 
@@ -127,6 +128,36 @@ main (int argc, char *argv[])
     value = carid_bits_decode_se2gol (bits);
     if (value != i) {
       printf("decode failed (%d != %d)\n", value, i);
+      fail = 1;
+    }
+  }
+  printf("\n");
+
+  printf("unsigned exp-Golomb\n");
+  for(i=0;i<31;i++) {
+    carid_bits_encode_init (bits, buffer);
+    carid_bits_encode_uegol(bits,(1<<i));
+    printf("%3d:", (1<<i));
+    dump_bits (bits);
+    carid_bits_decode_init (bits, buffer);
+    value = carid_bits_decode_uegol (bits);
+    if (value != (1<<i)) {
+      printf("decode failed (%d != %d)\n", value, (1<<i));
+      fail = 1;
+    }
+  }
+  printf("\n");
+
+  printf("unsigned exp-exp-Golomb\n");
+  for(i=0;i<31;i++) {
+    carid_bits_encode_init (bits, buffer);
+    carid_bits_encode_ue2gol(bits,(1<<i));
+    printf("%3d:", (1<<i));
+    dump_bits (bits);
+    carid_bits_decode_init (bits, buffer);
+    value = carid_bits_decode_ue2gol (bits);
+    if (value != (1<<i)) {
+      printf("decode failed (%d != %d)\n", value, (1<<i));
       fail = 1;
     }
   }
