@@ -1,5 +1,13 @@
 2006-01-23  David Schleef  <ds@schleef.org>
 
+	* carid/Makefile.am:
+	* carid/carid.h:
+	* carid/caridcoeff.c:
+	* carid/caridcoeff.h:
+	  Remove caridcoeff.
+
+2006-01-23  David Schleef  <ds@schleef.org>
+
 	* carid/caridarith.c:
 	* carid/caridarith.h:
 	* carid/caridbits.c:
