@@ -515,6 +515,7 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
         int nhood_sum;
         int previous_value;
         int sign_context;
+        int pred_value;
 
         nhood_sum = 0;
         if (j>0) {
@@ -527,6 +528,25 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
           nhood_sum += abs(data[(j-1)*stride + i - 1]);
         }
         
+        if (index == 0) {
+          if (j>0) {
+            if (i>0) {
+              pred_value = (data[j*stride + i - 1] + 
+                  data[(j-1)*stride + i] + data[(j-1)*stride + i - 1])/3;
+            } else {
+              pred_value = data[(j-1)*stride + i];
+            }
+          } else {
+            if (i>0) {
+              pred_value = data[j*stride + i - 1];
+            } else {
+              pred_value = 0;
+            }
+          }
+        } else {
+          pred_value = 0;
+        }
+
         if (info->has_parent) {
           if (parent_data[(j>>1)*(stride<<1) + (i>>1)]==0) {
             parent_zero = 1;
@@ -584,12 +604,12 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
 
         if (v) {
           if (sign) {
-            data[j*stride + i] = quant_offset + quant_factor * v;
+            data[j*stride + i] = pred_value + quant_offset + quant_factor * v;
           } else {
-            data[j*stride + i] = -(quant_offset + quant_factor * v);
+            data[j*stride + i] = pred_value - (quant_offset + quant_factor * v);
           }
         } else {
-          data[j*stride + i] = 0;
+          data[j*stride + i] = pred_value;
         }
 
 #if 0

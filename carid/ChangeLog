@@ -2,6 +2,12 @@
 
 	* carid/cariddecoder.c:
 	* carid/caridencoder.c:
+	  Add intra DC subband prediction.
+
+2006-01-23  David Schleef  <ds@schleef.org>
+
+	* carid/cariddecoder.c:
+	* carid/caridencoder.c:
 	  Duh.  The spec encodes subband value magnitudes as uu, not
 	  uegol.  Fixor.
 

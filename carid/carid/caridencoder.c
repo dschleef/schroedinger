@@ -26,15 +26,22 @@ carid_encoder_new (void)
   params->is_intra = TRUE;
   params->chroma_h_scale = 2;
   params->chroma_v_scale = 2;
-  params->transform_depth = 6;
+  params->transform_depth = 4;
 
   encoder->encoder_params.quant_index_dc = 6;
-  encoder->encoder_params.quant_index[0] = 6;
-  encoder->encoder_params.quant_index[1] = 8;
-  encoder->encoder_params.quant_index[2] = 12;
-  encoder->encoder_params.quant_index[3] = 14;
-  encoder->encoder_params.quant_index[4] = 16;
-  encoder->encoder_params.quant_index[5] = 18;
+  if (params->transform_depth == 6) {
+    encoder->encoder_params.quant_index[0] = 6;
+    encoder->encoder_params.quant_index[1] = 8;
+    encoder->encoder_params.quant_index[2] = 12;
+    encoder->encoder_params.quant_index[3] = 14;
+    encoder->encoder_params.quant_index[4] = 16;
+    encoder->encoder_params.quant_index[5] = 18;
+  } else {
+    encoder->encoder_params.quant_index[0] = 12;
+    encoder->encoder_params.quant_index[1] = 14;
+    encoder->encoder_params.quant_index[2] = 16;
+    encoder->encoder_params.quant_index[3] = 18;
+  }
 
   return encoder;
 }
@@ -412,6 +419,7 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
       int nhood_sum;
       int previous_value;
       int sign_context;
+      int pred_value;
 
       nhood_sum = 0;
       if (j>0) {
@@ -423,8 +431,28 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
       if (i>0 && j>0) {
         nhood_sum += abs(data[(j-1)*stride + i - 1]);
       }
+      
+      if (subband_index == 0) {
+        if (j>0) {
+          if (i>0) {
+            pred_value = (data[j*stride + i - 1] +
+                data[(j-1)*stride + i] + data[(j-1)*stride + i - 1])/3;
+          } else {
+            pred_value = data[(j-1)*stride + i];
+          }
+        } else {
+          if (i>0) {
+            pred_value = data[j*stride + i - 1];
+          } else {
+            pred_value = 0;
+          }
+        }
+      } else {
+        pred_value = 0;
+      }
 
-      if (data[j*stride + i] < 0) {
+      v -= pred_value;
+      if (v < 0) {
         sign = 0;
         v = -v;
       } else {
@@ -437,12 +465,12 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
       }
       if (v) {
         if (sign) {
-          data[j*stride + i] = quant_offset + quant_factor * v;
+          data[j*stride + i] = pred_value + quant_offset + quant_factor * v;
         } else {
-          data[j*stride + i] = -(quant_offset + quant_factor * v);
+          data[j*stride + i] = pred_value - (quant_offset + quant_factor * v);
         }
       } else {
-        data[j*stride + i] = 0;
+        data[j*stride + i] = pred_value;
       }
       
       if (info->has_parent) {
