@@ -577,7 +577,7 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
           sign_context = CARID_CTX_SIGN_ZERO;
         }
 
-        v = carid_arith_context_decode_uegol (arith, context);
+        v = carid_arith_context_decode_uu (arith, context);
         if (v) {
           sign = carid_arith_context_binary_decode (arith, sign_context);
         }

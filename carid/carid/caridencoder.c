@@ -495,7 +495,7 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
         sign_context = CARID_CTX_SIGN_ZERO;
       }
       
-      carid_arith_context_encode_uegol (arith, context, v);
+      carid_arith_context_encode_uu (arith, context, v);
       if (v) {
         carid_arith_context_binary_encode (arith, sign_context, sign);
       }

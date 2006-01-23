@@ -1,5 +1,12 @@
 2006-01-23  David Schleef  <ds@schleef.org>
 
+	* carid/cariddecoder.c:
+	* carid/caridencoder.c:
+	  Duh.  The spec encodes subband value magnitudes as uu, not
+	  uegol.  Fixor.
+
+2006-01-23  David Schleef  <ds@schleef.org>
+
 	* carid/caridarith.c:
 	* carid/caridarith.h:
 	* carid/caridbits.c:
