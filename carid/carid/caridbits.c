@@ -11,6 +11,7 @@
 #include <carid/caridbits.h>
 #include <carid/carid.h>
 
+#pragma GCC visibility push(hidden)
 
 CaridBits *
 carid_bits_new (void)
@@ -61,7 +62,7 @@ carid_bits_dumpbits (CaridBits *bits)
   CaridBits mybits;
   int i;
 
-  memcpy (&mybits, bits, sizeof(*bits));
+  oil_memcpy (&mybits, bits, sizeof(*bits));
 
   for(i=0;i<100;i++){
     int bit = carid_bits_decode_bit (&mybits);
@@ -82,7 +83,7 @@ carid_bits_append (CaridBits *bits, CaridBits *bits2)
     CARID_ERROR ("appending unsyncronized bits");
   }
 
-  memcpy (bits->buffer->data + (bits->offset>>3), bits2->buffer->data,
+  oil_memcpy (bits->buffer->data + (bits->offset>>3), bits2->buffer->data,
       (bits2->offset>>3));
   bits->offset += bits2->offset;
 }

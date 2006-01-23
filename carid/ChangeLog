@@ -1,5 +1,18 @@
 2006-01-23  David Schleef  <ds@schleef.org>
 
+	* carid/caridarith.c:
+	* carid/caridarith.h:
+	* carid/caridbits.c:
+	* carid/cariddecoder.c:
+	* carid/caridencoder.c:
+	* carid/caridencoder.h:
+	* carid/caridwavelet.c:
+	* gst/gstcaridtoy.c:
+	  Fix concerning clarification of spec and how bins are used.
+	  Code cleanup.
+
+2006-01-23  David Schleef  <ds@schleef.org>
+
 	* carid/cariddecoder.c:
 	* carid/caridencoder.c:
 	  Add intra DC subband prediction.

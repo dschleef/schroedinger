@@ -22,6 +22,8 @@ carid_encoder_new (void)
   encoder->tmpbuf = malloc(1024 * 2);
   encoder->tmpbuf2 = malloc(1024 * 2);
 
+  encoder->subband_buffer = carid_buffer_new_and_alloc (10000);
+
   params = &encoder->params;
   params->is_intra = TRUE;
   params->chroma_h_scale = 2;
@@ -144,7 +146,7 @@ carid_encoder_encode (CaridEncoder *encoder, CaridBuffer *buffer)
   carid_encoder_encode_transform_parameters (encoder);
   carid_encoder_encode_transform_data (encoder);
 
-  CARID_ERROR("encoded %d bits", encoder->bits->offset);
+  CARID_DEBUG("encoded %d bits", encoder->bits->offset);
   carid_bits_free (encoder->bits);
 
   return outbuffer;
@@ -377,7 +379,6 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
   CaridParams *params = &encoder->params;
   struct subband_struct *info = carid_encoder_subband_info + subband_index;
   CaridArith *arith;
-  CaridBuffer *buffer;
   CaridBits *bits;
   int16_t *data;
   int16_t *parent_data;
@@ -403,9 +404,8 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
 
   ntop = (scale_factor>>1) * quant_factor;
 
-  buffer = carid_buffer_new_and_alloc (10000);
   bits = carid_bits_new ();
-  carid_bits_encode_init (bits, buffer);
+  carid_bits_encode_init (bits, encoder->subband_buffer);
   arith = carid_arith_new ();
   carid_arith_encode_init (arith, bits);
   carid_arith_init_contexts (arith);
@@ -416,6 +416,7 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
       int sign;
       int parent_zero;
       int context;
+      int context2;
       int nhood_sum;
       int previous_value;
       int sign_context;
@@ -492,6 +493,7 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
         } else {
           context = CARID_CTX_Z_BIN1nz;
         }
+        context2 = CARID_CTX_Z_BIN2;
       } else {
         if (nhood_sum == 0) {
           context = CARID_CTX_NZ_BIN1z;
@@ -502,6 +504,7 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
             context = CARID_CTX_NZ_BIN1b;
           }
         }
+        context2 = CARID_CTX_NZ_BIN2;
       }
 
       previous_value = 0;
@@ -523,9 +526,9 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
         sign_context = CARID_CTX_SIGN_ZERO;
       }
       
-      carid_arith_context_encode_uu (arith, context, v);
+      carid_arith_context_encode_uu (arith, context, context2, v);
       if (v) {
-        carid_arith_context_binary_encode (arith, sign_context, sign);
+        carid_arith_context_encode_bit (arith, sign_context, sign);
       }
     }
   }
@@ -535,11 +538,6 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
   carid_arith_free (arith);
   carid_bits_sync (bits);
 
-#if 0
-if (x != 0 || y != 1) {
-  subband_zero_flag = 1;
-}
-#endif
   carid_bits_encode_bit (encoder->bits, subband_zero_flag);
   if (!subband_zero_flag) {
     carid_bits_encode_uegol (encoder->bits, quant_index);
@@ -552,44 +550,8 @@ if (x != 0 || y != 1) {
     CARID_DEBUG ("subband is zero");
     carid_bits_sync (encoder->bits);
   }
-  //carid_bits_sync (encoder->bits);
-
-#if 0
-  if (!subband_zero_flag) {
-    CaridArith *arith;
-    int offset;
-
-    offset = encoder->bits->offset;
-
-    arith = carid_arith_new ();
-    carid_arith_encode_init (arith, encoder->bits);
-    carid_arith_context_init (arith, 0, 1, 1);
-
-    for(j=0;j<h;j++){
-      for(i=0;i<w;i++){
-        int v = data[j*stride + i];
-        int sign;
-        if (v > 0) {
-          sign = 1;
-        } else {
-          sign = 0;
-          v = -v;
-        }
-        carid_arith_context_encode_uegol (arith, 0, v);
-        if (v) {
-          carid_arith_context_binary_encode (arith, 0, sign);
-        }
-      }
-    }
-    carid_arith_flush (arith);
-    CARID_ERROR("encoded %d bits", encoder->bits->offset - offset);
-    carid_arith_free (arith);
-    carid_bits_sync (encoder->bits);
-  }
-#endif
 
   carid_bits_free (bits);
-  carid_buffer_unref (buffer);
 }
 
 

@@ -29,6 +29,8 @@ struct _CaridEncoder {
 
   CaridParams params;
   CaridEncoderParams encoder_params;
+
+  CaridBuffer *subband_buffer;
 };
 
 CaridEncoder * carid_encoder_new (void);

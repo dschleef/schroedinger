@@ -1,4 +1,4 @@
-/* gsTREAmer
+/* GStreamer
  * Copyright (C) <1999> Erik Walthinsen <omega@cse.ogi.edu>
  * Copyright (C) <2003> David Schleef <ds@schleef.org>
  *
@@ -250,11 +250,8 @@ gst_caridtoy_transform_ip (GstBaseTransform * base_transform,
   g_return_val_if_fail (GST_IS_CARIDTOY (base_transform), GST_FLOW_ERROR);
   compress = GST_CARIDTOY (base_transform);
 
-
   carid_encoder_set_size (compress->encoder, width, height);
   carid_encoder_set_wavelet_type (compress->encoder, compress->wavelet_type);
-
-  compress->encoder->encoder_params.quant_index[6] = compress->level;
 
   if (1) {
   input_buffer = carid_buffer_new_with_data (GST_BUFFER_DATA (buf),

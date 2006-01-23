@@ -671,7 +671,7 @@ carid_wt_2d (int type, int16_t *i_n, int n, int stride)
 
   while(n>=MIN_SIZE) {
     for(i=0;i<n;i++) {
-      memcpy (tmp, i_n + i*stride, n * 2);
+      oil_memcpy (tmp, i_n + i*stride, n * 2);
       carid_lift_split (type, tmp, n);
       carid_deinterleave (i_n + i*stride, tmp, n);
     }
@@ -714,7 +714,7 @@ carid_iwt_2d (int type, int16_t *i_n, int n, int stride)
     for(i=0;i<m;i++) {
       carid_interleave (tmp2, i_n + i*stride, m);
       carid_lift_synth (type, tmp2, m);
-      memcpy (i_n + i*stride, tmp2, m * 2);
+      oil_memcpy (i_n + i*stride, tmp2, m * 2);
     }
 
     m<<=1;
@@ -742,7 +742,7 @@ carid_iwt (int type, int16_t *i_n, int n)
   while(m<=n) {
     carid_interleave (tmp, i_n, m);
     carid_lift_synth (type, tmp, m);
-    memcpy (i_n, tmp, m * 2);
+    oil_memcpy (i_n, tmp, m * 2);
 
     m<<=1;
   }

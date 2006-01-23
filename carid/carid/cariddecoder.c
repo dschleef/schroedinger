@@ -392,8 +392,10 @@ carid_decoder_decode_transform_data (CaridDecoder *decoder)
 #if 1
   {
     int16_t *data;
+    uint8_t value = 0;
     data = (int16_t *)decoder->frame_buffer->data;
-    memset(data, 0, params->iwt_luma_height*params->iwt_luma_width*2);
+    oil_splat_u8_ns((uint8_t *)data, &value,
+        params->iwt_luma_height*params->iwt_luma_width*2);
   }
 #endif
 
@@ -512,6 +514,7 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
         int v;
         int parent_zero;
         int context;
+        int context2;
         int nhood_sum;
         int previous_value;
         int sign_context;
@@ -566,6 +569,7 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
           } else {
             context = CARID_CTX_Z_BIN1nz;
           }
+          context2 = CARID_CTX_Z_BIN2;
         } else {
           if (nhood_sum == 0) {
             context = CARID_CTX_NZ_BIN1z;
@@ -576,6 +580,7 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
               context = CARID_CTX_NZ_BIN1b;
             }
           }
+          context2 = CARID_CTX_NZ_BIN2;
         }
 
         previous_value = 0;
@@ -597,9 +602,9 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
           sign_context = CARID_CTX_SIGN_ZERO;
         }
 
-        v = carid_arith_context_decode_uu (arith, context);
+        v = carid_arith_context_decode_uu (arith, context, context2);
         if (v) {
-          sign = carid_arith_context_binary_decode (arith, sign_context);
+          sign = carid_arith_context_decode_bit (arith, sign_context);
         }
 
         if (v) {

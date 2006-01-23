@@ -9,8 +9,13 @@
 
 #include <carid/caridarith.h>
 
+#pragma GCC visibility push(hidden)
 
-unsigned int division_factor[1024];
+
+static unsigned int division_factor[1024];
+
+static void carid_arith_input_bit (CaridArith *arith);
+static void carid_arith_output_bit (CaridArith *arith);
 
 static void
 _carid_arith_division_factor_init (void)
@@ -54,11 +59,6 @@ carid_arith_decode_init (CaridArith *arith, CaridBits *bits)
   arith->code = 0;
 
   arith->bits = bits;
-#if 0
-  arith->bits = carid_bits_new();
-  arith->buf = carid_buffer_new_with_data (arith->data, arith->size);
-  carid_bits_decode_init (arith->bits, arith->buf);
-#endif
 
   for(i=0;i<16;i++){
     carid_arith_input_bit(arith);
@@ -72,47 +72,23 @@ carid_arith_encode_init (CaridArith *arith, CaridBits *bits)
   arith->high = 0xffff;
   arith->code = 0;
 
-  //memset (arith->data, 0, arith->size);
-
   arith->bits = bits;
-#if 0
-  arith->bits = carid_bits_new();
-  arith->buf = carid_buffer_new_with_data (arith->data, arith->size);
-  carid_bits_encode_init (arith->bits, arith->buf);
-#endif
 }
 
-void
+static void
 carid_arith_input_bit (CaridArith *arith)
 {
   arith->code <<= 1;
-  //arith->code += ((arith->data[arith->offset]>>(7-arith->bit_offset)) & 0x1);
   arith->code += carid_bits_decode_bit(arith->bits);
-#if 0
-  arith->bit_offset++;
-  if (arith->bit_offset >= 8) {
-    arith->bit_offset = 0;
-    arith->offset++;
-  }
-#endif
 }
 
 static void
 carid_arith_push_bit (CaridArith *arith, int value)
 {
-#if 0
-  arith->data[arith->offset] |= value << (7-arith->bit_offset);
-  arith->bit_offset++;
-  if (arith->bit_offset >= 8) {
-    arith->bit_offset = 0;
-    arith->offset++;
-    arith->data[arith->offset] = 0;
-  }
-#endif
   carid_bits_encode_bit (arith->bits, value);
 }
 
-void
+static void
 carid_arith_output_bit (CaridArith *arith)
 {
   int value;
@@ -134,12 +110,6 @@ carid_arith_flush (CaridArith *arith)
   carid_arith_push_bit (arith, 1);
   carid_bits_sync (arith->bits);
   arith->bits->offset += 16;
-#if 0
-  if (arith->bit_offset > 0) {
-    arith->bit_offset = 0;
-    arith->offset++;
-  }
-#endif
 }
 
 void
@@ -179,7 +149,7 @@ carid_arith_context_halve_all_counts (CaridArith *arith)
   }
 }
 
-void
+static void
 carid_arith_context_update (CaridArith *arith, int i, int value)
 {
   if (value) {
@@ -195,7 +165,7 @@ carid_arith_context_update (CaridArith *arith, int i, int value)
 
 
 
-int
+static int
 carid_arith_context_binary_decode (CaridArith *arith, int i)
 {
   unsigned int count;
@@ -208,13 +178,6 @@ carid_arith_context_binary_decode (CaridArith *arith, int i)
   range = arith->high - arith->low + 1;
   weight = arith->contexts[i].count0 + arith->contexts[i].count1;
   scaled_count0 = ((unsigned int)arith->contexts[i].count0 * division_factor[weight - 1]) >> 21;
-#if 0
-printf("count0=%d count1=%d division_factor=%08x\n",
-    arith->contexts[i].count0, arith->contexts[i].count1,
-    division_factor[weight - 1]);
-printf("count=%d range=%d scaled_count0=%d (%d cmp %d)\n",
-    count, range, scaled_count0, count, range*scaled_count0);
-#endif
   if (count < range * scaled_count0) {
     value = 0;
   } else {
@@ -223,13 +186,11 @@ printf("count=%d range=%d scaled_count0=%d (%d cmp %d)\n",
 
   carid_arith_context_update (arith, i, value);
   
-  //printf("  %d [%04x %04x] -> ", value, arith->low, arith->high);
   if (value == 0) {
     arith->high = arith->low + ((range * scaled_count0)>>10) - 1;
   } else {
     arith->low = arith->low + ((range * scaled_count0)>>10);
   }
-  //printf("[%04x %04x]\n", arith->low, arith->high);
 
   do {
     if ((arith->high & (1<<15)) == (arith->low & (1<<15))) {
@@ -242,27 +203,18 @@ printf("count=%d range=%d scaled_count0=%d (%d cmp %d)\n",
       break;
     }
 
-#if 0
-    printf("shift: high=%04x low=%04x code=%04x -> ",
-        arith->high, arith->low, arith->code);
-#endif
     arith->low <<= 1;
     arith->high <<= 1;
     arith->high++;
 
     carid_arith_input_bit(arith);
-
-#if 0
-    printf("high=%04x low=%04x code=%04x\n",
-        arith->high, arith->low, arith->code);
-#endif
   } while (1);
 
   return value;
 }
 
 
-void
+static void
 carid_arith_context_binary_encode (CaridArith *arith, int i, int value)
 {
   int range;
@@ -275,28 +227,22 @@ carid_arith_context_binary_encode (CaridArith *arith, int i, int value)
 
   carid_arith_context_update (arith, i, value);
   
-  //printf("  %d [%04x %04x] -> ", value, arith->low, arith->high);
   if (value == 0) {
     arith->high = arith->low + ((range * scaled_count0)>>10) - 1;
   } else {
     arith->low = arith->low + ((range * scaled_count0)>>10);
-    //arith->code = arith->code + ((range * scaled_count0)>>10);
   }
-  //printf("[%04x %04x]\n", arith->low, arith->high);
 
   do {
     if ((arith->high & (1<<15)) == (arith->low & (1<<15))) {
-//printf("  shift %d\n", arith->low >> 15);
       carid_arith_output_bit(arith);
 
       arith->low <<= 1;
       arith->high <<= 1;
       arith->high++;
     } else if ((arith->low & (1<<14)) && !(arith->high & (1<<14))) {
-//printf("  underflow\n");
       arith->low ^= (1<<14);
       arith->high ^= (1<<14);
-      //arith->code ^= (1<<14);
 
       arith->low <<= 1;
       arith->high <<= 1;
@@ -306,31 +252,53 @@ carid_arith_context_binary_encode (CaridArith *arith, int i, int value)
       break;
     }
 
-#if 0
-    printf("shift: high=%04x low=%04x code=%04x -> ",
-        arith->high, arith->low, arith->code);
-#endif
-
-#if 0
-    printf("high=%04x low=%04x code=%04x\n",
-        arith->high, arith->low, arith->code);
-#endif
   } while (1);
 }
 
 
 
 
+void
+carid_arith_context_encode_bit (CaridArith *arith, int context, int value)
+{
+  carid_arith_context_binary_encode (arith, context, value);
+}
 
 void
-carid_arith_context_encode_uu (CaridArith *arith, int context, int value)
+carid_arith_context_encode_uu (CaridArith *arith, int context, int context2, int value)
 {
-  int i;
-
-  for(i=0;i<value;i++){
-    carid_arith_context_binary_encode (arith, context, 0);
+  switch (value) {
+    case 0:
+      carid_arith_context_binary_encode (arith, context, 1);
+      break;
+    case 1:
+      carid_arith_context_binary_encode (arith, context, 0);
+      carid_arith_context_binary_encode (arith, context2, 1);
+      break;
+    case 2:
+      carid_arith_context_binary_encode (arith, context, 0);
+      carid_arith_context_binary_encode (arith, context2, 0);
+      carid_arith_context_binary_encode (arith, context2 + 1, 1);
+      break;
+    case 3:
+      carid_arith_context_binary_encode (arith, context, 0);
+      carid_arith_context_binary_encode (arith, context2, 0);
+      carid_arith_context_binary_encode (arith, context2 + 1, 0);
+      carid_arith_context_binary_encode (arith, context2 + 2, 1);
+      break;
+    default:
+      carid_arith_context_binary_encode (arith, context, 0);
+      carid_arith_context_binary_encode (arith, context2, 0);
+      carid_arith_context_binary_encode (arith, context2 + 1, 0);
+      carid_arith_context_binary_encode (arith, context2 + 2, 0);
+      value -= 4;
+      while (value > 0) {
+        carid_arith_context_binary_encode (arith, context2 + 3, 0);
+        value--;
+      }
+      carid_arith_context_binary_encode (arith, context2 + 3, 1);
+      break;
   }
-  carid_arith_context_binary_encode (arith, context, 1);
 }
 
 void
@@ -446,6 +414,10 @@ carid_arith_context_encode_se2gol (CaridArith *arith, int context, int value)
 
 
 
+int carid_arith_context_decode_bit (CaridArith *arith, int context)
+{
+  return carid_arith_context_binary_decode (arith, context);
+}
 
 int carid_arith_context_decode_bits (CaridArith *arith, int context, int n)
 {
@@ -459,14 +431,18 @@ int carid_arith_context_decode_bits (CaridArith *arith, int context, int n)
   return value;
 }
 
-int carid_arith_context_decode_uu (CaridArith *arith, int context)
+int carid_arith_context_decode_uu (CaridArith *arith, int context, int context2)
 {
-  int value = 0;
+  int value;
 
-  while (carid_arith_context_binary_decode (arith, context) == 0) {
+  if (carid_arith_context_binary_decode (arith, context)) return 0;
+  if (carid_arith_context_binary_decode (arith, context2)) return 1;
+  if (carid_arith_context_binary_decode (arith, context2 + 1)) return 2;
+  if (carid_arith_context_binary_decode (arith, context2 + 2)) return 3;
+  value = 4;
+  while (carid_arith_context_binary_decode (arith, context2 + 3) == 0) {
     value++;
   }
-
   return value;
 }
 
