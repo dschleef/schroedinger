@@ -1,5 +1,19 @@
 2006-01-23  David Schleef  <ds@schleef.org>
 
+	* carid/cariddebug.c:
+	* carid/cariddebug.h:
+	* carid/caridparams.c:
+	* carid/caridparams.h:
+	* carid/caridtables.c:
+	* carid/caridtables.h:
+	  Oops, these weren't added.  I should be more careful.  Like,
+	  a *lot*.
+	* carid/caridencoder.c:
+	* carid/caridencoder.h:
+	  Refactor stuff into CaridSubband structures.
+
+2006-01-23  David Schleef  <ds@schleef.org>
+
 	* carid/Makefile.am:
 	* carid/carid.h:
 	* carid/caridcoeff.c:

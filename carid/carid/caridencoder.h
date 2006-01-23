@@ -31,6 +31,8 @@ struct _CaridEncoder {
   CaridEncoderParams encoder_params;
 
   CaridBuffer *subband_buffer;
+
+  CaridSubband subbands[1+6*3];
 };
 
 CaridEncoder * carid_encoder_new (void);
@@ -43,7 +45,7 @@ void carid_encoder_encode_rap (CaridEncoder *encoder);
 void carid_encoder_encode_frame_header (CaridEncoder *encoder);
 void carid_encoder_encode_transform_parameters (CaridEncoder *encoder);
 void carid_encoder_encode_transform_data (CaridEncoder *encoder);
-void carid_encoder_encode_subband (CaridEncoder *encoder, int index, int w, int h, int stride, int quant_index);
+void carid_encoder_encode_subband (CaridEncoder *encoder, int index);
 
 #endif
 

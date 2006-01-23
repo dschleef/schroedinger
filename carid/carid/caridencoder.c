@@ -309,99 +309,122 @@ carid_encoder_encode_transform_parameters (CaridEncoder *encoder)
 }
 
 void
-carid_encoder_encode_transform_data (CaridEncoder *encoder)
+carid_encoder_init_subbands (CaridEncoder *encoder)
 {
-  int i;
-  int w,h;
-  int stride;
-  int index;
   CaridParams *params = &encoder->params;
+  int i;
+  int w;
+  int h;
+  int stride;
 
   w = params->iwt_luma_width >> params->transform_depth;
   h = params->iwt_luma_height >> params->transform_depth;
-  stride = 2*(params->iwt_luma_width << params->transform_depth);
-  index = 0;
-  carid_encoder_encode_subband (encoder, index, w, h, stride,
-      encoder->encoder_params.quant_index_dc);
-  index++;
-  for(i=0; i < params->transform_depth; i++) {
-    carid_encoder_encode_subband (encoder, index, w, h, stride,
-        encoder->encoder_params.quant_index[i]);
-    index++;
-    carid_encoder_encode_subband (encoder, index, w, h, stride,
-        encoder->encoder_params.quant_index[i]);
-    index++;
-    carid_encoder_encode_subband (encoder, index, w, h, stride,
-        encoder->encoder_params.quant_index[i]);
-    index++;
+  stride = sizeof(int16_t)*(params->iwt_luma_width << params->transform_depth);
+
+  encoder->subbands[0].x = 0;
+  encoder->subbands[0].y = 0;
+  encoder->subbands[0].w = w;
+  encoder->subbands[0].h = h;
+  encoder->subbands[0].offset = 0;
+  encoder->subbands[0].stride = stride;
+  encoder->subbands[0].has_parent = 0;
+  encoder->subbands[0].scale_factor_shift = 0;
+  encoder->subbands[0].horizontally_oriented = 0;
+  encoder->subbands[0].vertically_oriented = 0;
+  encoder->subbands[0].quant_index = encoder->encoder_params.quant_index_dc;
+
+  for(i=0; i<params->transform_depth; i++) {
+    encoder->subbands[1+3*i].x = 1;
+    encoder->subbands[1+3*i].y = 1;
+    encoder->subbands[1+3*i].w = w;
+    encoder->subbands[1+3*i].h = h;
+    encoder->subbands[1+3*i].offset = w + (stride/2/sizeof(int16_t));
+    encoder->subbands[1+3*i].stride = stride;
+    encoder->subbands[1+3*i].has_parent = (i>0);
+    encoder->subbands[1+3*i].scale_factor_shift = i;
+    encoder->subbands[1+3*i].horizontally_oriented = 0;
+    encoder->subbands[1+3*i].vertically_oriented = 0;
+    encoder->subbands[1+3*i].quant_index =
+      encoder->encoder_params.quant_index[i];
+
+    encoder->subbands[2+3*i].x = 0;
+    encoder->subbands[2+3*i].y = 1;
+    encoder->subbands[2+3*i].w = w;
+    encoder->subbands[2+3*i].h = h;
+    encoder->subbands[2+3*i].offset = (stride/2/sizeof(int16_t));
+    encoder->subbands[2+3*i].stride = stride;
+    encoder->subbands[2+3*i].has_parent = (i>0);
+    encoder->subbands[2+3*i].scale_factor_shift = i;
+    encoder->subbands[2+3*i].horizontally_oriented = 0;
+    encoder->subbands[2+3*i].vertically_oriented = 1;
+    encoder->subbands[2+3*i].quant_index =
+      encoder->encoder_params.quant_index[i];
+
+    encoder->subbands[3+3*i].x = 1;
+    encoder->subbands[3+3*i].y = 0;
+    encoder->subbands[3+3*i].w = w;
+    encoder->subbands[3+3*i].h = h;
+    encoder->subbands[3+3*i].offset = w;
+    encoder->subbands[3+3*i].stride = stride;
+    encoder->subbands[3+3*i].has_parent = (i>0);
+    encoder->subbands[3+3*i].scale_factor_shift = i;
+    encoder->subbands[3+3*i].horizontally_oriented = 1;
+    encoder->subbands[3+3*i].vertically_oriented = 0;
+    encoder->subbands[3+3*i].quant_index =
+      encoder->encoder_params.quant_index[i];
+
     w <<= 1;
     h <<= 1;
     stride >>= 1;
   }
+
 }
 
-struct subband_struct {
-  int x;
-  int y;
-  int has_parent;
-  int scale_factor_shift;
-  int horizontally_oriented;
-  int vertically_oriented;
-};
+void
+carid_encoder_encode_transform_data (CaridEncoder *encoder)
+{
+  int i;
+  CaridParams *params = &encoder->params;
 
-struct subband_struct carid_encoder_subband_info[] = {
-  { 0, 0, 0, 0, 0, 0 },
-  { 1, 1, 0, 0, 0, 0 },
-  { 0, 1, 0, 0, 0, 1 },
-  { 1, 0, 0, 0, 1, 0 },
-  { 1, 1, 1, 1, 0, 0 },
-  { 0, 1, 1, 1, 0, 1 },
-  { 1, 0, 1, 1, 1, 0 },
-  { 1, 1, 1, 2, 0, 0 },
-  { 0, 1, 1, 2, 0, 1 },
-  { 1, 0, 1, 2, 1, 0 },
-  { 1, 1, 1, 3, 0, 0 },
-  { 0, 1, 1, 3, 0, 1 },
-  { 1, 0, 1, 3, 1, 0 },
-  { 1, 1, 1, 4, 0, 0 },
-  { 0, 1, 1, 4, 0, 1 },
-  { 1, 0, 1, 4, 1, 0 },
-  { 1, 1, 1, 5, 0, 0 },
-  { 0, 1, 1, 5, 0, 1 },
-  { 1, 0, 1, 5, 1, 0 }
-};
+  carid_encoder_init_subbands (encoder);
+
+  for (i=0;i < 1 + 3*params->transform_depth; i++) {
+    carid_encoder_encode_subband (encoder, i);
+  }
+}
 
 
 void
-carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
-    int h, int stride, int quant_index)
+carid_encoder_encode_subband (CaridEncoder *encoder, int index)
 {
   CaridParams *params = &encoder->params;
-  struct subband_struct *info = carid_encoder_subband_info + subband_index;
+  CaridSubband *subband = encoder->subbands + index;
+  CaridSubband *parent_subband = NULL;
   CaridArith *arith;
   CaridBits *bits;
   int16_t *data;
-  int16_t *parent_data;
+  int16_t *parent_data = NULL;
   int i,j;
   int quant_factor;
   int quant_offset;
   int scale_factor;
   int subband_zero_flag;
   int ntop;
+  int stride;
 
-  CARID_DEBUG("subband index=%d %d x %d at %d, %d with stride %d", subband_index, w, h, stride);
-  stride >>= 1;
-  data = (int16_t *)encoder->frame_buffer->data;
-  data += info->x * w;
-  data += info->y * (stride/2);
-  parent_data = (int16_t *)encoder->frame_buffer->data;
-  parent_data += info->x * (w>>1);
-  parent_data += info->y * ((stride<<1)/2);
-  quant_factor = carid_table_quant[quant_index];
-  quant_offset = carid_table_offset[quant_index];
-  subband_zero_flag = 1;
-  scale_factor = 1<<(params->transform_depth - quant_index);
+  CARID_DEBUG("subband index=%d %d x %d at %d, %d with stride %d", index,
+      subband->w, subband->h, subband->stride);
 
+  stride = subband->stride >> 1;
+  data = (int16_t *)encoder->frame_buffer->data + subband->offset;
+  if (subband->has_parent) {
+    parent_subband = subband - 3;
+    parent_data = (int16_t *)encoder->frame_buffer->data + parent_subband->offset;
+  }
+  quant_factor = carid_table_quant[subband->quant_index];
+  quant_offset = carid_table_offset[subband->quant_index];
+
+  scale_factor = 1<<(params->transform_depth - subband->quant_index);
   ntop = (scale_factor>>1) * quant_factor;
 
   bits = carid_bits_new ();
@@ -410,8 +433,9 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
   carid_arith_encode_init (arith, bits);
   carid_arith_init_contexts (arith);
 
-  for(j=0;j<h;j++){
-    for(i=0;i<w;i++){
+  subband_zero_flag = 1;
+  for(j=0;j<subband->h;j++){
+    for(i=0;i<subband->w;i++){
       int v = data[j*stride + i];
       int sign;
       int parent_zero;
@@ -433,7 +457,7 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
         nhood_sum += abs(data[(j-1)*stride + i - 1]);
       }
       
-      if (subband_index == 0) {
+      if (index == 0) {
         if (j>0) {
           if (i>0) {
             pred_value = (data[j*stride + i - 1] +
@@ -474,14 +498,14 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
         data[j*stride + i] = pred_value;
       }
       
-      if (info->has_parent) {
+      if (subband->has_parent) {
         if (parent_data[(j>>1)*(stride<<1) + (i>>1)]==0) {
           parent_zero = 1;
         } else {
           parent_zero = 0;
         }
       } else {
-        if (info->x == 0 && info->y == 0) {
+        if (subband->x == 0 && subband->y == 0) {
           parent_zero = 0;
         } else {
           parent_zero = 1;
@@ -508,11 +532,11 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
       }
 
       previous_value = 0;
-      if (info->horizontally_oriented) {
+      if (subband->horizontally_oriented) {
         if (i > 0) {
           previous_value = data[j*stride + i - 1];
         }
-      } else if (info->vertically_oriented) {
+      } else if (subband->vertically_oriented) {
         if (j > 0) {
           previous_value = data[(j-1)*stride + i];
         }
@@ -540,7 +564,7 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
 
   carid_bits_encode_bit (encoder->bits, subband_zero_flag);
   if (!subband_zero_flag) {
-    carid_bits_encode_uegol (encoder->bits, quant_index);
+    carid_bits_encode_uegol (encoder->bits, subband->quant_index);
     carid_bits_encode_uegol (encoder->bits, bits->offset/8);
 
     carid_bits_sync (encoder->bits);
