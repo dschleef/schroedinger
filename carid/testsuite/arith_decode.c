@@ -63,7 +63,7 @@ main (int argc, char *argv[])
   carid_arith_context_init (a, 0, 1, 1);
 
   i = 0;
-  while (a->offset < n_bytes) {
+  while (a->bits->offset < n_bytes) {
     for(j=0;j<8;j++){
       output_buffer[i] |= carid_arith_context_binary_decode (a, 0) << (7-j);
     }

@@ -91,15 +91,6 @@ round_up_pow2 (int x, int pow)
 }
 #endif
 
-static void
-notoil_splat_u16 (uint16_t *dest, uint16_t *src, int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    dest[i] = src[0];
-  }
-}
-
 CaridBuffer *
 carid_encoder_encode (CaridEncoder *encoder, CaridBuffer *buffer)
 {
@@ -146,7 +137,7 @@ carid_encoder_encode (CaridEncoder *encoder, CaridBuffer *buffer)
   carid_encoder_encode_transform_parameters (encoder);
   carid_encoder_encode_transform_data (encoder);
 
-  CARID_ERROR("encoded %d bytes", encoder->bits->offset/8);
+  CARID_ERROR("encoded %d bits", encoder->bits->offset);
   carid_bits_free (encoder->bits);
 
   return outbuffer;
@@ -165,8 +156,9 @@ carid_encoder_copy_to_frame_buffer (CaridEncoder *encoder, CaridBuffer *buffer)
   for(i = 0; i<params->height; i++) {
     oil_convert_s16_u8 (frame_data + i*params->iwt_luma_width,
         data + i*params->width, params->width);
-    notoil_splat_u16 (frame_data + i*params->iwt_luma_width + params->width,
-        frame_data + i*params->iwt_luma_width + params->width - 1,
+    oil_splat_u16_ns ((uint16_t *)frame_data +
+        i*params->iwt_luma_width + params->width,
+        (uint16_t *)frame_data + i*params->iwt_luma_width + params->width - 1,
         params->iwt_luma_width - params->width);
   }
   for (i = params->height; i < params->iwt_luma_height; i++) {
@@ -313,49 +305,125 @@ carid_encoder_encode_transform_data (CaridEncoder *encoder)
   int i;
   int w,h;
   int stride;
+  int index;
   CaridParams *params = &encoder->params;
 
   w = params->iwt_luma_width >> params->transform_depth;
   h = params->iwt_luma_height >> params->transform_depth;
   stride = 2*(params->iwt_luma_width << params->transform_depth);
-  carid_encoder_encode_subband (encoder, 0, 0, w, h, stride,
+  index = 0;
+  carid_encoder_encode_subband (encoder, index, w, h, stride,
       encoder->encoder_params.quant_index_dc);
+  index++;
   for(i=0; i < params->transform_depth; i++) {
-    carid_encoder_encode_subband (encoder, 1, 1, w, h, stride,
+    carid_encoder_encode_subband (encoder, index, w, h, stride,
         encoder->encoder_params.quant_index[i]);
-    carid_encoder_encode_subband (encoder, 0, 1, w, h, stride,
+    index++;
+    carid_encoder_encode_subband (encoder, index, w, h, stride,
         encoder->encoder_params.quant_index[i]);
-    carid_encoder_encode_subband (encoder, 1, 0, w, h, stride,
+    index++;
+    carid_encoder_encode_subband (encoder, index, w, h, stride,
         encoder->encoder_params.quant_index[i]);
+    index++;
     w <<= 1;
     h <<= 1;
     stride >>= 1;
   }
 }
 
+struct subband_struct {
+  int x;
+  int y;
+  int has_parent;
+  int scale_factor_shift;
+  int horizontally_oriented;
+  int vertically_oriented;
+};
+
+struct subband_struct carid_encoder_subband_info[] = {
+  { 0, 0, 0, 0, 0, 0 },
+  { 1, 1, 0, 0, 0, 0 },
+  { 0, 1, 0, 0, 0, 1 },
+  { 1, 0, 0, 0, 1, 0 },
+  { 1, 1, 1, 1, 0, 0 },
+  { 0, 1, 1, 1, 0, 1 },
+  { 1, 0, 1, 1, 1, 0 },
+  { 1, 1, 1, 2, 0, 0 },
+  { 0, 1, 1, 2, 0, 1 },
+  { 1, 0, 1, 2, 1, 0 },
+  { 1, 1, 1, 3, 0, 0 },
+  { 0, 1, 1, 3, 0, 1 },
+  { 1, 0, 1, 3, 1, 0 },
+  { 1, 1, 1, 4, 0, 0 },
+  { 0, 1, 1, 4, 0, 1 },
+  { 1, 0, 1, 4, 1, 0 },
+  { 1, 1, 1, 5, 0, 0 },
+  { 0, 1, 1, 5, 0, 1 },
+  { 1, 0, 1, 5, 1, 0 }
+};
+
+
 void
-carid_encoder_encode_subband (CaridEncoder *encoder, int x, int y, int w, int h, int stride, int quant_index)
+carid_encoder_encode_subband (CaridEncoder *encoder, int subband_index, int w,
+    int h, int stride, int quant_index)
 {
-  //CaridParams *params = &encoder->params;
+  CaridParams *params = &encoder->params;
+  struct subband_struct *info = carid_encoder_subband_info + subband_index;
+  CaridArith *arith;
+  CaridBuffer *buffer;
+  CaridBits *bits;
   int16_t *data;
+  int16_t *parent_data;
   int i,j;
   int quant_factor;
   int quant_offset;
+  int scale_factor;
   int subband_zero_flag;
+  int ntop;
 
-  CARID_DEBUG("subband %d x %d at %d, %d with stride %d", w, h, x, y, stride);
+  CARID_DEBUG("subband index=%d %d x %d at %d, %d with stride %d", subband_index, w, h, stride);
   stride >>= 1;
   data = (int16_t *)encoder->frame_buffer->data;
-  data += x * w;
-  data += y * (stride/2);
+  data += info->x * w;
+  data += info->y * (stride/2);
+  parent_data = (int16_t *)encoder->frame_buffer->data;
+  parent_data += info->x * (w>>1);
+  parent_data += info->y * ((stride<<1)/2);
   quant_factor = carid_table_quant[quant_index];
   quant_offset = carid_table_offset[quant_index];
   subband_zero_flag = 1;
-  //subband_zero_flag = 0;
+  scale_factor = 1<<(params->transform_depth - quant_index);
+
+  ntop = (scale_factor>>1) * quant_factor;
+
+  buffer = carid_buffer_new_and_alloc (10000);
+  bits = carid_bits_new ();
+  carid_bits_encode_init (bits, buffer);
+  arith = carid_arith_new ();
+  carid_arith_encode_init (arith, bits);
+  carid_arith_init_contexts (arith);
+
   for(j=0;j<h;j++){
     for(i=0;i<w;i++){
       int v = data[j*stride + i];
       int sign;
+      int parent_zero;
+      int context;
+      int nhood_sum;
+      int previous_value;
+      int sign_context;
+
+      nhood_sum = 0;
+      if (j>0) {
+        nhood_sum += abs(data[(j-1)*stride + i]);
+      }
+      if (i>0) {
+        nhood_sum += abs(data[j*stride + i - 1]);
+      }
+      if (i>0 && j>0) {
+        nhood_sum += abs(data[(j-1)*stride + i - 1]);
+      }
+
       if (data[j*stride + i] < 0) {
         sign = 0;
         v = -v;
@@ -364,15 +432,81 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int x, int y, int w, int h,
       }
       v += quant_factor/2 - quant_offset;
       v /= quant_factor;
-      if (sign == 0){
-        v = -v;
-      }
-      data[j*stride + i] = v;
       if (v != 0) {
         subband_zero_flag = 0;
       }
+      if (v) {
+        if (sign) {
+          data[j*stride + i] = quant_offset + quant_factor * v;
+        } else {
+          data[j*stride + i] = -(quant_offset + quant_factor * v);
+        }
+      } else {
+        data[j*stride + i] = 0;
+      }
+      
+      if (info->has_parent) {
+        if (parent_data[(j>>1)*(stride<<1) + (i>>1)]==0) {
+          parent_zero = 1;
+        } else {
+          parent_zero = 0;
+        }
+      } else {
+        if (info->x == 0 && info->y == 0) {
+          parent_zero = 0;
+        } else {
+          parent_zero = 1;
+        }
+      }
+      if (parent_zero) {
+        if (nhood_sum == 0) {
+          context = CARID_CTX_Z_BIN1z;
+        } else {
+          context = CARID_CTX_Z_BIN1nz;
+        }
+      } else {
+        if (nhood_sum == 0) {
+          context = CARID_CTX_NZ_BIN1z;
+        } else {
+          if (nhood_sum <= ntop) {
+            context = CARID_CTX_NZ_BIN1a;
+          } else {
+            context = CARID_CTX_NZ_BIN1b;
+          }
+        }
+      }
+
+      previous_value = 0;
+      if (info->horizontally_oriented) {
+        if (i > 0) {
+          previous_value = data[j*stride + i - 1];
+        }
+      } else if (info->vertically_oriented) {
+        if (j > 0) {
+          previous_value = data[(j-1)*stride + i];
+        }
+      }
+
+      if (previous_value > 0) {
+        sign_context = CARID_CTX_SIGN_POS;
+      } else if (previous_value < 0) {
+        sign_context = CARID_CTX_SIGN_NEG;
+      } else {
+        sign_context = CARID_CTX_SIGN_ZERO;
+      }
+      
+      carid_arith_context_encode_uegol (arith, context, v);
+      if (v) {
+        carid_arith_context_binary_encode (arith, sign_context, sign);
+      }
     }
   }
+
+  carid_arith_flush (arith);
+  CARID_DEBUG("encoded %d bits", bits->offset);
+  carid_arith_free (arith);
+  carid_bits_sync (bits);
+
 #if 0
 if (x != 0 || y != 1) {
   subband_zero_flag = 1;
@@ -380,17 +514,29 @@ if (x != 0 || y != 1) {
 #endif
   carid_bits_encode_bit (encoder->bits, subband_zero_flag);
   if (!subband_zero_flag) {
-    int subband_length;
-
     carid_bits_encode_uegol (encoder->bits, quant_index);
-    subband_length = 100;
-    carid_bits_encode_uegol (encoder->bits, subband_length);
+    carid_bits_encode_uegol (encoder->bits, bits->offset/8);
+
+    carid_bits_sync (encoder->bits);
+
+    carid_bits_append (encoder->bits, bits);
   } else {
     CARID_DEBUG ("subband is zero");
+    carid_bits_sync (encoder->bits);
   }
-  carid_bits_sync (encoder->bits);
+  //carid_bits_sync (encoder->bits);
 
+#if 0
   if (!subband_zero_flag) {
+    CaridArith *arith;
+    int offset;
+
+    offset = encoder->bits->offset;
+
+    arith = carid_arith_new ();
+    carid_arith_encode_init (arith, encoder->bits);
+    carid_arith_context_init (arith, 0, 1, 1);
+
     for(j=0;j<h;j++){
       for(i=0;i<w;i++){
         int v = data[j*stride + i];
@@ -401,14 +547,21 @@ if (x != 0 || y != 1) {
           sign = 0;
           v = -v;
         }
-        carid_bits_encode_uegol (encoder->bits, v);
+        carid_arith_context_encode_uegol (arith, 0, v);
         if (v) {
-          carid_bits_encode_bit (encoder->bits, sign);
+          carid_arith_context_binary_encode (arith, 0, sign);
         }
       }
     }
+    carid_arith_flush (arith);
+    CARID_ERROR("encoded %d bits", encoder->bits->offset - offset);
+    carid_arith_free (arith);
     carid_bits_sync (encoder->bits);
   }
+#endif
+
+  carid_bits_free (bits);
+  carid_buffer_unref (buffer);
 }
 
 

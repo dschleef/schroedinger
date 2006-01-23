@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <carid/caridarith.h>
+#include <carid/carid.h>
 
 #define BUFFER_SIZE 10000
 
@@ -12,15 +12,19 @@ void
 decode(uint8_t *dest, uint8_t *src, int n_bytes)
 {
   CaridArith *a;
+  CaridBuffer *buffer;
+  CaridBits *bits;
   int i;
   int j;
   int value;
 
   a = carid_arith_new();
 
-  a->data = src;
+  buffer = carid_buffer_new_with_data (src, n_bytes);
+  bits = carid_bits_new ();
+  carid_bits_decode_init (bits, buffer);
 
-  carid_arith_decode_init (a);
+  carid_arith_decode_init (a, bits);
   carid_arith_context_init (a, 0, 1, 1);
 
   for(i=0;i<n_bytes;i++){
@@ -34,21 +38,29 @@ decode(uint8_t *dest, uint8_t *src, int n_bytes)
   }
 
   carid_arith_free(a);
+  carid_bits_free (bits);
 }
 
 void
 encode (uint8_t *dest, uint8_t *src, int n_bytes)
 {
   CaridArith *a;
+  CaridBuffer *buffer;
+  CaridBits *bits;
   int i;
   int j;
 
   a = carid_arith_new();
 
+  buffer = carid_buffer_new_with_data (dest, BUFFER_SIZE);
+  bits = carid_bits_new ();
+  carid_bits_encode_init (bits, buffer);
+#if 0
   a->data = dest;
   a->size = BUFFER_SIZE;
+#endif
 
-  carid_arith_encode_init (a);
+  carid_arith_encode_init (a, bits);
   carid_arith_context_init (a, 0, 1, 1);
 
   for(i=0;i<n_bytes;i++){
@@ -92,6 +104,8 @@ main (int argc, char *argv[])
   int n;
   int fail=0;
   int j;
+
+  carid_init();
 
   for (j = 0; j < 40; j++){
     int value;

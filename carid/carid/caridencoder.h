@@ -41,7 +41,7 @@ void carid_encoder_encode_rap (CaridEncoder *encoder);
 void carid_encoder_encode_frame_header (CaridEncoder *encoder);
 void carid_encoder_encode_transform_parameters (CaridEncoder *encoder);
 void carid_encoder_encode_transform_data (CaridEncoder *encoder);
-void carid_encoder_encode_subband (CaridEncoder *encoder, int x, int y, int w, int h, int stride, int quant_index);
+void carid_encoder_encode_subband (CaridEncoder *encoder, int index, int w, int h, int stride, int quant_index);
 
 #endif
 

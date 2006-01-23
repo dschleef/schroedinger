@@ -45,7 +45,7 @@ carid_arith_free (CaridArith *arith)
 }
 
 void
-carid_arith_decode_init (CaridArith *arith)
+carid_arith_decode_init (CaridArith *arith, CaridBits *bits)
 {
   int i;
 
@@ -53,31 +53,63 @@ carid_arith_decode_init (CaridArith *arith)
   arith->high = 0xffff;
   arith->code = 0;
 
+  arith->bits = bits;
+#if 0
+  arith->bits = carid_bits_new();
+  arith->buf = carid_buffer_new_with_data (arith->data, arith->size);
+  carid_bits_decode_init (arith->bits, arith->buf);
+#endif
+
   for(i=0;i<16;i++){
     carid_arith_input_bit(arith);
   }
 }
 
 void
-carid_arith_encode_init (CaridArith *arith)
+carid_arith_encode_init (CaridArith *arith, CaridBits *bits)
 {
   arith->low = 0;
   arith->high = 0xffff;
   arith->code = 0;
 
-  memset (arith->data, 0, arith->size);
+  //memset (arith->data, 0, arith->size);
+
+  arith->bits = bits;
+#if 0
+  arith->bits = carid_bits_new();
+  arith->buf = carid_buffer_new_with_data (arith->data, arith->size);
+  carid_bits_encode_init (arith->bits, arith->buf);
+#endif
 }
 
 void
 carid_arith_input_bit (CaridArith *arith)
 {
   arith->code <<= 1;
-  arith->code += ((arith->data[arith->offset]>>(7-arith->bit_offset)) & 0x1);
+  //arith->code += ((arith->data[arith->offset]>>(7-arith->bit_offset)) & 0x1);
+  arith->code += carid_bits_decode_bit(arith->bits);
+#if 0
   arith->bit_offset++;
   if (arith->bit_offset >= 8) {
     arith->bit_offset = 0;
     arith->offset++;
   }
+#endif
+}
+
+static void
+carid_arith_push_bit (CaridArith *arith, int value)
+{
+#if 0
+  arith->data[arith->offset] |= value << (7-arith->bit_offset);
+  arith->bit_offset++;
+  if (arith->bit_offset >= 8) {
+    arith->bit_offset = 0;
+    arith->offset++;
+    arith->data[arith->offset] = 0;
+  }
+#endif
+  carid_bits_encode_bit (arith->bits, value);
 }
 
 void
@@ -87,23 +119,11 @@ carid_arith_output_bit (CaridArith *arith)
 
   value = arith->low >> 15;
 
-  arith->data[arith->offset] |= value << (7-arith->bit_offset);
-  arith->bit_offset++;
-  if (arith->bit_offset >= 8) {
-    arith->bit_offset = 0;
-    arith->offset++;
-    arith->data[arith->offset] = 0;
-  }
+  carid_arith_push_bit (arith, value);
   
   value = !value;
   while(arith->cntr) {
-    arith->data[arith->offset] |= value << (7-arith->bit_offset);
-    arith->bit_offset++;
-    if (arith->bit_offset >= 8) {
-      arith->bit_offset = 0;
-      arith->offset++;
-      arith->data[arith->offset] = 0;
-    }
+    carid_arith_push_bit (arith, value);
     arith->cntr--;
   }
 }
@@ -111,24 +131,25 @@ carid_arith_output_bit (CaridArith *arith)
 void
 carid_arith_flush (CaridArith *arith)
 {
-  unsigned int value;
-
-  //if (arith->cntr) {
-    value = 1;
-    arith->data[arith->offset] |= value << (7-arith->bit_offset);
-    arith->bit_offset++;
-    if (arith->bit_offset >= 8) {
-      arith->bit_offset = 0;
-      arith->offset++;
-      arith->data[arith->offset] = 0;
-    }
-  //}
+  carid_arith_push_bit (arith, 1);
+  carid_bits_sync (arith->bits);
+  arith->bits->offset += 16;
+#if 0
   if (arith->bit_offset > 0) {
     arith->bit_offset = 0;
     arith->offset++;
   }
+#endif
 }
 
+void
+carid_arith_init_contexts (CaridArith *arith)
+{
+  int i;
+  for(i=0;i<CARID_CTX_LAST;i++){
+    carid_arith_context_init (arith, i, 1, 1);
+  }
+}
 void
 carid_arith_context_init (CaridArith *arith, int i, int count0, int count1)
 {
@@ -421,5 +442,114 @@ carid_arith_context_encode_se2gol (CaridArith *arith, int context, int value)
   if (value) {
     carid_arith_context_binary_encode (arith, context, sign);
   }
+}
+
+
+
+
+int carid_arith_context_decode_bits (CaridArith *arith, int context, int n)
+{
+  int value = 0;
+  int i;
+  
+  for(i=0;i<n;i++){
+    value = (value << 1) | carid_arith_context_binary_decode (arith, context);
+  } 
+  
+  return value;
+}
+
+int carid_arith_context_decode_uu (CaridArith *arith, int context)
+{
+  int value = 0;
+
+  while (carid_arith_context_binary_decode (arith, context) == 0) {
+    value++;
+  }
+
+  return value;
+}
+
+int carid_arith_context_decode_su (CaridArith *arith, int context)
+{
+  int value = 0;
+
+  if (carid_arith_context_binary_decode (arith, context) == 1) {
+    return 0;
+  }
+  value = 1;
+  while (carid_arith_context_binary_decode (arith, context) == 0) {
+    value++;
+  }
+  if (carid_arith_context_binary_decode (arith, context) == 0) {
+    value = -value;
+  }
+
+  return value;
+}
+
+int carid_arith_context_decode_ut (CaridArith *arith, int context, int max)
+{
+  int value;
+
+  for(value=0;value<max;value++){
+    if (carid_arith_context_binary_decode (arith, context)) {
+      return value;
+    }
+  }
+  return value;
+}
+
+int carid_arith_context_decode_uegol (CaridArith *arith, int context)
+{
+  int count;
+  int value;
+
+  count = 0;
+  while(!carid_arith_context_binary_decode (arith, context)) {
+    count++;
+  }
+  value = (1<<count) - 1 + carid_arith_context_decode_bits (arith, context, count);
+
+  return value;
+}
+
+int carid_arith_context_decode_segol (CaridArith *arith, int context)
+{
+  int value;
+
+  value = carid_arith_context_decode_uegol (arith, context);
+  if (value) {
+    if (!carid_arith_context_binary_decode (arith, context)) {
+      value = -value;
+    }
+  }
+
+  return value;
+}
+
+int carid_arith_context_decode_ue2gol (CaridArith *arith, int context)
+{
+  int count;
+  int value;
+
+  count = carid_arith_context_decode_uegol (arith, context);
+  value = (1<<count) - 1 + carid_arith_context_decode_bits (arith, context, count);
+
+  return value;
+}
+
+int carid_arith_context_decode_se2gol (CaridArith *arith, int context)
+{
+  int value;
+
+  value = carid_arith_context_decode_ue2gol (arith, context);
+  if (value) {
+    if (!carid_arith_context_binary_decode (arith, context)) {
+      value = -value;
+    }
+  }
+
+  return value;
 }
 

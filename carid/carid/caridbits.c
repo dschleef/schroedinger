@@ -72,6 +72,20 @@ carid_bits_dumpbits (CaridBits *bits)
   CARID_DEBUG ("dump bits %s", s);
 }
 
+void
+carid_bits_append (CaridBits *bits, CaridBits *bits2)
+{
+  if (bits->offset & 7) {
+    CARID_ERROR ("appending to unsyncronized bits");
+  }
+  if (bits2->offset & 7) {
+    CARID_ERROR ("appending unsyncronized bits");
+  }
+
+  memcpy (bits->buffer->data + (bits->offset>>3), bits2->buffer->data,
+      (bits2->offset>>3));
+  bits->offset += bits2->offset;
+}
 
 
 void
