@@ -29,6 +29,8 @@ struct _CaridDecoder {
 CaridDecoder * carid_decoder_new (void);
 void carid_decoder_free (CaridDecoder *decoder);
 void carid_decoder_set_output_buffer (CaridDecoder *decoder, CaridBuffer *buffer);
+int carid_decoder_is_parse_header (CaridBuffer *buffer);
+int carid_decoder_is_rap (CaridBuffer *buffer);
 void carid_decoder_decode (CaridDecoder *decoder, CaridBuffer *buffer);
 void carid_decoder_decode_parse_header (CaridDecoder *decoder);
 void carid_decoder_decode_rap (CaridDecoder *decoder);

@@ -2,7 +2,7 @@
 #define _CARID_CARID_CARID_STDINT_H 1
 #ifndef _GENERATED_STDINT_H
 #define _GENERATED_STDINT_H "carid 0.1.0.1"
-/* generated using gnu compiler gcc (GCC) 3.4.5 20050809 (prerelease) (Ubuntu 3.4.4-6ubuntu8) */
+/* generated using gnu compiler gcc (GCC) 4.0.3 20060115 (prerelease) (Ubuntu 4.0.2-7ubuntu1) */
 #define _STDINT_HAVE_STDINT_H 1
 
 /* ................... shortcircuit part ........................... */

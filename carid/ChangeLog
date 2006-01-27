@@ -1,3 +1,19 @@
+2006-01-27  David Schleef  <ds@schleef.org>
+
+	* carid/carid-stdint.h: update
+	* carid/caridarith.c: remove hidden visibility pragma
+	* carid/caridbits.c: remove hidden visibility pragma
+	* carid/cariddecoder.c: check for RAP and parse header
+	* carid/cariddecoder.h: same
+	* carid/caridencoder.c: allocate smaller output buffer
+	* gst/Makefile.am: add gstcaridenc.c
+	* gst/gstcarid.c: same
+	* testsuite/Makefile.am: fixes
+	* testsuite/arith.c:
+	* testsuite/arith_decode.c:
+	* testsuite/arith_encode.c:
+	* testsuite/codes.c:
+
 2006-01-23  David Schleef  <ds@schleef.org>
 
 	* carid/cariddebug.c:

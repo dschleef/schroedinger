@@ -47,6 +47,8 @@ main (int argc, char *argv[])
   FILE *file;
   int n_bytes;
   int j;
+  CaridBuffer *output_buffer;
+  CaridBits *bits;
 
   carid_init();
 
@@ -56,15 +58,16 @@ main (int argc, char *argv[])
 
   a = carid_arith_new();
 
-  a->data = output_buffer;
-  a->size = BUFFER_SIZE;
+  output_buffer = carid_buffer_new_and_alloc (BUFFER_SIZE);
+  bits = carid_bits_new ();
+  carid_bits_encode_init (bits, output_buffer);
 
-  carid_arith_encode_init (a);
+  carid_arith_encode_init (a, bits);
   carid_arith_context_init (a, 0, 1, 1);
 
   for(i=0;i<n_bytes;i++){
     for(j=0;j<8;j++){
-      carid_arith_context_binary_encode (a, 0, (input_buffer[i]>>(7-j))&1);
+      carid_arith_context_encode_bit (a, 0, (input_buffer[i]>>(7-j))&1);
     }
   }
   carid_arith_flush (a);

@@ -109,14 +109,14 @@ carid_encoder_encode (CaridEncoder *encoder, CaridBuffer *buffer)
   int16_t *frame_data;
   CaridParams *params = &encoder->params;
   CaridBuffer *outbuffer;
+  CaridBuffer *subbuffer;
   
   if (encoder->frame_buffer == NULL) {
     encoder->frame_buffer = carid_buffer_new_and_alloc (params->iwt_luma_width *
         params->iwt_luma_height * sizeof(int16_t));
   }
 
-  outbuffer = carid_buffer_new_and_alloc (params->iwt_luma_width *
-      params->iwt_luma_height * 2);
+  outbuffer = carid_buffer_new_and_alloc (65536);
 
   encoder->bits = carid_bits_new ();
   carid_bits_encode_init (encoder->bits, outbuffer);
@@ -128,6 +128,8 @@ carid_encoder_encode (CaridEncoder *encoder, CaridBuffer *buffer)
   frame_data = (int16_t *)encoder->frame_buffer->data;
 
   carid_encoder_copy_to_frame_buffer (encoder, buffer);
+
+  carid_buffer_unref (buffer);
 
   for(level=0;level<params->transform_depth;level++) {
     int w;
@@ -149,7 +151,10 @@ carid_encoder_encode (CaridEncoder *encoder, CaridBuffer *buffer)
   CARID_DEBUG("encoded %d bits", encoder->bits->offset);
   carid_bits_free (encoder->bits);
 
-  return outbuffer;
+  subbuffer = carid_buffer_new_subbuffer (outbuffer, 0, encoder->bits->offset/8);
+  carid_buffer_unref (outbuffer);
+
+  return subbuffer;
 }
 
 void

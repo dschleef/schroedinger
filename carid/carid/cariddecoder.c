@@ -55,21 +55,38 @@ carid_decoder_set_output_buffer (CaridDecoder *decoder, CaridBuffer *buffer)
   decoder->output_buffer = buffer;
 }
 
-
-void
-carid_decoder_set_size (CaridDecoder *decoder, int width, int height)
+int
+carid_decoder_is_parse_header (CaridBuffer *buffer)
 {
-  CaridParams *params = &decoder->params;
+  uint8_t *data;
 
-  if (params->width == width && params->height == height) return;
+  if (buffer->length < 5) return 0;
 
-  params->width = width;
-  params->height = height;
-  params->chroma_width =
-    (width + params->chroma_h_scale - 1) / params->chroma_h_scale;
-  params->chroma_height =
-    (width + params->chroma_v_scale - 1) / params->chroma_v_scale;
+  data = buffer->data;
+  if (data[0] != 'B' || data[1] != 'B' || data[2] != 'C' || data[3] != 'D') {
+    return 0;
+  }
+
+  return 1;
 }
+
+int
+carid_decoder_is_rap (CaridBuffer *buffer)
+{
+  uint8_t *data;
+
+  if (buffer->length < 5) return 0;
+
+  data = buffer->data;
+  if (data[0] != 'B' || data[1] != 'B' || data[2] != 'C' || data[3] != 'D') {
+    return 0;
+  }
+
+  if (data[4] == 0xa2) return 1;
+
+  return 0;
+}
+
 
 #if 0
 static int

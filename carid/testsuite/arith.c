@@ -31,7 +31,7 @@ decode(uint8_t *dest, uint8_t *src, int n_bytes)
     value = 0;
     //printf("%d:\n", i);
     for(j=0;j<8;j++){
-      value |= carid_arith_context_binary_decode (a, 0) << (7-j);
+      value |= carid_arith_context_decode_bit (a, 0) << (7-j);
       //printf("[%04x %04x] %04x\n", a->low, a->high, a->code);
     }
     dest[i] = value;
@@ -66,7 +66,7 @@ encode (uint8_t *dest, uint8_t *src, int n_bytes)
   for(i=0;i<n_bytes;i++){
     //printf("%d:\n", i);
     for(j=0;j<8;j++){
-      carid_arith_context_binary_encode (a, 0, (src[i]>>(7-j))&1);
+      carid_arith_context_encode_bit (a, 0, (src[i]>>(7-j))&1);
       //printf("[%04x %04x]\n", a->low, a->high);
     }
   }

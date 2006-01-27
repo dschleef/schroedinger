@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 
-#include <carid/caridarith.h>
+#include <carid/carid.h>
 
 
 
@@ -143,10 +143,12 @@ main (int argc, char *argv[])
 {
   int i;
 
+  carid_init();
+
   printf("unsigned unary\n");
   for(i=0;i<5;i++) {
     printf("%3d:", i);
-    carid_arith_context_encode_uu(NULL,0,i);
+    carid_arith_context_encode_uu(NULL,0,0,i);
     printf("\n");
   }
   printf("\n");

@@ -11,7 +11,6 @@
 #include <carid/caridbits.h>
 #include <carid/carid.h>
 
-#pragma GCC visibility push(hidden)
 
 CaridBits *
 carid_bits_new (void)

@@ -9,7 +9,6 @@
 
 #include <carid/caridarith.h>
 
-#pragma GCC visibility push(hidden)
 
 
 static unsigned int division_factor[1024];
