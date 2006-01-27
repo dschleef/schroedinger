@@ -1,5 +1,12 @@
 2006-01-27  David Schleef  <ds@schleef.org>
 
+	* gst/gstcariddec.c: Add
+	* gst/gstcaridenc.c:
+	* testsuite/tables.c:
+	* testsuite/wavelet_2d.c:
+
+2006-01-27  David Schleef  <ds@schleef.org>
+
 	* carid/carid-stdint.h: update
 	* carid/caridarith.c: remove hidden visibility pragma
 	* carid/caridbits.c: remove hidden visibility pragma
