@@ -1,3 +1,7 @@
+2006-02-03  Christian Schaller <christian@fluendo.com>
+
+	* Add COPYING and LEGAL files
+
 2006-01-27  David Schleef  <ds@schleef.org>
 
 	* gst/gstcariddec.c: Add
