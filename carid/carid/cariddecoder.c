@@ -34,8 +34,14 @@ carid_decoder_new (void)
 void
 carid_decoder_free (CaridDecoder *decoder)
 {
-  if (decoder->frame_buffer) {
-    carid_buffer_unref (decoder->frame_buffer);
+  if (decoder->frame_buffer[0]) {
+    carid_buffer_unref (decoder->frame_buffer[0]);
+  }
+  if (decoder->frame_buffer[1]) {
+    carid_buffer_unref (decoder->frame_buffer[1]);
+  }
+  if (decoder->frame_buffer[2]) {
+    carid_buffer_unref (decoder->frame_buffer[2]);
   }
   if (decoder->output_buffer) {
     carid_buffer_unref (decoder->output_buffer);
@@ -53,6 +59,7 @@ carid_decoder_set_output_buffer (CaridDecoder *decoder, CaridBuffer *buffer)
     carid_buffer_unref (decoder->output_buffer);
   }
   decoder->output_buffer = buffer;
+  carid_buffer_ref (buffer);
 }
 
 int
@@ -82,7 +89,7 @@ carid_decoder_is_rap (CaridBuffer *buffer)
     return 0;
   }
 
-  if (data[4] == 0xa2) return 1;
+  if (data[4] == CARID_PARSE_CODE_RAP) return 1;
 
   return 0;
 }
@@ -101,54 +108,113 @@ round_up_pow2 (int x, int pow)
 void
 carid_decoder_decode (CaridDecoder *decoder, CaridBuffer *buffer)
 {
-  int16_t *tmp = decoder->tmpbuf;
-  int level;
-  int i;
-  int16_t *frame_data;
   uint8_t *dec_data;
   CaridParams *params = &decoder->params;
   
-  dec_data = (uint8_t *)decoder->output_buffer->data;
-
   decoder->bits = carid_bits_new ();
   carid_bits_decode_init (decoder->bits, buffer);
 
-  carid_decoder_decode_parse_header(decoder);
-  carid_decoder_decode_rap(decoder);
+  if (carid_decoder_is_rap (buffer)) {
+    carid_decoder_decode_parse_header(decoder);
+    carid_decoder_decode_rap(decoder);
+
+    carid_buffer_unref (buffer);
+    carid_bits_free (decoder->bits);
+    return;
+  }
+
+  dec_data = (uint8_t *)decoder->output_buffer->data;
+
   carid_decoder_decode_parse_header(decoder);
   carid_decoder_decode_frame_header(decoder);
 
   carid_decoder_decode_transform_parameters (decoder);
 
-  if (decoder->frame_buffer == NULL) {
-    decoder->frame_buffer = carid_buffer_new_and_alloc (params->iwt_luma_width * params->iwt_luma_height * 2);
+  if (decoder->frame_buffer[0] == NULL) {
+    decoder->frame_buffer[0] = carid_buffer_new_and_alloc (params->iwt_luma_width * params->iwt_luma_height * 2);
+    decoder->frame_buffer[1] = carid_buffer_new_and_alloc (params->iwt_chroma_width * params->iwt_chroma_height * 2);
+    decoder->frame_buffer[2] = carid_buffer_new_and_alloc (params->iwt_chroma_width * params->iwt_chroma_height * 2);
   }
 
-  carid_decoder_decode_transform_data (decoder);
+  carid_decoder_decode_transform_data (decoder, 0);
+  carid_decoder_iwt_transform (decoder, 0);
 
-  frame_data = (int16_t *)decoder->frame_buffer->data;
+  carid_decoder_decode_transform_data (decoder, 1);
+  carid_decoder_iwt_transform (decoder, 1);
+
+  carid_decoder_decode_transform_data (decoder, 2);
+  carid_decoder_iwt_transform (decoder, 2);
+
+  carid_decoder_copy_from_frame_buffer (decoder, decoder->output_buffer);
+
+  carid_buffer_unref (buffer);
+
+  carid_bits_free (decoder->bits);
+}
+
+void
+carid_decoder_copy_from_frame_buffer (CaridDecoder *decoder, CaridBuffer *buffer)
+{
+  CaridParams *params = &decoder->params;
+  int i;
+  uint8_t *data;
+  int16_t *frame_data;
+
+  data = buffer->data;
+
+  frame_data = (int16_t *)decoder->frame_buffer[0]->data;
+  for(i=0;i<params->height;i++){
+    oil_convert_u8_s16 (data, frame_data, params->width);
+    data += params->width;
+    frame_data += params->iwt_luma_width;
+  }
+
+  frame_data = (int16_t *)decoder->frame_buffer[1]->data;
+  for(i=0;i<params->height/2;i++){
+    oil_convert_u8_s16 (data, frame_data, params->width/2);
+    data += params->width/2;
+    frame_data += params->iwt_chroma_width;
+  }
+
+  frame_data = (int16_t *)decoder->frame_buffer[2]->data;
+  for(i=0;i<params->height/2;i++){
+    oil_convert_u8_s16 (data, frame_data, params->width/2);
+    data += params->width/2;
+    frame_data += params->iwt_chroma_width;
+  }
+}
+
+void
+carid_decoder_iwt_transform (CaridDecoder *decoder, int component)
+{
+  CaridParams *params = &decoder->params;
+  int16_t *frame_data;
+  int height;
+  int width;
+  int level;
+
+  if (component == 0) {
+    width = params->iwt_luma_width;
+    height = params->iwt_luma_height;
+  } else {
+    width = params->iwt_chroma_width;
+    height = params->iwt_chroma_height;
+  }
+
+  frame_data = (int16_t *)decoder->frame_buffer[component]->data;
   for(level=params->transform_depth-1;level>=0;level--) {
     int w;
     int h;
     int stride;
 
-    w = params->iwt_luma_width >> level;
-    h = params->iwt_luma_height >> level;
-    stride = 2*(params->iwt_luma_width << level);
+    w = width >> level;
+    h = height >> level;
+    stride = 2*(width << level);
 
     carid_wavelet_inverse_transform_2d (params->wavelet_filter_index,
-        frame_data, stride, w, h, tmp);
+        frame_data, stride, w, h, decoder->tmpbuf);
   }
 
-  for(i=0;i<params->height;i++){
-    oil_convert_u8_s16 (dec_data + i*params->width,
-        frame_data + i*params->iwt_luma_width,
-        params->width);
-  }
-
-  carid_buffer_unref (buffer);
-
-  carid_bits_free (decoder->bits);
 }
 
 void
@@ -180,6 +246,7 @@ void
 carid_decoder_decode_rap (CaridDecoder *decoder)
 {
   int bit;
+  int index;
 
   CARID_DEBUG("decoding RAP");
   /* parse parameters */
@@ -195,13 +262,13 @@ carid_decoder_decode_rap (CaridDecoder *decoder)
   CARID_DEBUG("level = %d", decoder->params.level);
 
   /* sequence parameters */
-  decoder->params.video_format_index = carid_bits_decode_uegol (decoder->bits);
+  index = carid_bits_decode_uegol (decoder->bits);
+  carid_params_set_video_format (&decoder->params, index);
+
   bit = carid_bits_decode_bit (decoder->bits);
   if (bit) {
     decoder->params.width = carid_bits_decode_uegol (decoder->bits);
     decoder->params.height = carid_bits_decode_uegol (decoder->bits);
-  } else {
-    /* FIXME */
   }
   CARID_DEBUG("size = %d x %d", decoder->params.width,
       decoder->params.height);
@@ -222,17 +289,17 @@ carid_decoder_decode_rap (CaridDecoder *decoder)
   /* signal range */
   bit = carid_bits_decode_bit (decoder->bits);
   if (bit) {
-    decoder->params.signal_range_index =
-      carid_bits_decode_uegol (decoder->bits);
-    if (decoder->params.signal_range_index == 0) {
+    index = carid_bits_decode_uegol (decoder->bits);
+    if (index == 0) {
       decoder->params.luma_offset = carid_bits_decode_uegol (decoder->bits);
       decoder->params.luma_excursion = carid_bits_decode_uegol (decoder->bits);
       decoder->params.chroma_offset = carid_bits_decode_uegol (decoder->bits);
       decoder->params.chroma_excursion =
         carid_bits_decode_uegol (decoder->bits);
+    } else {
+      /* FIXME */
+      //carid_params_set_excursion (&decoder->params, index);
     }
-  } else {
-    decoder->params.chroma_format_index = 0;
   }
   CARID_DEBUG("luma offset %d excursion %d",
       decoder->params.luma_offset, decoder->params.luma_excursion);
@@ -249,10 +316,12 @@ carid_decoder_decode_rap (CaridDecoder *decoder)
   /* frame rate */
   bit = carid_bits_decode_bit (decoder->bits);
   if (bit) {
-    decoder->params.frame_rate_index = carid_bits_decode_uegol (decoder->bits);
-    if (decoder->params.frame_rate_index == 0) {
+    index = carid_bits_decode_uegol (decoder->bits);
+    if (index == 0) {
       decoder->params.frame_rate_numerator = carid_bits_decode_uegol (decoder->bits);
       decoder->params.frame_rate_denominator = carid_bits_decode_uegol (decoder->bits);
+    } else {
+      carid_params_set_frame_rate (&decoder->params, index);
     }
   }
   CARID_DEBUG("frame rate %d/%d", decoder->params.frame_rate_numerator,
@@ -261,16 +330,19 @@ carid_decoder_decode_rap (CaridDecoder *decoder)
   /* pixel aspect ratio */
   bit = carid_bits_decode_bit (decoder->bits);
   if (bit) {
-    decoder->params.aspect_ratio_index = carid_bits_decode_uegol (decoder->bits);
-    if (decoder->params.aspect_ratio_index == 0) {
-      decoder->params.aspect_ratio_numerator =
+    index = carid_bits_decode_uegol (decoder->bits);
+    if (index == 0) {
+      decoder->params.pixel_aspect_ratio_numerator =
         carid_bits_decode_uegol (decoder->bits);
-      decoder->params.aspect_ratio_denominator =
+      decoder->params.pixel_aspect_ratio_denominator =
         carid_bits_decode_uegol (decoder->bits);
+    } else {
+      carid_params_set_pixel_aspect_ratio (&decoder->params, index);
     }
   }
-  CARID_DEBUG("aspect ratio %d/%d", decoder->params.aspect_ratio_numerator,
-      decoder->params.aspect_ratio_denominator);
+  CARID_DEBUG("aspect ratio %d/%d",
+      decoder->params.pixel_aspect_ratio_numerator,
+      decoder->params.pixel_aspect_ratio_denominator);
 
   /* clean area */
   bit = carid_bits_decode_bit (decoder->bits);
@@ -280,11 +352,9 @@ carid_decoder_decode_rap (CaridDecoder *decoder)
     decoder->params.clean_width = carid_bits_decode_uegol (decoder->bits);
     decoder->params.clean_height = carid_bits_decode_uegol (decoder->bits);
   }
-  CARID_DEBUG("clean offset %d %d",
-      decoder->params.clean_tl_x,
+  CARID_DEBUG("clean offset %d %d", decoder->params.clean_tl_x,
       decoder->params.clean_tl_y);
-  CARID_DEBUG("clean size %d %d",
-      decoder->params.clean_width,
+  CARID_DEBUG("clean size %d %d", decoder->params.clean_width,
       decoder->params.clean_height);
 
   /* colur matrix */
@@ -393,102 +463,162 @@ carid_decoder_decode_transform_parameters (CaridDecoder *decoder)
 }
 
 void
-carid_decoder_decode_transform_data (CaridDecoder *decoder)
+carid_decoder_init_subbands (CaridDecoder *decoder)
 {
-  int i;
-  int w,h;
-  int stride;
   CaridParams *params = &decoder->params;
-  int index;
-
-  carid_bits_dumpbits (decoder->bits);
+  int i;
+  int w;
+  int h;
+  int stride;
+  int chroma_w;
+  int chroma_h;
+  int chroma_stride;
 
   w = params->iwt_luma_width >> params->transform_depth;
   h = params->iwt_luma_height >> params->transform_depth;
-
-#if 1
-  {
-    int16_t *data;
-    uint8_t value = 0;
-    data = (int16_t *)decoder->frame_buffer->data;
-    oil_splat_u8_ns((uint8_t *)data, &value,
-        params->iwt_luma_height*params->iwt_luma_width*2);
-  }
-#endif
-
   stride = sizeof(int16_t)*(params->iwt_luma_width << params->transform_depth);
-  index = 0;
-  carid_decoder_decode_subband (decoder, index, w, h, stride);
-  index++;
-  for(i=0; i < params->transform_depth; i++) {
-    carid_decoder_decode_subband (decoder, index, w, h, stride);
-    index++;
-    carid_decoder_decode_subband (decoder, index, w, h, stride);
-    index++;
-    carid_decoder_decode_subband (decoder, index, w, h, stride);
-    index++;
+  chroma_w = params->iwt_chroma_width >> params->transform_depth;
+  chroma_h = params->iwt_chroma_height >> params->transform_depth;
+  chroma_stride = sizeof(int16_t)*(params->iwt_chroma_width << params->transform_depth);
+
+  decoder->subbands[0].x = 0;
+  decoder->subbands[0].y = 0;
+  decoder->subbands[0].w = w;
+  decoder->subbands[0].h = h;
+  decoder->subbands[0].offset = 0;
+  decoder->subbands[0].stride = stride;
+  decoder->subbands[0].chroma_w = chroma_w;
+  decoder->subbands[0].chroma_h = chroma_h;
+  decoder->subbands[0].chroma_offset = 0;
+  decoder->subbands[0].chroma_stride = chroma_stride;
+  decoder->subbands[0].has_parent = 0;
+  decoder->subbands[0].scale_factor_shift = 0;
+  decoder->subbands[0].horizontally_oriented = 0;
+  decoder->subbands[0].vertically_oriented = 0;
+
+  for(i=0; i<params->transform_depth; i++) {
+    decoder->subbands[1+3*i].x = 1;
+    decoder->subbands[1+3*i].y = 1;
+    decoder->subbands[1+3*i].w = w;
+    decoder->subbands[1+3*i].h = h;
+    decoder->subbands[1+3*i].offset = w + (stride/2/sizeof(int16_t));
+    decoder->subbands[1+3*i].stride = stride;
+    decoder->subbands[1+3*i].chroma_w = chroma_w;
+    decoder->subbands[1+3*i].chroma_h = chroma_h;
+    decoder->subbands[1+3*i].chroma_offset = chroma_w + (chroma_stride/2/sizeof(int16_t));
+    decoder->subbands[1+3*i].chroma_stride = chroma_stride;
+    decoder->subbands[1+3*i].has_parent = (i>0);
+    decoder->subbands[1+3*i].scale_factor_shift = i;
+    decoder->subbands[1+3*i].horizontally_oriented = 0;
+    decoder->subbands[1+3*i].vertically_oriented = 0;
+
+    decoder->subbands[2+3*i].x = 0;
+    decoder->subbands[2+3*i].y = 1;
+    decoder->subbands[2+3*i].w = w;
+    decoder->subbands[2+3*i].h = h;
+    decoder->subbands[2+3*i].offset = (stride/2/sizeof(int16_t));
+    decoder->subbands[2+3*i].stride = stride;
+    decoder->subbands[2+3*i].chroma_w = chroma_w;
+    decoder->subbands[2+3*i].chroma_h = chroma_h;
+    decoder->subbands[2+3*i].chroma_offset = (chroma_stride/2/sizeof(int16_t));
+    decoder->subbands[2+3*i].chroma_stride = chroma_stride;
+    decoder->subbands[2+3*i].has_parent = (i>0);
+    decoder->subbands[2+3*i].scale_factor_shift = i;
+    decoder->subbands[2+3*i].horizontally_oriented = 0;
+    decoder->subbands[2+3*i].vertically_oriented = 1;
+
+    decoder->subbands[3+3*i].x = 1;
+    decoder->subbands[3+3*i].y = 0;
+    decoder->subbands[3+3*i].w = w;
+    decoder->subbands[3+3*i].h = h;
+    decoder->subbands[3+3*i].offset = w;
+    decoder->subbands[3+3*i].stride = stride;
+    decoder->subbands[3+3*i].chroma_w = chroma_w;
+    decoder->subbands[3+3*i].chroma_h = chroma_h;
+    decoder->subbands[3+3*i].chroma_offset = chroma_w;
+    decoder->subbands[3+3*i].chroma_stride = chroma_stride;
+    decoder->subbands[3+3*i].has_parent = (i>0);
+    decoder->subbands[3+3*i].scale_factor_shift = i;
+    decoder->subbands[3+3*i].horizontally_oriented = 1;
+    decoder->subbands[3+3*i].vertically_oriented = 0;
+
     w <<= 1;
     h <<= 1;
     stride >>= 1;
+    chroma_w <<= 1;
+    chroma_h <<= 1;
+    chroma_stride >>= 1;
+  }
+
+}
+
+void
+carid_decoder_decode_transform_data (CaridDecoder *decoder, int component)
+{
+  int i;
+  CaridParams *params = &decoder->params;
+
+#if 1
+  for (i=0;i<3;i++){
+    uint8_t value = 0;
+    oil_splat_u8_ns (decoder->frame_buffer[component]->data, &value,
+        decoder->frame_buffer[component]->length);
+  }
+#endif
+
+  carid_decoder_init_subbands (decoder);
+
+  for(i=0;i<1+3*params->transform_depth;i++) {
+    carid_decoder_decode_subband (decoder, component, i);
   }
 }
 
-struct subband_struct {
-  int x;
-  int y;
-  int has_parent;
-  int scale_factor_shift;
-  int horizontally_oriented;
-  int vertically_oriented;
-};
-  
-struct subband_struct carid_decoder_subband_info[] = {
-  { 0, 0, 0, 0, 0, 0 },
-  { 1, 1, 0, 0, 0, 0 },
-  { 0, 1, 0, 0, 0, 1 },
-  { 1, 0, 0, 0, 1, 0 },
-  { 1, 1, 1, 1, 0, 0 },
-  { 0, 1, 1, 1, 0, 1 },
-  { 1, 0, 1, 1, 1, 0 },
-  { 1, 1, 1, 2, 0, 0 },
-  { 0, 1, 1, 2, 0, 1 },
-  { 1, 0, 1, 2, 1, 0 },
-  { 1, 1, 1, 3, 0, 0 },
-  { 0, 1, 1, 3, 0, 1 },
-  { 1, 0, 1, 3, 1, 0 },
-  { 1, 1, 1, 4, 0, 0 },
-  { 0, 1, 1, 4, 0, 1 },
-  { 1, 0, 1, 4, 1, 0 },
-  { 1, 1, 1, 5, 0, 0 },
-  { 0, 1, 1, 5, 0, 1 },
-  { 1, 0, 1, 5, 1, 0 }
-};
-
 void
-carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, int stride)
+carid_decoder_decode_subband (CaridDecoder *decoder, int component, int index)
 {
-  struct subband_struct *info = carid_decoder_subband_info + index;
   CaridParams *params = &decoder->params;
+  CaridSubband *subband = decoder->subbands + index;
+  CaridSubband *parent_subband = NULL;
   int subband_zero_flag;
   int16_t *data;
-  int16_t *parent_data;
+  int16_t *parent_data = NULL;
   int quant_index = 0;
   int quant_factor = 0;
   int quant_offset = 0;
   int subband_length;
   int scale_factor;
   int ntop;
+  int height;
+  int width;
+  int stride;
+  int offset;
 
-  CARID_DEBUG("subband index=%d %d x %d, stride=%d", index, w, h, stride);
+  if (component == 0) {
+    stride = subband->stride >> 1;
+    width = subband->w;
+    height = subband->h;
+    offset = subband->offset;
+  } else {
+    stride = subband->chroma_stride >> 1;
+    width = subband->chroma_w;
+    height = subband->chroma_h;
+    offset = subband->chroma_offset;
+  }
 
-  stride >>= 1;
-  data = (int16_t *)decoder->frame_buffer->data;
-  data += info->x * w;
-  data += info->y * (stride/2);
+  CARID_DEBUG("subband index=%d %d x %d at offset %d stride=%d",
+      index, width, height, offset, stride);
 
-  parent_data = (int16_t *)decoder->frame_buffer->data;
-  parent_data += info->x * (w>>1);
-  parent_data += info->y * ((stride<<1)/2);
+  data = (int16_t *)decoder->frame_buffer[component]->data + offset;
+  if (subband->has_parent) {
+    parent_subband = subband-3;
+    if (component == 0) {
+      parent_data = (int16_t *)decoder->frame_buffer[component]->data +
+        parent_subband->offset;
+    } else {
+      parent_data = (int16_t *)decoder->frame_buffer[component]->data +
+        parent_subband->chroma_offset;
+    }
+  }
 
   scale_factor = 1<<(params->transform_depth - quant_index);
   ntop = (scale_factor>>1) * quant_factor;
@@ -525,8 +655,8 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
     carid_arith_decode_init (arith, bits);
     carid_arith_init_contexts (arith);
 
-    for(j=0;j<h;j++){
-      for(i=0;i<w;i++){
+    for(j=0;j<height;j++){
+      for(i=0;i<width;i++){
         int sign = 0;
         int v;
         int parent_zero;
@@ -547,6 +677,7 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
         if (i>0 && j>0) {
           nhood_sum += abs(data[(j-1)*stride + i - 1]);
         }
+//nhood_sum = 0;
         
         if (index == 0) {
           if (j>0) {
@@ -566,20 +697,35 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
         } else {
           pred_value = 0;
         }
+//pred_value = 0;
 
-        if (info->has_parent) {
+        if (subband->has_parent) {
           if (parent_data[(j>>1)*(stride<<1) + (i>>1)]==0) {
             parent_zero = 1;
           } else {
             parent_zero = 0;
           }
         } else {
-          if (info->x == 0 && info->y == 0) {
+          if (subband->x == 0 && subband->y == 0) {
             parent_zero = 0;
           } else {
             parent_zero = 1;
           }
         }
+//parent_zero = 0;
+
+        previous_value = 0;
+        if (subband->horizontally_oriented) {
+          if (i > 0) {
+            previous_value = data[j*stride + i - 1];
+          }
+        } else if (subband->vertically_oriented) {
+          if (j > 0) {
+            previous_value = data[(j-1)*stride + i];
+          }
+        }
+//previous_value = 0;
+
         if (parent_zero) {
           if (nhood_sum == 0) {
             context = CARID_CTX_Z_BIN1z;
@@ -598,17 +744,6 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
             }
           }
           context2 = CARID_CTX_NZ_BIN2;
-        }
-
-        previous_value = 0;
-        if (info->horizontally_oriented) {
-          if (i > 0) {
-            previous_value = data[j*stride + i - 1];
-          }
-        } else if (info->vertically_oriented) {
-          if (j > 0) {
-            previous_value = data[(j-1)*stride + i];
-          }
         }
 
         if (previous_value > 0) {
@@ -633,19 +768,6 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
         } else {
           data[j*stride + i] = pred_value;
         }
-
-#if 0
-        v *= quant_factor;
-        if (v > 0) {
-          v += quant_offset;
-        }
-        if (v > 0) {
-          if (!sign) {
-            v = -v;
-          }
-        }
-        data[j*stride + i] = v;
-#endif
       }
     }
     carid_arith_free (arith);
@@ -655,16 +777,14 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int index, int w, int h, in
 
     decoder->bits->offset += subband_length * 8;
   } else {
-    //int i,j;
+    int i,j;
 
     CARID_DEBUG("subband is zero");
-#if 0
-    for(j=0;j<h;j++){
-      for(i=0;i<w;i++){
+    for(j=0;j<height;j++){
+      for(i=0;i<width;i++){
         data[j*stride + i] = 0;
       }
     }
-#endif
 
     carid_bits_sync (decoder->bits);
   }

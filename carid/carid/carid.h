@@ -5,6 +5,7 @@
 #include <carid/carid-stdint.h>
 #include <carid/caridarith.h>
 #include <carid/caridbits.h>
+#include <carid/caridbitstream.h>
 #include <carid/caridbuffer.h>
 #include <carid/cariddecoder.h>
 #include <carid/cariddebug.h>

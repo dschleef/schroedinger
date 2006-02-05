@@ -27,6 +27,7 @@
 
 GType gst_caridtoy_get_type (void);
 GType gst_carid_enc_get_type (void);
+GType gst_carid_dec_get_type (void);
 GType gst_waveletvisualizer_get_type (void);
 
 static gboolean
@@ -39,6 +40,8 @@ plugin_init (GstPlugin * plugin)
       gst_caridtoy_get_type ());
   gst_element_register (plugin, "caridenc", GST_RANK_PRIMARY,
       gst_carid_enc_get_type ());
+  gst_element_register (plugin, "cariddec", GST_RANK_PRIMARY,
+      gst_carid_dec_get_type ());
   gst_element_register (plugin, "waveletvisualizer", GST_RANK_NONE,
       gst_waveletvisualizer_get_type ());
 

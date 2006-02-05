@@ -60,7 +60,10 @@ struct _GstCaridEnc
   int par_n, par_d;
 
   /* state */
+  gboolean sent_header;
+  int n_frames;
   int offset;
+  int granulepos;
 
   CaridEncoder *encoder;
 };
@@ -263,6 +266,31 @@ gst_carid_buffer_free (CaridBuffer *buffer, void *priv)
   gst_buffer_unref (GST_BUFFER(priv));
 }
 
+static GstCaps *
+gst_carid_enc_set_header_on_caps (GstCaps * caps, GstBuffer * buf1)
+{
+  GstStructure *structure;
+  GValue array = { 0 };
+  GValue value = { 0 };
+
+  caps = gst_caps_make_writable (caps);
+  structure = gst_caps_get_structure (caps, 0);
+
+  /* mark buffers */
+  GST_BUFFER_FLAG_SET (buf1, GST_BUFFER_FLAG_IN_CAPS);
+
+  /* put buffers in a fixed list */
+  g_value_init (&array, GST_TYPE_ARRAY);
+  g_value_init (&value, GST_TYPE_BUFFER);
+  gst_value_set_buffer (&value, buf1);
+  gst_value_array_append_value (&array, &value);
+  g_value_unset (&value);
+  gst_structure_set_value (structure, "streamheader", &array);
+  g_value_unset (&array);
+
+  return caps;
+}
+
 static GstFlowReturn
 gst_carid_enc_chain (GstPad *pad, GstBuffer *buf)
 {
@@ -276,33 +304,69 @@ gst_carid_enc_chain (GstPad *pad, GstBuffer *buf)
 
   carid_encoder_set_wavelet_type (carid_enc->encoder, carid_enc->wavelet_type);
 
+  if (carid_enc->sent_header == 0) {
+    GstCaps *caps;
+
+    encoded_buffer = carid_encoder_encode (carid_enc->encoder);
+
+    GST_ERROR ("encoder produced %d bytes", encoded_buffer->length);
+
+    outbuf = gst_buffer_new_and_alloc (encoded_buffer->length);
+
+    memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data,
+        encoded_buffer->length);
+    GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_IN_CAPS);
+    GST_BUFFER_OFFSET_END (outbuf) = 0;
+
+    caps = gst_pad_get_caps (carid_enc->srcpad);
+    caps = gst_carid_enc_set_header_on_caps (caps, outbuf);
+
+    gst_pad_set_caps (carid_enc->srcpad, caps);
+
+    gst_buffer_set_caps (outbuf, caps);
+
+    ret = gst_pad_push (carid_enc->srcpad, outbuf);
+    if (ret!= GST_FLOW_OK) return ret;
+
+    carid_enc->sent_header = 1;
+  }
+
   input_buffer = carid_buffer_new_with_data (GST_BUFFER_DATA (buf),
       GST_BUFFER_SIZE (buf));
   input_buffer->free = gst_carid_buffer_free;
   input_buffer->priv = buf;
 
-  encoded_buffer = carid_encoder_encode (carid_enc->encoder, input_buffer);
+  GST_DEBUG ("pushing buffer");
+  carid_encoder_push_buffer (carid_enc->encoder, input_buffer);
 
-  GST_ERROR ("encoder produced %d bytes", encoded_buffer->length);
+  while (1) {
+    encoded_buffer = carid_encoder_encode (carid_enc->encoder);
+    if (encoded_buffer == NULL) break;
 
-  ret = gst_pad_alloc_buffer_and_set_caps (carid_enc->srcpad,
-      GST_BUFFER_OFFSET_NONE, encoded_buffer->length,
-      GST_PAD_CAPS (carid_enc->srcpad), &outbuf);
-  if (ret != GST_FLOW_OK) {
+    ret = gst_pad_alloc_buffer_and_set_caps (carid_enc->srcpad,
+        GST_BUFFER_OFFSET_NONE, encoded_buffer->length,
+        GST_PAD_CAPS (carid_enc->srcpad), &outbuf);
+    if (ret != GST_FLOW_OK) {
+      carid_buffer_unref (encoded_buffer);
+      return ret;
+    }
+
+    memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data, encoded_buffer->length);
+    GST_BUFFER_OFFSET (outbuf) = carid_enc->offset;
+    GST_BUFFER_OFFSET_END (outbuf) = carid_enc->granulepos;
+    GST_BUFFER_TIMESTAMP (outbuf) = (carid_enc->n_frames * GST_SECOND * carid_enc->fps_d)/carid_enc->fps_n;
+    GST_BUFFER_DURATION (outbuf) = (GST_SECOND * carid_enc->fps_d)/carid_enc->fps_n;
+
+    carid_enc->offset += encoded_buffer->length;
+    carid_enc->granulepos++;
+    carid_enc->n_frames++;
+
     carid_buffer_unref (encoded_buffer);
-    return ret;
+    
+    ret = gst_pad_push (carid_enc->srcpad, outbuf);
+
+    if (ret!= GST_FLOW_OK) return ret;
   }
-
-  memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data, encoded_buffer->length);
-  GST_BUFFER_OFFSET (outbuf) = carid_enc->offset;
-  GST_BUFFER_OFFSET_END (outbuf) = carid_enc->offset + encoded_buffer->length - 1;
-  GST_BUFFER_TIMESTAMP (outbuf) = GST_CLOCK_TIME_NONE;
-  GST_BUFFER_DURATION (outbuf) = GST_CLOCK_TIME_NONE;
-
-  carid_enc->offset += encoded_buffer->length;
-
-  carid_buffer_unref (encoded_buffer);
-
   return GST_FLOW_OK;
 }
 

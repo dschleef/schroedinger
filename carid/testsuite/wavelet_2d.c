@@ -44,7 +44,7 @@ int
 constant_test(int filter_index, int width, int height)
 {
   int i;
-  //int j;
+  int j;
 
   frame_data = malloc(width*height*2);
   tmp = malloc(1024*2);
@@ -56,25 +56,27 @@ constant_test(int filter_index, int width, int height)
   carid_wavelet_transform_2d (filter_index,
         frame_data, width*2, width, height, tmp);
 
-#if 0
+#if 1
   for(i=0;i<height;i++){
     for(j=0;j<width;j++){
       printf("%d ", frame_data[i*width + j]);
     }
     printf("\n");
   }
+  printf("\n");
 #endif
 
   carid_wavelet_inverse_transform_2d (filter_index,
         frame_data, width*2, width, height, tmp);
 
-#if 0
+#if 1
   for(i=0;i<height;i++){
     for(j=0;j<width;j++){
       printf("%d ", frame_data[i*width + j]);
     }
     printf("\n");
   }
+  printf("\n");
 #endif
 
   free(frame_data);
@@ -139,12 +141,16 @@ main (int argc, char *argv[])
 {
   carid_init();
 
+#if 0
   basic_test(CARID_WAVELET_5_3, 640,512,6);
 
   constant_test(CARID_WAVELET_5_3, 32,20);
   constant_test(CARID_WAVELET_5_3, 10,2);
 
   vramp_test(CARID_WAVELET_5_3, 16, 16);
+#endif
+
+  constant_test(CARID_WAVELET_DAUB97, 10, 10);
 
   return 0;
 }

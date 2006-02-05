@@ -1,3 +1,24 @@
+2006-02-04  David Schleef  <ds@schleef.org>
+
+	* carid/carid.h:
+	* carid/cariddecoder.c:
+	* carid/cariddecoder.h:
+	* carid/caridencoder.c:
+	* carid/caridencoder.h:
+	* carid/caridparams.c:
+	* carid/caridparams.h:
+	* carid/caridwavelet.c:
+	* gst/gstcarid.c:
+	* gst/gstcariddec.c:
+	* gst/gstcaridenc.c:
+	* gst/gstcaridtoy.c:
+	* testsuite/wavelet_2d.c:
+	  Another dropping of code.  I should really checkpoint more
+	  often.  At this point, encoding and decoding work and ogg
+	  muxing/demuxing roughly works.  So one can theoretically
+	  watch videos (encoded by caridenc) in totem.  The codec is
+	  still intra-frame only, argh.
+
 2006-02-03  Christian Schaller <christian@fluendo.com>
 
 	* Add COPYING and LEGAL files

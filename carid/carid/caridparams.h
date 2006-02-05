@@ -17,28 +17,29 @@ struct _CaridParams {
 
   /* */
 
-  int video_format_index;
   int chroma_format_index;
-  int signal_range_index;
   int luma_offset;
   int luma_excursion;
   int chroma_offset;
   int chroma_excursion;
   int interlace;
   int top_field_first;
-  int frame_rate_index;
   int frame_rate_numerator;
   int frame_rate_denominator;
-  int aspect_ratio_index;
-  int aspect_ratio_numerator;
-  int aspect_ratio_denominator;
+  int pixel_aspect_ratio_numerator;
+  int pixel_aspect_ratio_denominator;
   int clean_tl_x;
   int clean_tl_y;
   int clean_width;
   int clean_height;
+  int colour_matrix_index;
+  int signal_range_index;
+  int colour_primaries_index;
+  int transfer_char_index;
 
   int non_spec_input;
 
+  int have_chroma;
   int chroma_h_scale;
   int chroma_v_scale;
   int chroma_width;
@@ -71,6 +72,10 @@ struct _CaridSubband {
   int h;
   int offset;
   int stride;
+  int chroma_w;
+  int chroma_h;
+  int chroma_offset;
+  int chroma_stride;
   int has_parent;
   int scale_factor_shift;
   int horizontally_oriented;
@@ -79,6 +84,15 @@ struct _CaridSubband {
 };
 
 void carid_params_calculate_iwt_sizes (CaridParams *params);
+
+void carid_params_set_video_format (CaridParams *params, int index);
+int carid_params_get_video_format (CaridParams *params);
+void carid_params_set_chroma_format (CaridParams *params, int index);
+int carid_params_get_chroma_format (CaridParams *params);
+void carid_params_set_frame_rate (CaridParams *params, int index);
+int carid_params_get_frame_rate (CaridParams *params);
+void carid_params_set_pixel_aspect_ratio (CaridParams *params, int index);
+int carid_params_get_pixel_aspect_ratio (CaridParams *params);
 
 #endif
 

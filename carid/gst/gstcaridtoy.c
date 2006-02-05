@@ -256,7 +256,8 @@ gst_caridtoy_transform_ip (GstBaseTransform * base_transform,
   if (1) {
   input_buffer = carid_buffer_new_with_data (GST_BUFFER_DATA (buf),
       GST_BUFFER_SIZE (buf));
-  encoded_buffer = carid_encoder_encode (compress->encoder, input_buffer);
+  carid_encoder_push_buffer (compress->encoder, input_buffer);
+  encoded_buffer = carid_encoder_encode (compress->encoder);
   carid_buffer_unref (input_buffer);
 
 #if 0

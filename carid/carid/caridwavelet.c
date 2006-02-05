@@ -756,10 +756,50 @@ carid_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
   int i;
   int a;
   int n;
+  int16_t c6497 = 6497;
+  int16_t c217 = 217;
+  int16_t c3616 = 3616;
+  int16_t c1817 = 1817;
 
   stride >>= 1;
   n = width/2;
   switch (type) {
+    case CARID_WAVELET_DAUB97:
+      for(i=0;i<height-2;i+=2) {
+        oil_lift_sub_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
+            i_n + stride * (i+0), i_n + stride * (i+2), &c6497, width);
+      }
+      oil_lift_sub_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
+          i_n + stride * (i+0), i_n + stride * (i+0), &c6497, width);
+
+      i = 0;
+      oil_lift_sub_mult_shift12 (i_n + stride * (i+0), i_n + stride * (i+0),
+          i_n + stride * (i+1), i_n + stride * (i+1), &c217, width);
+      for(i=2;i<height;i+=2) {
+        oil_lift_sub_mult_shift12 (i_n + stride * (i+0), i_n + stride * (i+0),
+            i_n + stride * (i-1), i_n + stride * (i+1), &c217, width);
+      }
+
+      for(i=0;i<height-2;i+=2) {
+        oil_lift_add_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
+            i_n + stride * (i+0), i_n + stride * (i+2), &c3616, width);
+      }
+      oil_lift_add_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
+          i_n + stride * (i+0), i_n + stride * (i+0), &c3616, width);
+
+      i = 0;
+      oil_lift_add_mult_shift12 (i_n + stride * (i+0), i_n + stride * (i+0),
+          i_n + stride * (i+1), i_n + stride * (i+1), &c1817, width);
+      for(i=2;i<height;i+=2) {
+        oil_lift_add_mult_shift12 (i_n + stride * (i+0), i_n + stride * (i+0),
+            i_n + stride * (i-1), i_n + stride * (i+1), &c1817, width);
+      }
+
+      for(i=0;i<height;i++) {
+        oil_split_daub97 (tmp, i_n + stride * i, n);
+        oil_deinterleave (i_n + stride * i, tmp, n);
+      }
+      break;
     case CARID_WAVELET_5_3:
       for(i=0;i<height;i+=2){
         a = i+2;
@@ -783,6 +823,23 @@ carid_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
       oil_deinterleave (i_n + stride * (height-1), tmp, n);
 
       break;
+#if 0
+    case CARID_WAVELET_135:
+#define REFLECT_0(value) ((value<0)?(-value):(value))
+#define REFLECT_N(value,endpoint) ((value)>=(endpoint)?(2*(endpoint)-1-(value)):(value))
+      for(i=0;i<height-2;i+=2) {
+        oil_lift_sub_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
+            i_n + stride * (i+0), i_n + stride * (i+2), &c6497, n);
+      }
+      oil_lift_sub_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
+          i_n + stride * (i+0), i_n + stride * (i+0), &c6497, n);
+
+      for(i=0;i<height;i++) {
+        oil_split_daub97 (tmp, i_n + stride * i, n);
+        oil_deinterleave (i_n + stride * i, tmp, n);
+      }
+      break;
+#endif
     default:
       CARID_ERROR("invalid type");
       break;
@@ -795,6 +852,10 @@ carid_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int widt
 {
   int i;
   int n;
+  int16_t c6497 = 6497;
+  int16_t c217 = 217;
+  int16_t c3616 = 3616;
+  int16_t c1817 = 1817;
 
   CARID_ASSERT((height&1)==0);
   CARID_ASSERT((width&1)==0);
@@ -802,6 +863,43 @@ carid_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int widt
   stride >>= 1;
   n = width/2;
   switch (type) {
+    case CARID_WAVELET_DAUB97:
+      for(i=0;i<height;i++) {
+        oil_interleave (tmp, i_n + stride * i, n);
+        oil_synth_daub97 (i_n + stride * i, tmp, n);
+      }
+
+      i = 0;
+      oil_lift_sub_mult_shift12 (i_n + stride * (i+0), i_n + stride * (i+0),
+          i_n + stride * (i+1), i_n + stride * (i+1), &c1817, width);
+      for(i=2;i<height;i+=2) {
+        oil_lift_sub_mult_shift12 (i_n + stride * (i+0), i_n + stride * (i+0),
+            i_n + stride * (i-1), i_n + stride * (i+1), &c1817, width);
+      }
+
+      for(i=0;i<height-2;i+=2) {
+        oil_lift_sub_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
+            i_n + stride * (i+0), i_n + stride * (i+2), &c3616, width);
+      }
+      oil_lift_sub_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
+          i_n + stride * (i+0), i_n + stride * (i+0), &c3616, width);
+
+      i = 0;
+      oil_lift_add_mult_shift12 (i_n + stride * (i+0), i_n + stride * (i+0),
+          i_n + stride * (i+1), i_n + stride * (i+1), &c217, width);
+      for(i=2;i<height;i+=2) {
+        oil_lift_add_mult_shift12 (i_n + stride * (i+0), i_n + stride * (i+0),
+            i_n + stride * (i-1), i_n + stride * (i+1), &c217, width);
+      }
+      
+      for(i=0;i<height-2;i+=2) {
+        oil_lift_add_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
+            i_n + stride * (i+0), i_n + stride * (i+2), &c6497, width);
+      }
+      oil_lift_add_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
+          i_n + stride * (i+0), i_n + stride * (i+0), &c6497, width);
+
+      break;
     case CARID_WAVELET_5_3:
       oil_interleave (tmp, i_n + stride * (0), n);
       oil_synth_53 (i_n + stride * (0), tmp, n);

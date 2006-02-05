@@ -53,6 +53,8 @@ struct _GstCaridDec
   int level;
 
   CaridDecoder *decoder;
+
+  int n_frames;
 };
 
 struct _GstCaridDecClass
@@ -182,6 +184,19 @@ gst_carid_buffer_free (CaridBuffer *buffer, void *priv)
   gst_buffer_unref (GST_BUFFER (priv));
 }
 
+static CaridBuffer *
+gst_carid_wrap_gst_buffer (GstBuffer *buffer)
+{
+  CaridBuffer *caridbuf;
+
+  caridbuf = carid_buffer_new_with_data (GST_BUFFER_DATA (buffer),
+      GST_BUFFER_SIZE (buffer));
+  caridbuf->free = gst_carid_buffer_free;
+  caridbuf->priv = buffer;
+
+  return caridbuf;
+}
+
 static GstFlowReturn
 gst_carid_dec_chain (GstPad *pad, GstBuffer *buf)
 {
@@ -193,30 +208,66 @@ gst_carid_dec_chain (GstPad *pad, GstBuffer *buf)
 
   carid_dec = GST_CARID_DEC (GST_PAD_PARENT (pad));
 
-  ret = gst_pad_alloc_buffer_and_set_caps (carid_dec->srcpad,
-      GST_BUFFER_OFFSET_NONE, 1000,
-      GST_PAD_CAPS (carid_dec->srcpad), &outbuf);
-  if (ret != GST_FLOW_OK) {
-    return ret;
-  }
-
-  input_buffer = carid_buffer_new_with_data (GST_BUFFER_DATA (buf),
-      GST_BUFFER_SIZE (buf));
-  input_buffer->free = gst_carid_buffer_free;
-  input_buffer->priv = buf;
+  input_buffer = gst_carid_wrap_gst_buffer (buf);
 
   if (carid_decoder_is_rap (input_buffer)) {
+    GstCaps *caps;
+
+    GST_DEBUG("random access point");
     carid_decoder_decode (carid_dec->decoder, input_buffer);
+
+    caps = gst_caps_new_simple ("video/x-raw-yuv",
+        "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('I','4','2','0'),
+        "width", G_TYPE_INT, carid_dec->decoder->params.width,
+        "height", G_TYPE_INT, carid_dec->decoder->params.height,
+        "framerate", GST_TYPE_FRACTION,
+        carid_dec->decoder->params.frame_rate_numerator,
+        carid_dec->decoder->params.frame_rate_denominator,
+        "pixel-aspect-ratio", GST_TYPE_FRACTION,
+        carid_dec->decoder->params.pixel_aspect_ratio_numerator,
+        carid_dec->decoder->params.pixel_aspect_ratio_denominator,
+        NULL);
+
+    GST_DEBUG("setting caps %" GST_PTR_FORMAT, caps);
+
+    gst_pad_set_caps (carid_dec->srcpad, caps);
     
     return GST_FLOW_OK;
+  } else {
+    int size;
+
+    GST_DEBUG("not random access point");
+    size = carid_dec->decoder->params.width * carid_dec->decoder->params.height;
+    size += size/2;
+    ret = gst_pad_alloc_buffer_and_set_caps (carid_dec->srcpad,
+        GST_BUFFER_OFFSET_NONE, size,
+        GST_PAD_CAPS (carid_dec->srcpad), &outbuf);
+    if (ret != GST_FLOW_OK) {
+      GST_ERROR("could not allocate buffer for pad");
+      return ret;
+    }
+
+    GST_BUFFER_TIMESTAMP(outbuf) = 
+      (carid_dec->n_frames *
+       carid_dec->decoder->params.frame_rate_denominator * GST_SECOND)/
+       carid_dec->decoder->params.frame_rate_numerator;
+    GST_BUFFER_DURATION(outbuf) = 
+      (carid_dec->decoder->params.frame_rate_denominator * GST_SECOND)/
+       carid_dec->decoder->params.frame_rate_numerator;
+    GST_BUFFER_OFFSET(outbuf) = carid_dec->n_frames;
+
+    carid_dec->n_frames++;
+
+    output_buffer = gst_carid_wrap_gst_buffer (outbuf);
+
+    carid_decoder_set_output_buffer (carid_dec->decoder, output_buffer);
+
+    carid_decoder_decode (carid_dec->decoder, input_buffer);
+
+    ret = gst_pad_push (carid_dec->srcpad, outbuf);
+    
+    return ret;
   }
-
-  output_buffer = carid_buffer_new_with_data (GST_BUFFER_DATA (buf),
-      GST_BUFFER_SIZE (buf));
-  output_buffer->free = gst_carid_buffer_free;
-  output_buffer->priv = buf;
-
-  carid_decoder_set_output_buffer (carid_dec->decoder, output_buffer);
 
   return GST_FLOW_OK;
 }
