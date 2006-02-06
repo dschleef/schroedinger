@@ -1,5 +1,13 @@
 2006-02-06  David Schleef  <ds@schleef.org>
 
+	* carid/caridencoder.c:
+	* carid/caridframe.c:
+	* carid/caridframe.h:
+	* gst/gstcaridenc.c:
+	  Fix memory leak.  Some cleanup.
+
+2006-02-06  David Schleef  <ds@schleef.org>
+
 	* carid/Makefile.am:
 	* carid/carid.h:
 	* carid/caridbitstream.h:

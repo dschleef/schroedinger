@@ -277,13 +277,11 @@ gst_carid_enc_sink_event (GstPad *pad, GstEvent *event)
   return ret;
 }
 
-#if 0
 static void
-gst_carid_buffer_free (CaridBuffer *buffer, void *priv)
+gst_carid_frame_free (CaridFrame *frame, void *priv)
 {
   gst_buffer_unref (GST_BUFFER(priv));
 }
-#endif
 
 static GstCaps *
 gst_carid_enc_set_header_on_caps (GstCaps * caps, GstBuffer * buf1)
@@ -354,6 +352,8 @@ gst_carid_enc_chain (GstPad *pad, GstBuffer *buf)
 
   frame = carid_frame_new_I420 (GST_BUFFER_DATA (buf),
       carid_enc->encoder->params.width, carid_enc->encoder->params.height);
+
+  carid_frame_set_free_callback (frame, gst_carid_frame_free, buf);
 
   GST_DEBUG ("pushing frame");
   carid_encoder_push_frame (carid_enc->encoder, frame);

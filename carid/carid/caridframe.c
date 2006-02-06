@@ -110,11 +110,21 @@ carid_frame_new_I420 (void *data, int width, int height)
 void
 carid_frame_free (CaridFrame *frame)
 {
+  if (frame->free) {
+    frame->free (frame, frame->priv);
+  }
   if (frame->regions[0]) {
     free(frame->regions[0]);
   }
 
   free(frame);
+}
+
+void carid_frame_set_free_callback (CaridFrame *frame,
+    CaridFrameFreeFunc free_func, void *priv)
+{
+  frame->free = free_func;
+  frame->priv = priv;
 }
 
 static void carid_frame_convert_u8_s16 (CaridFrame *dest, CaridFrame *src);

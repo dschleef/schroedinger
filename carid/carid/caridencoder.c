@@ -122,14 +122,11 @@ carid_encoder_encode (CaridEncoder *encoder)
     carid_encoder_encode_rap (encoder);
     encoder->need_rap = FALSE;
   } else {
-    carid_encoder_encode_intra (encoder);
-#if 0
-    if ((encoder->frame_number & 1) == 0) {
+    //if ((encoder->frame_number & 1) == 0) {
       carid_encoder_encode_intra (encoder);
-    } else {
-      carid_encoder_encode_inter (encoder);
-    }
-#endif
+    //} else {
+    //  carid_encoder_encode_inter (encoder);
+    //}
   }
 
   CARID_DEBUG("encoded %d bits", encoder->bits->offset);
@@ -217,6 +214,7 @@ void
 carid_encoder_encode_intra (CaridEncoder *encoder)
 {
   CaridParams *params = &encoder->params;
+  int is_ref = 0;
 
   if (encoder->frame == NULL) {
     encoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
@@ -234,15 +232,32 @@ carid_encoder_encode_intra (CaridEncoder *encoder)
 
   carid_encoder_iwt_transform (encoder, 0);
   carid_encoder_encode_transform_data (encoder, 0);
-//  carid_encoder_inverse_iwt_transform (encoder, 0);
+  if (is_ref) {
+    carid_encoder_inverse_iwt_transform (encoder, 0);
+  }
 
   carid_encoder_iwt_transform (encoder, 1);
   carid_encoder_encode_transform_data (encoder, 1);
-//  carid_encoder_inverse_iwt_transform (encoder, 1);
+  if (is_ref) {
+    carid_encoder_inverse_iwt_transform (encoder, 1);
+  }
 
   carid_encoder_iwt_transform (encoder, 2);
   carid_encoder_encode_transform_data (encoder, 2);
-//  carid_encoder_inverse_iwt_transform (encoder, 2);
+  if (is_ref) {
+    CaridFrame *ref_frame;
+
+    carid_encoder_inverse_iwt_transform (encoder, 2);
+
+    ref_frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_U8,
+        params->width, params->height, 2, 2);
+    carid_frame_convert (ref_frame, encoder->frame);
+
+    if (encoder->reference_frames[0]) {
+      carid_frame_free (encoder->reference_frames[0]);
+    }
+    encoder->reference_frames[0] = ref_frame;
+  }
 
 }
 
@@ -250,6 +265,7 @@ void
 carid_encoder_encode_inter (CaridEncoder *encoder)
 {
   CaridParams *params = &encoder->params;
+  int is_ref = 1;
 
   if (encoder->frame == NULL) {
     encoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
@@ -267,95 +283,33 @@ carid_encoder_encode_inter (CaridEncoder *encoder)
 
   carid_encoder_iwt_transform (encoder, 0);
   carid_encoder_encode_transform_data (encoder, 0);
-//  carid_encoder_inverse_iwt_transform (encoder, 0);
+  if (is_ref) {
+    carid_encoder_inverse_iwt_transform (encoder, 0);
+  }
 
   carid_encoder_iwt_transform (encoder, 1);
   carid_encoder_encode_transform_data (encoder, 1);
-//  carid_encoder_inverse_iwt_transform (encoder, 1);
+  if (is_ref) {
+    carid_encoder_inverse_iwt_transform (encoder, 1);
+  }
 
   carid_encoder_iwt_transform (encoder, 2);
   carid_encoder_encode_transform_data (encoder, 2);
-//  carid_encoder_inverse_iwt_transform (encoder, 2);
-}
+  if (is_ref) {
+    CaridFrame *ref_frame;
 
-#if 0
-static void
-carid_encoder_copy_and_extend (int16_t *dest, int iwt_width, int iwt_height,
-    uint8_t *src, int width, int height)
-{
-  int i;
+    carid_encoder_inverse_iwt_transform (encoder, 2);
 
-  for(i = 0; i<height; i++) {
-    oil_convert_s16_u8 (dest, src, width);
-    oil_splat_u16_ns ((uint16_t *)dest + width, (uint16_t *)dest + width - 1,
-        iwt_width - width);
-    dest += iwt_width;
-    src += width;
-  }
-  for (i = 0; i < iwt_height - height; i++) {
-    oil_memcpy (dest + i*iwt_width, dest - iwt_width, iwt_width);
+    ref_frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_U8,
+        params->width, params->height, 2, 2);
+    carid_frame_convert (ref_frame, encoder->frame);
+
+    if (encoder->reference_frames[0]) {
+      carid_frame_free (encoder->reference_frames[0]);
+    }
+    encoder->reference_frames[0] = ref_frame;
   }
 }
-#endif
-
-#if 0
-void
-carid_encoder_copy_to_frame_buffer (CaridEncoder *encoder, CaridBuffer *buffer)
-{
-  CaridParams *params = &encoder->params;
-  uint8_t *data;
-
-  data = buffer->data;
-  carid_encoder_copy_and_extend ((int16_t *)encoder->frame_buffer[0]->data,
-      params->iwt_luma_width, params->iwt_luma_height,
-      data, params->width, params->height);
-  data += params->width * params->height;
-  /* FIXME this isn't quite right for I420 */
-  carid_encoder_copy_and_extend ((int16_t *)encoder->frame_buffer[1]->data,
-      params->iwt_chroma_width, params->iwt_chroma_height,
-      data, params->width/2, params->height/2);
-  data += (params->width/2) * (params->height/2);
-  carid_encoder_copy_and_extend ((int16_t *)encoder->frame_buffer[2]->data,
-      params->iwt_chroma_width, params->iwt_chroma_height,
-      data, params->width/2, params->height/2);
-
-}
-#endif
-
-#if 0
-void
-carid_encoder_copy_from_frame_buffer (CaridEncoder *encoder, CaridBuffer *buffer)
-{
-  CaridParams *params = &encoder->params;
-  int i;
-  uint8_t *data;
-  int16_t *frame_data;
-
-  data = buffer->data;
-
-  frame_data = (int16_t *)encoder->frame_buffer[0]->data;
-  for(i=0;i<params->height;i++){
-    oil_convert_u8_s16 (data, frame_data, params->width);
-    data += params->width;
-    frame_data += params->iwt_luma_width;
-  }
-
-  frame_data = (int16_t *)encoder->frame_buffer[1]->data;
-  for(i=0;i<params->height/2;i++){
-    oil_convert_u8_s16 (data, frame_data, params->width/2);
-    data += params->width/2;
-    frame_data += params->iwt_chroma_width;
-  }
-
-  frame_data = (int16_t *)encoder->frame_buffer[2]->data;
-  for(i=0;i<params->height/2;i++){
-    oil_convert_u8_s16 (data, frame_data, params->width/2);
-    data += params->width/2;
-    frame_data += params->iwt_chroma_width;
-  }
-}
-#endif
-
 
 
 
