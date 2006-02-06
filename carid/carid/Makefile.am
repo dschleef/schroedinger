@@ -17,6 +17,8 @@ libcarid_@CARID_MAJORMINOR@_la_SOURCES = \
 	cariddebug.h \
 	caridencoder.c \
 	caridencoder.h \
+	caridframe.c \
+	caridframe.h \
 	caridbuffer.c \
 	caridbuffer.h \
 	caridparams.c \

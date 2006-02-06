@@ -45,10 +45,8 @@ carid_encoder_new (void)
 void
 carid_encoder_free (CaridEncoder *encoder)
 {
-  if (encoder->frame_buffer) {
-    carid_buffer_unref (encoder->frame_buffer[0]);
-    carid_buffer_unref (encoder->frame_buffer[1]);
-    carid_buffer_unref (encoder->frame_buffer[2]);
+  if (encoder->frame) {
+    carid_frame_free (encoder->frame);
   }
 
   free (encoder->tmpbuf);
@@ -80,17 +78,9 @@ carid_encoder_set_size (CaridEncoder *encoder, int width, int height)
 
   carid_params_calculate_iwt_sizes (params);
 
-  if (encoder->frame_buffer[0]) {
-    carid_buffer_unref (encoder->frame_buffer[0]);
-    encoder->frame_buffer[0] = NULL;
-  }
-  if (encoder->frame_buffer[1]) {
-    carid_buffer_unref (encoder->frame_buffer[1]);
-    encoder->frame_buffer[1] = NULL;
-  }
-  if (encoder->frame_buffer[2]) {
-    carid_buffer_unref (encoder->frame_buffer[2]);
-    encoder->frame_buffer[2] = NULL;
+  if (encoder->frame) {
+    carid_frame_free (encoder->frame);
+    encoder->frame = NULL;
   }
 
   encoder->need_rap = TRUE;
@@ -107,9 +97,9 @@ round_up_pow2 (int x, int pow)
 #endif
 
 void
-carid_encoder_push_buffer (CaridEncoder *encoder, CaridBuffer *buffer)
+carid_encoder_push_frame (CaridEncoder *encoder, CaridFrame *frame)
 {
-  encoder->frames[0] = buffer;
+  encoder->frame_queue[0] = frame;
 }
 
 CaridBuffer *
@@ -118,7 +108,12 @@ carid_encoder_encode (CaridEncoder *encoder)
   CaridBuffer *outbuffer;
   CaridBuffer *subbuffer;
   
-  outbuffer = carid_buffer_new_and_alloc (0x40000);
+  if (!encoder->need_rap && encoder->frame_queue[0] == NULL) {
+    /* nothing to do */
+    return NULL;
+  }
+
+  outbuffer = carid_buffer_new_and_alloc (0x10000);
 
   encoder->bits = carid_bits_new ();
   carid_bits_encode_init (encoder->bits, outbuffer);
@@ -127,13 +122,17 @@ carid_encoder_encode (CaridEncoder *encoder)
     carid_encoder_encode_rap (encoder);
     encoder->need_rap = FALSE;
   } else {
-    if (encoder->frames[0]) {
+    carid_encoder_encode_intra (encoder);
+#if 0
+    if ((encoder->frame_number & 1) == 0) {
       carid_encoder_encode_intra (encoder);
+    } else {
+      carid_encoder_encode_inter (encoder);
     }
+#endif
   }
 
   CARID_DEBUG("encoded %d bits", encoder->bits->offset);
-  carid_bits_free (encoder->bits);
 
   if (encoder->bits->offset > 0) {
     subbuffer = carid_buffer_new_subbuffer (outbuffer, 0,
@@ -141,6 +140,7 @@ carid_encoder_encode (CaridEncoder *encoder)
   } else {
     subbuffer = NULL;
   }
+  carid_bits_free (encoder->bits);
   carid_buffer_unref (outbuffer);
 
   return subbuffer;
@@ -164,7 +164,7 @@ carid_encoder_iwt_transform (CaridEncoder *encoder, int component)
     height = params->iwt_chroma_height;
   }
   
-  frame_data = (int16_t *)encoder->frame_buffer[component]->data;
+  frame_data = (int16_t *)encoder->frame->components[component].data;
   for(level=0;level<params->transform_depth;level++) {
     int w;
     int h;
@@ -181,39 +181,104 @@ carid_encoder_iwt_transform (CaridEncoder *encoder, int component)
 }
 
 void
+carid_encoder_inverse_iwt_transform (CaridEncoder *encoder, int component)
+{
+  int16_t *frame_data;
+  CaridParams *params = &encoder->params;
+  int16_t *tmp = encoder->tmpbuf;
+  int width;
+  int height;
+  int level;
+
+  if (component == 0) {
+    width = params->iwt_luma_width;
+    height = params->iwt_luma_height;
+  } else {
+    width = params->iwt_chroma_width;
+    height = params->iwt_chroma_height;
+  }
+  
+  frame_data = (int16_t *)encoder->frame->components[component].data;
+  for(level=params->transform_depth-1; level >=0;level--) {
+    int w;
+    int h;
+    int stride;
+
+    w = width >> level;
+    h = height >> level;
+    stride = width << level;
+
+    carid_wavelet_inverse_transform_2d (params->wavelet_filter_index,
+        frame_data, stride*2, w, h, tmp);
+  }
+}
+
+void
 carid_encoder_encode_intra (CaridEncoder *encoder)
 {
   CaridParams *params = &encoder->params;
 
-  if (encoder->frame_buffer[0] == NULL) {
-    encoder->frame_buffer[0] = carid_buffer_new_and_alloc (params->iwt_luma_width *
-        params->iwt_luma_height * sizeof(int16_t));
-    encoder->frame_buffer[1] = carid_buffer_new_and_alloc (params->iwt_chroma_width *
-        params->iwt_chroma_height * sizeof(int16_t));
-    encoder->frame_buffer[2] = carid_buffer_new_and_alloc (params->iwt_chroma_width *
-        params->iwt_chroma_height * sizeof(int16_t));
+  if (encoder->frame == NULL) {
+    encoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
+        params->iwt_luma_width, params->iwt_luma_height, 2, 2);
   }
 
   carid_encoder_encode_frame_header (encoder);
 
-  carid_encoder_copy_to_frame_buffer (encoder, encoder->frames[0]);
+  carid_frame_convert (encoder->frame, encoder->frame_queue[0]);
 
-  carid_buffer_unref (encoder->frames[0]);
-  encoder->frames[0] = NULL;
+  carid_frame_free (encoder->frame_queue[0]);
+  encoder->frame_queue[0] = NULL;
 
   carid_encoder_encode_transform_parameters (encoder);
 
   carid_encoder_iwt_transform (encoder, 0);
   carid_encoder_encode_transform_data (encoder, 0);
+//  carid_encoder_inverse_iwt_transform (encoder, 0);
 
   carid_encoder_iwt_transform (encoder, 1);
   carid_encoder_encode_transform_data (encoder, 1);
+//  carid_encoder_inverse_iwt_transform (encoder, 1);
 
   carid_encoder_iwt_transform (encoder, 2);
   carid_encoder_encode_transform_data (encoder, 2);
+//  carid_encoder_inverse_iwt_transform (encoder, 2);
 
 }
 
+void
+carid_encoder_encode_inter (CaridEncoder *encoder)
+{
+  CaridParams *params = &encoder->params;
+
+  if (encoder->frame == NULL) {
+    encoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
+        params->iwt_luma_width, params->iwt_luma_height, 2, 2);
+  }
+
+  carid_encoder_encode_frame_header (encoder);
+
+  carid_frame_convert (encoder->frame, encoder->frame_queue[0]);
+
+  carid_frame_free (encoder->frame_queue[0]);
+  encoder->frame_queue[0] = NULL;
+
+  carid_encoder_encode_transform_parameters (encoder);
+
+  carid_encoder_iwt_transform (encoder, 0);
+  carid_encoder_encode_transform_data (encoder, 0);
+//  carid_encoder_inverse_iwt_transform (encoder, 0);
+
+  carid_encoder_iwt_transform (encoder, 1);
+  carid_encoder_encode_transform_data (encoder, 1);
+//  carid_encoder_inverse_iwt_transform (encoder, 1);
+
+  carid_encoder_iwt_transform (encoder, 2);
+  carid_encoder_encode_transform_data (encoder, 2);
+//  carid_encoder_inverse_iwt_transform (encoder, 2);
+}
+
+#if 0
 static void
 carid_encoder_copy_and_extend (int16_t *dest, int iwt_width, int iwt_height,
     uint8_t *src, int width, int height)
@@ -231,7 +296,9 @@ carid_encoder_copy_and_extend (int16_t *dest, int iwt_width, int iwt_height,
     oil_memcpy (dest + i*iwt_width, dest - iwt_width, iwt_width);
   }
 }
+#endif
 
+#if 0
 void
 carid_encoder_copy_to_frame_buffer (CaridEncoder *encoder, CaridBuffer *buffer)
 {
@@ -243,7 +310,7 @@ carid_encoder_copy_to_frame_buffer (CaridEncoder *encoder, CaridBuffer *buffer)
       params->iwt_luma_width, params->iwt_luma_height,
       data, params->width, params->height);
   data += params->width * params->height;
-  /* FIXME this isn't right for I420 */
+  /* FIXME this isn't quite right for I420 */
   carid_encoder_copy_and_extend ((int16_t *)encoder->frame_buffer[1]->data,
       params->iwt_chroma_width, params->iwt_chroma_height,
       data, params->width/2, params->height/2);
@@ -252,24 +319,45 @@ carid_encoder_copy_to_frame_buffer (CaridEncoder *encoder, CaridBuffer *buffer)
       params->iwt_chroma_width, params->iwt_chroma_height,
       data, params->width/2, params->height/2);
 
-#if 0
-  data = (uint8_t *)buffer->data;
-  frame_data = (int16_t *)encoder->frame_buffer->data;
-  for(i = 0; i<params->height; i++) {
-    oil_convert_s16_u8 (frame_data + i*params->iwt_luma_width,
-        data + i*params->width, params->width);
-    oil_splat_u16_ns ((uint16_t *)frame_data +
-        i*params->iwt_luma_width + params->width,
-        (uint16_t *)frame_data + i*params->iwt_luma_width + params->width - 1,
-        params->iwt_luma_width - params->width);
-  }
-  for (i = params->height; i < params->iwt_luma_height; i++) {
-    oil_memcpy (frame_data + i*params->iwt_luma_width,
-        frame_data + (params->height - 1)*params->iwt_luma_width,
-        params->iwt_luma_width*2);
-  }
-#endif
 }
+#endif
+
+#if 0
+void
+carid_encoder_copy_from_frame_buffer (CaridEncoder *encoder, CaridBuffer *buffer)
+{
+  CaridParams *params = &encoder->params;
+  int i;
+  uint8_t *data;
+  int16_t *frame_data;
+
+  data = buffer->data;
+
+  frame_data = (int16_t *)encoder->frame_buffer[0]->data;
+  for(i=0;i<params->height;i++){
+    oil_convert_u8_s16 (data, frame_data, params->width);
+    data += params->width;
+    frame_data += params->iwt_luma_width;
+  }
+
+  frame_data = (int16_t *)encoder->frame_buffer[1]->data;
+  for(i=0;i<params->height/2;i++){
+    oil_convert_u8_s16 (data, frame_data, params->width/2);
+    data += params->width/2;
+    frame_data += params->iwt_chroma_width;
+  }
+
+  frame_data = (int16_t *)encoder->frame_buffer[2]->data;
+  for(i=0;i<params->height/2;i++){
+    oil_convert_u8_s16 (data, frame_data, params->width/2);
+    data += params->width/2;
+    frame_data += params->iwt_chroma_width;
+  }
+}
+#endif
+
+
+
 
 void
 carid_encoder_encode_rap (CaridEncoder *encoder)
@@ -552,14 +640,14 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int component, int index)
   CARID_DEBUG("subband index=%d %d x %d at offset %d with stride %d", index,
       width, height, offset, stride);
 
-  data = (int16_t *)encoder->frame_buffer[component]->data + offset;
+  data = (int16_t *)encoder->frame->components[component].data + offset;
   if (subband->has_parent) {
     parent_subband = subband - 3;
     if (component == 0) {
-      parent_data = (int16_t *)encoder->frame_buffer[component]->data +
+      parent_data = (int16_t *)encoder->frame->components[component].data +
         parent_subband->offset;
     } else {
-      parent_data = (int16_t *)encoder->frame_buffer[component]->data +
+      parent_data = (int16_t *)encoder->frame->components[component].data +
         parent_subband->chroma_offset;
     }
   }

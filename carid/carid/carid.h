@@ -10,6 +10,7 @@
 #include <carid/cariddecoder.h>
 #include <carid/cariddebug.h>
 #include <carid/caridencoder.h>
+#include <carid/caridframe.h>
 #include <carid/caridparams.h>
 #include <carid/caridtables.h>
 #include <carid/caridwavelet.h>

@@ -74,6 +74,7 @@ enum
   ARG_0
 };
 
+static void gst_carid_dec_finalize (GObject *object);
 static void gst_carid_dec_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec);
 static void gst_carid_dec_get_property (GObject * object, guint prop_id,
@@ -126,6 +127,7 @@ gst_carid_dec_class_init (GstCaridDecClass *klass)
 
   gobject_class->set_property = gst_carid_dec_set_property;
   gobject_class->get_property = gst_carid_dec_get_property;
+  gobject_class->finalize = gst_carid_dec_finalize;
 
   //element_class->change_state = gst_carid_dec_change_state;
 }
@@ -144,6 +146,21 @@ gst_carid_dec_init (GstCaridDec *carid_dec, GstCaridDecClass *klass)
 
   carid_dec->srcpad = gst_pad_new_from_static_template (&gst_carid_dec_src_template, "src");
   gst_element_add_pad (GST_ELEMENT(carid_dec), carid_dec->srcpad);
+}
+
+static void
+gst_carid_dec_finalize (GObject *object)
+{
+  GstCaridDec *carid_dec;
+
+  g_return_if_fail (GST_IS_CARID_DEC (object));
+  carid_dec = GST_CARID_DEC (object);
+
+  if (carid_dec->decoder) {
+    carid_decoder_free (carid_dec->decoder);
+  }
+
+  G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
 static void
@@ -197,12 +214,31 @@ gst_carid_wrap_gst_buffer (GstBuffer *buffer)
   return caridbuf;
 }
 
+static void
+gst_carid_frame_free (CaridFrame *frame, void *priv)
+{
+  gst_buffer_unref (GST_BUFFER (priv));
+}
+
+static CaridFrame *
+gst_carid_wrap_frame (GstCaridDec *carid_dec, GstBuffer *buffer)
+{
+  CaridFrame *frame;
+
+  frame = carid_frame_new_I420 (GST_BUFFER_DATA (buffer),
+      carid_dec->decoder->params.width, carid_dec->decoder->params.height);
+  frame->free = gst_carid_frame_free;
+  frame->priv = buffer;
+
+  return frame;
+}
+
 static GstFlowReturn
 gst_carid_dec_chain (GstPad *pad, GstBuffer *buf)
 {
   GstCaridDec *carid_dec;
   CaridBuffer *input_buffer;
-  CaridBuffer *output_buffer;
+  CaridFrame *frame;
   GstBuffer *outbuf;
   GstFlowReturn ret;
 
@@ -231,6 +267,8 @@ gst_carid_dec_chain (GstPad *pad, GstBuffer *buf)
     GST_DEBUG("setting caps %" GST_PTR_FORMAT, caps);
 
     gst_pad_set_caps (carid_dec->srcpad, caps);
+
+    gst_caps_unref (caps);
     
     return GST_FLOW_OK;
   } else {
@@ -258,9 +296,9 @@ gst_carid_dec_chain (GstPad *pad, GstBuffer *buf)
 
     carid_dec->n_frames++;
 
-    output_buffer = gst_carid_wrap_gst_buffer (outbuf);
+    frame = gst_carid_wrap_frame (carid_dec, outbuf);
 
-    carid_decoder_set_output_buffer (carid_dec->decoder, output_buffer);
+    carid_decoder_set_output_frame (carid_dec->decoder, frame);
 
     carid_decoder_decode (carid_dec->decoder, input_buffer);
 

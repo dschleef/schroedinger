@@ -86,6 +86,7 @@ enum
   ARG_LEVEL
 };
 
+static void gst_carid_enc_finalize (GObject *object);
 static void gst_carid_enc_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec);
 static void gst_carid_enc_get_property (GObject * object, guint prop_id,
@@ -142,6 +143,7 @@ gst_carid_enc_class_init (GstCaridEncClass * klass)
 
   gobject_class->set_property = gst_carid_enc_set_property;
   gobject_class->get_property = gst_carid_enc_get_property;
+  gobject_class->finalize = gst_carid_enc_finalize;
 
   g_object_class_install_property (gobject_class, ARG_WAVELET_TYPE,
       g_param_spec_int ("wavelet-type", "wavelet type", "wavelet type",
@@ -193,6 +195,21 @@ gst_carid_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
       carid_enc->height);
 
   return TRUE;
+}
+
+static void
+gst_carid_enc_finalize (GObject *object)
+{
+  GstCaridEnc *carid_enc;
+
+  g_return_if_fail (GST_IS_CARID_ENC (object));
+  carid_enc = GST_CARID_ENC (object);
+
+  if (carid_enc->encoder) {
+    carid_encoder_free (carid_enc->encoder);
+  }
+
+  G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
 static void
@@ -260,11 +277,13 @@ gst_carid_enc_sink_event (GstPad *pad, GstEvent *event)
   return ret;
 }
 
+#if 0
 static void
 gst_carid_buffer_free (CaridBuffer *buffer, void *priv)
 {
   gst_buffer_unref (GST_BUFFER(priv));
 }
+#endif
 
 static GstCaps *
 gst_carid_enc_set_header_on_caps (GstCaps * caps, GstBuffer * buf1)
@@ -295,7 +314,7 @@ static GstFlowReturn
 gst_carid_enc_chain (GstPad *pad, GstBuffer *buf)
 {
   GstCaridEnc *carid_enc;
-  CaridBuffer *input_buffer;
+  CaridFrame *frame;
   CaridBuffer *encoded_buffer;
   GstBuffer *outbuf;
   GstFlowReturn ret;
@@ -318,6 +337,8 @@ gst_carid_enc_chain (GstPad *pad, GstBuffer *buf)
     GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_IN_CAPS);
     GST_BUFFER_OFFSET_END (outbuf) = 0;
 
+    carid_buffer_unref (encoded_buffer);
+
     caps = gst_pad_get_caps (carid_enc->srcpad);
     caps = gst_carid_enc_set_header_on_caps (caps, outbuf);
 
@@ -331,13 +352,11 @@ gst_carid_enc_chain (GstPad *pad, GstBuffer *buf)
     carid_enc->sent_header = 1;
   }
 
-  input_buffer = carid_buffer_new_with_data (GST_BUFFER_DATA (buf),
-      GST_BUFFER_SIZE (buf));
-  input_buffer->free = gst_carid_buffer_free;
-  input_buffer->priv = buf;
+  frame = carid_frame_new_I420 (GST_BUFFER_DATA (buf),
+      carid_enc->encoder->params.width, carid_enc->encoder->params.height);
 
-  GST_DEBUG ("pushing buffer");
-  carid_encoder_push_buffer (carid_enc->encoder, input_buffer);
+  GST_DEBUG ("pushing frame");
+  carid_encoder_push_frame (carid_enc->encoder, frame);
 
   while (1) {
     encoded_buffer = carid_encoder_encode (carid_enc->encoder);

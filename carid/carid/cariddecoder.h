@@ -4,13 +4,15 @@
 
 #include <carid/caridbuffer.h>
 #include <carid/caridparams.h>
+#include <carid/caridframe.h>
 
 
 typedef struct _CaridDecoder CaridDecoder;
 
 struct _CaridDecoder {
-  CaridBuffer *frame_buffer[3];
-  CaridBuffer *output_buffer;
+  CaridFrame *frame;
+  CaridFrame *reference_frames[10];
+  CaridFrame *output_frame;
 
   int16_t *tmpbuf;
   int16_t *tmpbuf2;
@@ -30,7 +32,7 @@ struct _CaridDecoder {
 
 CaridDecoder * carid_decoder_new (void);
 void carid_decoder_free (CaridDecoder *decoder);
-void carid_decoder_set_output_buffer (CaridDecoder *decoder, CaridBuffer *buffer);
+void carid_decoder_set_output_frame (CaridDecoder *decoder, CaridFrame *frame);
 int carid_decoder_is_parse_header (CaridBuffer *buffer);
 int carid_decoder_is_rap (CaridBuffer *buffer);
 void carid_decoder_decode (CaridDecoder *decoder, CaridBuffer *buffer);

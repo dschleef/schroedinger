@@ -36,14 +36,18 @@ plugin_init (GstPlugin * plugin)
   carid_init();
   oil_init();
 
+#if 0
   gst_element_register (plugin, "caridtoy", GST_RANK_NONE,
       gst_caridtoy_get_type ());
+#endif
   gst_element_register (plugin, "caridenc", GST_RANK_PRIMARY,
       gst_carid_enc_get_type ());
   gst_element_register (plugin, "cariddec", GST_RANK_PRIMARY,
       gst_carid_dec_get_type ());
+#if 0
   gst_element_register (plugin, "waveletvisualizer", GST_RANK_NONE,
       gst_waveletvisualizer_get_type ());
+#endif
 
   return TRUE;
 }

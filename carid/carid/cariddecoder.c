@@ -34,17 +34,11 @@ carid_decoder_new (void)
 void
 carid_decoder_free (CaridDecoder *decoder)
 {
-  if (decoder->frame_buffer[0]) {
-    carid_buffer_unref (decoder->frame_buffer[0]);
+  if (decoder->frame) {
+    carid_frame_free (decoder->frame);
   }
-  if (decoder->frame_buffer[1]) {
-    carid_buffer_unref (decoder->frame_buffer[1]);
-  }
-  if (decoder->frame_buffer[2]) {
-    carid_buffer_unref (decoder->frame_buffer[2]);
-  }
-  if (decoder->output_buffer) {
-    carid_buffer_unref (decoder->output_buffer);
+  if (decoder->output_frame) {
+    carid_frame_free (decoder->output_frame);
   }
 
   free (decoder->tmpbuf);
@@ -53,13 +47,12 @@ carid_decoder_free (CaridDecoder *decoder)
 }
 
 void
-carid_decoder_set_output_buffer (CaridDecoder *decoder, CaridBuffer *buffer)
+carid_decoder_set_output_frame (CaridDecoder *decoder, CaridFrame *frame)
 {
-  if (decoder->output_buffer) {
-    carid_buffer_unref (decoder->output_buffer);
+  if (decoder->output_frame) {
+    carid_frame_free (decoder->output_frame);
   }
-  decoder->output_buffer = buffer;
-  carid_buffer_ref (buffer);
+  decoder->output_frame = frame;
 }
 
 int
@@ -108,7 +101,6 @@ round_up_pow2 (int x, int pow)
 void
 carid_decoder_decode (CaridDecoder *decoder, CaridBuffer *buffer)
 {
-  uint8_t *dec_data;
   CaridParams *params = &decoder->params;
   
   decoder->bits = carid_bits_new ();
@@ -123,17 +115,14 @@ carid_decoder_decode (CaridDecoder *decoder, CaridBuffer *buffer)
     return;
   }
 
-  dec_data = (uint8_t *)decoder->output_buffer->data;
-
   carid_decoder_decode_parse_header(decoder);
   carid_decoder_decode_frame_header(decoder);
 
   carid_decoder_decode_transform_parameters (decoder);
 
-  if (decoder->frame_buffer[0] == NULL) {
-    decoder->frame_buffer[0] = carid_buffer_new_and_alloc (params->iwt_luma_width * params->iwt_luma_height * 2);
-    decoder->frame_buffer[1] = carid_buffer_new_and_alloc (params->iwt_chroma_width * params->iwt_chroma_height * 2);
-    decoder->frame_buffer[2] = carid_buffer_new_and_alloc (params->iwt_chroma_width * params->iwt_chroma_height * 2);
+  if (decoder->frame == NULL) {
+    decoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
+        params->iwt_luma_width, params->iwt_luma_height, 2, 2);
   }
 
   carid_decoder_decode_transform_data (decoder, 0);
@@ -145,13 +134,14 @@ carid_decoder_decode (CaridDecoder *decoder, CaridBuffer *buffer)
   carid_decoder_decode_transform_data (decoder, 2);
   carid_decoder_iwt_transform (decoder, 2);
 
-  carid_decoder_copy_from_frame_buffer (decoder, decoder->output_buffer);
+  carid_frame_convert (decoder->output_frame, decoder->frame);
 
   carid_buffer_unref (buffer);
 
   carid_bits_free (decoder->bits);
 }
 
+#if 0
 void
 carid_decoder_copy_from_frame_buffer (CaridDecoder *decoder, CaridBuffer *buffer)
 {
@@ -183,6 +173,7 @@ carid_decoder_copy_from_frame_buffer (CaridDecoder *decoder, CaridBuffer *buffer
     frame_data += params->iwt_chroma_width;
   }
 }
+#endif
 
 void
 carid_decoder_iwt_transform (CaridDecoder *decoder, int component)
@@ -201,7 +192,7 @@ carid_decoder_iwt_transform (CaridDecoder *decoder, int component)
     height = params->iwt_chroma_height;
   }
 
-  frame_data = (int16_t *)decoder->frame_buffer[component]->data;
+  frame_data = (int16_t *)decoder->frame->components[component].data;
   for(level=params->transform_depth-1;level>=0;level--) {
     int w;
     int h;
@@ -561,8 +552,8 @@ carid_decoder_decode_transform_data (CaridDecoder *decoder, int component)
 #if 1
   for (i=0;i<3;i++){
     uint8_t value = 0;
-    oil_splat_u8_ns (decoder->frame_buffer[component]->data, &value,
-        decoder->frame_buffer[component]->length);
+    oil_splat_u8_ns (decoder->frame->components[component].data, &value,
+        decoder->frame->components[component].length);
   }
 #endif
 
@@ -608,14 +599,14 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int component, int index)
   CARID_DEBUG("subband index=%d %d x %d at offset %d stride=%d",
       index, width, height, offset, stride);
 
-  data = (int16_t *)decoder->frame_buffer[component]->data + offset;
+  data = (int16_t *)decoder->frame->components[component].data + offset;
   if (subband->has_parent) {
     parent_subband = subband-3;
     if (component == 0) {
-      parent_data = (int16_t *)decoder->frame_buffer[component]->data +
+      parent_data = (int16_t *)decoder->frame->components[component].data +
         parent_subband->offset;
     } else {
-      parent_data = (int16_t *)decoder->frame_buffer[component]->data +
+      parent_data = (int16_t *)decoder->frame->components[component].data +
         parent_subband->chroma_offset;
     }
   }

@@ -1,3 +1,20 @@
+2006-02-06  David Schleef  <ds@schleef.org>
+
+	* carid/Makefile.am:
+	* carid/carid.h:
+	* carid/caridbitstream.h:
+	* carid/cariddecoder.c:
+	* carid/cariddecoder.h:
+	* carid/caridencoder.c:
+	* carid/caridencoder.h:
+	* carid/caridframe.c:
+	* carid/caridframe.h:
+	* gst/Makefile.am:
+	* gst/gstcarid.c:
+	* gst/gstcariddec.c:
+	* gst/gstcaridenc.c:
+	  Create a new type CaridFrame to hold frames in various forms.
+
 2006-02-04  David Schleef  <ds@schleef.org>
 
 	* carid/carid.h:
