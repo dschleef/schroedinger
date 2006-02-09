@@ -122,14 +122,17 @@ carid_encoder_encode (CaridEncoder *encoder)
     carid_encoder_encode_rap (encoder);
     encoder->need_rap = FALSE;
   } else {
-    //if ((encoder->frame_number & 1) == 0) {
+    CARID_DEBUG("frame number %d", encoder->frame_number);
+    if ((encoder->frame_number & 7) == 0) {
       carid_encoder_encode_intra (encoder);
-    //} else {
-    //  carid_encoder_encode_inter (encoder);
-    //}
+    } else {
+      carid_encoder_encode_inter (encoder);
+    }
+
+    encoder->frame_number++;
   }
 
-  CARID_DEBUG("encoded %d bits", encoder->bits->offset);
+  CARID_ERROR("encoded %d bits", encoder->bits->offset);
 
   if (encoder->bits->offset > 0) {
     subbuffer = carid_buffer_new_subbuffer (outbuffer, 0,
@@ -214,14 +217,14 @@ void
 carid_encoder_encode_intra (CaridEncoder *encoder)
 {
   CaridParams *params = &encoder->params;
-  int is_ref = 0;
+  int is_ref = 1;
 
   if (encoder->frame == NULL) {
     encoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
         params->iwt_luma_width, params->iwt_luma_height, 2, 2);
   }
 
-  carid_encoder_encode_frame_header (encoder);
+  carid_encoder_encode_frame_header (encoder, CARID_PARSE_CODE_INTRA_REF);
 
   carid_frame_convert (encoder->frame, encoder->frame_queue[0]);
 
@@ -265,15 +268,22 @@ void
 carid_encoder_encode_inter (CaridEncoder *encoder)
 {
   CaridParams *params = &encoder->params;
-  int is_ref = 1;
+  //int is_ref = 0;
 
   if (encoder->frame == NULL) {
     encoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
         params->iwt_luma_width, params->iwt_luma_height, 2, 2);
   }
 
-  carid_encoder_encode_frame_header (encoder);
+  carid_encoder_encode_frame_header (encoder, CARID_PARSE_CODE_INTER_NON_REF);
 
+  carid_encoder_motion_predict (encoder);
+
+  carid_encoder_encode_frame_prediction (encoder);
+
+  carid_frame_free (encoder->frame_queue[0]);
+  encoder->frame_queue[0] = NULL;
+#if 0
   carid_frame_convert (encoder->frame, encoder->frame_queue[0]);
 
   carid_frame_free (encoder->frame_queue[0]);
@@ -309,8 +319,40 @@ carid_encoder_encode_inter (CaridEncoder *encoder)
     }
     encoder->reference_frames[0] = ref_frame;
   }
+#endif
 }
 
+void
+carid_encoder_encode_frame_prediction (CaridEncoder *encoder)
+{
+  CaridParams *params = &encoder->params;
+  int i,j;
+
+  /* block params flag */
+  carid_bits_encode_bit (encoder->bits, FALSE);
+
+  /* mv precision flag */
+  carid_bits_encode_bit (encoder->bits, FALSE);
+
+  /* global motion flag */
+  carid_bits_encode_bit (encoder->bits, FALSE);
+
+  /* block data length */
+  carid_bits_encode_uegol (encoder->bits, 100);
+
+  carid_bits_sync (encoder->bits);
+
+  for(j=0;j<4*params->y_num_mb;j++){
+    for(i=0;i<4*params->x_num_mb;i++){
+      carid_bits_encode_segol(encoder->bits,
+          encoder->motion_x[j*(4*params->x_num_mb) + i]);
+      carid_bits_encode_segol(encoder->bits,
+          encoder->motion_y[j*(4*params->x_num_mb) + i]);
+    }
+  }
+
+  carid_bits_sync (encoder->bits);
+}
 
 
 void
@@ -393,7 +435,8 @@ carid_encoder_encode_rap (CaridEncoder *encoder)
 }
 
 void
-carid_encoder_encode_frame_header (CaridEncoder *encoder)
+carid_encoder_encode_frame_header (CaridEncoder *encoder,
+    int parse_code)
 {
   
   /* parse parameters */
@@ -401,7 +444,7 @@ carid_encoder_encode_frame_header (CaridEncoder *encoder)
   carid_bits_encode_bits (encoder->bits, 'B', 8);
   carid_bits_encode_bits (encoder->bits, 'C', 8);
   carid_bits_encode_bits (encoder->bits, 'D', 8);
-  carid_bits_encode_bits (encoder->bits, 0xd2, 8);
+  carid_bits_encode_bits (encoder->bits, parse_code, 8);
 
   /* offsets */
   /* FIXME */
@@ -767,6 +810,220 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int component, int index)
   }
 
   carid_bits_free (bits);
+}
+
+
+static void predict_motion (CaridFrame *frame, CaridFrame *reference_frame,
+    int x, int y, int w, int h, int *pred_x, int *pred_y);
+
+void
+carid_encoder_motion_predict (CaridEncoder *encoder)
+{
+  CaridParams *params = &encoder->params;
+  int i;
+  int j;
+  CaridFrame *ref_frame;
+  CaridFrame *frame;
+  int sum_pred_x;
+  int sum_pred_y;
+  double pan_x, pan_y;
+  double mag_x, mag_y;
+  double skew_x, skew_y;
+  double sum_x, sum_y;
+
+  params->xbsep_luma = 8;
+  params->ybsep_luma = 8;
+
+  params->x_num_mb = encoder->params.width / (4*params->xbsep_luma);
+#if 0
+  if (encoder->width % (4*xbsep_luma)) {
+    x_num_mb++;
+  }
+#endif
+  params->y_num_mb = encoder->params.height / (4*params->ybsep_luma);
+#if 0
+  if (encoder->height % (4*ybsep_luma)) {
+    y_num_mb++;
+  }
+#endif
+
+  if (encoder->motion_x == NULL) {
+    encoder->motion_x = malloc(sizeof(int16_t)*params->x_num_mb*params->y_num_mb*16);
+    encoder->motion_y = malloc(sizeof(int16_t)*params->x_num_mb*params->y_num_mb*16);
+  }
+
+  ref_frame = encoder->reference_frames[0];
+  if (!ref_frame) {
+    CARID_ERROR("no reference frame");
+  }
+  frame = encoder->frame_queue[0];
+
+  sum_pred_x = 0;
+  sum_pred_y = 0;
+  for(j=0;j<4*params->y_num_mb;j++){
+    for(i=0;i<4*params->x_num_mb;i++){
+      int x,y;
+      int pred_x, pred_y;
+
+      x = i*params->xbsep_luma;
+      y = j*params->ybsep_luma;
+
+      predict_motion (frame, ref_frame, x, y, params->xbsep_luma, params->ybsep_luma,
+          &pred_x, &pred_y);
+
+      encoder->motion_x[j*(4*params->x_num_mb) + i] = pred_x;
+      encoder->motion_y[j*(4*params->x_num_mb) + i] = pred_y;
+
+      sum_pred_x += pred_x;
+      sum_pred_y += pred_y;
+    }
+  }
+
+  pan_x = ((double)sum_pred_x)/(16*params->x_num_mb*params->y_num_mb);
+  pan_y = ((double)sum_pred_y)/(16*params->x_num_mb*params->y_num_mb);
+
+  mag_x = 0;
+  mag_y = 0;
+  skew_x = 0;
+  skew_y = 0;
+  sum_x = 0;
+  sum_y = 0;
+  for(j=0;j<4*params->y_num_mb;j++) {
+    for(i=0;i<4*params->x_num_mb;i++) {
+      double x;
+      double y;
+
+      x = i*params->xbsep_luma - (2*params->x_num_mb - 0.5);
+      y = j*params->ybsep_luma - (2*params->y_num_mb - 0.5);
+
+      mag_x += encoder->motion_x[j*(4*params->x_num_mb) + i] * x;
+      mag_y += encoder->motion_y[j*(4*params->x_num_mb) + i] * y;
+
+      skew_x += encoder->motion_x[j*(4*params->x_num_mb) + i] * y;
+      skew_y += encoder->motion_y[j*(4*params->x_num_mb) + i] * x;
+
+      sum_x += x * x;
+      sum_y += y * y;
+    }
+  }
+  mag_x = mag_x/sum_x;
+  mag_y = mag_y/sum_y;
+  skew_x = skew_x/sum_x;
+  skew_y = skew_y/sum_y;
+
+  CARID_ERROR("pan %6.3f %6.3f mag %6.3f %6.3f skew %6.3f %6.3f",
+      pan_x, pan_y, mag_x, mag_y, skew_x, skew_y);
+
+}
+
+static int
+calculate_metric (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
+    int width, int height)
+{
+  int i;
+  int j;
+  int metric = 0;
+
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      metric += abs (a[j*a_stride + i] - b[j*b_stride + i]);
+    }
+  }
+
+  return metric;
+}
+
+static void
+predict_motion (CaridFrame *frame, CaridFrame *reference_frame,
+    int x, int y, int w, int h, int *pred_x, int *pred_y)
+{
+  int dx, dy;
+  uint8_t *data = frame->components[0].data;
+  int stride = frame->components[0].stride;
+  uint8_t *ref_data = reference_frame->components[0].data;
+  int ref_stride = reference_frame->components[0].stride;
+  int metric;
+  int min_metric;
+  int step_size;
+
+#if 0
+  min_metric = calculate_metric (data + y * stride + x, stride,
+      ref_data + y * ref_stride + x, ref_stride, w, h);
+  *pred_x = 0;
+  *pred_y = 0;
+
+  printf("mp %d %d metric %d\n", x, y, min_metric);
+#endif
+
+  dx = 0;
+  dy = 0;
+  step_size = 8;
+  while (step_size > 0) {
+    static const int hx[5] = { 0, 0, -1, 0, 1 };
+    static const int hy[5] = { 0, -1, 0, 1, 0 };
+    int px, py;
+    int min_index;
+    int i;
+
+    min_index = 0;
+    min_metric = calculate_metric (data + y * stride + x, stride,
+          ref_data + (y + dy) * ref_stride + x + dx, ref_stride,
+          w, h);
+    for(i=1;i<5;i++){
+      px = x + dx + hx[i] * step_size;
+      py = y + dy + hy[i] * step_size;
+      if (px < 0) px = 0;
+      if (py < 0) py = 0;
+      if (px + w > reference_frame->components[0].width) {
+        px = reference_frame->components[0].width - w;
+      }
+      if (py + h > reference_frame->components[0].height) {
+        py = reference_frame->components[0].height - h;
+      }
+
+      metric = calculate_metric (data + y * stride + x, stride,
+          ref_data + py * ref_stride + px, ref_stride, w, h);
+
+      if (metric < min_metric) {
+        min_metric = metric;
+        min_index = i;
+      }
+    }
+
+    if (min_index == 0) {
+      step_size >>= 1;
+    } else {
+      dx += hx[min_index] * step_size;
+      dy += hy[min_index] * step_size;
+    }
+  }
+  *pred_x = dx;
+  *pred_y = dy;
+
+#if 0
+  for(dy = -4; dy <= 4; dy++) {
+    for(dx = -4; dx <= 4; dx++) {
+      if (y + dy < 0) continue;
+      if (x + dx < 0) continue;
+      if (y + dy + h > reference_frame->components[0].height) continue;
+      if (x + dx + w > reference_frame->components[0].width) continue;
+
+      metric = calculate_metric (data + y * stride + x, stride,
+          ref_data + (y + dy) * ref_stride + x + dx, ref_stride,
+          w, h);
+
+      printf(" %d", metric);
+      if (metric < min_metric) {
+        min_metric = metric;
+        *pred_x = dx;
+        *pred_y = dy;
+      }
+
+    }
+    printf("\n");
+  }
+#endif
+
 }
 
 

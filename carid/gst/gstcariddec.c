@@ -217,7 +217,7 @@ gst_carid_wrap_gst_buffer (GstBuffer *buffer)
 static void
 gst_carid_frame_free (CaridFrame *frame, void *priv)
 {
-  gst_buffer_unref (GST_BUFFER (priv));
+  //gst_buffer_unref (GST_BUFFER (priv));
 }
 
 static CaridFrame *

@@ -118,26 +118,40 @@ carid_decoder_decode (CaridDecoder *decoder, CaridBuffer *buffer)
   carid_decoder_decode_parse_header(decoder);
   carid_decoder_decode_frame_header(decoder);
 
-  carid_decoder_decode_transform_parameters (decoder);
+  if (decoder->code == CARID_PARSE_CODE_INTRA_REF) {
+    CARID_ERROR("intra ref");
+    carid_decoder_decode_transform_parameters (decoder);
 
-  if (decoder->frame == NULL) {
-    decoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
-        params->iwt_luma_width, params->iwt_luma_height, 2, 2);
+    if (decoder->frame == NULL) {
+      decoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
+          params->iwt_luma_width, params->iwt_luma_height, 2, 2);
+    }
+
+    carid_decoder_decode_transform_data (decoder, 0);
+    carid_decoder_iwt_transform (decoder, 0);
+
+    carid_decoder_decode_transform_data (decoder, 1);
+    carid_decoder_iwt_transform (decoder, 1);
+
+    carid_decoder_decode_transform_data (decoder, 2);
+    carid_decoder_iwt_transform (decoder, 2);
+
+    carid_frame_convert (decoder->output_frame, decoder->frame);
+
+    if (decoder->reference_frames[0] == NULL) {
+      decoder->reference_frames[0] = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_U8,
+          params->width, params->height, 2, 2);
+    }
+
+    carid_frame_convert (decoder->reference_frames[0], decoder->frame);
+  } else if (decoder->code == CARID_PARSE_CODE_INTER_NON_REF) {
+    CARID_ERROR("inter non-ref");
+    carid_decoder_decode_frame_prediction (decoder);
+
+    carid_decoder_decode_prediction_data (decoder);
   }
 
-  carid_decoder_decode_transform_data (decoder, 0);
-  carid_decoder_iwt_transform (decoder, 0);
-
-  carid_decoder_decode_transform_data (decoder, 1);
-  carid_decoder_iwt_transform (decoder, 1);
-
-  carid_decoder_decode_transform_data (decoder, 2);
-  carid_decoder_iwt_transform (decoder, 2);
-
-  carid_frame_convert (decoder->output_frame, decoder->frame);
-
   carid_buffer_unref (buffer);
-
   carid_bits_free (decoder->bits);
 }
 
@@ -400,6 +414,123 @@ carid_decoder_decode_frame_header (CaridDecoder *decoder)
   }
 
   carid_bits_sync (decoder->bits);
+}
+
+void
+carid_decoder_decode_frame_prediction (CaridDecoder *decoder)
+{
+  int bit;
+  int length;
+
+  /* block params flag */
+  bit = carid_bits_decode_bit (decoder->bits);
+  if (bit) {
+    CARID_ERROR("unimplemented");
+  }
+
+  /* mv precision flag */
+  bit = carid_bits_decode_bit (decoder->bits);
+  if (bit) {
+    CARID_ERROR("unimplemented");
+  }
+
+  /* global motion flag */
+  bit = carid_bits_decode_bit (decoder->bits);
+  if (bit) {
+    CARID_ERROR("unimplemented");
+  }
+
+  /* block data length */
+  length = carid_bits_decode_uegol (decoder->bits);
+}
+
+static void
+copy_block_4x4 (uint8_t *dest, int dstr, uint8_t *src, int sstr)
+{
+  int j;
+
+  for(j=0;j<4;j++){
+    *(uint32_t *)(dest + dstr*j) = *(uint32_t *)(src + sstr*j);
+  }
+}
+
+static void
+copy_block_8x8 (uint8_t *dest, int dstr, uint8_t *src, int sstr)
+{
+  int j;
+
+  for(j=0;j<8;j++){
+    *(uint64_t *)(dest + dstr*j) = *(uint64_t *)(src + sstr*j);
+  }
+}
+
+void
+copy_block (uint8_t *dest, int dstr, uint8_t *src, int sstr, int w, int h)
+{
+  int i,j;
+
+  for(j=0;j<h;j++){
+    for(i=0;i<w;i++) {
+      dest[dstr*j+i] = src[sstr*j+i];
+    }
+  }
+}
+
+void
+carid_decoder_decode_prediction_data (CaridDecoder *decoder)
+{
+  CaridParams *params = &decoder->params;
+  CaridFrame *frame = decoder->output_frame;
+  CaridFrame *reference_frame = decoder->reference_frames[0];
+  int i, j;
+  int dx, dy;
+  int x, y;
+  uint8_t *data;
+  int stride;
+  uint8_t *ref_data;
+  int ref_stride;
+
+  params->xbsep_luma = 8;
+  params->ybsep_luma = 8;
+
+  params->x_num_mb = decoder->params.width / (4*params->xbsep_luma);
+  params->y_num_mb = decoder->params.height / (4*params->xbsep_luma);
+
+  for(j=0;j<4*params->y_num_mb;j++){
+    for(i=0;i<4*params->x_num_mb;i++){
+      x = i*params->xbsep_luma;
+      y = j*params->ybsep_luma;
+
+      dx = carid_bits_decode_segol (decoder->bits);
+      dy = carid_bits_decode_segol (decoder->bits);
+
+      data = frame->components[0].data;
+      stride = frame->components[0].stride;
+      ref_data = reference_frame->components[0].data;
+      ref_stride = reference_frame->components[0].stride;
+      copy_block_8x8 (data + y * stride + x, stride,
+          ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
+
+      x /= 2;
+      dx /= 2;
+      y /= 2;
+      dy /= 2;
+
+      data = frame->components[1].data;
+      stride = frame->components[1].stride;
+      ref_data = reference_frame->components[1].data;
+      ref_stride = reference_frame->components[1].stride;
+      copy_block_4x4 (data + y * stride + x, stride,
+          ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
+
+      data = frame->components[2].data;
+      stride = frame->components[2].stride;
+      ref_data = reference_frame->components[2].data;
+      ref_stride = reference_frame->components[2].stride;
+      copy_block_4x4 (data + y * stride + x, stride,
+          ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
+    }
+  }
 }
 
 void

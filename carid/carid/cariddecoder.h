@@ -39,6 +39,8 @@ void carid_decoder_decode (CaridDecoder *decoder, CaridBuffer *buffer);
 void carid_decoder_decode_parse_header (CaridDecoder *decoder);
 void carid_decoder_decode_rap (CaridDecoder *decoder);
 void carid_decoder_decode_frame_header (CaridDecoder *decoder);
+void carid_decoder_decode_frame_prediction (CaridDecoder *decoder);
+void carid_decoder_decode_prediction_data (CaridDecoder *decoder);
 void carid_decoder_decode_transform_parameters (CaridDecoder *decoder);
 void carid_decoder_decode_transform_data (CaridDecoder *decoder, int component);
 void carid_decoder_decode_subband (CaridDecoder *decoder, int component, int index);

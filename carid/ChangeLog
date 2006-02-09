@@ -1,3 +1,14 @@
+2006-02-08  David Schleef  <ds@schleef.org>
+
+	* carid/cariddecoder.c:
+	* carid/cariddecoder.h:
+	* carid/caridencoder.c:
+	* carid/caridencoder.h:
+	* carid/caridparams.h:
+	* gst/gstcariddec.c:
+	  Preliminary motion estimation stuff.  Doesn't follow the
+	  spec, but I needed to checkpoint stuff.
+
 2006-02-06  David Schleef  <ds@schleef.org>
 
 	* carid/caridencoder.c:

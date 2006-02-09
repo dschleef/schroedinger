@@ -28,8 +28,8 @@ struct _CaridEncoder {
   int16_t *tmpbuf;
   int16_t *tmpbuf2;
 
-  int width;
-  int height;
+  //int width;
+  //int height;
 
   int wavelet_type;
 
@@ -41,6 +41,9 @@ struct _CaridEncoder {
   CaridSubband subbands[1+6*3];
 
   int frame_number;
+
+  int16_t *motion_x;
+  int16_t *motion_y;
 };
 
 CaridEncoder * carid_encoder_new (void);
@@ -53,12 +56,14 @@ void carid_encoder_copy_to_frame_buffer (CaridEncoder *encoder, CaridBuffer *buf
 void carid_encoder_encode_rap (CaridEncoder *encoder);
 void carid_encoder_encode_intra (CaridEncoder *encoder);
 void carid_encoder_encode_inter (CaridEncoder *encoder);
-void carid_encoder_encode_frame_header (CaridEncoder *encoder);
+void carid_encoder_encode_frame_header (CaridEncoder *encoder, int parse_code);
+void carid_encoder_encode_frame_prediction (CaridEncoder *encoder);
 void carid_encoder_encode_transform_parameters (CaridEncoder *encoder);
 void carid_encoder_encode_transform_data (CaridEncoder *encoder, int component);
 void carid_encoder_encode_subband (CaridEncoder *encoder, int component, int index);
 void carid_encoder_inverse_iwt_transform (CaridEncoder *encoder, int component);
 void carid_encoder_copy_from_frame_buffer (CaridEncoder *encoder, CaridBuffer *buffer);
+void carid_encoder_motion_predict (CaridEncoder *encoder);
 
 #endif
 

@@ -57,6 +57,12 @@ struct _CaridParams {
   int max_yblocks;
   int multi_quant;
 
+  /* motion prediction parameters */
+  int xbsep_luma;
+  int ybsep_luma;
+  int x_num_mb;
+  int y_num_mb;
+
   /* frame padding */
   int iwt_chroma_width;
   int iwt_chroma_height;
