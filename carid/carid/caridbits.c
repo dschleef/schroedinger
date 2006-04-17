@@ -98,9 +98,10 @@ carid_bits_encode_bit (CaridBits *bits, int value)
 }
 
 void
-carid_bits_encode_bits (CaridBits *bits, int value, int n)
+carid_bits_encode_bits (CaridBits *bits, int n, int value)
 {
   int i;
+  CARID_ASSERT (value < (1<<n));
   for(i=0;i<n;i++){
     carid_bits_encode_bit (bits, (value>>(n - 1 - i)) & 1);
   }

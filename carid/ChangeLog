@@ -1,3 +1,16 @@
+2006-04-16  David Schleef  <ds@schleef.org>
+
+	* carid/carid-stdint.h:
+	* carid/caridbits.c:
+	* carid/caridbits.h:
+	* carid/cariddecoder.c:
+	* carid/cariddecoder.h:
+	* carid/caridencoder.c:
+	* carid/caridencoder.h:
+	* carid/caridparams.c:
+	* carid/caridparams.h:
+	  OMG.  I'm lazy.
+
 2006-02-08  David Schleef  <ds@schleef.org>
 
 	* carid/cariddecoder.c:

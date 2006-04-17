@@ -327,6 +327,7 @@ carid_encoder_encode_frame_prediction (CaridEncoder *encoder)
 {
   CaridParams *params = &encoder->params;
   int i,j;
+  int global_motion;
 
   /* block params flag */
   carid_bits_encode_bit (encoder->bits, FALSE);
@@ -335,19 +336,44 @@ carid_encoder_encode_frame_prediction (CaridEncoder *encoder)
   carid_bits_encode_bit (encoder->bits, FALSE);
 
   /* global motion flag */
-  carid_bits_encode_bit (encoder->bits, FALSE);
+  global_motion = FALSE;
+  carid_bits_encode_bit (encoder->bits, global_motion);
 
   /* block data length */
   carid_bits_encode_uegol (encoder->bits, 100);
 
   carid_bits_sync (encoder->bits);
 
-  for(j=0;j<4*params->y_num_mb;j++){
-    for(i=0;i<4*params->x_num_mb;i++){
-      carid_bits_encode_segol(encoder->bits,
-          encoder->motion_x[j*(4*params->x_num_mb) + i]);
-      carid_bits_encode_segol(encoder->bits,
-          encoder->motion_y[j*(4*params->x_num_mb) + i]);
+  for(j=0;j<4*params->y_num_mb;j+=4){
+    for(i=0;i<4*params->x_num_mb;i+=4){
+      int k,l;
+      int mb_using_global = FALSE;
+      int mb_split = 1;
+      int mb_common = FALSE;
+
+      if (global_motion) {
+        carid_bits_encode_bit (encoder->bits, mb_using_global);
+      } else {
+        CARID_ASSERT(mb_using_global == FALSE);
+      }
+      if (!mb_using_global) {
+        CARID_ASSERT(mb_split < 3);
+        carid_bits_encode_bits (encoder->bits, 2, mb_split);
+      } else {
+        CARID_ASSERT(mb_split == 2);
+      }
+      if (mb_split != 0) {
+        carid_bits_encode_bit (encoder->bits, mb_common);
+      }
+
+      for(k=0;k<4;k+=(4>>mb_split)) {
+        for(l=0;l<4;l+=(4>>mb_split)) {
+          carid_bits_encode_segol(encoder->bits,
+              encoder->motion_vectors[(j+l)*(4*params->x_num_mb) + i + k].x);
+          carid_bits_encode_segol(encoder->bits,
+              encoder->motion_vectors[(j+l)*(4*params->x_num_mb) + i + k].y);
+        }
+      }
     }
   }
 
@@ -360,17 +386,17 @@ carid_encoder_encode_rap (CaridEncoder *encoder)
 {
   
   /* parse parameters */
-  carid_bits_encode_bits (encoder->bits, 'B', 8);
-  carid_bits_encode_bits (encoder->bits, 'B', 8);
-  carid_bits_encode_bits (encoder->bits, 'C', 8);
-  carid_bits_encode_bits (encoder->bits, 'D', 8);
+  carid_bits_encode_bits (encoder->bits, 8, 'B');
+  carid_bits_encode_bits (encoder->bits, 8, 'B');
+  carid_bits_encode_bits (encoder->bits, 8, 'C');
+  carid_bits_encode_bits (encoder->bits, 8, 'D');
 
-  carid_bits_encode_bits (encoder->bits, CARID_PARSE_CODE_RAP, 8);
+  carid_bits_encode_bits (encoder->bits, 8, CARID_PARSE_CODE_RAP);
 
   /* offsets */
   /* FIXME */
-  carid_bits_encode_bits (encoder->bits, 0, 24);
-  carid_bits_encode_bits (encoder->bits, 0, 24);
+  carid_bits_encode_bits (encoder->bits, 24, 0);
+  carid_bits_encode_bits (encoder->bits, 24, 0);
 
   /* rap frame number */
   /* FIXME */
@@ -440,16 +466,16 @@ carid_encoder_encode_frame_header (CaridEncoder *encoder,
 {
   
   /* parse parameters */
-  carid_bits_encode_bits (encoder->bits, 'B', 8);
-  carid_bits_encode_bits (encoder->bits, 'B', 8);
-  carid_bits_encode_bits (encoder->bits, 'C', 8);
-  carid_bits_encode_bits (encoder->bits, 'D', 8);
-  carid_bits_encode_bits (encoder->bits, parse_code, 8);
+  carid_bits_encode_bits (encoder->bits, 8, 'B');
+  carid_bits_encode_bits (encoder->bits, 8, 'B');
+  carid_bits_encode_bits (encoder->bits, 8, 'C');
+  carid_bits_encode_bits (encoder->bits, 8, 'D');
+  carid_bits_encode_bits (encoder->bits, 8, parse_code);
 
   /* offsets */
   /* FIXME */
-  carid_bits_encode_bits (encoder->bits, 0, 24);
-  carid_bits_encode_bits (encoder->bits, 0, 24);
+  carid_bits_encode_bits (encoder->bits, 24, 0);
+  carid_bits_encode_bits (encoder->bits, 24, 0);
 
   /* frame number offset */
   /* FIXME */
@@ -847,9 +873,9 @@ carid_encoder_motion_predict (CaridEncoder *encoder)
   }
 #endif
 
-  if (encoder->motion_x == NULL) {
-    encoder->motion_x = malloc(sizeof(int16_t)*params->x_num_mb*params->y_num_mb*16);
-    encoder->motion_y = malloc(sizeof(int16_t)*params->x_num_mb*params->y_num_mb*16);
+  if (encoder->motion_vectors == NULL) {
+    encoder->motion_vectors = malloc(sizeof(CaridMotionVector)*
+        params->x_num_mb*params->y_num_mb*16);
   }
 
   ref_frame = encoder->reference_frames[0];
@@ -871,8 +897,8 @@ carid_encoder_motion_predict (CaridEncoder *encoder)
       predict_motion (frame, ref_frame, x, y, params->xbsep_luma, params->ybsep_luma,
           &pred_x, &pred_y);
 
-      encoder->motion_x[j*(4*params->x_num_mb) + i] = pred_x;
-      encoder->motion_y[j*(4*params->x_num_mb) + i] = pred_y;
+      encoder->motion_vectors[j*(4*params->x_num_mb) + i].x = pred_x;
+      encoder->motion_vectors[j*(4*params->x_num_mb) + i].y = pred_y;
 
       sum_pred_x += pred_x;
       sum_pred_y += pred_y;
@@ -896,11 +922,11 @@ carid_encoder_motion_predict (CaridEncoder *encoder)
       x = i*params->xbsep_luma - (2*params->x_num_mb - 0.5);
       y = j*params->ybsep_luma - (2*params->y_num_mb - 0.5);
 
-      mag_x += encoder->motion_x[j*(4*params->x_num_mb) + i] * x;
-      mag_y += encoder->motion_y[j*(4*params->x_num_mb) + i] * y;
+      mag_x += encoder->motion_vectors[j*(4*params->x_num_mb) + i].x * x;
+      mag_y += encoder->motion_vectors[j*(4*params->x_num_mb) + i].y * y;
 
-      skew_x += encoder->motion_x[j*(4*params->x_num_mb) + i] * y;
-      skew_y += encoder->motion_y[j*(4*params->x_num_mb) + i] * x;
+      skew_x += encoder->motion_vectors[j*(4*params->x_num_mb) + i].x * y;
+      skew_y += encoder->motion_vectors[j*(4*params->x_num_mb) + i].y * x;
 
       sum_x += x * x;
       sum_y += y * y;

@@ -65,34 +65,35 @@ struct _CaridVideoFormat {
   int signal_range_index;
   int colour_primaries_index;
   int transfer_char_index;
+  int block_params_index;
 };
 
 static CaridVideoFormat
 carid_video_formats[] = {
   { "custom", 640, 480, FALSE, TRUE, 30, 1, 1, 1, 0, 0, 640, 480,
-    1, 1, 1, 0 },
+    1, 1, 1, 0, 2 },
   { "QSIF", 176, 120, FALSE, TRUE, 15, 1, 10, 11, 0, 0, 176, 120,
-    1, 1, 1, 0 },
+    1, 1, 1, 0, 1 },
   { "QCIF", 176, 144, FALSE, TRUE, 25, 2, 59, 54, 0, 0, 176, 144,
-    1, 1, 2, 0 },
+    1, 1, 2, 0, 1 },
   { "SIF", 352, 240, FALSE, TRUE, 15, 1, 10, 11, 0, 0, 352, 240,
-    1, 1, 1, 0 },
+    1, 1, 1, 0, 2 },
   { "CIF", 352, 288, FALSE, TRUE, 25, 2, 59, 54, 0, 0, 352, 288,
-    1, 1, 2, 0 },
+    1, 1, 2, 0, 2 },
   { "SD (NTSC)", 704, 480, TRUE, TRUE, 30000, 1001, 10, 11, 0, 0, 704, 480,
-    1, 2, 1, 0 },
+    1, 2, 1, 0, 2 },
   { "SD (PAL)", 704, 576, TRUE, TRUE, 25, 1, 59, 54, 0, 0, 704, 576,
-    1, 2, 2, 0 },
+    1, 2, 2, 0, 2 },
   { "SD (525 Digital)", 720, 480, TRUE, TRUE, 30000, 1001, 10, 11, 0, 0, 720, 480,
-    1, 2, 1, 0 },
+    1, 2, 1, 0, 2 },
   { "SD (625 Digital)", 720, 576, TRUE, TRUE, 30, 1, 59, 54, 0, 0, 720, 576,
-    1, 2, 2, 0 },
+    1, 2, 2, 0, 2 },
   { "HD 720", 1280, 720, FALSE, TRUE, 24, 1, 1, 1, 0, 0, 1280, 720,
-    2, 2, 3, 0 },
+    2, 2, 3, 0, 3 },
   { "HD 1080", 1920, 1080, FALSE, TRUE, 24, 1, 1, 1, 0, 0, 1920, 1080,
-    2, 2, 3, 0 },
+    2, 2, 3, 0, 4 },
   { "Advanced Video Format", 1920, 1080, FALSE, TRUE, 50, 1, 1, 1, 0, 0, 1920, 1080,
-    3, 5, 3, 1 }
+    3, 5, 3, 1, 4 }
 };
 
 void carid_params_set_video_format (CaridParams *params, int index)
@@ -123,8 +124,8 @@ void carid_params_set_video_format (CaridParams *params, int index)
   params->signal_range_index = format->signal_range_index;
   params->colour_primaries_index = format->colour_primaries_index;
   params->transfer_char_index = format->transfer_char_index;
-  
 
+  carid_params_set_block_params (params, format->block_params_index);
 }
 
 static int
@@ -343,4 +344,36 @@ int carid_params_get_pixel_aspect_ratio (CaridParams *params)
 
   return 0;
 }
+
+typedef struct _CaridBlockParams CaridBlockParams;
+struct _CaridBlockParams {
+  int xblen_luma;
+  int yblen_luma;
+  int xbsep_luma;
+  int ybsep_luma;
+};
+
+static CaridBlockParams
+carid_block_params[] = {
+  { 8, 8, 4, 4 },
+  { 12, 12, 8, 8 },
+  { 18, 16, 10, 12 },
+  { 24, 24, 16, 16 }
+};
+
+void
+carid_params_set_block_params (CaridParams *params, int index)
+{
+  if (index < 1 || index >= ARRAY_SIZE(carid_block_params) + 1) {
+    CARID_ERROR("illegal block params index");
+    return;
+  }
+
+  params->xblen_luma = carid_block_params[index-1].xblen_luma;
+  params->yblen_luma = carid_block_params[index-1].yblen_luma;
+  params->xbsep_luma = carid_block_params[index-1].xbsep_luma;
+  params->ybsep_luma = carid_block_params[index-1].ybsep_luma;
+}
+
+
 

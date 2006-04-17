@@ -42,8 +42,7 @@ struct _CaridEncoder {
 
   int frame_number;
 
-  int16_t *motion_x;
-  int16_t *motion_y;
+  CaridMotionVector *motion_vectors;
 };
 
 CaridEncoder * carid_encoder_new (void);

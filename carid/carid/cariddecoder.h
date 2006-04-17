@@ -28,6 +28,8 @@ struct _CaridDecoder {
   CaridParams params;
 
   CaridSubband subbands[1+6*3];
+
+  CaridMotionVector *motion_vectors;
 };
 
 CaridDecoder * carid_decoder_new (void);

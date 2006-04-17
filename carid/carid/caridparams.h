@@ -4,6 +4,7 @@
 
 typedef struct _CaridParams CaridParams;
 typedef struct _CaridSubband CaridSubband;
+typedef struct _CaridMotionVector CaridMotionVector;
 
 struct _CaridParams {
 
@@ -58,16 +59,32 @@ struct _CaridParams {
   int multi_quant;
 
   /* motion prediction parameters */
+  int num_refs;
+  int global_motion;
+  int xblen_luma;
+  int yblen_luma;
   int xbsep_luma;
   int ybsep_luma;
   int x_num_mb;
   int y_num_mb;
+  int mv_precision;
+  int global_only_flag;
+  int global_prec_bits;
+  int b_1[2];
+  int b_2[2];
+  int a_11[2];
+  int a_12[2];
+  int a_21[2];
+  int a_22[2];
+  int c_1[2];
+  int c_2[2];
 
   /* frame padding */
   int iwt_chroma_width;
   int iwt_chroma_height;
   int iwt_luma_width;
   int iwt_luma_height;
+
 
 };
 
@@ -89,6 +106,14 @@ struct _CaridSubband {
   int quant_index;
 };
 
+struct _CaridMotionVector {
+  int mb_using_global;
+  int mb_split;
+  int mb_common;
+  int x;
+  int y;
+};
+
 void carid_params_calculate_iwt_sizes (CaridParams *params);
 
 void carid_params_set_video_format (CaridParams *params, int index);
@@ -99,6 +124,7 @@ void carid_params_set_frame_rate (CaridParams *params, int index);
 int carid_params_get_frame_rate (CaridParams *params);
 void carid_params_set_pixel_aspect_ratio (CaridParams *params, int index);
 int carid_params_get_pixel_aspect_ratio (CaridParams *params);
+void carid_params_set_block_params (CaridParams *params, int index);
 
 #endif
 

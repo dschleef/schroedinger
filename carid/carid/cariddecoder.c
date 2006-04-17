@@ -9,6 +9,12 @@
 #include <stdio.h>
 
 
+static void carid_decoder_decode_macroblock(CaridDecoder *decoder, int i,
+    int j);
+static void carid_decoder_decode_prediction_unit(CaridDecoder *decoder,
+    CaridMotionVector *mv);
+static void carid_decoder_predict (CaridDecoder *decoder);
+
 
 CaridDecoder *
 carid_decoder_new (void)
@@ -148,7 +154,21 @@ carid_decoder_decode (CaridDecoder *decoder, CaridBuffer *buffer)
     CARID_ERROR("inter non-ref");
     carid_decoder_decode_frame_prediction (decoder);
 
+    /* FIXME */
+    CARID_ASSERT(params->xbsep_luma == 8);
+    CARID_ASSERT(params->ybsep_luma == 8);
+
+    params->x_num_mb = decoder->params.width / (4*params->xbsep_luma);
+    params->y_num_mb = decoder->params.height / (4*params->xbsep_luma);
+
+    /* FIXME: This should be kept from frame to frame */
+    decoder->motion_vectors = malloc(sizeof(CaridMotionVector) * 16 *
+        params->x_num_mb * params->y_num_mb);
+
     carid_decoder_decode_prediction_data (decoder);
+    carid_decoder_predict (decoder);
+
+    free(decoder->motion_vectors);
   }
 
   carid_buffer_unref (buffer);
@@ -419,29 +439,91 @@ carid_decoder_decode_frame_header (CaridDecoder *decoder)
 void
 carid_decoder_decode_frame_prediction (CaridDecoder *decoder)
 {
+  CaridParams *params = &decoder->params;
   int bit;
   int length;
+  int index;
 
   /* block params flag */
   bit = carid_bits_decode_bit (decoder->bits);
   if (bit) {
-    CARID_ERROR("unimplemented");
+    index = carid_bits_decode_uegol (decoder->bits);
+    if (index == 0) {
+      params->xblen_luma = carid_bits_decode_uegol (decoder->bits);
+      params->yblen_luma = carid_bits_decode_uegol (decoder->bits);
+      params->xbsep_luma = carid_bits_decode_uegol (decoder->bits);
+      params->ybsep_luma = carid_bits_decode_uegol (decoder->bits);
+    } else {
+      carid_params_set_block_params (params, index);
+    }
   }
+  CARID_ERROR("blen_luma %d %d bsep_luma %d %d",
+      params->xblen_luma, params->yblen_luma,
+      params->xbsep_luma, params->ybsep_luma);
 
   /* mv precision flag */
   bit = carid_bits_decode_bit (decoder->bits);
   if (bit) {
-    CARID_ERROR("unimplemented");
+    params->mv_precision = carid_bits_decode_uegol (decoder->bits);
   }
+  CARID_ERROR("mv_precision %d", params->mv_precision);
 
   /* global motion flag */
-  bit = carid_bits_decode_bit (decoder->bits);
-  if (bit) {
-    CARID_ERROR("unimplemented");
+  params->global_motion = carid_bits_decode_bit (decoder->bits);
+  if (params->global_motion) {
+    int i;
+
+    params->global_only_flag = carid_bits_decode_bit (decoder->bits);
+    params->global_prec_bits = carid_bits_decode_uegol (decoder->bits);
+
+    for (i=0;i<params->num_refs;i++) {
+      /* pan */
+      bit = carid_bits_decode_bit (decoder->bits);
+      if (bit) {
+        params->b_1[i] = carid_bits_decode_segol (decoder->bits);
+        params->b_2[i] = carid_bits_decode_segol (decoder->bits);
+      } else {
+        params->b_1[i] = 0;
+        params->b_2[i] = 0;
+      }
+
+      /* matrix */
+      bit = carid_bits_decode_bit (decoder->bits);
+      if (bit) {
+        params->a_11[i] = carid_bits_decode_segol (decoder->bits);
+        params->a_12[i] = carid_bits_decode_segol (decoder->bits);
+        params->a_21[i] = carid_bits_decode_segol (decoder->bits);
+        params->a_22[i] = carid_bits_decode_segol (decoder->bits);
+      } else {
+        params->a_11[i] = 1;
+        params->a_12[i] = 0;
+        params->a_21[i] = 0;
+        params->a_22[i] = 1;
+      }
+
+      /* perspective */
+      bit = carid_bits_decode_bit (decoder->bits);
+      if (bit) {
+        params->c_1[i] = carid_bits_decode_segol (decoder->bits);
+        params->c_2[i] = carid_bits_decode_segol (decoder->bits);
+      } else {
+        params->c_1[i] = 0;
+        params->c_2[i] = 0;
+      }
+
+      CARID_ERROR("ref %d pan %d %d matrix %d %d %d %d perspective %d %d",
+          i, params->b_1[i], params->b_2[i],
+          params->a_11[i], params->a_12[i],
+          params->a_21[i], params->a_22[i],
+          params->c_1[i], params->c_2[i]);
+    }
   }
 
   /* block data length */
   length = carid_bits_decode_uegol (decoder->bits);
+  CARID_ERROR("length %d", length);
+
+  carid_bits_sync (decoder->bits);
 }
 
 static void
@@ -480,6 +562,19 @@ void
 carid_decoder_decode_prediction_data (CaridDecoder *decoder)
 {
   CaridParams *params = &decoder->params;
+  int i, j;
+
+  for(j=0;j<4*params->y_num_mb;j+=4){
+    for(i=0;i<4*params->x_num_mb;i+=4){
+      carid_decoder_decode_macroblock(decoder, i, j);
+    }
+  }
+}
+
+static void
+carid_decoder_predict (CaridDecoder *decoder)
+{
+  CaridParams *params = &decoder->params;
   CaridFrame *frame = decoder->output_frame;
   CaridFrame *reference_frame = decoder->reference_frames[0];
   int i, j;
@@ -490,19 +585,15 @@ carid_decoder_decode_prediction_data (CaridDecoder *decoder)
   uint8_t *ref_data;
   int ref_stride;
 
-  params->xbsep_luma = 8;
-  params->ybsep_luma = 8;
-
-  params->x_num_mb = decoder->params.width / (4*params->xbsep_luma);
-  params->y_num_mb = decoder->params.height / (4*params->xbsep_luma);
-
   for(j=0;j<4*params->y_num_mb;j++){
     for(i=0;i<4*params->x_num_mb;i++){
+      CaridMotionVector *mv = &decoder->motion_vectors[j*4*params->x_num_mb + i];
+
       x = i*params->xbsep_luma;
       y = j*params->ybsep_luma;
 
-      dx = carid_bits_decode_segol (decoder->bits);
-      dy = carid_bits_decode_segol (decoder->bits);
+      dx = mv->x;
+      dy = mv->y;
 
       data = frame->components[0].data;
       stride = frame->components[0].stride;
@@ -531,6 +622,68 @@ carid_decoder_decode_prediction_data (CaridDecoder *decoder)
           ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
     }
   }
+}
+
+static void
+carid_decoder_decode_macroblock(CaridDecoder *decoder, int i, int j)
+{
+  CaridParams *params = &decoder->params;
+  CaridMotionVector *mv = &decoder->motion_vectors[j*4*params->x_num_mb + i];
+  int k,l;
+  int mask;
+
+  //CARID_ERROR("global motion %d", params->global_motion);
+  if (params->global_motion) {
+    mv->mb_using_global = carid_bits_decode_bit (decoder->bits);
+  } else {
+    mv->mb_using_global = FALSE;
+  }
+  if (!mv->mb_using_global) {
+    mv->mb_split = carid_bits_decode_bits (decoder->bits, 2);
+    CARID_ASSERT(mv->mb_split != 3);
+  } else {
+    mv->mb_split = 2;
+  }
+  if (mv->mb_split != 0) {
+    mv->mb_common = carid_bits_decode_bit (decoder->bits);
+  } else {
+    mv->mb_common = FALSE;
+  }
+  //CARID_ERROR("mb_using_global=%d mb_split=%d mb_common=%d",
+  //    mv->mb_using_global, mv->mb_split, mv->mb_common);
+
+  mask = 3 >> mv->mb_split;
+  for (k=0;k<4;k++) {
+    for (l=0;l<4;l++) {
+      CaridMotionVector *bv =
+        &decoder->motion_vectors[(j+l)*4*params->x_num_mb + (i+k)];
+
+      if ((k&mask) == 0 && (l&mask) == 0) {
+        //CARID_ERROR("decoding PU %d %d", j+l, i+k);
+
+        carid_decoder_decode_prediction_unit (decoder, bv);
+      } else {
+        CaridMotionVector *bv1;
+       
+        bv1 = &decoder->motion_vectors[(j+(l&(~mask)))*4*params->x_num_mb +
+          (i+(k&(~mask)))];
+
+        *bv = *bv1;
+      }
+    }
+  }
+}
+
+static void
+carid_decoder_decode_prediction_unit(CaridDecoder *decoder,
+    CaridMotionVector *mv)
+{
+  /* FIXME */
+
+  //int pred_mode = 1;
+
+  mv->x = carid_bits_decode_segol (decoder->bits);
+  mv->y = carid_bits_decode_segol (decoder->bits);
 }
 
 void

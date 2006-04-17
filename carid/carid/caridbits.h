@@ -33,7 +33,7 @@ void carid_bits_dumpbits (CaridBits *bits);
 void carid_bits_append (CaridBits *bits, CaridBits *bits2);
 
 void carid_bits_encode_bit (CaridBits *bits, int value);
-void carid_bits_encode_bits (CaridBits *bits, int value, int n);
+void carid_bits_encode_bits (CaridBits *bits, int n, int value);
 void carid_bits_encode_uu (CaridBits *bits, int value);
 void carid_bits_encode_su (CaridBits *bits, int value);
 void carid_bits_encode_ut (CaridBits *bits, int value, int max);
