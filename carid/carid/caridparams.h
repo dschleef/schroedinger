@@ -107,11 +107,14 @@ struct _CaridSubband {
 };
 
 struct _CaridMotionVector {
+  int pred_mode;
   int mb_using_global;
   int mb_split;
   int mb_common;
   int x;
   int y;
+  int dc[3];
+  int metric;
 };
 
 void carid_params_calculate_iwt_sizes (CaridParams *params);

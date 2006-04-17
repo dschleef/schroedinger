@@ -8,6 +8,10 @@
 #include <string.h>
 #include <stdio.h>
 
+static void predict_dc (CaridMotionVector *mv, CaridFrame *frame,
+    int x, int y, int w, int h);
+static void predict_motion (CaridMotionVector *mv, CaridFrame *frame,
+    CaridFrame *reference_frame, int x, int y, int w, int h);
 
 
 CaridEncoder *
@@ -348,7 +352,7 @@ carid_encoder_encode_frame_prediction (CaridEncoder *encoder)
     for(i=0;i<4*params->x_num_mb;i+=4){
       int k,l;
       int mb_using_global = FALSE;
-      int mb_split = 1;
+      int mb_split = 2;
       int mb_common = FALSE;
 
       if (global_motion) {
@@ -368,10 +372,19 @@ carid_encoder_encode_frame_prediction (CaridEncoder *encoder)
 
       for(k=0;k<4;k+=(4>>mb_split)) {
         for(l=0;l<4;l+=(4>>mb_split)) {
-          carid_bits_encode_segol(encoder->bits,
-              encoder->motion_vectors[(j+l)*(4*params->x_num_mb) + i + k].x);
-          carid_bits_encode_segol(encoder->bits,
-              encoder->motion_vectors[(j+l)*(4*params->x_num_mb) + i + k].y);
+          CaridMotionVector *mv =
+            &encoder->motion_vectors[(j+l)*(4*params->x_num_mb) + i + k];
+
+          carid_bits_encode_bits(encoder->bits, 2, mv->pred_mode);
+          if (mv->pred_mode == 0) {
+            /* FIXME not defined in spec */
+            carid_bits_encode_uegol(encoder->bits, mv->dc[0]);
+            carid_bits_encode_uegol(encoder->bits, mv->dc[1]);
+            carid_bits_encode_uegol(encoder->bits, mv->dc[2]);
+          } else {
+            carid_bits_encode_segol(encoder->bits, mv->x);
+            carid_bits_encode_segol(encoder->bits, mv->y);
+          }
         }
       }
     }
@@ -839,9 +852,6 @@ carid_encoder_encode_subband (CaridEncoder *encoder, int component, int index)
 }
 
 
-static void predict_motion (CaridFrame *frame, CaridFrame *reference_frame,
-    int x, int y, int w, int h, int *pred_x, int *pred_y);
-
 void
 carid_encoder_motion_predict (CaridEncoder *encoder)
 {
@@ -889,19 +899,21 @@ carid_encoder_motion_predict (CaridEncoder *encoder)
   for(j=0;j<4*params->y_num_mb;j++){
     for(i=0;i<4*params->x_num_mb;i++){
       int x,y;
-      int pred_x, pred_y;
+      CaridMotionVector *mv =
+        &encoder->motion_vectors[j*(4*params->x_num_mb) + i];
 
       x = i*params->xbsep_luma;
       y = j*params->ybsep_luma;
 
-      predict_motion (frame, ref_frame, x, y, params->xbsep_luma, params->ybsep_luma,
-          &pred_x, &pred_y);
+      predict_dc (mv, frame, x, y, params->xbsep_luma, params->ybsep_luma);
 
-      encoder->motion_vectors[j*(4*params->x_num_mb) + i].x = pred_x;
-      encoder->motion_vectors[j*(4*params->x_num_mb) + i].y = pred_y;
+      predict_motion (mv, frame, ref_frame, x, y,
+          params->xbsep_luma, params->ybsep_luma);
 
-      sum_pred_x += pred_x;
-      sum_pred_y += pred_y;
+      if (mv->pred_mode != 0) {
+        sum_pred_x += mv->x;
+        sum_pred_y += mv->y;
+      }
     }
   }
 
@@ -942,6 +954,7 @@ carid_encoder_motion_predict (CaridEncoder *encoder)
 
 }
 
+#if 0
 static int
 calculate_metric (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
     int width, int height)
@@ -958,16 +971,72 @@ calculate_metric (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
 
   return metric;
 }
+#endif
+
+static int
+calculate_metric2 (CaridFrame *frame1, int x1, int y1,
+    CaridFrame *frame2, int x2, int y2, int width, int height)
+{
+  int i;
+  int j;
+  int metric = 0;
+  uint8_t *a;
+  int a_stride;
+  uint8_t *b;
+  int b_stride;
+
+  a_stride = frame1->components[0].stride;
+  a = frame1->components[0].data + x1 + y1 * a_stride;
+  b_stride = frame2->components[0].stride;
+  b = frame2->components[0].data + x2 + y2 * b_stride;
+
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      metric += abs (a[j*a_stride + i] - b[j*b_stride + i]);
+    }
+  }
+
+  width/=2;
+  height/=2;
+  x1/=2;
+  y1/=2;
+  x2/=2;
+  y2/=2;
+
+  a_stride = frame1->components[1].stride;
+  a = frame1->components[1].data + x1 + y1 * a_stride;
+  b_stride = frame2->components[1].stride;
+  b = frame2->components[1].data + x2 + y2 * b_stride;
+
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      metric += abs (a[j*a_stride + i] - b[j*b_stride + i]);
+    }
+  }
+
+  a_stride = frame1->components[2].stride;
+  a = frame1->components[2].data + x1 + y1 * a_stride;
+  b_stride = frame2->components[2].stride;
+  b = frame2->components[2].data + x2 + y2 * b_stride;
+
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      metric += abs (a[j*a_stride + i] - b[j*b_stride + i]);
+    }
+  }
+
+  return metric;
+}
 
 static void
-predict_motion (CaridFrame *frame, CaridFrame *reference_frame,
-    int x, int y, int w, int h, int *pred_x, int *pred_y)
+predict_motion_search (CaridMotionVector *mv, CaridFrame *frame,
+    CaridFrame *reference_frame, int x, int y, int w, int h)
 {
   int dx, dy;
-  uint8_t *data = frame->components[0].data;
-  int stride = frame->components[0].stride;
-  uint8_t *ref_data = reference_frame->components[0].data;
-  int ref_stride = reference_frame->components[0].stride;
+  //uint8_t *data = frame->components[0].data;
+  //int stride = frame->components[0].stride;
+  //uint8_t *ref_data = reference_frame->components[0].data;
+  //int ref_stride = reference_frame->components[0].stride;
   int metric;
   int min_metric;
   int step_size;
@@ -983,7 +1052,7 @@ predict_motion (CaridFrame *frame, CaridFrame *reference_frame,
 
   dx = 0;
   dy = 0;
-  step_size = 8;
+  step_size = 4;
   while (step_size > 0) {
     static const int hx[5] = { 0, 0, -1, 0, 1 };
     static const int hy[5] = { 0, -1, 0, 1, 0 };
@@ -992,23 +1061,19 @@ predict_motion (CaridFrame *frame, CaridFrame *reference_frame,
     int i;
 
     min_index = 0;
-    min_metric = calculate_metric (data + y * stride + x, stride,
-          ref_data + (y + dy) * ref_stride + x + dx, ref_stride,
-          w, h);
+    min_metric = calculate_metric2 (frame, x, y, reference_frame, x+dx, y+dy,
+        w, h);
     for(i=1;i<5;i++){
       px = x + dx + hx[i] * step_size;
       py = y + dy + hy[i] * step_size;
-      if (px < 0) px = 0;
-      if (py < 0) py = 0;
-      if (px + w > reference_frame->components[0].width) {
-        px = reference_frame->components[0].width - w;
-      }
-      if (py + h > reference_frame->components[0].height) {
-        py = reference_frame->components[0].height - h;
+      if (px < 0 || py < 0 || 
+          px + w > reference_frame->components[0].width ||
+          py + h > reference_frame->components[0].height) {
+        continue;
       }
 
-      metric = calculate_metric (data + y * stride + x, stride,
-          ref_data + py * ref_stride + px, ref_stride, w, h);
+      metric = calculate_metric2 (frame, x, y, reference_frame, px, py,
+          w, h);
 
       if (metric < min_metric) {
         min_metric = metric;
@@ -1023,10 +1088,21 @@ predict_motion (CaridFrame *frame, CaridFrame *reference_frame,
       dy += hy[min_index] * step_size;
     }
   }
-  *pred_x = dx;
-  *pred_y = dy;
+  if (min_metric < mv->metric) {
+    mv->x = dx;
+    mv->y = dy;
+    mv->metric = min_metric;
+    mv->pred_mode = 1;
+  }
+}
 
-#if 0
+static void
+predict_motion_scan (CaridMotionVector *mv, CaridFrame *frame,
+    CaridFrame *reference_frame, int x, int y, int w, int h)
+{
+  int dx,dy;
+  int metric;
+
   for(dy = -4; dy <= 4; dy++) {
     for(dx = -4; dx <= 4; dx++) {
       if (y + dy < 0) continue;
@@ -1034,22 +1110,116 @@ predict_motion (CaridFrame *frame, CaridFrame *reference_frame,
       if (y + dy + h > reference_frame->components[0].height) continue;
       if (x + dx + w > reference_frame->components[0].width) continue;
 
-      metric = calculate_metric (data + y * stride + x, stride,
-          ref_data + (y + dy) * ref_stride + x + dx, ref_stride,
-          w, h);
+      metric = calculate_metric2 (frame, x, y, reference_frame,
+          x + dx, y + dy, w, h);
 
-      printf(" %d", metric);
-      if (metric < min_metric) {
-        min_metric = metric;
-        *pred_x = dx;
-        *pred_y = dy;
+      if (metric < mv->metric) {
+        mv->metric = metric;
+        mv->x = dx;
+        mv->y = dy;
+        mv->pred_mode = 1;
       }
 
     }
-    printf("\n");
   }
-#endif
-
 }
 
+static void
+predict_motion_none (CaridMotionVector *mv, CaridFrame *frame,
+    CaridFrame *reference_frame, int x, int y, int w, int h)
+{
+  int metric;
+
+  metric = calculate_metric2 (frame, x, y, reference_frame, x, y, w, h);
+  if (metric < mv->metric) {
+    mv->x = 0;
+    mv->y = 0;
+    mv->metric = metric;
+    mv->pred_mode = 1;
+  }
+}
+
+static void
+predict_motion (CaridMotionVector *mv, CaridFrame *frame,
+    CaridFrame *reference_frame, int x, int y, int w, int h)
+{
+  int how = 1;
+
+  switch(how) {
+    case 0:
+      predict_motion_scan (mv, frame, reference_frame, x, y, w, h);
+      break;
+    case 1:
+      predict_motion_search (mv, frame, reference_frame, x, y, w, h);
+      break;
+    case 2:
+      predict_motion_none (mv, frame, reference_frame, x, y, w, h);
+      break;
+  }
+}
+
+static void
+predict_dc (CaridMotionVector *mv, CaridFrame *frame, int x, int y,
+    int width, int height)
+{
+  int i;
+  int j;
+  int metric = 0;
+  uint8_t *a;
+  int a_stride;
+  int sum;
+
+  a_stride = frame->components[0].stride;
+  a = frame->components[0].data + x + y * a_stride;
+  sum = 0;
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      sum += a[j*a_stride + i];
+    }
+  }
+  mv->dc[0] = (sum+height*width/2)/(height*width);
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      metric += abs (a[j*a_stride + i] - mv->dc[0]);
+    }
+  }
+
+  width/=2;
+  height/=2;
+  x/=2;
+  y/=2;
+
+  a_stride = frame->components[1].stride;
+  a = frame->components[1].data + x + y * a_stride;
+  sum = 0;
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      sum += a[j*a_stride + i];
+    }
+  }
+  mv->dc[1] = (sum+height*width/2)/(height*width);
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      metric += abs (a[j*a_stride + i] - mv->dc[1]);
+    }
+  }
+
+  a_stride = frame->components[2].stride;
+  a = frame->components[2].data + x + y * a_stride;
+  sum = 0;
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      sum += a[j*a_stride + i];
+    }
+  }
+  mv->dc[2] = (sum+height*width/2)/(height*width);
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      metric += abs (a[j*a_stride + i] - mv->dc[2]);
+    }
+  }
+
+  mv->pred_mode = 0;
+  mv->metric = metric;
+}
 

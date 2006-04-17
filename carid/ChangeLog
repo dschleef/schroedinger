@@ -1,5 +1,12 @@
 2006-04-16  David Schleef  <ds@schleef.org>
 
+	* carid/cariddecoder.c:
+	* carid/caridencoder.c:
+	* carid/caridparams.h:
+	  Implement DC macroblocks and improve prediction.
+
+2006-04-16  David Schleef  <ds@schleef.org>
+
 	* carid/carid-stdint.h:
 	* carid/caridbits.c:
 	* carid/caridbits.h:

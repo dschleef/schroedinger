@@ -559,6 +559,18 @@ copy_block (uint8_t *dest, int dstr, uint8_t *src, int sstr, int w, int h)
 }
 
 void
+splat_block (uint8_t *dest, int dstr, int value, int w, int h)
+{
+  int i,j;
+
+  for(j=0;j<h;j++){
+    for(i=0;i<w;i++) {
+      dest[dstr*j+i] = value;
+    }
+  }
+}
+
+void
 carid_decoder_decode_prediction_data (CaridDecoder *decoder)
 {
   CaridParams *params = &decoder->params;
@@ -592,34 +604,54 @@ carid_decoder_predict (CaridDecoder *decoder)
       x = i*params->xbsep_luma;
       y = j*params->ybsep_luma;
 
-      dx = mv->x;
-      dy = mv->y;
+      if (mv->pred_mode == 0) {
+        data = frame->components[0].data;
+        stride = frame->components[0].stride;
+        splat_block (data + y * stride + x, stride, mv->dc[0], 8, 8);
 
-      data = frame->components[0].data;
-      stride = frame->components[0].stride;
-      ref_data = reference_frame->components[0].data;
-      ref_stride = reference_frame->components[0].stride;
-      copy_block_8x8 (data + y * stride + x, stride,
-          ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
+        data = frame->components[1].data;
+        stride = frame->components[1].stride;
+        splat_block (data + y/2 * stride + x/2, stride, mv->dc[1], 4, 4);
 
-      x /= 2;
-      dx /= 2;
-      y /= 2;
-      dy /= 2;
+        data = frame->components[2].data;
+        stride = frame->components[2].stride;
+        splat_block (data + y/2 * stride + x/2, stride, mv->dc[2], 4, 4);
+      } else {
+        dx = mv->x;
+        dy = mv->y;
 
-      data = frame->components[1].data;
-      stride = frame->components[1].stride;
-      ref_data = reference_frame->components[1].data;
-      ref_stride = reference_frame->components[1].stride;
-      copy_block_4x4 (data + y * stride + x, stride,
-          ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
+        /* FIXME This is only roughly correct */
+        CARID_ASSERT(x + dx >= 0);
+        CARID_ASSERT(x + dx < frame->components[0].width);
+        CARID_ASSERT(y + dy >= 0);
+        CARID_ASSERT(y + dy < frame->components[0].height);
 
-      data = frame->components[2].data;
-      stride = frame->components[2].stride;
-      ref_data = reference_frame->components[2].data;
-      ref_stride = reference_frame->components[2].stride;
-      copy_block_4x4 (data + y * stride + x, stride,
-          ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
+        data = frame->components[0].data;
+        stride = frame->components[0].stride;
+        ref_data = reference_frame->components[0].data;
+        ref_stride = reference_frame->components[0].stride;
+        copy_block_8x8 (data + y * stride + x, stride,
+            ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
+
+        x /= 2;
+        dx /= 2;
+        y /= 2;
+        dy /= 2;
+
+        data = frame->components[1].data;
+        stride = frame->components[1].stride;
+        ref_data = reference_frame->components[1].data;
+        ref_stride = reference_frame->components[1].stride;
+        copy_block_4x4 (data + y * stride + x, stride,
+            ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
+
+        data = frame->components[2].data;
+        stride = frame->components[2].stride;
+        ref_data = reference_frame->components[2].data;
+        ref_stride = reference_frame->components[2].stride;
+        copy_block_4x4 (data + y * stride + x, stride,
+            ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
+      }
     }
   }
 }
@@ -678,12 +710,16 @@ static void
 carid_decoder_decode_prediction_unit(CaridDecoder *decoder,
     CaridMotionVector *mv)
 {
-  /* FIXME */
+  mv->pred_mode = carid_bits_decode_bits (decoder->bits, 2);
 
-  //int pred_mode = 1;
-
-  mv->x = carid_bits_decode_segol (decoder->bits);
-  mv->y = carid_bits_decode_segol (decoder->bits);
+  if (mv->pred_mode == 0) {
+    mv->dc[0] = carid_bits_decode_uegol (decoder->bits);
+    mv->dc[1] = carid_bits_decode_uegol (decoder->bits);
+    mv->dc[2] = carid_bits_decode_uegol (decoder->bits);
+  } else {
+    mv->x = carid_bits_decode_segol (decoder->bits);
+    mv->y = carid_bits_decode_segol (decoder->bits);
+  }
 }
 
 void
