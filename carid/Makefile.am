@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = doc carid gst testsuite
 
-EXTRA_DIST = COPYING autogen.sh gtk-doc.make
+EXTRA_DIST = COPYING COPYING.GPL COPYING.LGPL COPYING.MIT COPYING.MPL autogen.sh libcarid.spec
 
 pkgconfig_DATA = carid-$(CARID_MAJORMINOR).pc
 

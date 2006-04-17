@@ -1,3 +1,8 @@
+2006-04-16  Christian Schaller <christian@fluendo.com>
+
+	* add spec file
+	* add missing .h file to sources list
+	
 2006-04-16  David Schleef  <ds@schleef.org>
 
 	* carid/cariddecoder.c:

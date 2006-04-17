@@ -26,7 +26,8 @@ libcarid_@CARID_MAJORMINOR@_la_SOURCES = \
 	caridtables.c \
 	caridtables.h \
 	caridwavelet.c \
-	caridwavelet.h
+	caridwavelet.h \
+	caridbitstream.h
 
 libcarid_@CARID_MAJORMINOR@_la_CFLAGS = $(CARID_CFLAGS) $(LIBOIL_CFLAGS)
 libcarid_@CARID_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)

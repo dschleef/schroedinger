@@ -1,7 +1,7 @@
 AC_PREREQ([2.58])
 AC_INIT(carid,0.1.0.1)
 
-AS_NANO(CARID_CVS=no,CARID_CVS=yes)
+AS_NANO(CARID_CVS=no,CARID_CVS=no)
 
 AC_CANONICAL_HOST([])
 AM_INIT_AUTOMAKE(1.6)
@@ -192,6 +192,7 @@ gst/Makefile
 testsuite/Makefile
 carid-uninstalled.pc
 carid.pc
+libcarid.spec
 ])
 AC_OUTPUT
 
