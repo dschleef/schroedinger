@@ -1,5 +1,13 @@
 2006-04-17  David Schleef  <ds@schleef.org>
 
+	* carid/caridencoder.c:
+	* carid/caridencoder.h:
+	* carid/caridframe.c:
+	* configure.ac:
+	  hacking
+
+2006-04-17  David Schleef  <ds@schleef.org>
+
 	* carid/Makefile.am: make distcheck work
 	* carid/caridencoder.c: hacking
 	* carid/caridencoder.h:

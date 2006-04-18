@@ -17,9 +17,16 @@ static void predict_motion (CaridMotionVector *mv, CaridFrame *frame,
 static void carid_encoder_frame_queue_push (CaridEncoder *encoder,
     CaridFrame *frame);
 static CaridFrame * carid_encoder_frame_queue_get (CaridEncoder *encoder,
-    int frame_index);
+    int frame_number);
 static void carid_encoder_frame_queue_remove (CaridEncoder *encoder,
-    int frame_index);
+    int frame_number);
+static void carid_encoder_reference_add (CaridEncoder *encoder,
+    CaridFrame *frame);
+static CaridFrame * carid_encoder_reference_get (CaridEncoder *encoder,
+    int frame_number);
+static void carid_encoder_reference_retire (CaridEncoder *encoder,
+    int frame_number);
+
 
 
 CaridEncoder *
@@ -122,6 +129,7 @@ carid_encoder_encode (CaridEncoder *encoder)
 {
   CaridBuffer *outbuffer;
   CaridBuffer *subbuffer;
+  int i;
   
   if (encoder->need_rap) {
     outbuffer = carid_buffer_new_and_alloc (0x100);
@@ -149,9 +157,24 @@ carid_encoder_encode (CaridEncoder *encoder)
   }
   encoder->picture = &encoder->picture_list[encoder->picture_index];
 
+  if (encoder->picture->n_refs > 0) {
+    encoder->ref_frame0 = carid_encoder_reference_get (encoder,
+        encoder->picture->reference_frame_number[0]);
+    CARID_ASSERT (encoder->ref_frame0 != NULL);
+  }
+  if (encoder->picture->n_refs > 1) {
+    encoder->ref_frame1 = carid_encoder_reference_get (encoder,
+        encoder->picture->reference_frame_number[1]);
+    CARID_ASSERT (encoder->ref_frame1 != NULL);
+  }
+
   encoder->encode_frame = carid_encoder_frame_queue_get (encoder,
       encoder->picture->frame_number);
   if (encoder->encode_frame == NULL) return NULL;
+
+  CARID_ERROR("encoding picture frame_number=%d is_ref=%d n_refs=%d",
+      encoder->picture->frame_number, encoder->picture->is_ref,
+      encoder->picture->n_refs);
 
   carid_encoder_frame_queue_remove (encoder, encoder->picture->frame_number);
 
@@ -161,10 +184,15 @@ carid_encoder_encode (CaridEncoder *encoder)
   carid_bits_encode_init (encoder->bits, outbuffer);
 
   CARID_DEBUG("frame number %d", encoder->frame_number);
+
   if (encoder->picture->n_refs > 0) {
     carid_encoder_encode_inter (encoder);
   } else {
     carid_encoder_encode_intra (encoder);
+  }
+
+  for(i=0;i<encoder->picture->n_retire;i++){
+    carid_encoder_reference_retire (encoder, encoder->picture->retire[i]);
   }
 
   encoder->picture_index++;
@@ -323,7 +351,7 @@ void
 carid_encoder_encode_intra (CaridEncoder *encoder)
 {
   CaridParams *params = &encoder->params;
-  int is_ref = 1;
+  int is_ref = encoder->picture->is_ref;
 
   if (encoder->frame == NULL) {
     encoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
@@ -361,10 +389,7 @@ carid_encoder_encode_intra (CaridEncoder *encoder)
         params->width, params->height, 2, 2);
     carid_frame_convert (ref_frame, encoder->frame);
 
-    if (encoder->reference_frames[0]) {
-      carid_frame_free (encoder->reference_frames[0]);
-    }
-    encoder->reference_frames[0] = ref_frame;
+    carid_encoder_reference_add (encoder, ref_frame);
   }
 
 }
@@ -415,11 +440,6 @@ carid_encoder_encode_inter (CaridEncoder *encoder)
     ref_frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_U8,
         params->width, params->height, 2, 2);
     carid_frame_convert (ref_frame, encoder->frame);
-
-    if (encoder->reference_frames[0]) {
-      carid_frame_free (encoder->reference_frames[0]);
-    }
-    encoder->reference_frames[0] = ref_frame;
   }
 #endif
 }
@@ -986,7 +1006,7 @@ carid_encoder_motion_predict (CaridEncoder *encoder)
         params->x_num_mb*params->y_num_mb*16);
   }
 
-  ref_frame = encoder->reference_frames[0];
+  ref_frame = encoder->ref_frame0;
   if (!ref_frame) {
     CARID_ERROR("no reference frame");
   }
@@ -1329,6 +1349,7 @@ carid_encoder_frame_queue_push (CaridEncoder *encoder, CaridFrame *frame)
 {
   encoder->frame_queue[encoder->frame_queue_length] = frame;
   encoder->frame_queue_length++;
+  CARID_ASSERT(encoder->frame_queue_length < 10);
 }
 
 static CaridFrame *
@@ -1357,4 +1378,45 @@ carid_encoder_frame_queue_remove (CaridEncoder *encoder, int frame_index)
   }
 }
 
+
+/* reference pool */
+
+static void
+carid_encoder_reference_add (CaridEncoder *encoder, CaridFrame *frame)
+{
+  CARID_DEBUG("adding %d", frame->frame_number);
+  encoder->reference_frames[encoder->n_reference_frames] = frame;
+  encoder->n_reference_frames++;
+  CARID_ASSERT(encoder->n_reference_frames < 10);
+}
+
+static CaridFrame *
+carid_encoder_reference_get (CaridEncoder *encoder, int frame_number)
+{
+  int i;
+  CARID_DEBUG("getting %d", frame_number);
+  for(i=0;i<encoder->n_reference_frames;i++){
+    if (encoder->reference_frames[i]->frame_number == frame_number) {
+      return encoder->reference_frames[i];
+    }
+  }
+  return NULL;
+
+}
+
+static void
+carid_encoder_reference_retire (CaridEncoder *encoder, int frame_number)
+{
+  int i;
+  CARID_DEBUG("retiring %d", frame_number);
+  for(i=0;i<encoder->n_reference_frames;i++){
+    if (encoder->reference_frames[i]->frame_number == frame_number) {
+      carid_frame_free (encoder->reference_frames[i]);
+      memmove (encoder->reference_frames + i, encoder->reference_frames + i + 1,
+          sizeof(CaridFrame *)*(encoder->n_reference_frames - i - 1));
+      encoder->n_reference_frames--;
+      return;
+    }
+  }
+}
 

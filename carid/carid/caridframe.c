@@ -136,6 +136,8 @@ carid_frame_convert (CaridFrame *dest, CaridFrame *src)
   CARID_ASSERT(dest != NULL);
   CARID_ASSERT(src != NULL);
 
+  dest->frame_number = src->frame_number;
+
   if (dest->format == CARID_FRAME_FORMAT_U8 &&
       src->format == CARID_FRAME_FORMAT_S16) {
     carid_frame_convert_u8_s16 (dest, src);

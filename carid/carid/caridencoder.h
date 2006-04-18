@@ -27,6 +27,7 @@ struct _CaridEncoder {
   int frame_queue_index;
 
   CaridFrame *reference_frames[10];
+  int n_reference_frames;
 
   int need_rap;
 
@@ -55,6 +56,10 @@ struct _CaridEncoder {
 
   /* picture that is currently being encoded */
   CaridPicture *picture;
+
+  /* current reference frames */
+  CaridFrame *ref_frame0;
+  CaridFrame *ref_frame1;
 };
 
 CaridEncoder * carid_encoder_new (void);
