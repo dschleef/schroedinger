@@ -1,5 +1,15 @@
 2006-04-17  David Schleef  <ds@schleef.org>
 
+	* carid/cariddecoder.c:
+	* carid/cariddecoder.h:
+	* carid/caridencoder.c:
+	* carid/caridframe.c:
+	* carid/caridparams.c:
+	* carid/caridparams.h:
+	  Fix green strip problem.  Move code to caridparams.
+
+2006-04-17  David Schleef  <ds@schleef.org>
+
 	* carid/caridencoder.c:
 	* carid/caridencoder.h:
 	* carid/caridframe.c:

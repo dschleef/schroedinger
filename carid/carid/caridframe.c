@@ -129,6 +129,7 @@ void carid_frame_set_free_callback (CaridFrame *frame,
 
 static void carid_frame_convert_u8_s16 (CaridFrame *dest, CaridFrame *src);
 static void carid_frame_convert_s16_u8 (CaridFrame *dest, CaridFrame *src);
+static void carid_frame_convert_u8_u8 (CaridFrame *dest, CaridFrame *src);
 
 void
 carid_frame_convert (CaridFrame *dest, CaridFrame *src)
@@ -146,6 +147,11 @@ carid_frame_convert (CaridFrame *dest, CaridFrame *src)
   if (dest->format == CARID_FRAME_FORMAT_S16 &&
       src->format == CARID_FRAME_FORMAT_U8) {
     carid_frame_convert_s16_u8 (dest, src);
+    return;
+  }
+  if (dest->format == CARID_FRAME_FORMAT_U8 &&
+      src->format == CARID_FRAME_FORMAT_U8) {
+    carid_frame_convert_u8_u8 (dest, src);
     return;
   }
 
@@ -247,5 +253,52 @@ carid_frame_convert_s16_u8 (CaridFrame *dest, CaridFrame *src)
     }
   }
 }
+
+
+static void
+carid_frame_convert_u8_u8 (CaridFrame *dest, CaridFrame *src)
+{
+  CaridFrameComponent *dcomp;
+  CaridFrameComponent *scomp;
+  uint8_t *ddata;
+  uint8_t *sdata;
+  int i;
+  int y;
+
+  for(i=0;i<3;i++){
+    dcomp = &dest->components[i];
+    scomp = &src->components[i];
+    ddata = dcomp->data;
+    sdata = scomp->data;
+
+    if (dcomp->width <= scomp->width && dcomp->height <= scomp->height) {
+      for(y=0;y<dcomp->height;y++){
+        oil_memcpy (ddata, sdata, dcomp->width);
+        ddata = OFFSET(ddata, dcomp->stride);
+        sdata = OFFSET(sdata, scomp->stride);
+      }
+    } else {
+      void *last_ddata;
+
+      if (dcomp->width < scomp->width || dcomp->height < scomp->height) {
+        CARID_ERROR("unimplemented");
+      }
+
+      for(y=0;y<scomp->height;y++){
+        oil_memcpy (ddata, sdata, scomp->width);
+        oil_splat_u8_ns (ddata + scomp->width, ddata + scomp->width - 1,
+            dcomp->width - scomp->width);
+        ddata = OFFSET(ddata, dcomp->stride);
+        sdata = OFFSET(sdata, scomp->stride);
+      }
+      last_ddata = OFFSET(ddata, -dcomp->stride);
+      for(;y<dcomp->height;y++){
+        oil_memcpy (ddata, last_ddata, dcomp->width);
+        ddata = OFFSET(ddata, dcomp->stride);
+      }
+    }
+  }
+}
+
 
 

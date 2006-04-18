@@ -158,17 +158,20 @@ carid_decoder_decode (CaridDecoder *decoder, CaridBuffer *buffer)
     CARID_ASSERT(params->xbsep_luma == 8);
     CARID_ASSERT(params->ybsep_luma == 8);
 
-    params->x_num_mb = decoder->params.width / (4*params->xbsep_luma);
-    params->y_num_mb = decoder->params.height / (4*params->xbsep_luma);
+    if (decoder->mc_tmp_frame == NULL) {
+      decoder->mc_tmp_frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_U8,
+          params->mc_luma_width, params->mc_luma_height, 2, 2);
+    }
 
-    /* FIXME: This should be kept from frame to frame */
-    decoder->motion_vectors = malloc(sizeof(CaridMotionVector) * 16 *
-        params->x_num_mb * params->y_num_mb);
+    if (decoder->motion_vectors == NULL) {
+      decoder->motion_vectors = malloc(sizeof(CaridMotionVector) *
+          params->x_num_blocks * params->y_num_blocks);
+    }
 
     carid_decoder_decode_prediction_data (decoder);
     carid_decoder_predict (decoder);
 
-    free(decoder->motion_vectors);
+    carid_frame_convert (decoder->output_frame, decoder->mc_tmp_frame);
   }
 
   carid_buffer_unref (buffer);
@@ -524,6 +527,8 @@ carid_decoder_decode_frame_prediction (CaridDecoder *decoder)
   CARID_ERROR("length %d", length);
 
   carid_bits_sync (decoder->bits);
+
+  carid_params_calculate_mc_sizes (params);
 }
 
 static void
@@ -587,7 +592,7 @@ static void
 carid_decoder_predict (CaridDecoder *decoder)
 {
   CaridParams *params = &decoder->params;
-  CaridFrame *frame = decoder->output_frame;
+  CaridFrame *frame = decoder->mc_tmp_frame;
   CaridFrame *reference_frame = decoder->reference_frames[0];
   int i, j;
   int dx, dy;
@@ -622,9 +627,11 @@ carid_decoder_predict (CaridDecoder *decoder)
 
         /* FIXME This is only roughly correct */
         CARID_ASSERT(x + dx >= 0);
-        CARID_ASSERT(x + dx < frame->components[0].width);
+        //CARID_ASSERT(x + dx < params->mc_luma_width - params->xbsep_luma);
+        CARID_ASSERT(x + dx < params->mc_luma_width);
         CARID_ASSERT(y + dy >= 0);
-        CARID_ASSERT(y + dy < frame->components[0].height);
+        //CARID_ASSERT(y + dy < params->mc_luma_height - params->ybsep_luma);
+        CARID_ASSERT(y + dy < params->mc_luma_height);
 
         data = frame->components[0].data;
         stride = frame->components[0].stride;

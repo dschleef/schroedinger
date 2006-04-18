@@ -19,10 +19,27 @@ round_up_pow2 (int x, int p)
   return x;
 }
 
+#define DIVIDE_ROUND_UP(a,b) (((a) + (b) - 1)/(b))
+
+void
+carid_params_calculate_mc_sizes (CaridParams *params)
+{
+  params->x_num_mb =
+    DIVIDE_ROUND_UP(params->width, 4*params->xbsep_luma);
+  params->y_num_mb =
+    DIVIDE_ROUND_UP(params->height, 4*params->ybsep_luma);
+
+  params->x_num_blocks = 4 * params->x_num_mb;
+  params->y_num_blocks = 4 * params->y_num_mb;
+  params->mc_luma_width = 4 * params->x_num_mb * params->xbsep_luma;
+  params->mc_luma_height = 4 * params->y_num_mb * params->ybsep_luma;
+  params->mc_chroma_width = params->mc_luma_width / params->chroma_h_scale;
+  params->mc_chroma_height = params->mc_luma_width / params->chroma_v_scale;
+}
+
 void
 carid_params_calculate_iwt_sizes (CaridParams *params)
 {
-
   CARID_DEBUG ("chroma size %d x %d", params->chroma_width,
       params->chroma_height);
   if (params->is_intra) {

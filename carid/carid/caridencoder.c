@@ -50,6 +50,8 @@ carid_encoder_new (void)
   params->chroma_h_scale = 2;
   params->chroma_v_scale = 2;
   params->transform_depth = 4;
+  params->xbsep_luma = 8;
+  params->ybsep_luma = 8;
 
   base_quant_index = 18;
   encoder->encoder_params.quant_index_dc = 6;
@@ -94,8 +96,6 @@ carid_encoder_set_size (CaridEncoder *encoder, int width, int height)
     (width + params->chroma_h_scale - 1) / params->chroma_h_scale;
   params->chroma_height =
     (height + params->chroma_v_scale - 1) / params->chroma_v_scale;
-
-  carid_params_calculate_iwt_sizes (params);
 
   if (encoder->frame) {
     carid_frame_free (encoder->frame);
@@ -353,6 +353,8 @@ carid_encoder_encode_intra (CaridEncoder *encoder)
   CaridParams *params = &encoder->params;
   int is_ref = encoder->picture->is_ref;
 
+  carid_params_calculate_iwt_sizes (params);
+
   if (encoder->frame == NULL) {
     encoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
         params->iwt_luma_width, params->iwt_luma_height, 2, 2);
@@ -399,6 +401,9 @@ carid_encoder_encode_inter (CaridEncoder *encoder)
 {
   CaridParams *params = &encoder->params;
   //int is_ref = 0;
+
+  carid_params_calculate_mc_sizes (params);
+  carid_params_calculate_iwt_sizes (params);
 
   if (encoder->frame == NULL) {
     encoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
@@ -985,21 +990,11 @@ carid_encoder_motion_predict (CaridEncoder *encoder)
   double skew_x, skew_y;
   double sum_x, sum_y;
 
-  params->xbsep_luma = 8;
-  params->ybsep_luma = 8;
-
-  params->x_num_mb = encoder->params.width / (4*params->xbsep_luma);
-#if 0
-  if (encoder->width % (4*xbsep_luma)) {
-    x_num_mb++;
-  }
-#endif
-  params->y_num_mb = encoder->params.height / (4*params->ybsep_luma);
-#if 0
-  if (encoder->height % (4*ybsep_luma)) {
-    y_num_mb++;
-  }
-#endif
+#define DIVIDE_ROUND_UP(a,b) (((a) + (b) - 1)/(b))
+  params->x_num_mb =
+    DIVIDE_ROUND_UP(encoder->params.width, 4*params->xbsep_luma);
+  params->y_num_mb =
+    DIVIDE_ROUND_UP(encoder->params.height, 4*params->ybsep_luma);
 
   if (encoder->motion_vectors == NULL) {
     encoder->motion_vectors = malloc(sizeof(CaridMotionVector)*

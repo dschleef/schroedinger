@@ -48,6 +48,8 @@ struct _CaridParams {
   int chroma_height;
   int mc_chroma_width;
   int mc_chroma_height;
+  int mc_luma_width;
+  int mc_luma_height;
   int is_intra;
 
   /* transform parameters */
@@ -68,6 +70,8 @@ struct _CaridParams {
   int ybsep_luma;
   int x_num_mb;
   int y_num_mb;
+  int x_num_blocks;
+  int y_num_blocks;
   int mv_precision;
   int global_only_flag;
   int global_prec_bits;
@@ -129,6 +133,7 @@ struct _CaridPicture {
   int retire[10];
 };
 
+void carid_params_calculate_mc_sizes (CaridParams *params);
 void carid_params_calculate_iwt_sizes (CaridParams *params);
 
 void carid_params_set_video_format (CaridParams *params, int index);

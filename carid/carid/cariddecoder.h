@@ -11,6 +11,7 @@ typedef struct _CaridDecoder CaridDecoder;
 
 struct _CaridDecoder {
   CaridFrame *frame;
+  CaridFrame *mc_tmp_frame;
   CaridFrame *reference_frames[10];
   CaridFrame *output_frame;
 
