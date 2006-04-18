@@ -1,7 +1,7 @@
-#ifndef _CARID_CARID_CARID_STDINT_H
-#define _CARID_CARID_CARID_STDINT_H 1
+#ifndef _SCHROEDINGER_CARID_CARID_STDINT_H
+#define _SCHROEDINGER_CARID_CARID_STDINT_H 1
 #ifndef _GENERATED_STDINT_H
-#define _GENERATED_STDINT_H "carid 0.1.0.1"
+#define _GENERATED_STDINT_H "schroedinger 0.1.0.1"
 /* generated using gnu compiler gcc (GCC) 4.0.3 (Ubuntu 4.0.3-1ubuntu4) */
 #define _STDINT_HAVE_STDINT_H 1
 

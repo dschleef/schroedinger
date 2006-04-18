@@ -17,10 +17,15 @@ struct _CaridEncoderParams {
 
 struct _CaridEncoder {
   CaridFrame *frame;
+  CaridFrame *encode_frame;
 
   CaridBits *bits;
 
   CaridFrame *frame_queue[10];
+  int frame_queue_length;
+
+  int frame_queue_index;
+
   CaridFrame *reference_frames[10];
 
   int need_rap;
@@ -43,6 +48,13 @@ struct _CaridEncoder {
   int frame_number;
 
   CaridMotionVector *motion_vectors;
+
+  CaridPicture picture_list[10];
+  int n_pictures;
+  int picture_index;
+
+  /* picture that is currently being encoded */
+  CaridPicture *picture;
 };
 
 CaridEncoder * carid_encoder_new (void);

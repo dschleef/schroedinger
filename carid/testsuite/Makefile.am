@@ -2,7 +2,7 @@
 
 noinst_PROGRAMS = arith arith_encode arith_decode codes bits bits2 wavelet wavelet2 tables wavelet_2d
 
-TESTS = arith arith_encode arith_decode bits bits2 wavelet wavelet2 tables wavelet_2d
+TESTS = arith bits bits2 wavelet wavelet2 tables wavelet_2d
 
 
 arith_CFLAGS = $(CARID_CFLAGS)

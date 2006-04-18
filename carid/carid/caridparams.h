@@ -5,6 +5,7 @@
 typedef struct _CaridParams CaridParams;
 typedef struct _CaridSubband CaridSubband;
 typedef struct _CaridMotionVector CaridMotionVector;
+typedef struct _CaridPicture CaridPicture;
 
 struct _CaridParams {
 
@@ -115,6 +116,17 @@ struct _CaridMotionVector {
   int y;
   int dc[3];
   int metric;
+};
+
+struct _CaridPicture {
+  int is_ref;
+  int n_refs;
+
+  int frame_number;
+  int reference_frame_number[2];
+
+  int n_retire;
+  int retire[10];
 };
 
 void carid_params_calculate_iwt_sizes (CaridParams *params);

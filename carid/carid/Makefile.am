@@ -3,6 +3,8 @@ pkgincludedir = $(includedir)/carid-@CARID_MAJORMINOR@/carid
 
 lib_LTLIBRARIES = libcarid-@CARID_MAJORMINOR@.la
 
+DISTCLEANFILES = carid-stdint.h
+
 libcarid_@CARID_MAJORMINOR@_la_SOURCES = \
 	carid-stdint.h \
 	carid.h \
@@ -11,6 +13,7 @@ libcarid_@CARID_MAJORMINOR@_la_SOURCES = \
 	caridarith.h \
 	caridbits.c \
 	caridbits.h \
+	caridbitstream.h \
 	cariddecoder.c \
 	cariddecoder.h \
 	cariddebug.c \

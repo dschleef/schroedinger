@@ -1,5 +1,5 @@
 AC_PREREQ([2.58])
-AC_INIT(carid,0.1.0.1)
+AC_INIT(schroedinger,0.1.0.1)
 
 AS_NANO(CARID_CVS=no,CARID_CVS=no)
 

@@ -8,10 +8,18 @@
 #include <string.h>
 #include <stdio.h>
 
+static void carid_encoder_create_picture_list (CaridEncoder *encoder);
 static void predict_dc (CaridMotionVector *mv, CaridFrame *frame,
     int x, int y, int w, int h);
 static void predict_motion (CaridMotionVector *mv, CaridFrame *frame,
     CaridFrame *reference_frame, int x, int y, int w, int h);
+
+static void carid_encoder_frame_queue_push (CaridEncoder *encoder,
+    CaridFrame *frame);
+static CaridFrame * carid_encoder_frame_queue_get (CaridEncoder *encoder,
+    int frame_index);
+static void carid_encoder_frame_queue_remove (CaridEncoder *encoder,
+    int frame_index);
 
 
 CaridEncoder *
@@ -103,7 +111,10 @@ round_up_pow2 (int x, int pow)
 void
 carid_encoder_push_frame (CaridEncoder *encoder, CaridFrame *frame)
 {
-  encoder->frame_queue[0] = frame;
+  frame->frame_number = encoder->frame_queue_index;
+  encoder->frame_queue_index++;
+
+  carid_encoder_frame_queue_push (encoder, frame);
 }
 
 CaridBuffer *
@@ -112,29 +123,51 @@ carid_encoder_encode (CaridEncoder *encoder)
   CaridBuffer *outbuffer;
   CaridBuffer *subbuffer;
   
-  if (!encoder->need_rap && encoder->frame_queue[0] == NULL) {
-    /* nothing to do */
-    return NULL;
+  if (encoder->need_rap) {
+    outbuffer = carid_buffer_new_and_alloc (0x100);
+
+    encoder->bits = carid_bits_new ();
+    carid_bits_encode_init (encoder->bits, outbuffer);
+
+    carid_encoder_encode_rap (encoder);
+    encoder->need_rap = FALSE;
+
+    if (encoder->bits->offset > 0) {
+      subbuffer = carid_buffer_new_subbuffer (outbuffer, 0,
+          encoder->bits->offset/8);
+    } else {
+      subbuffer = NULL;
+    }
+    carid_bits_free (encoder->bits);
+    carid_buffer_unref (outbuffer);
+
+    return subbuffer;
   }
+ 
+  if (encoder->picture_index >= encoder->n_pictures) {
+    carid_encoder_create_picture_list (encoder);
+  }
+  encoder->picture = &encoder->picture_list[encoder->picture_index];
+
+  encoder->encode_frame = carid_encoder_frame_queue_get (encoder,
+      encoder->picture->frame_number);
+  if (encoder->encode_frame == NULL) return NULL;
+
+  carid_encoder_frame_queue_remove (encoder, encoder->picture->frame_number);
 
   outbuffer = carid_buffer_new_and_alloc (0x10000);
 
   encoder->bits = carid_bits_new ();
   carid_bits_encode_init (encoder->bits, outbuffer);
 
-  if (encoder->need_rap) {
-    carid_encoder_encode_rap (encoder);
-    encoder->need_rap = FALSE;
+  CARID_DEBUG("frame number %d", encoder->frame_number);
+  if (encoder->picture->n_refs > 0) {
+    carid_encoder_encode_inter (encoder);
   } else {
-    CARID_DEBUG("frame number %d", encoder->frame_number);
-    if ((encoder->frame_number & 7) == 0) {
-      carid_encoder_encode_intra (encoder);
-    } else {
-      carid_encoder_encode_inter (encoder);
-    }
-
-    encoder->frame_number++;
+    carid_encoder_encode_intra (encoder);
   }
+
+  encoder->picture_index++;
 
   CARID_ERROR("encoded %d bits", encoder->bits->offset);
 
@@ -148,6 +181,75 @@ carid_encoder_encode (CaridEncoder *encoder)
   carid_buffer_unref (outbuffer);
 
   return subbuffer;
+}
+
+static void
+carid_encoder_create_picture_list (CaridEncoder *encoder)
+{
+  int type = 1;
+  int i;
+
+  switch(type) {
+    case 0:
+      /* intra only */
+      encoder->n_pictures = 1;
+      encoder->picture_list[0].is_ref = 0;
+      encoder->picture_list[0].n_refs = 0;
+      encoder->picture_list[0].frame_number = encoder->frame_number;
+      encoder->frame_number++;
+      break;
+    case 1:
+      /* */
+      encoder->n_pictures = 8;
+      encoder->picture_list[0].is_ref = 1;
+      encoder->picture_list[0].n_refs = 0;
+      encoder->picture_list[0].frame_number = encoder->frame_number;
+      if (encoder->frame_number != 0) {
+        encoder->picture_list[0].n_retire = 1;
+        encoder->picture_list[0].retire[0] = encoder->frame_number - 8;
+      }
+      for(i=1;i<8;i++){
+        encoder->picture_list[i].is_ref = 0;
+        encoder->picture_list[i].n_refs = 1;
+        encoder->picture_list[i].frame_number = encoder->frame_number + i;
+        encoder->picture_list[i].reference_frame_number[0] =
+          encoder->frame_number;
+        encoder->picture_list[i].n_retire = 0;
+      }
+      encoder->frame_number+=8;
+      break;
+    case 2:
+      /* */
+      i = 0;
+      if (encoder->frame_number == 0) {
+        encoder->n_pictures = 1;
+        encoder->picture_list[0].is_ref = 1;
+        encoder->picture_list[0].n_refs = 0;
+        encoder->picture_list[0].frame_number = encoder->frame_number;
+      } else {
+        encoder->picture_list[0].is_ref = 1;
+        encoder->picture_list[0].n_refs = 0;
+        encoder->picture_list[0].frame_number = encoder->frame_number + 7;
+        for(i=1;i<8;i++){
+          encoder->picture_list[i].is_ref = 0;
+          encoder->picture_list[i].n_refs = 2;
+          encoder->picture_list[i].frame_number = encoder->frame_number + i - 1;
+          encoder->picture_list[i].reference_frame_number[0] =
+            encoder->frame_number - 1;
+          encoder->picture_list[i].reference_frame_number[0] =
+            encoder->frame_number + 7;
+          encoder->picture_list[i].n_retire = 0;
+        }
+        encoder->picture_list[7].n_retire = 1;
+        encoder->picture_list[7].retire[0] = encoder->frame_number - 1;
+      }
+      encoder->frame_number+=encoder->n_pictures;
+      break;
+    default:
+      CARID_ASSERT(0);
+      break;
+  }
+  encoder->picture_index = 0;
 }
 
 void
@@ -230,10 +332,9 @@ carid_encoder_encode_intra (CaridEncoder *encoder)
 
   carid_encoder_encode_frame_header (encoder, CARID_PARSE_CODE_INTRA_REF);
 
-  carid_frame_convert (encoder->frame, encoder->frame_queue[0]);
+  carid_frame_convert (encoder->frame, encoder->encode_frame);
 
-  carid_frame_free (encoder->frame_queue[0]);
-  encoder->frame_queue[0] = NULL;
+  carid_frame_free (encoder->encode_frame);
 
   carid_encoder_encode_transform_parameters (encoder);
 
@@ -285,13 +386,10 @@ carid_encoder_encode_inter (CaridEncoder *encoder)
 
   carid_encoder_encode_frame_prediction (encoder);
 
-  carid_frame_free (encoder->frame_queue[0]);
-  encoder->frame_queue[0] = NULL;
+  carid_frame_free (encoder->encode_frame);
 #if 0
-  carid_frame_convert (encoder->frame, encoder->frame_queue[0]);
-
-  carid_frame_free (encoder->frame_queue[0]);
-  encoder->frame_queue[0] = NULL;
+  carid_frame_convert (encoder->frame, encoder->encode_frame);
+  carid_frame_free (encoder->encode_frame);
 
   carid_encoder_encode_transform_parameters (encoder);
 
@@ -892,7 +990,7 @@ carid_encoder_motion_predict (CaridEncoder *encoder)
   if (!ref_frame) {
     CARID_ERROR("no reference frame");
   }
-  frame = encoder->frame_queue[0];
+  frame = encoder->encode_frame;
 
   sum_pred_x = 0;
   sum_pred_y = 0;
@@ -1222,4 +1320,41 @@ predict_dc (CaridMotionVector *mv, CaridFrame *frame, int x, int y,
   mv->pred_mode = 0;
   mv->metric = metric;
 }
+
+
+/* frame queue */
+
+static void
+carid_encoder_frame_queue_push (CaridEncoder *encoder, CaridFrame *frame)
+{
+  encoder->frame_queue[encoder->frame_queue_length] = frame;
+  encoder->frame_queue_length++;
+}
+
+static CaridFrame *
+carid_encoder_frame_queue_get (CaridEncoder *encoder, int frame_index)
+{
+  int i;
+  for(i=0;i<encoder->frame_queue_length;i++){
+    if (encoder->frame_queue[i]->frame_number == frame_index) {
+      return encoder->frame_queue[i];
+    }
+  }
+  return NULL;
+}
+
+static void
+carid_encoder_frame_queue_remove (CaridEncoder *encoder, int frame_index)
+{
+  int i;
+  for(i=0;i<encoder->frame_queue_length;i++){
+    if (encoder->frame_queue[i]->frame_number == frame_index) {
+      memmove (encoder->frame_queue + i, encoder->frame_queue + i + 1,
+          sizeof(CaridFrame *)*(encoder->frame_queue_length - i - 1));
+      encoder->frame_queue_length--;
+      return;
+    }
+  }
+}
+
 
