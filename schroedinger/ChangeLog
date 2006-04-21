@@ -1,5 +1,9 @@
 2006-04-21  David Schleef  <ds@schleef.org>
 
+	* configure.ac: Add hackaround for ld bug.
+
+2006-04-21  David Schleef  <ds@schleef.org>
+
 	Fixes to make stuff compile with the new name
 	* Makefile.am:
 	* configure.ac:

@@ -61,6 +61,8 @@ SCHRO_CFLAGS="$SCHRO_CFLAGS -I\$(top_srcdir)"
 AC_SUBST(SCHRO_CFLAGS)
 
 SCHRO_LIBS="\$(top_builddir)/schroedinger/libschroedinger-$SCHRO_MAJORMINOR.la"
+# hack around ld bug
+SCHRO_LIBS="$SCHRO_LIBS $LIBOIL_LIBS"
 AC_SUBST(SCHRO_LIBS)
 
 ########################
