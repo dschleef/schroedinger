@@ -1,10 +1,10 @@
 
-#ifndef HAVE_CONFIG_H
+#ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <caridbuffer.h>
-//#include <cariddebug.h>
+#include <carid/caridbuffer.h>
+//#include <carid/cariddebug.h>
 #include <string.h>
 #include <stdlib.h>
 #include <liboil/liboil.h>
