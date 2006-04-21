@@ -2,7 +2,7 @@
 #ifndef _SCHRO_WAVELET_H_
 #define _SCHRO_WAVELET_H_
 
-#include <schro/schro-stdint.h>
+#include <schroedinger/schro-stdint.h>
 
 enum {
   SCHRO_WAVELET_DAUB97,

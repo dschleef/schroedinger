@@ -2,7 +2,7 @@
 #ifndef __SCHRO_FRAME_H__
 #define __SCHRO_FRAME_H__
 
-#include <schro/schrobuffer.h>
+#include <schroedinger/schrobuffer.h>
 
 typedef struct _SchroFrame SchroFrame;
 typedef struct _SchroFrameComponent SchroFrameComponent;

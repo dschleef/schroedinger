@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <schro/schro.h>
+#include <schroedinger/schro.h>
 
 #define BUFFER_SIZE 10000
 

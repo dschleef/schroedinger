@@ -1,5 +1,5 @@
 
-#include <schro/schro.h>
+#include <schroedinger/schro.h>
 #include <string.h>
 #include <stdio.h>
 #include <liboil/liboil.h>

@@ -1,5 +1,5 @@
 
-#include <schro/schro-stdint.h>
+#include <schroedinger/schro-stdint.h>
 
 int16_t schro_table_offset[61] = {
       0,     0,     0,     1,

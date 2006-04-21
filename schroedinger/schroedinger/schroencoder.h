@@ -2,9 +2,9 @@
 #ifndef __SCHRO_ENCODER_H__
 #define __SCHRO_ENCODER_H__
 
-#include <schro/schrobuffer.h>
-#include <schro/schroparams.h>
-#include <schro/schroframe.h>
+#include <schroedinger/schrobuffer.h>
+#include <schroedinger/schroparams.h>
+#include <schroedinger/schroframe.h>
 
 
 typedef struct _SchroEncoder SchroEncoder;

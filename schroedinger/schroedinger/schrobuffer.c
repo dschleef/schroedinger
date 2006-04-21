@@ -3,8 +3,8 @@
 #include "config.h"
 #endif
 
-#include <schro/schrobuffer.h>
-//#include <schro/schrodebug.h>
+#include <schroedinger/schrobuffer.h>
+//#include <schroedinger/schrodebug.h>
 #include <string.h>
 #include <stdlib.h>
 #include <liboil/liboil.h>

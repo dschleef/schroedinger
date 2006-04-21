@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <schro/schroarith.h>
+#include <schroedinger/schroarith.h>
 
 
 

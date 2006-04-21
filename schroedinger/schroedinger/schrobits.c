@@ -8,8 +8,8 @@
 #include <string.h>
 #include <liboil/liboil.h>
 
-#include <schro/schrobits.h>
-#include <schro/schro.h>
+#include <schroedinger/schrobits.h>
+#include <schroedinger/schro.h>
 
 
 SchroBits *

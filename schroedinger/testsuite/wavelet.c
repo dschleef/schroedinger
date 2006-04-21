@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <schro/schro.h>
+#include <schroedinger/schro.h>
 
 int16_t b1[128];
 int16_t b2[128];

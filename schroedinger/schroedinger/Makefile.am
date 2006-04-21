@@ -1,11 +1,11 @@
 
-pkgincludedir = $(includedir)/schro-@SCHRO_MAJORMINOR@/schro
+pkgincludedir = $(includedir)/schroedinger-@SCHRO_MAJORMINOR@/schro
 
-lib_LTLIBRARIES = libschro-@SCHRO_MAJORMINOR@.la
+lib_LTLIBRARIES = libschroedinger-@SCHRO_MAJORMINOR@.la
 
 DISTCLEANFILES = schro-stdint.h
 
-libschro_@SCHRO_MAJORMINOR@_la_SOURCES = \
+libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schro-stdint.h \
 	schro.h \
 	schro.c \
@@ -25,7 +25,6 @@ libschro_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrobuffer.c \
 	schrobuffer.h \
 	schromotion.c \
-	schromotion.h \
 	schroparams.c \
 	schroparams.h \
 	schrotables.c \
@@ -34,9 +33,9 @@ libschro_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrowavelet.h \
 	schrobitstream.h
 
-libschro_@SCHRO_MAJORMINOR@_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-libschro_@SCHRO_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)
-libschro_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
+libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)
+libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-no-undefined \
 	-version-info $(SCHRO_LIBVERSION) \
 	-export-symbols-regex '^schro_'

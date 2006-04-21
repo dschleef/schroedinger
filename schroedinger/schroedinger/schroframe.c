@@ -4,8 +4,8 @@
 #include <config.h>
 #endif
 
-#include <schro/schro.h>
-#include <schro/schroframe.h>
+#include <schroedinger/schro.h>
+#include <schroedinger/schroframe.h>
 #include <liboil/liboil.h>
 
 #include <stdlib.h>

@@ -33,7 +33,7 @@
 #include <gst/base/gstpushsrc.h>
 #include <gst/video/video.h>
 #include <string.h>
-#include <schro/schro.h>
+#include <schroedinger/schro.h>
 #include <liboil/liboil.h>
 #include <math.h>
 

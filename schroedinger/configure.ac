@@ -26,7 +26,7 @@ AM_PROG_AS
 dnl allow for different autotools
 AS_AUTOTOOLS_ALTERNATE
 
-AC_CONFIG_SRCDIR([schro/schro.h])
+AC_CONFIG_SRCDIR([schroedinger/schro.h])
 
 ACLOCAL_AMFLAGS="-I m4 $ACLOCAL_AMFLAGS"
 AC_SUBST(ACLOCAL_AMFLAGS)
@@ -35,7 +35,7 @@ dnl set up gettext
 dnl the version check needs to stay here because autopoint greps for it
 #AM_GNU_GETTEXT_VERSION([0.11.5])
 #AM_GNU_GETTEXT([external])
-#GST_GETTEXT([schro-$SCHRO_MAJORMINOR])
+#GST_GETTEXT([schroedinger-$SCHRO_MAJORMINOR])
 
 dnl liboil is required
 PKG_CHECK_MODULES(LIBOIL, liboil-0.3 >= 0.3.2, HAVE_LIBOIL=yes, HAVE_LIBOIL=no)
@@ -49,7 +49,7 @@ fi
 
 GTK_DOC_CHECK([1.0])
 
-AX_CREATE_STDINT_H([schro/schro-stdint.h])
+AX_CREATE_STDINT_H([schroedinger/schro-stdint.h])
 
 AS_COMPILER_FLAG(-Wall, SCHRO_CFLAGS="$SCHRO_CFLAGS -Wall")
 if test "x$SCHRO_CVS" = "xyes"
@@ -60,7 +60,7 @@ fi
 SCHRO_CFLAGS="$SCHRO_CFLAGS -I\$(top_srcdir)"
 AC_SUBST(SCHRO_CFLAGS)
 
-SCHRO_LIBS="\$(top_builddir)/schro/libschro-$SCHRO_MAJORMINOR.la"
+SCHRO_LIBS="\$(top_builddir)/schroedinger/libschroedinger-$SCHRO_MAJORMINOR.la"
 AC_SUBST(SCHRO_LIBS)
 
 ########################
@@ -187,12 +187,12 @@ AC_SUBST(pkgconfigdir)
 AC_CONFIG_FILES([
 Makefile 
 doc/Makefile
-schro/Makefile
+schroedinger/Makefile
 gst/Makefile
 testsuite/Makefile
-schro-uninstalled.pc
-schro.pc
-libschro.spec
+schroedinger-uninstalled.pc
+schroedinger.pc
+libschroedinger.spec
 ])
 AC_OUTPUT
 

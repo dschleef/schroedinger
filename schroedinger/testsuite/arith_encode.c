@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <schro/schro.h>
+#include <schroedinger/schro.h>
 
 #define BUFFER_SIZE 10000
 uint8_t input_buffer[BUFFER_SIZE];

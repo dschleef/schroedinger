@@ -1,21 +1,21 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = doc schro gst testsuite
+SUBDIRS = doc schroedinger gst testsuite
 
-EXTRA_DIST = COPYING COPYING.GPL COPYING.LGPL COPYING.MIT COPYING.MPL autogen.sh libschro.spec
+EXTRA_DIST = COPYING COPYING.GPL COPYING.LGPL COPYING.MIT COPYING.MPL autogen.sh libschroedinger.spec
 
-pkgconfig_DATA = schro-$(SCHRO_MAJORMINOR).pc
+pkgconfig_DATA = schroedinger-$(SCHRO_MAJORMINOR).pc
 
-schro-$(SCHRO_MAJORMINOR).pc: schro.pc
-	cp schro.pc schro-$(SCHRO_MAJORMINOR).pc
+schroedinger-$(SCHRO_MAJORMINOR).pc: schroedinger.pc
+	cp schroedinger.pc schroedinger-$(SCHRO_MAJORMINOR).pc
 
-schro-$(SCHRO_MAJORMINOR)-uninstalled.pc: schro-uninstalled.pc
-	cp schro-uninstalled.pc schro-$(SCHRO_MAJORMINOR)-uninstalled.pc
+schroedinger-$(SCHRO_MAJORMINOR)-uninstalled.pc: schroedinger-uninstalled.pc
+	cp schroedinger-uninstalled.pc schroedinger-$(SCHRO_MAJORMINOR)-uninstalled.pc
 
-BUILT_SOURCES=schro-$(SCHRO_MAJORMINOR)-uninstalled.pc
+BUILT_SOURCES=schroedinger-$(SCHRO_MAJORMINOR)-uninstalled.pc
 
-CLEANFILES = schro-$(SCHRO_MAJORMINOR).pc schro-$(SCHRO_MAJORMINOR)-uninstalled.pc
+CLEANFILES = schroedinger-$(SCHRO_MAJORMINOR).pc schroedinger-$(SCHRO_MAJORMINOR)-uninstalled.pc
 
 ACLOCAL_FLAGS = -I m4
 

@@ -2,18 +2,18 @@
 #ifndef __SCHRO_SCHRO_H__
 #define __SCHRO_SCHRO_H__
 
-#include <schro/schro-stdint.h>
-#include <schro/schroarith.h>
-#include <schro/schrobits.h>
-#include <schro/schrobitstream.h>
-#include <schro/schrobuffer.h>
-#include <schro/schrodecoder.h>
-#include <schro/schrodebug.h>
-#include <schro/schroencoder.h>
-#include <schro/schroframe.h>
-#include <schro/schroparams.h>
-#include <schro/schrotables.h>
-#include <schro/schrowavelet.h>
+#include <schroedinger/schro-stdint.h>
+#include <schroedinger/schroarith.h>
+#include <schroedinger/schrobits.h>
+#include <schroedinger/schrobitstream.h>
+#include <schroedinger/schrobuffer.h>
+#include <schroedinger/schrodecoder.h>
+#include <schroedinger/schrodebug.h>
+#include <schroedinger/schroencoder.h>
+#include <schroedinger/schroframe.h>
+#include <schroedinger/schroparams.h>
+#include <schroedinger/schrotables.h>
+#include <schroedinger/schrowavelet.h>
 
 
 void schro_init(void);

@@ -2,9 +2,9 @@
 #ifndef _SCHRO_ARITH_H_
 #define _SCHRO_ARITH_H_
 
-#include <schro/schro-stdint.h>
-#include <schro/schrobits.h>
-#include <schro/schrobuffer.h>
+#include <schroedinger/schro-stdint.h>
+#include <schroedinger/schrobits.h>
+#include <schroedinger/schrobuffer.h>
 
 enum {
   SCHRO_CTX_BLOCK_SKIP = 0,

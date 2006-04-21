@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <schro/schro.h>
+#include <schroedinger/schro.h>
 
 void
 dump_bits (SchroBits *bits)

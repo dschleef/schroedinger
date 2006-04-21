@@ -22,7 +22,7 @@
 #endif
 
 #include <gst/gst.h>
-#include <schro/schro.h>
+#include <schroedinger/schro.h>
 #include <liboil/liboil.h>
 
 GType gst_schrotoy_get_type (void);

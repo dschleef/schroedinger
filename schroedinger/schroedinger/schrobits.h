@@ -2,8 +2,8 @@
 #ifndef _SCHRO_BITS_H_
 #define _SCHRO_BITS_H_
 
-#include <schro/schro-stdint.h>
-#include <schro/schrobuffer.h>
+#include <schroedinger/schro-stdint.h>
+#include <schroedinger/schrobuffer.h>
 
 
 #define SCHRO_ARITH_N_CONTEXTS 64

@@ -2,7 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <schro/schro.h>
+#include <schroedinger/schro.h>
 #include <stdarg.h>
 #include <stdio.h>
 

@@ -1,5 +1,46 @@
 2006-04-21  David Schleef  <ds@schleef.org>
 
+	Fixes to make stuff compile with the new name
+	* Makefile.am:
+	* configure.ac:
+	* gst/gstschro.c:
+	* gst/gstschrodec.c:
+	* gst/gstschroenc.c:
+	* gst/gstschrotoy.c:
+	* gst/gstwaveletvisualizer.c:
+	* schroedinger/Makefile.am:
+	* schroedinger/schro.c:
+	* schroedinger/schro.h:
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrobits.c:
+	* schroedinger/schrobits.h:
+	* schroedinger/schrobuffer.c:
+	* schroedinger/schrodebug.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schromotion.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schrotables.c:
+	* schroedinger/schrotables.h:
+	* schroedinger/schrowavelet.c:
+	* schroedinger/schrowavelet.h:
+	* testsuite/arith.c:
+	* testsuite/arith_decode.c:
+	* testsuite/arith_encode.c:
+	* testsuite/bits.c:
+	* testsuite/bits2.c:
+	* testsuite/codes.c:
+	* testsuite/wavelet.c:
+	* testsuite/wavelet2.c:
+	* testsuite/wavelet_2d.c:
+
+2006-04-21  David Schleef  <ds@schleef.org>
+
         * global search/replace of carid->schro[edinger].
 
 2006-04-21  David Schleef  <ds@schleef.org>
