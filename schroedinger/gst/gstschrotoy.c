@@ -33,42 +33,42 @@
 #include <gst/base/gstbasetransform.h>
 #include <gst/video/video.h>
 #include <string.h>
-#include <carid/carid.h>
+#include <schro/schro.h>
 #include <liboil/liboil.h>
 #include <math.h>
 
-#define GST_TYPE_CARIDTOY \
-  (gst_caridtoy_get_type())
-#define GST_CARIDTOY(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_CARIDTOY,GstCaridtoy))
-#define GST_CARIDTOY_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_CARIDTOY,GstCaridtoyClass))
-#define GST_IS_CARIDTOY(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_CARIDTOY))
-#define GST_IS_CARIDTOY_CLASS(obj) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_CARIDTOY))
+#define GST_TYPE_SCHROTOY \
+  (gst_schrotoy_get_type())
+#define GST_SCHROTOY(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_SCHROTOY,GstSchrotoy))
+#define GST_SCHROTOY_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_SCHROTOY,GstSchrotoyClass))
+#define GST_IS_SCHROTOY(obj) \
+  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_SCHROTOY))
+#define GST_IS_SCHROTOY_CLASS(obj) \
+  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_SCHROTOY))
 
-typedef struct _GstCaridtoy GstCaridtoy;
-typedef struct _GstCaridtoyClass GstCaridtoyClass;
+typedef struct _GstSchrotoy GstSchrotoy;
+typedef struct _GstSchrotoyClass GstSchrotoyClass;
 
-struct _GstCaridtoy
+struct _GstSchrotoy
 {
   GstBaseTransform base_transform;
 
   int wavelet_type;
   int level;
 
-  CaridEncoder *encoder;
-  CaridDecoder *decoder;
+  SchroEncoder *encoder;
+  SchroDecoder *decoder;
 };
 
-struct _GstCaridtoyClass
+struct _GstSchrotoyClass
 {
   GstBaseTransformClass parent_class;
 };
 
 
-/* GstCaridtoy signals and args */
+/* GstSchrotoy signals and args */
 enum
 {
   /* FILL ME */
@@ -83,27 +83,27 @@ enum
       /* FILL ME */
 };
 
-static void gst_caridtoy_base_init (gpointer g_class);
-static void gst_caridtoy_class_init (gpointer g_class,
+static void gst_schrotoy_base_init (gpointer g_class);
+static void gst_schrotoy_class_init (gpointer g_class,
     gpointer class_data);
-static void gst_caridtoy_init (GTypeInstance * instance, gpointer g_class);
+static void gst_schrotoy_init (GTypeInstance * instance, gpointer g_class);
 
-static void gst_caridtoy_set_property (GObject * object, guint prop_id,
+static void gst_schrotoy_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec);
-static void gst_caridtoy_get_property (GObject * object, guint prop_id,
+static void gst_schrotoy_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec);
 
-static GstFlowReturn gst_caridtoy_transform_ip (GstBaseTransform * base_transform,
+static GstFlowReturn gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
     GstBuffer *buf);
 
-static GstStaticPadTemplate gst_caridtoy_sink_template =
+static GstStaticPadTemplate gst_schrotoy_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
     GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420"))
     );
 
-static GstStaticPadTemplate gst_caridtoy_src_template =
+static GstStaticPadTemplate gst_schrotoy_src_template =
     GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
@@ -111,32 +111,32 @@ static GstStaticPadTemplate gst_caridtoy_src_template =
     );
 
 GType
-gst_caridtoy_get_type (void)
+gst_schrotoy_get_type (void)
 {
   static GType compress_type = 0;
 
   if (!compress_type) {
     static const GTypeInfo compress_info = {
-      sizeof (GstCaridtoyClass),
-      gst_caridtoy_base_init,
+      sizeof (GstSchrotoyClass),
+      gst_schrotoy_base_init,
       NULL,
-      gst_caridtoy_class_init,
+      gst_schrotoy_class_init,
       NULL,
       NULL,
-      sizeof (GstCaridtoy),
+      sizeof (GstSchrotoy),
       0,
-      gst_caridtoy_init,
+      gst_schrotoy_init,
     };
 
     compress_type = g_type_register_static (GST_TYPE_BASE_TRANSFORM,
-        "GstCaridtoy", &compress_info, 0);
+        "GstSchrotoy", &compress_info, 0);
   }
   return compress_type;
 }
 
 
 static void
-gst_caridtoy_base_init (gpointer g_class)
+gst_schrotoy_base_init (gpointer g_class)
 {
   static GstElementDetails compress_details =
       GST_ELEMENT_DETAILS ("Video Filter Template",
@@ -147,15 +147,15 @@ gst_caridtoy_base_init (gpointer g_class)
   //GstBaseTransformClass *base_transform_class = GST_BASE_TRANSFORM_CLASS (g_class);
 
   gst_element_class_add_pad_template (element_class,
-      gst_static_pad_template_get (&gst_caridtoy_src_template));
+      gst_static_pad_template_get (&gst_schrotoy_src_template));
   gst_element_class_add_pad_template (element_class,
-      gst_static_pad_template_get (&gst_caridtoy_sink_template));
+      gst_static_pad_template_get (&gst_schrotoy_sink_template));
 
   gst_element_class_set_details (element_class, &compress_details);
 }
 
 static void
-gst_caridtoy_class_init (gpointer g_class, gpointer class_data)
+gst_schrotoy_class_init (gpointer g_class, gpointer class_data)
 {
   GObjectClass *gobject_class;
   GstBaseTransformClass *base_transform_class;
@@ -163,8 +163,8 @@ gst_caridtoy_class_init (gpointer g_class, gpointer class_data)
   gobject_class = G_OBJECT_CLASS (g_class);
   base_transform_class = GST_BASE_TRANSFORM_CLASS (g_class);
 
-  gobject_class->set_property = gst_caridtoy_set_property;
-  gobject_class->get_property = gst_caridtoy_get_property;
+  gobject_class->set_property = gst_schrotoy_set_property;
+  gobject_class->get_property = gst_schrotoy_get_property;
 
   g_object_class_install_property (gobject_class, ARG_WAVELET_TYPE,
       g_param_spec_int ("wavelet-type", "wavelet type", "wavelet type",
@@ -173,30 +173,30 @@ gst_caridtoy_class_init (gpointer g_class, gpointer class_data)
       g_param_spec_int ("level", "level", "level",
         0, 100, 0, G_PARAM_READWRITE));
 
-  base_transform_class->transform_ip = gst_caridtoy_transform_ip;
+  base_transform_class->transform_ip = gst_schrotoy_transform_ip;
 }
 
 static void
-gst_caridtoy_init (GTypeInstance * instance, gpointer g_class)
+gst_schrotoy_init (GTypeInstance * instance, gpointer g_class)
 {
-  GstCaridtoy *compress = GST_CARIDTOY (instance);
+  GstSchrotoy *compress = GST_SCHROTOY (instance);
 
-  GST_DEBUG ("gst_caridtoy_init");
+  GST_DEBUG ("gst_schrotoy_init");
 
-  compress->encoder = carid_encoder_new ();
-  compress->decoder = carid_decoder_new ();
+  compress->encoder = schro_encoder_new ();
+  compress->decoder = schro_decoder_new ();
 }
 
 static void
-gst_caridtoy_set_property (GObject * object, guint prop_id,
+gst_schrotoy_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
 {
-  GstCaridtoy *src;
+  GstSchrotoy *src;
 
-  g_return_if_fail (GST_IS_CARIDTOY (object));
-  src = GST_CARIDTOY (object);
+  g_return_if_fail (GST_IS_SCHROTOY (object));
+  src = GST_SCHROTOY (object);
 
-  GST_DEBUG ("gst_caridtoy_set_property");
+  GST_DEBUG ("gst_schrotoy_set_property");
   switch (prop_id) {
     case ARG_WAVELET_TYPE:
       src->wavelet_type = g_value_get_int (value);
@@ -210,13 +210,13 @@ gst_caridtoy_set_property (GObject * object, guint prop_id,
 }
 
 static void
-gst_caridtoy_get_property (GObject * object, guint prop_id, GValue * value,
+gst_schrotoy_get_property (GObject * object, guint prop_id, GValue * value,
     GParamSpec * pspec)
 {
-  GstCaridtoy *src;
+  GstSchrotoy *src;
 
-  g_return_if_fail (GST_IS_CARIDTOY (object));
-  src = GST_CARIDTOY (object);
+  g_return_if_fail (GST_IS_SCHROTOY (object));
+  src = GST_SCHROTOY (object);
 
   switch (prop_id) {
     case ARG_WAVELET_TYPE:
@@ -232,33 +232,33 @@ gst_caridtoy_get_property (GObject * object, guint prop_id, GValue * value,
 }
 
 static GstFlowReturn
-gst_caridtoy_transform_ip (GstBaseTransform * base_transform,
+gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
     GstBuffer *buf)
 {
-  GstCaridtoy *compress;
+  GstSchrotoy *compress;
   int width;
   int height;
-  CaridBuffer *input_buffer;
-  CaridBuffer *encoded_buffer;
-  CaridBuffer *decoded_buffer;
+  SchroBuffer *input_buffer;
+  SchroBuffer *encoded_buffer;
+  SchroBuffer *decoded_buffer;
 
   gst_structure_get_int (gst_caps_get_structure(buf->caps,0),
       "width", &width);
   gst_structure_get_int (gst_caps_get_structure(buf->caps,0),
       "height", &height);
 
-  g_return_val_if_fail (GST_IS_CARIDTOY (base_transform), GST_FLOW_ERROR);
-  compress = GST_CARIDTOY (base_transform);
+  g_return_val_if_fail (GST_IS_SCHROTOY (base_transform), GST_FLOW_ERROR);
+  compress = GST_SCHROTOY (base_transform);
 
-  carid_encoder_set_size (compress->encoder, width, height);
-  carid_encoder_set_wavelet_type (compress->encoder, compress->wavelet_type);
+  schro_encoder_set_size (compress->encoder, width, height);
+  schro_encoder_set_wavelet_type (compress->encoder, compress->wavelet_type);
 
   if (1) {
-  input_buffer = carid_buffer_new_with_data (GST_BUFFER_DATA (buf),
+  input_buffer = schro_buffer_new_with_data (GST_BUFFER_DATA (buf),
       GST_BUFFER_SIZE (buf));
-  carid_encoder_push_buffer (compress->encoder, input_buffer);
-  encoded_buffer = carid_encoder_encode (compress->encoder);
-  carid_buffer_unref (input_buffer);
+  schro_encoder_push_buffer (compress->encoder, input_buffer);
+  encoded_buffer = schro_encoder_encode (compress->encoder);
+  schro_buffer_unref (input_buffer);
 
 #if 0
   {
@@ -289,10 +289,10 @@ gst_caridtoy_transform_ip (GstBaseTransform * base_transform,
 #endif
 
 
-  decoded_buffer = carid_buffer_new_with_data (GST_BUFFER_DATA (buf),
+  decoded_buffer = schro_buffer_new_with_data (GST_BUFFER_DATA (buf),
       GST_BUFFER_SIZE (buf));
-  carid_decoder_set_output_buffer (compress->decoder, decoded_buffer);
-  carid_decoder_decode (compress->decoder, encoded_buffer);
+  schro_decoder_set_output_buffer (compress->decoder, decoded_buffer);
+  schro_decoder_decode (compress->decoder, encoded_buffer);
   } else {
     int16_t *frame_data;
     int16_t *tmp;
@@ -301,15 +301,15 @@ gst_caridtoy_transform_ip (GstBaseTransform * base_transform,
     tmp = g_malloc (2048);
     
     oil_convert_s16_u8 (frame_data, GST_BUFFER_DATA(buf), width*height);
-    carid_wavelet_transform_2d (compress->wavelet_type,
+    schro_wavelet_transform_2d (compress->wavelet_type,
         frame_data, width*2, width, height, tmp);
-    carid_wavelet_transform_2d (compress->wavelet_type,
+    schro_wavelet_transform_2d (compress->wavelet_type,
         frame_data, width*2*2, width/2, height/2, tmp);
 
 
-    carid_wavelet_inverse_transform_2d (compress->wavelet_type,
+    schro_wavelet_inverse_transform_2d (compress->wavelet_type,
         frame_data, width*2*2, width/2, height/2, tmp);
-    carid_wavelet_inverse_transform_2d (compress->wavelet_type,
+    schro_wavelet_inverse_transform_2d (compress->wavelet_type,
         frame_data, width*2, width, height, tmp);
     oil_convert_u8_s16 (GST_BUFFER_DATA(buf), frame_data, width*height);
 

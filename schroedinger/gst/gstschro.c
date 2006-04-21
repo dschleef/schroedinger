@@ -22,28 +22,28 @@
 #endif
 
 #include <gst/gst.h>
-#include <carid/carid.h>
+#include <schro/schro.h>
 #include <liboil/liboil.h>
 
-GType gst_caridtoy_get_type (void);
-GType gst_carid_enc_get_type (void);
-GType gst_carid_dec_get_type (void);
+GType gst_schrotoy_get_type (void);
+GType gst_schro_enc_get_type (void);
+GType gst_schro_dec_get_type (void);
 GType gst_waveletvisualizer_get_type (void);
 
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
-  carid_init();
+  schro_init();
   oil_init();
 
 #if 0
-  gst_element_register (plugin, "caridtoy", GST_RANK_NONE,
-      gst_caridtoy_get_type ());
+  gst_element_register (plugin, "schrotoy", GST_RANK_NONE,
+      gst_schrotoy_get_type ());
 #endif
-  gst_element_register (plugin, "caridenc", GST_RANK_PRIMARY,
-      gst_carid_enc_get_type ());
-  gst_element_register (plugin, "cariddec", GST_RANK_PRIMARY,
-      gst_carid_dec_get_type ());
+  gst_element_register (plugin, "schroenc", GST_RANK_PRIMARY,
+      gst_schro_enc_get_type ());
+  gst_element_register (plugin, "schrodec", GST_RANK_PRIMARY,
+      gst_schro_dec_get_type ());
 #if 0
   gst_element_register (plugin, "waveletvisualizer", GST_RANK_NONE,
       gst_waveletvisualizer_get_type ());
@@ -54,7 +54,7 @@ plugin_init (GstPlugin * plugin)
 
 GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,
     GST_VERSION_MINOR,
-    "carid",
-    "Carid plugins",
+    "schro",
+    "Schro plugins",
     plugin_init, VERSION, GST_LICENSE, GST_PACKAGE_NAME, GST_PACKAGE_ORIGIN)
 

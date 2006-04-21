@@ -2,28 +2,28 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <carid/carid.h>
+#include <schro/schro.h>
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
 
-static void carid_decoder_decode_macroblock(CaridDecoder *decoder, int i,
+static void schro_decoder_decode_macroblock(SchroDecoder *decoder, int i,
     int j);
-static void carid_decoder_decode_prediction_unit(CaridDecoder *decoder,
-    CaridMotionVector *mv);
-static void carid_decoder_predict (CaridDecoder *decoder);
+static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
+    SchroMotionVector *mv);
+static void schro_decoder_predict (SchroDecoder *decoder);
 
 
-CaridDecoder *
-carid_decoder_new (void)
+SchroDecoder *
+schro_decoder_new (void)
 {
-  CaridDecoder *decoder;
-  CaridParams *params;
+  SchroDecoder *decoder;
+  SchroParams *params;
 
-  decoder = malloc(sizeof(CaridDecoder));
-  memset (decoder, 0, sizeof(CaridDecoder));
+  decoder = malloc(sizeof(SchroDecoder));
+  memset (decoder, 0, sizeof(SchroDecoder));
 
   decoder->tmpbuf = malloc(1024 * 2);
   decoder->tmpbuf2 = malloc(1024 * 2);
@@ -38,13 +38,13 @@ carid_decoder_new (void)
 }
 
 void
-carid_decoder_free (CaridDecoder *decoder)
+schro_decoder_free (SchroDecoder *decoder)
 {
   if (decoder->frame) {
-    carid_frame_free (decoder->frame);
+    schro_frame_free (decoder->frame);
   }
   if (decoder->output_frame) {
-    carid_frame_free (decoder->output_frame);
+    schro_frame_free (decoder->output_frame);
   }
 
   free (decoder->tmpbuf);
@@ -53,16 +53,16 @@ carid_decoder_free (CaridDecoder *decoder)
 }
 
 void
-carid_decoder_set_output_frame (CaridDecoder *decoder, CaridFrame *frame)
+schro_decoder_set_output_frame (SchroDecoder *decoder, SchroFrame *frame)
 {
   if (decoder->output_frame) {
-    carid_frame_free (decoder->output_frame);
+    schro_frame_free (decoder->output_frame);
   }
   decoder->output_frame = frame;
 }
 
 int
-carid_decoder_is_parse_header (CaridBuffer *buffer)
+schro_decoder_is_parse_header (SchroBuffer *buffer)
 {
   uint8_t *data;
 
@@ -77,7 +77,7 @@ carid_decoder_is_parse_header (CaridBuffer *buffer)
 }
 
 int
-carid_decoder_is_rap (CaridBuffer *buffer)
+schro_decoder_is_rap (SchroBuffer *buffer)
 {
   uint8_t *data;
 
@@ -88,7 +88,7 @@ carid_decoder_is_rap (CaridBuffer *buffer)
     return 0;
   }
 
-  if (data[4] == CARID_PARSE_CODE_RAP) return 1;
+  if (data[4] == SCHRO_PARSE_CODE_RAP) return 1;
 
   return 0;
 }
@@ -105,84 +105,84 @@ round_up_pow2 (int x, int pow)
 #endif
 
 void
-carid_decoder_decode (CaridDecoder *decoder, CaridBuffer *buffer)
+schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
 {
-  CaridParams *params = &decoder->params;
+  SchroParams *params = &decoder->params;
   
-  decoder->bits = carid_bits_new ();
-  carid_bits_decode_init (decoder->bits, buffer);
+  decoder->bits = schro_bits_new ();
+  schro_bits_decode_init (decoder->bits, buffer);
 
-  if (carid_decoder_is_rap (buffer)) {
-    carid_decoder_decode_parse_header(decoder);
-    carid_decoder_decode_rap(decoder);
+  if (schro_decoder_is_rap (buffer)) {
+    schro_decoder_decode_parse_header(decoder);
+    schro_decoder_decode_rap(decoder);
 
-    carid_buffer_unref (buffer);
-    carid_bits_free (decoder->bits);
+    schro_buffer_unref (buffer);
+    schro_bits_free (decoder->bits);
     return;
   }
 
-  carid_decoder_decode_parse_header(decoder);
-  carid_decoder_decode_frame_header(decoder);
+  schro_decoder_decode_parse_header(decoder);
+  schro_decoder_decode_frame_header(decoder);
 
-  if (decoder->code == CARID_PARSE_CODE_INTRA_REF) {
-    CARID_ERROR("intra ref");
-    carid_decoder_decode_transform_parameters (decoder);
+  if (decoder->code == SCHRO_PARSE_CODE_INTRA_REF) {
+    SCHRO_ERROR("intra ref");
+    schro_decoder_decode_transform_parameters (decoder);
 
     if (decoder->frame == NULL) {
-      decoder->frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_S16,
+      decoder->frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
           params->iwt_luma_width, params->iwt_luma_height, 2, 2);
     }
 
-    carid_decoder_decode_transform_data (decoder, 0);
-    carid_decoder_iwt_transform (decoder, 0);
+    schro_decoder_decode_transform_data (decoder, 0);
+    schro_decoder_iwt_transform (decoder, 0);
 
-    carid_decoder_decode_transform_data (decoder, 1);
-    carid_decoder_iwt_transform (decoder, 1);
+    schro_decoder_decode_transform_data (decoder, 1);
+    schro_decoder_iwt_transform (decoder, 1);
 
-    carid_decoder_decode_transform_data (decoder, 2);
-    carid_decoder_iwt_transform (decoder, 2);
+    schro_decoder_decode_transform_data (decoder, 2);
+    schro_decoder_iwt_transform (decoder, 2);
 
-    carid_frame_convert (decoder->output_frame, decoder->frame);
+    schro_frame_convert (decoder->output_frame, decoder->frame);
 
     if (decoder->reference_frames[0] == NULL) {
-      decoder->reference_frames[0] = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_U8,
+      decoder->reference_frames[0] = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
           params->width, params->height, 2, 2);
     }
 
-    carid_frame_convert (decoder->reference_frames[0], decoder->frame);
-  } else if (decoder->code == CARID_PARSE_CODE_INTER_NON_REF) {
-    CARID_ERROR("inter non-ref");
-    carid_decoder_decode_frame_prediction (decoder);
+    schro_frame_convert (decoder->reference_frames[0], decoder->frame);
+  } else if (decoder->code == SCHRO_PARSE_CODE_INTER_NON_REF) {
+    SCHRO_ERROR("inter non-ref");
+    schro_decoder_decode_frame_prediction (decoder);
 
     /* FIXME */
-    CARID_ASSERT(params->xbsep_luma == 8);
-    CARID_ASSERT(params->ybsep_luma == 8);
+    SCHRO_ASSERT(params->xbsep_luma == 8);
+    SCHRO_ASSERT(params->ybsep_luma == 8);
 
     if (decoder->mc_tmp_frame == NULL) {
-      decoder->mc_tmp_frame = carid_frame_new_and_alloc (CARID_FRAME_FORMAT_U8,
+      decoder->mc_tmp_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
           params->mc_luma_width, params->mc_luma_height, 2, 2);
     }
 
     if (decoder->motion_vectors == NULL) {
-      decoder->motion_vectors = malloc(sizeof(CaridMotionVector) *
+      decoder->motion_vectors = malloc(sizeof(SchroMotionVector) *
           params->x_num_blocks * params->y_num_blocks);
     }
 
-    carid_decoder_decode_prediction_data (decoder);
-    carid_decoder_predict (decoder);
+    schro_decoder_decode_prediction_data (decoder);
+    schro_decoder_predict (decoder);
 
-    carid_frame_convert (decoder->output_frame, decoder->mc_tmp_frame);
+    schro_frame_convert (decoder->output_frame, decoder->mc_tmp_frame);
   }
 
-  carid_buffer_unref (buffer);
-  carid_bits_free (decoder->bits);
+  schro_buffer_unref (buffer);
+  schro_bits_free (decoder->bits);
 }
 
 #if 0
 void
-carid_decoder_copy_from_frame_buffer (CaridDecoder *decoder, CaridBuffer *buffer)
+schro_decoder_copy_from_frame_buffer (SchroDecoder *decoder, SchroBuffer *buffer)
 {
-  CaridParams *params = &decoder->params;
+  SchroParams *params = &decoder->params;
   int i;
   uint8_t *data;
   int16_t *frame_data;
@@ -213,9 +213,9 @@ carid_decoder_copy_from_frame_buffer (CaridDecoder *decoder, CaridBuffer *buffer
 #endif
 
 void
-carid_decoder_iwt_transform (CaridDecoder *decoder, int component)
+schro_decoder_iwt_transform (SchroDecoder *decoder, int component)
 {
-  CaridParams *params = &decoder->params;
+  SchroParams *params = &decoder->params;
   int16_t *frame_data;
   int height;
   int width;
@@ -239,264 +239,264 @@ carid_decoder_iwt_transform (CaridDecoder *decoder, int component)
     h = height >> level;
     stride = 2*(width << level);
 
-    carid_wavelet_inverse_transform_2d (params->wavelet_filter_index,
+    schro_wavelet_inverse_transform_2d (params->wavelet_filter_index,
         frame_data, stride, w, h, decoder->tmpbuf);
   }
 
 }
 
 void
-carid_decoder_decode_parse_header (CaridDecoder *decoder)
+schro_decoder_decode_parse_header (SchroDecoder *decoder)
 {
   int v1, v2, v3, v4;
   
-  v1 = carid_bits_decode_bits (decoder->bits, 8);
-  v2 = carid_bits_decode_bits (decoder->bits, 8);
-  v3 = carid_bits_decode_bits (decoder->bits, 8);
-  v4 = carid_bits_decode_bits (decoder->bits, 8);
-  CARID_DEBUG ("parse header %02x %02x %02x %02x", v1, v2, v3, v4);
+  v1 = schro_bits_decode_bits (decoder->bits, 8);
+  v2 = schro_bits_decode_bits (decoder->bits, 8);
+  v3 = schro_bits_decode_bits (decoder->bits, 8);
+  v4 = schro_bits_decode_bits (decoder->bits, 8);
+  SCHRO_DEBUG ("parse header %02x %02x %02x %02x", v1, v2, v3, v4);
   if (v1 != 'B' || v2 != 'B' || v3 != 'C' || v4 != 'D') {
-    CARID_ERROR ("expected parse header");
+    SCHRO_ERROR ("expected parse header");
     return;
   }
 
 
-  decoder->code = carid_bits_decode_bits (decoder->bits, 8);
-  CARID_DEBUG ("parse code %02x", decoder->code);
+  decoder->code = schro_bits_decode_bits (decoder->bits, 8);
+  SCHRO_DEBUG ("parse code %02x", decoder->code);
 
-  decoder->next_parse_offset = carid_bits_decode_bits (decoder->bits, 24);
-  CARID_DEBUG ("next_parse_offset %d", decoder->next_parse_offset);
-  decoder->prev_parse_offset = carid_bits_decode_bits (decoder->bits, 24);
-  CARID_DEBUG ("prev_parse_offset %d", decoder->prev_parse_offset);
+  decoder->next_parse_offset = schro_bits_decode_bits (decoder->bits, 24);
+  SCHRO_DEBUG ("next_parse_offset %d", decoder->next_parse_offset);
+  decoder->prev_parse_offset = schro_bits_decode_bits (decoder->bits, 24);
+  SCHRO_DEBUG ("prev_parse_offset %d", decoder->prev_parse_offset);
 }
 
 void
-carid_decoder_decode_rap (CaridDecoder *decoder)
+schro_decoder_decode_rap (SchroDecoder *decoder)
 {
   int bit;
   int index;
 
-  CARID_DEBUG("decoding RAP");
+  SCHRO_DEBUG("decoding RAP");
   /* parse parameters */
-  decoder->rap_frame_number = carid_bits_decode_ue2gol (decoder->bits);
-  CARID_DEBUG("rap frame number = %d", decoder->rap_frame_number);
-  decoder->params.major_version = carid_bits_decode_uegol (decoder->bits);
-  CARID_DEBUG("major_version = %d", decoder->params.major_version);
-  decoder->params.minor_version = carid_bits_decode_uegol (decoder->bits);
-  CARID_DEBUG("minor_version = %d", decoder->params.minor_version);
-  decoder->params.profile = carid_bits_decode_uegol (decoder->bits);
-  CARID_DEBUG("profile = %d", decoder->params.profile);
-  decoder->params.level = carid_bits_decode_uegol (decoder->bits);
-  CARID_DEBUG("level = %d", decoder->params.level);
+  decoder->rap_frame_number = schro_bits_decode_ue2gol (decoder->bits);
+  SCHRO_DEBUG("rap frame number = %d", decoder->rap_frame_number);
+  decoder->params.major_version = schro_bits_decode_uegol (decoder->bits);
+  SCHRO_DEBUG("major_version = %d", decoder->params.major_version);
+  decoder->params.minor_version = schro_bits_decode_uegol (decoder->bits);
+  SCHRO_DEBUG("minor_version = %d", decoder->params.minor_version);
+  decoder->params.profile = schro_bits_decode_uegol (decoder->bits);
+  SCHRO_DEBUG("profile = %d", decoder->params.profile);
+  decoder->params.level = schro_bits_decode_uegol (decoder->bits);
+  SCHRO_DEBUG("level = %d", decoder->params.level);
 
   /* sequence parameters */
-  index = carid_bits_decode_uegol (decoder->bits);
-  carid_params_set_video_format (&decoder->params, index);
+  index = schro_bits_decode_uegol (decoder->bits);
+  schro_params_set_video_format (&decoder->params, index);
 
-  bit = carid_bits_decode_bit (decoder->bits);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    decoder->params.width = carid_bits_decode_uegol (decoder->bits);
-    decoder->params.height = carid_bits_decode_uegol (decoder->bits);
+    decoder->params.width = schro_bits_decode_uegol (decoder->bits);
+    decoder->params.height = schro_bits_decode_uegol (decoder->bits);
   }
-  CARID_DEBUG("size = %d x %d", decoder->params.width,
+  SCHRO_DEBUG("size = %d x %d", decoder->params.width,
       decoder->params.height);
 
   /* chroma format */
-  bit = carid_bits_decode_bit (decoder->bits);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
     decoder->params.chroma_format_index =
-      carid_bits_decode_bits (decoder->bits, 3);
+      schro_bits_decode_bits (decoder->bits, 3);
   } else {
     decoder->params.chroma_format_index = 0;
   }
-  CARID_DEBUG("chroma_format_index %d",
+  SCHRO_DEBUG("chroma_format_index %d",
       decoder->params.chroma_format_index);
   decoder->params.chroma_width = (decoder->params.width + 1)/2;
   decoder->params.chroma_height = (decoder->params.height + 1)/2;
 
   /* signal range */
-  bit = carid_bits_decode_bit (decoder->bits);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    index = carid_bits_decode_uegol (decoder->bits);
+    index = schro_bits_decode_uegol (decoder->bits);
     if (index == 0) {
-      decoder->params.luma_offset = carid_bits_decode_uegol (decoder->bits);
-      decoder->params.luma_excursion = carid_bits_decode_uegol (decoder->bits);
-      decoder->params.chroma_offset = carid_bits_decode_uegol (decoder->bits);
+      decoder->params.luma_offset = schro_bits_decode_uegol (decoder->bits);
+      decoder->params.luma_excursion = schro_bits_decode_uegol (decoder->bits);
+      decoder->params.chroma_offset = schro_bits_decode_uegol (decoder->bits);
       decoder->params.chroma_excursion =
-        carid_bits_decode_uegol (decoder->bits);
+        schro_bits_decode_uegol (decoder->bits);
     } else {
       /* FIXME */
-      //carid_params_set_excursion (&decoder->params, index);
+      //schro_params_set_excursion (&decoder->params, index);
     }
   }
-  CARID_DEBUG("luma offset %d excursion %d",
+  SCHRO_DEBUG("luma offset %d excursion %d",
       decoder->params.luma_offset, decoder->params.luma_excursion);
 
   /* display parameters */
   /* interlace */
-  decoder->params.interlace = carid_bits_decode_bit (decoder->bits);
+  decoder->params.interlace = schro_bits_decode_bit (decoder->bits);
   if (decoder->params.interlace) {
-    decoder->params.top_field_first = carid_bits_decode_bit (decoder->bits);
+    decoder->params.top_field_first = schro_bits_decode_bit (decoder->bits);
   }
-  CARID_DEBUG("interlace %d top_field_first %d",
+  SCHRO_DEBUG("interlace %d top_field_first %d",
       decoder->params.interlace, decoder->params.top_field_first);
 
   /* frame rate */
-  bit = carid_bits_decode_bit (decoder->bits);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    index = carid_bits_decode_uegol (decoder->bits);
+    index = schro_bits_decode_uegol (decoder->bits);
     if (index == 0) {
-      decoder->params.frame_rate_numerator = carid_bits_decode_uegol (decoder->bits);
-      decoder->params.frame_rate_denominator = carid_bits_decode_uegol (decoder->bits);
+      decoder->params.frame_rate_numerator = schro_bits_decode_uegol (decoder->bits);
+      decoder->params.frame_rate_denominator = schro_bits_decode_uegol (decoder->bits);
     } else {
-      carid_params_set_frame_rate (&decoder->params, index);
+      schro_params_set_frame_rate (&decoder->params, index);
     }
   }
-  CARID_DEBUG("frame rate %d/%d", decoder->params.frame_rate_numerator,
+  SCHRO_DEBUG("frame rate %d/%d", decoder->params.frame_rate_numerator,
       decoder->params.frame_rate_denominator);
 
   /* pixel aspect ratio */
-  bit = carid_bits_decode_bit (decoder->bits);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    index = carid_bits_decode_uegol (decoder->bits);
+    index = schro_bits_decode_uegol (decoder->bits);
     if (index == 0) {
       decoder->params.pixel_aspect_ratio_numerator =
-        carid_bits_decode_uegol (decoder->bits);
+        schro_bits_decode_uegol (decoder->bits);
       decoder->params.pixel_aspect_ratio_denominator =
-        carid_bits_decode_uegol (decoder->bits);
+        schro_bits_decode_uegol (decoder->bits);
     } else {
-      carid_params_set_pixel_aspect_ratio (&decoder->params, index);
+      schro_params_set_pixel_aspect_ratio (&decoder->params, index);
     }
   }
-  CARID_DEBUG("aspect ratio %d/%d",
+  SCHRO_DEBUG("aspect ratio %d/%d",
       decoder->params.pixel_aspect_ratio_numerator,
       decoder->params.pixel_aspect_ratio_denominator);
 
   /* clean area */
-  bit = carid_bits_decode_bit (decoder->bits);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    decoder->params.clean_tl_x = carid_bits_decode_uegol (decoder->bits);
-    decoder->params.clean_tl_y = carid_bits_decode_uegol (decoder->bits);
-    decoder->params.clean_width = carid_bits_decode_uegol (decoder->bits);
-    decoder->params.clean_height = carid_bits_decode_uegol (decoder->bits);
+    decoder->params.clean_tl_x = schro_bits_decode_uegol (decoder->bits);
+    decoder->params.clean_tl_y = schro_bits_decode_uegol (decoder->bits);
+    decoder->params.clean_width = schro_bits_decode_uegol (decoder->bits);
+    decoder->params.clean_height = schro_bits_decode_uegol (decoder->bits);
   }
-  CARID_DEBUG("clean offset %d %d", decoder->params.clean_tl_x,
+  SCHRO_DEBUG("clean offset %d %d", decoder->params.clean_tl_x,
       decoder->params.clean_tl_y);
-  CARID_DEBUG("clean size %d %d", decoder->params.clean_width,
+  SCHRO_DEBUG("clean size %d %d", decoder->params.clean_width,
       decoder->params.clean_height);
 
   /* colur matrix */
-  bit = carid_bits_decode_bit (decoder->bits);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    CARID_ERROR ("unimplemented");
+    SCHRO_ERROR ("unimplemented");
     /* FIXME */
   }
 
   /* signal range */
-  CARID_DEBUG("bit %d",bit);
-  bit = carid_bits_decode_bit (decoder->bits);
+  SCHRO_DEBUG("bit %d",bit);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    CARID_ERROR ("unimplemented");
+    SCHRO_ERROR ("unimplemented");
     /* FIXME */
   }
 
   /* colour spec */
-  CARID_DEBUG("bit %d",bit);
-  bit = carid_bits_decode_bit (decoder->bits);
+  SCHRO_DEBUG("bit %d",bit);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    CARID_ERROR ("unimplemented");
+    SCHRO_ERROR ("unimplemented");
     /* FIXME */
   }
-  CARID_DEBUG("bit %d",bit);
+  SCHRO_DEBUG("bit %d",bit);
 
   /* transfer characteristic */
-  CARID_DEBUG("bit %d",bit);
-  bit = carid_bits_decode_bit (decoder->bits);
+  SCHRO_DEBUG("bit %d",bit);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    CARID_ERROR ("unimplemented");
+    SCHRO_ERROR ("unimplemented");
     /* FIXME */
   }
-  CARID_DEBUG("bit %d",bit);
+  SCHRO_DEBUG("bit %d",bit);
 
-  carid_bits_sync (decoder->bits);
+  schro_bits_sync (decoder->bits);
 }
 
 void
-carid_decoder_decode_frame_header (CaridDecoder *decoder)
+schro_decoder_decode_frame_header (SchroDecoder *decoder)
 {
   int n;
   int i;
 
-  decoder->frame_number_offset = carid_bits_decode_se2gol (decoder->bits);
-  CARID_DEBUG("frame number offset %d", decoder->frame_number_offset);
+  decoder->frame_number_offset = schro_bits_decode_se2gol (decoder->bits);
+  SCHRO_DEBUG("frame number offset %d", decoder->frame_number_offset);
 
-  n = carid_bits_decode_uegol (decoder->bits);
+  n = schro_bits_decode_uegol (decoder->bits);
   for(i=0;i<n;i++){
-    carid_bits_decode_se2gol (decoder->bits);
-    CARID_DEBUG("retire %d", decoder->frame_number_offset);
+    schro_bits_decode_se2gol (decoder->bits);
+    SCHRO_DEBUG("retire %d", decoder->frame_number_offset);
   }
 
-  carid_bits_sync (decoder->bits);
+  schro_bits_sync (decoder->bits);
 }
 
 void
-carid_decoder_decode_frame_prediction (CaridDecoder *decoder)
+schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
 {
-  CaridParams *params = &decoder->params;
+  SchroParams *params = &decoder->params;
   int bit;
   int length;
   int index;
 
   /* block params flag */
-  bit = carid_bits_decode_bit (decoder->bits);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    index = carid_bits_decode_uegol (decoder->bits);
+    index = schro_bits_decode_uegol (decoder->bits);
     if (index == 0) {
-      params->xblen_luma = carid_bits_decode_uegol (decoder->bits);
-      params->yblen_luma = carid_bits_decode_uegol (decoder->bits);
-      params->xbsep_luma = carid_bits_decode_uegol (decoder->bits);
-      params->ybsep_luma = carid_bits_decode_uegol (decoder->bits);
+      params->xblen_luma = schro_bits_decode_uegol (decoder->bits);
+      params->yblen_luma = schro_bits_decode_uegol (decoder->bits);
+      params->xbsep_luma = schro_bits_decode_uegol (decoder->bits);
+      params->ybsep_luma = schro_bits_decode_uegol (decoder->bits);
     } else {
-      carid_params_set_block_params (params, index);
+      schro_params_set_block_params (params, index);
     }
   }
-  CARID_ERROR("blen_luma %d %d bsep_luma %d %d",
+  SCHRO_ERROR("blen_luma %d %d bsep_luma %d %d",
       params->xblen_luma, params->yblen_luma,
       params->xbsep_luma, params->ybsep_luma);
 
   /* mv precision flag */
-  bit = carid_bits_decode_bit (decoder->bits);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    params->mv_precision = carid_bits_decode_uegol (decoder->bits);
+    params->mv_precision = schro_bits_decode_uegol (decoder->bits);
   }
-  CARID_ERROR("mv_precision %d", params->mv_precision);
+  SCHRO_ERROR("mv_precision %d", params->mv_precision);
 
   /* global motion flag */
-  params->global_motion = carid_bits_decode_bit (decoder->bits);
+  params->global_motion = schro_bits_decode_bit (decoder->bits);
   if (params->global_motion) {
     int i;
 
-    params->global_only_flag = carid_bits_decode_bit (decoder->bits);
-    params->global_prec_bits = carid_bits_decode_uegol (decoder->bits);
+    params->global_only_flag = schro_bits_decode_bit (decoder->bits);
+    params->global_prec_bits = schro_bits_decode_uegol (decoder->bits);
 
     for (i=0;i<params->num_refs;i++) {
       /* pan */
-      bit = carid_bits_decode_bit (decoder->bits);
+      bit = schro_bits_decode_bit (decoder->bits);
       if (bit) {
-        params->b_1[i] = carid_bits_decode_segol (decoder->bits);
-        params->b_2[i] = carid_bits_decode_segol (decoder->bits);
+        params->b_1[i] = schro_bits_decode_segol (decoder->bits);
+        params->b_2[i] = schro_bits_decode_segol (decoder->bits);
       } else {
         params->b_1[i] = 0;
         params->b_2[i] = 0;
       }
 
       /* matrix */
-      bit = carid_bits_decode_bit (decoder->bits);
+      bit = schro_bits_decode_bit (decoder->bits);
       if (bit) {
-        params->a_11[i] = carid_bits_decode_segol (decoder->bits);
-        params->a_12[i] = carid_bits_decode_segol (decoder->bits);
-        params->a_21[i] = carid_bits_decode_segol (decoder->bits);
-        params->a_22[i] = carid_bits_decode_segol (decoder->bits);
+        params->a_11[i] = schro_bits_decode_segol (decoder->bits);
+        params->a_12[i] = schro_bits_decode_segol (decoder->bits);
+        params->a_21[i] = schro_bits_decode_segol (decoder->bits);
+        params->a_22[i] = schro_bits_decode_segol (decoder->bits);
       } else {
         params->a_11[i] = 1;
         params->a_12[i] = 0;
@@ -505,16 +505,16 @@ carid_decoder_decode_frame_prediction (CaridDecoder *decoder)
       }
 
       /* perspective */
-      bit = carid_bits_decode_bit (decoder->bits);
+      bit = schro_bits_decode_bit (decoder->bits);
       if (bit) {
-        params->c_1[i] = carid_bits_decode_segol (decoder->bits);
-        params->c_2[i] = carid_bits_decode_segol (decoder->bits);
+        params->c_1[i] = schro_bits_decode_segol (decoder->bits);
+        params->c_2[i] = schro_bits_decode_segol (decoder->bits);
       } else {
         params->c_1[i] = 0;
         params->c_2[i] = 0;
       }
 
-      CARID_ERROR("ref %d pan %d %d matrix %d %d %d %d perspective %d %d",
+      SCHRO_ERROR("ref %d pan %d %d matrix %d %d %d %d perspective %d %d",
           i, params->b_1[i], params->b_2[i],
           params->a_11[i], params->a_12[i],
           params->a_21[i], params->a_22[i],
@@ -523,12 +523,12 @@ carid_decoder_decode_frame_prediction (CaridDecoder *decoder)
   }
 
   /* block data length */
-  length = carid_bits_decode_uegol (decoder->bits);
-  CARID_ERROR("length %d", length);
+  length = schro_bits_decode_uegol (decoder->bits);
+  SCHRO_ERROR("length %d", length);
 
-  carid_bits_sync (decoder->bits);
+  schro_bits_sync (decoder->bits);
 
-  carid_params_calculate_mc_sizes (params);
+  schro_params_calculate_mc_sizes (params);
 }
 
 static void
@@ -576,24 +576,24 @@ splat_block (uint8_t *dest, int dstr, int value, int w, int h)
 }
 
 void
-carid_decoder_decode_prediction_data (CaridDecoder *decoder)
+schro_decoder_decode_prediction_data (SchroDecoder *decoder)
 {
-  CaridParams *params = &decoder->params;
+  SchroParams *params = &decoder->params;
   int i, j;
 
   for(j=0;j<4*params->y_num_mb;j+=4){
     for(i=0;i<4*params->x_num_mb;i+=4){
-      carid_decoder_decode_macroblock(decoder, i, j);
+      schro_decoder_decode_macroblock(decoder, i, j);
     }
   }
 }
 
 static void
-carid_decoder_predict (CaridDecoder *decoder)
+schro_decoder_predict (SchroDecoder *decoder)
 {
-  CaridParams *params = &decoder->params;
-  CaridFrame *frame = decoder->mc_tmp_frame;
-  CaridFrame *reference_frame = decoder->reference_frames[0];
+  SchroParams *params = &decoder->params;
+  SchroFrame *frame = decoder->mc_tmp_frame;
+  SchroFrame *reference_frame = decoder->reference_frames[0];
   int i, j;
   int dx, dy;
   int x, y;
@@ -604,7 +604,7 @@ carid_decoder_predict (CaridDecoder *decoder)
 
   for(j=0;j<4*params->y_num_mb;j++){
     for(i=0;i<4*params->x_num_mb;i++){
-      CaridMotionVector *mv = &decoder->motion_vectors[j*4*params->x_num_mb + i];
+      SchroMotionVector *mv = &decoder->motion_vectors[j*4*params->x_num_mb + i];
 
       x = i*params->xbsep_luma;
       y = j*params->ybsep_luma;
@@ -626,12 +626,12 @@ carid_decoder_predict (CaridDecoder *decoder)
         dy = mv->y;
 
         /* FIXME This is only roughly correct */
-        CARID_ASSERT(x + dx >= 0);
-        //CARID_ASSERT(x + dx < params->mc_luma_width - params->xbsep_luma);
-        CARID_ASSERT(x + dx < params->mc_luma_width);
-        CARID_ASSERT(y + dy >= 0);
-        //CARID_ASSERT(y + dy < params->mc_luma_height - params->ybsep_luma);
-        CARID_ASSERT(y + dy < params->mc_luma_height);
+        SCHRO_ASSERT(x + dx >= 0);
+        //SCHRO_ASSERT(x + dx < params->mc_luma_width - params->xbsep_luma);
+        SCHRO_ASSERT(x + dx < params->mc_luma_width);
+        SCHRO_ASSERT(y + dy >= 0);
+        //SCHRO_ASSERT(y + dy < params->mc_luma_height - params->ybsep_luma);
+        SCHRO_ASSERT(y + dy < params->mc_luma_height);
 
         data = frame->components[0].data;
         stride = frame->components[0].stride;
@@ -664,45 +664,45 @@ carid_decoder_predict (CaridDecoder *decoder)
 }
 
 static void
-carid_decoder_decode_macroblock(CaridDecoder *decoder, int i, int j)
+schro_decoder_decode_macroblock(SchroDecoder *decoder, int i, int j)
 {
-  CaridParams *params = &decoder->params;
-  CaridMotionVector *mv = &decoder->motion_vectors[j*4*params->x_num_mb + i];
+  SchroParams *params = &decoder->params;
+  SchroMotionVector *mv = &decoder->motion_vectors[j*4*params->x_num_mb + i];
   int k,l;
   int mask;
 
-  //CARID_ERROR("global motion %d", params->global_motion);
+  //SCHRO_ERROR("global motion %d", params->global_motion);
   if (params->global_motion) {
-    mv->mb_using_global = carid_bits_decode_bit (decoder->bits);
+    mv->mb_using_global = schro_bits_decode_bit (decoder->bits);
   } else {
     mv->mb_using_global = FALSE;
   }
   if (!mv->mb_using_global) {
-    mv->mb_split = carid_bits_decode_bits (decoder->bits, 2);
-    CARID_ASSERT(mv->mb_split != 3);
+    mv->mb_split = schro_bits_decode_bits (decoder->bits, 2);
+    SCHRO_ASSERT(mv->mb_split != 3);
   } else {
     mv->mb_split = 2;
   }
   if (mv->mb_split != 0) {
-    mv->mb_common = carid_bits_decode_bit (decoder->bits);
+    mv->mb_common = schro_bits_decode_bit (decoder->bits);
   } else {
     mv->mb_common = FALSE;
   }
-  //CARID_ERROR("mb_using_global=%d mb_split=%d mb_common=%d",
+  //SCHRO_ERROR("mb_using_global=%d mb_split=%d mb_common=%d",
   //    mv->mb_using_global, mv->mb_split, mv->mb_common);
 
   mask = 3 >> mv->mb_split;
   for (k=0;k<4;k++) {
     for (l=0;l<4;l++) {
-      CaridMotionVector *bv =
+      SchroMotionVector *bv =
         &decoder->motion_vectors[(j+l)*4*params->x_num_mb + (i+k)];
 
       if ((k&mask) == 0 && (l&mask) == 0) {
-        //CARID_ERROR("decoding PU %d %d", j+l, i+k);
+        //SCHRO_ERROR("decoding PU %d %d", j+l, i+k);
 
-        carid_decoder_decode_prediction_unit (decoder, bv);
+        schro_decoder_decode_prediction_unit (decoder, bv);
       } else {
-        CaridMotionVector *bv1;
+        SchroMotionVector *bv1;
        
         bv1 = &decoder->motion_vectors[(j+(l&(~mask)))*4*params->x_num_mb +
           (i+(k&(~mask)))];
@@ -714,76 +714,76 @@ carid_decoder_decode_macroblock(CaridDecoder *decoder, int i, int j)
 }
 
 static void
-carid_decoder_decode_prediction_unit(CaridDecoder *decoder,
-    CaridMotionVector *mv)
+schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
+    SchroMotionVector *mv)
 {
-  mv->pred_mode = carid_bits_decode_bits (decoder->bits, 2);
+  mv->pred_mode = schro_bits_decode_bits (decoder->bits, 2);
 
   if (mv->pred_mode == 0) {
-    mv->dc[0] = carid_bits_decode_uegol (decoder->bits);
-    mv->dc[1] = carid_bits_decode_uegol (decoder->bits);
-    mv->dc[2] = carid_bits_decode_uegol (decoder->bits);
+    mv->dc[0] = schro_bits_decode_uegol (decoder->bits);
+    mv->dc[1] = schro_bits_decode_uegol (decoder->bits);
+    mv->dc[2] = schro_bits_decode_uegol (decoder->bits);
   } else {
-    mv->x = carid_bits_decode_segol (decoder->bits);
-    mv->y = carid_bits_decode_segol (decoder->bits);
+    mv->x = schro_bits_decode_segol (decoder->bits);
+    mv->y = schro_bits_decode_segol (decoder->bits);
   }
 }
 
 void
-carid_decoder_decode_transform_parameters (CaridDecoder *decoder)
+schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
 {
   int bit;
-  CaridParams *params = &decoder->params;
+  SchroParams *params = &decoder->params;
 
   /* transform */
-  bit = carid_bits_decode_bit (decoder->bits);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    params->wavelet_filter_index = carid_bits_decode_uegol (decoder->bits);
+    params->wavelet_filter_index = schro_bits_decode_uegol (decoder->bits);
     if (params->wavelet_filter_index > 4) {
       params->non_spec_input = TRUE;
     }
   } else {
-    params->wavelet_filter_index = CARID_WAVELET_DAUB97;
+    params->wavelet_filter_index = SCHRO_WAVELET_DAUB97;
   }
-  CARID_DEBUG ("wavelet filter index %d", params->wavelet_filter_index);
+  SCHRO_DEBUG ("wavelet filter index %d", params->wavelet_filter_index);
 
   /* transform depth */
-  bit = carid_bits_decode_bit (decoder->bits);
+  bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    params->transform_depth = carid_bits_decode_uegol (decoder->bits);
+    params->transform_depth = schro_bits_decode_uegol (decoder->bits);
     if (params->transform_depth > 6) {
       params->non_spec_input = TRUE;
     }
   } else {
     params->transform_depth = 4;
   }
-  CARID_DEBUG ("transform depth %d", params->transform_depth);
+  SCHRO_DEBUG ("transform depth %d", params->transform_depth);
 
   /* spatial partitioning */
-  params->spatial_partition = carid_bits_decode_bit (decoder->bits);
-  CARID_DEBUG ("spatial_partitioning %d", params->spatial_partition);
+  params->spatial_partition = schro_bits_decode_bit (decoder->bits);
+  SCHRO_DEBUG ("spatial_partitioning %d", params->spatial_partition);
   if (params->spatial_partition) {
-    params->partition_index = carid_bits_decode_uegol (decoder->bits);
+    params->partition_index = schro_bits_decode_uegol (decoder->bits);
     if (params->partition_index > 1) {
       /* FIXME: ? */
       params->non_spec_input = TRUE;
     }
     if (params->partition_index == 0) {
-      params->max_xblocks = carid_bits_decode_uegol (decoder->bits);
-      params->max_yblocks = carid_bits_decode_uegol (decoder->bits);
+      params->max_xblocks = schro_bits_decode_uegol (decoder->bits);
+      params->max_yblocks = schro_bits_decode_uegol (decoder->bits);
     }
-    params->multi_quant = carid_bits_decode_bit (decoder->bits);
+    params->multi_quant = schro_bits_decode_bit (decoder->bits);
   }
 
-  carid_params_calculate_iwt_sizes (params);
+  schro_params_calculate_iwt_sizes (params);
 
-  carid_bits_sync(decoder->bits);
+  schro_bits_sync(decoder->bits);
 }
 
 void
-carid_decoder_init_subbands (CaridDecoder *decoder)
+schro_decoder_init_subbands (SchroDecoder *decoder)
 {
-  CaridParams *params = &decoder->params;
+  SchroParams *params = &decoder->params;
   int i;
   int w;
   int h;
@@ -871,10 +871,10 @@ carid_decoder_init_subbands (CaridDecoder *decoder)
 }
 
 void
-carid_decoder_decode_transform_data (CaridDecoder *decoder, int component)
+schro_decoder_decode_transform_data (SchroDecoder *decoder, int component)
 {
   int i;
-  CaridParams *params = &decoder->params;
+  SchroParams *params = &decoder->params;
 
 #if 1
   for (i=0;i<3;i++){
@@ -884,19 +884,19 @@ carid_decoder_decode_transform_data (CaridDecoder *decoder, int component)
   }
 #endif
 
-  carid_decoder_init_subbands (decoder);
+  schro_decoder_init_subbands (decoder);
 
   for(i=0;i<1+3*params->transform_depth;i++) {
-    carid_decoder_decode_subband (decoder, component, i);
+    schro_decoder_decode_subband (decoder, component, i);
   }
 }
 
 void
-carid_decoder_decode_subband (CaridDecoder *decoder, int component, int index)
+schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
 {
-  CaridParams *params = &decoder->params;
-  CaridSubband *subband = decoder->subbands + index;
-  CaridSubband *parent_subband = NULL;
+  SchroParams *params = &decoder->params;
+  SchroSubband *subband = decoder->subbands + index;
+  SchroSubband *parent_subband = NULL;
   int subband_zero_flag;
   int16_t *data;
   int16_t *parent_data = NULL;
@@ -923,7 +923,7 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int component, int index)
     offset = subband->chroma_offset;
   }
 
-  CARID_DEBUG("subband index=%d %d x %d at offset %d stride=%d",
+  SCHRO_DEBUG("subband index=%d %d x %d at offset %d stride=%d",
       index, width, height, offset, stride);
 
   data = (int16_t *)decoder->frame->components[component].data + offset;
@@ -941,37 +941,37 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int component, int index)
   scale_factor = 1<<(params->transform_depth - quant_index);
   ntop = (scale_factor>>1) * quant_factor;
 
-  subband_zero_flag = carid_bits_decode_bit (decoder->bits);
+  subband_zero_flag = schro_bits_decode_bit (decoder->bits);
   if (!subband_zero_flag) {
     int i,j;
-    CaridBuffer *buffer;
-    CaridBits *bits;
-    CaridArith *arith;
+    SchroBuffer *buffer;
+    SchroBits *bits;
+    SchroArith *arith;
 
-    quant_index = carid_bits_decode_uegol (decoder->bits);
-    CARID_DEBUG("quant index %d", quant_index);
+    quant_index = schro_bits_decode_uegol (decoder->bits);
+    SCHRO_DEBUG("quant index %d", quant_index);
     if ((unsigned int)quant_index > 60) {
-      CARID_ERROR("quant_index too big (%u > 60)", quant_index);
+      SCHRO_ERROR("quant_index too big (%u > 60)", quant_index);
       params->non_spec_input = TRUE;
       return;
     }
-    quant_factor = carid_table_quant[quant_index];
-    quant_offset = carid_table_offset[quant_index];
-    CARID_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
+    quant_factor = schro_table_quant[quant_index];
+    quant_offset = schro_table_offset[quant_index];
+    SCHRO_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
 
-    subband_length = carid_bits_decode_uegol (decoder->bits);
-    CARID_DEBUG("subband length %d", subband_length);
+    subband_length = schro_bits_decode_uegol (decoder->bits);
+    SCHRO_DEBUG("subband length %d", subband_length);
 
-    carid_bits_sync (decoder->bits);
+    schro_bits_sync (decoder->bits);
 
-    buffer = carid_buffer_new_subbuffer (decoder->bits->buffer,
+    buffer = schro_buffer_new_subbuffer (decoder->bits->buffer,
         decoder->bits->offset>>3, subband_length);
-    bits = carid_bits_new ();
-    carid_bits_decode_init (bits, buffer);
+    bits = schro_bits_new ();
+    schro_bits_decode_init (bits, buffer);
 
-    arith = carid_arith_new ();
-    carid_arith_decode_init (arith, bits);
-    carid_arith_init_contexts (arith);
+    arith = schro_arith_new ();
+    schro_arith_decode_init (arith, bits);
+    schro_arith_init_contexts (arith);
 
     for(j=0;j<height;j++){
       for(i=0;i<width;i++){
@@ -1046,35 +1046,35 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int component, int index)
 
         if (parent_zero) {
           if (nhood_sum == 0) {
-            context = CARID_CTX_Z_BIN1z;
+            context = SCHRO_CTX_Z_BIN1z;
           } else {
-            context = CARID_CTX_Z_BIN1nz;
+            context = SCHRO_CTX_Z_BIN1nz;
           }
-          context2 = CARID_CTX_Z_BIN2;
+          context2 = SCHRO_CTX_Z_BIN2;
         } else {
           if (nhood_sum == 0) {
-            context = CARID_CTX_NZ_BIN1z;
+            context = SCHRO_CTX_NZ_BIN1z;
           } else {
             if (nhood_sum <= ntop) {
-              context = CARID_CTX_NZ_BIN1a;
+              context = SCHRO_CTX_NZ_BIN1a;
             } else {
-              context = CARID_CTX_NZ_BIN1b;
+              context = SCHRO_CTX_NZ_BIN1b;
             }
           }
-          context2 = CARID_CTX_NZ_BIN2;
+          context2 = SCHRO_CTX_NZ_BIN2;
         }
 
         if (previous_value > 0) {
-          sign_context = CARID_CTX_SIGN_POS;
+          sign_context = SCHRO_CTX_SIGN_POS;
         } else if (previous_value < 0) {
-          sign_context = CARID_CTX_SIGN_NEG;
+          sign_context = SCHRO_CTX_SIGN_NEG;
         } else {
-          sign_context = CARID_CTX_SIGN_ZERO;
+          sign_context = SCHRO_CTX_SIGN_ZERO;
         }
 
-        v = carid_arith_context_decode_uu (arith, context, context2);
+        v = schro_arith_context_decode_uu (arith, context, context2);
         if (v) {
-          sign = carid_arith_context_decode_bit (arith, sign_context);
+          sign = schro_arith_context_decode_bit (arith, sign_context);
         }
 
         if (v) {
@@ -1088,23 +1088,23 @@ carid_decoder_decode_subband (CaridDecoder *decoder, int component, int index)
         }
       }
     }
-    carid_arith_free (arith);
-    CARID_DEBUG("decoded %d bits", bits->offset);
-    carid_bits_free (bits);
-    carid_buffer_unref (buffer);
+    schro_arith_free (arith);
+    SCHRO_DEBUG("decoded %d bits", bits->offset);
+    schro_bits_free (bits);
+    schro_buffer_unref (buffer);
 
     decoder->bits->offset += subband_length * 8;
   } else {
     int i,j;
 
-    CARID_DEBUG("subband is zero");
+    SCHRO_DEBUG("subband is zero");
     for(j=0;j<height;j++){
       for(i=0;i<width;i++){
         data[j*stride + i] = 0;
       }
     }
 
-    carid_bits_sync (decoder->bits);
+    schro_bits_sync (decoder->bits);
   }
 }
 

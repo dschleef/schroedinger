@@ -1,14 +1,14 @@
 AC_PREREQ([2.58])
 AC_INIT(schroedinger,0.1.0.1)
 
-AS_NANO(CARID_CVS=no,CARID_CVS=yes)
+AS_NANO(SCHRO_CVS=no,SCHRO_CVS=yes)
 
 AC_CANONICAL_HOST([])
 AM_INIT_AUTOMAKE(1.6)
 AM_MAINTAINER_MODE
 
-CARID_MAJORMINOR=0.1
-AC_SUBST(CARID_MAJORMINOR)
+SCHRO_MAJORMINOR=0.1
+AC_SUBST(SCHRO_MAJORMINOR)
 
 AM_CONFIG_HEADER(config.h)
 
@@ -17,8 +17,8 @@ dnl - library source changed -> increment REVISION
 dnl - interfaces added/removed/changed -> increment CURRENT, REVISION = 0
 dnl - interfaces added -> increment AGE
 dnl - interfaces removed -> AGE = 0
-CARID_LIBVERSION="0:0:0"
-AC_SUBST(CARID_LIBVERSION)
+SCHRO_LIBVERSION="0:0:0"
+AC_SUBST(SCHRO_LIBVERSION)
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 AM_PROG_AS
@@ -26,7 +26,7 @@ AM_PROG_AS
 dnl allow for different autotools
 AS_AUTOTOOLS_ALTERNATE
 
-AC_CONFIG_SRCDIR([carid/carid.h])
+AC_CONFIG_SRCDIR([schro/schro.h])
 
 ACLOCAL_AMFLAGS="-I m4 $ACLOCAL_AMFLAGS"
 AC_SUBST(ACLOCAL_AMFLAGS)
@@ -35,7 +35,7 @@ dnl set up gettext
 dnl the version check needs to stay here because autopoint greps for it
 #AM_GNU_GETTEXT_VERSION([0.11.5])
 #AM_GNU_GETTEXT([external])
-#GST_GETTEXT([carid-$CARID_MAJORMINOR])
+#GST_GETTEXT([schro-$SCHRO_MAJORMINOR])
 
 dnl liboil is required
 PKG_CHECK_MODULES(LIBOIL, liboil-0.3 >= 0.3.2, HAVE_LIBOIL=yes, HAVE_LIBOIL=no)
@@ -49,19 +49,19 @@ fi
 
 GTK_DOC_CHECK([1.0])
 
-AX_CREATE_STDINT_H([carid/carid-stdint.h])
+AX_CREATE_STDINT_H([schro/schro-stdint.h])
 
-AS_COMPILER_FLAG(-Wall, CARID_CFLAGS="$CARID_CFLAGS -Wall")
-if test "x$CARID_CVS" = "xyes"
+AS_COMPILER_FLAG(-Wall, SCHRO_CFLAGS="$SCHRO_CFLAGS -Wall")
+if test "x$SCHRO_CVS" = "xyes"
 then
-  AS_COMPILER_FLAG(-Werror, CARID_CFLAGS="$CARID_CFLAGS -Werror")
+  AS_COMPILER_FLAG(-Werror, SCHRO_CFLAGS="$SCHRO_CFLAGS -Werror")
 fi
 
-CARID_CFLAGS="$CARID_CFLAGS -I\$(top_srcdir)"
-AC_SUBST(CARID_CFLAGS)
+SCHRO_CFLAGS="$SCHRO_CFLAGS -I\$(top_srcdir)"
+AC_SUBST(SCHRO_CFLAGS)
 
-CARID_LIBS="\$(top_builddir)/carid/libcarid-$CARID_MAJORMINOR.la"
-AC_SUBST(CARID_LIBS)
+SCHRO_LIBS="\$(top_builddir)/schro/libschro-$SCHRO_MAJORMINOR.la"
+AC_SUBST(SCHRO_LIBS)
 
 ########################
 # GStreamer stuff
@@ -187,12 +187,12 @@ AC_SUBST(pkgconfigdir)
 AC_CONFIG_FILES([
 Makefile 
 doc/Makefile
-carid/Makefile
+schro/Makefile
 gst/Makefile
 testsuite/Makefile
-carid-uninstalled.pc
-carid.pc
-libcarid.spec
+schro-uninstalled.pc
+schro.pc
+libschro.spec
 ])
 AC_OUTPUT
 

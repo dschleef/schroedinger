@@ -2,7 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <carid/carid.h>
+#include <schro/schro.h>
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +22,7 @@ round_up_pow2 (int x, int p)
 #define DIVIDE_ROUND_UP(a,b) (((a) + (b) - 1)/(b))
 
 void
-carid_params_calculate_mc_sizes (CaridParams *params)
+schro_params_calculate_mc_sizes (SchroParams *params)
 {
   params->x_num_mb =
     DIVIDE_ROUND_UP(params->width, 4*params->xbsep_luma);
@@ -38,9 +38,9 @@ carid_params_calculate_mc_sizes (CaridParams *params)
 }
 
 void
-carid_params_calculate_iwt_sizes (CaridParams *params)
+schro_params_calculate_iwt_sizes (SchroParams *params)
 {
-  CARID_DEBUG ("chroma size %d x %d", params->chroma_width,
+  SCHRO_DEBUG ("chroma size %d x %d", params->chroma_width,
       params->chroma_height);
   if (params->is_intra) {
     params->iwt_chroma_width =
@@ -53,18 +53,18 @@ carid_params_calculate_iwt_sizes (CaridParams *params)
     params->iwt_chroma_height =
       round_up_pow2(params->mc_chroma_height, params->transform_depth);
   }
-  CARID_DEBUG ("iwt chroma size %d x %d", params->iwt_chroma_width,
+  SCHRO_DEBUG ("iwt chroma size %d x %d", params->iwt_chroma_width,
       params->iwt_chroma_height);
   params->iwt_luma_width =
     params->iwt_chroma_width * params->chroma_h_scale;
   params->iwt_luma_height =
     params->iwt_chroma_height * params->chroma_v_scale;
-  CARID_DEBUG ("iwt luma size %d x %d", params->iwt_luma_width,
+  SCHRO_DEBUG ("iwt luma size %d x %d", params->iwt_luma_width,
       params->iwt_luma_height);
 }
 
-typedef struct _CaridVideoFormat CaridVideoFormat;
-struct _CaridVideoFormat {
+typedef struct _SchroVideoFormat SchroVideoFormat;
+struct _SchroVideoFormat {
   char *name;
   int width;
   int height;
@@ -85,8 +85,8 @@ struct _CaridVideoFormat {
   int block_params_index;
 };
 
-static CaridVideoFormat
-carid_video_formats[] = {
+static SchroVideoFormat
+schro_video_formats[] = {
   { "custom", 640, 480, FALSE, TRUE, 30, 1, 1, 1, 0, 0, 640, 480,
     1, 1, 1, 0, 2 },
   { "QSIF", 176, 120, FALSE, TRUE, 15, 1, 10, 11, 0, 0, 176, 120,
@@ -113,16 +113,16 @@ carid_video_formats[] = {
     3, 5, 3, 1, 4 }
 };
 
-void carid_params_set_video_format (CaridParams *params, int index)
+void schro_params_set_video_format (SchroParams *params, int index)
 {
-  CaridVideoFormat *format;
+  SchroVideoFormat *format;
 
-  if (index < 0 || index >= ARRAY_SIZE(carid_video_formats)) {
-    CARID_ERROR("illegal video format index");
+  if (index < 0 || index >= ARRAY_SIZE(schro_video_formats)) {
+    SCHRO_ERROR("illegal video format index");
     return;
   }
 
-  format = carid_video_formats + index;
+  format = schro_video_formats + index;
 
   params->width = format->width;
   params->height = format->height;
@@ -142,16 +142,16 @@ void carid_params_set_video_format (CaridParams *params, int index)
   params->colour_primaries_index = format->colour_primaries_index;
   params->transfer_char_index = format->transfer_char_index;
 
-  carid_params_set_block_params (params, format->block_params_index);
+  schro_params_set_block_params (params, format->block_params_index);
 }
 
 static int
-carid_params_get_video_format_metric (CaridParams *params, int i)
+schro_params_get_video_format_metric (SchroParams *params, int i)
 {
-  CaridVideoFormat *format;
+  SchroVideoFormat *format;
   int metric = 0;
 
-  format = carid_video_formats + i;
+  format = schro_video_formats + i;
 
   if (params->width != format->width) {
     metric++;
@@ -205,7 +205,7 @@ carid_params_get_video_format_metric (CaridParams *params, int i)
   return metric;
 }
 
-int carid_params_get_video_format (CaridParams *params)
+int schro_params_get_video_format (SchroParams *params)
 {
   int metric;
   int min_index;
@@ -213,9 +213,9 @@ int carid_params_get_video_format (CaridParams *params)
   int i;
 
   min_index = 0;
-  min_metric = carid_params_get_video_format_metric (params, 0);
-  for(i=1;i<ARRAY_SIZE (carid_video_formats); i++) {
-    metric = carid_params_get_video_format_metric (params, i);
+  min_metric = schro_params_get_video_format_metric (params, 0);
+  for(i=1;i<ARRAY_SIZE (schro_video_formats); i++) {
+    metric = schro_params_get_video_format_metric (params, i);
     if (metric < min_metric) {
       min_index = i;
       min_metric = metric;
@@ -224,15 +224,15 @@ int carid_params_get_video_format (CaridParams *params)
   return min_index;
 }
 
-typedef struct _CaridChromaFormat CaridChromaFormat;
-struct _CaridChromaFormat {
+typedef struct _SchroChromaFormat SchroChromaFormat;
+struct _SchroChromaFormat {
   int chroma_h_scale;
   int chroma_v_scale;
   int have_chroma;
 };
 
-static CaridChromaFormat
-carid_chroma_formats[] = {
+static SchroChromaFormat
+schro_chroma_formats[] = {
   { 2, 2, TRUE },
   { 2, 1, TRUE },
   { 4, 4, TRUE },
@@ -240,44 +240,44 @@ carid_chroma_formats[] = {
   { 1, 1, FALSE }
 };
 
-void carid_params_set_chroma_format (CaridParams *params, int index)
+void schro_params_set_chroma_format (SchroParams *params, int index)
 {
-  if (index < 0 || index >= ARRAY_SIZE(carid_chroma_formats)) {
-    CARID_ERROR("illegal chroma format index");
+  if (index < 0 || index >= ARRAY_SIZE(schro_chroma_formats)) {
+    SCHRO_ERROR("illegal chroma format index");
     return;
   }
 
-  params->chroma_h_scale = carid_chroma_formats[index].chroma_h_scale;
-  params->chroma_v_scale = carid_chroma_formats[index].chroma_v_scale;
-  params->have_chroma = carid_chroma_formats[index].have_chroma;
+  params->chroma_h_scale = schro_chroma_formats[index].chroma_h_scale;
+  params->chroma_v_scale = schro_chroma_formats[index].chroma_v_scale;
+  params->have_chroma = schro_chroma_formats[index].have_chroma;
 
 }
 
-int carid_params_get_chroma_format (CaridParams *params)
+int schro_params_get_chroma_format (SchroParams *params)
 {
   int i;
 
-  for(i=0;i<ARRAY_SIZE(carid_chroma_formats);i++){
-    if (params->chroma_h_scale == carid_chroma_formats[i].chroma_h_scale &&
-        params->chroma_v_scale == carid_chroma_formats[i].chroma_v_scale &&
-        params->have_chroma == carid_chroma_formats[i].have_chroma) {
+  for(i=0;i<ARRAY_SIZE(schro_chroma_formats);i++){
+    if (params->chroma_h_scale == schro_chroma_formats[i].chroma_h_scale &&
+        params->chroma_v_scale == schro_chroma_formats[i].chroma_v_scale &&
+        params->have_chroma == schro_chroma_formats[i].have_chroma) {
       return i;
     }
   }
 
-  CARID_ERROR("illegal chroma format");
+  SCHRO_ERROR("illegal chroma format");
 
   return -1;
 }
 
-typedef struct _CaridFrameRate CaridFrameRate;
-struct _CaridFrameRate {
+typedef struct _SchroFrameRate SchroFrameRate;
+struct _SchroFrameRate {
   int numerator;
   int denominator;
 };
 
-static CaridFrameRate
-carid_frame_rates[] = {
+static SchroFrameRate
+schro_frame_rates[] = {
   { 0, 0 },
   { 12, 1 },
   { 25, 2 },
@@ -293,24 +293,24 @@ carid_frame_rates[] = {
 };
 
 
-void carid_params_set_frame_rate (CaridParams *params, int index)
+void schro_params_set_frame_rate (SchroParams *params, int index)
 {
-  if (index < 0 || index >= ARRAY_SIZE(carid_frame_rates)) {
-    CARID_ERROR("illegal frame rate index");
+  if (index < 0 || index >= ARRAY_SIZE(schro_frame_rates)) {
+    SCHRO_ERROR("illegal frame rate index");
     return;
   }
 
-  params->frame_rate_numerator = carid_frame_rates[index].numerator;
-  params->frame_rate_denominator = carid_frame_rates[index].denominator;
+  params->frame_rate_numerator = schro_frame_rates[index].numerator;
+  params->frame_rate_denominator = schro_frame_rates[index].denominator;
 }
 
-int carid_params_get_frame_rate (CaridParams *params)
+int schro_params_get_frame_rate (SchroParams *params)
 {
   int i;
 
-  for(i=1;i<ARRAY_SIZE(carid_frame_rates);i++){
-    if (params->frame_rate_numerator == carid_frame_rates[i].numerator &&
-        params->frame_rate_denominator == carid_frame_rates[i].denominator) {
+  for(i=1;i<ARRAY_SIZE(schro_frame_rates);i++){
+    if (params->frame_rate_numerator == schro_frame_rates[i].numerator &&
+        params->frame_rate_denominator == schro_frame_rates[i].denominator) {
       return i;
     }
   }
@@ -318,43 +318,43 @@ int carid_params_get_frame_rate (CaridParams *params)
   return 0;
 }
 
-typedef struct _CaridPixelAspectRatio CaridPixelAspectRatio;
-struct _CaridPixelAspectRatio {
+typedef struct _SchroPixelAspectRatio SchroPixelAspectRatio;
+struct _SchroPixelAspectRatio {
   int numerator;
   int denominator;
 };
 
-static CaridPixelAspectRatio
-carid_pixel_aspect_ratios[] = {
+static SchroPixelAspectRatio
+schro_pixel_aspect_ratios[] = {
   { 0, 0 },
   { 1, 1 },
   { 10, 11 },
   { 59, 54 }
 };
 
-void carid_params_set_pixel_aspect_ratio (CaridParams *params, int index)
+void schro_params_set_pixel_aspect_ratio (SchroParams *params, int index)
 {
-  if (index < 0 || index >= ARRAY_SIZE(carid_pixel_aspect_ratios)) {
-    CARID_ERROR("illegal pixel aspect ratio index");
+  if (index < 0 || index >= ARRAY_SIZE(schro_pixel_aspect_ratios)) {
+    SCHRO_ERROR("illegal pixel aspect ratio index");
     return;
   }
 
   params->pixel_aspect_ratio_numerator =
-    carid_pixel_aspect_ratios[index].numerator;
+    schro_pixel_aspect_ratios[index].numerator;
   params->pixel_aspect_ratio_denominator =
-    carid_pixel_aspect_ratios[index].denominator;
+    schro_pixel_aspect_ratios[index].denominator;
 
 }
 
-int carid_params_get_pixel_aspect_ratio (CaridParams *params)
+int schro_params_get_pixel_aspect_ratio (SchroParams *params)
 {
   int i;
 
-  for(i=1;i<ARRAY_SIZE(carid_pixel_aspect_ratios);i++){
+  for(i=1;i<ARRAY_SIZE(schro_pixel_aspect_ratios);i++){
     if (params->pixel_aspect_ratio_numerator ==
-        carid_pixel_aspect_ratios[i].numerator &&
+        schro_pixel_aspect_ratios[i].numerator &&
         params->pixel_aspect_ratio_denominator ==
-        carid_pixel_aspect_ratios[i].denominator) {
+        schro_pixel_aspect_ratios[i].denominator) {
       return i;
     }
   }
@@ -362,16 +362,16 @@ int carid_params_get_pixel_aspect_ratio (CaridParams *params)
   return 0;
 }
 
-typedef struct _CaridBlockParams CaridBlockParams;
-struct _CaridBlockParams {
+typedef struct _SchroBlockParams SchroBlockParams;
+struct _SchroBlockParams {
   int xblen_luma;
   int yblen_luma;
   int xbsep_luma;
   int ybsep_luma;
 };
 
-static CaridBlockParams
-carid_block_params[] = {
+static SchroBlockParams
+schro_block_params[] = {
   { 8, 8, 4, 4 },
   { 12, 12, 8, 8 },
   { 18, 16, 10, 12 },
@@ -379,17 +379,17 @@ carid_block_params[] = {
 };
 
 void
-carid_params_set_block_params (CaridParams *params, int index)
+schro_params_set_block_params (SchroParams *params, int index)
 {
-  if (index < 1 || index >= ARRAY_SIZE(carid_block_params) + 1) {
-    CARID_ERROR("illegal block params index");
+  if (index < 1 || index >= ARRAY_SIZE(schro_block_params) + 1) {
+    SCHRO_ERROR("illegal block params index");
     return;
   }
 
-  params->xblen_luma = carid_block_params[index-1].xblen_luma;
-  params->yblen_luma = carid_block_params[index-1].yblen_luma;
-  params->xbsep_luma = carid_block_params[index-1].xbsep_luma;
-  params->ybsep_luma = carid_block_params[index-1].ybsep_luma;
+  params->xblen_luma = schro_block_params[index-1].xblen_luma;
+  params->yblen_luma = schro_block_params[index-1].yblen_luma;
+  params->xbsep_luma = schro_block_params[index-1].xbsep_luma;
+  params->ybsep_luma = schro_block_params[index-1].ybsep_luma;
 }
 
 

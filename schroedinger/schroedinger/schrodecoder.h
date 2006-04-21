@@ -1,19 +1,19 @@
 
-#ifndef __CARID_DECODER_H__
-#define __CARID_DECODER_H__
+#ifndef __SCHRO_DECODER_H__
+#define __SCHRO_DECODER_H__
 
-#include <carid/caridbuffer.h>
-#include <carid/caridparams.h>
-#include <carid/caridframe.h>
+#include <schro/schrobuffer.h>
+#include <schro/schroparams.h>
+#include <schro/schroframe.h>
 
 
-typedef struct _CaridDecoder CaridDecoder;
+typedef struct _SchroDecoder SchroDecoder;
 
-struct _CaridDecoder {
-  CaridFrame *frame;
-  CaridFrame *mc_tmp_frame;
-  CaridFrame *reference_frames[10];
-  CaridFrame *output_frame;
+struct _SchroDecoder {
+  SchroFrame *frame;
+  SchroFrame *mc_tmp_frame;
+  SchroFrame *reference_frames[10];
+  SchroFrame *output_frame;
 
   int16_t *tmpbuf;
   int16_t *tmpbuf2;
@@ -24,31 +24,31 @@ struct _CaridDecoder {
   int prev_parse_offset;
   int frame_number_offset;
 
-  CaridBits *bits;
+  SchroBits *bits;
 
-  CaridParams params;
+  SchroParams params;
 
-  CaridSubband subbands[1+6*3];
+  SchroSubband subbands[1+6*3];
 
-  CaridMotionVector *motion_vectors;
+  SchroMotionVector *motion_vectors;
 };
 
-CaridDecoder * carid_decoder_new (void);
-void carid_decoder_free (CaridDecoder *decoder);
-void carid_decoder_set_output_frame (CaridDecoder *decoder, CaridFrame *frame);
-int carid_decoder_is_parse_header (CaridBuffer *buffer);
-int carid_decoder_is_rap (CaridBuffer *buffer);
-void carid_decoder_decode (CaridDecoder *decoder, CaridBuffer *buffer);
-void carid_decoder_decode_parse_header (CaridDecoder *decoder);
-void carid_decoder_decode_rap (CaridDecoder *decoder);
-void carid_decoder_decode_frame_header (CaridDecoder *decoder);
-void carid_decoder_decode_frame_prediction (CaridDecoder *decoder);
-void carid_decoder_decode_prediction_data (CaridDecoder *decoder);
-void carid_decoder_decode_transform_parameters (CaridDecoder *decoder);
-void carid_decoder_decode_transform_data (CaridDecoder *decoder, int component);
-void carid_decoder_decode_subband (CaridDecoder *decoder, int component, int index);
-void carid_decoder_iwt_transform (CaridDecoder *decoder, int component);
-void carid_decoder_copy_from_frame_buffer (CaridDecoder *decoder, CaridBuffer *buffer);
+SchroDecoder * schro_decoder_new (void);
+void schro_decoder_free (SchroDecoder *decoder);
+void schro_decoder_set_output_frame (SchroDecoder *decoder, SchroFrame *frame);
+int schro_decoder_is_parse_header (SchroBuffer *buffer);
+int schro_decoder_is_rap (SchroBuffer *buffer);
+void schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer);
+void schro_decoder_decode_parse_header (SchroDecoder *decoder);
+void schro_decoder_decode_rap (SchroDecoder *decoder);
+void schro_decoder_decode_frame_header (SchroDecoder *decoder);
+void schro_decoder_decode_frame_prediction (SchroDecoder *decoder);
+void schro_decoder_decode_prediction_data (SchroDecoder *decoder);
+void schro_decoder_decode_transform_parameters (SchroDecoder *decoder);
+void schro_decoder_decode_transform_data (SchroDecoder *decoder, int component);
+void schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index);
+void schro_decoder_iwt_transform (SchroDecoder *decoder, int component);
+void schro_decoder_copy_from_frame_buffer (SchroDecoder *decoder, SchroBuffer *buffer);
 
 #endif
 

@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <carid/carid.h>
+#include <schro/schro.h>
 
 int16_t b1[128];
 int16_t b2[128];
@@ -16,7 +16,7 @@ main (int argc, char *argv[])
 {
   int i;
 
-  carid_init();
+  schro_init();
 
   for(i=0;i<128;i++) {
     b1[i] = 16;
@@ -24,7 +24,7 @@ main (int argc, char *argv[])
 
   memcpy(b2, b1, 128*2);
 
-  //carid_wt (0, b2, 128);
+  //schro_wt (0, b2, 128);
 
   for(i=0;i<128;i++){
     printf("%d %d\n", i, b2[i]);

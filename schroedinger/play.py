@@ -97,14 +97,14 @@ class VideoWidget(gtk.DrawingArea):
         
         self.player = player
         self.imagesink = gst.element_factory_make('xvimagesink')
-        self.caridtoy = gst.element_factory_make('caridtoy')
+        self.schrotoy = gst.element_factory_make('schrotoy')
         self.bin = gst.Bin('bin')
-        self.bin.add(self.imagesink, self.caridtoy)
-        self.caridtoy.link (self.imagesink)
-        self.bin.add_pad(gst.GhostPad("sink", self.caridtoy.get_pad("sink")))
+        self.bin.add(self.imagesink, self.schrotoy)
+        self.schrotoy.link (self.imagesink)
+        self.bin.add_pad(gst.GhostPad("sink", self.schrotoy.get_pad("sink")))
         self.player.set_video_sink(self.bin)
 
-        self.caridtoy.set_property ("wavelet-type", 2)
+        self.schrotoy.set_property ("wavelet-type", 2)
 
     def destroy_cb(self, da):
         self.set_window_id(0L)
@@ -282,11 +282,11 @@ class PlayerWindow(gtk.Window):
     def hscale_value_changed_cb(self, hscale):
         value = hscale.get_value()
         print value
-        self.videowidget.caridtoy.set_property ("level", int(value))
+        self.videowidget.schrotoy.set_property ("level", int(value))
 
     def combobox_changed_cb(self, combobox):
         value = combobox.get_active()
-        self.videowidget.caridtoy.set_property ("wavelet-type", value)
+        self.videowidget.schrotoy.set_property ("wavelet-type", value)
 
 def main(args):
     w = PlayerWindow()

@@ -3,7 +3,7 @@
 #include "config.h"
 #endif
 
-#include <carid/carid.h>
+#include <schro/schro.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -30,7 +30,7 @@ basic_test(int filter_index, int width, int height, int transform_depth)
     h = height >> level;
     stride = width << level;
 
-    carid_wavelet_transform_2d (filter_index,
+    schro_wavelet_transform_2d (filter_index,
         frame_data, stride, w, h, tmp);
   }
 
@@ -53,7 +53,7 @@ constant_test(int filter_index, int width, int height)
     frame_data[i] = 10;
   }
 
-  carid_wavelet_transform_2d (filter_index,
+  schro_wavelet_transform_2d (filter_index,
         frame_data, width*2, width, height, tmp);
 
 #if 1
@@ -66,7 +66,7 @@ constant_test(int filter_index, int width, int height)
   printf("\n");
 #endif
 
-  carid_wavelet_inverse_transform_2d (filter_index,
+  schro_wavelet_inverse_transform_2d (filter_index,
         frame_data, width*2, width, height, tmp);
 
 #if 1
@@ -101,9 +101,9 @@ vramp_test(int filter_index, int width, int height)
     }
   }
 
-  carid_wavelet_transform_2d (filter_index,
+  schro_wavelet_transform_2d (filter_index,
         frame_data, width*2, width, height, tmp);
-  carid_wavelet_transform_2d (filter_index,
+  schro_wavelet_transform_2d (filter_index,
         frame_data, width*4, width/2, height/2, tmp);
 
 #if 0
@@ -115,9 +115,9 @@ vramp_test(int filter_index, int width, int height)
   }
 #endif
 
-  carid_wavelet_inverse_transform_2d (filter_index,
+  schro_wavelet_inverse_transform_2d (filter_index,
         frame_data, width*4, width/2, height/2, tmp);
-  carid_wavelet_inverse_transform_2d (filter_index,
+  schro_wavelet_inverse_transform_2d (filter_index,
         frame_data, width*2, width, height, tmp);
 
 #if 1
@@ -139,18 +139,18 @@ vramp_test(int filter_index, int width, int height)
 int
 main (int argc, char *argv[])
 {
-  carid_init();
+  schro_init();
 
 #if 0
-  basic_test(CARID_WAVELET_5_3, 640,512,6);
+  basic_test(SCHRO_WAVELET_5_3, 640,512,6);
 
-  constant_test(CARID_WAVELET_5_3, 32,20);
-  constant_test(CARID_WAVELET_5_3, 10,2);
+  constant_test(SCHRO_WAVELET_5_3, 32,20);
+  constant_test(SCHRO_WAVELET_5_3, 10,2);
 
-  vramp_test(CARID_WAVELET_5_3, 16, 16);
+  vramp_test(SCHRO_WAVELET_5_3, 16, 16);
 #endif
 
-  constant_test(CARID_WAVELET_DAUB97, 10, 10);
+  constant_test(SCHRO_WAVELET_DAUB97, 10, 10);
 
   return 0;
 }

@@ -7,17 +7,17 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <carid/caridarith.h>
+#include <schro/schroarith.h>
 
 
 
 static unsigned int division_factor[1024];
 
-static void carid_arith_input_bit (CaridArith *arith);
-static void carid_arith_output_bit (CaridArith *arith);
+static void schro_arith_input_bit (SchroArith *arith);
+static void schro_arith_output_bit (SchroArith *arith);
 
 static void
-_carid_arith_division_factor_init (void)
+_schro_arith_division_factor_init (void)
 {
   static int inited = 0;
 
@@ -29,27 +29,27 @@ _carid_arith_division_factor_init (void)
   }
 }
 
-CaridArith *
-carid_arith_new (void)
+SchroArith *
+schro_arith_new (void)
 {
-  CaridArith *arith;
+  SchroArith *arith;
   
   arith = malloc (sizeof(*arith));
   memset (arith, 0, sizeof(*arith));
 
-  _carid_arith_division_factor_init();
+  _schro_arith_division_factor_init();
 
   return arith;
 }
 
 void
-carid_arith_free (CaridArith *arith)
+schro_arith_free (SchroArith *arith)
 {
   free(arith);
 }
 
 void
-carid_arith_decode_init (CaridArith *arith, CaridBits *bits)
+schro_arith_decode_init (SchroArith *arith, SchroBits *bits)
 {
   int i;
 
@@ -60,12 +60,12 @@ carid_arith_decode_init (CaridArith *arith, CaridBits *bits)
   arith->bits = bits;
 
   for(i=0;i<16;i++){
-    carid_arith_input_bit(arith);
+    schro_arith_input_bit(arith);
   }
 }
 
 void
-carid_arith_encode_init (CaridArith *arith, CaridBits *bits)
+schro_arith_encode_init (SchroArith *arith, SchroBits *bits)
 {
   arith->low = 0;
   arith->high = 0xffff;
@@ -75,52 +75,52 @@ carid_arith_encode_init (CaridArith *arith, CaridBits *bits)
 }
 
 static void
-carid_arith_input_bit (CaridArith *arith)
+schro_arith_input_bit (SchroArith *arith)
 {
   arith->code <<= 1;
-  arith->code += carid_bits_decode_bit(arith->bits);
+  arith->code += schro_bits_decode_bit(arith->bits);
 }
 
 static void
-carid_arith_push_bit (CaridArith *arith, int value)
+schro_arith_push_bit (SchroArith *arith, int value)
 {
-  carid_bits_encode_bit (arith->bits, value);
+  schro_bits_encode_bit (arith->bits, value);
 }
 
 static void
-carid_arith_output_bit (CaridArith *arith)
+schro_arith_output_bit (SchroArith *arith)
 {
   int value;
 
   value = arith->low >> 15;
 
-  carid_arith_push_bit (arith, value);
+  schro_arith_push_bit (arith, value);
   
   value = !value;
   while(arith->cntr) {
-    carid_arith_push_bit (arith, value);
+    schro_arith_push_bit (arith, value);
     arith->cntr--;
   }
 }
 
 void
-carid_arith_flush (CaridArith *arith)
+schro_arith_flush (SchroArith *arith)
 {
-  carid_arith_push_bit (arith, 1);
-  carid_bits_sync (arith->bits);
+  schro_arith_push_bit (arith, 1);
+  schro_bits_sync (arith->bits);
   arith->bits->offset += 16;
 }
 
 void
-carid_arith_init_contexts (CaridArith *arith)
+schro_arith_init_contexts (SchroArith *arith)
 {
   int i;
-  for(i=0;i<CARID_CTX_LAST;i++){
-    carid_arith_context_init (arith, i, 1, 1);
+  for(i=0;i<SCHRO_CTX_LAST;i++){
+    schro_arith_context_init (arith, i, 1, 1);
   }
 }
 void
-carid_arith_context_init (CaridArith *arith, int i, int count0, int count1)
+schro_arith_context_init (SchroArith *arith, int i, int count0, int count1)
 {
   arith->contexts[i].count0 = count0;
   arith->contexts[i].count1 = count1;
@@ -128,7 +128,7 @@ carid_arith_context_init (CaridArith *arith, int i, int count0, int count1)
 
 
 void
-carid_arith_context_halve_counts (CaridArith *arith, int i)
+schro_arith_context_halve_counts (SchroArith *arith, int i)
 {
   arith->contexts[i].count0 >>= 1;
   arith->contexts[i].count0++;
@@ -137,7 +137,7 @@ carid_arith_context_halve_counts (CaridArith *arith, int i)
 }
 
 void
-carid_arith_context_halve_all_counts (CaridArith *arith)
+schro_arith_context_halve_all_counts (SchroArith *arith)
 {
   int i;
   for(i=0;i<arith->n_contexts;i++) {
@@ -149,7 +149,7 @@ carid_arith_context_halve_all_counts (CaridArith *arith)
 }
 
 static void
-carid_arith_context_update (CaridArith *arith, int i, int value)
+schro_arith_context_update (SchroArith *arith, int i, int value)
 {
   if (value) {
     arith->contexts[i].count1++;
@@ -157,7 +157,7 @@ carid_arith_context_update (CaridArith *arith, int i, int value)
     arith->contexts[i].count0++;
   }
   if (arith->contexts[i].count0 + arith->contexts[i].count1 >= 1024) {
-    carid_arith_context_halve_counts (arith, i);
+    schro_arith_context_halve_counts (arith, i);
   }
 }
 
@@ -165,7 +165,7 @@ carid_arith_context_update (CaridArith *arith, int i, int value)
 
 
 static int
-carid_arith_context_binary_decode (CaridArith *arith, int i)
+schro_arith_context_binary_decode (SchroArith *arith, int i)
 {
   unsigned int count;
   int value;
@@ -183,7 +183,7 @@ carid_arith_context_binary_decode (CaridArith *arith, int i)
     value = 1;
   }
 
-  carid_arith_context_update (arith, i, value);
+  schro_arith_context_update (arith, i, value);
   
   if (value == 0) {
     arith->high = arith->low + ((range * scaled_count0)>>10) - 1;
@@ -206,7 +206,7 @@ carid_arith_context_binary_decode (CaridArith *arith, int i)
     arith->high <<= 1;
     arith->high++;
 
-    carid_arith_input_bit(arith);
+    schro_arith_input_bit(arith);
   } while (1);
 
   return value;
@@ -214,7 +214,7 @@ carid_arith_context_binary_decode (CaridArith *arith, int i)
 
 
 static void
-carid_arith_context_binary_encode (CaridArith *arith, int i, int value)
+schro_arith_context_binary_encode (SchroArith *arith, int i, int value)
 {
   int range;
   int scaled_count0;
@@ -224,7 +224,7 @@ carid_arith_context_binary_encode (CaridArith *arith, int i, int value)
   weight = arith->contexts[i].count0 + arith->contexts[i].count1;
   scaled_count0 = ((unsigned int)arith->contexts[i].count0 * division_factor[weight - 1]) >> 21;
 
-  carid_arith_context_update (arith, i, value);
+  schro_arith_context_update (arith, i, value);
   
   if (value == 0) {
     arith->high = arith->low + ((range * scaled_count0)>>10) - 1;
@@ -234,7 +234,7 @@ carid_arith_context_binary_encode (CaridArith *arith, int i, int value)
 
   do {
     if ((arith->high & (1<<15)) == (arith->low & (1<<15))) {
-      carid_arith_output_bit(arith);
+      schro_arith_output_bit(arith);
 
       arith->low <<= 1;
       arith->high <<= 1;
@@ -258,56 +258,56 @@ carid_arith_context_binary_encode (CaridArith *arith, int i, int value)
 
 
 void
-carid_arith_context_encode_bit (CaridArith *arith, int context, int value)
+schro_arith_context_encode_bit (SchroArith *arith, int context, int value)
 {
-  carid_arith_context_binary_encode (arith, context, value);
+  schro_arith_context_binary_encode (arith, context, value);
 }
 
 void
-carid_arith_context_encode_uu (CaridArith *arith, int context, int context2, int value)
+schro_arith_context_encode_uu (SchroArith *arith, int context, int context2, int value)
 {
   switch (value) {
     case 0:
-      carid_arith_context_binary_encode (arith, context, 1);
+      schro_arith_context_binary_encode (arith, context, 1);
       break;
     case 1:
-      carid_arith_context_binary_encode (arith, context, 0);
-      carid_arith_context_binary_encode (arith, context2, 1);
+      schro_arith_context_binary_encode (arith, context, 0);
+      schro_arith_context_binary_encode (arith, context2, 1);
       break;
     case 2:
-      carid_arith_context_binary_encode (arith, context, 0);
-      carid_arith_context_binary_encode (arith, context2, 0);
-      carid_arith_context_binary_encode (arith, context2 + 1, 1);
+      schro_arith_context_binary_encode (arith, context, 0);
+      schro_arith_context_binary_encode (arith, context2, 0);
+      schro_arith_context_binary_encode (arith, context2 + 1, 1);
       break;
     case 3:
-      carid_arith_context_binary_encode (arith, context, 0);
-      carid_arith_context_binary_encode (arith, context2, 0);
-      carid_arith_context_binary_encode (arith, context2 + 1, 0);
-      carid_arith_context_binary_encode (arith, context2 + 2, 1);
+      schro_arith_context_binary_encode (arith, context, 0);
+      schro_arith_context_binary_encode (arith, context2, 0);
+      schro_arith_context_binary_encode (arith, context2 + 1, 0);
+      schro_arith_context_binary_encode (arith, context2 + 2, 1);
       break;
     default:
-      carid_arith_context_binary_encode (arith, context, 0);
-      carid_arith_context_binary_encode (arith, context2, 0);
-      carid_arith_context_binary_encode (arith, context2 + 1, 0);
-      carid_arith_context_binary_encode (arith, context2 + 2, 0);
+      schro_arith_context_binary_encode (arith, context, 0);
+      schro_arith_context_binary_encode (arith, context2, 0);
+      schro_arith_context_binary_encode (arith, context2 + 1, 0);
+      schro_arith_context_binary_encode (arith, context2 + 2, 0);
       value -= 4;
       while (value > 0) {
-        carid_arith_context_binary_encode (arith, context2 + 3, 0);
+        schro_arith_context_binary_encode (arith, context2 + 3, 0);
         value--;
       }
-      carid_arith_context_binary_encode (arith, context2 + 3, 1);
+      schro_arith_context_binary_encode (arith, context2 + 3, 1);
       break;
   }
 }
 
 void
-carid_arith_context_encode_su (CaridArith *arith, int context, int value)
+schro_arith_context_encode_su (SchroArith *arith, int context, int value)
 {
   int i;
   int sign;
 
   if (value==0) {
-    carid_arith_context_binary_encode (arith, context, 1);
+    schro_arith_context_binary_encode (arith, context, 1);
     return;
   }
   if (value < 0) {
@@ -317,22 +317,22 @@ carid_arith_context_encode_su (CaridArith *arith, int context, int value)
     sign = 1;
   }
   for(i=0;i<value;i++){
-    carid_arith_context_binary_encode (arith, context, 0);
+    schro_arith_context_binary_encode (arith, context, 0);
   }
-  carid_arith_context_binary_encode (arith, context, 1);
-  carid_arith_context_binary_encode (arith, context, sign);
+  schro_arith_context_binary_encode (arith, context, 1);
+  schro_arith_context_binary_encode (arith, context, sign);
 }
 
 void
-carid_arith_context_encode_ut (CaridArith *arith, int context, int value, int max)
+schro_arith_context_encode_ut (SchroArith *arith, int context, int value, int max)
 {
   int i;
 
   for(i=0;i<value;i++){
-    carid_arith_context_binary_encode (arith, context, 0);
+    schro_arith_context_binary_encode (arith, context, 0);
   }
   if (value < max) {
-    carid_arith_context_binary_encode (arith, context, 1);
+    schro_arith_context_binary_encode (arith, context, 1);
   }
 }
 
@@ -347,7 +347,7 @@ maxbit (unsigned int x)
 }
 
 void
-carid_arith_context_encode_uegol (CaridArith *arith, int context, int value)
+schro_arith_context_encode_uegol (SchroArith *arith, int context, int value)
 {
   int i;
   int n_bits;
@@ -355,16 +355,16 @@ carid_arith_context_encode_uegol (CaridArith *arith, int context, int value)
   value++;
   n_bits = maxbit(value);
   for(i=0;i<n_bits - 1;i++){
-    carid_arith_context_binary_encode (arith, context, 0);
+    schro_arith_context_binary_encode (arith, context, 0);
   }
-  carid_arith_context_binary_encode (arith, context, 1);
+  schro_arith_context_binary_encode (arith, context, 1);
   for(i=0;i<n_bits - 1;i++){
-    carid_arith_context_binary_encode (arith, context, (value>>(n_bits - 2 - i))&1);
+    schro_arith_context_binary_encode (arith, context, (value>>(n_bits - 2 - i))&1);
   }
 }
 
 void
-carid_arith_context_encode_segol (CaridArith *arith, int context, int value)
+schro_arith_context_encode_segol (SchroArith *arith, int context, int value)
 {
   int sign;
 
@@ -374,28 +374,28 @@ carid_arith_context_encode_segol (CaridArith *arith, int context, int value)
   } else {
     sign = 1;
   }
-  carid_arith_context_encode_uegol (arith, context, value);
+  schro_arith_context_encode_uegol (arith, context, value);
   if (value) {
-    carid_arith_context_binary_encode (arith, context, sign);
+    schro_arith_context_binary_encode (arith, context, sign);
   }
 }
 
 void
-carid_arith_context_encode_ue2gol (CaridArith *arith, int context, int value)
+schro_arith_context_encode_ue2gol (SchroArith *arith, int context, int value)
 {
   int i;
   int n_bits;
 
   value++;
   n_bits = maxbit(value);
-  carid_arith_context_encode_uegol (arith, context, n_bits - 1);
+  schro_arith_context_encode_uegol (arith, context, n_bits - 1);
   for(i=0;i<n_bits - 1;i++){
-    carid_arith_context_binary_encode (arith, context, (value>>(n_bits - 2 - i))&1);
+    schro_arith_context_binary_encode (arith, context, (value>>(n_bits - 2 - i))&1);
   }
 }
 
 void
-carid_arith_context_encode_se2gol (CaridArith *arith, int context, int value)
+schro_arith_context_encode_se2gol (SchroArith *arith, int context, int value)
 {
   int sign;
 
@@ -405,97 +405,97 @@ carid_arith_context_encode_se2gol (CaridArith *arith, int context, int value)
   } else {
     sign = 1;
   }
-  carid_arith_context_encode_ue2gol (arith, context, value);
+  schro_arith_context_encode_ue2gol (arith, context, value);
   if (value) {
-    carid_arith_context_binary_encode (arith, context, sign);
+    schro_arith_context_binary_encode (arith, context, sign);
   }
 }
 
 
 
-int carid_arith_context_decode_bit (CaridArith *arith, int context)
+int schro_arith_context_decode_bit (SchroArith *arith, int context)
 {
-  return carid_arith_context_binary_decode (arith, context);
+  return schro_arith_context_binary_decode (arith, context);
 }
 
-int carid_arith_context_decode_bits (CaridArith *arith, int context, int n)
+int schro_arith_context_decode_bits (SchroArith *arith, int context, int n)
 {
   int value = 0;
   int i;
   
   for(i=0;i<n;i++){
-    value = (value << 1) | carid_arith_context_binary_decode (arith, context);
+    value = (value << 1) | schro_arith_context_binary_decode (arith, context);
   } 
   
   return value;
 }
 
-int carid_arith_context_decode_uu (CaridArith *arith, int context, int context2)
+int schro_arith_context_decode_uu (SchroArith *arith, int context, int context2)
 {
   int value;
 
-  if (carid_arith_context_binary_decode (arith, context)) return 0;
-  if (carid_arith_context_binary_decode (arith, context2)) return 1;
-  if (carid_arith_context_binary_decode (arith, context2 + 1)) return 2;
-  if (carid_arith_context_binary_decode (arith, context2 + 2)) return 3;
+  if (schro_arith_context_binary_decode (arith, context)) return 0;
+  if (schro_arith_context_binary_decode (arith, context2)) return 1;
+  if (schro_arith_context_binary_decode (arith, context2 + 1)) return 2;
+  if (schro_arith_context_binary_decode (arith, context2 + 2)) return 3;
   value = 4;
-  while (carid_arith_context_binary_decode (arith, context2 + 3) == 0) {
+  while (schro_arith_context_binary_decode (arith, context2 + 3) == 0) {
     value++;
   }
   return value;
 }
 
-int carid_arith_context_decode_su (CaridArith *arith, int context)
+int schro_arith_context_decode_su (SchroArith *arith, int context)
 {
   int value = 0;
 
-  if (carid_arith_context_binary_decode (arith, context) == 1) {
+  if (schro_arith_context_binary_decode (arith, context) == 1) {
     return 0;
   }
   value = 1;
-  while (carid_arith_context_binary_decode (arith, context) == 0) {
+  while (schro_arith_context_binary_decode (arith, context) == 0) {
     value++;
   }
-  if (carid_arith_context_binary_decode (arith, context) == 0) {
+  if (schro_arith_context_binary_decode (arith, context) == 0) {
     value = -value;
   }
 
   return value;
 }
 
-int carid_arith_context_decode_ut (CaridArith *arith, int context, int max)
+int schro_arith_context_decode_ut (SchroArith *arith, int context, int max)
 {
   int value;
 
   for(value=0;value<max;value++){
-    if (carid_arith_context_binary_decode (arith, context)) {
+    if (schro_arith_context_binary_decode (arith, context)) {
       return value;
     }
   }
   return value;
 }
 
-int carid_arith_context_decode_uegol (CaridArith *arith, int context)
+int schro_arith_context_decode_uegol (SchroArith *arith, int context)
 {
   int count;
   int value;
 
   count = 0;
-  while(!carid_arith_context_binary_decode (arith, context)) {
+  while(!schro_arith_context_binary_decode (arith, context)) {
     count++;
   }
-  value = (1<<count) - 1 + carid_arith_context_decode_bits (arith, context, count);
+  value = (1<<count) - 1 + schro_arith_context_decode_bits (arith, context, count);
 
   return value;
 }
 
-int carid_arith_context_decode_segol (CaridArith *arith, int context)
+int schro_arith_context_decode_segol (SchroArith *arith, int context)
 {
   int value;
 
-  value = carid_arith_context_decode_uegol (arith, context);
+  value = schro_arith_context_decode_uegol (arith, context);
   if (value) {
-    if (!carid_arith_context_binary_decode (arith, context)) {
+    if (!schro_arith_context_binary_decode (arith, context)) {
       value = -value;
     }
   }
@@ -503,24 +503,24 @@ int carid_arith_context_decode_segol (CaridArith *arith, int context)
   return value;
 }
 
-int carid_arith_context_decode_ue2gol (CaridArith *arith, int context)
+int schro_arith_context_decode_ue2gol (SchroArith *arith, int context)
 {
   int count;
   int value;
 
-  count = carid_arith_context_decode_uegol (arith, context);
-  value = (1<<count) - 1 + carid_arith_context_decode_bits (arith, context, count);
+  count = schro_arith_context_decode_uegol (arith, context);
+  value = (1<<count) - 1 + schro_arith_context_decode_bits (arith, context, count);
 
   return value;
 }
 
-int carid_arith_context_decode_se2gol (CaridArith *arith, int context)
+int schro_arith_context_decode_se2gol (SchroArith *arith, int context)
 {
   int value;
 
-  value = carid_arith_context_decode_ue2gol (arith, context);
+  value = schro_arith_context_decode_ue2gol (arith, context);
   if (value) {
-    if (!carid_arith_context_binary_decode (arith, context)) {
+    if (!schro_arith_context_binary_decode (arith, context)) {
       value = -value;
     }
   }

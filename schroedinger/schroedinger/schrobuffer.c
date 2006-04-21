@@ -3,14 +3,14 @@
 #include "config.h"
 #endif
 
-#include <carid/caridbuffer.h>
-//#include <carid/cariddebug.h>
+#include <schro/schrobuffer.h>
+//#include <schro/schrodebug.h>
 #include <string.h>
 #include <stdlib.h>
 #include <liboil/liboil.h>
 
-static void carid_buffer_free_mem (CaridBuffer * buffer, void *);
-static void carid_buffer_free_subbuffer (CaridBuffer * buffer, void *priv);
+static void schro_buffer_free_mem (SchroBuffer * buffer, void *);
+static void schro_buffer_free_subbuffer (SchroBuffer * buffer, void *priv);
 
 
 #define g_new0(type, n) memset(malloc(sizeof(type) * (n)), 0, sizeof(type) * (n))
@@ -18,32 +18,32 @@ static void carid_buffer_free_subbuffer (CaridBuffer * buffer, void *priv);
 #define g_free(size) free(size)
 
 
-CaridBuffer *
-carid_buffer_new (void)
+SchroBuffer *
+schro_buffer_new (void)
 {
-  CaridBuffer *buffer;
+  SchroBuffer *buffer;
 
-  buffer = g_new0 (CaridBuffer, 1);
+  buffer = g_new0 (SchroBuffer, 1);
   buffer->ref_count = 1;
   return buffer;
 }
 
-CaridBuffer *
-carid_buffer_new_and_alloc (int size)
+SchroBuffer *
+schro_buffer_new_and_alloc (int size)
 {
-  CaridBuffer *buffer = carid_buffer_new ();
+  SchroBuffer *buffer = schro_buffer_new ();
 
   buffer->data = g_malloc (size);
   buffer->length = size;
-  buffer->free = carid_buffer_free_mem;
+  buffer->free = schro_buffer_free_mem;
 
   return buffer;
 }
 
-CaridBuffer *
-carid_buffer_new_with_data (void *data, int size)
+SchroBuffer *
+schro_buffer_new_with_data (void *data, int size)
 {
-  CaridBuffer *buffer = carid_buffer_new ();
+  SchroBuffer *buffer = schro_buffer_new ();
 
   buffer->data = data;
   buffer->length = size;
@@ -51,34 +51,34 @@ carid_buffer_new_with_data (void *data, int size)
   return buffer;
 }
 
-CaridBuffer *
-carid_buffer_new_subbuffer (CaridBuffer * buffer, int offset, int length)
+SchroBuffer *
+schro_buffer_new_subbuffer (SchroBuffer * buffer, int offset, int length)
 {
-  CaridBuffer *subbuffer = carid_buffer_new ();
+  SchroBuffer *subbuffer = schro_buffer_new ();
 
   if (buffer->parent) {
-    carid_buffer_ref (buffer->parent);
+    schro_buffer_ref (buffer->parent);
     subbuffer->parent = buffer->parent;
   } else {
-    carid_buffer_ref (buffer);
+    schro_buffer_ref (buffer);
     subbuffer->parent = buffer;
   }
   subbuffer->data = buffer->data + offset;
   subbuffer->length = length;
-  subbuffer->free = carid_buffer_free_subbuffer;
+  subbuffer->free = schro_buffer_free_subbuffer;
 
   return subbuffer;
 }
 
-CaridBuffer *
-carid_buffer_ref (CaridBuffer * buffer)
+SchroBuffer *
+schro_buffer_ref (SchroBuffer * buffer)
 {
   buffer->ref_count++;
   return buffer;
 }
 
 void
-carid_buffer_unref (CaridBuffer * buffer)
+schro_buffer_unref (SchroBuffer * buffer)
 {
   buffer->ref_count--;
   if (buffer->ref_count == 0) {
@@ -89,63 +89,63 @@ carid_buffer_unref (CaridBuffer * buffer)
 }
 
 static void
-carid_buffer_free_mem (CaridBuffer * buffer, void *priv)
+schro_buffer_free_mem (SchroBuffer * buffer, void *priv)
 {
   g_free (buffer->data);
 }
 
 static void
-carid_buffer_free_subbuffer (CaridBuffer * buffer, void *priv)
+schro_buffer_free_subbuffer (SchroBuffer * buffer, void *priv)
 {
-  carid_buffer_unref (buffer->parent);
+  schro_buffer_unref (buffer->parent);
 }
 
 
 #if 0
-CaridBufferQueue *
-carid_buffer_queue_new (void)
+SchroBufferQueue *
+schro_buffer_queue_new (void)
 {
-  return g_new0 (CaridBufferQueue, 1);
+  return g_new0 (SchroBufferQueue, 1);
 }
 
 int
-carid_buffer_queue_get_depth (CaridBufferQueue * queue)
+schro_buffer_queue_get_depth (SchroBufferQueue * queue)
 {
   return queue->depth;
 }
 
 int
-carid_buffer_queue_get_offset (CaridBufferQueue * queue)
+schro_buffer_queue_get_offset (SchroBufferQueue * queue)
 {
   return queue->offset;
 }
 
 void
-carid_buffer_queue_free (CaridBufferQueue * queue)
+schro_buffer_queue_free (SchroBufferQueue * queue)
 {
   GList *g;
 
   for (g = g_list_first (queue->buffers); g; g = g_list_next (g)) {
-    carid_buffer_unref ((CaridBuffer *) g->data);
+    schro_buffer_unref ((SchroBuffer *) g->data);
   }
   g_list_free (queue->buffers);
   g_free (queue);
 }
 
 void
-carid_buffer_queue_push (CaridBufferQueue * queue, CaridBuffer * buffer)
+schro_buffer_queue_push (SchroBufferQueue * queue, SchroBuffer * buffer)
 {
   queue->buffers = g_list_append (queue->buffers, buffer);
   queue->depth += buffer->length;
 }
 
-CaridBuffer *
-carid_buffer_queue_pull (CaridBufferQueue * queue, int length)
+SchroBuffer *
+schro_buffer_queue_pull (SchroBufferQueue * queue, int length)
 {
   GList *g;
-  CaridBuffer *newbuffer;
-  CaridBuffer *buffer;
-  CaridBuffer *subbuffer;
+  SchroBuffer *newbuffer;
+  SchroBuffer *buffer;
+  SchroBuffer *subbuffer;
 
   g_return_val_if_fail (length > 0, NULL);
 
@@ -153,22 +153,22 @@ carid_buffer_queue_pull (CaridBufferQueue * queue, int length)
     return NULL;
   }
 
-  CARID_LOG ("pulling %d, %d available", length, queue->depth);
+  SCHRO_LOG ("pulling %d, %d available", length, queue->depth);
 
   g = g_list_first (queue->buffers);
   buffer = g->data;
 
   if (buffer->length > length) {
-    newbuffer = carid_buffer_new_subbuffer (buffer, 0, length);
+    newbuffer = schro_buffer_new_subbuffer (buffer, 0, length);
 
-    subbuffer = carid_buffer_new_subbuffer (buffer, length,
+    subbuffer = schro_buffer_new_subbuffer (buffer, length,
         buffer->length - length);
     g->data = subbuffer;
-    carid_buffer_unref (buffer);
+    schro_buffer_unref (buffer);
   } else {
     int offset = 0;
 
-    newbuffer = carid_buffer_new_and_alloc (length);
+    newbuffer = schro_buffer_new_and_alloc (length);
 
     while (offset < length) {
       g = g_list_first (queue->buffers);
@@ -178,9 +178,9 @@ carid_buffer_queue_pull (CaridBufferQueue * queue, int length)
         int n = length - offset;
 
         oil_copy_u8 (newbuffer->data + offset, buffer->data, n);
-        subbuffer = carid_buffer_new_subbuffer (buffer, n, buffer->length - n);
+        subbuffer = schro_buffer_new_subbuffer (buffer, n, buffer->length - n);
         g->data = subbuffer;
-        carid_buffer_unref (buffer);
+        schro_buffer_unref (buffer);
         offset += n;
       } else {
         oil_copy_u8 (newbuffer->data + offset, buffer->data, buffer->length);
@@ -197,12 +197,12 @@ carid_buffer_queue_pull (CaridBufferQueue * queue, int length)
   return newbuffer;
 }
 
-CaridBuffer *
-carid_buffer_queue_peek (CaridBufferQueue * queue, int length)
+SchroBuffer *
+schro_buffer_queue_peek (SchroBufferQueue * queue, int length)
 {
   GList *g;
-  CaridBuffer *newbuffer;
-  CaridBuffer *buffer;
+  SchroBuffer *newbuffer;
+  SchroBuffer *buffer;
   int offset = 0;
 
   g_return_val_if_fail (length > 0, NULL);
@@ -211,14 +211,14 @@ carid_buffer_queue_peek (CaridBufferQueue * queue, int length)
     return NULL;
   }
 
-  CARID_LOG ("peeking %d, %d available", length, queue->depth);
+  SCHRO_LOG ("peeking %d, %d available", length, queue->depth);
 
   g = g_list_first (queue->buffers);
   buffer = g->data;
   if (buffer->length > length) {
-    newbuffer = carid_buffer_new_subbuffer (buffer, 0, length);
+    newbuffer = schro_buffer_new_subbuffer (buffer, 0, length);
   } else {
-    newbuffer = carid_buffer_new_and_alloc (length);
+    newbuffer = schro_buffer_new_and_alloc (length);
     while (offset < length) {
       buffer = g->data;
 

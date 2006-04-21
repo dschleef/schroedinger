@@ -1,10 +1,10 @@
 prefix=
 exec_prefix=
-libdir=${pcfiledir}/carid/
+libdir=${pcfiledir}/schro/
 includedir=${pcfiledir}/
 
-Name: carid-@CARID_MAJORMINOR@ uninstalled
+Name: schro-@SCHRO_MAJORMINOR@ uninstalled
 Description: Dirac codec library
 Version: @VERSION@
-Libs: -L${libdir} -loil-@CARID_MAJORMINOR@ -lm
+Libs: -L${libdir} -loil-@SCHRO_MAJORMINOR@ -lm
 Cflags: -I${includedir}

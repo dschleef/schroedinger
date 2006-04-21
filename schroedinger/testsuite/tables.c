@@ -26,11 +26,11 @@ main (int argc, char *argv[])
   int i;
 
   printf("\n");
-  printf("#include <carid/carid-stdint.h>\n");
+  printf("#include <schro/schro-stdint.h>\n");
   printf("\n");
 
-  /* carid_table_offset */
-  printf("int16_t carid_table_offset[61] = {\n");
+  /* schro_table_offset */
+  printf("int16_t schro_table_offset[61] = {\n");
   for(i=0;i<60;i+=4) {
     printf("  %5d, %5d, %5d, %5d,\n",
         get_offset(i),
@@ -42,8 +42,8 @@ main (int argc, char *argv[])
   printf("};\n");
   printf("\n");
 
-  /* carid_table_quant */
-  printf("int16_t carid_table_quant[61] = {\n");
+  /* schro_table_quant */
+  printf("int16_t schro_table_quant[61] = {\n");
   for(i=0;i<60;i+=4) {
     printf("  %5d, %5d, %5d, %5d,\n",
         get_quant(i),
@@ -55,8 +55,8 @@ main (int argc, char *argv[])
   printf("};\n");
   printf("\n");
 
-  /* carid_table_quant */
-  printf("uint32_t carid_table_division_factor[1024] = {\n");
+  /* schro_table_quant */
+  printf("uint32_t schro_table_division_factor[1024] = {\n");
   for(i=0;i<1020;i+=4) {
     printf("  %10u, %10u, %10u, %10u,\n",
         get_factor(i),

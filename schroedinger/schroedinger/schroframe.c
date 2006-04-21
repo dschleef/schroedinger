@@ -4,17 +4,17 @@
 #include <config.h>
 #endif
 
-#include <carid/carid.h>
-#include <carid/caridframe.h>
+#include <schro/schro.h>
+#include <schro/schroframe.h>
 #include <liboil/liboil.h>
 
 #include <stdlib.h>
 #include <string.h>
 
-CaridFrame *
-carid_frame_new (void)
+SchroFrame *
+schro_frame_new (void)
 {
-  CaridFrame *frame;
+  SchroFrame *frame;
 
   frame = malloc (sizeof(*frame));
   memset (frame, 0, sizeof(*frame));
@@ -22,19 +22,19 @@ carid_frame_new (void)
   return frame;
 }
 
-CaridFrame *
-carid_frame_new_and_alloc (CaridFrameFormat format, int width, int height, int sub_x, int sub_y)
+SchroFrame *
+schro_frame_new_and_alloc (SchroFrameFormat format, int width, int height, int sub_x, int sub_y)
 {
-  CaridFrame *frame = carid_frame_new();
+  SchroFrame *frame = schro_frame_new();
   int bytes_pp;
   
   frame->format = format;
 
   switch (format) {
-    case CARID_FRAME_FORMAT_U8:
+    case SCHRO_FRAME_FORMAT_U8:
       bytes_pp = 1;
       break;
-    case CARID_FRAME_FORMAT_S16:
+    case SCHRO_FRAME_FORMAT_S16:
       bytes_pp = 2;
       break;
     default:
@@ -72,14 +72,14 @@ carid_frame_new_and_alloc (CaridFrameFormat format, int width, int height, int s
   return frame;
 }
 
-CaridFrame *
-carid_frame_new_I420 (void *data, int width, int height)
+SchroFrame *
+schro_frame_new_I420 (void *data, int width, int height)
 {
-  CaridFrame *frame = carid_frame_new();
+  SchroFrame *frame = schro_frame_new();
 
   /* FIXME: This isn't 100% correct */
 
-  frame->format = CARID_FRAME_FORMAT_U8;
+  frame->format = SCHRO_FRAME_FORMAT_U8;
 
   frame->components[0].width = width;
   frame->components[0].height = height;
@@ -108,7 +108,7 @@ carid_frame_new_I420 (void *data, int width, int height)
 }
 
 void
-carid_frame_free (CaridFrame *frame)
+schro_frame_free (SchroFrame *frame)
 {
   if (frame->free) {
     frame->free (frame, frame->priv);
@@ -120,51 +120,51 @@ carid_frame_free (CaridFrame *frame)
   free(frame);
 }
 
-void carid_frame_set_free_callback (CaridFrame *frame,
-    CaridFrameFreeFunc free_func, void *priv)
+void schro_frame_set_free_callback (SchroFrame *frame,
+    SchroFrameFreeFunc free_func, void *priv)
 {
   frame->free = free_func;
   frame->priv = priv;
 }
 
-static void carid_frame_convert_u8_s16 (CaridFrame *dest, CaridFrame *src);
-static void carid_frame_convert_s16_u8 (CaridFrame *dest, CaridFrame *src);
-static void carid_frame_convert_u8_u8 (CaridFrame *dest, CaridFrame *src);
+static void schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src);
+static void schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src);
+static void schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src);
 
 void
-carid_frame_convert (CaridFrame *dest, CaridFrame *src)
+schro_frame_convert (SchroFrame *dest, SchroFrame *src)
 {
-  CARID_ASSERT(dest != NULL);
-  CARID_ASSERT(src != NULL);
+  SCHRO_ASSERT(dest != NULL);
+  SCHRO_ASSERT(src != NULL);
 
   dest->frame_number = src->frame_number;
 
-  if (dest->format == CARID_FRAME_FORMAT_U8 &&
-      src->format == CARID_FRAME_FORMAT_S16) {
-    carid_frame_convert_u8_s16 (dest, src);
+  if (dest->format == SCHRO_FRAME_FORMAT_U8 &&
+      src->format == SCHRO_FRAME_FORMAT_S16) {
+    schro_frame_convert_u8_s16 (dest, src);
     return;
   }
-  if (dest->format == CARID_FRAME_FORMAT_S16 &&
-      src->format == CARID_FRAME_FORMAT_U8) {
-    carid_frame_convert_s16_u8 (dest, src);
+  if (dest->format == SCHRO_FRAME_FORMAT_S16 &&
+      src->format == SCHRO_FRAME_FORMAT_U8) {
+    schro_frame_convert_s16_u8 (dest, src);
     return;
   }
-  if (dest->format == CARID_FRAME_FORMAT_U8 &&
-      src->format == CARID_FRAME_FORMAT_U8) {
-    carid_frame_convert_u8_u8 (dest, src);
+  if (dest->format == SCHRO_FRAME_FORMAT_U8 &&
+      src->format == SCHRO_FRAME_FORMAT_U8) {
+    schro_frame_convert_u8_u8 (dest, src);
     return;
   }
 
-  CARID_ERROR("unimplemented");
+  SCHRO_ERROR("unimplemented");
 }
 
 #define OFFSET(ptr,offset) ((void *)(((uint8_t *)(ptr)) + (offset)))
 
 static void
-carid_frame_convert_u8_s16 (CaridFrame *dest, CaridFrame *src)
+schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
 {
-  CaridFrameComponent *dcomp;
-  CaridFrameComponent *scomp;
+  SchroFrameComponent *dcomp;
+  SchroFrameComponent *scomp;
   uint8_t *ddata;
   int16_t *sdata;
   int i;
@@ -186,7 +186,7 @@ carid_frame_convert_u8_s16 (CaridFrame *dest, CaridFrame *src)
       void *last_ddata;
 
       if (dcomp->width < scomp->width || dcomp->height < scomp->height) {
-        CARID_ERROR("unimplemented");
+        SCHRO_ERROR("unimplemented");
       }
 
       for(y=0;y<scomp->height;y++){
@@ -209,10 +209,10 @@ carid_frame_convert_u8_s16 (CaridFrame *dest, CaridFrame *src)
 
 
 static void
-carid_frame_convert_s16_u8 (CaridFrame *dest, CaridFrame *src)
+schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
 {
-  CaridFrameComponent *dcomp;
-  CaridFrameComponent *scomp;
+  SchroFrameComponent *dcomp;
+  SchroFrameComponent *scomp;
   int16_t *ddata;
   uint8_t *sdata;
   int i;
@@ -234,7 +234,7 @@ carid_frame_convert_s16_u8 (CaridFrame *dest, CaridFrame *src)
       void *last_ddata;
 
       if (dcomp->width < scomp->width || dcomp->height < scomp->height) {
-        CARID_ERROR("unimplemented");
+        SCHRO_ERROR("unimplemented");
       }
 
       for(y=0;y<scomp->height;y++){
@@ -256,10 +256,10 @@ carid_frame_convert_s16_u8 (CaridFrame *dest, CaridFrame *src)
 
 
 static void
-carid_frame_convert_u8_u8 (CaridFrame *dest, CaridFrame *src)
+schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src)
 {
-  CaridFrameComponent *dcomp;
-  CaridFrameComponent *scomp;
+  SchroFrameComponent *dcomp;
+  SchroFrameComponent *scomp;
   uint8_t *ddata;
   uint8_t *sdata;
   int i;
@@ -281,7 +281,7 @@ carid_frame_convert_u8_u8 (CaridFrame *dest, CaridFrame *src)
       void *last_ddata;
 
       if (dcomp->width < scomp->width || dcomp->height < scomp->height) {
-        CARID_ERROR("unimplemented");
+        SCHRO_ERROR("unimplemented");
       }
 
       for(y=0;y<scomp->height;y++){

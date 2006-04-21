@@ -1,7 +1,7 @@
 
-#include <carid/carid-stdint.h>
+#include <schro/schro-stdint.h>
 
-int16_t carid_table_offset[61] = {
+int16_t schro_table_offset[61] = {
       0,     0,     0,     1,
       1,     1,     1,     1,
       2,     2,     2,     3,
@@ -20,7 +20,7 @@ int16_t carid_table_offset[61] = {
   12288
 };
 
-int16_t carid_table_quant[61] = {
+int16_t schro_table_quant[61] = {
       1,     1,     1,     2,
       2,     2,     3,     3,
       4,     5,     6,     7,

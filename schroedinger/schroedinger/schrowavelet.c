@@ -1,5 +1,5 @@
 
-#include <carid/carid.h>
+#include <schro/schro.h>
 #include <string.h>
 #include <stdio.h>
 #include <liboil/liboil.h>
@@ -7,7 +7,7 @@
 #define MIN_SIZE 2
 
 void
-carid_deinterleave (int16_t *d_n, int16_t *s_n, int n)
+schro_deinterleave (int16_t *d_n, int16_t *s_n, int n)
 {
   oil_deinterleave (d_n, s_n, n/2);
 #if 0
@@ -21,7 +21,7 @@ carid_deinterleave (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-carid_deinterleave_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
+schro_deinterleave_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 {
   int i;
 
@@ -33,7 +33,7 @@ carid_deinterleave_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 }
 
 void
-carid_interleave_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
+schro_interleave_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 {
   int i;
 
@@ -45,7 +45,7 @@ carid_interleave_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 }
 
 void
-carid_interleave (int16_t *d_n, int16_t *s_n, int n)
+schro_interleave (int16_t *d_n, int16_t *s_n, int n)
 {
   oil_interleave (d_n, s_n, n/2);
 #if 0
@@ -59,7 +59,7 @@ carid_interleave (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-carid_lift_synth_daub97 (int16_t *d_n, int16_t *s_n, int n)
+schro_lift_synth_daub97 (int16_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
@@ -85,7 +85,7 @@ carid_lift_synth_daub97 (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-carid_lift_split_daub97 (int16_t *d_n, int16_t *s_n, int n)
+schro_lift_split_daub97 (int16_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
@@ -111,7 +111,7 @@ carid_lift_split_daub97 (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-carid_lift_synth_daub97_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
+schro_lift_synth_daub97_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 {
   int i;
 
@@ -139,7 +139,7 @@ carid_lift_synth_daub97_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 }
 
 void
-carid_lift_split_daub97_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
+schro_lift_split_daub97_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 {
   int i;
 
@@ -169,7 +169,7 @@ carid_lift_split_daub97_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 
 
 void
-carid_lift_split_approx97 (int16_t *d_n, int16_t *s_n, int n)
+schro_lift_split_approx97 (int16_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
@@ -203,7 +203,7 @@ carid_lift_split_approx97 (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-carid_lift_synth_approx97 (int16_t *d_n, int16_t *s_n, int n)
+schro_lift_synth_approx97 (int16_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
@@ -236,7 +236,7 @@ carid_lift_synth_approx97 (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-carid_lift_split_approx97_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
+schro_lift_split_approx97_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 {
   int i;
 
@@ -271,7 +271,7 @@ carid_lift_split_approx97_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 }
 
 void
-carid_lift_synth_approx97_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
+schro_lift_synth_approx97_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 {
   int i;
 
@@ -307,7 +307,7 @@ carid_lift_synth_approx97_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 #if 0
 /* original */
 void
-carid_lift_split_53 (int16_t *i_n, int n)
+schro_lift_split_53 (int16_t *i_n, int n)
 {
   int i;
 
@@ -325,7 +325,7 @@ carid_lift_split_53 (int16_t *i_n, int n)
 }
 
 void
-carid_lift_synth_53 (int16_t *i_n, int n)
+schro_lift_synth_53 (int16_t *i_n, int n)
 {
   int i;
 
@@ -344,7 +344,7 @@ carid_lift_synth_53 (int16_t *i_n, int n)
 #endif
 
 void
-carid_lift_split_53 (int16_t *d_n, int16_t *s_n, int n)
+schro_lift_split_53 (int16_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
@@ -364,7 +364,7 @@ carid_lift_split_53 (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-carid_lift_synth_53 (int16_t *d_n, int16_t *s_n, int n)
+schro_lift_synth_53 (int16_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
@@ -384,7 +384,7 @@ carid_lift_synth_53 (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-carid_lift_split_53_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
+schro_lift_split_53_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 {
   int i;
 
@@ -405,7 +405,7 @@ carid_lift_split_53_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 }
 
 void
-carid_lift_synth_53_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
+schro_lift_synth_53_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 {
   int i;
 
@@ -428,7 +428,7 @@ carid_lift_synth_53_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 
 
 void
-carid_lift_split_135 (int16_t *d_n, int16_t *s_n, int n)
+schro_lift_split_135 (int16_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
@@ -464,7 +464,7 @@ carid_lift_split_135 (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-carid_lift_synth_135 (int16_t *d_n, int16_t *s_n, int n)
+schro_lift_synth_135 (int16_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
@@ -498,7 +498,7 @@ carid_lift_synth_135 (int16_t *d_n, int16_t *s_n, int n)
   }
 }
 void
-carid_lift_split_135_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
+schro_lift_split_135_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 {
   int i;
 
@@ -535,7 +535,7 @@ carid_lift_split_135_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 }
 
 void
-carid_lift_synth_135_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
+schro_lift_synth_135_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 {
   int i;
 
@@ -573,96 +573,96 @@ carid_lift_synth_135_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 
 
 void
-carid_lift_split (int type, int16_t *d_n, int16_t *s_n, int n)
+schro_lift_split (int type, int16_t *d_n, int16_t *s_n, int n)
 {
   switch (type) {
-    case CARID_WAVELET_DAUB97:
+    case SCHRO_WAVELET_DAUB97:
       oil_split_daub97 (d_n, s_n, n/2);
       break;
-    case CARID_WAVELET_APPROX97:
+    case SCHRO_WAVELET_APPROX97:
       oil_split_approx97 (d_n, s_n, n/2);
       break;
-    case CARID_WAVELET_5_3:
+    case SCHRO_WAVELET_5_3:
       oil_split_53 (d_n, s_n, n/2);
       break;
-    case CARID_WAVELET_13_5:
+    case SCHRO_WAVELET_13_5:
       oil_split_135 (d_n, s_n, n/2);
       break;
     default:
-      CARID_ERROR("invalid type");
+      SCHRO_ERROR("invalid type");
       break;
   }
 }
 
 void
-carid_lift_split_str (int type, int16_t *d_n, int16_t *s_n, int sstr, int n)
+schro_lift_split_str (int type, int16_t *d_n, int16_t *s_n, int sstr, int n)
 {
   switch (type) {
-    case CARID_WAVELET_DAUB97:
-      carid_lift_split_daub97_str (d_n, s_n, sstr, n);
+    case SCHRO_WAVELET_DAUB97:
+      schro_lift_split_daub97_str (d_n, s_n, sstr, n);
       break;
-    case CARID_WAVELET_APPROX97:
-      carid_lift_split_approx97_str (d_n, s_n, sstr, n);
+    case SCHRO_WAVELET_APPROX97:
+      schro_lift_split_approx97_str (d_n, s_n, sstr, n);
       break;
-    case CARID_WAVELET_5_3:
-      carid_lift_split_53_str (d_n, s_n, sstr, n);
+    case SCHRO_WAVELET_5_3:
+      schro_lift_split_53_str (d_n, s_n, sstr, n);
       break;
-    case CARID_WAVELET_13_5:
-      carid_lift_split_135_str (d_n, s_n, sstr, n);
+    case SCHRO_WAVELET_13_5:
+      schro_lift_split_135_str (d_n, s_n, sstr, n);
       break;
     default:
-      CARID_ERROR("invalid type");
+      SCHRO_ERROR("invalid type");
       break;
   }
 }
 
 void
-carid_lift_synth (int type, int16_t *d_n, int16_t *s_n, int n)
+schro_lift_synth (int type, int16_t *d_n, int16_t *s_n, int n)
 {
   switch (type) {
-    case CARID_WAVELET_DAUB97:
+    case SCHRO_WAVELET_DAUB97:
       oil_synth_daub97 (d_n, s_n, n/2);
       break;
-    case CARID_WAVELET_APPROX97:
+    case SCHRO_WAVELET_APPROX97:
       oil_synth_approx97 (d_n, s_n, n/2);
       break;
-    case CARID_WAVELET_5_3:
+    case SCHRO_WAVELET_5_3:
       oil_synth_53 (d_n, s_n, n/2);
       break;
-    case CARID_WAVELET_13_5:
+    case SCHRO_WAVELET_13_5:
       oil_synth_135 (d_n, s_n, n/2);
       break;
     default:
-      CARID_ERROR("invalid type");
+      SCHRO_ERROR("invalid type");
       break;
   }
 }
 
 void
-carid_lift_synth_str (int type, int16_t *d_n, int dstr, int16_t *s_n, int n)
+schro_lift_synth_str (int type, int16_t *d_n, int dstr, int16_t *s_n, int n)
 {
   switch (type) {
-    case CARID_WAVELET_DAUB97:
-      carid_lift_synth_daub97_str (d_n, dstr, s_n, n);
+    case SCHRO_WAVELET_DAUB97:
+      schro_lift_synth_daub97_str (d_n, dstr, s_n, n);
       break;
-    case CARID_WAVELET_APPROX97:
-      carid_lift_synth_approx97_str (d_n, dstr, s_n, n);
+    case SCHRO_WAVELET_APPROX97:
+      schro_lift_synth_approx97_str (d_n, dstr, s_n, n);
       break;
-    case CARID_WAVELET_5_3:
-      carid_lift_synth_53_str (d_n, dstr, s_n, n);
+    case SCHRO_WAVELET_5_3:
+      schro_lift_synth_53_str (d_n, dstr, s_n, n);
       break;
-    case CARID_WAVELET_13_5:
-      carid_lift_synth_135_str (d_n, dstr, s_n, n);
+    case SCHRO_WAVELET_13_5:
+      schro_lift_synth_135_str (d_n, dstr, s_n, n);
       break;
     default:
-      CARID_ERROR("invalid type");
+      SCHRO_ERROR("invalid type");
       break;
   }
 }
 
 #if 0
 void
-carid_wt_2d (int type, int16_t *i_n, int n, int stride)
+schro_wt_2d (int type, int16_t *i_n, int n, int stride)
 {
   int16_t tmp[256];
   int16_t tmp2[256];
@@ -672,15 +672,15 @@ carid_wt_2d (int type, int16_t *i_n, int n, int stride)
   while(n>=MIN_SIZE) {
     for(i=0;i<n;i++) {
       oil_memcpy (tmp, i_n + i*stride, n * 2);
-      carid_lift_split (type, tmp, n);
-      carid_deinterleave (i_n + i*stride, tmp, n);
+      schro_lift_split (type, tmp, n);
+      schro_deinterleave (i_n + i*stride, tmp, n);
     }
     for(i=0;i<n;i++) {
       for(j=0;j<n;j++) {
         tmp[j] = i_n[j*stride + i];
       }
-      carid_lift_split (type, tmp, n);
-      carid_deinterleave (tmp2, tmp, n);
+      schro_lift_split (type, tmp, n);
+      schro_deinterleave (tmp2, tmp, n);
       for(j=0;j<n;j++) {
         i_n[j*stride + i] = tmp2[j];
       }
@@ -691,7 +691,7 @@ carid_wt_2d (int type, int16_t *i_n, int n, int stride)
 }
 
 void
-carid_iwt_2d (int type, int16_t *i_n, int n, int stride)
+schro_iwt_2d (int type, int16_t *i_n, int n, int stride)
 {
   int16_t tmp[256];
   int16_t tmp2[256];
@@ -705,15 +705,15 @@ carid_iwt_2d (int type, int16_t *i_n, int n, int stride)
       for(j=0;j<m;j++) {
         tmp[j] = i_n[j*stride + i];
       }
-      carid_interleave (tmp2, tmp, m);
-      carid_lift_synth (type, tmp2, m);
+      schro_interleave (tmp2, tmp, m);
+      schro_lift_synth (type, tmp2, m);
       for(j=0;j<m;j++) {
         i_n[j*stride + i] = tmp2[j];
       }
     }
     for(i=0;i<m;i++) {
-      carid_interleave (tmp2, i_n + i*stride, m);
-      carid_lift_synth (type, tmp2, m);
+      schro_interleave (tmp2, i_n + i*stride, m);
+      schro_lift_synth (type, tmp2, m);
       oil_memcpy (i_n + i*stride, tmp2, m * 2);
     }
 
@@ -724,24 +724,24 @@ carid_iwt_2d (int type, int16_t *i_n, int n, int stride)
 
 #if 0
 void
-carid_wt (int type, int16_t *d_n, int16_t *s_n, int n)
+schro_wt (int type, int16_t *d_n, int16_t *s_n, int n)
 {
   int16_t tmp[256];
 
-  carid_lift_split (type, tmp, s_n, n);
-  carid_deinterleave (d_n, s_n, n);
+  schro_lift_split (type, tmp, s_n, n);
+  schro_deinterleave (d_n, s_n, n);
 }
 
 void
-carid_iwt (int type, int16_t *i_n, int n)
+schro_iwt (int type, int16_t *i_n, int n)
 {
   int16_t tmp[256];
   int m;
 
   m = MIN_SIZE;
   while(m<=n) {
-    carid_interleave (tmp, i_n, m);
-    carid_lift_synth (type, tmp, m);
+    schro_interleave (tmp, i_n, m);
+    schro_lift_synth (type, tmp, m);
     oil_memcpy (i_n, tmp, m * 2);
 
     m<<=1;
@@ -750,7 +750,7 @@ carid_iwt (int type, int16_t *i_n, int n)
 #endif
 
 void
-carid_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
+schro_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
     int height, int16_t *tmp)
 {
   int i;
@@ -764,7 +764,7 @@ carid_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
   stride >>= 1;
   n = width/2;
   switch (type) {
-    case CARID_WAVELET_DAUB97:
+    case SCHRO_WAVELET_DAUB97:
       for(i=0;i<height-2;i+=2) {
         oil_lift_sub_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
             i_n + stride * (i+0), i_n + stride * (i+2), &c6497, width);
@@ -800,7 +800,7 @@ carid_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
         oil_deinterleave (i_n + stride * i, tmp, n);
       }
       break;
-    case CARID_WAVELET_5_3:
+    case SCHRO_WAVELET_5_3:
       for(i=0;i<height;i+=2){
         a = i+2;
         if (a >= height) a = 2*height - 2 - a;
@@ -824,7 +824,7 @@ carid_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
 
       break;
 #if 0
-    case CARID_WAVELET_135:
+    case SCHRO_WAVELET_135:
 #define REFLECT_0(value) ((value<0)?(-value):(value))
 #define REFLECT_N(value,endpoint) ((value)>=(endpoint)?(2*(endpoint)-1-(value)):(value))
       for(i=0;i<height-2;i+=2) {
@@ -841,13 +841,13 @@ carid_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
       break;
 #endif
     default:
-      CARID_ERROR("invalid type");
+      SCHRO_ERROR("invalid type");
       break;
   }
 }
 
 void
-carid_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int width,
+schro_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int width,
     int height, int16_t *tmp)
 {
   int i;
@@ -857,13 +857,13 @@ carid_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int widt
   int16_t c3616 = 3616;
   int16_t c1817 = 1817;
 
-  CARID_ASSERT((height&1)==0);
-  CARID_ASSERT((width&1)==0);
+  SCHRO_ASSERT((height&1)==0);
+  SCHRO_ASSERT((width&1)==0);
 
   stride >>= 1;
   n = width/2;
   switch (type) {
-    case CARID_WAVELET_DAUB97:
+    case SCHRO_WAVELET_DAUB97:
       for(i=0;i<height;i++) {
         oil_interleave (tmp, i_n + stride * i, n);
         oil_synth_daub97 (i_n + stride * i, tmp, n);
@@ -900,7 +900,7 @@ carid_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int widt
           i_n + stride * (i+0), i_n + stride * (i+0), &c6497, width);
 
       break;
-    case CARID_WAVELET_5_3:
+    case SCHRO_WAVELET_5_3:
       oil_interleave (tmp, i_n + stride * (0), n);
       oil_synth_53 (i_n + stride * (0), tmp, n);
       oil_interleave (tmp, i_n + stride * (1), n);
@@ -923,7 +923,7 @@ carid_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int widt
 
       break;
     default:
-      CARID_ERROR("invalid type");
+      SCHRO_ERROR("invalid type");
       break;
   }
 }

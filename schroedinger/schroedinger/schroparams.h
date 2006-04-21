@@ -1,13 +1,13 @@
 
-#ifndef __CARID_PARAMS_H__
-#define __CARID_PARAMS_H__
+#ifndef __SCHRO_PARAMS_H__
+#define __SCHRO_PARAMS_H__
 
-typedef struct _CaridParams CaridParams;
-typedef struct _CaridSubband CaridSubband;
-typedef struct _CaridMotionVector CaridMotionVector;
-typedef struct _CaridPicture CaridPicture;
+typedef struct _SchroParams SchroParams;
+typedef struct _SchroSubband SchroSubband;
+typedef struct _SchroMotionVector SchroMotionVector;
+typedef struct _SchroPicture SchroPicture;
 
-struct _CaridParams {
+struct _SchroParams {
 
   int major_version;
   int minor_version;
@@ -93,7 +93,7 @@ struct _CaridParams {
 
 };
 
-struct _CaridSubband {
+struct _SchroSubband {
   int x;
   int y;
   int w;
@@ -111,7 +111,7 @@ struct _CaridSubband {
   int quant_index;
 };
 
-struct _CaridMotionVector {
+struct _SchroMotionVector {
   int pred_mode;
   int mb_using_global;
   int mb_split;
@@ -122,7 +122,7 @@ struct _CaridMotionVector {
   int metric;
 };
 
-struct _CaridPicture {
+struct _SchroPicture {
   int is_ref;
   int n_refs;
 
@@ -133,18 +133,18 @@ struct _CaridPicture {
   int retire[10];
 };
 
-void carid_params_calculate_mc_sizes (CaridParams *params);
-void carid_params_calculate_iwt_sizes (CaridParams *params);
+void schro_params_calculate_mc_sizes (SchroParams *params);
+void schro_params_calculate_iwt_sizes (SchroParams *params);
 
-void carid_params_set_video_format (CaridParams *params, int index);
-int carid_params_get_video_format (CaridParams *params);
-void carid_params_set_chroma_format (CaridParams *params, int index);
-int carid_params_get_chroma_format (CaridParams *params);
-void carid_params_set_frame_rate (CaridParams *params, int index);
-int carid_params_get_frame_rate (CaridParams *params);
-void carid_params_set_pixel_aspect_ratio (CaridParams *params, int index);
-int carid_params_get_pixel_aspect_ratio (CaridParams *params);
-void carid_params_set_block_params (CaridParams *params, int index);
+void schro_params_set_video_format (SchroParams *params, int index);
+int schro_params_get_video_format (SchroParams *params);
+void schro_params_set_chroma_format (SchroParams *params, int index);
+int schro_params_get_chroma_format (SchroParams *params);
+void schro_params_set_frame_rate (SchroParams *params, int index);
+int schro_params_get_frame_rate (SchroParams *params);
+void schro_params_set_pixel_aspect_ratio (SchroParams *params, int index);
+int schro_params_get_pixel_aspect_ratio (SchroParams *params);
+void schro_params_set_block_params (SchroParams *params, int index);
 
 #endif
 

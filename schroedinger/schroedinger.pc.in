@@ -1,14 +1,14 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
-includedir=@includedir@/carid-@CARID_MAJORMINOR@
+includedir=@includedir@/schro-@SCHRO_MAJORMINOR@
 toolsdir=${exec_prefix}/bin
 
 
-Name: carid-@CARID_MAJORMINOR@
+Name: schro-@SCHRO_MAJORMINOR@
 Description: Dirac codec library
 Version: @VERSION@
-Libs: -L${libdir} -loil-@CARID_MAJORMINOR@ -lm
+Libs: -L${libdir} -loil-@SCHRO_MAJORMINOR@ -lm
 Cflags: -I${includedir}
 
 

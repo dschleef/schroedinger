@@ -8,14 +8,14 @@
 #include <string.h>
 #include <liboil/liboil.h>
 
-#include <carid/caridbits.h>
-#include <carid/carid.h>
+#include <schro/schrobits.h>
+#include <schro/schro.h>
 
 
-CaridBits *
-carid_bits_new (void)
+SchroBits *
+schro_bits_new (void)
 {
-  CaridBits *bits;
+  SchroBits *bits;
   
   bits = malloc (sizeof(*bits));
   memset (bits, 0, sizeof(*bits));
@@ -24,20 +24,20 @@ carid_bits_new (void)
 }
 
 void
-carid_bits_free (CaridBits *bits)
+schro_bits_free (SchroBits *bits)
 {
   free(bits);
 }
 
 void
-carid_bits_decode_init (CaridBits *bits, CaridBuffer *buffer)
+schro_bits_decode_init (SchroBits *bits, SchroBuffer *buffer)
 {
   bits->buffer = buffer;
   bits->offset = 0;
 }
 
 void
-carid_bits_encode_init (CaridBits *bits, CaridBuffer *buffer)
+schro_bits_encode_init (SchroBits *bits, SchroBuffer *buffer)
 {
   uint8_t value = 0;
 
@@ -49,37 +49,37 @@ carid_bits_encode_init (CaridBits *bits, CaridBuffer *buffer)
 }
 
 void
-carid_bits_sync (CaridBits *bits)
+schro_bits_sync (SchroBits *bits)
 {
   bits->offset = (bits->offset + 7) & (~0x7);
 }
 
 void
-carid_bits_dumpbits (CaridBits *bits)
+schro_bits_dumpbits (SchroBits *bits)
 {
   char s[101];
-  CaridBits mybits;
+  SchroBits mybits;
   int i;
 
   oil_memcpy (&mybits, bits, sizeof(*bits));
 
   for(i=0;i<100;i++){
-    int bit = carid_bits_decode_bit (&mybits);
+    int bit = schro_bits_decode_bit (&mybits);
     s[i] = bit ? '1' : '0';
   }
   s[101] = 0;
 
-  CARID_DEBUG ("dump bits %s", s);
+  SCHRO_DEBUG ("dump bits %s", s);
 }
 
 void
-carid_bits_append (CaridBits *bits, CaridBits *bits2)
+schro_bits_append (SchroBits *bits, SchroBits *bits2)
 {
   if (bits->offset & 7) {
-    CARID_ERROR ("appending to unsyncronized bits");
+    SCHRO_ERROR ("appending to unsyncronized bits");
   }
   if (bits2->offset & 7) {
-    CARID_ERROR ("appending unsyncronized bits");
+    SCHRO_ERROR ("appending unsyncronized bits");
   }
 
   oil_memcpy (bits->buffer->data + (bits->offset>>3), bits2->buffer->data,
@@ -89,7 +89,7 @@ carid_bits_append (CaridBits *bits, CaridBits *bits2)
 
 
 void
-carid_bits_encode_bit (CaridBits *bits, int value)
+schro_bits_encode_bit (SchroBits *bits, int value)
 {
   value &= 1;
   value <<= 7 - (bits->offset & 7);
@@ -98,34 +98,34 @@ carid_bits_encode_bit (CaridBits *bits, int value)
 }
 
 void
-carid_bits_encode_bits (CaridBits *bits, int n, int value)
+schro_bits_encode_bits (SchroBits *bits, int n, int value)
 {
   int i;
-  CARID_ASSERT (value < (1<<n));
+  SCHRO_ASSERT (value < (1<<n));
   for(i=0;i<n;i++){
-    carid_bits_encode_bit (bits, (value>>(n - 1 - i)) & 1);
+    schro_bits_encode_bit (bits, (value>>(n - 1 - i)) & 1);
   }
 }
 
 void
-carid_bits_encode_uu (CaridBits *bits, int value)
+schro_bits_encode_uu (SchroBits *bits, int value)
 {
   int i;
 
   for(i=0;i<value;i++){
-    carid_bits_encode_bit (bits, 0);
+    schro_bits_encode_bit (bits, 0);
   }
-  carid_bits_encode_bit (bits, 1);
+  schro_bits_encode_bit (bits, 1);
 }
 
 void
-carid_bits_encode_su (CaridBits *bits, int value)
+schro_bits_encode_su (SchroBits *bits, int value)
 {
   int i;
   int sign;
 
   if (value==0) {
-    carid_bits_encode_bit (bits, 1);
+    schro_bits_encode_bit (bits, 1);
     return;
   }
   if (value < 0) {
@@ -135,22 +135,22 @@ carid_bits_encode_su (CaridBits *bits, int value)
     sign = 1;
   }
   for(i=0;i<value;i++){
-    carid_bits_encode_bit (bits, 0);
+    schro_bits_encode_bit (bits, 0);
   }
-  carid_bits_encode_bit (bits, 1);
-  carid_bits_encode_bit (bits, sign);
+  schro_bits_encode_bit (bits, 1);
+  schro_bits_encode_bit (bits, sign);
 }
 
 void
-carid_bits_encode_ut (CaridBits *bits, int value, int max)
+schro_bits_encode_ut (SchroBits *bits, int value, int max)
 {
   int i;
 
   for(i=0;i<value;i++){
-    carid_bits_encode_bit (bits, 0);
+    schro_bits_encode_bit (bits, 0);
   }
   if (value < max) {
-    carid_bits_encode_bit (bits, 1);
+    schro_bits_encode_bit (bits, 1);
   }
 }
 
@@ -165,7 +165,7 @@ maxbit (unsigned int x)
 }
 
 void
-carid_bits_encode_uegol (CaridBits *bits, int value)
+schro_bits_encode_uegol (SchroBits *bits, int value)
 {
   int i;
   int n_bits;
@@ -173,16 +173,16 @@ carid_bits_encode_uegol (CaridBits *bits, int value)
   value++;
   n_bits = maxbit(value);
   for(i=0;i<n_bits - 1;i++){
-    carid_bits_encode_bit (bits, 0);
+    schro_bits_encode_bit (bits, 0);
   }
-  carid_bits_encode_bit (bits, 1);
+  schro_bits_encode_bit (bits, 1);
   for(i=0;i<n_bits - 1;i++){
-    carid_bits_encode_bit (bits, (value>>(n_bits - 2 - i))&1);
+    schro_bits_encode_bit (bits, (value>>(n_bits - 2 - i))&1);
   }
 }
 
 void
-carid_bits_encode_segol (CaridBits *bits, int value)
+schro_bits_encode_segol (SchroBits *bits, int value)
 {
   int sign;
 
@@ -192,28 +192,28 @@ carid_bits_encode_segol (CaridBits *bits, int value)
   } else {
     sign = 1;
   }
-  carid_bits_encode_uegol (bits, value);
+  schro_bits_encode_uegol (bits, value);
   if (value) {
-    carid_bits_encode_bit (bits, sign);
+    schro_bits_encode_bit (bits, sign);
   }
 }
 
 void
-carid_bits_encode_ue2gol (CaridBits *bits, int value)
+schro_bits_encode_ue2gol (SchroBits *bits, int value)
 {
   int i;
   int n_bits;
 
   value++;
   n_bits = maxbit(value);
-  carid_bits_encode_uegol (bits, n_bits - 1);
+  schro_bits_encode_uegol (bits, n_bits - 1);
   for(i=0;i<n_bits - 1;i++){
-    carid_bits_encode_bit (bits, (value>>(n_bits - 2 - i))&1);
+    schro_bits_encode_bit (bits, (value>>(n_bits - 2 - i))&1);
   }
 }
 
 void
-carid_bits_encode_se2gol (CaridBits *bits, int value)
+schro_bits_encode_se2gol (SchroBits *bits, int value)
 {
   int sign;
 
@@ -223,9 +223,9 @@ carid_bits_encode_se2gol (CaridBits *bits, int value)
   } else {
     sign = 1;
   }
-  carid_bits_encode_ue2gol (bits, value);
+  schro_bits_encode_ue2gol (bits, value);
   if (value) {
-    carid_bits_encode_bit (bits, sign);
+    schro_bits_encode_bit (bits, sign);
   }
 }
 
@@ -233,7 +233,7 @@ carid_bits_encode_se2gol (CaridBits *bits, int value)
 
 
 int
-carid_bits_decode_bit (CaridBits *bits)
+schro_bits_decode_bit (SchroBits *bits)
 {
   int value;
   value = bits->buffer->data[(bits->offset>>3)];
@@ -244,80 +244,80 @@ carid_bits_decode_bit (CaridBits *bits)
 }
 
 int
-carid_bits_decode_bits (CaridBits *bits, int n)
+schro_bits_decode_bits (SchroBits *bits, int n)
 {
   int value = 0;
   int i;
 
   for(i=0;i<n;i++){
-    value = (value << 1) | carid_bits_decode_bit (bits);
+    value = (value << 1) | schro_bits_decode_bit (bits);
   }
 
   return value;
 }
 
-int carid_bits_decode_uu (CaridBits *bits)
+int schro_bits_decode_uu (SchroBits *bits)
 {
   int value = 0;
 
-  while (carid_bits_decode_bit (bits) == 0) {
+  while (schro_bits_decode_bit (bits) == 0) {
     value++;
   }
 
   return value;
 }
 
-int carid_bits_decode_su (CaridBits *bits)
+int schro_bits_decode_su (SchroBits *bits)
 {
   int value = 0;
 
-  if (carid_bits_decode_bit (bits) == 1) {
+  if (schro_bits_decode_bit (bits) == 1) {
     return 0;
   }
   value = 1;
-  while (carid_bits_decode_bit (bits) == 0) {
+  while (schro_bits_decode_bit (bits) == 0) {
     value++;
   }
-  if (carid_bits_decode_bit (bits) == 0) {
+  if (schro_bits_decode_bit (bits) == 0) {
     value = -value;
   }
 
   return value;
 }
 
-int carid_bits_decode_ut (CaridBits *bits, int max)
+int schro_bits_decode_ut (SchroBits *bits, int max)
 {
   int value;
 
   for(value=0;value<max;value++){
-    if (carid_bits_decode_bit (bits)) {
+    if (schro_bits_decode_bit (bits)) {
       return value;
     }
   }
   return value;
 }
 
-int carid_bits_decode_uegol (CaridBits *bits)
+int schro_bits_decode_uegol (SchroBits *bits)
 {
   int count;
   int value;
 
   count = 0;
-  while(!carid_bits_decode_bit (bits)) {
+  while(!schro_bits_decode_bit (bits)) {
     count++;
   }
-  value = (1<<count) - 1 + carid_bits_decode_bits (bits, count);
+  value = (1<<count) - 1 + schro_bits_decode_bits (bits, count);
 
   return value;
 }
 
-int carid_bits_decode_segol (CaridBits *bits)
+int schro_bits_decode_segol (SchroBits *bits)
 {
   int value;
 
-  value = carid_bits_decode_uegol (bits);
+  value = schro_bits_decode_uegol (bits);
   if (value) {
-    if (!carid_bits_decode_bit (bits)) {
+    if (!schro_bits_decode_bit (bits)) {
       value = -value;
     }
   }
@@ -325,24 +325,24 @@ int carid_bits_decode_segol (CaridBits *bits)
   return value;
 }
 
-int carid_bits_decode_ue2gol (CaridBits *bits)
+int schro_bits_decode_ue2gol (SchroBits *bits)
 {
   int count;
   int value;
 
-  count = carid_bits_decode_uegol (bits);
-  value = (1<<count) - 1 + carid_bits_decode_bits (bits, count);
+  count = schro_bits_decode_uegol (bits);
+  value = (1<<count) - 1 + schro_bits_decode_bits (bits, count);
 
   return value;
 }
 
-int carid_bits_decode_se2gol (CaridBits *bits)
+int schro_bits_decode_se2gol (SchroBits *bits)
 {
   int value;
 
-  value = carid_bits_decode_ue2gol (bits);
+  value = schro_bits_decode_ue2gol (bits);
   if (value) {
-    if (!carid_bits_decode_bit (bits)) {
+    if (!schro_bits_decode_bit (bits)) {
       value = -value;
     }
   }

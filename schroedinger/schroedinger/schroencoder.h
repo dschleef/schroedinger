@@ -1,32 +1,32 @@
 
-#ifndef __CARID_ENCODER_H__
-#define __CARID_ENCODER_H__
+#ifndef __SCHRO_ENCODER_H__
+#define __SCHRO_ENCODER_H__
 
-#include <carid/caridbuffer.h>
-#include <carid/caridparams.h>
-#include <carid/caridframe.h>
+#include <schro/schrobuffer.h>
+#include <schro/schroparams.h>
+#include <schro/schroframe.h>
 
 
-typedef struct _CaridEncoder CaridEncoder;
-typedef struct _CaridEncoderParams CaridEncoderParams;
+typedef struct _SchroEncoder SchroEncoder;
+typedef struct _SchroEncoderParams SchroEncoderParams;
 
-struct _CaridEncoderParams {
+struct _SchroEncoderParams {
   int quant_index_dc;
   int quant_index[6];
 };
 
-struct _CaridEncoder {
-  CaridFrame *frame;
-  CaridFrame *encode_frame;
+struct _SchroEncoder {
+  SchroFrame *frame;
+  SchroFrame *encode_frame;
 
-  CaridBits *bits;
+  SchroBits *bits;
 
-  CaridFrame *frame_queue[10];
+  SchroFrame *frame_queue[10];
   int frame_queue_length;
 
   int frame_queue_index;
 
-  CaridFrame *reference_frames[10];
+  SchroFrame *reference_frames[10];
   int n_reference_frames;
 
   int need_rap;
@@ -39,47 +39,47 @@ struct _CaridEncoder {
 
   int wavelet_type;
 
-  CaridParams params;
-  CaridEncoderParams encoder_params;
+  SchroParams params;
+  SchroEncoderParams encoder_params;
 
-  CaridBuffer *subband_buffer;
+  SchroBuffer *subband_buffer;
 
-  CaridSubband subbands[1+6*3];
+  SchroSubband subbands[1+6*3];
 
   int frame_number;
 
-  CaridMotionVector *motion_vectors;
+  SchroMotionVector *motion_vectors;
 
-  CaridPicture picture_list[10];
+  SchroPicture picture_list[10];
   int n_pictures;
   int picture_index;
 
   /* picture that is currently being encoded */
-  CaridPicture *picture;
+  SchroPicture *picture;
 
   /* current reference frames */
-  CaridFrame *ref_frame0;
-  CaridFrame *ref_frame1;
+  SchroFrame *ref_frame0;
+  SchroFrame *ref_frame1;
 };
 
-CaridEncoder * carid_encoder_new (void);
-void carid_encoder_free (CaridEncoder *encoder);
-void carid_encoder_set_size (CaridEncoder *encoder, int width, int height);
-void carid_encoder_set_wavelet_type (CaridEncoder *encoder, int wavelet_type);
-void carid_encoder_push_frame (CaridEncoder *encoder, CaridFrame *frame);
-CaridBuffer * carid_encoder_encode (CaridEncoder *encoder);
-void carid_encoder_copy_to_frame_buffer (CaridEncoder *encoder, CaridBuffer *buffer);
-void carid_encoder_encode_rap (CaridEncoder *encoder);
-void carid_encoder_encode_intra (CaridEncoder *encoder);
-void carid_encoder_encode_inter (CaridEncoder *encoder);
-void carid_encoder_encode_frame_header (CaridEncoder *encoder, int parse_code);
-void carid_encoder_encode_frame_prediction (CaridEncoder *encoder);
-void carid_encoder_encode_transform_parameters (CaridEncoder *encoder);
-void carid_encoder_encode_transform_data (CaridEncoder *encoder, int component);
-void carid_encoder_encode_subband (CaridEncoder *encoder, int component, int index);
-void carid_encoder_inverse_iwt_transform (CaridEncoder *encoder, int component);
-void carid_encoder_copy_from_frame_buffer (CaridEncoder *encoder, CaridBuffer *buffer);
-void carid_encoder_motion_predict (CaridEncoder *encoder);
+SchroEncoder * schro_encoder_new (void);
+void schro_encoder_free (SchroEncoder *encoder);
+void schro_encoder_set_size (SchroEncoder *encoder, int width, int height);
+void schro_encoder_set_wavelet_type (SchroEncoder *encoder, int wavelet_type);
+void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
+SchroBuffer * schro_encoder_encode (SchroEncoder *encoder);
+void schro_encoder_copy_to_frame_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
+void schro_encoder_encode_rap (SchroEncoder *encoder);
+void schro_encoder_encode_intra (SchroEncoder *encoder);
+void schro_encoder_encode_inter (SchroEncoder *encoder);
+void schro_encoder_encode_frame_header (SchroEncoder *encoder, int parse_code);
+void schro_encoder_encode_frame_prediction (SchroEncoder *encoder);
+void schro_encoder_encode_transform_parameters (SchroEncoder *encoder);
+void schro_encoder_encode_transform_data (SchroEncoder *encoder, int component);
+void schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index);
+void schro_encoder_inverse_iwt_transform (SchroEncoder *encoder, int component);
+void schro_encoder_copy_from_frame_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
+void schro_encoder_motion_predict (SchroEncoder *encoder);
 
 #endif
 

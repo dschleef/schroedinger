@@ -1,22 +1,22 @@
 
-#ifndef __CARID_CARID_H__
-#define __CARID_CARID_H__
+#ifndef __SCHRO_SCHRO_H__
+#define __SCHRO_SCHRO_H__
 
-#include <carid/carid-stdint.h>
-#include <carid/caridarith.h>
-#include <carid/caridbits.h>
-#include <carid/caridbitstream.h>
-#include <carid/caridbuffer.h>
-#include <carid/cariddecoder.h>
-#include <carid/cariddebug.h>
-#include <carid/caridencoder.h>
-#include <carid/caridframe.h>
-#include <carid/caridparams.h>
-#include <carid/caridtables.h>
-#include <carid/caridwavelet.h>
+#include <schro/schro-stdint.h>
+#include <schro/schroarith.h>
+#include <schro/schrobits.h>
+#include <schro/schrobitstream.h>
+#include <schro/schrobuffer.h>
+#include <schro/schrodecoder.h>
+#include <schro/schrodebug.h>
+#include <schro/schroencoder.h>
+#include <schro/schroframe.h>
+#include <schro/schroparams.h>
+#include <schro/schrotables.h>
+#include <schro/schrowavelet.h>
 
 
-void carid_init(void);
+void schro_init(void);
 
 #ifndef TRUE
 #define TRUE 1

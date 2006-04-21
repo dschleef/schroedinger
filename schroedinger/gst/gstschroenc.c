@@ -24,25 +24,25 @@
 #include <gst/gst.h>
 #include <gst/video/video.h>
 #include <string.h>
-#include <carid/carid.h>
+#include <schro/schro.h>
 #include <liboil/liboil.h>
 #include <math.h>
 
-#define GST_TYPE_CARID_ENC \
-  (gst_carid_enc_get_type())
-#define GST_CARID_ENC(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_CARID_ENC,GstCaridEnc))
-#define GST_CARID_ENC_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_CARID_ENC,GstCaridEncClass))
-#define GST_IS_CARID_ENC(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_CARID_ENC))
-#define GST_IS_CARID_ENC_CLASS(obj) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_CARID_ENC))
+#define GST_TYPE_SCHRO_ENC \
+  (gst_schro_enc_get_type())
+#define GST_SCHRO_ENC(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_SCHRO_ENC,GstSchroEnc))
+#define GST_SCHRO_ENC_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_SCHRO_ENC,GstSchroEncClass))
+#define GST_IS_SCHRO_ENC(obj) \
+  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_SCHRO_ENC))
+#define GST_IS_SCHRO_ENC_CLASS(obj) \
+  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_SCHRO_ENC))
 
-typedef struct _GstCaridEnc GstCaridEnc;
-typedef struct _GstCaridEncClass GstCaridEncClass;
+typedef struct _GstSchroEnc GstSchroEnc;
+typedef struct _GstSchroEncClass GstSchroEncClass;
 
-struct _GstCaridEnc
+struct _GstSchroEnc
 {
   GstElement element;
 
@@ -65,10 +65,10 @@ struct _GstCaridEnc
   int offset;
   int granulepos;
 
-  CaridEncoder *encoder;
+  SchroEncoder *encoder;
 };
 
-struct _GstCaridEncClass
+struct _GstSchroEncClass
 {
   GstElementClass parent_class;
 };
@@ -86,38 +86,38 @@ enum
   ARG_LEVEL
 };
 
-static void gst_carid_enc_finalize (GObject *object);
-static void gst_carid_enc_set_property (GObject * object, guint prop_id,
+static void gst_schro_enc_finalize (GObject *object);
+static void gst_schro_enc_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec);
-static void gst_carid_enc_get_property (GObject * object, guint prop_id,
+static void gst_schro_enc_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec);
 
-static gboolean gst_carid_enc_sink_setcaps (GstPad *pad, GstCaps *caps);
-static gboolean gst_carid_enc_sink_event (GstPad *pad, GstEvent *event);
-static GstFlowReturn gst_carid_enc_chain (GstPad *pad, GstBuffer *buf);
-static GstStateChangeReturn gst_carid_enc_change_state (GstElement *element,
+static gboolean gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps);
+static gboolean gst_schro_enc_sink_event (GstPad *pad, GstEvent *event);
+static GstFlowReturn gst_schro_enc_chain (GstPad *pad, GstBuffer *buf);
+static GstStateChangeReturn gst_schro_enc_change_state (GstElement *element,
     GstStateChange transition);
 
-static GstStaticPadTemplate gst_carid_enc_sink_template =
+static GstStaticPadTemplate gst_schro_enc_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
     GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420"))
     );
 
-static GstStaticPadTemplate gst_carid_enc_src_template =
+static GstStaticPadTemplate gst_schro_enc_src_template =
     GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
     GST_STATIC_CAPS ("video/x-dirac")
     );
 
-GST_BOILERPLATE (GstCaridEnc, gst_carid_enc, GstElement, GST_TYPE_ELEMENT);
+GST_BOILERPLATE (GstSchroEnc, gst_schro_enc, GstElement, GST_TYPE_ELEMENT);
 
 static void
-gst_carid_enc_base_init (gpointer g_class)
+gst_schro_enc_base_init (gpointer g_class)
 {
-  static GstElementDetails carid_enc_details =
+  static GstElementDetails schro_enc_details =
       GST_ELEMENT_DETAILS ("Dirac Encoder",
       "Coder/Encoder/Video",
       "Encode raw YUV video into Dirac stream",
@@ -125,15 +125,15 @@ gst_carid_enc_base_init (gpointer g_class)
   GstElementClass *element_class = GST_ELEMENT_CLASS (g_class);
 
   gst_element_class_add_pad_template (element_class,
-      gst_static_pad_template_get (&gst_carid_enc_src_template));
+      gst_static_pad_template_get (&gst_schro_enc_src_template));
   gst_element_class_add_pad_template (element_class,
-      gst_static_pad_template_get (&gst_carid_enc_sink_template));
+      gst_static_pad_template_get (&gst_schro_enc_sink_template));
 
-  gst_element_class_set_details (element_class, &carid_enc_details);
+  gst_element_class_set_details (element_class, &schro_enc_details);
 }
 
 static void
-gst_carid_enc_class_init (GstCaridEncClass * klass)
+gst_schro_enc_class_init (GstSchroEncClass * klass)
 {
   GObjectClass *gobject_class;
   GstElementClass *gstelement_class;
@@ -141,9 +141,9 @@ gst_carid_enc_class_init (GstCaridEncClass * klass)
   gobject_class = G_OBJECT_CLASS (klass);
   gstelement_class = GST_ELEMENT_CLASS (klass);
 
-  gobject_class->set_property = gst_carid_enc_set_property;
-  gobject_class->get_property = gst_carid_enc_get_property;
-  gobject_class->finalize = gst_carid_enc_finalize;
+  gobject_class->set_property = gst_schro_enc_set_property;
+  gobject_class->get_property = gst_schro_enc_get_property;
+  gobject_class->finalize = gst_schro_enc_finalize;
 
   g_object_class_install_property (gobject_class, ARG_WAVELET_TYPE,
       g_param_spec_int ("wavelet-type", "wavelet type", "wavelet type",
@@ -152,76 +152,76 @@ gst_carid_enc_class_init (GstCaridEncClass * klass)
       g_param_spec_int ("level", "level", "level",
         0, 100, 0, G_PARAM_READWRITE));
 
-  gstelement_class->change_state = gst_carid_enc_change_state;
+  gstelement_class->change_state = gst_schro_enc_change_state;
 }
 
 static void
-gst_carid_enc_init (GstCaridEnc *carid_enc, GstCaridEncClass *klass)
+gst_schro_enc_init (GstSchroEnc *schro_enc, GstSchroEncClass *klass)
 {
-  GST_DEBUG ("gst_carid_enc_init");
+  GST_DEBUG ("gst_schro_enc_init");
 
-  carid_enc->encoder = carid_encoder_new ();
-  carid_enc->wavelet_type = 2;
+  schro_enc->encoder = schro_encoder_new ();
+  schro_enc->wavelet_type = 2;
 
-  carid_enc->sinkpad = gst_pad_new_from_static_template (&gst_carid_enc_sink_template, "sink");
-  gst_pad_set_chain_function (carid_enc->sinkpad, gst_carid_enc_chain);
-  gst_pad_set_event_function (carid_enc->sinkpad, gst_carid_enc_sink_event);
-  gst_pad_set_setcaps_function (carid_enc->sinkpad, gst_carid_enc_sink_setcaps);
-  gst_element_add_pad (GST_ELEMENT(carid_enc), carid_enc->sinkpad);
+  schro_enc->sinkpad = gst_pad_new_from_static_template (&gst_schro_enc_sink_template, "sink");
+  gst_pad_set_chain_function (schro_enc->sinkpad, gst_schro_enc_chain);
+  gst_pad_set_event_function (schro_enc->sinkpad, gst_schro_enc_sink_event);
+  gst_pad_set_setcaps_function (schro_enc->sinkpad, gst_schro_enc_sink_setcaps);
+  gst_element_add_pad (GST_ELEMENT(schro_enc), schro_enc->sinkpad);
 
-  carid_enc->srcpad = gst_pad_new_from_static_template (&gst_carid_enc_src_template, "src");
-  gst_element_add_pad (GST_ELEMENT(carid_enc), carid_enc->srcpad);
+  schro_enc->srcpad = gst_pad_new_from_static_template (&gst_schro_enc_src_template, "src");
+  gst_element_add_pad (GST_ELEMENT(schro_enc), schro_enc->srcpad);
 
 }
 
 static gboolean
-gst_carid_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
+gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
 {
   GstStructure *structure;
-  GstCaridEnc *carid_enc = GST_CARID_ENC (gst_pad_get_parent (pad));
+  GstSchroEnc *schro_enc = GST_SCHRO_ENC (gst_pad_get_parent (pad));
 
   structure = gst_caps_get_structure (caps, 0);
 
-  gst_structure_get_int (structure, "width", &carid_enc->width);
-  gst_structure_get_int (structure, "height", &carid_enc->height);
-  gst_structure_get_fraction (structure, "framerate", &carid_enc->fps_n,
-      &carid_enc->fps_d);
+  gst_structure_get_int (structure, "width", &schro_enc->width);
+  gst_structure_get_int (structure, "height", &schro_enc->height);
+  gst_structure_get_fraction (structure, "framerate", &schro_enc->fps_n,
+      &schro_enc->fps_d);
   gst_structure_get_fraction (structure, "pixel-aspect-ratio",
-      &carid_enc->par_n, &carid_enc->par_d);
+      &schro_enc->par_n, &schro_enc->par_d);
 
   /* FIXME init encoder */
 
-  carid_encoder_set_size (carid_enc->encoder, carid_enc->width,
-      carid_enc->height);
+  schro_encoder_set_size (schro_enc->encoder, schro_enc->width,
+      schro_enc->height);
 
   return TRUE;
 }
 
 static void
-gst_carid_enc_finalize (GObject *object)
+gst_schro_enc_finalize (GObject *object)
 {
-  GstCaridEnc *carid_enc;
+  GstSchroEnc *schro_enc;
 
-  g_return_if_fail (GST_IS_CARID_ENC (object));
-  carid_enc = GST_CARID_ENC (object);
+  g_return_if_fail (GST_IS_SCHRO_ENC (object));
+  schro_enc = GST_SCHRO_ENC (object);
 
-  if (carid_enc->encoder) {
-    carid_encoder_free (carid_enc->encoder);
+  if (schro_enc->encoder) {
+    schro_encoder_free (schro_enc->encoder);
   }
 
   G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
 static void
-gst_carid_enc_set_property (GObject * object, guint prop_id,
+gst_schro_enc_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
 {
-  GstCaridEnc *src;
+  GstSchroEnc *src;
 
-  g_return_if_fail (GST_IS_CARID_ENC (object));
-  src = GST_CARID_ENC (object);
+  g_return_if_fail (GST_IS_SCHRO_ENC (object));
+  src = GST_SCHRO_ENC (object);
 
-  GST_DEBUG ("gst_carid_enc_set_property");
+  GST_DEBUG ("gst_schro_enc_set_property");
   switch (prop_id) {
     case ARG_WAVELET_TYPE:
       src->wavelet_type = g_value_get_int (value);
@@ -235,13 +235,13 @@ gst_carid_enc_set_property (GObject * object, guint prop_id,
 }
 
 static void
-gst_carid_enc_get_property (GObject * object, guint prop_id, GValue * value,
+gst_schro_enc_get_property (GObject * object, guint prop_id, GValue * value,
     GParamSpec * pspec)
 {
-  GstCaridEnc *src;
+  GstSchroEnc *src;
 
-  g_return_if_fail (GST_IS_CARID_ENC (object));
-  src = GST_CARID_ENC (object);
+  g_return_if_fail (GST_IS_SCHRO_ENC (object));
+  src = GST_SCHRO_ENC (object);
 
   switch (prop_id) {
     case ARG_WAVELET_TYPE:
@@ -257,20 +257,20 @@ gst_carid_enc_get_property (GObject * object, guint prop_id, GValue * value,
 }
 
 static gboolean
-gst_carid_enc_sink_event (GstPad *pad, GstEvent *event)
+gst_schro_enc_sink_event (GstPad *pad, GstEvent *event)
 {
-  GstCaridEnc *carid_enc;
+  GstSchroEnc *schro_enc;
   gboolean ret;
 
-  carid_enc = GST_CARID_ENC (GST_PAD_PARENT (pad));
+  schro_enc = GST_SCHRO_ENC (GST_PAD_PARENT (pad));
 
   switch (GST_EVENT_TYPE (event)) {
     case GST_EVENT_EOS:
       /* flush */
-      ret = gst_pad_push_event (carid_enc->srcpad, event);
+      ret = gst_pad_push_event (schro_enc->srcpad, event);
       break;
     default:
-      ret = gst_pad_push_event (carid_enc->srcpad, event);
+      ret = gst_pad_push_event (schro_enc->srcpad, event);
       break;
   }
 
@@ -278,13 +278,13 @@ gst_carid_enc_sink_event (GstPad *pad, GstEvent *event)
 }
 
 static void
-gst_carid_frame_free (CaridFrame *frame, void *priv)
+gst_schro_frame_free (SchroFrame *frame, void *priv)
 {
   gst_buffer_unref (GST_BUFFER(priv));
 }
 
 static GstCaps *
-gst_carid_enc_set_header_on_caps (GstCaps * caps, GstBuffer * buf1)
+gst_schro_enc_set_header_on_caps (GstCaps * caps, GstBuffer * buf1)
 {
   GstStructure *structure;
   GValue array = { 0 };
@@ -309,22 +309,22 @@ gst_carid_enc_set_header_on_caps (GstCaps * caps, GstBuffer * buf1)
 }
 
 static GstFlowReturn
-gst_carid_enc_chain (GstPad *pad, GstBuffer *buf)
+gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
 {
-  GstCaridEnc *carid_enc;
-  CaridFrame *frame;
-  CaridBuffer *encoded_buffer;
+  GstSchroEnc *schro_enc;
+  SchroFrame *frame;
+  SchroBuffer *encoded_buffer;
   GstBuffer *outbuf;
   GstFlowReturn ret;
 
-  carid_enc = GST_CARID_ENC (GST_PAD_PARENT (pad));
+  schro_enc = GST_SCHRO_ENC (GST_PAD_PARENT (pad));
 
-  carid_encoder_set_wavelet_type (carid_enc->encoder, carid_enc->wavelet_type);
+  schro_encoder_set_wavelet_type (schro_enc->encoder, schro_enc->wavelet_type);
 
-  if (carid_enc->sent_header == 0) {
+  if (schro_enc->sent_header == 0) {
     GstCaps *caps;
 
-    encoded_buffer = carid_encoder_encode (carid_enc->encoder);
+    encoded_buffer = schro_encoder_encode (schro_enc->encoder);
 
     GST_ERROR ("encoder produced %d bytes", encoded_buffer->length);
 
@@ -335,54 +335,54 @@ gst_carid_enc_chain (GstPad *pad, GstBuffer *buf)
     GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_IN_CAPS);
     GST_BUFFER_OFFSET_END (outbuf) = 0;
 
-    carid_buffer_unref (encoded_buffer);
+    schro_buffer_unref (encoded_buffer);
 
-    caps = gst_pad_get_caps (carid_enc->srcpad);
-    caps = gst_carid_enc_set_header_on_caps (caps, outbuf);
+    caps = gst_pad_get_caps (schro_enc->srcpad);
+    caps = gst_schro_enc_set_header_on_caps (caps, outbuf);
 
-    gst_pad_set_caps (carid_enc->srcpad, caps);
+    gst_pad_set_caps (schro_enc->srcpad, caps);
 
     gst_buffer_set_caps (outbuf, caps);
 
-    ret = gst_pad_push (carid_enc->srcpad, outbuf);
+    ret = gst_pad_push (schro_enc->srcpad, outbuf);
     if (ret!= GST_FLOW_OK) return ret;
 
-    carid_enc->sent_header = 1;
+    schro_enc->sent_header = 1;
   }
 
-  frame = carid_frame_new_I420 (GST_BUFFER_DATA (buf),
-      carid_enc->encoder->params.width, carid_enc->encoder->params.height);
+  frame = schro_frame_new_I420 (GST_BUFFER_DATA (buf),
+      schro_enc->encoder->params.width, schro_enc->encoder->params.height);
 
-  carid_frame_set_free_callback (frame, gst_carid_frame_free, buf);
+  schro_frame_set_free_callback (frame, gst_schro_frame_free, buf);
 
   GST_DEBUG ("pushing frame");
-  carid_encoder_push_frame (carid_enc->encoder, frame);
+  schro_encoder_push_frame (schro_enc->encoder, frame);
 
   while (1) {
-    encoded_buffer = carid_encoder_encode (carid_enc->encoder);
+    encoded_buffer = schro_encoder_encode (schro_enc->encoder);
     if (encoded_buffer == NULL) break;
 
-    ret = gst_pad_alloc_buffer_and_set_caps (carid_enc->srcpad,
+    ret = gst_pad_alloc_buffer_and_set_caps (schro_enc->srcpad,
         GST_BUFFER_OFFSET_NONE, encoded_buffer->length,
-        GST_PAD_CAPS (carid_enc->srcpad), &outbuf);
+        GST_PAD_CAPS (schro_enc->srcpad), &outbuf);
     if (ret != GST_FLOW_OK) {
-      carid_buffer_unref (encoded_buffer);
+      schro_buffer_unref (encoded_buffer);
       return ret;
     }
 
     memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data, encoded_buffer->length);
-    GST_BUFFER_OFFSET (outbuf) = carid_enc->offset;
-    GST_BUFFER_OFFSET_END (outbuf) = carid_enc->granulepos;
-    GST_BUFFER_TIMESTAMP (outbuf) = (carid_enc->n_frames * GST_SECOND * carid_enc->fps_d)/carid_enc->fps_n;
-    GST_BUFFER_DURATION (outbuf) = (GST_SECOND * carid_enc->fps_d)/carid_enc->fps_n;
+    GST_BUFFER_OFFSET (outbuf) = schro_enc->offset;
+    GST_BUFFER_OFFSET_END (outbuf) = schro_enc->granulepos;
+    GST_BUFFER_TIMESTAMP (outbuf) = (schro_enc->n_frames * GST_SECOND * schro_enc->fps_d)/schro_enc->fps_n;
+    GST_BUFFER_DURATION (outbuf) = (GST_SECOND * schro_enc->fps_d)/schro_enc->fps_n;
 
-    carid_enc->offset += encoded_buffer->length;
-    carid_enc->granulepos++;
-    carid_enc->n_frames++;
+    schro_enc->offset += encoded_buffer->length;
+    schro_enc->granulepos++;
+    schro_enc->n_frames++;
 
-    carid_buffer_unref (encoded_buffer);
+    schro_buffer_unref (encoded_buffer);
     
-    ret = gst_pad_push (carid_enc->srcpad, outbuf);
+    ret = gst_pad_push (schro_enc->srcpad, outbuf);
 
     if (ret!= GST_FLOW_OK) return ret;
   }
@@ -390,12 +390,12 @@ gst_carid_enc_chain (GstPad *pad, GstBuffer *buf)
 }
 
 static GstStateChangeReturn
-gst_carid_enc_change_state (GstElement *element, GstStateChange transition)
+gst_schro_enc_change_state (GstElement *element, GstStateChange transition)
 {
-  GstCaridEnc *carid_enc;
+  GstSchroEnc *schro_enc;
   GstStateChangeReturn ret;
 
-  carid_enc = GST_CARID_ENC (element);
+  schro_enc = GST_SCHRO_ENC (element);
 
   switch (transition) {
     default:

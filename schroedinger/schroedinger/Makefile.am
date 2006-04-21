@@ -1,43 +1,43 @@
 
-pkgincludedir = $(includedir)/carid-@CARID_MAJORMINOR@/carid
+pkgincludedir = $(includedir)/schro-@SCHRO_MAJORMINOR@/schro
 
-lib_LTLIBRARIES = libcarid-@CARID_MAJORMINOR@.la
+lib_LTLIBRARIES = libschro-@SCHRO_MAJORMINOR@.la
 
-DISTCLEANFILES = carid-stdint.h
+DISTCLEANFILES = schro-stdint.h
 
-libcarid_@CARID_MAJORMINOR@_la_SOURCES = \
-	carid-stdint.h \
-	carid.h \
-	carid.c \
-	caridarith.c \
-	caridarith.h \
-	caridbits.c \
-	caridbits.h \
-	caridbitstream.h \
-	cariddecoder.c \
-	cariddecoder.h \
-	cariddebug.c \
-	cariddebug.h \
-	caridencoder.c \
-	caridencoder.h \
-	caridframe.c \
-	caridframe.h \
-	caridbuffer.c \
-	caridbuffer.h \
-	caridmotion.c \
-	caridmotion.h \
-	caridparams.c \
-	caridparams.h \
-	caridtables.c \
-	caridtables.h \
-	caridwavelet.c \
-	caridwavelet.h \
-	caridbitstream.h
+libschro_@SCHRO_MAJORMINOR@_la_SOURCES = \
+	schro-stdint.h \
+	schro.h \
+	schro.c \
+	schroarith.c \
+	schroarith.h \
+	schrobits.c \
+	schrobits.h \
+	schrobitstream.h \
+	schrodecoder.c \
+	schrodecoder.h \
+	schrodebug.c \
+	schrodebug.h \
+	schroencoder.c \
+	schroencoder.h \
+	schroframe.c \
+	schroframe.h \
+	schrobuffer.c \
+	schrobuffer.h \
+	schromotion.c \
+	schromotion.h \
+	schroparams.c \
+	schroparams.h \
+	schrotables.c \
+	schrotables.h \
+	schrowavelet.c \
+	schrowavelet.h \
+	schrobitstream.h
 
-libcarid_@CARID_MAJORMINOR@_la_CFLAGS = $(CARID_CFLAGS) $(LIBOIL_CFLAGS)
-libcarid_@CARID_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)
-libcarid_@CARID_MAJORMINOR@_la_LDFLAGS = \
+libschro_@SCHRO_MAJORMINOR@_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+libschro_@SCHRO_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)
+libschro_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-no-undefined \
-	-version-info $(CARID_LIBVERSION) \
-	-export-symbols-regex '^carid_'
+	-version-info $(SCHRO_LIBVERSION) \
+	-export-symbols-regex '^schro_'
 

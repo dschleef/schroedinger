@@ -33,7 +33,7 @@
 #include <gst/base/gstpushsrc.h>
 #include <gst/video/video.h>
 #include <string.h>
-#include <carid/carid.h>
+#include <schro/schro.h>
 #include <liboil/liboil.h>
 #include <math.h>
 
@@ -79,7 +79,7 @@ struct _GstWaveletvisualizer
 
   gboolean inited;
 
-  CaridDecoder *decoder;
+  SchroDecoder *decoder;
 };
 
 struct _GstWaveletvisualizerClass
@@ -171,7 +171,7 @@ gst_waveletvisualizer_init (GstWaveletvisualizer *waveletvisualizer,
 
   gst_pad_set_fixatecaps_function (pad, gst_waveletvisualizer_fixate);
 
-  waveletvisualizer->decoder = carid_decoder_new ();
+  waveletvisualizer->decoder = schro_decoder_new ();
 
   waveletvisualizer->inited = FALSE;
 }
@@ -259,7 +259,7 @@ gst_waveletvisualizer_fixate (GstPad *pad, GstCaps *caps)
 
 static void do_init (GstWaveletvisualizerComponent *c, int w, int h);
 static void do_update (GstWaveletvisualizerComponent *c, int dc_val);
-static void do_transform (GstWaveletvisualizerComponent *c, CaridDecoder *decoder, int16_t *tmpdata, uint8_t *dest);
+static void do_transform (GstWaveletvisualizerComponent *c, SchroDecoder *decoder, int16_t *tmpdata, uint8_t *dest);
 
 static GstFlowReturn
 gst_waveletvisualizer_create (GstPushSrc * push_src,
@@ -373,23 +373,23 @@ static void do_update (GstWaveletvisualizerComponent *c, int dc_val)
 }
 
 static void
-do_transform (GstWaveletvisualizerComponent *c, CaridDecoder *decoder,
+do_transform (GstWaveletvisualizerComponent *c, SchroDecoder *decoder,
     int16_t *tmpdata, uint8_t *dest)
 {
   int n;
-  CaridBuffer *encoded_buffer;
-  CaridBuffer *decoded_buffer;
+  SchroBuffer *encoded_buffer;
+  SchroBuffer *decoded_buffer;
 
   n = c->rwidth*c->rheight;
 
   oil_memcpy(tmpdata, c->data, n*2);
 
-  encoded_buffer = carid_buffer_new_with_data (tmpdata, c->width*c->height*2);
+  encoded_buffer = schro_buffer_new_with_data (tmpdata, c->width*c->height*2);
   decoder->params.width = c->width;
   decoder->params.height = c->height;
-  decoded_buffer = carid_buffer_new_with_data (dest,
+  decoded_buffer = schro_buffer_new_with_data (dest,
       c->width * c->height);
-  carid_decoder_set_output_buffer (decoder, decoded_buffer);
-  carid_decoder_decode (decoder, encoded_buffer);
+  schro_decoder_set_output_buffer (decoder, decoded_buffer);
+  schro_decoder_decode (decoder, encoded_buffer);
 }
 

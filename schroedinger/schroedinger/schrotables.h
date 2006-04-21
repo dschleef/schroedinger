@@ -1,6 +1,6 @@
 
-#include <carid/carid-stdint.h>
+#include <schro/schro-stdint.h>
 
-extern int16_t carid_table_offset[61];
-extern int16_t carid_table_quant[61];
+extern int16_t schro_table_offset[61];
+extern int16_t schro_table_quant[61];
 

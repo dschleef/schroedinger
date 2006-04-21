@@ -1,17 +1,17 @@
 
-#ifndef _CARID_BITS_H_
-#define _CARID_BITS_H_
+#ifndef _SCHRO_BITS_H_
+#define _SCHRO_BITS_H_
 
-#include <carid/carid-stdint.h>
-#include <carid/caridbuffer.h>
+#include <schro/schro-stdint.h>
+#include <schro/schrobuffer.h>
 
 
-#define CARID_ARITH_N_CONTEXTS 64
+#define SCHRO_ARITH_N_CONTEXTS 64
 
-typedef struct _CaridBits CaridBits;
+typedef struct _SchroBits SchroBits;
 
-struct _CaridBits {
-  CaridBuffer *buffer;
+struct _SchroBits {
+  SchroBuffer *buffer;
 
   int offset;
   int bit_offset;
@@ -21,36 +21,36 @@ struct _CaridBits {
   int n_contexts;
 };
 
-CaridBits * carid_bits_new (void);
-void carid_bits_free (CaridBits *bits);
+SchroBits * schro_bits_new (void);
+void schro_bits_free (SchroBits *bits);
 
-void carid_bits_decode_init (CaridBits *bits, CaridBuffer *buffer);
-void carid_bits_encode_init (CaridBits *bits, CaridBuffer *buffer);
+void schro_bits_decode_init (SchroBits *bits, SchroBuffer *buffer);
+void schro_bits_encode_init (SchroBits *bits, SchroBuffer *buffer);
 
-void carid_bits_sync (CaridBits *bits);
-void carid_bits_dumpbits (CaridBits *bits);
+void schro_bits_sync (SchroBits *bits);
+void schro_bits_dumpbits (SchroBits *bits);
 
-void carid_bits_append (CaridBits *bits, CaridBits *bits2);
+void schro_bits_append (SchroBits *bits, SchroBits *bits2);
 
-void carid_bits_encode_bit (CaridBits *bits, int value);
-void carid_bits_encode_bits (CaridBits *bits, int n, int value);
-void carid_bits_encode_uu (CaridBits *bits, int value);
-void carid_bits_encode_su (CaridBits *bits, int value);
-void carid_bits_encode_ut (CaridBits *bits, int value, int max);
-void carid_bits_encode_uegol (CaridBits *bits, int value);
-void carid_bits_encode_segol (CaridBits *bits, int value);
-void carid_bits_encode_ue2gol (CaridBits *bits, int value);
-void carid_bits_encode_se2gol (CaridBits *bits, int value);
+void schro_bits_encode_bit (SchroBits *bits, int value);
+void schro_bits_encode_bits (SchroBits *bits, int n, int value);
+void schro_bits_encode_uu (SchroBits *bits, int value);
+void schro_bits_encode_su (SchroBits *bits, int value);
+void schro_bits_encode_ut (SchroBits *bits, int value, int max);
+void schro_bits_encode_uegol (SchroBits *bits, int value);
+void schro_bits_encode_segol (SchroBits *bits, int value);
+void schro_bits_encode_ue2gol (SchroBits *bits, int value);
+void schro_bits_encode_se2gol (SchroBits *bits, int value);
 
-int carid_bits_decode_bit (CaridBits *bits);
-int carid_bits_decode_bits (CaridBits *bits, int n);
-int carid_bits_decode_uu (CaridBits *bits);
-int carid_bits_decode_su (CaridBits *bits);
-int carid_bits_decode_ut (CaridBits *bits, int max);
-int carid_bits_decode_uegol (CaridBits *bits);
-int carid_bits_decode_segol (CaridBits *bits);
-int carid_bits_decode_ue2gol (CaridBits *bits);
-int carid_bits_decode_se2gol (CaridBits *bits);
+int schro_bits_decode_bit (SchroBits *bits);
+int schro_bits_decode_bits (SchroBits *bits, int n);
+int schro_bits_decode_uu (SchroBits *bits);
+int schro_bits_decode_su (SchroBits *bits);
+int schro_bits_decode_ut (SchroBits *bits, int max);
+int schro_bits_decode_uegol (SchroBits *bits);
+int schro_bits_decode_segol (SchroBits *bits);
+int schro_bits_decode_ue2gol (SchroBits *bits);
+int schro_bits_decode_se2gol (SchroBits *bits);
 
 #endif
 

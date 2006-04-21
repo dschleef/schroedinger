@@ -1,4 +1,4 @@
-Name:		libcarid
+Name:		libschro
 Version:	@VERSION@
 Release:	gst.3
 Summary:	Library for decoding and encoding video in the Dirac format.
@@ -7,23 +7,23 @@ Group:		Libraries/Multimedia
 License:	LGPL
 URL:		http://schrodinger.sourceforge.net
 Vendor:         GStreamer Backpackers Team <package@gstreamer.net>
-Source:		http://schrodinger.sourceforge.net/carid-%{version}.tar.gz
+Source:		http://schrodinger.sourceforge.net/schro-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-root
 Prereq:		/sbin/ldconfig
 
 %description
-Library for decoding and encoding video in the Dirac format. It is implemented in ANSI C and optimized through the us of liboil. libcarid is written as a collaboartion between the BBC Research and Development, David Schleef and Fluendo.
+Library for decoding and encoding video in the Dirac format. It is implemented in ANSI C and optimized through the us of liboil. libschro is written as a collaboartion between the BBC Research and Development, David Schleef and Fluendo.
 
 %package devel
-Summary:	libcarid development files and static libraries.
+Summary:	libschro development files and static libraries.
 Group:		Development/Libraries
 Requires:	%{name} = %{version}-%{release}
 
 %description devel
-libcarid-devel contains the files needed to build packages that depend on libcarid.
+libschro-devel contains the files needed to build packages that depend on libschro.
 
 %prep
-%setup -q -n carid-%{version}
+%setup -q -n schro-%{version}
 
 %build
 CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --enable-shared
@@ -52,13 +52,13 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/gstreamer-0.10/*.a
 %files
 %defattr(-,root,root)
 %doc COPYING COPYING.MIT COPYING.GPL COPYING.LGPL COPYING.MPL ChangeLog
-%{_libdir}/libcarid-0.1.so.*
-%{_libdir}/gstreamer-0.10/libgstcarid.so
+%{_libdir}/libschro-0.1.so.*
+%{_libdir}/gstreamer-0.10/libgstschro.so
 
 %files devel
 %defattr(-,root,root)
-%{_libdir}/pkgconfig/carid-0.1.pc
-%{_libdir}/libcarid-0.1.so
+%{_libdir}/pkgconfig/schro-0.1.pc
+%{_libdir}/libschro-0.1.so
 
 %changelog
 * Wed Feb 05 2003 Christian F.K. Schaller <Uraeus@linuxrising.org>

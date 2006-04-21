@@ -3,10 +3,10 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <carid/carid.h>
+#include <schro/schro.h>
 
 void
-dump_bits (CaridBits *bits)
+dump_bits (SchroBits *bits)
 {
   int i;
   
@@ -24,26 +24,26 @@ int
 main (int argc, char *argv[])
 {
   int i;
-  CaridBuffer *buffer = carid_buffer_new_and_alloc (300);
-  CaridBits *bits;
+  SchroBuffer *buffer = schro_buffer_new_and_alloc (300);
+  SchroBits *bits;
   int value;
   int fail = 0;
 
-  carid_init();
+  schro_init();
 
   srand(time(NULL));
 
-  bits = carid_bits_new();
+  bits = schro_bits_new();
 
   printf("unsigned unary\n");
-  carid_bits_encode_init (bits, buffer);
+  schro_bits_encode_init (bits, buffer);
   for(i=0;i<N;i++) {
     ref[i] = random() & 0x7;
-    carid_bits_encode_uu(bits,ref[i]);
+    schro_bits_encode_uu(bits,ref[i]);
   }
-  carid_bits_decode_init (bits, buffer);
+  schro_bits_decode_init (bits, buffer);
   for(i=0;i<N;i++) {
-    value = carid_bits_decode_uu (bits);
+    value = schro_bits_decode_uu (bits);
     if (value != ref[i]) {
       printf("decode failed (%d != %d) at offset %d\n", value, ref[i], i);
       fail = 1;
@@ -51,14 +51,14 @@ main (int argc, char *argv[])
   }
 
   printf("signed unary\n");
-  carid_bits_encode_init (bits, buffer);
+  schro_bits_encode_init (bits, buffer);
   for(i=0;i<N;i++) {
     ref[i] = (random() & 0xf) - 8;
-    carid_bits_encode_su(bits,ref[i]);
+    schro_bits_encode_su(bits,ref[i]);
   }
-  carid_bits_decode_init (bits, buffer);
+  schro_bits_decode_init (bits, buffer);
   for(i=0;i<N;i++) {
-    value = carid_bits_decode_su (bits);
+    value = schro_bits_decode_su (bits);
     if (value != ref[i]) {
       printf("decode failed (%d != %d) at offset %d\n", value, ref[i], i);
       fail = 1;
@@ -66,14 +66,14 @@ main (int argc, char *argv[])
   }
 
   printf("unsigned truncated unary (n=3)\n");
-  carid_bits_encode_init (bits, buffer);
+  schro_bits_encode_init (bits, buffer);
   for(i=0;i<N;i++) {
     ref[i] = random() & 0x3;
-    carid_bits_encode_ut(bits,ref[i], 3);
+    schro_bits_encode_ut(bits,ref[i], 3);
   }
-  carid_bits_decode_init (bits, buffer);
+  schro_bits_decode_init (bits, buffer);
   for(i=0;i<N;i++) {
-    value = carid_bits_decode_ut (bits, 3);
+    value = schro_bits_decode_ut (bits, 3);
     if (value != ref[i]) {
       printf("decode failed (%d != %d) at offset %d\n", value, ref[i], i);
       fail = 1;
@@ -81,14 +81,14 @@ main (int argc, char *argv[])
   }
 
   printf("unsigned exp-Golomb\n");
-  carid_bits_encode_init (bits, buffer);
+  schro_bits_encode_init (bits, buffer);
   for(i=0;i<N;i++) {
     ref[i] = random() & 0x7;
-    carid_bits_encode_uegol(bits,ref[i]);
+    schro_bits_encode_uegol(bits,ref[i]);
   }
-  carid_bits_decode_init (bits, buffer);
+  schro_bits_decode_init (bits, buffer);
   for(i=0;i<N;i++) {
-    value = carid_bits_decode_uegol (bits);
+    value = schro_bits_decode_uegol (bits);
     if (value != ref[i]) {
       printf("decode failed (%d != %d) at offset %d\n", value, ref[i], i);
       fail = 1;
@@ -96,14 +96,14 @@ main (int argc, char *argv[])
   }
 
   printf("signed exp-Golomb\n");
-  carid_bits_encode_init (bits, buffer);
+  schro_bits_encode_init (bits, buffer);
   for(i=0;i<N;i++) {
     ref[i] = (random() & 0xf) - 8;
-    carid_bits_encode_segol (bits,ref[i]);
+    schro_bits_encode_segol (bits,ref[i]);
   }
-  carid_bits_decode_init (bits, buffer);
+  schro_bits_decode_init (bits, buffer);
   for(i=0;i<N;i++) {
-    value = carid_bits_decode_segol (bits);
+    value = schro_bits_decode_segol (bits);
     if (value != ref[i]) {
       printf("decode failed (%d != %d) at offset %d\n", value, ref[i], i);
       fail = 1;
@@ -111,14 +111,14 @@ main (int argc, char *argv[])
   }
 
   printf("unsigned exp-exp-Golomb\n");
-  carid_bits_encode_init (bits, buffer);
+  schro_bits_encode_init (bits, buffer);
   for(i=0;i<N;i++) {
     ref[i] = random() & 0x7;
-    carid_bits_encode_ue2gol(bits,ref[i]);
+    schro_bits_encode_ue2gol(bits,ref[i]);
   }
-  carid_bits_decode_init (bits, buffer);
+  schro_bits_decode_init (bits, buffer);
   for(i=0;i<N;i++) {
-    value = carid_bits_decode_ue2gol (bits);
+    value = schro_bits_decode_ue2gol (bits);
     if (value != ref[i]) {
       printf("decode failed (%d != %d) at offset %d\n", value, ref[i], i);
       fail = 1;
@@ -126,14 +126,14 @@ main (int argc, char *argv[])
   }
 
   printf("signed exp-exp-Golomb\n");
-  carid_bits_encode_init (bits, buffer);
+  schro_bits_encode_init (bits, buffer);
   for(i=0;i<N;i++) {
     ref[i] = (random() & 0xf) - 8;
-    carid_bits_encode_se2gol (bits,ref[i]);
+    schro_bits_encode_se2gol (bits,ref[i]);
   }
-  carid_bits_decode_init (bits, buffer);
+  schro_bits_decode_init (bits, buffer);
   for(i=0;i<N;i++) {
-    value = carid_bits_decode_se2gol (bits);
+    value = schro_bits_decode_se2gol (bits);
     if (value != ref[i]) {
       printf("decode failed (%d != %d) at offset %d\n", value, ref[i], i);
       fail = 1;

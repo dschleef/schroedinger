@@ -3,7 +3,7 @@
 #include "config.h"
 #endif
 
-#include <carid/carid.h>
+#include <schro/schro.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -29,9 +29,9 @@ check_output (int type, int split)
     }
 
     if (split) {
-      carid_lift_split (type, dest + 10, src + 10, n);
+      schro_lift_split (type, dest + 10, src + 10, n);
     } else {
-      carid_lift_synth (type, dest + 10, src + 10, n);
+      schro_lift_synth (type, dest + 10, src + 10, n);
     }
 
     for(i=10;i<10+n;i++){
@@ -75,9 +75,9 @@ check_endpoints (int type, int split)
       }
 
       if (split) {
-        carid_lift_split (type, dest + 10, src + 10, n);
+        schro_lift_split (type, dest + 10, src + 10, n);
       } else {
-        carid_lift_synth (type, dest + 10, src + 10, n);
+        schro_lift_synth (type, dest + 10, src + 10, n);
       }
 
       for(i=10;i<10+n;i++){
@@ -113,7 +113,7 @@ check_constant (int type)
       src[i] = 100;
     }
 
-    carid_lift_split (type, dest, src, n);
+    schro_lift_split (type, dest, src, n);
 
     for(i=0;i<n;i+=2){
       if (dest[i] != dest[0]) {
@@ -157,8 +157,8 @@ check_random (int type)
       src[i] = random()&0xff;
     }
 
-    carid_lift_split (type, tmp, src, n);
-    carid_lift_synth (type, dest, tmp, n);
+    schro_lift_split (type, tmp, src, n);
+    schro_lift_synth (type, dest, tmp, n);
 
     for(i=0;i<n;i++){
       if (dest[i] != src[i]) {
@@ -178,43 +178,43 @@ check_random (int type)
 int
 main (int argc, char *argv[])
 {
-  carid_init();
+  schro_init();
 
-  check_output (CARID_WAVELET_DAUB97, 1);
-  check_output (CARID_WAVELET_DAUB97, 0);
+  check_output (SCHRO_WAVELET_DAUB97, 1);
+  check_output (SCHRO_WAVELET_DAUB97, 0);
 
-  check_output (CARID_WAVELET_APPROX97, 1);
-  check_output (CARID_WAVELET_APPROX97, 0);
+  check_output (SCHRO_WAVELET_APPROX97, 1);
+  check_output (SCHRO_WAVELET_APPROX97, 0);
 
-  check_output (CARID_WAVELET_5_3, 1);
-  check_output (CARID_WAVELET_5_3, 0);
+  check_output (SCHRO_WAVELET_5_3, 1);
+  check_output (SCHRO_WAVELET_5_3, 0);
 
-  check_output (CARID_WAVELET_13_5, 1);
-  check_output (CARID_WAVELET_13_5, 0);
+  check_output (SCHRO_WAVELET_13_5, 1);
+  check_output (SCHRO_WAVELET_13_5, 0);
   
-  check_endpoints (CARID_WAVELET_DAUB97, 1);
-  check_endpoints (CARID_WAVELET_DAUB97, 0);
+  check_endpoints (SCHRO_WAVELET_DAUB97, 1);
+  check_endpoints (SCHRO_WAVELET_DAUB97, 0);
 
-  check_endpoints (CARID_WAVELET_APPROX97, 1);
-  check_endpoints (CARID_WAVELET_APPROX97, 0);
+  check_endpoints (SCHRO_WAVELET_APPROX97, 1);
+  check_endpoints (SCHRO_WAVELET_APPROX97, 0);
 
-  check_endpoints (CARID_WAVELET_5_3, 1);
-  check_endpoints (CARID_WAVELET_5_3, 0);
+  check_endpoints (SCHRO_WAVELET_5_3, 1);
+  check_endpoints (SCHRO_WAVELET_5_3, 0);
 
-  check_endpoints (CARID_WAVELET_13_5, 1);
-  check_endpoints (CARID_WAVELET_13_5, 0);
+  check_endpoints (SCHRO_WAVELET_13_5, 1);
+  check_endpoints (SCHRO_WAVELET_13_5, 0);
   
 
-  check_constant (CARID_WAVELET_DAUB97);
-  check_constant (CARID_WAVELET_APPROX97);
-  check_constant (CARID_WAVELET_5_3);
-  check_constant (CARID_WAVELET_13_5);
+  check_constant (SCHRO_WAVELET_DAUB97);
+  check_constant (SCHRO_WAVELET_APPROX97);
+  check_constant (SCHRO_WAVELET_5_3);
+  check_constant (SCHRO_WAVELET_13_5);
 
 
-  check_random (CARID_WAVELET_DAUB97);
-  check_random (CARID_WAVELET_APPROX97);
-  check_random (CARID_WAVELET_5_3);
-  check_random (CARID_WAVELET_13_5);
+  check_random (SCHRO_WAVELET_DAUB97);
+  check_random (SCHRO_WAVELET_APPROX97);
+  check_random (SCHRO_WAVELET_5_3);
+  check_random (SCHRO_WAVELET_13_5);
 
 
   return 0;
