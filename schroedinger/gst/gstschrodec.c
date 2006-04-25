@@ -29,6 +29,9 @@
 #include <liboil/liboil.h>
 #include <math.h>
 
+GST_DEBUG_CATEGORY_EXTERN (schro_debug);
+#define GST_CAT_DEFAULT schro_debug
+
 #define GST_TYPE_SCHRO_DEC \
   (gst_schro_dec_get_type())
 #define GST_SCHRO_DEC(obj) \
@@ -243,6 +246,12 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
   GstFlowReturn ret;
 
   schro_dec = GST_SCHRO_DEC (GST_PAD_PARENT (pad));
+
+  if (GST_BUFFER_SIZE(buf) >= 8 && !memcmp(GST_BUFFER_DATA(buf),"KW-DIRAC",8)) {
+    GST_DEBUG("bos");
+    gst_buffer_unref(buf);
+    return GST_FLOW_OK;
+  }
 
   input_buffer = gst_schro_wrap_gst_buffer (buf);
 
