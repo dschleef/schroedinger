@@ -1,3 +1,9 @@
+2006-05-02  David Schleef  <ds@schleef.org>
+
+	* m4/check.m4:
+	* m4/pkg.m4:
+	  Add some macros that not everyone has.
+
 2006-04-25  David Schleef  <ds@schleef.org>
 
 	* gst/gstschro.c:
