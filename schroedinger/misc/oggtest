@@ -1,0 +1,9 @@
+#!/bin/sh
+
+
+gst-launch-0.10 \
+	oggmux name=mux ! filesink location=vts.ogg \
+	videotestsrc num-buffers=100 ! schroenc ! queue ! mux. \
+	audiotestsrc ! audioconvert ! vorbisenc ! queue ! mux.
+
+

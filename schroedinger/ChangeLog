@@ -1,3 +1,15 @@
+2006-05-04  David Schleef  <ds@schleef.org>
+
+	* misc: Add some test scripts
+	* misc/dvd-to-ogg:
+	* misc/dvdtest:
+	* misc/fgenc:
+	* misc/fgtest:
+	* misc/oggplay:
+	* misc/oggtest:
+	* misc/spidertest:
+	* misc/vtstest:
+
 2006-05-02  David Schleef  <ds@schleef.org>
 
 	* m4/check.m4:
