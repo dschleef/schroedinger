@@ -16,7 +16,9 @@ struct _SchroEncoderParams {
 };
 
 struct _SchroEncoder {
-  SchroFrame *frame;
+  SchroFrame *tmp_frame0;
+  SchroFrame *tmp_frame1;
+
   SchroFrame *encode_frame;
 
   SchroBits *bits;

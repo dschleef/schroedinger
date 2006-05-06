@@ -66,8 +66,11 @@ schro_encoder_new (void)
 void
 schro_encoder_free (SchroEncoder *encoder)
 {
-  if (encoder->frame) {
-    schro_frame_free (encoder->frame);
+  if (encoder->tmp_frame0) {
+    schro_frame_free (encoder->tmp_frame0);
+  }
+  if (encoder->tmp_frame1) {
+    schro_frame_free (encoder->tmp_frame1);
   }
 
   free (encoder->tmpbuf);
@@ -97,9 +100,13 @@ schro_encoder_set_size (SchroEncoder *encoder, int width, int height)
   params->chroma_height =
     (height + params->chroma_v_scale - 1) / params->chroma_v_scale;
 
-  if (encoder->frame) {
-    schro_frame_free (encoder->frame);
-    encoder->frame = NULL;
+  if (encoder->tmp_frame0) {
+    schro_frame_free (encoder->tmp_frame0);
+    encoder->tmp_frame0 = NULL;
+  }
+  if (encoder->tmp_frame1) {
+    schro_frame_free (encoder->tmp_frame1);
+    encoder->tmp_frame1 = NULL;
   }
 
   encoder->need_rap = TRUE;
@@ -281,73 +288,6 @@ schro_encoder_create_picture_list (SchroEncoder *encoder)
 }
 
 void
-schro_encoder_iwt_transform (SchroEncoder *encoder, int component)
-{
-  int16_t *frame_data;
-  SchroParams *params = &encoder->params;
-  int16_t *tmp = encoder->tmpbuf;
-  int width;
-  int height;
-  int level;
-
-  if (component == 0) {
-    width = params->iwt_luma_width;
-    height = params->iwt_luma_height;
-  } else {
-    width = params->iwt_chroma_width;
-    height = params->iwt_chroma_height;
-  }
-  
-  frame_data = (int16_t *)encoder->frame->components[component].data;
-  for(level=0;level<params->transform_depth;level++) {
-    int w;
-    int h;
-    int stride;
-
-    w = width >> level;
-    h = height >> level;
-    stride = width << level;
-
-    SCHRO_DEBUG("wavelet transform %dx%d stride %d", w, h, stride);
-    schro_wavelet_transform_2d (params->wavelet_filter_index,
-        frame_data, stride*2, w, h, tmp);
-  }
-}
-
-void
-schro_encoder_inverse_iwt_transform (SchroEncoder *encoder, int component)
-{
-  int16_t *frame_data;
-  SchroParams *params = &encoder->params;
-  int16_t *tmp = encoder->tmpbuf;
-  int width;
-  int height;
-  int level;
-
-  if (component == 0) {
-    width = params->iwt_luma_width;
-    height = params->iwt_luma_height;
-  } else {
-    width = params->iwt_chroma_width;
-    height = params->iwt_chroma_height;
-  }
-  
-  frame_data = (int16_t *)encoder->frame->components[component].data;
-  for(level=params->transform_depth-1; level >=0;level--) {
-    int w;
-    int h;
-    int stride;
-
-    w = width >> level;
-    h = height >> level;
-    stride = width << level;
-
-    schro_wavelet_inverse_transform_2d (params->wavelet_filter_index,
-        frame_data, stride*2, w, h, tmp);
-  }
-}
-
-void
 schro_encoder_encode_intra (SchroEncoder *encoder)
 {
   SchroParams *params = &encoder->params;
@@ -355,41 +295,34 @@ schro_encoder_encode_intra (SchroEncoder *encoder)
 
   schro_params_calculate_iwt_sizes (params);
 
-  if (encoder->frame == NULL) {
-    encoder->frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
+  if (encoder->tmp_frame0 == NULL) {
+    encoder->tmp_frame0 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
         params->iwt_luma_width, params->iwt_luma_height, 2, 2);
   }
 
   schro_encoder_encode_frame_header (encoder, SCHRO_PARSE_CODE_INTRA_REF);
 
-  schro_frame_convert (encoder->frame, encoder->encode_frame);
+  schro_frame_convert (encoder->tmp_frame0, encoder->encode_frame);
 
   schro_frame_free (encoder->encode_frame);
 
   schro_encoder_encode_transform_parameters (encoder);
 
-  schro_encoder_iwt_transform (encoder, 0);
+  schro_frame_iwt_transform (encoder->tmp_frame0, &encoder->params,
+      encoder->tmpbuf);
   schro_encoder_encode_transform_data (encoder, 0);
-  if (is_ref) {
-    schro_encoder_inverse_iwt_transform (encoder, 0);
-  }
-
-  schro_encoder_iwt_transform (encoder, 1);
   schro_encoder_encode_transform_data (encoder, 1);
-  if (is_ref) {
-    schro_encoder_inverse_iwt_transform (encoder, 1);
-  }
-
-  schro_encoder_iwt_transform (encoder, 2);
   schro_encoder_encode_transform_data (encoder, 2);
+
   if (is_ref) {
     SchroFrame *ref_frame;
 
-    schro_encoder_inverse_iwt_transform (encoder, 2);
+    schro_frame_inverse_iwt_transform (encoder->tmp_frame0, &encoder->params,
+        encoder->tmpbuf);
 
     ref_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
         params->width, params->height, 2, 2);
-    schro_frame_convert (ref_frame, encoder->frame);
+    schro_frame_convert (ref_frame, encoder->tmp_frame0);
 
     schro_encoder_reference_add (encoder, ref_frame);
   }
@@ -400,13 +333,17 @@ void
 schro_encoder_encode_inter (SchroEncoder *encoder)
 {
   SchroParams *params = &encoder->params;
-  //int is_ref = 0;
+  int is_ref = 0;
 
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
 
-  if (encoder->frame == NULL) {
-    encoder->frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
+  if (encoder->tmp_frame0 == NULL) {
+    encoder->tmp_frame0 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
+        params->iwt_luma_width, params->iwt_luma_height, 2, 2);
+  }
+  if (encoder->tmp_frame1 == NULL) {
+    encoder->tmp_frame1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
         params->iwt_luma_width, params->iwt_luma_height, 2, 2);
   }
 
@@ -416,37 +353,34 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
 
   schro_encoder_encode_frame_prediction (encoder);
 
+  schro_frame_convert (encoder->tmp_frame0, encoder->encode_frame);
   schro_frame_free (encoder->encode_frame);
-#if 0
-  schro_frame_convert (encoder->frame, encoder->encode_frame);
-  schro_frame_free (encoder->encode_frame);
+
+  schro_frame_copy_with_motion (encoder->tmp_frame1,
+      encoder->ref_frame0, NULL, encoder->motion_vectors,
+      &encoder->params);
+
+  schro_frame_subtract (encoder->tmp_frame0, encoder->tmp_frame1);
 
   schro_encoder_encode_transform_parameters (encoder);
 
-  schro_encoder_iwt_transform (encoder, 0);
+  schro_frame_iwt_transform (encoder->tmp_frame0, &encoder->params,
+      encoder->tmpbuf);
   schro_encoder_encode_transform_data (encoder, 0);
-  if (is_ref) {
-    schro_encoder_inverse_iwt_transform (encoder, 0);
-  }
-
-  schro_encoder_iwt_transform (encoder, 1);
   schro_encoder_encode_transform_data (encoder, 1);
-  if (is_ref) {
-    schro_encoder_inverse_iwt_transform (encoder, 1);
-  }
-
-  schro_encoder_iwt_transform (encoder, 2);
   schro_encoder_encode_transform_data (encoder, 2);
+
   if (is_ref) {
     SchroFrame *ref_frame;
 
-    schro_encoder_inverse_iwt_transform (encoder, 2);
+    schro_frame_inverse_iwt_transform (encoder->tmp_frame0,
+        &encoder->params, encoder->tmpbuf);
+    schro_frame_add (encoder->tmp_frame0, encoder->tmp_frame1);
 
     ref_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
         params->width, params->height, 2, 2);
-    schro_frame_convert (ref_frame, encoder->frame);
+    schro_frame_convert (ref_frame, encoder->tmp_frame0);
   }
-#endif
 }
 
 void
@@ -799,14 +733,14 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   SCHRO_DEBUG("subband index=%d %d x %d at offset %d with stride %d", index,
       width, height, offset, stride);
 
-  data = (int16_t *)encoder->frame->components[component].data + offset;
+  data = (int16_t *)encoder->tmp_frame0->components[component].data + offset;
   if (subband->has_parent) {
     parent_subband = subband - 3;
     if (component == 0) {
-      parent_data = (int16_t *)encoder->frame->components[component].data +
+      parent_data = (int16_t *)encoder->tmp_frame0->components[component].data +
         parent_subband->offset;
     } else {
-      parent_data = (int16_t *)encoder->frame->components[component].data +
+      parent_data = (int16_t *)encoder->tmp_frame0->components[component].data +
         parent_subband->chroma_offset;
     }
   }

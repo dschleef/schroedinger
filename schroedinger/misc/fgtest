@@ -1,8 +1,8 @@
 #!/bin/sh
 
 gst-launch-0.10 filesrc location=/home/ds/media/family.guy.402.pdtv-lol.\[BT\].avi \
-  ! decodebin ! caridenc ! cariddec ! xvimagesink sync=false
+  ! decodebin ! schroenc ! schrodec ! xvimagesink sync=false
 
 #gst-launch-0.10 filesrc location=/home/ds/media/pianostripper5.mpg \
-#  ! decodebin ! caridenc ! cariddec ! xvimagesink
+#  ! decodebin ! schroenc ! schrodec ! xvimagesink
 

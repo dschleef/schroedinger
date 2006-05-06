@@ -1,3 +1,22 @@
+2006-05-05  David Schleef  <ds@schleef.org>
+
+	* misc/dvd-to-ogg:
+	* misc/dvdtest:
+	* misc/fgenc:
+	* misc/fgtest:
+	* misc/oggplay:
+	* misc/spidertest:
+	* misc/vtstest:
+	  Oops.  We're called schro, not carid.
+
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	  Encode/decode residuals after motion compensation.  Finally,
+	  inter coding looks halfway decent.
+
 2006-05-04  David Schleef  <ds@schleef.org>
 
 	* misc: Add some test scripts

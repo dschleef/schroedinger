@@ -1,6 +1,6 @@
 #!/bin/sh
 
 gdb -args  \
-gst-launch-0.10 videotestsrc ! caridenc ! cariddec ! xvimagesink sync=false
+gst-launch-0.10 videotestsrc ! schroenc ! schrodec ! xvimagesink sync=false
 
 

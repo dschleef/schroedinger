@@ -46,6 +46,17 @@ void schro_frame_set_free_callback (SchroFrame *frame,
     SchroFrameFreeFunc free_func, void *priv);
 void schro_frame_free (SchroFrame *frame);
 void schro_frame_convert (SchroFrame *dest, SchroFrame *src);
+void schro_frame_add (SchroFrame *dest, SchroFrame *src);
+void schro_frame_subtract (SchroFrame *dest, SchroFrame *src);
+
+void schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
+    int16_t *tmp);
+void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
+    int16_t *tmp);
+
+void schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
+    SchroFrame *src2, SchroMotionVector *motion_vectors, SchroParams *params);
+
 
 
 #endif

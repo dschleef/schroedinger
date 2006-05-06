@@ -13,7 +13,9 @@ static void schro_decoder_decode_macroblock(SchroDecoder *decoder, int i,
     int j);
 static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
     SchroMotionVector *mv);
+#if 0
 static void schro_decoder_predict (SchroDecoder *decoder);
+#endif
 
 
 SchroDecoder *
@@ -134,13 +136,11 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     }
 
     schro_decoder_decode_transform_data (decoder, 0);
-    schro_decoder_iwt_transform (decoder, 0);
-
     schro_decoder_decode_transform_data (decoder, 1);
-    schro_decoder_iwt_transform (decoder, 1);
-
     schro_decoder_decode_transform_data (decoder, 2);
-    schro_decoder_iwt_transform (decoder, 2);
+
+    schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
+        decoder->tmpbuf);
 
     schro_frame_convert (decoder->output_frame, decoder->frame);
 
@@ -169,9 +169,22 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     }
 
     schro_decoder_decode_prediction_data (decoder);
-    schro_decoder_predict (decoder);
+    schro_frame_copy_with_motion (decoder->mc_tmp_frame,
+        decoder->reference_frames[0], NULL, decoder->motion_vectors,
+        &decoder->params);
 
-    schro_frame_convert (decoder->output_frame, decoder->mc_tmp_frame);
+    schro_decoder_decode_transform_parameters (decoder);
+
+    schro_decoder_decode_transform_data (decoder, 0);
+    schro_decoder_decode_transform_data (decoder, 1);
+    schro_decoder_decode_transform_data (decoder, 2);
+
+    schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
+        decoder->tmpbuf);
+
+    schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
+
+    schro_frame_convert (decoder->output_frame, decoder->frame);
   }
 
   schro_buffer_unref (buffer);
@@ -531,6 +544,7 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
   schro_params_calculate_mc_sizes (params);
 }
 
+#if 0
 static void
 copy_block_4x4 (uint8_t *dest, int dstr, uint8_t *src, int sstr)
 {
@@ -574,6 +588,7 @@ splat_block (uint8_t *dest, int dstr, int value, int w, int h)
     }
   }
 }
+#endif
 
 void
 schro_decoder_decode_prediction_data (SchroDecoder *decoder)
@@ -586,8 +601,10 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
       schro_decoder_decode_macroblock(decoder, i, j);
     }
   }
+  schro_bits_sync (decoder->bits);
 }
 
+#if 0
 static void
 schro_decoder_predict (SchroDecoder *decoder)
 {
@@ -662,6 +679,7 @@ schro_decoder_predict (SchroDecoder *decoder)
     }
   }
 }
+#endif
 
 static void
 schro_decoder_decode_macroblock(SchroDecoder *decoder, int i, int j)
