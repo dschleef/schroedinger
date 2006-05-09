@@ -1,8 +1,9 @@
 
 
-noinst_PROGRAMS = arith arith_encode arith_decode codes bits bits2 wavelet wavelet2 tables wavelet_2d
+noinst_PROGRAMS = arith arith_encode arith_decode codes bits bits2 \
+	 encode wavelet wavelet2 tables wavelet_2d
 
-TESTS = arith bits bits2 wavelet wavelet2 tables wavelet_2d
+TESTS = arith bits bits2 encode wavelet wavelet2 tables wavelet_2d
 
 
 arith_CFLAGS = $(SCHRO_CFLAGS)
@@ -17,10 +18,6 @@ arith_decode_CFLAGS = $(SCHRO_CFLAGS)
 arith_decode_LDADD = $(SCHRO_LIBS)
 arith_decode_SOURCES = arith_decode.c
 
-codes_CFLAGS = $(SCHRO_CFLAGS)
-codes_LDADD = $(SCHRO_LIBS)
-codes_SOURCES = codes.c
-
 bits_CFLAGS = $(SCHRO_CFLAGS)
 bits_LDADD = $(SCHRO_LIBS)
 bits_SOURCES = bits.c
@@ -28,6 +25,14 @@ bits_SOURCES = bits.c
 bits2_CFLAGS = $(SCHRO_CFLAGS)
 bits2_LDADD = $(SCHRO_LIBS)
 bits2_SOURCES = bits2.c
+
+codes_CFLAGS = $(SCHRO_CFLAGS)
+codes_LDADD = $(SCHRO_LIBS)
+codes_SOURCES = codes.c
+
+encode_CFLAGS = $(SCHRO_CFLAGS)
+encode_LDADD = $(SCHRO_LIBS)
+encode_SOURCES = encode.c
 
 wavelet_CFLAGS = $(SCHRO_CFLAGS)
 wavelet_LDADD = $(SCHRO_LIBS)

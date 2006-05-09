@@ -49,6 +49,7 @@ struct _SchroEncoder {
   SchroSubband subbands[1+6*3];
 
   int frame_number;
+  int end_of_stream;
 
   SchroMotionVector *motion_vectors;
 
@@ -62,12 +63,17 @@ struct _SchroEncoder {
   /* current reference frames */
   SchroFrame *ref_frame0;
   SchroFrame *ref_frame1;
+
+  double pan_x, pan_y;
+  double mag_x, mag_y;
+  double skew_x, skew_y;
 };
 
 SchroEncoder * schro_encoder_new (void);
 void schro_encoder_free (SchroEncoder *encoder);
 void schro_encoder_set_size (SchroEncoder *encoder, int width, int height);
 void schro_encoder_set_wavelet_type (SchroEncoder *encoder, int wavelet_type);
+void schro_encoder_end_of_stream (SchroEncoder *encoder);
 void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
 SchroBuffer * schro_encoder_encode (SchroEncoder *encoder);
 void schro_encoder_copy_to_frame_buffer (SchroEncoder *encoder, SchroBuffer *buffer);

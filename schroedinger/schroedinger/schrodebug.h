@@ -1,4 +1,6 @@
 
+#include <stdlib.h>
+
 #ifndef __SCHRO_DEBUG_H__
 #define __SCHRO_DEBUG_H__
 
@@ -29,6 +31,7 @@ enum
 #define SCHRO_ASSERT(test) do { \
   if (!(test)) { \
     SCHRO_ERROR("assertion failed: " #test ); \
+    exit(1); \
   } \
 } while(0)
 

@@ -1,3 +1,13 @@
+2006-05-08  David Schleef  <ds@schleef.org>
+
+	* testsuite/Makefile.am:
+	* testsuite/encode.c:
+	  Add a valgrindable test for encoding.
+	* schroedinger/schrodebug.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Fixes to make above valgrind-clean.
+
 2006-05-05  David Schleef  <ds@schleef.org>
 
 	* misc/dvd-to-ogg:

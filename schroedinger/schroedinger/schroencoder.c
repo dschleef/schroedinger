@@ -66,11 +66,25 @@ schro_encoder_new (void)
 void
 schro_encoder_free (SchroEncoder *encoder)
 {
+  int i;
+
   if (encoder->tmp_frame0) {
     schro_frame_free (encoder->tmp_frame0);
   }
   if (encoder->tmp_frame1) {
     schro_frame_free (encoder->tmp_frame1);
+  }
+  if (encoder->motion_vectors) {
+    free (encoder->motion_vectors);
+  }
+  for(i=0;i<encoder->n_reference_frames; i++) {
+    schro_frame_free(encoder->reference_frames[i]);
+  }
+  for(i=0;i<encoder->frame_queue_length; i++) {
+    schro_frame_free(encoder->frame_queue[i]);
+  }
+  if (encoder->subband_buffer) {
+    schro_buffer_unref (encoder->subband_buffer);
   }
 
   free (encoder->tmpbuf);
@@ -129,6 +143,12 @@ schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
   encoder->frame_queue_index++;
 
   schro_encoder_frame_queue_push (encoder, frame);
+}
+
+void
+schro_encoder_end_of_stream (SchroEncoder *encoder)
+{
+  encoder->end_of_stream = TRUE;
 }
 
 SchroBuffer *
@@ -924,11 +944,8 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
   double skew_x, skew_y;
   double sum_x, sum_y;
 
-#define DIVIDE_ROUND_UP(a,b) (((a) + (b) - 1)/(b))
-  params->x_num_mb =
-    DIVIDE_ROUND_UP(encoder->params.width, 4*params->xbsep_luma);
-  params->y_num_mb =
-    DIVIDE_ROUND_UP(encoder->params.height, 4*params->ybsep_luma);
+  SCHRO_ASSERT(params->x_num_mb != 0);
+  SCHRO_ASSERT(params->y_num_mb != 0);
 
   if (encoder->motion_vectors == NULL) {
     encoder->motion_vectors = malloc(sizeof(SchroMotionVector)*
@@ -991,12 +1008,29 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
       sum_y += y * y;
     }
   }
-  mag_x = mag_x/sum_x;
-  mag_y = mag_y/sum_y;
-  skew_x = skew_x/sum_x;
-  skew_y = skew_y/sum_y;
+  if (sum_x != 0) {
+    mag_x = mag_x/sum_x;
+    skew_x = skew_x/sum_x;
+  } else {
+    mag_x = 0;
+    skew_x = 0;
+  }
+  if (sum_y != 0) {
+    mag_y = mag_y/sum_y;
+    skew_y = skew_y/sum_y;
+  } else {
+    mag_y = 0;
+    skew_y = 0;
+  }
 
-  SCHRO_ERROR("pan %6.3f %6.3f mag %6.3f %6.3f skew %6.3f %6.3f",
+  encoder->pan_x = pan_x;
+  encoder->pan_y = pan_y;
+  encoder->mag_x = mag_x;
+  encoder->mag_y = mag_y;
+  encoder->skew_x = skew_x;
+  encoder->skew_y = skew_y;
+
+  SCHRO_DEBUG("pan %g %g mag %g %g skew %g %g",
       pan_x, pan_y, mag_x, mag_y, skew_x, skew_y);
 
 }
