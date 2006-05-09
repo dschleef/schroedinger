@@ -892,7 +892,7 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
         subband_zero_flag = 0;
       }
 
-      schro_arith_context_encode_uu (arith, context, context2, v);
+      schro_arith_context_encode_uint (arith, context, context, v);
       if (v) {
         schro_arith_context_encode_bit (arith, sign_context, sign);
       }

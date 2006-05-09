@@ -36,6 +36,7 @@ typedef struct _SchroArithContext SchroArithContext;
 struct _SchroArithContext {
   int count0;
   int count1;
+  int next;
 };
 
 struct _SchroArith {
@@ -79,6 +80,10 @@ void schro_arith_context_encode_uegol (SchroArith *arith, int context, int value
 void schro_arith_context_encode_segol (SchroArith *arith, int context, int value);
 void schro_arith_context_encode_ue2gol (SchroArith *arith, int context, int value);
 void schro_arith_context_encode_se2gol (SchroArith *arith, int context, int value);
+void schro_arith_context_encode_uint (SchroArith *arith, int cont_context,
+    int value_context, int value);
+void schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
+    int value_context, int sign_context, int value);
 
 int schro_arith_context_decode_bit (SchroArith *arith, int context);
 int schro_arith_context_decode_bits (SchroArith *arith, int context, int max);
@@ -89,6 +94,10 @@ int schro_arith_context_decode_uegol (SchroArith *arith, int context);
 int schro_arith_context_decode_segol (SchroArith *arith, int context);
 int schro_arith_context_decode_ue2gol (SchroArith *arith, int context);
 int schro_arith_context_decode_se2gol (SchroArith *arith, int context);
+int schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
+    int value_context);
+int schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
+    int value_context, int sign_context);
 
 #endif
 

@@ -165,6 +165,38 @@ maxbit (unsigned int x)
 }
 
 void
+schro_bits_encode_uint (SchroBits *bits, int value)
+{
+  int i;
+  int n_bits;
+
+  value++;
+  n_bits = maxbit(value);
+  for(i=0;i<n_bits - 1;i++){
+    schro_bits_encode_bit (bits, 0);
+    schro_bits_encode_bit (bits, (value>>(n_bits - 2 - i))&1);
+  }
+  schro_bits_encode_bit (bits, 1);
+}
+
+void
+schro_bits_encode_sint (SchroBits *bits, int value)
+{
+  int sign;
+
+  if (value < 0) {
+    sign = 0;
+    value = -value;
+  } else {
+    sign = 1;
+  }
+  schro_bits_encode_uint (bits, value);
+  if (value) {
+    schro_bits_encode_bit (bits, sign);
+  }
+}
+
+void
 schro_bits_encode_uegol (SchroBits *bits, int value)
 {
   int i;

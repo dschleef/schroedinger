@@ -6,7 +6,7 @@
 
 #define BUFFER_SIZE 10000
 
-int debug=0;
+int debug=1;
 
 void
 decode(uint8_t *dest, uint8_t *src, int n_bytes)
@@ -17,6 +17,7 @@ decode(uint8_t *dest, uint8_t *src, int n_bytes)
   int i;
   int j;
   int value;
+  int bit;
 
   a = schro_arith_new();
 
@@ -29,10 +30,12 @@ decode(uint8_t *dest, uint8_t *src, int n_bytes)
 
   for(i=0;i<n_bytes;i++){
     value = 0;
-    //printf("%d:\n", i);
+    printf("%d:\n", i);
     for(j=0;j<8;j++){
-      value |= schro_arith_context_decode_bit (a, 0) << (7-j);
-      //printf("[%04x %04x] %04x\n", a->low, a->high, a->code);
+      printf("[%04x %04x] %04x -> ", a->low, a->high, a->code);
+      bit = schro_arith_context_decode_bit (a, 0);
+      printf("%d\n", bit);
+      value |= bit << (7-j);
     }
     dest[i] = value;
   }
@@ -49,6 +52,7 @@ encode (uint8_t *dest, uint8_t *src, int n_bytes)
   SchroBits *bits;
   int i;
   int j;
+  int bit;
 
   a = schro_arith_new();
 
@@ -64,10 +68,11 @@ encode (uint8_t *dest, uint8_t *src, int n_bytes)
   schro_arith_context_init (a, 0, 1, 1);
 
   for(i=0;i<n_bytes;i++){
-    //printf("%d:\n", i);
+    printf("%d:\n", i);
     for(j=0;j<8;j++){
-      schro_arith_context_encode_bit (a, 0, (src[i]>>(7-j))&1);
-      //printf("[%04x %04x]\n", a->low, a->high);
+      bit = (src[i]>>(7-j))&1;
+      printf("[%04x %04x] %d\n", a->low, a->high, bit);
+      schro_arith_context_encode_bit (a, 0, bit);
     }
   }
   schro_arith_flush (a);
@@ -120,7 +125,7 @@ main (int argc, char *argv[])
         printf("Checking: encoding/decoding constant array (size=%d value=%d)\n",
             n, value);
       }
-      if (!check(10)){
+      if (!check(n)){
         printf("Failed: encoding/decoding constant array (size=%d value=%d)\n",
             n, value);
         fail = 1;
@@ -140,7 +145,7 @@ main (int argc, char *argv[])
         printf("Checking: encoding/decoding masked random array (size=%d mask=%02x)\n",
             n, mask);
       }
-      if (!check(10)){
+      if (!check(n)){
         printf("Failed: encoding/decoding masked random array (size=%d mask=%02x)\n",
             n, mask);
         fail = 1;
@@ -160,7 +165,7 @@ main (int argc, char *argv[])
         printf("Checking: encoding/decoding masked random array (size=%d mask=%02x)\n",
             n, mask);
       }
-      if (!check(10)){
+      if (!check(n)){
         printf("Failed: encoding/decoding masked random array (size=%d mask=%02x)\n",
             n, mask);
         fail = 1;

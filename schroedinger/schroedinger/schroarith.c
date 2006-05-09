@@ -119,11 +119,36 @@ schro_arith_init_contexts (SchroArith *arith)
     schro_arith_context_init (arith, i, 1, 1);
   }
 }
+
+static const int next_list[] = {
+  -1,
+  -1,
+  -1,
+  -1,
+  -1,
+  -1,
+  SCHRO_CTX_Z_BIN2,
+  SCHRO_CTX_Z_BIN2,
+  SCHRO_CTX_Z_BIN3,
+  SCHRO_CTX_Z_BIN4,
+  SCHRO_CTX_Z_BIN5,
+  SCHRO_CTX_Z_BIN5,
+  SCHRO_CTX_NZ_BIN2,
+  SCHRO_CTX_NZ_BIN2,
+  SCHRO_CTX_NZ_BIN2,
+  SCHRO_CTX_NZ_BIN3,
+  SCHRO_CTX_NZ_BIN4,
+  SCHRO_CTX_NZ_BIN5,
+  SCHRO_CTX_NZ_BIN5,
+  -1
+};
+  
 void
 schro_arith_context_init (SchroArith *arith, int i, int count0, int count1)
 {
   arith->contexts[i].count0 = count0;
   arith->contexts[i].count1 = count1;
+  arith->contexts[i].next = next_list[i];
 }
 
 
@@ -411,6 +436,43 @@ schro_arith_context_encode_se2gol (SchroArith *arith, int context, int value)
   }
 }
 
+void
+schro_arith_context_encode_uint (SchroArith *arith, int cont_context,
+    int value_context, int value)
+{
+  int i;
+  int n_bits;
+
+  value++;
+  n_bits = maxbit(value);
+  for(i=0;i<n_bits - 1;i++){
+    schro_arith_context_binary_encode (arith, cont_context, 0);
+    schro_arith_context_binary_encode (arith, value_context,
+        (value>>(n_bits - 2 - i))&1);
+    cont_context = arith->contexts[cont_context].next;
+  }
+  schro_arith_context_binary_encode (arith, cont_context, 1);
+}
+
+void
+schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
+    int value_context, int sign_context, int value)
+{
+  int sign;
+
+  if (value < 0) {
+    sign = 0;
+    value = -value;
+  } else {
+    sign = 1;
+  }
+  schro_arith_context_encode_uint (arith, cont_context, value_context, value);
+  if (value) {
+    schro_arith_context_binary_encode (arith, sign_context, sign);
+  }
+}
+
+
 
 
 int schro_arith_context_decode_bit (SchroArith *arith, int context)
@@ -521,6 +583,38 @@ int schro_arith_context_decode_se2gol (SchroArith *arith, int context)
   value = schro_arith_context_decode_ue2gol (arith, context);
   if (value) {
     if (!schro_arith_context_binary_decode (arith, context)) {
+      value = -value;
+    }
+  }
+
+  return value;
+}
+
+int schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
+    int value_context)
+{
+  int bits;
+  int count=0;
+
+  bits = 0;
+  while(!schro_arith_context_binary_decode (arith, cont_context)) {
+    bits <<= 1;
+    bits |= schro_arith_context_binary_decode (arith, value_context);
+    cont_context = arith->contexts[cont_context].next;
+    count++;
+  }
+  return (1<<count) - 1 + bits;
+}
+
+int
+schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
+    int value_context, int sign_context)
+{
+  int value;
+
+  value = schro_arith_context_decode_uint (arith, cont_context, value_context);
+  if (value) {
+    if (!schro_arith_context_binary_decode (arith, sign_context)) {
       value = -value;
     }
   }

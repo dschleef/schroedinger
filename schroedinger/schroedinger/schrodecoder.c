@@ -991,7 +991,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
           sign_context = SCHRO_CTX_SIGN_ZERO;
         }
 
-        v = schro_arith_context_decode_uu (arith, context, context2);
+        v = schro_arith_context_decode_uint (arith, context, context);
         if (v) {
           sign = schro_arith_context_decode_bit (arith, sign_context);
         }
