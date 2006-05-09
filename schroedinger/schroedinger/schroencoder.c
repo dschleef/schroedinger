@@ -783,10 +783,9 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   for(j=0;j<height;j++){
     for(i=0;i<width;i++){
       int v = data[j*stride + i];
-      int sign;
       int parent_zero;
-      int context;
-      int context2;
+      int cont_context;
+      int value_context;
       int nhood_sum;
       int previous_value;
       int sign_context;
@@ -853,55 +852,60 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
 
       if (parent_zero) {
         if (nhood_sum == 0) {
-          context = SCHRO_CTX_Z_BIN1z;
+          cont_context = SCHRO_CTX_Z_BIN1_0;
         } else {
-          context = SCHRO_CTX_Z_BIN1nz;
+          cont_context = SCHRO_CTX_Z_BIN1_1;
         }
-        context2 = SCHRO_CTX_Z_BIN2;
+        value_context = SCHRO_CTX_Z_VALUE;
+        if (previous_value > 0) {
+          sign_context = SCHRO_CTX_Z_SIGN_0;
+        } else if (previous_value < 0) {
+          sign_context = SCHRO_CTX_Z_SIGN_1;
+        } else {
+          sign_context = SCHRO_CTX_Z_SIGN_2;
+        }
       } else {
         if (nhood_sum == 0) {
-          context = SCHRO_CTX_NZ_BIN1z;
+          cont_context = SCHRO_CTX_NZ_BIN1_0;
         } else {
           if (nhood_sum <= ntop) {
-            context = SCHRO_CTX_NZ_BIN1a;
+            cont_context = SCHRO_CTX_NZ_BIN1_1;
           } else {
-            context = SCHRO_CTX_NZ_BIN1b;
+            cont_context = SCHRO_CTX_NZ_BIN1_2;
           }
         }
-        context2 = SCHRO_CTX_NZ_BIN2;
+        value_context = SCHRO_CTX_NZ_VALUE;
+        if (previous_value > 0) {
+          sign_context = SCHRO_CTX_NZ_SIGN_0;
+        } else if (previous_value < 0) {
+          sign_context = SCHRO_CTX_NZ_SIGN_1;
+        } else {
+          sign_context = SCHRO_CTX_NZ_SIGN_2;
+        }
       }
 
-      if (previous_value > 0) {
-        sign_context = SCHRO_CTX_SIGN_POS;
-      } else if (previous_value < 0) {
-        sign_context = SCHRO_CTX_SIGN_NEG;
-      } else {
-        sign_context = SCHRO_CTX_SIGN_ZERO;
-      }
-      
       v -= pred_value;
       if (v < 0) {
-        sign = 0;
+        v = -v;
+        v += quant_factor/2 - quant_offset;
+        v /= quant_factor;
         v = -v;
       } else {
-        sign = 1;
+        v += quant_factor/2 - quant_offset;
+        v /= quant_factor;
       }
-      v += quant_factor/2 - quant_offset;
-      v /= quant_factor;
       if (v != 0) {
         subband_zero_flag = 0;
       }
 
-      schro_arith_context_encode_uint (arith, context, context, v);
-      if (v) {
-        schro_arith_context_encode_bit (arith, sign_context, sign);
-      }
+      schro_arith_context_encode_sint (arith, cont_context, value_context,
+          sign_context, v);
 
       if (v) {
-        if (sign) {
+        if (v>0) {
           data[j*stride + i] = pred_value + quant_offset + quant_factor * v;
         } else {
-          data[j*stride + i] = pred_value - (quant_offset + quant_factor * v);
+          data[j*stride + i] = pred_value - quant_offset + quant_factor * v;
         }
       } else {
         data[j*stride + i] = pred_value;

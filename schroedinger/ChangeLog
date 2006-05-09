@@ -1,3 +1,11 @@
+2006-05-09  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  Convert bins over to newer spec.
+
 2006-05-08  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroarith.c:

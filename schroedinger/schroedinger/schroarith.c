@@ -11,7 +11,7 @@
 
 
 
-static unsigned int division_factor[1024];
+static unsigned int division_factor[256];
 
 static void schro_arith_input_bit (SchroArith *arith);
 static void schro_arith_output_bit (SchroArith *arith);
@@ -23,7 +23,7 @@ _schro_arith_division_factor_init (void)
 
   if (!inited) {
     int i;
-    for(i=0;i<1024;i++){
+    for(i=0;i<256;i++){
       division_factor[i] = (1U<<31)/(i+1);
     }
   }
@@ -121,18 +121,20 @@ schro_arith_init_contexts (SchroArith *arith)
 }
 
 static const int next_list[] = {
-  -1,
-  -1,
-  -1,
-  -1,
-  -1,
-  -1,
+  0,
+  SCHRO_CTX_QUANTISER_CONT,
+  0,
+  0,
   SCHRO_CTX_Z_BIN2,
   SCHRO_CTX_Z_BIN2,
   SCHRO_CTX_Z_BIN3,
   SCHRO_CTX_Z_BIN4,
   SCHRO_CTX_Z_BIN5,
   SCHRO_CTX_Z_BIN5,
+  0,
+  0,
+  0,
+  0,
   SCHRO_CTX_NZ_BIN2,
   SCHRO_CTX_NZ_BIN2,
   SCHRO_CTX_NZ_BIN2,
@@ -140,7 +142,11 @@ static const int next_list[] = {
   SCHRO_CTX_NZ_BIN4,
   SCHRO_CTX_NZ_BIN5,
   SCHRO_CTX_NZ_BIN5,
-  -1
+  0,
+  0,
+  0,
+  0,
+  0,
 };
   
 void
@@ -181,7 +187,7 @@ schro_arith_context_update (SchroArith *arith, int i, int value)
   } else {
     arith->contexts[i].count0++;
   }
-  if (arith->contexts[i].count0 + arith->contexts[i].count1 >= 1024) {
+  if (arith->contexts[i].count0 + arith->contexts[i].count1 > 255) {
     schro_arith_context_halve_counts (arith, i);
   }
 }
