@@ -56,6 +56,8 @@ void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
 
 void schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
     SchroFrame *src2, SchroMotionVector *motion_vectors, SchroParams *params);
+void schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
+    SchroParams *params, int x, int y, int *pred);
 
 
 

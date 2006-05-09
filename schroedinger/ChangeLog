@@ -1,5 +1,14 @@
 2006-05-08  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schromotion.c:
+	  Fix bug in ntop calculation.  Add DC prediction in motion
+	  prediction.  Clean up code.
+
+2006-05-08  David Schleef  <ds@schleef.org>
+
 	* testsuite/Makefile.am:
 	* testsuite/encode.c:
 	  Add a valgrindable test for encoding.

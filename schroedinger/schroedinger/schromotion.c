@@ -134,3 +134,54 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
   }
 }
 
+void
+schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
+    SchroParams *params, int x, int y, int *pred)
+{
+  SchroMotionVector *mv = &motion_vectors[y*(4*params->x_num_mb) + x];
+  int i;
+
+  for(i=0;i<3;i++){
+    int sum = 0;
+    int n = 0;
+
+    if (x>0) {
+      mv = &motion_vectors[y*(4*params->x_num_mb) + (x-1)];
+      if (mv->pred_mode == 0) {
+        sum += mv->dc[i];
+        n++;
+      }
+    }
+    if (y>0) {
+      mv = &motion_vectors[(y-1)*(4*params->x_num_mb) + x];
+      if (mv->pred_mode == 0) {
+        sum += mv->dc[i];
+        n++;
+      }
+    }
+    if (x>0 && y>0) {
+      mv = &motion_vectors[(y-1)*(4*params->x_num_mb) + (x-1)];
+      if (mv->pred_mode == 0) {
+        sum += mv->dc[i];
+        n++;
+      }
+    }
+    switch(n) {
+      case 0:
+        pred[i] = 128;
+        break;
+      case 1:
+        pred[i] = sum;
+        break;
+      case 2:
+        pred[i] = (sum+1)/2;
+        break;
+      case 3:
+        pred[i] = (sum+1)/3;
+        break;
+      default:
+        SCHRO_ASSERT(0);
+    }
+  }
+}
+

@@ -12,7 +12,7 @@
 static void schro_decoder_decode_macroblock(SchroDecoder *decoder, int i,
     int j);
 static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
-    SchroMotionVector *mv);
+    SchroMotionVector *motion_vectors, int x, int y);
 #if 0
 static void schro_decoder_predict (SchroDecoder *decoder);
 #endif
@@ -127,7 +127,7 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
   schro_decoder_decode_frame_header(decoder);
 
   if (decoder->code == SCHRO_PARSE_CODE_INTRA_REF) {
-    SCHRO_ERROR("intra ref");
+    SCHRO_DEBUG("intra ref");
     schro_decoder_decode_transform_parameters (decoder);
 
     if (decoder->frame == NULL) {
@@ -151,7 +151,7 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
 
     schro_frame_convert (decoder->reference_frames[0], decoder->frame);
   } else if (decoder->code == SCHRO_PARSE_CODE_INTER_NON_REF) {
-    SCHRO_ERROR("inter non-ref");
+    SCHRO_DEBUG("inter non-ref");
     schro_decoder_decode_frame_prediction (decoder);
 
     /* FIXME */
@@ -473,7 +473,7 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
       schro_params_set_block_params (params, index);
     }
   }
-  SCHRO_ERROR("blen_luma %d %d bsep_luma %d %d",
+  SCHRO_DEBUG("blen_luma %d %d bsep_luma %d %d",
       params->xblen_luma, params->yblen_luma,
       params->xbsep_luma, params->ybsep_luma);
 
@@ -482,7 +482,7 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
   if (bit) {
     params->mv_precision = schro_bits_decode_uegol (decoder->bits);
   }
-  SCHRO_ERROR("mv_precision %d", params->mv_precision);
+  SCHRO_DEBUG("mv_precision %d", params->mv_precision);
 
   /* global motion flag */
   params->global_motion = schro_bits_decode_bit (decoder->bits);
@@ -537,58 +537,12 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
 
   /* block data length */
   length = schro_bits_decode_uegol (decoder->bits);
-  SCHRO_ERROR("length %d", length);
+  SCHRO_DEBUG("length %d", length);
 
   schro_bits_sync (decoder->bits);
 
   schro_params_calculate_mc_sizes (params);
 }
-
-#if 0
-static void
-copy_block_4x4 (uint8_t *dest, int dstr, uint8_t *src, int sstr)
-{
-  int j;
-
-  for(j=0;j<4;j++){
-    *(uint32_t *)(dest + dstr*j) = *(uint32_t *)(src + sstr*j);
-  }
-}
-
-static void
-copy_block_8x8 (uint8_t *dest, int dstr, uint8_t *src, int sstr)
-{
-  int j;
-
-  for(j=0;j<8;j++){
-    *(uint64_t *)(dest + dstr*j) = *(uint64_t *)(src + sstr*j);
-  }
-}
-
-void
-copy_block (uint8_t *dest, int dstr, uint8_t *src, int sstr, int w, int h)
-{
-  int i,j;
-
-  for(j=0;j<h;j++){
-    for(i=0;i<w;i++) {
-      dest[dstr*j+i] = src[sstr*j+i];
-    }
-  }
-}
-
-void
-splat_block (uint8_t *dest, int dstr, int value, int w, int h)
-{
-  int i,j;
-
-  for(j=0;j<h;j++){
-    for(i=0;i<w;i++) {
-      dest[dstr*j+i] = value;
-    }
-  }
-}
-#endif
 
 void
 schro_decoder_decode_prediction_data (SchroDecoder *decoder)
@@ -604,90 +558,12 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
   schro_bits_sync (decoder->bits);
 }
 
-#if 0
-static void
-schro_decoder_predict (SchroDecoder *decoder)
-{
-  SchroParams *params = &decoder->params;
-  SchroFrame *frame = decoder->mc_tmp_frame;
-  SchroFrame *reference_frame = decoder->reference_frames[0];
-  int i, j;
-  int dx, dy;
-  int x, y;
-  uint8_t *data;
-  int stride;
-  uint8_t *ref_data;
-  int ref_stride;
-
-  for(j=0;j<4*params->y_num_mb;j++){
-    for(i=0;i<4*params->x_num_mb;i++){
-      SchroMotionVector *mv = &decoder->motion_vectors[j*4*params->x_num_mb + i];
-
-      x = i*params->xbsep_luma;
-      y = j*params->ybsep_luma;
-
-      if (mv->pred_mode == 0) {
-        data = frame->components[0].data;
-        stride = frame->components[0].stride;
-        splat_block (data + y * stride + x, stride, mv->dc[0], 8, 8);
-
-        data = frame->components[1].data;
-        stride = frame->components[1].stride;
-        splat_block (data + y/2 * stride + x/2, stride, mv->dc[1], 4, 4);
-
-        data = frame->components[2].data;
-        stride = frame->components[2].stride;
-        splat_block (data + y/2 * stride + x/2, stride, mv->dc[2], 4, 4);
-      } else {
-        dx = mv->x;
-        dy = mv->y;
-
-        /* FIXME This is only roughly correct */
-        SCHRO_ASSERT(x + dx >= 0);
-        //SCHRO_ASSERT(x + dx < params->mc_luma_width - params->xbsep_luma);
-        SCHRO_ASSERT(x + dx < params->mc_luma_width);
-        SCHRO_ASSERT(y + dy >= 0);
-        //SCHRO_ASSERT(y + dy < params->mc_luma_height - params->ybsep_luma);
-        SCHRO_ASSERT(y + dy < params->mc_luma_height);
-
-        data = frame->components[0].data;
-        stride = frame->components[0].stride;
-        ref_data = reference_frame->components[0].data;
-        ref_stride = reference_frame->components[0].stride;
-        copy_block_8x8 (data + y * stride + x, stride,
-            ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
-
-        x /= 2;
-        dx /= 2;
-        y /= 2;
-        dy /= 2;
-
-        data = frame->components[1].data;
-        stride = frame->components[1].stride;
-        ref_data = reference_frame->components[1].data;
-        ref_stride = reference_frame->components[1].stride;
-        copy_block_4x4 (data + y * stride + x, stride,
-            ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
-
-        data = frame->components[2].data;
-        stride = frame->components[2].stride;
-        ref_data = reference_frame->components[2].data;
-        ref_stride = reference_frame->components[2].stride;
-        copy_block_4x4 (data + y * stride + x, stride,
-            ref_data + (y+dy) * ref_stride + x + dx, ref_stride);
-      }
-    }
-  }
-}
-#endif
-
 static void
 schro_decoder_decode_macroblock(SchroDecoder *decoder, int i, int j)
 {
   SchroParams *params = &decoder->params;
   SchroMotionVector *mv = &decoder->motion_vectors[j*4*params->x_num_mb + i];
   int k,l;
-  int mask;
 
   //SCHRO_ERROR("global motion %d", params->global_motion);
   if (params->global_motion) {
@@ -709,38 +585,63 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, int i, int j)
   //SCHRO_ERROR("mb_using_global=%d mb_split=%d mb_common=%d",
   //    mv->mb_using_global, mv->mb_split, mv->mb_common);
 
-  mask = 3 >> mv->mb_split;
-  for (k=0;k<4;k++) {
-    for (l=0;l<4;l++) {
-      SchroMotionVector *bv =
-        &decoder->motion_vectors[(j+l)*4*params->x_num_mb + (i+k)];
+  switch (mv->mb_split) {
+    case 0:
+      schro_decoder_decode_prediction_unit (decoder,
+          decoder->motion_vectors, i, j);
+      mv[1] = mv[0];
+      mv[2] = mv[0];
+      mv[3] = mv[0];
+      memcpy(mv + params->x_num_blocks, mv, 4*sizeof(*mv));
+      memcpy(mv + 2*params->x_num_blocks, mv, 4*sizeof(*mv));
+      memcpy(mv + 3*params->x_num_blocks, mv, 4*sizeof(*mv));
+      break;
+    case 1:
+      schro_decoder_decode_prediction_unit (decoder,
+          decoder->motion_vectors, i, j);
+      mv[1] = mv[0];
+      schro_decoder_decode_prediction_unit (decoder,
+          decoder->motion_vectors, i + 2, j);
+      memcpy(mv + params->x_num_blocks, mv, 4*sizeof(*mv));
 
-      if ((k&mask) == 0 && (l&mask) == 0) {
-        //SCHRO_ERROR("decoding PU %d %d", j+l, i+k);
-
-        schro_decoder_decode_prediction_unit (decoder, bv);
-      } else {
-        SchroMotionVector *bv1;
-       
-        bv1 = &decoder->motion_vectors[(j+(l&(~mask)))*4*params->x_num_mb +
-          (i+(k&(~mask)))];
-
-        *bv = *bv1;
+      mv += 2*params->x_num_blocks;
+      schro_decoder_decode_prediction_unit (decoder,
+          decoder->motion_vectors, i, j + 2);
+      mv[1] = mv[0];
+      schro_decoder_decode_prediction_unit (decoder,
+          decoder->motion_vectors, i + 2, j + 2);
+      memcpy(mv + params->x_num_blocks, mv, 4*sizeof(*mv));
+      break;
+    case 2:
+      for (l=0;l<4;l++) {
+        for (k=0;k<4;k++) {
+          schro_decoder_decode_prediction_unit (decoder,
+              decoder->motion_vectors, i + k, j + l);
+        }
       }
-    }
+      break;
+    default:
+      SCHRO_ASSERT(0);
   }
 }
 
 static void
 schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
-    SchroMotionVector *mv)
+    SchroMotionVector *motion_vectors, int x, int y)
 {
+  SchroParams *params = &decoder->params;
+  SchroMotionVector *mv = &motion_vectors[y*4*params->x_num_mb + x];
+
   mv->pred_mode = schro_bits_decode_bits (decoder->bits, 2);
 
   if (mv->pred_mode == 0) {
-    mv->dc[0] = schro_bits_decode_uegol (decoder->bits);
-    mv->dc[1] = schro_bits_decode_uegol (decoder->bits);
-    mv->dc[2] = schro_bits_decode_uegol (decoder->bits);
+    int pred[3];
+
+    schro_motion_dc_prediction (motion_vectors, &decoder->params, x, y, pred);
+
+    mv->dc[0] = pred[0] + schro_bits_decode_segol (decoder->bits);
+    mv->dc[1] = pred[1] + schro_bits_decode_segol (decoder->bits);
+    mv->dc[2] = pred[2] + schro_bits_decode_segol (decoder->bits);
   } else {
     mv->x = schro_bits_decode_segol (decoder->bits);
     mv->y = schro_bits_decode_segol (decoder->bits);
@@ -918,9 +819,9 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
   int subband_zero_flag;
   int16_t *data;
   int16_t *parent_data = NULL;
-  int quant_index = 0;
-  int quant_factor = 0;
-  int quant_offset = 0;
+  int quant_index;
+  int quant_factor;
+  int quant_offset;
   int subband_length;
   int scale_factor;
   int ntop;
@@ -956,9 +857,6 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     }
   }
 
-  scale_factor = 1<<(params->transform_depth - quant_index);
-  ntop = (scale_factor>>1) * quant_factor;
-
   subband_zero_flag = schro_bits_decode_bit (decoder->bits);
   if (!subband_zero_flag) {
     int i,j;
@@ -976,6 +874,9 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     quant_factor = schro_table_quant[quant_index];
     quant_offset = schro_table_offset[quant_index];
     SCHRO_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
+
+    scale_factor = 1<<(params->transform_depth - subband->scale_factor_shift);
+    ntop = (scale_factor>>1) * quant_factor;
 
     subband_length = schro_bits_decode_uegol (decoder->bits);
     SCHRO_DEBUG("subband length %d", subband_length);

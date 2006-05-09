@@ -34,8 +34,6 @@ schro_encoder_new (void)
 {
   SchroEncoder *encoder;
   SchroParams *params;
-  int base_quant_index;
-  int i;
 
   encoder = malloc(sizeof(SchroEncoder));
   memset (encoder, 0, sizeof(SchroEncoder));
@@ -43,22 +41,23 @@ schro_encoder_new (void)
   encoder->tmpbuf = malloc(1024 * 2);
   encoder->tmpbuf2 = malloc(1024 * 2);
 
-  encoder->subband_buffer = schro_buffer_new_and_alloc (100000);
+  encoder->subband_buffer = schro_buffer_new_and_alloc (1000000);
 
   params = &encoder->params;
   params->is_intra = TRUE;
   params->chroma_h_scale = 2;
   params->chroma_v_scale = 2;
-  params->transform_depth = 4;
+  params->transform_depth = 6;
   params->xbsep_luma = 8;
   params->ybsep_luma = 8;
 
-  base_quant_index = 18;
-  encoder->encoder_params.quant_index_dc = 6;
-  for(i=0;i<params->transform_depth;i++){
-    encoder->encoder_params.quant_index[i] =
-      base_quant_index - 2 * (params->transform_depth - 1 - i);
-  }
+  encoder->encoder_params.quant_index_dc = 1;
+  encoder->encoder_params.quant_index[0] = 1;
+  encoder->encoder_params.quant_index[1] = 1;
+  encoder->encoder_params.quant_index[2] = 6;
+  encoder->encoder_params.quant_index[3] = 8;
+  encoder->encoder_params.quant_index[4] = 10;
+  encoder->encoder_params.quant_index[5] = 12;
 
   return encoder;
 }
@@ -199,13 +198,13 @@ schro_encoder_encode (SchroEncoder *encoder)
       encoder->picture->frame_number);
   if (encoder->encode_frame == NULL) return NULL;
 
-  SCHRO_ERROR("encoding picture frame_number=%d is_ref=%d n_refs=%d",
+  SCHRO_DEBUG("encoding picture frame_number=%d is_ref=%d n_refs=%d",
       encoder->picture->frame_number, encoder->picture->is_ref,
       encoder->picture->n_refs);
 
   schro_encoder_frame_queue_remove (encoder, encoder->picture->frame_number);
 
-  outbuffer = schro_buffer_new_and_alloc (0x10000);
+  outbuffer = schro_buffer_new_and_alloc (0x40000);
 
   encoder->bits = schro_bits_new ();
   schro_bits_encode_init (encoder->bits, outbuffer);
@@ -241,7 +240,7 @@ schro_encoder_encode (SchroEncoder *encoder)
 static void
 schro_encoder_create_picture_list (SchroEncoder *encoder)
 {
-  int type = 1;
+  int type = 0;
   int i;
 
   switch(type) {
@@ -447,17 +446,21 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
         schro_bits_encode_bit (encoder->bits, mb_common);
       }
 
-      for(k=0;k<4;k+=(4>>mb_split)) {
-        for(l=0;l<4;l+=(4>>mb_split)) {
+      for(l=0;l<4;l+=(4>>mb_split)) {
+        for(k=0;k<4;k+=(4>>mb_split)) {
           SchroMotionVector *mv =
             &encoder->motion_vectors[(j+l)*(4*params->x_num_mb) + i + k];
 
           schro_bits_encode_bits(encoder->bits, 2, mv->pred_mode);
           if (mv->pred_mode == 0) {
-            /* FIXME not defined in spec */
-            schro_bits_encode_uegol(encoder->bits, mv->dc[0]);
-            schro_bits_encode_uegol(encoder->bits, mv->dc[1]);
-            schro_bits_encode_uegol(encoder->bits, mv->dc[2]);
+            int pred[3];
+
+            schro_motion_dc_prediction (encoder->motion_vectors,
+                params, i+k, j+l, pred);
+
+            schro_bits_encode_segol(encoder->bits, mv->dc[0] - pred[0]);
+            schro_bits_encode_segol(encoder->bits, mv->dc[1] - pred[1]);
+            schro_bits_encode_segol(encoder->bits, mv->dc[2] - pred[2]);
           } else {
             schro_bits_encode_segol(encoder->bits, mv->x);
             schro_bits_encode_segol(encoder->bits, mv->y);
@@ -767,7 +770,7 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   quant_factor = schro_table_quant[subband->quant_index];
   quant_offset = schro_table_offset[subband->quant_index];
 
-  scale_factor = 1<<(params->transform_depth - subband->quant_index);
+  scale_factor = 1<<(params->transform_depth - subband->scale_factor_shift);
   ntop = (scale_factor>>1) * quant_factor;
 
   bits = schro_bits_new ();
