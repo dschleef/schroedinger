@@ -408,6 +408,7 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
   SchroParams *params = &encoder->params;
   int i,j;
   int global_motion;
+  SchroArith *arith;
 
   /* block params flag */
   schro_bits_encode_bit (encoder->bits, FALSE);
@@ -424,6 +425,10 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
 
   schro_bits_sync (encoder->bits);
 
+  arith = schro_arith_new ();
+  schro_arith_encode_init (arith, encoder->bits);
+  schro_arith_init_contexts (arith);
+
   for(j=0;j<4*params->y_num_mb;j+=4){
     for(i=0;i<4*params->x_num_mb;i+=4){
       int k,l;
@@ -432,18 +437,20 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
       int mb_common = FALSE;
 
       if (global_motion) {
-        schro_bits_encode_bit (encoder->bits, mb_using_global);
+        schro_arith_context_encode_bit (arith, SCHRO_CTX_GLOBAL_BLOCK,
+            mb_using_global);
       } else {
         SCHRO_ASSERT(mb_using_global == FALSE);
       }
       if (!mb_using_global) {
         SCHRO_ASSERT(mb_split < 3);
-        schro_bits_encode_bits (encoder->bits, 2, mb_split);
+        //schro_bits_encode_bits (encoder->bits, 2, mb_split);
       } else {
         SCHRO_ASSERT(mb_split == 2);
       }
       if (mb_split != 0) {
-        schro_bits_encode_bit (encoder->bits, mb_common);
+        schro_arith_context_encode_bit (arith, SCHRO_CTX_COMMON,
+            mb_common);
       }
 
       for(l=0;l<4;l+=(4>>mb_split)) {
@@ -451,25 +458,47 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
           SchroMotionVector *mv =
             &encoder->motion_vectors[(j+l)*(4*params->x_num_mb) + i + k];
 
-          schro_bits_encode_bits(encoder->bits, 2, mv->pred_mode);
+          schro_arith_context_encode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF1,
+              mv->pred_mode & 1);
+          schro_arith_context_encode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF2,
+              mv->pred_mode >> 1);
           if (mv->pred_mode == 0) {
             int pred[3];
 
             schro_motion_dc_prediction (encoder->motion_vectors,
                 params, i+k, j+l, pred);
 
-            schro_bits_encode_segol(encoder->bits, mv->dc[0] - pred[0]);
-            schro_bits_encode_segol(encoder->bits, mv->dc[1] - pred[1]);
-            schro_bits_encode_segol(encoder->bits, mv->dc[2] - pred[2]);
+            schro_arith_context_encode_sint (arith,
+                SCHRO_CTX_LUMA_DC_CONT_BIN1, SCHRO_CTX_LUMA_DC_VALUE,
+                SCHRO_CTX_LUMA_DC_SIGN,
+                mv->dc[0] - pred[0]);
+            schro_arith_context_encode_sint (arith,
+                SCHRO_CTX_CHROMA1_DC_CONT_BIN1, SCHRO_CTX_CHROMA1_DC_VALUE,
+                SCHRO_CTX_CHROMA1_DC_SIGN,
+                mv->dc[1] - pred[1]);
+            schro_arith_context_encode_sint (arith,
+                SCHRO_CTX_CHROMA2_DC_CONT_BIN1, SCHRO_CTX_CHROMA2_DC_VALUE,
+                SCHRO_CTX_CHROMA2_DC_SIGN,
+                mv->dc[2] - pred[2]);
           } else {
-            schro_bits_encode_segol(encoder->bits, mv->x);
-            schro_bits_encode_segol(encoder->bits, mv->y);
+            schro_arith_context_encode_sint(arith,
+                SCHRO_CTX_MV_REF1_H_CONT_BIN1,
+                SCHRO_CTX_MV_REF1_H_VALUE,
+                SCHRO_CTX_MV_REF1_H_SIGN,
+                mv->x);
+            schro_arith_context_encode_sint(arith,
+                SCHRO_CTX_MV_REF1_V_CONT_BIN1,
+                SCHRO_CTX_MV_REF1_V_VALUE,
+                SCHRO_CTX_MV_REF1_V_SIGN,
+                mv->y);
           }
         }
       }
     }
   }
 
+  schro_arith_flush (arith);
+  schro_arith_free (arith);
   schro_bits_sync (encoder->bits);
 }
 

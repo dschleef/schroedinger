@@ -1,3 +1,16 @@
+2006-05-11  David Schleef  <ds@schleef.org>
+
+	* gst/gstschrodec.c:
+	* gst/gstschroenc.c:
+	  Major improvements
+	* misc/dvd-to-ogg:
+	  Fix somewhat
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  Add arithmetic encoding to motion encoding
+
 2006-05-09  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroarith.c:

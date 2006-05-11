@@ -266,7 +266,7 @@ gst_schro_enc_sink_event (GstPad *pad, GstEvent *event)
 
   switch (GST_EVENT_TYPE (event)) {
     case GST_EVENT_EOS:
-      /* flush */
+      /* FIXME: flush */
       ret = gst_pad_push_event (schro_enc->srcpad, event);
       break;
     default:

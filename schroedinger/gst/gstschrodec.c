@@ -58,6 +58,14 @@ struct _GstSchroDec
   SchroDecoder *decoder;
 
   int n_frames;
+  gint64 granulepos;
+
+  int bytes_per_picture;
+  int fps_numerator;
+  int fps_denominator;
+
+  GstSegment segment;
+  gboolean discont;
 };
 
 struct _GstSchroDecClass
@@ -83,6 +91,19 @@ static void gst_schro_dec_set_property (GObject * object, guint prop_id,
 static void gst_schro_dec_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec);
 
+static const GstQueryType *gst_schro_dec_get_query_types (GstPad *pad);
+static gboolean gst_schro_dec_src_convert (GstPad *pad,
+    GstFormat src_format, gint64 src_value,
+    GstFormat * dest_format, gint64 *dest_value);
+static gboolean gst_schro_dec_sink_convert (GstPad *pad,
+    GstFormat src_format, gint64 src_value,
+    GstFormat * dest_format, gint64 *dest_value);
+static gboolean gst_schro_dec_src_query (GstPad *pad, GstQuery *query);
+static gboolean gst_schro_dec_sink_query (GstPad *pad, GstQuery *query);
+static gboolean gst_schro_dec_src_event (GstPad *pad, GstEvent *event);
+static gboolean gst_schro_dec_sink_event (GstPad *pad, GstEvent *event);
+static GstStateChangeReturn gst_schro_dec_change_state (GstElement *element,
+    GstStateChange transition);
 static GstFlowReturn gst_schro_dec_chain (GstPad *pad, GstBuffer *buf);
 
 static GstStaticPadTemplate gst_schro_dec_sink_template =
@@ -132,7 +153,7 @@ gst_schro_dec_class_init (GstSchroDecClass *klass)
   gobject_class->get_property = gst_schro_dec_get_property;
   gobject_class->finalize = gst_schro_dec_finalize;
 
-  //element_class->change_state = gst_schro_dec_change_state;
+  element_class->change_state = gst_schro_dec_change_state;
 }
 
 static void
@@ -144,11 +165,22 @@ gst_schro_dec_init (GstSchroDec *schro_dec, GstSchroDecClass *klass)
 
   schro_dec->sinkpad = gst_pad_new_from_static_template (&gst_schro_dec_sink_template, "sink");
   gst_pad_set_chain_function (schro_dec->sinkpad, gst_schro_dec_chain);
-  //gst_pad_set_event_function (schro_dec->sinkpad, gst_schro_dec_sink_event);
+  gst_pad_set_query_function (schro_dec->sinkpad, gst_schro_dec_sink_query);
+  gst_pad_set_event_function (schro_dec->sinkpad, gst_schro_dec_sink_event);
   gst_element_add_pad (GST_ELEMENT(schro_dec), schro_dec->sinkpad);
 
   schro_dec->srcpad = gst_pad_new_from_static_template (&gst_schro_dec_src_template, "src");
+  gst_pad_set_query_type_function (schro_dec->srcpad, gst_schro_dec_get_query_types);
+  gst_pad_set_query_function (schro_dec->srcpad, gst_schro_dec_src_query);
+  gst_pad_set_event_function (schro_dec->srcpad, gst_schro_dec_src_event);
   gst_element_add_pad (GST_ELEMENT(schro_dec), schro_dec->srcpad);
+
+}
+
+static void
+gst_schro_dec_reset (GstSchroDec *dec)
+{
+  gst_segment_init (&dec->segment, GST_FORMAT_TIME);
 }
 
 static void
@@ -198,6 +230,392 @@ gst_schro_dec_get_property (GObject * object, guint prop_id, GValue * value,
   }
 }
 
+#define OGG_DIRAC_GRANULE_SHIFT 30
+#define OGG_DIRAC_GRANULE_LOW_MASK ((1<<OGG_DIRAC_GRANULE_SHIFT)-1)
+
+static gint64
+granulepos_to_frame (gint64 granulepos)
+{
+  if (granulepos == -1) return -1;
+
+  return (granulepos >> OGG_DIRAC_GRANULE_SHIFT) +
+    (granulepos & OGG_DIRAC_GRANULE_LOW_MASK);
+}
+
+static const GstQueryType *
+gst_schro_dec_get_query_types (GstPad *pad)
+{
+  static const GstQueryType query_types[] = {
+    GST_QUERY_POSITION,
+    GST_QUERY_DURATION,
+    GST_QUERY_CONVERT,
+    0
+  };
+
+  return query_types;
+}
+
+static gboolean
+gst_schro_dec_src_convert (GstPad *pad,
+    GstFormat src_format, gint64 src_value,
+    GstFormat * dest_format, gint64 *dest_value)
+{
+  gboolean res = TRUE;
+  GstSchroDec *dec;
+
+  if (src_format == *dest_format) {
+    *dest_value = src_value;
+    return TRUE;
+  }
+
+  dec = GST_SCHRO_DEC (gst_pad_get_parent (pad));
+
+  /* FIXME: check if we are in a decoding state */
+
+  switch (src_format) {
+    case GST_FORMAT_BYTES:
+      switch (*dest_format) {
+        case GST_FORMAT_DEFAULT:
+          *dest_value = gst_util_uint64_scale_int (src_value, 1,
+              dec->bytes_per_picture);
+          break;
+        case GST_FORMAT_TIME:
+          /* seems like a rather silly conversion, implement me if you like */
+        default:
+          res = FALSE;
+      }
+      break;
+    case GST_FORMAT_DEFAULT:
+      switch (*dest_format) {
+        case GST_FORMAT_TIME:
+          *dest_value = gst_util_uint64_scale (src_value,
+              GST_SECOND * dec->fps_denominator, dec->fps_numerator);
+          break;
+        case GST_FORMAT_BYTES:
+          *dest_value = gst_util_uint64_scale_int (src_value,
+              dec->bytes_per_picture, 1);
+          break;
+        default:
+          res = FALSE;
+      }
+      break;
+    default:
+      res = FALSE;
+      break;
+  }
+
+  gst_object_unref (dec);
+
+  return res;
+}
+
+static gboolean
+gst_schro_dec_sink_convert (GstPad *pad,
+    GstFormat src_format, gint64 src_value,
+    GstFormat * dest_format, gint64 *dest_value)
+{
+  gboolean res = TRUE;
+  GstSchroDec *dec;
+
+  if (src_format == *dest_format) {
+    *dest_value = src_value;
+    return TRUE;
+  }
+
+  dec = GST_SCHRO_DEC (gst_pad_get_parent (pad));
+
+  /* FIXME: check if we are in a decoding state */
+
+  switch (src_format) {
+    case GST_FORMAT_DEFAULT:
+      switch (*dest_format) {
+        case GST_FORMAT_TIME:
+          *dest_value = gst_util_uint64_scale (granulepos_to_frame (src_value),
+              dec->fps_numerator, dec->fps_denominator);
+          break;
+        default:
+          res = FALSE;
+      }
+      break;
+    case GST_FORMAT_TIME:
+      switch (*dest_format) {
+        case GST_FORMAT_DEFAULT:
+        {
+          *dest_value = gst_util_uint64_scale (src_value,
+              dec->fps_numerator, dec->fps_denominator);
+          break;
+        }
+        default:
+          res = FALSE;
+          break;
+      }
+      break;
+    default:
+      res = FALSE;
+      break;
+  }
+
+  gst_object_unref (dec);
+
+  return res;
+}
+
+static gboolean
+gst_schro_dec_src_query (GstPad *pad, GstQuery *query)
+{
+  GstSchroDec *dec;
+  gboolean res = FALSE;
+
+  dec = GST_SCHRO_DEC (gst_pad_get_parent(pad));
+
+  switch (GST_QUERY_TYPE (query)) {
+    case GST_QUERY_POSITION:
+    {
+      GstFormat format;
+      gint64 time;
+      gint64 value;
+
+      gst_query_parse_position (query, &format, NULL);
+
+      time = gst_util_uint64_scale (granulepos_to_frame (dec->granulepos),
+              dec->fps_numerator, dec->fps_denominator);
+      res = gst_schro_dec_src_convert (pad, GST_FORMAT_TIME, time,
+          &format, &value);
+      if (!res) goto error;
+
+      gst_query_set_position (query, format, value);
+      break;
+    }
+    case GST_QUERY_DURATION:
+      res = gst_pad_query (GST_PAD_PEER (dec->sinkpad), query);
+      if (!res) goto error;
+      break;
+    case GST_QUERY_CONVERT:
+    {
+      GstFormat src_fmt, dest_fmt;
+      gint64 src_val, dest_val;
+
+      gst_query_parse_convert (query, &src_fmt, &src_val, &dest_fmt, &dest_val);
+      res = gst_schro_dec_src_convert (pad, src_fmt, src_val, &dest_fmt,
+          &dest_val);
+      if (!res) goto error;
+      gst_query_set_convert (query, src_fmt, src_val, dest_fmt, dest_val);
+      break;
+    }
+    default:
+      res = gst_pad_query_default (pad, query);
+      break;
+  }
+done:
+  gst_object_unref (dec);
+
+  return res;
+error:
+  GST_DEBUG_OBJECT (dec, "query failed");
+  goto done;
+}
+
+static gboolean
+gst_schro_dec_sink_query (GstPad *pad, GstQuery *query)
+{
+  GstSchroDec *dec;
+  gboolean res = FALSE;
+
+  dec = GST_SCHRO_DEC (gst_pad_get_parent(pad));
+
+  switch (GST_QUERY_TYPE (query)) {
+    case GST_QUERY_CONVERT:
+    {
+      GstFormat src_fmt, dest_fmt;
+      gint64 src_val, dest_val;
+
+      gst_query_parse_convert (query, &src_fmt, &src_val, &dest_fmt, &dest_val);
+      res = gst_schro_dec_sink_convert (pad, src_fmt, src_val, &dest_fmt,
+          &dest_val);
+      if (!res) goto error;
+      gst_query_set_convert (query, src_fmt, src_val, dest_fmt, dest_val);
+      break;
+    }
+    default:
+      res = gst_pad_query_default (pad, query);
+      break;
+  }
+done:
+  gst_object_unref (dec);
+
+  return res;
+error:
+  GST_DEBUG_OBJECT (dec, "query failed");
+  goto done;
+}
+
+static gboolean
+gst_schro_dec_src_event (GstPad *pad, GstEvent *event)
+{
+  GstSchroDec *dec;
+  gboolean res = FALSE;
+
+  dec = GST_SCHRO_DEC (gst_pad_get_parent(pad));
+
+  switch (GST_EVENT_TYPE (event)) {
+    case GST_EVENT_SEEK:
+    {
+      GstFormat format, tformat;
+      gdouble rate;
+      GstEvent *real_seek;
+      GstSeekFlags flags;
+      GstSeekType cur_type, stop_type;
+      gint64 cur, stop;
+      gint64 tcur, tstop;
+
+      gst_event_parse_seek (event, &rate, &format, &flags, &cur_type,
+          &cur, &stop_type, &stop);
+      gst_event_unref (event);
+
+      tformat = GST_FORMAT_TIME;
+      res = gst_schro_dec_src_convert (pad, format, cur, &tformat, &tcur);
+      if (!res) goto convert_error;
+      res = gst_schro_dec_src_convert (pad, format, stop, &tformat, &tstop);
+      if (!res) goto convert_error;
+
+      real_seek = gst_event_new_seek (rate, GST_FORMAT_TIME,
+          flags, cur_type, tcur, stop_type, tstop);
+
+      res = gst_pad_push_event (dec->sinkpad, real_seek);
+
+      break;
+    }
+#if 0
+    case GST_EVENT_QOS:
+    {
+      gdouble proportion;
+      GstClockTimeDiff diff;
+      GstClockTime timestamp;
+
+      gst_event_parse_qos (event, &proportion, &diff, &timestamp);
+
+      GST_OBJECT_LOCK (dec);
+      dec->proportion = proportion;
+      dec->earliest_time = timestamp + diff;
+      GST_OBJECT_UNLOCK (dec);
+
+      GST_DEBUG_OBJECT (dec, "got QoS %" GST_TIME_FORMAT ", %" G_GINT64_FORMAT,
+          GST_TIME_ARGS(timestamp), diff);
+
+      res = gst_pad_push_event (dec->sinkpad, event);
+      break;
+    }
+#endif
+    default:
+      res = gst_pad_push_event (dec->sinkpad, event);
+      break;
+  }
+done:
+  gst_object_unref (dec);
+  return res;
+
+convert_error:
+  GST_DEBUG_OBJECT (dec, "could not convert format");
+  goto done;
+}
+
+static gboolean
+gst_schro_dec_sink_event (GstPad *pad, GstEvent *event)
+{
+  GstSchroDec *dec;
+  gboolean ret = FALSE;
+
+  dec = GST_SCHRO_DEC (gst_pad_get_parent(pad));
+
+  switch (GST_EVENT_TYPE (event)) {
+    case GST_EVENT_FLUSH_START:
+      ret = gst_pad_push_event (dec->srcpad, event);
+      break;
+    case GST_EVENT_FLUSH_STOP:
+      gst_schro_dec_reset (dec);
+      ret = gst_pad_push_event (dec->srcpad, event);
+      break;
+    case GST_EVENT_EOS:
+      ret = gst_pad_push_event (dec->srcpad, event);
+      break;
+    case GST_EVENT_NEWSEGMENT:
+    {
+      gboolean update;
+      GstFormat format;
+      gdouble rate;
+      gint64 start, stop, time;
+
+      gst_event_parse_new_segment (event, &update, &rate, &format, &start,
+          &stop, &time);
+
+      if (format != GST_FORMAT_TIME)
+        goto newseg_wrong_format;
+
+      if (rate <= 0.0)
+        goto newseg_wrong_rate;
+
+      gst_segment_set_newsegment (&dec->segment, update, rate, format,
+          start, stop, time);
+
+      ret = gst_pad_push_event (dec->srcpad, event);
+      break;
+    }
+    default:
+      ret = gst_pad_push_event (dec->srcpad, event);
+      break;
+  }
+done:
+  gst_object_unref (dec);
+  return ret;
+
+newseg_wrong_format:
+  GST_DEBUG_OBJECT (dec, "received non TIME newsegment");
+  gst_event_unref (event);
+  goto done;
+
+newseg_wrong_rate:
+  GST_DEBUG_OBJECT (dec, "negative rates not supported");
+  gst_event_unref (event);
+  goto done;
+}
+
+
+static GstStateChangeReturn
+gst_schro_dec_change_state (GstElement *element, GstStateChange transition)
+{
+  GstSchroDec *dec = GST_SCHRO_DEC (element);
+  GstStateChangeReturn ret;
+
+  switch (transition) {
+    case GST_STATE_CHANGE_NULL_TO_READY:
+      break;
+    case GST_STATE_CHANGE_READY_TO_PAUSED:
+      gst_schro_dec_reset (dec);
+      break;
+    case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
+      break;
+    default:
+      break;
+  }
+
+  ret = parent_class->change_state (element, transition);
+
+  switch (transition) {
+    case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
+      break;
+    case GST_STATE_CHANGE_PAUSED_TO_READY:
+      gst_schro_dec_reset (dec);
+      break;
+    case GST_STATE_CHANGE_READY_TO_NULL:
+      break;
+    default:
+      break;
+  }
+
+  return ret;
+}
+
+
 static void
 gst_schro_buffer_free (SchroBuffer *buffer, void *priv)
 {
@@ -222,6 +640,7 @@ gst_schro_frame_free (SchroFrame *frame, void *priv)
 {
   //gst_buffer_unref (GST_BUFFER (priv));
 }
+
 
 static SchroFrame *
 gst_schro_wrap_frame (GstSchroDec *schro_dec, GstBuffer *buffer)
@@ -276,6 +695,13 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
     GST_DEBUG("setting caps %" GST_PTR_FORMAT, caps);
 
     gst_pad_set_caps (schro_dec->srcpad, caps);
+
+    schro_dec->fps_numerator =
+      schro_dec->decoder->params.frame_rate_numerator;
+    schro_dec->fps_denominator =
+      schro_dec->decoder->params.frame_rate_denominator;
+    schro_dec->bytes_per_picture =
+      (schro_dec->decoder->params.width * schro_dec->decoder->params.height * 3) / 4;
 
     gst_caps_unref (caps);
     
