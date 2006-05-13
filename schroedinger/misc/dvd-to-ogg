@@ -3,13 +3,13 @@
 test -f /home/ds/output.ogg && rm /home/ds/output.ogg
 
 gst-launch-0.10 \
-  dvdreadsrc title="1" ! \
+  dvdreadsrc title="3" ! \
   decodebin name="dvd" dvd. ! \
   ffmpegcolorspace ! \
   schroenc ! \
   queue ! \
   oggmux name=mux ! \
-  gnomevfssink location=file:///home/ds/output.ogg dvd. ! \
+  gnomevfssink location=file:///home/cschalle/output.ogg dvd. ! \
   audioconvert ! \
   vorbisenc ! \
   queue ! \
