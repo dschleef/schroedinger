@@ -57,15 +57,15 @@ struct _GstSchroDec
 
   SchroDecoder *decoder;
 
+  /* state */
   int n_frames;
   gint64 granulepos;
+  GstSegment segment;
+  gboolean discont;
 
   int bytes_per_picture;
   int fps_numerator;
   int fps_denominator;
-
-  GstSegment segment;
-  gboolean discont;
 };
 
 struct _GstSchroDecClass
@@ -180,6 +180,10 @@ gst_schro_dec_init (GstSchroDec *schro_dec, GstSchroDecClass *klass)
 static void
 gst_schro_dec_reset (GstSchroDec *dec)
 {
+  dec->granulepos = 0;
+  dec->discont = TRUE;
+  dec->n_frames = 0;
+
   gst_segment_init (&dec->segment, GST_FORMAT_TIME);
 }
 
@@ -379,6 +383,8 @@ gst_schro_dec_src_query (GstPad *pad, GstQuery *query)
 
       time = gst_util_uint64_scale (granulepos_to_frame (dec->granulepos),
               dec->fps_numerator, dec->fps_denominator);
+      time -= dec->segment.start;
+      time += dec->segment.time;
       res = gst_schro_dec_src_convert (pad, GST_FORMAT_TIME, time,
           &format, &value);
       if (!res) goto error;
@@ -554,6 +560,7 @@ gst_schro_dec_sink_event (GstPad *pad, GstEvent *event)
       if (rate <= 0.0)
         goto newseg_wrong_rate;
 
+      GST_DEBUG("newsegment %lld", start, time);
       gst_segment_set_newsegment (&dec->segment, update, rate, format,
           start, stop, time);
 
@@ -638,7 +645,7 @@ gst_schro_wrap_gst_buffer (GstBuffer *buffer)
 static void
 gst_schro_frame_free (SchroFrame *frame, void *priv)
 {
-  //gst_buffer_unref (GST_BUFFER (priv));
+  gst_buffer_unref (GST_BUFFER (priv));
 }
 
 
@@ -647,6 +654,7 @@ gst_schro_wrap_frame (GstSchroDec *schro_dec, GstBuffer *buffer)
 {
   SchroFrame *frame;
 
+  gst_buffer_ref (buffer);
   frame = schro_frame_new_I420 (GST_BUFFER_DATA (buffer),
       schro_dec->decoder->params.width, schro_dec->decoder->params.height);
   frame->free = gst_schro_frame_free;
@@ -672,6 +680,14 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
     return GST_FLOW_OK;
   }
 
+  if (G_UNLIKELY (GST_BUFFER_FLAG_IS_SET (buf, GST_BUFFER_FLAG_DISCONT))) {
+    GST_DEBUG_OBJECT (schro_dec, "received DISCONT buffer");
+    //dec->need_keyframe = TRUE;
+    //dec->last_timestamp = -1;
+    schro_dec->granulepos = -1;
+    schro_dec->discont = TRUE;
+  }
+  
   input_buffer = gst_schro_wrap_gst_buffer (buf);
 
   if (schro_decoder_is_rap (input_buffer)) {
@@ -709,7 +725,6 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
   } else {
     int size;
 
-    GST_DEBUG("not random access point");
     size = schro_dec->decoder->params.width * schro_dec->decoder->params.height;
     size += size/2;
     ret = gst_pad_alloc_buffer_and_set_caps (schro_dec->srcpad,
@@ -720,16 +735,16 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
       return ret;
     }
 
-    GST_BUFFER_TIMESTAMP(outbuf) = 
-      (schro_dec->n_frames *
-       schro_dec->decoder->params.frame_rate_denominator * GST_SECOND)/
-       schro_dec->decoder->params.frame_rate_numerator;
-    GST_BUFFER_DURATION(outbuf) = 
-      (schro_dec->decoder->params.frame_rate_denominator * GST_SECOND)/
-       schro_dec->decoder->params.frame_rate_numerator;
+    GST_BUFFER_TIMESTAMP(outbuf) = gst_util_uint64_scale_int (
+        schro_dec->n_frames,
+       schro_dec->decoder->params.frame_rate_denominator * GST_SECOND,
+       schro_dec->decoder->params.frame_rate_numerator);
+    GST_BUFFER_DURATION(outbuf) = gst_util_uint64_scale_int (GST_SECOND,
+       schro_dec->decoder->params.frame_rate_denominator,
+       schro_dec->decoder->params.frame_rate_numerator);
     //GST_BUFFER_OFFSET(outbuf) = schro_dec->n_frames;
 
-    GST_ERROR("timestamp %" G_GINT64_FORMAT, GST_BUFFER_TIMESTAMP(outbuf));
+    //GST_DEBUG("decoding timestamp %" G_GINT64_FORMAT, GST_BUFFER_TIMESTAMP(outbuf));
     schro_dec->n_frames++;
 
     frame = gst_schro_wrap_frame (schro_dec, outbuf);
@@ -738,6 +753,10 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
 
     schro_decoder_decode (schro_dec->decoder, input_buffer);
 
+    if (schro_dec->discont) {
+      GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_DISCONT);
+      schro_dec->discont = FALSE;
+    }
     ret = gst_pad_push (schro_dec->srcpad, outbuf);
     
     return ret;

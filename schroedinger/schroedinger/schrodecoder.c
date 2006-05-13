@@ -48,6 +48,9 @@ schro_decoder_free (SchroDecoder *decoder)
   if (decoder->output_frame) {
     schro_frame_free (decoder->output_frame);
   }
+  if (decoder->reference_frames[0]) {
+    schro_frame_free (decoder->reference_frames[0]);
+  }
 
   free (decoder->tmpbuf);
   free (decoder->tmpbuf2);

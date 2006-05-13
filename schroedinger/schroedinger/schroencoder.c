@@ -125,6 +125,14 @@ schro_encoder_set_size (SchroEncoder *encoder, int width, int height)
   encoder->need_rap = TRUE;
 }
 
+void
+schro_encoder_set_framerate (SchroEncoder *encoder, int numerator,
+    int denominator)
+{
+  encoder->params.frame_rate_numerator = numerator;
+  encoder->params.frame_rate_denominator = denominator;
+}
+
 #if 0
 static int
 round_up_pow2 (int x, int pow)
@@ -555,8 +563,8 @@ schro_encoder_encode_rap (SchroEncoder *encoder)
   /* frame rate */
   schro_bits_encode_bit (encoder->bits, TRUE);
   schro_bits_encode_uegol (encoder->bits, 0);
-  schro_bits_encode_uegol (encoder->bits, 24);
-  schro_bits_encode_uegol (encoder->bits, 1);
+  schro_bits_encode_uegol (encoder->bits, params->frame_rate_numerator);
+  schro_bits_encode_uegol (encoder->bits, params->frame_rate_denominator);
 
   /* pixel aspect ratio */
   schro_bits_encode_bit (encoder->bits, TRUE);

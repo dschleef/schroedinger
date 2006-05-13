@@ -72,6 +72,7 @@ struct _SchroEncoder {
 SchroEncoder * schro_encoder_new (void);
 void schro_encoder_free (SchroEncoder *encoder);
 void schro_encoder_set_size (SchroEncoder *encoder, int width, int height);
+void schro_encoder_set_framerate (SchroEncoder *encoder, int numerator, int denominator);
 void schro_encoder_set_wavelet_type (SchroEncoder *encoder, int wavelet_type);
 void schro_encoder_end_of_stream (SchroEncoder *encoder);
 void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);

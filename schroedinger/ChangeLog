@@ -2,6 +2,17 @@
 
 	* gst/gstschrodec.c:
 	* gst/gstschroenc.c:
+	  Plugin hacking.
+	* schroedinger/schrodecoder.c:
+	  Fix memleak.
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Add setting of framerate.
+
+2006-05-13  David Schleef  <ds@schleef.org>
+
+	* gst/gstschrodec.c:
+	* gst/gstschroenc.c:
 	  Ogg packet fixups, more (annoying) debugging.
 	* misc/oggtest:
 

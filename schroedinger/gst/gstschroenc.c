@@ -58,12 +58,16 @@ struct _GstSchroEnc
   int height;
   int fps_n, fps_d;
   int par_n, par_d;
+  guint64 duration;
 
   /* state */
   gboolean sent_header;
   int n_frames;
   int offset;
   int granulepos;
+
+  guint64 granulepos_offset;
+  guint64 timestamp_offset;
 
   SchroEncoder *encoder;
 };
@@ -191,8 +195,13 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
 
   /* FIXME init encoder */
 
+  schro_encoder_set_framerate (schro_enc->encoder, schro_enc->fps_n,
+      schro_enc->fps_d);
   schro_encoder_set_size (schro_enc->encoder, schro_enc->width,
       schro_enc->height);
+
+  schro_enc->duration = gst_util_uint64_scale_int (GST_SECOND,
+          schro_enc->fps_d, schro_enc->fps_n);
 
   return TRUE;
 }
@@ -327,8 +336,10 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
     GstCaps *caps;
     GstBuffer *outbuf1;
 
-    outbuf1 = gst_buffer_new_and_alloc (20);
+    outbuf1 = gst_buffer_new_and_alloc (16);
     memcpy(GST_BUFFER_DATA(outbuf1), "KW-DIRAC", 8);
+    GST_WRITE_UINT32_BE(GST_BUFFER_DATA(outbuf1) + 8, schro_enc->fps_n);
+    GST_WRITE_UINT32_BE(GST_BUFFER_DATA(outbuf1) + 12, schro_enc->fps_d);
     GST_BUFFER_FLAG_SET (outbuf1, GST_BUFFER_FLAG_IN_CAPS);
     GST_BUFFER_OFFSET (outbuf1) = 0;
     GST_BUFFER_OFFSET_END (outbuf1) = 0;
@@ -360,10 +371,16 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
     ret = gst_pad_push (schro_enc->srcpad, outbuf);
     if (ret!= GST_FLOW_OK) return ret;
 
+    schro_enc->timestamp_offset = GST_BUFFER_TIMESTAMP (buf);
+    schro_enc->granulepos_offset =
+      gst_util_uint64_scale (GST_BUFFER_TIMESTAMP(buf), schro_enc->fps_n,
+          GST_SECOND * schro_enc->fps_d);
+
     schro_enc->sent_header = 1;
     schro_enc->granulepos = 1;
   }
 
+  gst_buffer_ref (buf);
   frame = schro_frame_new_I420 (GST_BUFFER_DATA (buf),
       schro_enc->encoder->params.width, schro_enc->encoder->params.height);
 
@@ -385,11 +402,15 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
     }
 
     memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data, encoded_buffer->length);
+    GST_BUFFER_OFFSET_END (outbuf) = schro_enc->granulepos +
+      schro_enc->granulepos_offset;
     GST_BUFFER_OFFSET (outbuf) = 
-      (schro_enc->granulepos * GST_SECOND * schro_enc->fps_d)/schro_enc->fps_n;
-    GST_BUFFER_OFFSET_END (outbuf) = schro_enc->granulepos;
-    GST_BUFFER_TIMESTAMP (outbuf) = (schro_enc->n_frames * GST_SECOND * schro_enc->fps_d)/schro_enc->fps_n;
-    GST_BUFFER_DURATION (outbuf) = (GST_SECOND * schro_enc->fps_d)/schro_enc->fps_n;
+      gst_util_uint64_scale_int (GST_BUFFER_OFFSET_END (outbuf) * GST_SECOND,
+          schro_enc->fps_d, schro_enc->fps_n);
+    GST_BUFFER_TIMESTAMP (outbuf) = 
+      gst_util_uint64_scale_int (schro_enc->n_frames * GST_SECOND,
+          schro_enc->fps_d, schro_enc->fps_n) + schro_enc->timestamp_offset;
+    GST_BUFFER_DURATION (outbuf) = schro_enc->duration;
 
 GST_ERROR("offset %lld offset_end %lld timestamp %lld duration %lld",
     GST_BUFFER_OFFSET (outbuf),
