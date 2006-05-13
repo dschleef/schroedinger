@@ -1,3 +1,10 @@
+2006-05-13  David Schleef  <ds@schleef.org>
+
+	* gst/gstschrodec.c:
+	* gst/gstschroenc.c:
+	  Ogg packet fixups, more (annoying) debugging.
+	* misc/oggtest:
+
 2006-05-11  David Schleef  <ds@schleef.org>
 
 	* gst/gstschrodec.c:

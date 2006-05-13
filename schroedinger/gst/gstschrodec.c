@@ -699,7 +699,7 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
     schro_dec->fps_numerator =
       schro_dec->decoder->params.frame_rate_numerator;
     schro_dec->fps_denominator =
-      schro_dec->decoder->params.frame_rate_denominator;
+      schro_dec->decoder->params.frame_rate_denominator * 2;
     schro_dec->bytes_per_picture =
       (schro_dec->decoder->params.width * schro_dec->decoder->params.height * 3) / 4;
 
@@ -727,8 +727,9 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
     GST_BUFFER_DURATION(outbuf) = 
       (schro_dec->decoder->params.frame_rate_denominator * GST_SECOND)/
        schro_dec->decoder->params.frame_rate_numerator;
-    GST_BUFFER_OFFSET(outbuf) = schro_dec->n_frames;
+    //GST_BUFFER_OFFSET(outbuf) = schro_dec->n_frames;
 
+    GST_ERROR("timestamp %" G_GINT64_FORMAT, GST_BUFFER_TIMESTAMP(outbuf));
     schro_dec->n_frames++;
 
     frame = gst_schro_wrap_frame (schro_dec, outbuf);
