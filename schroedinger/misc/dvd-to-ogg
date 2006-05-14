@@ -1,15 +1,25 @@
 #!/bin/sh
 
-test -f /home/ds/output.ogg && rm /home/ds/output.ogg
+if [ "$(whoami)" = "ds" ] ; then
+  title=1
+else if [ "$(whoami)" = "cschalle" ] ; then
+  title=5
+else
+  title=5
+fi
 
 gst-launch-0.10 \
-  dvdreadsrc title="3" ! \
+  dvdreadsrc title="$title" ! \
   decodebin name="dvd" dvd. ! \
   ffmpegcolorspace ! \
+  videorate ! \
+    video/x-raw-yuv,framerate=12/1 ! \
+  videoscale ! \
+    video/x-raw-yuv,width=352,height=288,pixel-aspect-ratio=\(fraction\)16/15 ! \
   schroenc ! \
   queue ! \
   oggmux name=mux ! \
-  gnomevfssink location=file:///home/cschalle/output.ogg dvd. ! \
+  filesink location=output.ogg dvd. ! \
   audioconvert ! \
   vorbisenc ! \
   queue ! \
