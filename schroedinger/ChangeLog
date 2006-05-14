@@ -1,5 +1,11 @@
 2006-05-13  David Schleef  <ds@schleef.org>
 
+	* gst/gstschrodec.c:
+	* gst/gstschroenc.c:
+	  Seeking seems to mostly work now.
+
+2006-05-13  David Schleef  <ds@schleef.org>
+
 	* misc/dvd-to-ogg:
 	  Improve somewhat.
 

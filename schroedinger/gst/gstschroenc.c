@@ -412,11 +412,11 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
           schro_enc->fps_d, schro_enc->fps_n) + schro_enc->timestamp_offset;
     GST_BUFFER_DURATION (outbuf) = schro_enc->duration;
 
-GST_ERROR("offset %lld offset_end %lld timestamp %lld duration %lld",
-    GST_BUFFER_OFFSET (outbuf),
-    GST_BUFFER_OFFSET_END (outbuf),
-    GST_BUFFER_TIMESTAMP (outbuf),
-    GST_BUFFER_DURATION (outbuf));
+    GST_DEBUG("offset %lld offset_end %lld timestamp %lld duration %lld",
+        GST_BUFFER_OFFSET (outbuf),
+        GST_BUFFER_OFFSET_END (outbuf),
+        GST_BUFFER_TIMESTAMP (outbuf),
+        GST_BUFFER_DURATION (outbuf));
 
     /* mark all as key frames */
     //GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);

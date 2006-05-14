@@ -180,6 +180,7 @@ gst_schro_dec_init (GstSchroDec *schro_dec, GstSchroDecClass *klass)
 static void
 gst_schro_dec_reset (GstSchroDec *dec)
 {
+  GST_DEBUG("reset");
   dec->granulepos = 0;
   dec->discont = TRUE;
   dec->n_frames = 0;
@@ -335,7 +336,8 @@ gst_schro_dec_sink_convert (GstPad *pad,
       switch (*dest_format) {
         case GST_FORMAT_TIME:
           *dest_value = gst_util_uint64_scale (granulepos_to_frame (src_value),
-              dec->fps_numerator, dec->fps_denominator);
+              dec->fps_denominator * GST_SECOND, dec->fps_numerator);
+GST_DEBUG("convert default->time %lld %lld", src_value, *dest_value);
           break;
         default:
           res = FALSE;
@@ -346,7 +348,8 @@ gst_schro_dec_sink_convert (GstPad *pad,
         case GST_FORMAT_DEFAULT:
         {
           *dest_value = gst_util_uint64_scale (src_value,
-              dec->fps_numerator, dec->fps_denominator);
+              dec->fps_numerator, dec->fps_denominator * GST_SECOND);
+GST_DEBUG("convert time->default %lld %lld", src_value, *dest_value);
           break;
         }
         default:
@@ -383,8 +386,9 @@ gst_schro_dec_src_query (GstPad *pad, GstQuery *query)
 
       time = gst_util_uint64_scale (granulepos_to_frame (dec->granulepos),
               dec->fps_numerator, dec->fps_denominator);
-      time -= dec->segment.start;
+      //time -= dec->segment.start;
       time += dec->segment.time;
+      GST_DEBUG("query position %lld", time);
       res = gst_schro_dec_src_convert (pad, GST_FORMAT_TIME, time,
           &format, &value);
       if (!res) goto error;
@@ -560,7 +564,7 @@ gst_schro_dec_sink_event (GstPad *pad, GstEvent *event)
       if (rate <= 0.0)
         goto newseg_wrong_rate;
 
-      GST_DEBUG("newsegment %lld", start, time);
+      GST_DEBUG("newsegment %lld %lld", start, time);
       gst_segment_set_newsegment (&dec->segment, update, rate, format,
           start, stop, time);
 
@@ -737,8 +741,9 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
 
     GST_BUFFER_TIMESTAMP(outbuf) = gst_util_uint64_scale_int (
         schro_dec->n_frames,
-       schro_dec->decoder->params.frame_rate_denominator * GST_SECOND,
-       schro_dec->decoder->params.frame_rate_numerator);
+        schro_dec->decoder->params.frame_rate_denominator * GST_SECOND,
+        schro_dec->decoder->params.frame_rate_numerator) +
+      schro_dec->segment.start;
     GST_BUFFER_DURATION(outbuf) = gst_util_uint64_scale_int (GST_SECOND,
        schro_dec->decoder->params.frame_rate_denominator,
        schro_dec->decoder->params.frame_rate_numerator);
@@ -754,6 +759,7 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
     schro_decoder_decode (schro_dec->decoder, input_buffer);
 
     if (schro_dec->discont) {
+GST_DEBUG("discont timestamp %" G_GINT64_FORMAT, GST_BUFFER_TIMESTAMP(outbuf));
       GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_DISCONT);
       schro_dec->discont = FALSE;
     }
