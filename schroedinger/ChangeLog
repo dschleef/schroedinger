@@ -1,5 +1,10 @@
 2006-05-13  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.c:
+	  oops, compile fix
+
+2006-05-13  David Schleef  <ds@schleef.org>
+
 	* gst/gstschrodec.c:
 	* gst/gstschroenc.c:
 	  Plugin hacking.

@@ -563,8 +563,8 @@ schro_encoder_encode_rap (SchroEncoder *encoder)
   /* frame rate */
   schro_bits_encode_bit (encoder->bits, TRUE);
   schro_bits_encode_uegol (encoder->bits, 0);
-  schro_bits_encode_uegol (encoder->bits, params->frame_rate_numerator);
-  schro_bits_encode_uegol (encoder->bits, params->frame_rate_denominator);
+  schro_bits_encode_uegol (encoder->bits, encoder->params.frame_rate_numerator);
+  schro_bits_encode_uegol (encoder->bits, encoder->params.frame_rate_denominator);
 
   /* pixel aspect ratio */
   schro_bits_encode_bit (encoder->bits, TRUE);
