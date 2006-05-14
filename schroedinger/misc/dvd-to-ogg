@@ -2,7 +2,7 @@
 
 if [ "$(whoami)" = "ds" ] ; then
   title=1
-else if [ "$(whoami)" = "cschalle" ] ; then
+elif [ "$(whoami)" = "cschalle" ] ; then
   title=5
 else
   title=5

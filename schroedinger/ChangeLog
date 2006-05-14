@@ -1,5 +1,10 @@
 2006-05-13  David Schleef  <ds@schleef.org>
 
+	* misc/dvd-to-ogg:
+	  fix parse error
+
+2006-05-13  David Schleef  <ds@schleef.org>
+
 	* gst/gstschrodec.c:
 	* gst/gstschroenc.c:
 	  Seeking seems to mostly work now.
