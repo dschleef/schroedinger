@@ -1,0 +1,1 @@
+gst-launch-0.10 filesrc location=nwnintro640x480.mpg ! decodebin name="decode" decode. ! ffmpegcolorspace ! schroenc ! queue ! oggmux name=mux ! gnomevfssink location=file:///home/cschalle/nwn.ogg decode. ! audioconvert ! vorbisenc ! queue ! mux.
