@@ -292,6 +292,19 @@ gst_schro_frame_free (SchroFrame *frame, void *priv)
   gst_buffer_unref (GST_BUFFER(priv));
 }
 
+static SchroFrame *
+gst_schro_buffer_wrap (GstBuffer *buf, int width, int height)
+{
+  SchroFrame *frame;
+
+  gst_buffer_ref (buf);
+  frame = schro_frame_new_I420 (GST_BUFFER_DATA (buf), width, height);
+
+  schro_frame_set_free_callback (frame, gst_schro_frame_free, buf);
+
+  return frame;
+}
+
 static GstCaps *
 gst_schro_enc_set_header_on_caps (GstCaps * caps, GstBuffer *buf1, GstBuffer * buf2)
 {
@@ -380,11 +393,9 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
     schro_enc->granulepos = 1;
   }
 
-  gst_buffer_ref (buf);
-  frame = schro_frame_new_I420 (GST_BUFFER_DATA (buf),
+  frame = gst_schro_buffer_wrap (buf,
       schro_enc->encoder->params.width, schro_enc->encoder->params.height);
-
-  schro_frame_set_free_callback (frame, gst_schro_frame_free, buf);
+  gst_buffer_unref (buf);
 
   GST_DEBUG ("pushing frame");
   schro_encoder_push_frame (schro_enc->encoder, frame);
@@ -393,6 +404,7 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
     encoded_buffer = schro_encoder_encode (schro_enc->encoder);
     if (encoded_buffer == NULL) break;
 
+#if 0
     ret = gst_pad_alloc_buffer_and_set_caps (schro_enc->srcpad,
         GST_BUFFER_OFFSET_NONE, encoded_buffer->length,
         GST_PAD_CAPS (schro_enc->srcpad), &outbuf);
@@ -400,6 +412,10 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
       schro_buffer_unref (encoded_buffer);
       return ret;
     }
+#endif
+    outbuf = gst_buffer_new_and_alloc (encoded_buffer->length);
+
+    gst_buffer_set_caps (outbuf, GST_PAD_CAPS(schro_enc->srcpad));
 
     memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data, encoded_buffer->length);
     GST_BUFFER_OFFSET_END (outbuf) = schro_enc->granulepos +

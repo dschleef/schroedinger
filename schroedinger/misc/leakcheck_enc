@@ -1,0 +1,8 @@
+#!/bin/sh
+
+VALGRIND_OPTS=""
+valgrind.bin --tool=massif --depth=5 --alloc-fn=g_malloc --alloc-fn=g_malloc0 \
+  --alloc-fn=g_realloc \
+gst-launch-0.10 videotestsrc num-buffers=10 ! schroenc ! fakesink
+
+

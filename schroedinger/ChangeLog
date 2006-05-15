@@ -1,3 +1,12 @@
+2006-05-15  David Schleef  <ds@schleef.org>
+
+	* gst/gstschroenc.c:
+	  Fix massive memleak.
+	* misc/leakcheck_enc:
+	  leak checking
+	* schroedinger/schroencoder.c:
+	  lossless is dumb
+
 2006-05-13  David Schleef  <ds@schleef.org>
 
 	* misc/dvd-to-ogg:

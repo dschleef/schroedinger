@@ -51,9 +51,9 @@ schro_encoder_new (void)
   params->xbsep_luma = 8;
   params->ybsep_luma = 8;
 
-  encoder->encoder_params.quant_index_dc = 1;
-  encoder->encoder_params.quant_index[0] = 1;
-  encoder->encoder_params.quant_index[1] = 1;
+  encoder->encoder_params.quant_index_dc = 4;
+  encoder->encoder_params.quant_index[0] = 4;
+  encoder->encoder_params.quant_index[1] = 4;
   encoder->encoder_params.quant_index[2] = 6;
   encoder->encoder_params.quant_index[3] = 8;
   encoder->encoder_params.quant_index[4] = 10;
