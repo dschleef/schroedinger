@@ -1,5 +1,13 @@
 2006-05-15  David Schleef  <ds@schleef.org>
 
+	* gst/gstschroenc.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Um, yeah, don't disable the code that was just written.  And
+	  disable wavelet_type.
+
+2006-05-15  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	  Do some cleanup of non-visible areas after wavelet transform.
 

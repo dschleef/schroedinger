@@ -50,6 +50,7 @@ schro_encoder_new (void)
   params->transform_depth = 6;
   params->xbsep_luma = 8;
   params->ybsep_luma = 8;
+  params->wavelet_filter_index = 1;
 
   encoder->encoder_params.quant_index_dc = 4;
   encoder->encoder_params.quant_index[0] = 4;
@@ -89,14 +90,6 @@ schro_encoder_free (SchroEncoder *encoder)
   free (encoder->tmpbuf);
   free (encoder->tmpbuf2);
   free (encoder);
-}
-
-
-void
-schro_encoder_set_wavelet_type (SchroEncoder *encoder, int wavelet_type)
-{
-  encoder->params.wavelet_filter_index = wavelet_type;
-  SCHRO_DEBUG("set wavelet %d", wavelet_type);
 }
 
 void
@@ -744,7 +737,8 @@ schro_encoder_init_subbands (SchroEncoder *encoder)
 
 }
 
-#define ROUND_UP_SHIFT(x,y) (((x) + (1<<(y)) - 1)>>(y))
+//#define ROUND_UP_SHIFT(x,y) (((x) + (1<<(y)) - 1)>>(y))
+#define ROUND_UP_SHIFT(x,y) (((x))>>(y))
 void
 schro_encoder_clean_up_transform (SchroEncoder *encoder, int component,
     int index)
@@ -809,7 +803,7 @@ schro_encoder_encode_transform_data (SchroEncoder *encoder, int component)
   schro_encoder_init_subbands (encoder);
 
   for (i=0;i < 1 + 3*params->transform_depth; i++) {
-    //schro_encoder_clean_up_transform (encoder, component, i);
+    schro_encoder_clean_up_transform (encoder, component, i);
     schro_encoder_encode_subband (encoder, component, i);
   }
 }

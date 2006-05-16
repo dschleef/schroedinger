@@ -50,7 +50,6 @@ struct _GstSchroEnc
   GstPad *srcpad;
 
   /* parameters */
-  int wavelet_type;
   int level;
 
   /* video properties */
@@ -86,7 +85,6 @@ enum
 enum
 {
   ARG_0,
-  ARG_WAVELET_TYPE,
   ARG_LEVEL
 };
 
@@ -149,9 +147,11 @@ gst_schro_enc_class_init (GstSchroEncClass * klass)
   gobject_class->get_property = gst_schro_enc_get_property;
   gobject_class->finalize = gst_schro_enc_finalize;
 
+#if 0
   g_object_class_install_property (gobject_class, ARG_WAVELET_TYPE,
       g_param_spec_int ("wavelet-type", "wavelet type", "wavelet type",
         0, 4, 2, G_PARAM_READWRITE));
+#endif
   g_object_class_install_property (gobject_class, ARG_LEVEL,
       g_param_spec_int ("level", "level", "level",
         0, 100, 0, G_PARAM_READWRITE));
@@ -165,7 +165,6 @@ gst_schro_enc_init (GstSchroEnc *schro_enc, GstSchroEncClass *klass)
   GST_DEBUG ("gst_schro_enc_init");
 
   schro_enc->encoder = schro_encoder_new ();
-  schro_enc->wavelet_type = 2;
 
   schro_enc->sinkpad = gst_pad_new_from_static_template (&gst_schro_enc_sink_template, "sink");
   gst_pad_set_chain_function (schro_enc->sinkpad, gst_schro_enc_chain);
@@ -232,9 +231,6 @@ gst_schro_enc_set_property (GObject * object, guint prop_id,
 
   GST_DEBUG ("gst_schro_enc_set_property");
   switch (prop_id) {
-    case ARG_WAVELET_TYPE:
-      src->wavelet_type = g_value_get_int (value);
-      break;
     case ARG_LEVEL:
       src->level = g_value_get_int (value);
       break;
@@ -253,9 +249,6 @@ gst_schro_enc_get_property (GObject * object, guint prop_id, GValue * value,
   src = GST_SCHRO_ENC (object);
 
   switch (prop_id) {
-    case ARG_WAVELET_TYPE:
-      g_value_set_int (value, src->wavelet_type);
-      break;
     case ARG_LEVEL:
       g_value_set_int (value, src->level);
       break;
@@ -342,8 +335,6 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
   GstFlowReturn ret;
 
   schro_enc = GST_SCHRO_ENC (GST_PAD_PARENT (pad));
-
-  schro_encoder_set_wavelet_type (schro_enc->encoder, schro_enc->wavelet_type);
 
   if (schro_enc->sent_header == 0) {
     GstCaps *caps;
