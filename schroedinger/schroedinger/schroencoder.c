@@ -50,7 +50,7 @@ schro_encoder_new (void)
   params->transform_depth = 6;
   params->xbsep_luma = 8;
   params->ybsep_luma = 8;
-  params->wavelet_filter_index = 1;
+  params->wavelet_filter_index = SCHRO_WAVELET_5_3;
 
   encoder->encoder_params.quant_index_dc = 4;
   encoder->encoder_params.quant_index[0] = 4;
