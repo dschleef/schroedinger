@@ -337,6 +337,7 @@ schro_encoder_encode_intra (SchroEncoder *encoder)
 
   schro_frame_iwt_transform (encoder->tmp_frame0, &encoder->params,
       encoder->tmpbuf);
+
   schro_encoder_encode_transform_data (encoder, 0);
   schro_encoder_encode_transform_data (encoder, 1);
   schro_encoder_encode_transform_data (encoder, 2);
@@ -743,6 +744,62 @@ schro_encoder_init_subbands (SchroEncoder *encoder)
 
 }
 
+#define ROUND_UP_SHIFT(x,y) (((x) + (1<<(y)) - 1)>>(y))
+void
+schro_encoder_clean_up_transform (SchroEncoder *encoder, int component,
+    int index)
+{
+  SchroSubband *subband = encoder->subbands + index;
+  SchroParams *params = &encoder->params;
+  int stride;
+  int width;
+  int height;
+  int offset;
+  int w;
+  int h;
+  int shift;
+  int16_t *data;
+  int i,j;
+
+  shift = params->transform_depth - subband->scale_factor_shift;
+
+  if (component == 0) {
+    stride = subband->stride >> 1;
+    width = subband->w;
+    w = ROUND_UP_SHIFT(params->width, shift);
+    height = subband->h;
+    h = ROUND_UP_SHIFT(params->height, shift);
+    offset = subband->offset;
+  } else {
+    stride = subband->chroma_stride >> 1;
+    width = subband->chroma_w;
+    w = ROUND_UP_SHIFT(params->width/2, shift);
+    height = subband->chroma_h;
+    h = ROUND_UP_SHIFT(params->height/2, shift);
+    offset = subband->chroma_offset;
+  }
+
+  data = (int16_t *)encoder->tmp_frame0->components[component].data + offset;
+
+  SCHRO_DEBUG("subband index=%d %d x %d at offset %d with stride %d; clean area %d %d", index,
+      width, height, offset, stride, w, h);
+
+  /* FIXME this is dependent on the particular wavelet transform */
+  h+=1;
+  w+=1;
+
+  for(j=0;j<h;j++){
+    for(i=w;i<width;i++){
+      data[j*stride + i] = 0;
+    }
+  }
+  for(j=h;j<height;j++){
+    for(i=0;i<width;i++){
+      data[j*stride + i] = 0;
+    }
+  }
+}
+
 void
 schro_encoder_encode_transform_data (SchroEncoder *encoder, int component)
 {
@@ -752,6 +809,7 @@ schro_encoder_encode_transform_data (SchroEncoder *encoder, int component)
   schro_encoder_init_subbands (encoder);
 
   for (i=0;i < 1 + 3*params->transform_depth; i++) {
+    //schro_encoder_clean_up_transform (encoder, component, i);
     schro_encoder_encode_subband (encoder, component, i);
   }
 }

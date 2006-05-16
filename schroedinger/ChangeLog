@@ -1,6 +1,11 @@
 2006-05-15  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:
+	  Do some cleanup of non-visible areas after wavelet transform.
+
+2006-05-15  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
 	  Rip out quantization into a separate function.
 
 2006-05-15  David Schleef  <ds@schleef.org>
