@@ -756,6 +756,111 @@ schro_encoder_encode_transform_data (SchroEncoder *encoder, int component)
   }
 }
 
+static int
+dequantize (int q, int quant_factor, int quant_offset)
+{
+  if (q == 0) return 0;
+  if (q < 0) {
+    return q * quant_factor - quant_offset;
+  } else {
+    return q * quant_factor + quant_offset;
+  }
+}
+
+static int
+quantize (int value, int quant_factor, int quant_offset)
+{
+  if (value == 0) return 0;
+  if (value < 0) {
+    return - (-value - quant_offset + quant_factor/2)/quant_factor;
+  } else {
+    return (value - quant_offset + quant_factor/2)/quant_factor;
+  }
+}
+
+static int
+schro_encoder_quantize_subband (SchroEncoder *encoder, int component, int index,
+    int16_t *quant_data)
+{
+  SchroSubband *subband = encoder->subbands + index;
+  int pred_value;
+  int quant_factor;
+  int quant_offset;
+  int stride;
+  int width;
+  int height;
+  int offset;
+  int i,j;
+  int16_t *data;
+  int subband_zero_flag;
+
+  subband_zero_flag = 1;
+
+  quant_factor = schro_table_quant[subband->quant_index];
+  quant_offset = schro_table_offset[subband->quant_index];
+
+  if (component == 0) {
+    stride = subband->stride >> 1;
+    width = subband->w;
+    height = subband->h;
+    offset = subband->offset;
+  } else {
+    stride = subband->chroma_stride >> 1;
+    width = subband->chroma_w;
+    height = subband->chroma_h;
+    offset = subband->chroma_offset;
+  }
+
+  data = (int16_t *)encoder->tmp_frame0->components[component].data + offset;
+
+  if (index == 0) {
+    for(j=0;j<height;j++){
+      for(i=0;i<width;i++){
+        int q;
+
+        if (j>0) {
+          if (i>0) {
+            pred_value = (data[j*stride + i - 1] +
+                data[(j-1)*stride + i] + data[(j-1)*stride + i - 1])/3;
+          } else {
+            pred_value = data[(j-1)*stride + i];
+          }
+        } else {
+          if (i>0) {
+            pred_value = data[j*stride + i - 1];
+          } else {
+            pred_value = 0;
+          }
+        }
+
+        q = quantize(data[j*stride + i] - pred_value, quant_factor, quant_offset);
+        data[j*stride + i] = dequantize(q, quant_factor, quant_offset) +
+          pred_value;
+        quant_data[j*width + i] = q;
+        if (data[j*stride + i] != 0) {
+          subband_zero_flag = 0;
+        }
+
+      }
+    }
+  } else {
+    for(j=0;j<height;j++){
+      for(i=0;i<width;i++){
+        int q;
+
+        q = quantize(data[j*stride + i], quant_factor, quant_offset);
+        data[j*stride + i] = dequantize(q, quant_factor, quant_offset);
+        quant_data[j*width + i] = q;
+        if (data[j*stride + i] != 0) {
+          subband_zero_flag = 0;
+        }
+
+      }
+    }
+  }
+
+  return subband_zero_flag;
+}
 
 void
 schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
@@ -777,6 +882,7 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   int width;
   int height;
   int offset;
+  int16_t *quant_data;
 
   if (component == 0) {
     stride = subband->stride >> 1;
@@ -816,17 +922,24 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   schro_arith_encode_init (arith, bits);
   schro_arith_init_contexts (arith);
 
-  subband_zero_flag = 1;
+  quant_data = malloc (sizeof(int16_t) * height * width);
+  subband_zero_flag = schro_encoder_quantize_subband (encoder, component,
+      index, quant_data);
+  schro_bits_encode_bit (encoder->bits, subband_zero_flag);
+  if (subband_zero_flag) {
+    SCHRO_DEBUG ("subband is zero");
+    schro_bits_sync (encoder->bits);
+    return;
+  }
+
   for(j=0;j<height;j++){
     for(i=0;i<width;i++){
-      int v = data[j*stride + i];
       int parent_zero;
       int cont_context;
       int value_context;
       int nhood_sum;
       int previous_value;
       int sign_context;
-      int pred_value;
 
       nhood_sum = 0;
       if (j>0) {
@@ -840,26 +953,6 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
       }
 //nhood_sum = 0;
       
-      if (index == 0) {
-        if (j>0) {
-          if (i>0) {
-            pred_value = (data[j*stride + i - 1] +
-                data[(j-1)*stride + i] + data[(j-1)*stride + i - 1])/3;
-          } else {
-            pred_value = data[(j-1)*stride + i];
-          }
-        } else {
-          if (i>0) {
-            pred_value = data[j*stride + i - 1];
-          } else {
-            pred_value = 0;
-          }
-        }
-      } else {
-        pred_value = 0;
-      }
-//pred_value = 0;
-
       if (subband->has_parent) {
         if (parent_data[(j>>1)*(stride<<1) + (i>>1)]==0) {
           parent_zero = 1;
@@ -921,53 +1014,23 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
         }
       }
 
-      v -= pred_value;
-      if (v < 0) {
-        v = -v;
-        v += quant_factor/2 - quant_offset;
-        v /= quant_factor;
-        v = -v;
-      } else {
-        v += quant_factor/2 - quant_offset;
-        v /= quant_factor;
-      }
-      if (v != 0) {
-        subband_zero_flag = 0;
-      }
-
       schro_arith_context_encode_sint (arith, cont_context, value_context,
-          sign_context, v);
-
-      if (v) {
-        if (v>0) {
-          data[j*stride + i] = pred_value + quant_offset + quant_factor * v;
-        } else {
-          data[j*stride + i] = pred_value - quant_offset + quant_factor * v;
-        }
-      } else {
-        data[j*stride + i] = pred_value;
-      }
-      
+          sign_context, quant_data[j*width + i]);
     }
   }
+  free (quant_data);
 
   schro_arith_flush (arith);
   SCHRO_DEBUG("encoded %d bits", bits->offset);
   schro_arith_free (arith);
   schro_bits_sync (bits);
 
-  schro_bits_encode_bit (encoder->bits, subband_zero_flag);
-  if (!subband_zero_flag) {
-    schro_bits_encode_uegol (encoder->bits, subband->quant_index);
-    schro_bits_encode_uegol (encoder->bits, bits->offset/8);
+  schro_bits_encode_uegol (encoder->bits, subband->quant_index);
+  schro_bits_encode_uegol (encoder->bits, bits->offset/8);
 
-    schro_bits_sync (encoder->bits);
+  schro_bits_sync (encoder->bits);
 
-    schro_bits_append (encoder->bits, bits);
-  } else {
-    SCHRO_DEBUG ("subband is zero");
-    schro_bits_sync (encoder->bits);
-  }
+  schro_bits_append (encoder->bits, bits);
 
   schro_bits_free (bits);
 }
