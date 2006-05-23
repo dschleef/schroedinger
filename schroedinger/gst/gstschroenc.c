@@ -426,7 +426,7 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
         GST_BUFFER_DURATION (outbuf));
 
     /* mark all as key frames */
-    //GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
+    GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
 
     schro_enc->offset += encoded_buffer->length;
     schro_enc->granulepos++;

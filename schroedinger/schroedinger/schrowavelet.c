@@ -570,6 +570,48 @@ schro_lift_synth_135_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
   }
 }
 
+void
+oil_lift_haar_split (int16_t *i1, int16_t *i2, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    i2[i] -= i1[i];
+    i1[i] += i2[i]>>1;
+  }
+}
+
+void
+oil_lift_haar_synth (int16_t *i1, int16_t *i2, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    i1[i] -= i2[i]>>1;
+    i2[i] += i1[i];
+  }
+}
+
+void
+oil_synth_haar (int16_t *d, int16_t *s, int n)
+{
+  int i;
+
+  for(i=0;i<n;i++){
+    d[2*i] = s[2*i] - (s[2*i+1]>>1);
+    d[2*i + 1] = s[2*i+1] + d[2*i];
+  }
+}
+
+void
+oil_split_haar (int16_t *d, int16_t *s, int n)
+{
+  int i;
+
+  for(i=0;i<n;i++){
+    d[2*i+1] = s[2*i+1] - s[2*i];
+    d[2*i] = s[2*i] + (d[2*i + 1]>>1);
+  }
+}
+
 
 
 void
@@ -823,6 +865,16 @@ schro_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
       oil_deinterleave (i_n + stride * (height-1), tmp, n);
 
       break;
+    case SCHRO_WAVELET_HAAR:
+      for(i=0;i<height;i+=2){
+        oil_lift_haar_split (i_n + stride * i, i_n + stride * (i+1), width);
+        oil_split_haar (tmp, i_n + stride * i, n);
+        oil_deinterleave (i_n + stride * i, tmp, n);
+        oil_split_haar (tmp, i_n + stride * (i+1), n);
+        oil_deinterleave (i_n + stride * (i+1), tmp, n);
+      }
+
+      break;
 #if 0
     case SCHRO_WAVELET_135:
 #define REFLECT_0(value) ((value<0)?(-value):(value))
@@ -841,7 +893,7 @@ schro_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
       break;
 #endif
     default:
-      SCHRO_ERROR("invalid type");
+      SCHRO_ERROR("invalid type %d", type);
       break;
   }
 }
@@ -922,8 +974,18 @@ schro_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int widt
           i_n + stride * (i-2), i_n + stride * (i-2), width);
 
       break;
+    case SCHRO_WAVELET_HAAR:
+      for(i=0;i<height;i+=2){
+        oil_interleave (tmp, i_n + stride * (i + 0), n);
+        oil_synth_haar (i_n + stride * (i + 0), tmp, n);
+        oil_interleave (tmp, i_n + stride * (i + 1), n);
+        oil_synth_haar (i_n + stride * (i + 1), tmp, n);
+        oil_lift_haar_synth (i_n + stride * i, i_n + stride * (i+1), width);
+      }
+
+      break;
     default:
-      SCHRO_ERROR("invalid type");
+      SCHRO_ERROR("invalid type %d", type);
       break;
   }
 }

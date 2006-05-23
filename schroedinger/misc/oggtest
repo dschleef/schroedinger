@@ -1,14 +1,18 @@
 #!/bin/sh
 
+#frames=120
+frames=1200
+
 #for codec in theora schro
 for codec in schro
 do
 #G_DEBUG=fatal_warnings gdb -args \
 gst-launch-0.10 \
 	oggmux name=mux ! filesink location=vts-${codec}.ogg \
-	videotestsrc num-buffers=240 ! video/x-raw-yuv,framerate=24/1 \
+	videotestsrc num-buffers=$frames timestamp-offset=500000000 \
+	  ! timeoverlay ! video/x-raw-yuv,framerate=12/1 \
 	  ! ${codec}enc ! queue ! mux. \
-	audiotestsrc samplesperbuffer=44100 num-buffers=10 ! \
+	audiotestsrc samplesperbuffer=3675 num-buffers=$frames timestamp-offset=500000000 ! \
 	  audioconvert ! vorbisenc ! queue ! mux.
 oggzdump vts-${codec}.ogg |grep -A 1 ^0 | grep -v '^--' >dump.${codec}
 done

@@ -685,11 +685,11 @@ schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
   bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
     params->wavelet_filter_index = schro_bits_decode_uegol (decoder->bits);
-    if (params->wavelet_filter_index > 4) {
+    if (params->wavelet_filter_index > 6) {
       params->non_spec_input = TRUE;
     }
   } else {
-    params->wavelet_filter_index = SCHRO_WAVELET_DAUB97;
+    params->wavelet_filter_index = SCHRO_WAVELET_APPROX97;
   }
   SCHRO_DEBUG ("wavelet filter index %d", params->wavelet_filter_index);
 

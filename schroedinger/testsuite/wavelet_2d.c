@@ -103,16 +103,26 @@ vramp_test(int filter_index, int width, int height)
 
   schro_wavelet_transform_2d (filter_index,
         frame_data, width*2, width, height, tmp);
-  schro_wavelet_transform_2d (filter_index,
-        frame_data, width*4, width/2, height/2, tmp);
-
-#if 0
+#if 1
   for(i=0;i<height;i++){
     for(j=0;j<width;j++){
       printf("%d ", frame_data[i*width + j]);
     }
     printf("\n");
   }
+  printf("\n");
+#endif
+  schro_wavelet_transform_2d (filter_index,
+        frame_data, width*4, width/2, height/2, tmp);
+
+#if 1
+  for(i=0;i<height;i++){
+    for(j=0;j<width;j++){
+      printf("%d ", frame_data[i*width + j]);
+    }
+    printf("\n");
+  }
+  printf("\n");
 #endif
 
   schro_wavelet_inverse_transform_2d (filter_index,
@@ -127,6 +137,7 @@ vramp_test(int filter_index, int width, int height)
     }
     printf("\n");
   }
+  printf("\n");
 #endif
 
   free(frame_data);
@@ -150,7 +161,16 @@ main (int argc, char *argv[])
   vramp_test(SCHRO_WAVELET_5_3, 16, 16);
 #endif
 
+  basic_test(SCHRO_WAVELET_HAAR, 640,512,6);
+
+  constant_test(SCHRO_WAVELET_HAAR, 32,20);
+  constant_test(SCHRO_WAVELET_HAAR, 10,2);
+
+  vramp_test(SCHRO_WAVELET_HAAR, 16, 16);
+
+#if 0
   constant_test(SCHRO_WAVELET_DAUB97, 10, 10);
+#endif
 
   return 0;
 }

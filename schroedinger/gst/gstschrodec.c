@@ -337,7 +337,6 @@ gst_schro_dec_sink_convert (GstPad *pad,
         case GST_FORMAT_TIME:
           *dest_value = gst_util_uint64_scale (granulepos_to_frame (src_value),
               dec->fps_denominator * GST_SECOND, dec->fps_numerator);
-GST_DEBUG("convert default->time %lld %lld", src_value, *dest_value);
           break;
         default:
           res = FALSE;
@@ -349,7 +348,6 @@ GST_DEBUG("convert default->time %lld %lld", src_value, *dest_value);
         {
           *dest_value = gst_util_uint64_scale (src_value,
               dec->fps_numerator, dec->fps_denominator * GST_SECOND);
-GST_DEBUG("convert time->default %lld %lld", src_value, *dest_value);
           break;
         }
         default:
@@ -691,6 +689,12 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
     schro_dec->granulepos = -1;
     schro_dec->discont = TRUE;
   }
+
+#if 0
+  timestamp = gst_util_uint64_scale_int (GST_BUFFER_OFFSET_END(buf),
+        schro_dec->decoder->params.frame_rate_denominator * GST_SECOND,
+        schro_dec->decoder->params.frame_rate_numerator);
+#endif
   
   input_buffer = gst_schro_wrap_gst_buffer (buf);
 
@@ -719,7 +723,7 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
     schro_dec->fps_numerator =
       schro_dec->decoder->params.frame_rate_numerator;
     schro_dec->fps_denominator =
-      schro_dec->decoder->params.frame_rate_denominator * 2;
+      schro_dec->decoder->params.frame_rate_denominator;
     schro_dec->bytes_per_picture =
       (schro_dec->decoder->params.width * schro_dec->decoder->params.height * 3) / 4;
 

@@ -5,10 +5,13 @@
 #include <schroedinger/schro-stdint.h>
 
 enum {
-  SCHRO_WAVELET_DAUB97,
   SCHRO_WAVELET_APPROX97,
   SCHRO_WAVELET_5_3,
-  SCHRO_WAVELET_13_5
+  SCHRO_WAVELET_13_5,
+  SCHRO_WAVELET_HAAR,
+  SCHRO_WAVELET_reserved1,
+  SCHRO_WAVELET_reserved2,
+  SCHRO_WAVELET_DAUB97
 };
 
 void schro_deinterleave (int16_t *d_n, int16_t *s_n, int n);

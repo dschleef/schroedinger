@@ -50,7 +50,7 @@ schro_encoder_new (void)
   params->transform_depth = 6;
   params->xbsep_luma = 8;
   params->ybsep_luma = 8;
-  params->wavelet_filter_index = SCHRO_WAVELET_5_3;
+  params->wavelet_filter_index = SCHRO_WAVELET_HAAR;
 
   encoder->encoder_params.quant_index_dc = 4;
   encoder->encoder_params.quant_index[0] = 4;
@@ -619,7 +619,7 @@ schro_encoder_encode_transform_parameters (SchroEncoder *encoder)
   SchroParams *params = &encoder->params;
 
   /* transform */
-  if (params->wavelet_filter_index == SCHRO_WAVELET_DAUB97) {
+  if (params->wavelet_filter_index == SCHRO_WAVELET_APPROX97) {
     schro_bits_encode_bit (encoder->bits, 0);
   } else {
     schro_bits_encode_bit (encoder->bits, 1);
