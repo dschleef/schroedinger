@@ -67,6 +67,8 @@ struct _SchroEncoder {
   double pan_x, pan_y;
   double mag_x, mag_y;
   double skew_x, skew_y;
+
+  int base_quant;
 };
 
 SchroEncoder * schro_encoder_new (void);

@@ -50,7 +50,7 @@ schro_encoder_new (void)
   params->transform_depth = 6;
   params->xbsep_luma = 8;
   params->ybsep_luma = 8;
-  params->wavelet_filter_index = SCHRO_WAVELET_HAAR;
+  params->wavelet_filter_index = SCHRO_WAVELET_5_3;
 
   encoder->encoder_params.quant_index_dc = 4;
   encoder->encoder_params.quant_index[0] = 4;
@@ -179,6 +179,15 @@ schro_encoder_encode (SchroEncoder *encoder)
     return subbuffer;
   }
  
+#define CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
+  encoder->encoder_params.quant_index_dc = CLAMP(encoder->base_quant - 8, 0, 63);
+  encoder->encoder_params.quant_index[0] = CLAMP(encoder->base_quant - 8, 0, 63);
+  encoder->encoder_params.quant_index[1] = CLAMP(encoder->base_quant - 8, 0, 63);
+  encoder->encoder_params.quant_index[2] = CLAMP(encoder->base_quant - 6, 0, 63);
+  encoder->encoder_params.quant_index[3] = CLAMP(encoder->base_quant - 4, 0, 63);
+  encoder->encoder_params.quant_index[4] = CLAMP(encoder->base_quant - 2, 0, 63);
+  encoder->encoder_params.quant_index[5] = CLAMP(encoder->base_quant, 0, 63);
+
   if (encoder->picture_index >= encoder->n_pictures) {
     schro_encoder_create_picture_list (encoder);
   }
@@ -224,7 +233,15 @@ schro_encoder_encode (SchroEncoder *encoder)
 
   encoder->picture_index++;
 
-  SCHRO_ERROR("encoded %d bits", encoder->bits->offset);
+  SCHRO_ERROR("encoded %d bits (q=%d)", encoder->bits->offset, encoder->base_quant);
+
+  if (encoder->bits->offset > 100000) {
+    encoder->base_quant++;
+  }
+  if (encoder->bits->offset < 100000) {
+    encoder->base_quant--;
+  }
+  encoder->base_quant = CLAMP(encoder->base_quant, 0, 70);
 
   if (encoder->bits->offset > 0) {
     subbuffer = schro_buffer_new_subbuffer (outbuffer, 0,

@@ -1,7 +1,7 @@
 AC_PREREQ([2.58])
-AC_INIT(schroedinger,0.2.0.0)
+AC_INIT(schroedinger,0.2.0.1)
 
-AS_NANO(SCHRO_CVS=no,SCHRO_CVS=no)
+AS_NANO(SCHRO_CVS=no,SCHRO_CVS=yes)
 
 AC_CANONICAL_HOST([])
 AM_INIT_AUTOMAKE(1.6)

@@ -837,6 +837,48 @@ schro_decoder_decode_transform_data (SchroDecoder *decoder, int component)
   }
 }
 
+static int table[32][3] = {
+  { SCHRO_CTX_Z_BIN1_0, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_2 },
+  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_2 },
+  { 0, 0, 0 },
+  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_2 },
+
+  { SCHRO_CTX_Z_BIN1_0, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_0 },
+  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_0 },
+  { 0, 0, 0 },
+  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_0 },
+
+  { SCHRO_CTX_Z_BIN1_0, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_1 },
+  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_1 },
+  { 0, 0, 0 },
+  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_1 },
+
+  { 0, 0, 0 },
+  { 0, 0, 0 },
+  { 0, 0, 0 },
+  { 0, 0, 0 },
+
+  { SCHRO_CTX_NZ_BIN1_0, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_2 },
+  { SCHRO_CTX_NZ_BIN1_1, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_2 },
+  { 0, 0, 0 },
+  { SCHRO_CTX_NZ_BIN1_2, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_2 },
+
+  { SCHRO_CTX_NZ_BIN1_0, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_0 },
+  { SCHRO_CTX_NZ_BIN1_1, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_0 },
+  { 0, 0, 0 },
+  { SCHRO_CTX_NZ_BIN1_2, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_0 },
+
+  { SCHRO_CTX_NZ_BIN1_0, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_1 },
+  { SCHRO_CTX_NZ_BIN1_1, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_1 },
+  { 0, 0, 0 },
+  { SCHRO_CTX_NZ_BIN1_2, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_1 },
+
+  { 0, 0, 0 },
+  { 0, 0, 0 },
+  { 0, 0, 0 },
+  { 0, 0, 0 },
+};
+
 void
 schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
 {
@@ -929,30 +971,31 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
         int sign_context;
         int value_context;
         int pred_value;
+        int table_index;
+        int16_t *p = data + j*stride + i;
 
         nhood_sum = 0;
         if (j>0) {
-          nhood_sum += abs(data[(j-1)*stride + i]);
+          nhood_sum += abs(p[-stride]);
         }
         if (i>0) {
-          nhood_sum += abs(data[j*stride + i - 1]);
+          nhood_sum += abs(p[-1]);
         }
         if (i>0 && j>0) {
-          nhood_sum += abs(data[(j-1)*stride + i - 1]);
+          nhood_sum += abs(p[-stride-1]);
         }
 //nhood_sum = 0;
         
         if (index == 0) {
           if (j>0) {
             if (i>0) {
-              pred_value = (data[j*stride + i - 1] + 
-                  data[(j-1)*stride + i] + data[(j-1)*stride + i - 1])/3;
+              pred_value = (p[-1] + p[-stride] + p[-stride-1])/3;
             } else {
-              pred_value = data[(j-1)*stride + i];
+              pred_value = p[-stride];
             }
           } else {
             if (i>0) {
-              pred_value = data[j*stride + i - 1];
+              pred_value = p[-1];
             } else {
               pred_value = 0;
             }
@@ -980,15 +1023,22 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
         previous_value = 0;
         if (subband->horizontally_oriented) {
           if (i > 0) {
-            previous_value = data[j*stride + i - 1];
+            previous_value = p[-1];
           }
         } else if (subband->vertically_oriented) {
           if (j > 0) {
-            previous_value = data[(j-1)*stride + i];
+            previous_value = p[-stride];
           }
         }
 //previous_value = 0;
 
+        table_index = (parent_zero == 0)<<4;
+        table_index |= (previous_value < 0)<<3;
+        table_index |= (previous_value > 0)<<2;
+        table_index |= (nhood_sum > ntop)<<1;
+        table_index |= (nhood_sum > 0)<<0;
+
+#if 0
         if (parent_zero) {
           if (nhood_sum == 0) {
             cont_context = SCHRO_CTX_Z_BIN1_0;
@@ -1022,6 +1072,18 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
             sign_context = SCHRO_CTX_NZ_SIGN_2;
           }
         }
+        if (cont_context != table[table_index][0] ||
+            value_context != table[table_index][1] ||
+            sign_context != table[table_index][2]) { 
+          SCHRO_ERROR("c,v,s %d %d %d : %d %d %d [%d]",
+              cont_context, value_context, sign_context,
+              table[table_index][0], table[table_index][1],
+              table[table_index][2], table_index);
+        }
+#endif
+        cont_context = table[table_index][0];
+        value_context = table[table_index][1];
+        sign_context = table[table_index][2];
 
         v = schro_arith_context_decode_sint (arith, cont_context,
             value_context, sign_context);
