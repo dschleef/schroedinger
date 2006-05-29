@@ -1,4 +1,5 @@
 AC_PREREQ([2.58])
+dnl PLEASE remove the nano when doing a release
 AC_INIT(schroedinger,0.2.0.1)
 
 AS_NANO(SCHRO_CVS=no,SCHRO_CVS=yes)
@@ -81,7 +82,7 @@ GST_ARG_GCOV
 GST_ARG_EXAMPLES
 
 GST_ARG_WITH_PKG_CONFIG_PATH
-GST_ARG_WITH_PACKAGE_NAME([GStreamer Base Plug-ins])
+GST_ARG_WITH_PACKAGE_NAME([Schroedinger])
 GST_ARG_WITH_PACKAGE_ORIGIN
 
 dnl checks for gstreamer
