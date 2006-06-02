@@ -13,7 +13,6 @@ decode(uint8_t *dest, uint8_t *src, int n_bytes)
 {
   SchroArith *a;
   SchroBuffer *buffer;
-  SchroBits *bits;
   int i;
   int j;
   int value;
@@ -22,10 +21,7 @@ decode(uint8_t *dest, uint8_t *src, int n_bytes)
   a = schro_arith_new();
 
   buffer = schro_buffer_new_with_data (src, n_bytes);
-  bits = schro_bits_new ();
-  schro_bits_decode_init (bits, buffer);
-
-  schro_arith_decode_init (a, bits);
+  schro_arith_decode_init (a, buffer);
   schro_arith_context_init (a, 0, 1, 1);
 
   for(i=0;i<n_bytes;i++){
@@ -41,7 +37,6 @@ decode(uint8_t *dest, uint8_t *src, int n_bytes)
   }
 
   schro_arith_free(a);
-  schro_bits_free (bits);
 }
 
 void
@@ -49,7 +44,6 @@ encode (uint8_t *dest, uint8_t *src, int n_bytes)
 {
   SchroArith *a;
   SchroBuffer *buffer;
-  SchroBits *bits;
   int i;
   int j;
   int bit;
@@ -57,14 +51,7 @@ encode (uint8_t *dest, uint8_t *src, int n_bytes)
   a = schro_arith_new();
 
   buffer = schro_buffer_new_with_data (dest, BUFFER_SIZE);
-  bits = schro_bits_new ();
-  schro_bits_encode_init (bits, buffer);
-#if 0
-  a->data = dest;
-  a->size = BUFFER_SIZE;
-#endif
-
-  schro_arith_encode_init (a, bits);
+  schro_arith_encode_init (a, buffer);
   schro_arith_context_init (a, 0, 1, 1);
 
   for(i=0;i<n_bytes;i++){

@@ -47,7 +47,6 @@ main (int argc, char *argv[])
   int n_bytes;
   int j;
   SchroBuffer *input_buffer;
-  SchroBits *bits;
 
   schro_init();
 
@@ -59,14 +58,11 @@ main (int argc, char *argv[])
 
   a = schro_arith_new();
 
-  bits = schro_bits_new();
-  schro_bits_decode_init (bits, input_buffer);
-
-  schro_arith_decode_init (a, bits);
+  schro_arith_decode_init (a, input_buffer);
   schro_arith_context_init (a, 0, 1, 1);
 
   i = 0;
-  while (a->bits->offset < n_bytes) {
+  while (a->offset < n_bytes) {
     for(j=0;j<8;j++){
       output_buffer[i] |= schro_arith_context_decode_bit (a, 0) << (7-j);
     }

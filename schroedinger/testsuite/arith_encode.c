@@ -48,7 +48,6 @@ main (int argc, char *argv[])
   int n_bytes;
   int j;
   SchroBuffer *output_buffer;
-  SchroBits *bits;
 
   schro_init();
 
@@ -59,10 +58,7 @@ main (int argc, char *argv[])
   a = schro_arith_new();
 
   output_buffer = schro_buffer_new_and_alloc (BUFFER_SIZE);
-  bits = schro_bits_new ();
-  schro_bits_encode_init (bits, output_buffer);
-
-  schro_arith_encode_init (a, bits);
+  schro_arith_encode_init (a, output_buffer);
   schro_arith_context_init (a, 0, 1, 1);
 
   for(i=0;i<n_bytes;i++){
@@ -73,7 +69,7 @@ main (int argc, char *argv[])
   schro_arith_flush (a);
 
   file = fopen("test_file_arith.out","w");
-  n_bytes = fwrite (output_buffer, 1, a->bits->offset, file);
+  n_bytes = fwrite (output_buffer, 1, a->offset, file);
   fclose(file);
 
   return 0;

@@ -1,5 +1,11 @@
 2006-06-01  David Schleef  <ds@schleef.org>
 
+	* testsuite/arith.c: And some compile fixes.
+	* testsuite/arith_decode.c:
+	* testsuite/arith_encode.c:
+
+2006-06-01  David Schleef  <ds@schleef.org>
+
 	* misc/dvd-to-ogg: rescaling is for wimps.  Full-size, baby.
 	* schroedinger/schroarith.c: Stop using the (artificial) extra
 	  layer of schro_bits_*()
