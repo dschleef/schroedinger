@@ -67,24 +67,20 @@ schro_bits_dumpbits (SchroBits *bits)
     int bit = schro_bits_decode_bit (&mybits);
     s[i] = bit ? '1' : '0';
   }
-  s[101] = 0;
+  s[100] = 0;
 
   SCHRO_DEBUG ("dump bits %s", s);
 }
 
 void
-schro_bits_append (SchroBits *bits, SchroBits *bits2)
+schro_bits_append (SchroBits *bits, uint8_t *data, int len)
 {
   if (bits->offset & 7) {
     SCHRO_ERROR ("appending to unsyncronized bits");
   }
-  if (bits2->offset & 7) {
-    SCHRO_ERROR ("appending unsyncronized bits");
-  }
 
-  oil_memcpy (bits->buffer->data + (bits->offset>>3), bits2->buffer->data,
-      (bits2->offset>>3));
-  bits->offset += bits2->offset;
+  oil_memcpy (bits->buffer->data + (bits->offset>>3), data, len);
+  bits->offset += len*8;
 }
 
 

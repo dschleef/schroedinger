@@ -10,7 +10,6 @@
 #include <schroedinger/schroarith.h>
 
 
-
 static unsigned int division_factor[256];
 
 static void schro_arith_input_bit (SchroArith *arith);
@@ -49,42 +48,60 @@ schro_arith_free (SchroArith *arith)
 }
 
 void
-schro_arith_decode_init (SchroArith *arith, SchroBits *bits)
+schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
 {
-  int i;
-
   arith->low = 0;
   arith->high = 0xffff;
   arith->code = 0;
 
-  arith->bits = bits;
+  arith->buffer = buffer;
 
-  for(i=0;i<16;i++){
-    schro_arith_input_bit(arith);
-  }
+  arith->code = arith->buffer->data[0] << 8;
+  arith->code |= arith->buffer->data[1];
+  arith->nextcode = arith->buffer->data[2];
+  arith->nextbits = 8;
+  arith->offset=3;
 }
 
 void
-schro_arith_encode_init (SchroArith *arith, SchroBits *bits)
+schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer)
 {
   arith->low = 0;
   arith->high = 0xffff;
   arith->code = 0;
 
-  arith->bits = bits;
+  arith->buffer = buffer;
+  arith->offset = 0;
+  arith->nextbits = 0;
+  arith->nextcode = 0;
 }
 
 static void
 schro_arith_input_bit (SchroArith *arith)
 {
   arith->code <<= 1;
-  arith->code += schro_bits_decode_bit(arith->bits);
+  arith->code |= (arith->nextcode >> 7);
+  arith->nextcode <<= 1;
+  arith->nextbits--;
+  if (arith->nextbits == 0) {
+    arith->nextbits = 8;
+    arith->nextcode = arith->buffer->data[arith->offset];
+    arith->offset++;
+  }
 }
 
 static void
 schro_arith_push_bit (SchroArith *arith, int value)
 {
-  schro_bits_encode_bit (arith->bits, value);
+  arith->nextcode <<= 1;
+  arith->nextcode |= value;
+  arith->nextbits++;
+  if (arith->nextbits == 8) {
+    arith->buffer->data[arith->offset] = arith->nextcode;
+    arith->nextbits = 0;
+    arith->nextcode = 0;
+    arith->offset++;
+  }
 }
 
 static void
@@ -107,8 +124,18 @@ void
 schro_arith_flush (SchroArith *arith)
 {
   schro_arith_push_bit (arith, 1);
-  schro_bits_sync (arith->bits);
-  arith->bits->offset += 16;
+  while(arith->nextbits < 8) {
+    arith->nextcode <<= 1;
+    arith->nextbits++;
+  }
+  arith->buffer->data[arith->offset] = arith->nextcode;
+  arith->nextbits = 0;
+  arith->nextcode = 0;
+  arith->offset++;
+  arith->buffer->data[arith->offset] = arith->nextcode;
+  arith->offset++;
+  arith->buffer->data[arith->offset] = arith->nextcode;
+  arith->offset++;
 }
 
 void
@@ -241,7 +268,6 @@ schro_arith_context_update (SchroArith *arith, int i, int value)
 
 
 
-
 static int
 schro_arith_context_binary_decode (SchroArith *arith, int i)
 {
@@ -255,19 +281,34 @@ schro_arith_context_binary_decode (SchroArith *arith, int i)
   range = arith->high - arith->low + 1;
   weight = arith->contexts[i].count0 + arith->contexts[i].count1;
   scaled_count0 = ((unsigned int)arith->contexts[i].count0 * division_factor[weight - 1]) >> 21;
+#ifdef READABLE
   if (count < range * scaled_count0) {
     value = 0;
   } else {
     value = 1;
   }
+#else
+  value = (count >= range * scaled_count0);
+#endif
 
   schro_arith_context_update (arith, i, value);
   
+#ifdef READABLE
   if (value == 0) {
     arith->high = arith->low + ((range * scaled_count0)>>10) - 1;
   } else {
     arith->low = arith->low + ((range * scaled_count0)>>10);
   }
+#else
+  {
+    int newval = arith->low + ((range * scaled_count0)>>10);
+    if (value == 0) {
+      arith->high = newval - 1;
+    } else {
+      arith->low = newval;
+    }
+  }
+#endif
 
   do {
     if ((arith->high & (1<<15)) == (arith->low & (1<<15))) {
@@ -528,12 +569,14 @@ schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
 
 
 
-int schro_arith_context_decode_bit (SchroArith *arith, int context)
+int
+schro_arith_context_decode_bit (SchroArith *arith, int context)
 {
   return schro_arith_context_binary_decode (arith, context);
 }
 
-int schro_arith_context_decode_bits (SchroArith *arith, int context, int n)
+int
+schro_arith_context_decode_bits (SchroArith *arith, int context, int n)
 {
   int value = 0;
   int i;
@@ -545,7 +588,8 @@ int schro_arith_context_decode_bits (SchroArith *arith, int context, int n)
   return value;
 }
 
-int schro_arith_context_decode_uu (SchroArith *arith, int context, int context2)
+int
+schro_arith_context_decode_uu (SchroArith *arith, int context, int context2)
 {
   int value;
 
@@ -560,7 +604,8 @@ int schro_arith_context_decode_uu (SchroArith *arith, int context, int context2)
   return value;
 }
 
-int schro_arith_context_decode_su (SchroArith *arith, int context)
+int
+schro_arith_context_decode_su (SchroArith *arith, int context)
 {
   int value = 0;
 
@@ -578,7 +623,8 @@ int schro_arith_context_decode_su (SchroArith *arith, int context)
   return value;
 }
 
-int schro_arith_context_decode_ut (SchroArith *arith, int context, int max)
+int
+schro_arith_context_decode_ut (SchroArith *arith, int context, int max)
 {
   int value;
 
@@ -590,7 +636,8 @@ int schro_arith_context_decode_ut (SchroArith *arith, int context, int max)
   return value;
 }
 
-int schro_arith_context_decode_uegol (SchroArith *arith, int context)
+int
+schro_arith_context_decode_uegol (SchroArith *arith, int context)
 {
   int count;
   int value;
@@ -604,7 +651,8 @@ int schro_arith_context_decode_uegol (SchroArith *arith, int context)
   return value;
 }
 
-int schro_arith_context_decode_segol (SchroArith *arith, int context)
+int
+schro_arith_context_decode_segol (SchroArith *arith, int context)
 {
   int value;
 
@@ -618,7 +666,8 @@ int schro_arith_context_decode_segol (SchroArith *arith, int context)
   return value;
 }
 
-int schro_arith_context_decode_ue2gol (SchroArith *arith, int context)
+int
+schro_arith_context_decode_ue2gol (SchroArith *arith, int context)
 {
   int count;
   int value;
@@ -629,7 +678,8 @@ int schro_arith_context_decode_ue2gol (SchroArith *arith, int context)
   return value;
 }
 
-int schro_arith_context_decode_se2gol (SchroArith *arith, int context)
+int
+schro_arith_context_decode_se2gol (SchroArith *arith, int context)
 {
   int value;
 
@@ -643,7 +693,8 @@ int schro_arith_context_decode_se2gol (SchroArith *arith, int context)
   return value;
 }
 
-int schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
+int
+schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
     int value_context)
 {
   int bits;

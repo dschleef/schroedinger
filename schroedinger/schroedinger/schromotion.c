@@ -185,3 +185,58 @@ schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
   }
 }
 
+void
+schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
+    SchroParams *params, int x, int y, int *pred_x, int *pred_y)
+{
+  SchroMotionVector *mv = &motion_vectors[y*(4*params->x_num_mb) + x];
+  int sum_x = 0;
+  int sum_y = 0;
+  int n = 0;
+
+  if (x>0) {
+    mv = &motion_vectors[y*(4*params->x_num_mb) + (x-1)];
+    if (mv->pred_mode == 1) {
+      sum_x += mv->x;
+      sum_y += mv->y;
+      n++;
+    }
+  }
+  if (y>0) {
+    mv = &motion_vectors[(y-1)*(4*params->x_num_mb) + x];
+    if (mv->pred_mode == 1) {
+      sum_x += mv->x;
+      sum_y += mv->y;
+      n++;
+    }
+  }
+  if (x>0 && y>0) {
+    mv = &motion_vectors[(y-1)*(4*params->x_num_mb) + (x-1)];
+    if (mv->pred_mode == 1) {
+      sum_x += mv->x;
+      sum_y += mv->y;
+      n++;
+    }
+  }
+  switch(n) {
+    case 0:
+      *pred_x = 0;
+      *pred_y = 0;
+      break;
+    case 1:
+      *pred_x = sum_x;
+      *pred_y = sum_y;
+      break;
+    case 2:
+      *pred_x = (sum_x + 1)/2;
+      *pred_y = (sum_y + 1)/2;
+      break;
+    case 3:
+      *pred_x = (sum_x + 1)/3;
+      *pred_y = (sum_y + 1)/3;
+      break;
+    default:
+      SCHRO_ASSERT(0);
+  }
+}
+

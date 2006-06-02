@@ -392,5 +392,19 @@ schro_params_set_block_params (SchroParams *params, int index)
   params->ybsep_luma = schro_block_params[index-1].ybsep_luma;
 }
 
+void
+schro_params_set_default_codeblock (SchroParams *params)
+{
+  int i;
+
+  params->spatial_partition_flag = TRUE;
+  params->nondefault_partition_flag = TRUE;
+  for(i=0;i<8;i++){
+    params->codeblock_width[i] = 10;
+    params->codeblock_height[i] = 10;
+  }
+  params->codeblock_mode_index = 1;
+
+}
 
 

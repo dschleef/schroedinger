@@ -58,6 +58,8 @@ void schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
     SchroFrame *src2, SchroMotionVector *motion_vectors, SchroParams *params);
 void schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
     SchroParams *params, int x, int y, int *pred);
+void schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
+    SchroParams *params, int x, int y, int *pred_x, int *pred_y);
 
 
 

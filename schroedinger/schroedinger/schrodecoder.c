@@ -460,7 +460,6 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
 {
   SchroParams *params = &decoder->params;
   int bit;
-  int length;
   int index;
 
   /* block params flag */
@@ -538,12 +537,6 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
     }
   }
 
-  /* block data length */
-  length = schro_bits_decode_uegol (decoder->bits);
-  SCHRO_DEBUG("length %d", length);
-
-  schro_bits_sync (decoder->bits);
-
   schro_params_calculate_mc_sizes (params);
 }
 
@@ -553,9 +546,18 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
   SchroParams *params = &decoder->params;
   SchroArith *arith;
   int i, j;
+  SchroBuffer *buffer;
+  int length;
+
+  length = schro_bits_decode_uegol (decoder->bits);
+
+  schro_bits_sync (decoder->bits);
+
+  buffer = schro_buffer_new_subbuffer (decoder->bits->buffer,
+      decoder->bits->offset>>3, length);
 
   arith = schro_arith_new ();
-  schro_arith_decode_init (arith, decoder->bits);
+  schro_arith_decode_init (arith, buffer);
   schro_arith_init_contexts (arith);
 
   for(j=0;j<4*params->y_num_mb;j+=4){
@@ -565,7 +567,8 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
   }
 
   schro_arith_free (arith);
-  schro_bits_sync (decoder->bits);
+
+  decoder->bits->offset += length<<3;
 }
 
 static void
@@ -666,10 +669,15 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
         SCHRO_CTX_CHROMA2_DC_CONT_BIN1, SCHRO_CTX_CHROMA2_DC_VALUE,
         SCHRO_CTX_CHROMA2_DC_SIGN);
   } else {
-    mv->x = schro_arith_context_decode_sint (arith,
+    int pred_x, pred_y;
+
+    schro_motion_vector_prediction (motion_vectors, &decoder->params, x, y,
+        &pred_x, &pred_y);
+
+    mv->x = pred_x + schro_arith_context_decode_sint (arith,
          SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,
          SCHRO_CTX_MV_REF1_H_SIGN);
-    mv->y = schro_arith_context_decode_sint (arith,
+    mv->y = pred_y + schro_arith_context_decode_sint (arith,
          SCHRO_CTX_MV_REF1_V_CONT_BIN1, SCHRO_CTX_MV_REF1_V_VALUE,
          SCHRO_CTX_MV_REF1_V_SIGN);
   }
@@ -706,19 +714,18 @@ schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
   SCHRO_DEBUG ("transform depth %d", params->transform_depth);
 
   /* spatial partitioning */
-  params->spatial_partition = schro_bits_decode_bit (decoder->bits);
-  SCHRO_DEBUG ("spatial_partitioning %d", params->spatial_partition);
-  if (params->spatial_partition) {
-    params->partition_index = schro_bits_decode_uegol (decoder->bits);
-    if (params->partition_index > 1) {
-      /* FIXME: ? */
-      params->non_spec_input = TRUE;
+  params->spatial_partition_flag = schro_bits_decode_bit (decoder->bits);
+  SCHRO_DEBUG ("spatial_partitioning %d", params->spatial_partition_flag);
+  if (params->spatial_partition_flag) {
+    params->nondefault_partition_flag = schro_bits_decode_bit (decoder->bits);
+    if (params->nondefault_partition_flag) {
+      int i;
+      for(i=0;i<params->transform_depth;i++) {
+        params->codeblock_width[i] = schro_bits_decode_uegol (decoder->bits);
+        params->codeblock_height[i] = schro_bits_decode_uegol (decoder->bits);
+      }
     }
-    if (params->partition_index == 0) {
-      params->max_xblocks = schro_bits_decode_uegol (decoder->bits);
-      params->max_yblocks = schro_bits_decode_uegol (decoder->bits);
-    }
-    params->multi_quant = schro_bits_decode_bit (decoder->bits);
+    params->codeblock_mode_index = schro_bits_decode_uegol (decoder->bits);
   }
 
   schro_params_calculate_iwt_sizes (params);
@@ -822,7 +829,7 @@ schro_decoder_decode_transform_data (SchroDecoder *decoder, int component)
   int i;
   SchroParams *params = &decoder->params;
 
-#if 1
+#if 0
   for (i=0;i<3;i++){
     uint8_t value = 0;
     oil_splat_u8_ns (decoder->frame->components[component].data, &value,
@@ -898,6 +905,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
   int width;
   int stride;
   int offset;
+  int x,y;
 
   if (component == 0) {
     stride = subband->stride >> 1;
@@ -930,7 +938,6 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
   if (!subband_zero_flag) {
     int i,j;
     SchroBuffer *buffer;
-    SchroBits *bits;
     SchroArith *arith;
 
     quant_index = schro_bits_decode_uegol (decoder->bits);
@@ -954,15 +961,22 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
 
     buffer = schro_buffer_new_subbuffer (decoder->bits->buffer,
         decoder->bits->offset>>3, subband_length);
-    bits = schro_bits_new ();
-    schro_bits_decode_init (bits, buffer);
 
     arith = schro_arith_new ();
-    schro_arith_decode_init (arith, bits);
+    schro_arith_decode_init (arith, buffer);
     schro_arith_init_contexts (arith);
 
-    for(j=0;j<height;j++){
-      for(i=0;i<width;i++){
+#define MIN(a,b) ((a)<(b) ? (a) : (b))
+    for(y=0;y<height;y+=params->codeblock_height[subband->scale_factor_shift]) {
+      int ymax = MIN(y + params->codeblock_height[subband->scale_factor_shift],
+          height);
+
+      for(x=0;x<width;x+=params->codeblock_width[subband->scale_factor_shift]) {
+        int xmax = MIN(x + params->codeblock_width[subband->scale_factor_shift],
+            width);
+
+    for(j=y;j<ymax;j++){
+      for(i=x;i<xmax;i++){
         int v;
         int parent_zero;
         int cont_context;
@@ -1098,9 +1112,9 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
         }
       }
     }
+      }
+    }
     schro_arith_free (arith);
-    SCHRO_DEBUG("decoded %d bits", bits->offset);
-    schro_bits_free (bits);
     schro_buffer_unref (buffer);
 
     decoder->bits->offset += subband_length * 8;

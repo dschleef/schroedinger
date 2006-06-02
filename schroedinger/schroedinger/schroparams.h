@@ -55,11 +55,11 @@ struct _SchroParams {
   /* transform parameters */
   int wavelet_filter_index;
   int transform_depth;
-  int spatial_partition;
-  int partition_index;
-  int max_xblocks;
-  int max_yblocks;
-  int multi_quant;
+  int spatial_partition_flag;
+  int nondefault_partition_flag;
+  int codeblock_width[8];
+  int codeblock_height[8];
+  int codeblock_mode_index;
 
   /* motion prediction parameters */
   int num_refs;
@@ -145,6 +145,8 @@ int schro_params_get_frame_rate (SchroParams *params);
 void schro_params_set_pixel_aspect_ratio (SchroParams *params, int index);
 int schro_params_get_pixel_aspect_ratio (SchroParams *params);
 void schro_params_set_block_params (SchroParams *params, int index);
+void schro_params_set_default_codeblock (SchroParams *params);
+
 
 #endif
 

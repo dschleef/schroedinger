@@ -1,3 +1,23 @@
+2006-06-01  David Schleef  <ds@schleef.org>
+
+	* misc/dvd-to-ogg: rescaling is for wimps.  Full-size, baby.
+	* schroedinger/schroarith.c: Stop using the (artificial) extra
+	  layer of schro_bits_*()
+	* schroedinger/schroarith.h:
+	* schroedinger/schrobits.c: Change bits_append() to make it
+	  useful from schro_arith
+	* schroedinger/schrobits.h:
+	* schroedinger/schrodecoder.c: Add prediction of motion vectors.
+	  Added codeblocks.  Changes BITSTREAM.
+	* schroedinger/schroencoder.c: same
+	* schroedinger/schroencoder.h: same
+	* schroedinger/schroframe.h:
+	* schroedinger/schromotion.c: Slightly smarter motion prediction.
+	* schroedinger/schroparams.c: add codeblocks
+	* schroedinger/schroparams.h: add codeblocks
+	* testsuite/Makefile.am: compile some files directly against
+	  schroarith.c
+
 2006-05-26  David Schleef  <ds@schleef.org>
 
 	* configure.ac: bump nano

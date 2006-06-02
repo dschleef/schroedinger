@@ -30,7 +30,7 @@ void schro_bits_encode_init (SchroBits *bits, SchroBuffer *buffer);
 void schro_bits_sync (SchroBits *bits);
 void schro_bits_dumpbits (SchroBits *bits);
 
-void schro_bits_append (SchroBits *bits, SchroBits *bits2);
+void schro_bits_append (SchroBits *bits, uint8_t *data, int len);
 
 void schro_bits_encode_bit (SchroBits *bits, int value);
 void schro_bits_encode_bits (SchroBits *bits, int n, int value);

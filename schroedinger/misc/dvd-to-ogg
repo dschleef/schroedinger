@@ -14,8 +14,6 @@ gst-launch-0.10 \
   ffmpegcolorspace ! \
   videorate ! \
     video/x-raw-yuv,framerate=12/1 ! \
-  videoscale ! \
-    video/x-raw-yuv,width=352,height=288,pixel-aspect-ratio=\(fraction\)16/15 ! \
   schroenc ! \
   queue ! \
   oggmux name=mux ! \
@@ -25,3 +23,5 @@ gst-launch-0.10 \
   queue ! \
   mux.
 
+#  videoscale method=1 ! \
+#    video/x-raw-yuv,width=352,height=288,pixel-aspect-ratio=\(fraction\)16/15 ! \

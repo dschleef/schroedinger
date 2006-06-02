@@ -52,6 +52,9 @@ struct _SchroEncoder {
   int end_of_stream;
 
   SchroMotionVector *motion_vectors;
+  SchroMotionVector *motion_vectors_dc;
+  SchroMotionVector *motion_vectors_none;
+  SchroMotionVector *motion_vectors_scan;
 
   SchroPicture picture_list[10];
   int n_pictures;
@@ -69,6 +72,12 @@ struct _SchroEncoder {
   double skew_x, skew_y;
 
   int base_quant;
+
+  double metric_to_cost;
+  int stats_metric;
+  int stats_dc_blocks;
+  int stats_none_blocks;
+  int stats_scan_blocks;
 };
 
 SchroEncoder * schro_encoder_new (void);
