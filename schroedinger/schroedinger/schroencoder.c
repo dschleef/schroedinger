@@ -1060,6 +1060,20 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
     for(x=0;x<width;x+=params->codeblock_width[subband->scale_factor_shift]) {
       int xmax = MIN(x + params->codeblock_width[subband->scale_factor_shift],
           width);
+      int zero_codeblock = 1;
+
+  if (index == 0) zero_codeblock = 0;
+  for(j=y;j<ymax;j++){
+    for(i=x;i<xmax;i++){
+      if (quant_data[j*width + i] != 0) {
+        zero_codeblock = 0;
+      }
+    }
+  }
+  schro_arith_context_encode_bit (arith, SCHRO_CTX_ZERO_CODEBLOCK, zero_codeblock);
+  if (zero_codeblock) {
+    continue;
+  }
 
   for(j=y;j<ymax;j++){
     for(i=x;i<xmax;i++){

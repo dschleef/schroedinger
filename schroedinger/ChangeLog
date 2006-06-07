@@ -1,5 +1,11 @@
 2006-06-06  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  Flag zero codeblocks.  Changes BITSTREAM.
+
+2006-06-06  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schro.h: Implement OBMC
 	* schroedinger/schrodebug.h:
 	* schroedinger/schrodecoder.c:

@@ -981,6 +981,17 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
       for(x=0;x<width;x+=params->codeblock_width[subband->scale_factor_shift]) {
         int xmax = MIN(x + params->codeblock_width[subband->scale_factor_shift],
             width);
+        int zero_codeblock;
+
+        zero_codeblock = schro_arith_context_decode_bit (arith, SCHRO_CTX_ZERO_CODEBLOCK);
+        if (zero_codeblock) {
+          for(j=y;j<ymax;j++){
+            for(i=x;i<xmax;i++){
+              data[j*stride + i] = 0;
+            }
+          }
+          continue;
+        }
 
     for(j=y;j<ymax;j++){
       for(i=x;i<xmax;i++){
