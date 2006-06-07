@@ -58,7 +58,7 @@ schro_encoder_new (void)
 
   schro_params_set_default_codeblock (params);
 
-  encoder->base_quant = 20;
+  encoder->base_quant = 30;
 
   encoder->encoder_params.quant_index_dc = 4;
   encoder->encoder_params.quant_index[0] = 4;
@@ -362,6 +362,7 @@ schro_encoder_encode_intra (SchroEncoder *encoder)
   schro_encoder_encode_frame_header (encoder, SCHRO_PARSE_CODE_INTRA_REF);
 
   schro_frame_convert (encoder->tmp_frame0, encoder->encode_frame);
+  schro_frame_shift_left (encoder->tmp_frame0, 4);
 
   schro_frame_free (encoder->encode_frame);
 
@@ -382,6 +383,7 @@ schro_encoder_encode_intra (SchroEncoder *encoder)
 
     ref_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
         params->width, params->height, 2, 2);
+    schro_frame_shift_right (encoder->tmp_frame0, 4);
     schro_frame_convert (ref_frame, encoder->tmp_frame0);
 
     schro_encoder_reference_add (encoder, ref_frame);
@@ -404,8 +406,8 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
         params->iwt_luma_width, params->iwt_luma_height, 2, 2);
   }
   if (encoder->tmp_frame1 == NULL) {
-    encoder->tmp_frame1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-        params->iwt_luma_width, params->iwt_luma_height, 2, 2);
+    encoder->tmp_frame1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
+        params->mc_luma_width, params->mc_luma_height, 2, 2);
   }
 
   schro_encoder_encode_frame_header (encoder, SCHRO_PARSE_CODE_INTER_NON_REF);
@@ -423,8 +425,11 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
 
   schro_frame_subtract (encoder->tmp_frame0, encoder->tmp_frame1);
 
+  schro_frame_edge_extend (encoder->tmp_frame0, params->width, params->height);
+
   schro_encoder_encode_transform_parameters (encoder);
 
+  schro_frame_shift_left (encoder->tmp_frame0, 4);
   schro_frame_iwt_transform (encoder->tmp_frame0, &encoder->params,
       encoder->tmpbuf);
   residue_bits_start = encoder->bits->offset;
@@ -445,6 +450,7 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
 
     schro_frame_inverse_iwt_transform (encoder->tmp_frame0,
         &encoder->params, encoder->tmpbuf);
+    schro_frame_shift_right (encoder->tmp_frame0, 4);
     schro_frame_add (encoder->tmp_frame0, encoder->tmp_frame1);
 
     ref_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
@@ -1357,20 +1363,22 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
   for(j=0;j<4*params->y_num_mb;j++){
     for(i=0;i<4*params->x_num_mb;i++){
       int x,y;
+      int w,h;
 
       x = i*params->xbsep_luma;
       y = j*params->ybsep_luma;
+      
+      w = CLAMP(params->width - x, 0, params->xbsep_luma);
+      h = CLAMP(params->height - y, 0, params->ybsep_luma);
 
       predict_dc (&encoder->motion_vectors_dc[j*(4*params->x_num_mb) + i],
-          frame, x, y, params->xbsep_luma, params->ybsep_luma);
+          frame, x, y, w, h);
 
       predict_motion_none (&encoder->motion_vectors_none[j*(4*params->x_num_mb) + i],
-          frame, ref_frame, x, y,
-          params->xbsep_luma, params->ybsep_luma);
+          frame, ref_frame, x, y, w, h);
 
       predict_motion_search (&encoder->motion_vectors_scan[j*(4*params->x_num_mb) + i],
-          frame, ref_frame, x, y,
-          params->xbsep_luma, params->ybsep_luma);
+          frame, ref_frame, x, y, w, h);
 
       (void)&predict_motion;
     }
@@ -1716,6 +1724,15 @@ predict_dc (SchroMotionVector *mv, SchroFrame *frame, int x, int y,
   uint8_t *a;
   int a_stride;
   int sum;
+
+  if (height == 0 || width == 0) {
+    mv->pred_mode = 0;
+    mv->metric = 1000000;
+    return;
+  }
+
+  SCHRO_ASSERT(x + width <= frame->components[0].width);
+  SCHRO_ASSERT(y + height <= frame->components[0].height);
 
   a_stride = frame->components[0].stride;
   a = frame->components[0].data + x + y * a_stride;

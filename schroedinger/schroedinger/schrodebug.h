@@ -31,7 +31,7 @@ enum
 #define SCHRO_ASSERT(test) do { \
   if (!(test)) { \
     SCHRO_ERROR("assertion failed: " #test ); \
-    exit(1); \
+    abort(); \
   } \
 } while(0)
 

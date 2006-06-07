@@ -1,3 +1,13 @@
+2006-06-06  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schro.h: Implement OBMC
+	* schroedinger/schrodebug.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schromotion.c:
+
 2006-06-01  David Schleef  <ds@schleef.org>
 
 	* testsuite/arith.c: And some compile fixes.

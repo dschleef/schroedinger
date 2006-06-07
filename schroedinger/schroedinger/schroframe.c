@@ -129,7 +129,7 @@ void schro_frame_set_free_callback (SchroFrame *frame,
 
 static void schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src);
-static void schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src);
+//static void schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src);
 
 void
 schro_frame_convert (SchroFrame *dest, SchroFrame *src)
@@ -149,11 +149,13 @@ schro_frame_convert (SchroFrame *dest, SchroFrame *src)
     schro_frame_convert_s16_u8 (dest, src);
     return;
   }
+#if 0
   if (dest->format == SCHRO_FRAME_FORMAT_U8 &&
       src->format == SCHRO_FRAME_FORMAT_U8) {
     schro_frame_convert_u8_u8 (dest, src);
     return;
   }
+#endif
 
   SCHRO_ERROR("unimplemented");
 }
@@ -204,27 +206,34 @@ schro_frame_subtract (SchroFrame *dest, SchroFrame *src)
   SCHRO_ERROR("unimplemented");
 }
 
+#if 0
 static void
 oil_convert4_s16_u8 (int16_t *d_n, uint8_t *s_n, int n)
 {
   int i;
 
   for(i=0;i<n;i++){
-    d_n[i] = s_n[i]<<4;
+    d_n[i] = s_n[i];
   }
 }
+#endif
 
+#define CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
+
+#if 0
 static void
 oil_convert4_u8_s16 (uint8_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
   for(i=0;i<n;i++){
-    d_n[i] = (s_n[i] + 8)>>4;
+    d_n[i] = CLAMP(s_n[i],0,255);
   }
 }
+#endif
 
 #define OFFSET(ptr,offset) ((void *)(((uint8_t *)(ptr)) + (offset)))
+#define MIN(a,b) ((a)<(b) ? (a) : (b))
 
 static void
 schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
@@ -235,6 +244,7 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
   int16_t *sdata;
   int i;
   int y;
+  int width, height;
 
   for(i=0;i<3;i++){
     dcomp = &dest->components[i];
@@ -242,6 +252,16 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
     ddata = dcomp->data;
     sdata = scomp->data;
 
+    width = MIN(dcomp->width, scomp->width);
+    height = MIN(dcomp->height, scomp->height);
+
+    for(y=0;y<height;y++){
+      oil_convert_u8_s16(ddata, sdata, width);
+      ddata = OFFSET(ddata, dcomp->stride);
+      sdata = OFFSET(sdata, scomp->stride);
+    }
+
+#if 0
     if (dcomp->width <= scomp->width && dcomp->height <= scomp->height) {
       for(y=0;y<dcomp->height;y++){
         oil_convert4_u8_s16 (ddata, sdata, dcomp->width);
@@ -269,7 +289,11 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
         ddata = OFFSET(ddata, dcomp->stride);
       }
     }
+#endif
   }
+
+  schro_frame_edge_extend (dest, src->components[0].width,
+      src->components[0].height);
 }
 
 
@@ -283,6 +307,7 @@ schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
   uint8_t *sdata;
   int i;
   int y;
+  int width, height;
 
   for(i=0;i<3;i++){
     dcomp = &dest->components[i];
@@ -290,6 +315,15 @@ schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
     ddata = dcomp->data;
     sdata = scomp->data;
 
+    width = MIN(dcomp->width, scomp->width);
+    height = MIN(dcomp->height, scomp->height);
+
+    for(y=0;y<height;y++){
+      oil_convert_s16_u8(ddata, sdata, width);
+      ddata = OFFSET(ddata, dcomp->stride);
+      sdata = OFFSET(sdata, scomp->stride);
+    }
+#if 0
     if (dcomp->width <= scomp->width && dcomp->height <= scomp->height) {
       for(y=0;y<dcomp->height;y++){
         oil_convert4_s16_u8 (ddata, sdata, dcomp->width);
@@ -317,10 +351,12 @@ schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
         ddata = OFFSET(ddata, dcomp->stride);
       }
     }
+#endif
   }
 }
 
 
+#if 0
 static void
 schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src)
 {
@@ -365,6 +401,7 @@ schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src)
     }
   }
 }
+#endif
 
 static void
 oil_add_s16(int16_t *d_n, int16_t *s1_n, int16_t *s2_n, int n)
@@ -372,7 +409,7 @@ oil_add_s16(int16_t *d_n, int16_t *s1_n, int16_t *s2_n, int n)
   int i;
 
   for(i=0;i<n;i++){
-    d_n[i] = s1_n[i] + (s2_n[i]<<4);
+    d_n[i] = s1_n[i] + s2_n[i];
   }
 }
 
@@ -382,7 +419,7 @@ oil_add_s16_u8(int16_t *d_n, int16_t *s1_n, uint8_t *s2_n, int n)
   int i;
 
   for(i=0;i<n;i++){
-    d_n[i] = s1_n[i] + (s2_n[i]<<4);
+    d_n[i] = s1_n[i] + s2_n[i];
   }
 }
 
@@ -448,7 +485,7 @@ oil_subtract_s16(int16_t *d_n, int16_t *s1_n, int16_t *s2_n, int n)
   int i;
 
   for(i=0;i<n;i++){
-    d_n[i] = s1_n[i] - (s2_n[i]<<4);
+    d_n[i] = s1_n[i] - s2_n[i];
   }
 }
 
@@ -589,6 +626,144 @@ schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
       schro_wavelet_inverse_transform_2d (params->wavelet_filter_index,
           frame_data, stride*2, w, h, tmp);
     }
+  }
+}
+
+
+void
+oil_leftshift_s16(int16_t *data, int *shift, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    data[i] <<= *shift;
+  }
+}
+
+void schro_frame_shift_left (SchroFrame *frame, int shift)
+{
+  SchroFrameComponent *comp;
+  int16_t *data;
+  int i;
+  int y;
+
+  for(i=0;i<3;i++){
+    comp = &frame->components[i];
+    data = comp->data;
+
+    for(y=0;y<comp->height;y++){
+      oil_leftshift_s16 (data, &shift, comp->width);
+      data = OFFSET(data, comp->stride);
+    }
+  }
+}
+
+void
+oil_divpow2_s16(int16_t *data, int *shift, int n)
+{
+  int i;
+  int16_t round;
+ 
+  if (*shift > 1) {
+    round = 1<<(*shift-1);
+  } else {
+    round = 0;
+  }
+
+  for(i=0;i<n;i++){
+    data[i] = (data[i] + round) >> *shift;
+  }
+}
+
+void schro_frame_shift_right (SchroFrame *frame, int shift)
+{
+  SchroFrameComponent *comp;
+  int16_t *data;
+  int i;
+  int y;
+
+  for(i=0;i<3;i++){
+    comp = &frame->components[i];
+    data = comp->data;
+
+    for(y=0;y<comp->height;y++){
+      oil_divpow2_s16 (data, &shift, comp->width);
+      data = OFFSET(data, comp->stride);
+    }
+  }
+}
+
+
+static void
+oil_splat_s16_ns (int16_t *dest, int16_t *src, int n)
+{
+  oil_splat_u16_ns ((uint16_t *)dest, (uint16_t *)src, n);
+}
+
+void
+schro_frame_edge_extend (SchroFrame *frame, int width, int height)
+{
+  SchroFrameComponent *comp;
+  int i;
+  int y;
+
+  switch(frame->format) {
+    case SCHRO_FRAME_FORMAT_U8:
+      for(i=0;i<3;i++){
+        uint8_t *data;
+        int w,h;
+
+        comp = &frame->components[i];
+        data = comp->data;
+
+        if (i>0) {
+          w = width/2;
+          h = height/2;
+        } else {
+          w = width;
+          h = height;
+        }
+        if (w < comp->width) {
+          for(y = 0; y<h; y++) {
+            data = OFFSET(comp->data, comp->stride * y);
+            oil_splat_u8_ns (data + w, data + w - 1, comp->width - w);
+          }
+        }
+        for(y=h; y < comp->height; y++) {
+          oil_memcpy (OFFSET(comp->data, comp->stride * y),
+              OFFSET(comp->data, comp->stride * (h-1)), comp->width);
+        }
+      }
+      break;
+    case SCHRO_FRAME_FORMAT_S16:
+      for(i=0;i<3;i++){
+        int16_t *data;
+        int w,h;
+
+        comp = &frame->components[i];
+        data = comp->data;
+
+        if (i>0) {
+          w = width/2;
+          h = height/2;
+        } else {
+          w = width;
+          h = height;
+        }
+        if (w < comp->width) {
+          for(y = 0; y<h; y++) {
+            data = OFFSET(comp->data, comp->stride * y);
+            oil_splat_s16_ns (data + w, data + w - 1, comp->width - w);
+          }
+        }
+        for(y=h; y < comp->height; y++) {
+          oil_memcpy (OFFSET(comp->data, comp->stride * y),
+              OFFSET(comp->data, comp->stride * (h-1)), comp->width * 2);
+        }
+      }
+      break;
+    default:
+      SCHRO_ERROR("unimplemented case");
+      break;
   }
 }
 

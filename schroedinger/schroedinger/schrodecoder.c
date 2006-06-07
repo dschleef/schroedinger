@@ -145,6 +145,7 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
         decoder->tmpbuf);
 
+    schro_frame_shift_right (decoder->frame, 4);
     schro_frame_convert (decoder->output_frame, decoder->frame);
 
     if (decoder->reference_frames[0] == NULL) {
@@ -162,7 +163,7 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     SCHRO_ASSERT(params->ybsep_luma == 8);
 
     if (decoder->mc_tmp_frame == NULL) {
-      decoder->mc_tmp_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
+      decoder->mc_tmp_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
           params->mc_luma_width, params->mc_luma_height, 2, 2);
     }
 
@@ -185,9 +186,15 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
         decoder->tmpbuf);
 
+    schro_frame_shift_right (decoder->frame, 4);
+
+#if 1
     schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
 
     schro_frame_convert (decoder->output_frame, decoder->frame);
+#else
+    schro_frame_convert (decoder->output_frame, decoder->mc_tmp_frame);
+#endif
   }
 
   schro_buffer_unref (buffer);

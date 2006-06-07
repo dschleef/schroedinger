@@ -48,19 +48,14 @@ void schro_frame_free (SchroFrame *frame);
 void schro_frame_convert (SchroFrame *dest, SchroFrame *src);
 void schro_frame_add (SchroFrame *dest, SchroFrame *src);
 void schro_frame_subtract (SchroFrame *dest, SchroFrame *src);
+void schro_frame_shift_left (SchroFrame *frame, int shift);
+void schro_frame_shift_right (SchroFrame *frame, int shift);
+void schro_frame_edge_extend (SchroFrame *frame, int width, int height);
 
 void schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp);
 void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp);
-
-void schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
-    SchroFrame *src2, SchroMotionVector *motion_vectors, SchroParams *params);
-void schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
-    SchroParams *params, int x, int y, int *pred);
-void schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
-    SchroParams *params, int x, int y, int *pred_x, int *pred_y);
-
 
 
 #endif

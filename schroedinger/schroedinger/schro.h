@@ -11,6 +11,7 @@
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schroencoder.h>
 #include <schroedinger/schroframe.h>
+#include <schroedinger/schromotion.h>
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schrotables.h>
 #include <schroedinger/schrowavelet.h>
