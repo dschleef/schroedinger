@@ -58,7 +58,7 @@ schro_encoder_new (void)
 
   schro_params_set_default_codeblock (params);
 
-  encoder->base_quant = 30;
+  encoder->base_quant = 20;
 
   encoder->encoder_params.quant_index_dc = 4;
   encoder->encoder_params.quant_index[0] = 4;
@@ -168,6 +168,40 @@ schro_encoder_end_of_stream (SchroEncoder *encoder)
   encoder->end_of_stream = TRUE;
 }
 
+#define CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
+static void
+schro_encoder_choose_quantisers (SchroEncoder *encoder)
+{
+  if (encoder->picture->n_refs > 0) {
+    encoder->base_quant = 28;
+  } else {
+    encoder->base_quant = 24;
+  }
+#if 0
+  if ((encoder->picture->frame_number & 0x1f) > 0x10) {
+    encoder->base_quant = 28;
+  } else {
+    encoder->base_quant = 24;
+  }
+#endif
+  encoder->encoder_params.quant_index_dc = 20;
+  encoder->encoder_params.quant_index[0] = CLAMP(encoder->base_quant, 0, 63);
+  encoder->encoder_params.quant_index[1] = CLAMP(encoder->base_quant, 0, 63);
+  encoder->encoder_params.quant_index[2] = CLAMP(encoder->base_quant, 0, 63);
+  encoder->encoder_params.quant_index[3] = CLAMP(encoder->base_quant, 0, 63);
+  encoder->encoder_params.quant_index[4] = CLAMP(encoder->base_quant, 0, 63);
+  encoder->encoder_params.quant_index[5] = CLAMP(encoder->base_quant, 0, 63);
+#if 0
+  encoder->encoder_params.quant_index_dc = CLAMP(encoder->base_quant - 8, 0, 63);
+  encoder->encoder_params.quant_index[0] = CLAMP(encoder->base_quant - 8, 0, 63);
+  encoder->encoder_params.quant_index[1] = CLAMP(encoder->base_quant - 8, 0, 63);
+  encoder->encoder_params.quant_index[2] = CLAMP(encoder->base_quant - 6, 0, 63);
+  encoder->encoder_params.quant_index[3] = CLAMP(encoder->base_quant - 4, 0, 63);
+  encoder->encoder_params.quant_index[4] = CLAMP(encoder->base_quant - 2, 0, 63);
+  encoder->encoder_params.quant_index[5] = CLAMP(encoder->base_quant, 0, 63);
+#endif
+}
+
 SchroBuffer *
 schro_encoder_encode (SchroEncoder *encoder)
 {
@@ -196,19 +230,12 @@ schro_encoder_encode (SchroEncoder *encoder)
     return subbuffer;
   }
  
-#define CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
-  encoder->encoder_params.quant_index_dc = CLAMP(encoder->base_quant - 8, 0, 63);
-  encoder->encoder_params.quant_index[0] = CLAMP(encoder->base_quant - 8, 0, 63);
-  encoder->encoder_params.quant_index[1] = CLAMP(encoder->base_quant - 8, 0, 63);
-  encoder->encoder_params.quant_index[2] = CLAMP(encoder->base_quant - 6, 0, 63);
-  encoder->encoder_params.quant_index[3] = CLAMP(encoder->base_quant - 4, 0, 63);
-  encoder->encoder_params.quant_index[4] = CLAMP(encoder->base_quant - 2, 0, 63);
-  encoder->encoder_params.quant_index[5] = CLAMP(encoder->base_quant, 0, 63);
-
   if (encoder->picture_index >= encoder->n_pictures) {
     schro_encoder_create_picture_list (encoder);
   }
   encoder->picture = &encoder->picture_list[encoder->picture_index];
+
+  schro_encoder_choose_quantisers (encoder);
 
   if (encoder->picture->n_refs > 0) {
     encoder->ref_frame0 = schro_encoder_reference_get (encoder,
@@ -252,6 +279,7 @@ schro_encoder_encode (SchroEncoder *encoder)
 
   SCHRO_ERROR("encoded %d bits (q=%d)", encoder->bits->offset, encoder->base_quant);
 
+#if 0
   if (encoder->picture->n_refs == 0) {
     if (encoder->bits->offset > 200000) {
       encoder->base_quant+=4;
@@ -263,7 +291,8 @@ schro_encoder_encode (SchroEncoder *encoder)
     }
     encoder->base_quant = CLAMP(encoder->base_quant, 0, 70);
   }
-  encoder->base_quant = 30;
+  encoder->base_quant = 35;
+#endif
 
   if (encoder->bits->offset > 0) {
     subbuffer = schro_buffer_new_subbuffer (outbuffer, 0,
@@ -440,7 +469,7 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
   encoder->metric_to_cost =
     (double)(encoder->bits->offset - residue_bits_start) /
     encoder->stats_metric;
-  SCHRO_ERROR("residue bits %d, stats_metric %d, m_to_c = %g, dc_blocks %d, none blocks %d scan blocks %d",
+  SCHRO_DEBUG("residue bits %d, stats_metric %d, m_to_c = %g, dc_blocks %d, none blocks %d scan blocks %d",
       encoder->bits->offset - residue_bits_start,
       encoder->stats_metric, encoder->metric_to_cost,
       encoder->stats_dc_blocks, encoder->stats_none_blocks, encoder->stats_scan_blocks);
@@ -1340,6 +1369,45 @@ codeblock_line_encode (SchroSubband *subband, int16_t *data,
   }
 }
 
+static void
+schro_encoder_choose_split (SchroEncoder *encoder, int x, int y)
+{
+  SchroParams *params = &encoder->params;
+  SchroMotionVector *mv0;
+  SchroMotionVector *mv;
+  int i,j;
+ 
+  mv0 = &encoder->motion_vectors[y*(4*params->x_num_mb) + x];
+
+  if (mv0->pred_mode == 0) {
+    for(j=0;j<4;j++){
+      for(i=0;i<4;i++){
+        mv = &encoder->motion_vectors[(y+j)*(4*params->x_num_mb) + (x+j)];
+        if (mv0->dc[0] != mv->dc[0] ||
+            mv0->dc[1] != mv->dc[1] ||
+            mv0->dc[2] != mv->dc[2]) {
+          mv->split = 2;
+          return;
+        }
+      }
+    }
+    mv->split = 0;
+  } else {
+    for(j=0;j<4;j++){
+      for(i=0;i<4;i++){
+        mv = &encoder->motion_vectors[(y+j)*(4*params->x_num_mb) + (x+j)];
+        if (mv0->pred_mode != mv->pred_mode ||
+            mv0->x != mv->x ||
+            mv0->y != mv->y) {
+          mv->split = 2;
+          return;
+        }
+      }
+    }
+    mv->split = 0;
+  }
+}
+
 int cost (int value)
 {
   int n;
@@ -1469,6 +1537,11 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
           encoder->motion_vectors[j*(4*params->x_num_mb) + i].metric;
 
       encoder->motion_vectors[j*(4*params->x_num_mb) + i].split = 2;
+    }
+  }
+  for(j=0;j<4*params->y_num_mb;j+=4) {
+    for(i=0;i<4*params->x_num_mb;i+=4) {
+      schro_encoder_choose_split (encoder, i, j);
     }
   }
 

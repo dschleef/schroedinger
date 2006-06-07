@@ -1,5 +1,10 @@
 2006-06-06  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.c: Choose superblock split.  Slightly
+	  more intellegence in choosing quantisers.
+
+2006-06-06  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroarith.c:
 	* schroedinger/schroarith.h:
 	* schroedinger/schrodecoder.c:
