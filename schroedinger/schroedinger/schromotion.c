@@ -594,3 +594,26 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
   }
 }
 
+int
+schro_motion_split_prediction (SchroMotionVector *motion_vectors,
+    SchroParams *params, int x, int y)
+{
+  if (y == 0) {
+    if (x == 0) {
+      return 0;
+    } else {
+      return motion_vectors[x-4].split;
+    }
+  } else {
+    if (x == 0) {
+      return motion_vectors[(y-4)*(4*params->x_num_mb)].split;
+    } else {
+      int value;
+      value = (motion_vectors[(y-4)*(4*params->x_num_mb) + (x-4)].split +
+          motion_vectors[(y-4)*(4*params->x_num_mb) + x].split +
+          motion_vectors[y*(4*params->x_num_mb) + (x-4)].split + 1) / 3;
+      return value;
+    }
+  }
+}
+

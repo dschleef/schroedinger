@@ -466,6 +466,7 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
   int i,j;
   int global_motion;
   SchroArith *arith;
+  int superblock_count = 0;
 
   /* block params flag */
   schro_bits_encode_bit (encoder->bits, FALSE);
@@ -485,8 +486,22 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
     for(i=0;i<4*params->x_num_mb;i+=4){
       int k,l;
       int mb_using_global = FALSE;
-      int mb_split = 2;
       int mb_common = FALSE;
+      int split_prediction;
+      int split_residual;
+      SchroMotionVector *mv =
+        &encoder->motion_vectors[j*(4*params->x_num_mb) + i];
+
+      split_prediction = schro_motion_split_prediction (
+          encoder->motion_vectors, params, i, j);
+      split_residual = (mv->split - split_prediction)%3;
+      schro_arith_encode_mode (arith, SCHRO_CTX_SPLIT_0, SCHRO_CTX_SPLIT_1,
+          split_residual);
+
+#if 0
+      common_prediction = schro_motion_common_prediction (
+          ncoder->motion_vectors, params, i, j);
+#endif
 
       if (global_motion) {
         schro_arith_context_encode_bit (arith, SCHRO_CTX_GLOBAL_BLOCK,
@@ -495,18 +510,18 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
         SCHRO_ASSERT(mb_using_global == FALSE);
       }
       if (!mb_using_global) {
-        SCHRO_ASSERT(mb_split < 3);
-        //schro_bits_encode_bits (encoder->bits, 2, mb_split);
+        SCHRO_ASSERT(mv->split < 3);
+        //schro_bits_encode_bits (encoder->bits, 2, mv->split);
       } else {
-        SCHRO_ASSERT(mb_split == 2);
+        SCHRO_ASSERT(mv->split == 2);
       }
-      if (mb_split != 0) {
+      if (mv->split != 0) {
         schro_arith_context_encode_bit (arith, SCHRO_CTX_COMMON,
             mb_common);
       }
 
-      for(l=0;l<4;l+=(4>>mb_split)) {
-        for(k=0;k<4;k+=(4>>mb_split)) {
+      for(l=0;l<4;l+=(4>>mv->split)) {
+        for(k=0;k<4;k+=(4>>mv->split)) {
           SchroMotionVector *mv =
             &encoder->motion_vectors[(j+l)*(4*params->x_num_mb) + i + k];
 
@@ -550,6 +565,12 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
                 mv->y - pred_y);
           }
         }
+      }
+
+      superblock_count++;
+      if (superblock_count == 32) {
+        schro_arith_halve_all_counts (arith);
+        superblock_count = 0;
       }
     }
   }
@@ -1446,6 +1467,8 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
       }
       encoder->stats_metric += 
           encoder->motion_vectors[j*(4*params->x_num_mb) + i].metric;
+
+      encoder->motion_vectors[j*(4*params->x_num_mb) + i].split = 2;
     }
   }
 

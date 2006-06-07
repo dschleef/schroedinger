@@ -585,32 +585,36 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith *arith,
   SchroParams *params = &decoder->params;
   SchroMotionVector *mv = &decoder->motion_vectors[j*4*params->x_num_mb + i];
   int k,l;
+  int split_prediction;
 
-  //SCHRO_ERROR("global motion %d", params->global_motion);
+  split_prediction = schro_motion_split_prediction (decoder->motion_vectors,
+      params, i, j);
+  mv->split = (split_prediction + schro_arith_decode_mode (arith,
+        SCHRO_CTX_SPLIT_0, SCHRO_CTX_SPLIT_1))%3;
+
   if (params->global_motion) {
-    mv->mb_using_global = schro_arith_context_decode_bit (arith,
+    mv->using_global = schro_arith_context_decode_bit (arith,
         SCHRO_CTX_GLOBAL_BLOCK);
   } else {
-    mv->mb_using_global = FALSE;
+    mv->using_global = FALSE;
   }
 #if 0
-  if (!mv->mb_using_global) {
-    mv->mb_split = schro_bits_decode_bits (decoder->bits, 2);
-    SCHRO_ASSERT(mv->mb_split != 3);
+  if (!mv->using_global) {
+    mv->split = schro_bits_decode_bits (decoder->bits, 2);
+    SCHRO_ASSERT(mv->split != 3);
   } else {
-    mv->mb_split = 2;
+    mv->split = 2;
   }
 #endif
-mv->mb_split = 2;
-  if (mv->mb_split != 0) {
-    mv->mb_common = schro_arith_context_decode_bit (arith, SCHRO_CTX_COMMON);
+  if (mv->split != 0) {
+    mv->common = schro_arith_context_decode_bit (arith, SCHRO_CTX_COMMON);
   } else {
-    mv->mb_common = FALSE;
+    mv->common = FALSE;
   }
-  //SCHRO_ERROR("mb_using_global=%d mb_split=%d mb_common=%d",
-  //    mv->mb_using_global, mv->mb_split, mv->mb_common);
+  //SCHRO_ERROR("using_global=%d split=%d common=%d",
+  //    mv->using_global, mv->split, mv->common);
 
-  switch (mv->mb_split) {
+  switch (mv->split) {
     case 0:
       schro_decoder_decode_prediction_unit (decoder, arith,
           decoder->motion_vectors, i, j);

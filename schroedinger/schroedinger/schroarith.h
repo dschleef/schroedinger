@@ -117,7 +117,7 @@ void schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer) INTERNAL;
 void schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer) INTERNAL;
 void schro_arith_context_init (SchroArith *arith, int i, int count0, int count1) INTERNAL;
 void schro_arith_context_halve_counts (SchroArith *arith, int i) INTERNAL;
-void schro_arith_context_halve_all_counts (SchroArith *arith) INTERNAL;
+void schro_arith_halve_all_counts (SchroArith *arith) INTERNAL;
 void schro_arith_flush (SchroArith *arith) INTERNAL;
 void schro_arith_init_contexts (SchroArith *arith) INTERNAL;
 
@@ -133,6 +133,8 @@ void schro_arith_context_encode_uint (SchroArith *arith, int cont_context,
     int value_context, int value) INTERNAL;
 void schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value) INTERNAL;
+void schro_arith_encode_mode (SchroArith *arith, int context0, int context1,
+    int value);
 
 int schro_arith_context_decode_bit (SchroArith *arith, int context) INTERNAL;
 int schro_arith_context_decode_bits (SchroArith *arith, int context, int max) INTERNAL;
@@ -147,6 +149,7 @@ int schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
     int value_context) INTERNAL;
 int schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context) INTERNAL;
+int schro_arith_decode_mode (SchroArith *arith, int context0, int context1);
 
 #endif
 

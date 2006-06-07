@@ -242,7 +242,7 @@ schro_arith_context_halve_counts (SchroArith *arith, int i)
 }
 
 void
-schro_arith_context_halve_all_counts (SchroArith *arith)
+schro_arith_halve_all_counts (SchroArith *arith)
 {
   int i;
   for(i=0;i<arith->n_contexts;i++) {
@@ -566,6 +566,25 @@ schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
   }
 }
 
+void
+schro_arith_encode_mode (SchroArith *arith, int context0, int context1,
+    int value)
+{
+  switch (value) {
+    case 0:
+      schro_arith_context_binary_encode (arith, context0, 1);
+      break;
+    case 1:
+      schro_arith_context_binary_encode (arith, context0, 0);
+      schro_arith_context_binary_encode (arith, context1, 1);
+      break;
+    case 2:
+      schro_arith_context_binary_encode (arith, context0, 0);
+      schro_arith_context_binary_encode (arith, context1, 0);
+      break;
+  }
+}
+
 
 
 
@@ -724,5 +743,17 @@ schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
   }
 
   return value;
+}
+
+int
+schro_arith_decode_mode (SchroArith *arith, int context0, int context1)
+{
+  if (schro_arith_context_binary_decode (arith, context0)) {
+    return 0;
+  }
+  if (schro_arith_context_binary_decode (arith, context1)) {
+    return 1;
+  }
+  return 2;
 }
 

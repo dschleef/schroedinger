@@ -113,9 +113,9 @@ struct _SchroSubband {
 
 struct _SchroMotionVector {
   int pred_mode;
-  int mb_using_global;
-  int mb_split;
-  int mb_common;
+  int using_global;
+  int split;
+  int common;
   int x;
   int y;
   int dc[3];
