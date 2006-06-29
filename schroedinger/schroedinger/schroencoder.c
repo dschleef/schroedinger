@@ -9,14 +9,6 @@
 #include <stdio.h>
 
 static void schro_encoder_create_picture_list (SchroEncoder *encoder);
-static void predict_dc (SchroMotionVector *mv, SchroFrame *frame,
-    int x, int y, int w, int h);
-static void predict_motion (SchroMotionVector *mv, SchroFrame *frame,
-    SchroFrame *reference_frame, int x, int y, int w, int h);
-static void predict_motion_none (SchroMotionVector *mv, SchroFrame *frame,
-    SchroFrame *reference_frame, int x, int y, int w, int h);
-static void predict_motion_search (SchroMotionVector *mv, SchroFrame *frame,
-    SchroFrame *reference_frame, int x, int y, int w, int h);
 
 static void schro_encoder_frame_queue_push (SchroEncoder *encoder,
     SchroFrame *frame);
@@ -173,7 +165,7 @@ static void
 schro_encoder_choose_quantisers (SchroEncoder *encoder)
 {
   if (encoder->picture->n_refs > 0) {
-    encoder->base_quant = 28;
+    encoder->base_quant = 26;
   } else {
     encoder->base_quant = 24;
   }
@@ -469,7 +461,7 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
   encoder->metric_to_cost =
     (double)(encoder->bits->offset - residue_bits_start) /
     encoder->stats_metric;
-  SCHRO_DEBUG("residue bits %d, stats_metric %d, m_to_c = %g, dc_blocks %d, none blocks %d scan blocks %d",
+  SCHRO_ERROR("residue bits %d, stats_metric %d, m_to_c = %g, dc_blocks %d, none blocks %d scan blocks %d",
       encoder->bits->offset - residue_bits_start,
       encoder->stats_metric, encoder->metric_to_cost,
       encoder->stats_dc_blocks, encoder->stats_none_blocks, encoder->stats_scan_blocks);
@@ -944,10 +936,11 @@ quantize (int value, int quant_factor, int quant_offset)
 {
   if (value == 0) return 0;
   if (value < 0) {
-    return - (-value - quant_offset + quant_factor/2)/quant_factor;
+    value = - (-value - quant_offset + quant_factor/2)/quant_factor;
   } else {
-    return (value - quant_offset + quant_factor/2)/quant_factor;
+    value = (value - quant_offset + quant_factor/2)/quant_factor;
   }
+  return value;
 }
 
 static int
@@ -993,7 +986,7 @@ schro_encoder_quantize_subband (SchroEncoder *encoder, int component, int index,
         if (j>0) {
           if (i>0) {
             pred_value = (data[j*stride + i - 1] +
-                data[(j-1)*stride + i] + data[(j-1)*stride + i - 1])/3;
+                data[(j-1)*stride + i] + data[(j-1)*stride + i - 1] + 1)/3;
           } else {
             pred_value = data[(j-1)*stride + i];
           }
@@ -1099,6 +1092,8 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   if (subband_zero_flag) {
     SCHRO_DEBUG ("subband is zero");
     schro_bits_sync (encoder->bits);
+    schro_arith_free (arith);
+    free (quant_data);
     return;
   }
 
@@ -1369,6 +1364,7 @@ codeblock_line_encode (SchroSubband *subband, int16_t *data,
   }
 }
 
+#if 0
 static void
 schro_encoder_choose_split (SchroEncoder *encoder, int x, int y)
 {
@@ -1897,6 +1893,7 @@ predict_dc (SchroMotionVector *mv, SchroFrame *frame, int x, int y,
   mv->pred_mode = 0;
   mv->metric = metric;
 }
+#endif
 
 
 /* frame queue */

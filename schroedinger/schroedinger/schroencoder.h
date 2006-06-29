@@ -98,7 +98,6 @@ void schro_encoder_encode_transform_data (SchroEncoder *encoder, int component);
 void schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index);
 void schro_encoder_inverse_iwt_transform (SchroEncoder *encoder, int component);
 void schro_encoder_copy_from_frame_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
-void schro_encoder_motion_predict (SchroEncoder *encoder);
 
 #endif
 

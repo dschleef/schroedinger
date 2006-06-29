@@ -13,6 +13,7 @@
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schromotion.h>
 #include <schroedinger/schroparams.h>
+#include <schroedinger/schropredict.h>
 #include <schroedinger/schrotables.h>
 #include <schroedinger/schrowavelet.h>
 

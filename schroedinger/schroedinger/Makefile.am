@@ -27,6 +27,8 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schromotion.c \
 	schroparams.c \
 	schroparams.h \
+	schropredict.c \
+	schropredict.h \
 	schrotables.c \
 	schrotables.h \
 	schrowavelet.c \

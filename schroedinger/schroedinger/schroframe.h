@@ -57,6 +57,7 @@ void schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
 void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp);
 
+void schro_frame_downsample (SchroFrame *dest, SchroFrame *src, int shift);
 
 #endif
 

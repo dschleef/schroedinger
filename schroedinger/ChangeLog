@@ -1,3 +1,24 @@
+2006-06-12  David Schleef  <ds@schleef.org>
+
+	* schroedinger/Makefile.am:
+	* schroedinger/schro.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroframe.c: Fix a memleak.  Fix other bugs.
+	* schroedinger/schroframe.h:
+	* schroedinger/schromotion.c: Fix some bugs
+	* schroedinger/schromotion.h: new header
+	* schroedinger/schropredict.c: Add a file for prediction functions.
+	* schroedinger/schropredict.h:
+	* schroedinger/schroutils.c: Utility functions go here.
+	* testsuite/Makefile.am: More tests
+	* testsuite/arith2.c:
+	* testsuite/arith_speed.c:
+	* testsuite/obmc.c:
+	* testsuite/predict.c:
+	* testsuite/utils.c:
+
 2006-06-06  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c: Choose superblock split.  Slightly

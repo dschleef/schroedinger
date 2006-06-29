@@ -353,6 +353,9 @@ schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
     }
 #endif
   }
+
+  schro_frame_edge_extend (dest, src->components[0].width,
+      src->components[0].height);
 }
 
 
@@ -706,6 +709,9 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
   int i;
   int y;
 
+  SCHRO_DEBUG("extending %d %d -> %d %d", width, height,
+      frame->components[0].width, frame->components[0].height);
+
   switch(frame->format) {
     case SCHRO_FRAME_FORMAT_U8:
       for(i=0;i<3;i++){
@@ -764,6 +770,61 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
     default:
       SCHRO_ERROR("unimplemented case");
       break;
+  }
+}
+
+
+static int
+average_block_u8 (uint8_t *src, int stride, int width, int height)
+{
+  int i,j;
+  int sum;
+
+  SCHRO_ASSERT(width > 0);
+  SCHRO_ASSERT(height > 0);
+
+  sum = 0;
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      sum += src[i];
+    }
+    src += stride;
+  }
+  sum += width * height / 2;
+
+  return sum / (width * height);
+}
+
+
+void
+schro_frame_downsample (SchroFrame *dest, SchroFrame *src, int shift)
+{
+  int factor = 1<<shift;
+  int i, j, k;
+  SchroFrameComponent *dcomp;
+  SchroFrameComponent *scomp;
+
+  if (dest->format != SCHRO_FRAME_FORMAT_U8 ||
+      src->format != SCHRO_FRAME_FORMAT_U8) {
+    SCHRO_ERROR("unimplemented");
+    return;
+  }
+
+  for(k=0;k<3;k++){
+    dcomp = &dest->components[k];
+    scomp = &src->components[k];
+
+    SCHRO_ASSERT(dcomp->width * factor <= scomp->width);
+    SCHRO_ASSERT(dcomp->height * factor <= scomp->height);
+
+    for(j=0;j<dcomp->height;j++){
+      for(i=0;i<dcomp->width;i++){
+        *((uint8_t *)dcomp->data + dcomp->stride * j + i) =
+          average_block_u8 (scomp->data + scomp->stride * j*factor + i * factor,
+              scomp->stride, factor, factor);
+      }
+    }
+
   }
 }
 

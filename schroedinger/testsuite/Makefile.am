@@ -1,9 +1,10 @@
 
 
 noinst_PROGRAMS = arith arith_encode arith_decode codes bits bits2 \
-	 encode wavelet wavelet2 tables wavelet_2d arith_speed
+	 encode wavelet wavelet2 tables wavelet_2d arith_speed utils \
+	 obmc predict
 
-TESTS = arith bits bits2 encode wavelet wavelet2 tables wavelet_2d
+TESTS = arith bits bits2 encode wavelet wavelet2 tables wavelet_2d utils
 
 
 arith_CFLAGS = $(SCHRO_CFLAGS)
@@ -54,5 +55,16 @@ tables_CFLAGS =
 tables_LDADD = -lm
 tables_SOURCES = tables.c
 
+utils_CFLAGS = $(SCHRO_CFLAGS)
+utils_LDADD = $(SCHRO_LIBS)
+utils_SOURCES = utils.c ../schroedinger/schroutils.c
+
+obmc_CFLAGS = $(SCHRO_CFLAGS)
+obmc_LDADD = $(SCHRO_LIBS)
+obmc_SOURCES = obmc.c
+
+predict_CFLAGS = $(SCHRO_CFLAGS)
+predict_LDADD = $(SCHRO_LIBS)
+predict_SOURCES = predict.c
 
 

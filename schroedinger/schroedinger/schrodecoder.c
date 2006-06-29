@@ -1025,7 +1025,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
         if (index == 0) {
           if (j>0) {
             if (i>0) {
-              pred_value = (p[-1] + p[-stride] + p[-stride-1])/3;
+              pred_value = (p[-1] + p[-stride] + p[-stride-1] + 1)/3;
             } else {
               pred_value = p[-stride];
             }

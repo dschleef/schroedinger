@@ -167,13 +167,15 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
   obmc->y_sep = y_sep;
 
   for(i=0;i<x_len;i++){
+    int w;
     if (i < x_ramp) {
-      obmc->regions[0].weights[i] = 1 + 2*i;
+      w = 1 + 2*i;
     } else if (i >= x_len - x_ramp) {
-      obmc->regions[0].weights[i] = 1 + 2*(x_len - 1 - i);
+      w = 1 + 2*(x_len - 1 - i);
     } else {
-      obmc->regions[0].weights[i] = x_ramp*2;
+      w = x_ramp*2;
     }
+    obmc->regions[0].weights[i] = w;
   }
 
   for(j=0;j<y_len;j++){
@@ -272,9 +274,9 @@ splat_block_general (SchroFrameComponent *dest, int x, int y, int value,
 
   k = 0;
   if (x>0) k++;
-  if (x>dest->width) k++;
+  if (x + obmc->x_len >= dest->width) k++;
   if (y>0) k+=3;
-  if (y>dest->height) k+=3;
+  if (y + obmc->y_len >= dest->height) k+=3;
 
   region = obmc->regions + k;
 
@@ -345,9 +347,9 @@ copy_block_general (SchroFrameComponent *dest, int x, int y,
   } else {
     for(j=region->start_y;j<region->end_y;j++){
       notoil_multiply_and_add_s16 (
-          OFFSET(dest->data, dest->stride*(y+j) + 2*x),
+          OFFSET(dest->data, dest->stride*(y+j) + 2*(x + region->start_x)),
           OFFSET(region->weights, obmc->stride*j + 2*region->start_x),
-          OFFSET(src->data, src->stride * (sy + j) + sx),
+          OFFSET(src->data, src->stride * (sy + j) + sx + region->start_x),
           region->end_x - region->start_x);
 #if 0
       for(i=region->start_x;i<region->end_x;i++){
@@ -410,22 +412,11 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
   schro_obmc_init (&obmc_luma, 12, 12, 8, 8);
   schro_obmc_init (&obmc_chroma, 6, 6, 4, 4);
 
+  oil_splat_u8_ns (dest->components[0].data, &zero, dest->components[0].length);
+  oil_splat_u8_ns (dest->components[1].data, &zero, dest->components[1].length);
+  oil_splat_u8_ns (dest->components[2].data, &zero, dest->components[2].length);
   for(j=0;j<params->y_num_blocks;j++){
     y = j*params->ybsep_luma;
-
-    for(i=0;i<params->ybsep_luma;i++){
-      oil_splat_u8_ns (OFFSET(dest->components[0].data,
-            dest->components[0].stride*(y+i + obmc_luma.y_ramp/2)),
-          &zero, 2*dest->components[0].width);
-    }
-    for(i=0;i<params->ybsep_luma/2;i++){
-      oil_splat_u8_ns (OFFSET(dest->components[1].data,
-            dest->components[1].stride*(y/2+i + obmc_chroma.y_ramp/2)),
-          &zero, 2*dest->components[1].width);
-      oil_splat_u8_ns (OFFSET(dest->components[2].data,
-            dest->components[2].stride*(y/2+i + obmc_chroma.y_ramp/2)),
-          &zero, 2*dest->components[2].width);
-    }
 
     for(i=0;i<params->x_num_blocks;i++){
       SchroMotionVector *mv = &motion_vectors[j*params->x_num_blocks + i];
@@ -460,29 +451,27 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
       }
     }
   }
-#if 1
   {
     int16_t *data;
     int shift;
     data = frame->components[0].data;
     shift = ilog2(obmc_luma.max_weight);
-    for(j=0;j<params->height;j++){
+    for(j=0;j<frame->components[0].height;j++){
       oil_divpow2_s16(data, &shift, frame->components[0].width);
       data = OFFSET(data, frame->components[0].stride);
     }
     data = frame->components[1].data;
     shift = ilog2(obmc_chroma.max_weight);
-    for(j=0;j<params->chroma_height;j++){
+    for(j=0;j<frame->components[1].height;j++){
       oil_divpow2_s16(data, &shift, frame->components[1].width);
       data = OFFSET(data, frame->components[1].stride);
     }
     data = frame->components[2].data;
-    for(j=0;j<params->chroma_height;j++){
+    for(j=0;j<frame->components[2].height;j++){
       oil_divpow2_s16(data, &shift, frame->components[2].width);
       data = OFFSET(data, frame->components[2].stride);
     }
   }
-#endif
 
   schro_obmc_cleanup (&obmc_luma);
   schro_obmc_cleanup (&obmc_chroma);
