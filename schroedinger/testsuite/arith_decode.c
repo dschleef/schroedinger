@@ -70,7 +70,7 @@ main (int argc, char *argv[])
   }
 
   file = fopen("test_file.out","w");
-  fwrite (output_buffer, 1, i, file);
+  (void)fwrite (output_buffer, 1, i, file);
   fclose (file);
 
   schro_arith_free(a);
