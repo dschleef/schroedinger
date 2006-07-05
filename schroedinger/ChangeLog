@@ -1,3 +1,9 @@
+2006-06-30  David Schleef  <ds@schleef.org>
+
+	* schroedinger/Makefile.am:
+	* testsuite/arith.c:
+	  distcheck fixes.
+
 2006-06-12  David Schleef  <ds@schleef.org>
 
 	* schroedinger/Makefile.am:

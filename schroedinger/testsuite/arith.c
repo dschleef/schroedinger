@@ -7,6 +7,7 @@
 #define BUFFER_SIZE 10000
 
 int debug=1;
+int verbose = 0;
 
 void
 decode(uint8_t *dest, uint8_t *src, int n_bytes)
@@ -26,11 +27,11 @@ decode(uint8_t *dest, uint8_t *src, int n_bytes)
 
   for(i=0;i<n_bytes;i++){
     value = 0;
-    printf("%d:\n", i);
+    if (verbose) printf("%d:\n", i);
     for(j=0;j<8;j++){
-      printf("[%04x %04x] %04x -> ", a->low, a->high, a->code);
+      if (verbose) printf("[%04x %04x] %04x -> ", a->low, a->high, a->code);
       bit = schro_arith_context_decode_bit (a, 0);
-      printf("%d\n", bit);
+      if (verbose) printf("%d\n", bit);
       value |= bit << (7-j);
     }
     dest[i] = value;
@@ -55,10 +56,10 @@ encode (uint8_t *dest, uint8_t *src, int n_bytes)
   schro_arith_context_init (a, 0, 1, 1);
 
   for(i=0;i<n_bytes;i++){
-    printf("%d:\n", i);
+    if (verbose) printf("%d:\n", i);
     for(j=0;j<8;j++){
       bit = (src[i]>>(7-j))&1;
-      printf("[%04x %04x] %d\n", a->low, a->high, bit);
+      if (verbose) printf("[%04x %04x] %d\n", a->low, a->high, bit);
       schro_arith_context_encode_bit (a, 0, bit);
     }
   }
