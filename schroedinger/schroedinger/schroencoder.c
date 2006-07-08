@@ -80,12 +80,14 @@ schro_encoder_free (SchroEncoder *encoder)
   if (encoder->motion_vectors_dc) {
     free (encoder->motion_vectors_dc);
   }
+#if 0
   if (encoder->motion_vectors_none) {
     free (encoder->motion_vectors_none);
   }
   if (encoder->motion_vectors_scan) {
     free (encoder->motion_vectors_scan);
   }
+#endif
   for(i=0;i<encoder->n_reference_frames; i++) {
     schro_frame_free(encoder->reference_frames[i]);
   }
@@ -461,10 +463,10 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
   encoder->metric_to_cost =
     (double)(encoder->bits->offset - residue_bits_start) /
     encoder->stats_metric;
-  SCHRO_ERROR("residue bits %d, stats_metric %d, m_to_c = %g, dc_blocks %d, none blocks %d scan blocks %d",
+  SCHRO_ERROR("residue bits %d, stats_metric %d, m_to_c = %g, dc_blocks %d, scan blocks %d",
       encoder->bits->offset - residue_bits_start,
       encoder->stats_metric, encoder->metric_to_cost,
-      encoder->stats_dc_blocks, encoder->stats_none_blocks, encoder->stats_scan_blocks);
+      encoder->stats_dc_blocks, encoder->stats_scan_blocks);
 
   if (is_ref) {
     SchroFrame *ref_frame;

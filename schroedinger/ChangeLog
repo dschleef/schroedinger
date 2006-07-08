@@ -1,3 +1,12 @@
+2006-07-08  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schropredict.c:
+	  Rewrite the hierarchical motion prediction code.  Add a metric
+	  based on an 8x8 Haar transform.  The haar metric is a much more
+	  consistent predictor of bits in the final bitstream.
+
 2006-07-05  David Schleef  <ds@schleef.org>
 
 	* testsuite/arith_decode.c: compile fix.  From Christian.

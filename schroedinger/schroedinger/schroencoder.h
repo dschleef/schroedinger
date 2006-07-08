@@ -36,9 +36,6 @@ struct _SchroEncoder {
   int16_t *tmpbuf;
   int16_t *tmpbuf2;
 
-  //int width;
-  //int height;
-
   int wavelet_type;
 
   SchroParams params;
@@ -53,8 +50,10 @@ struct _SchroEncoder {
 
   SchroMotionVector *motion_vectors;
   SchroMotionVector *motion_vectors_dc;
+#if 0
   SchroMotionVector *motion_vectors_none;
   SchroMotionVector *motion_vectors_scan;
+#endif
 
   SchroPicture picture_list[10];
   int n_pictures;
