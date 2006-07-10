@@ -9,6 +9,8 @@
 #include <stdio.h>
 
 
+//#define DECODE_PREDICTION_ONLY
+
 static void schro_decoder_decode_macroblock(SchroDecoder *decoder,
     SchroArith *arith, int i, int j);
 static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
@@ -188,7 +190,7 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
 
     schro_frame_shift_right (decoder->frame, 4);
 
-#if 1
+#ifndef DECODE_PREDICTION_ONLY
     schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
 
     schro_frame_convert (decoder->output_frame, decoder->frame);

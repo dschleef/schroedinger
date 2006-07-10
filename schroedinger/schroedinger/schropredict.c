@@ -889,6 +889,41 @@ schro_encoder_rough_global_prediction_2 (SchroEncoder *encoder)
         }
       }
     }
+#if 0
+    /* This is expensive */
+    for(j=0;j<y_blocks;j++){
+      for(i=0;i<x_blocks;i++){
+        if(j>0) {
+          SchroPredictionList *neighbor_list = pred_lists + (j-1)*x_blocks + i;
+          schro_prediction_list_scan (pred_lists + j*x_blocks + i,
+              downsampled_frame, downsampled_ref, i*8, j*8,
+              i*8 - 2 + neighbor_list->vectors[0].dx,
+              j*8 - 2 + neighbor_list->vectors[0].dy, 5, 5);
+        }
+        if(i>0) {
+          SchroPredictionList *neighbor_list = pred_lists + j*x_blocks + i-1;
+          schro_prediction_list_scan (pred_lists + j*x_blocks + i,
+              downsampled_frame, downsampled_ref, i*8, j*8,
+              i*8 - 2 + neighbor_list->vectors[0].dx,
+              j*8 - 2 + neighbor_list->vectors[0].dy, 5, 5);
+        }
+        if(j+1 < y_blocks) {
+          SchroPredictionList *neighbor_list = pred_lists + (j+1)*x_blocks + i;
+          schro_prediction_list_scan (pred_lists + j*x_blocks + i,
+              downsampled_frame, downsampled_ref, i*8, j*8,
+              i*8 - 2 + neighbor_list->vectors[0].dx,
+              j*8 - 2 + neighbor_list->vectors[0].dy, 5, 5);
+        }
+        if(i+1 < x_blocks) {
+          SchroPredictionList *neighbor_list = pred_lists + j*x_blocks + i+1;
+          schro_prediction_list_scan (pred_lists + j*x_blocks + i,
+              downsampled_frame, downsampled_ref, i*8, j*8,
+              i*8 - 2 + neighbor_list->vectors[0].dx,
+              j*8 - 2 + neighbor_list->vectors[0].dy, 5, 5);
+        }
+      }
+    }
+#endif
 
     schro_frame_free (downsampled_ref);
     schro_frame_free (downsampled_frame);

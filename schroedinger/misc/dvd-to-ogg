@@ -10,18 +10,22 @@ fi
 
 gst-launch-0.10 \
   dvdreadsrc title="$title" ! \
-  decodebin name="dvd" dvd. ! \
-  ffmpegcolorspace ! \
-  videorate ! \
+  dvddemux name="dvd" \
+  dvd.current_video ! \
+    mpeg2dec ! \
+    ffmpegcolorspace ! \
+    videorate ! \
     video/x-raw-yuv,framerate=12/1 ! \
-  schroenc ! \
-  queue ! \
+    schroenc ! \
+    queue ! \
   oggmux name=mux ! \
-  filesink location=output.ogg dvd. ! \
-  audioconvert ! \
-  vorbisenc ! \
-  queue ! \
-  mux.
+  filesink location=output.ogg \
+  dvd.current_audio ! \
+    a52dec ! \
+    audioconvert ! \
+    vorbisenc ! \
+    queue ! \
+    mux.
 
 #  videoscale method=1 ! \
 #    video/x-raw-yuv,width=352,height=288,pixel-aspect-ratio=\(fraction\)16/15 ! \
