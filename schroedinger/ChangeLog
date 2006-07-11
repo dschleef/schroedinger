@@ -1,5 +1,12 @@
 2006-07-10  David Schleef  <ds@schleef.org>
 
+	* gst/gstschrodec.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	  Play pictures in order.
+
+2006-07-10  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schrodecoder.h:
 	* schroedinger/schroencoder.c:

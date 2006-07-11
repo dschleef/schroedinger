@@ -14,7 +14,10 @@ struct _SchroDecoder {
   SchroFrame *mc_tmp_frame;
   int n_reference_frames;
   SchroFrame *reference_frames[10];
-  SchroFrame *output_frame;
+  SchroFrame *output_frames[10];
+  int n_output_frames;
+
+  int next_frame_number;
 
   int picture_number;
   int n_refs;
@@ -48,10 +51,10 @@ struct _SchroDecoder {
 
 SchroDecoder * schro_decoder_new (void);
 void schro_decoder_free (SchroDecoder *decoder);
-void schro_decoder_set_output_frame (SchroDecoder *decoder, SchroFrame *frame);
+void schro_decoder_add_output_frame (SchroDecoder *decoder, SchroFrame *frame);
 int schro_decoder_is_parse_header (SchroBuffer *buffer);
 int schro_decoder_is_rap (SchroBuffer *buffer);
-void schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer);
+SchroFrame *schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer);
 void schro_decoder_decode_parse_header (SchroDecoder *decoder);
 void schro_decoder_decode_rap (SchroDecoder *decoder);
 void schro_decoder_decode_frame_header (SchroDecoder *decoder);

@@ -743,31 +743,39 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
       return ret;
     }
 
-    GST_BUFFER_TIMESTAMP(outbuf) = gst_util_uint64_scale_int (
-        schro_dec->n_frames,
-        schro_dec->decoder->params.frame_rate_denominator * GST_SECOND,
-        schro_dec->decoder->params.frame_rate_numerator) +
-      schro_dec->segment.start;
-    GST_BUFFER_DURATION(outbuf) = gst_util_uint64_scale_int (GST_SECOND,
-       schro_dec->decoder->params.frame_rate_denominator,
-       schro_dec->decoder->params.frame_rate_numerator);
-    //GST_BUFFER_OFFSET(outbuf) = schro_dec->n_frames;
-
-    //GST_DEBUG("decoding timestamp %" G_GINT64_FORMAT, GST_BUFFER_TIMESTAMP(outbuf));
-    schro_dec->n_frames++;
-
     frame = gst_schro_wrap_frame (schro_dec, outbuf);
 
-    schro_decoder_set_output_frame (schro_dec->decoder, frame);
+    schro_decoder_add_output_frame (schro_dec->decoder, frame);
 
-    schro_decoder_decode (schro_dec->decoder, input_buffer);
+    frame = schro_decoder_decode (schro_dec->decoder, input_buffer);
 
-    if (schro_dec->discont) {
-GST_DEBUG("discont timestamp %" G_GINT64_FORMAT, GST_BUFFER_TIMESTAMP(outbuf));
-      GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_DISCONT);
-      schro_dec->discont = FALSE;
+    ret = GST_FLOW_OK;
+
+    while (frame) {
+      outbuf = frame->priv;
+
+      if (schro_dec->discont) {
+        GST_DEBUG("discont timestamp %" G_GINT64_FORMAT, GST_BUFFER_TIMESTAMP(outbuf));
+        GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_DISCONT);
+        schro_dec->discont = FALSE;
+      }
+
+      GST_BUFFER_TIMESTAMP(outbuf) = gst_util_uint64_scale_int (
+          schro_dec->n_frames,
+          schro_dec->decoder->params.frame_rate_denominator * GST_SECOND,
+          schro_dec->decoder->params.frame_rate_numerator) +
+        schro_dec->segment.start;
+      GST_BUFFER_DURATION(outbuf) = gst_util_uint64_scale_int (GST_SECOND,
+         schro_dec->decoder->params.frame_rate_denominator,
+         schro_dec->decoder->params.frame_rate_numerator);
+      //GST_BUFFER_OFFSET(outbuf) = schro_dec->n_frames;
+
+      schro_frame_free (frame);
+      ret = gst_pad_push (schro_dec->srcpad, outbuf);
+      frame = schro_decoder_decode (schro_dec->decoder, NULL);
+
+      schro_dec->n_frames++;
     }
-    ret = gst_pad_push (schro_dec->srcpad, outbuf);
     
     return ret;
   }
