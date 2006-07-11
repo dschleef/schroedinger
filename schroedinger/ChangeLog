@@ -1,5 +1,18 @@
 2006-07-10  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schrometric.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schropredict.c:
+	* schroedinger/schropredict.h:
+	  Turn on support for bi-reference frames.  Changes BITSTREAM.
+	  The decoder outputs frames in bitstream order still, so it
+	  looks a bit strange.
+
+2006-07-10  David Schleef  <ds@schleef.org>
+
 	* schroedinger/Makefile.am:
 	* schroedinger/schro.h:
 	* schroedinger/schrometric.c:

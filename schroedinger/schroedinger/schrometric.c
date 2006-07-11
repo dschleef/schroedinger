@@ -32,6 +32,43 @@ schro_metric_haar_transform (int16_t *diff)
   int i,j;
   int a,b;
 
+#if 0
+  for(j=0;j<8;j+=2){
+    for(i=0;i<8;i+=2){
+      diff[8*j+i+1] -= (diff[8*j+i] + diff[8*j+i+1])/2;
+      diff[8*j+i] += diff[8*j+i+1];
+      diff[8*(j+1)+i+1] -= (diff[8*(j+1)+i] + diff[8*(j+1)+i+1])/2;
+      diff[8*(j+1)+i] += diff[8*(j+1)+i+1];
+      diff[8*(j+1)+i] -= (diff[8*j+i] + diff[8*(j+1)+i])/2;
+      diff[8*j+i] += diff[8*(j+1)+i];
+      diff[8*(j+1)+i+1] -= (diff[8*j+i+1] + diff[8*(j+1)+i+1])/2;
+      diff[8*j+i+1] += diff[8*(j+1)+i+1];
+    }
+  }
+  for(j=0;j<8;j+=4){
+    for(i=0;i<8;i+=4){
+      diff[8*j+i+2] -= (diff[8*j+i] + diff[8*j+i+2])/2;
+      diff[8*j+i] += diff[8*j+i+2];
+      diff[8*(j+2)+i+2] -= (diff[8*(j+2)+i] + diff[8*(j+2)+i+2])/2;
+      diff[8*(j+2)+i] += diff[8*(j+2)+i+2];
+      diff[8*(j+2)+i] -= (diff[8*j+i] + diff[8*(j+2)+i])/2;
+      diff[8*j+i] += diff[8*(j+2)+i];
+      diff[8*(j+2)+i+2] -= (diff[8*j+i+2] + diff[8*(j+2)+i+2])/2;
+      diff[8*j+i+2] += diff[8*(j+2)+i+2];
+    }
+  }
+  i = 0;
+  j = 0;
+  diff[8*j+i+4] -= (diff[8*j+i] + diff[8*j+i+4])/2;
+  diff[8*j+i] += diff[8*j+i+4];
+  diff[8*(j+4)+i+4] -= (diff[8*(j+4)+i] + diff[8*(j+4)+i+4])/2;
+  diff[8*(j+4)+i] += diff[8*(j+4)+i+4];
+  diff[8*(j+4)+i] -= (diff[8*j+i] + diff[8*(j+4)+i])/2;
+  diff[8*j+i] += diff[8*(j+4)+i];
+  diff[8*(j+4)+i+4] -= (diff[8*j+i+4] + diff[8*(j+4)+i+4])/2;
+  diff[8*j+i+4] += diff[8*(j+4)+i+4];
+#endif
+#if 1
   for(j=0;j<8;j++){
     for(i=0;i<8;i+=2){
       a = (diff[8*j+i] + diff[8*j+i+1])/2;
@@ -80,6 +117,7 @@ schro_metric_haar_transform (int16_t *diff)
       diff[j+8*(i+4)] = b;
     }
   }
+#endif
 }
 
 int
@@ -135,7 +173,7 @@ schro_metric_abssum_s16 (int16_t *data, int stride, int width,
 
   for(j=0;j<height;j++){
     for(i=0;i<width;i++){
-      sum += abs(data[j*stride + i]);
+      sum += abs(data[j*(stride/sizeof(int16_t)) + i]);
     }
   }
 

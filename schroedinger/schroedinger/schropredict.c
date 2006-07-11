@@ -13,7 +13,7 @@
 static void predict_dc (SchroMotionVector *mv, SchroFrame *frame,
     int x, int y, int w, int h);
 
-void schro_encoder_rough_global_prediction_2 (SchroEncoder *encoder);
+void schro_encoder_hierarchical_prediction (SchroEncoder *encoder);
 
 
 int cost (int value)
@@ -63,7 +63,9 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
   }
   frame = encoder->encode_frame;
 
-  schro_encoder_rough_global_prediction_2 (encoder);
+  SCHRO_ASSERT(params->num_refs > 0);
+
+  schro_encoder_hierarchical_prediction (encoder);
 
   for(j=0;j<4*params->y_num_mb;j++){
     for(i=0;i<4*params->x_num_mb;i++){
@@ -266,7 +268,7 @@ void schro_prediction_list_insert (SchroPredictionList *pred,
 
 void
 schro_prediction_list_scan (SchroPredictionList *list, SchroFrame *frame,
-    SchroFrame *ref, int x, int y, int sx, int sy, int sw, int sh)
+    SchroFrame *ref, int refnum, int x, int y, int sx, int sy, int sw, int sh)
 {
   int i,j;
   SchroPredictionVector vec;
@@ -282,6 +284,7 @@ schro_prediction_list_scan (SchroPredictionList *list, SchroFrame *frame,
 
   for(j=ymin;j<=ymax;j++){
     for(i=xmin;i<=xmax;i++){
+      vec.ref = refnum;
       vec.dx = i - x;
       vec.dy = j - y;
       vec.metric = schro_metric_haar (
@@ -296,14 +299,15 @@ schro_prediction_list_scan (SchroPredictionList *list, SchroFrame *frame,
 
 
 void
-schro_encoder_rough_global_prediction_2 (SchroEncoder *encoder)
+schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
 {
   SchroParams *params = &encoder->params;
   int i;
   int j;
   int x_blocks;
   int y_blocks;
-  SchroFrame *downsampled_ref;
+  SchroFrame *downsampled_ref0;
+  SchroFrame *downsampled_ref1 = NULL;
   SchroFrame *downsampled_frame;
   SchroPredictionList *pred_lists;
   SchroPredictionList *prev_pred_lists;
@@ -312,9 +316,15 @@ schro_encoder_rough_global_prediction_2 (SchroEncoder *encoder)
   prev_pred_lists = NULL;
 
   for(shift=3;shift>=0;shift--) {
-    downsampled_ref = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
+    downsampled_ref0 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
         params->width>>shift, params->height>>shift, 2, 2);
-    schro_frame_downsample (downsampled_ref, encoder->ref_frame0, shift);
+    schro_frame_downsample (downsampled_ref0, encoder->ref_frame0, shift);
+
+    if (params->num_refs == 2) {
+      downsampled_ref1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
+          params->width>>shift, params->height>>shift, 2, 2);
+      schro_frame_downsample (downsampled_ref1, encoder->ref_frame1, shift);
+    }
 
     downsampled_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
         params->width>>shift, params->height>>shift, 2, 2);
@@ -350,11 +360,18 @@ schro_encoder_rough_global_prediction_2 (SchroEncoder *encoder)
             }
             list = prev_pred_lists + parent_j*(x_blocks>>1) + parent_i;
           }
-          for(k=0;k<MIN(2,list->n_vectors);k++){
-            schro_prediction_list_scan (pred_lists + j*x_blocks + i,
-                downsampled_frame, downsampled_ref, i*8, j*8,
-                i*8 - 2 + list->vectors[k].dx*2,
-                j*8 - 2 + list->vectors[k].dy*2, 5, 5);
+          for(k=0;k<MIN(4,list->n_vectors);k++){
+            if (list->vectors[k].ref == 0) {
+              schro_prediction_list_scan (pred_lists + j*x_blocks + i,
+                  downsampled_frame, downsampled_ref0, 0, i*8, j*8,
+                  i*8 - 1 + list->vectors[k].dx*2,
+                  j*8 - 1 + list->vectors[k].dy*2, 3, 3);
+            } else {
+              schro_prediction_list_scan (pred_lists + j*x_blocks + i,
+                  downsampled_frame, downsampled_ref1, 1, i*8, j*8,
+                  i*8 - 1 + list->vectors[k].dx*2,
+                  j*8 - 1 + list->vectors[k].dy*2, 3, 3);
+            }
           }
         }
       }
@@ -364,8 +381,13 @@ schro_encoder_rough_global_prediction_2 (SchroEncoder *encoder)
         SchroPredictionList *list = pred_lists + j*x_blocks + i;
         if (list->n_vectors == 0) {
           schro_prediction_list_scan (pred_lists + j*x_blocks + i,
-              downsampled_frame, downsampled_ref, i*8, j*8,
+              downsampled_frame, downsampled_ref0, 0, i*8, j*8,
               i*8 - 8, j*8 - 8, 17, 17);
+          if (params->num_refs == 2) {
+            schro_prediction_list_scan (pred_lists + j*x_blocks + i,
+                downsampled_frame, downsampled_ref1, 1, i*8, j*8,
+                i*8 - 8, j*8 - 8, 17, 17);
+          }
         }
       }
     }
@@ -405,7 +427,10 @@ schro_encoder_rough_global_prediction_2 (SchroEncoder *encoder)
     }
 #endif
 
-    schro_frame_free (downsampled_ref);
+    schro_frame_free (downsampled_ref0);
+    if (downsampled_ref1) {
+      schro_frame_free (downsampled_ref1);
+    }
     schro_frame_free (downsampled_frame);
 
     if (prev_pred_lists) {
@@ -423,7 +448,7 @@ schro_encoder_rough_global_prediction_2 (SchroEncoder *encoder)
       mv = &encoder->motion_vectors[j*(4*params->x_num_mb) + i];
       list = prev_pred_lists + MIN(j,y_blocks-1)*x_blocks + MIN(i,x_blocks-1);
 
-      mv->pred_mode = 1;
+      mv->pred_mode = list->vectors[0].ref + 1;
       mv->using_global = 0;
       mv->split = 2;
       mv->common = 0;

@@ -12,8 +12,16 @@ typedef struct _SchroDecoder SchroDecoder;
 struct _SchroDecoder {
   SchroFrame *frame;
   SchroFrame *mc_tmp_frame;
+  int n_reference_frames;
   SchroFrame *reference_frames[10];
   SchroFrame *output_frame;
+
+  int picture_number;
+  int n_refs;
+  int reference1;
+  int reference2;
+  SchroFrame *ref0;
+  SchroFrame *ref1;
 
   int16_t *tmpbuf;
   int16_t *tmpbuf2;
@@ -22,7 +30,6 @@ struct _SchroDecoder {
   int rap_frame_number;
   int next_parse_offset;
   int prev_parse_offset;
-  int frame_number_offset;
 
   SchroBits *bits;
 
@@ -31,6 +38,12 @@ struct _SchroDecoder {
   SchroSubband subbands[1+6*3];
 
   SchroMotionVector *motion_vectors;
+
+  int n_retire;
+  int retire_list[10];
+
+  int frame_queue_length;
+  SchroFrame *frame_queue[10];
 };
 
 SchroDecoder * schro_decoder_new (void);

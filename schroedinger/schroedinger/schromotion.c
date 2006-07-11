@@ -401,7 +401,6 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
     SchroFrame *src2, SchroMotionVector *motion_vectors, SchroParams *params)
 {
   SchroFrame *frame = dest;
-  SchroFrame *reference_frame = src1;
   int i, j;
   int dx, dy;
   int x, y;
@@ -431,6 +430,14 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
         splat_block_general (&frame->components[2], x/2, y/2, mv->dc[2],
             &obmc_chroma);
       } else {
+        SchroFrame *ref;
+
+        if (mv->pred_mode == 1) {
+          ref = src1;
+        } else {
+          ref = src2;
+        }
+
         dx = mv->x;
         dy = mv->y;
 
@@ -443,11 +450,11 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
         SCHRO_ASSERT(y + dy < params->mc_luma_height);
 
         copy_block_general (&frame->components[0], x, y,
-            &reference_frame->components[0], x+dx, y+dy, &obmc_luma);
+            &ref->components[0], x+dx, y+dy, &obmc_luma);
         copy_block_general (&frame->components[1], x/2, y/2,
-            &reference_frame->components[1], (x+dx)/2, (y+dy)/2, &obmc_chroma);
+            &ref->components[1], (x+dx)/2, (y+dy)/2, &obmc_chroma);
         copy_block_general (&frame->components[2], x/2, y/2,
-            &reference_frame->components[2], (x+dx)/2, (y+dy)/2, &obmc_chroma);
+            &ref->components[2], (x+dx)/2, (y+dy)/2, &obmc_chroma);
       }
     }
   }

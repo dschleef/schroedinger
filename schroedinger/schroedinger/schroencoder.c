@@ -231,6 +231,10 @@ schro_encoder_encode (SchroEncoder *encoder)
 
   schro_encoder_choose_quantisers (encoder);
 
+  encoder->encode_frame = schro_encoder_frame_queue_get (encoder,
+      encoder->picture->frame_number);
+  if (encoder->encode_frame == NULL) return NULL;
+
   if (encoder->picture->n_refs > 0) {
     encoder->ref_frame0 = schro_encoder_reference_get (encoder,
         encoder->picture->reference_frame_number[0]);
@@ -241,10 +245,6 @@ schro_encoder_encode (SchroEncoder *encoder)
         encoder->picture->reference_frame_number[1]);
     SCHRO_ASSERT (encoder->ref_frame1 != NULL);
   }
-
-  encoder->encode_frame = schro_encoder_frame_queue_get (encoder,
-      encoder->picture->frame_number);
-  if (encoder->encode_frame == NULL) return NULL;
 
   SCHRO_DEBUG("encoding picture frame_number=%d is_ref=%d n_refs=%d",
       encoder->picture->frame_number, encoder->picture->is_ref,
@@ -259,6 +259,7 @@ schro_encoder_encode (SchroEncoder *encoder)
 
   SCHRO_DEBUG("frame number %d", encoder->frame_number);
 
+  encoder->params.num_refs = encoder->picture->n_refs;
   if (encoder->picture->n_refs > 0) {
     schro_encoder_encode_inter (encoder);
   } else {
@@ -271,7 +272,8 @@ schro_encoder_encode (SchroEncoder *encoder)
 
   encoder->picture_index++;
 
-  SCHRO_ERROR("encoded %d bits (q=%d)", encoder->bits->offset, encoder->base_quant);
+  SCHRO_ERROR("frame %d encoded %d bits (q=%d)", encoder->picture->frame_number,
+      encoder->bits->offset, encoder->base_quant);
 
 #if 0
   if (encoder->picture->n_refs == 0) {
@@ -303,7 +305,7 @@ schro_encoder_encode (SchroEncoder *encoder)
 static void
 schro_encoder_create_picture_list (SchroEncoder *encoder)
 {
-  int type = 1;
+  int type = 2;
   int i;
 
   switch(type) {
@@ -317,15 +319,15 @@ schro_encoder_create_picture_list (SchroEncoder *encoder)
       break;
     case 1:
       /* */
-      encoder->n_pictures = 4;
+      encoder->n_pictures = 8;
       encoder->picture_list[0].is_ref = 1;
       encoder->picture_list[0].n_refs = 0;
       encoder->picture_list[0].frame_number = encoder->frame_number;
       if (encoder->frame_number != 0) {
         encoder->picture_list[0].n_retire = 1;
-        encoder->picture_list[0].retire[0] = encoder->frame_number - 4;
+        encoder->picture_list[0].retire[0] = encoder->frame_number - 8;
       }
-      for(i=1;i<4;i++){
+      for(i=1;i<8;i++){
         encoder->picture_list[i].is_ref = 0;
         encoder->picture_list[i].n_refs = 1;
         encoder->picture_list[i].frame_number = encoder->frame_number + i;
@@ -333,7 +335,7 @@ schro_encoder_create_picture_list (SchroEncoder *encoder)
           encoder->frame_number;
         encoder->picture_list[i].n_retire = 0;
       }
-      encoder->frame_number+=4;
+      encoder->frame_number+=8;
       break;
     case 2:
       /* */
@@ -344,6 +346,7 @@ schro_encoder_create_picture_list (SchroEncoder *encoder)
         encoder->picture_list[0].n_refs = 0;
         encoder->picture_list[0].frame_number = encoder->frame_number;
       } else {
+        encoder->n_pictures = 8;
         encoder->picture_list[0].is_ref = 1;
         encoder->picture_list[0].n_refs = 0;
         encoder->picture_list[0].frame_number = encoder->frame_number + 7;
@@ -353,7 +356,7 @@ schro_encoder_create_picture_list (SchroEncoder *encoder)
           encoder->picture_list[i].frame_number = encoder->frame_number + i - 1;
           encoder->picture_list[i].reference_frame_number[0] =
             encoder->frame_number - 1;
-          encoder->picture_list[i].reference_frame_number[0] =
+          encoder->picture_list[i].reference_frame_number[1] =
             encoder->frame_number + 7;
           encoder->picture_list[i].n_retire = 0;
         }
@@ -443,7 +446,7 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
   schro_frame_free (encoder->encode_frame);
 
   schro_frame_copy_with_motion (encoder->tmp_frame1,
-      encoder->ref_frame0, NULL, encoder->motion_vectors,
+      encoder->ref_frame0, encoder->ref_frame1, encoder->motion_vectors,
       &encoder->params);
 
   schro_frame_subtract (encoder->tmp_frame0, encoder->tmp_frame1);
@@ -692,6 +695,7 @@ void
 schro_encoder_encode_frame_header (SchroEncoder *encoder,
     int parse_code)
 {
+  int i;
   
   /* parse parameters */
   schro_bits_encode_bits (encoder->bits, 8, 'B');
@@ -706,12 +710,21 @@ schro_encoder_encode_frame_header (SchroEncoder *encoder,
   schro_bits_encode_bits (encoder->bits, 24, 0);
 
   /* frame number offset */
-  /* FIXME */
-  schro_bits_encode_se2gol (encoder->bits, 1);
+  schro_bits_encode_se2gol (encoder->bits, encoder->picture->frame_number);
+
+  schro_bits_encode_uegol (encoder->bits, encoder->picture->n_refs);
+  for(i=0;i<encoder->picture->n_refs;i++){
+    schro_bits_encode_se2gol (encoder->bits,
+        encoder->picture->reference_frame_number[i] -
+        encoder->picture->frame_number);
+  }
 
   /* list */
-  schro_bits_encode_uegol (encoder->bits, 0);
-  //schro_bits_encode_se2gol (encoder->bits, -1);
+  schro_bits_encode_uegol (encoder->bits, encoder->picture->n_retire);
+  for(i=0;i<encoder->picture->n_retire;i++){
+    schro_bits_encode_se2gol (encoder->bits,
+        encoder->picture->retire[i] - encoder->picture->frame_number);
+  }
 
   schro_bits_sync (encoder->bits);
 }
