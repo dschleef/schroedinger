@@ -1,5 +1,14 @@
 2006-07-10  David Schleef  <ds@schleef.org>
 
+	* schroedinger/Makefile.am:
+	* schroedinger/schro.h:
+	* schroedinger/schrometric.c:
+	* schroedinger/schrometric.h:
+	* schroedinger/schropredict.c:
+	  Move some code from schropredict to separate file.
+
+2006-07-10  David Schleef  <ds@schleef.org>
+
 	* misc/dvd-to-ogg:
 	  Use default audio stream.  Samurai Jack is better in English
 	  than in Spanish.

@@ -12,64 +12,9 @@
 
 static void predict_dc (SchroMotionVector *mv, SchroFrame *frame,
     int x, int y, int w, int h);
-#if 0
-static void predict_motion (SchroMotionVector *mv, SchroFrame *frame,
-    SchroFrame *reference_frame, int x, int y, int w, int h);
-static void predict_motion_none (SchroMotionVector *mv, SchroFrame *frame,
-    SchroFrame *reference_frame, int x, int y, int w, int h);
-static void predict_motion_search (SchroMotionVector *mv, SchroFrame *frame,
-    SchroFrame *reference_frame, int x, int y, int w, int h);
-#endif
-
-#if 0
-static void schro_encoder_rough_global_prediction (SchroEncoder *encoder);
-static void schro_block_search (SchroMotionVector *est, SchroFrame *frame,
-    SchroFrame *ref, int x, int y, int distance);
-#endif
 
 void schro_encoder_rough_global_prediction_2 (SchroEncoder *encoder);
 
-
-#if 0
-static void
-schro_encoder_choose_split (SchroEncoder *encoder, int x, int y)
-{
-  SchroParams *params = &encoder->params;
-  SchroMotionVector *mv0;
-  SchroMotionVector *mv;
-  int i,j;
- 
-  mv0 = &encoder->motion_vectors[y*(4*params->x_num_mb) + x];
-
-  if (mv0->pred_mode == 0) {
-    for(j=0;j<4;j++){
-      for(i=0;i<4;i++){
-        mv = &encoder->motion_vectors[(y+j)*(4*params->x_num_mb) + (x+j)];
-        if (mv0->dc[0] != mv->dc[0] ||
-            mv0->dc[1] != mv->dc[1] ||
-            mv0->dc[2] != mv->dc[2]) {
-          mv->split = 2;
-          return;
-        }
-      }
-    }
-    mv->split = 0;
-  } else {
-    for(j=0;j<4;j++){
-      for(i=0;i<4;i++){
-        mv = &encoder->motion_vectors[(y+j)*(4*params->x_num_mb) + (x+j)];
-        if (mv0->pred_mode != mv->pred_mode ||
-            mv0->x != mv->x ||
-            mv0->y != mv->y) {
-          mv->split = 2;
-          return;
-        }
-      }
-    }
-    mv->split = 0;
-  }
-}
-#endif
 
 int cost (int value)
 {
@@ -111,16 +56,6 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
     encoder->motion_vectors_dc = malloc(sizeof(SchroMotionVector)*
         params->x_num_mb*params->y_num_mb*16);
   }
-#if 0
-  if (encoder->motion_vectors_none == NULL) {
-    encoder->motion_vectors_none = malloc(sizeof(SchroMotionVector)*
-        params->x_num_mb*params->y_num_mb*16);
-  }
-  if (encoder->motion_vectors_scan == NULL) {
-    encoder->motion_vectors_scan = malloc(sizeof(SchroMotionVector)*
-        params->x_num_mb*params->y_num_mb*16);
-  }
-#endif
 
   ref_frame = encoder->ref_frame0;
   if (!ref_frame) {
@@ -128,9 +63,6 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
   }
   frame = encoder->encode_frame;
 
-#if 0
-  schro_encoder_rough_global_prediction (encoder);
-#endif
   schro_encoder_rough_global_prediction_2 (encoder);
 
   for(j=0;j<4*params->y_num_mb;j++){
@@ -146,16 +78,6 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
 
       predict_dc (&encoder->motion_vectors_dc[j*(4*params->x_num_mb) + i],
           frame, x, y, w, h);
-
-#if 0
-      predict_motion_none (&encoder->motion_vectors_none[j*(4*params->x_num_mb) + i],
-          frame, ref_frame, x, y, w, h);
-
-      predict_motion_search (&encoder->motion_vectors_scan[j*(4*params->x_num_mb) + i],
-          frame, ref_frame, x, y, w, h);
-
-      (void)&predict_motion;
-#endif
     }
   }
 
@@ -166,9 +88,6 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
   for(j=0;j<4*params->y_num_mb;j++){
     for(i=0;i<4*params->x_num_mb;i++){
       int cost_dc;
-#if 0
-      int cost_none;
-#endif
       int cost_scan;
       int pred[3];
       int pred_x, pred_y;
@@ -191,15 +110,6 @@ mv->dc[2] = 128;
 
       schro_motion_vector_prediction (encoder->motion_vectors,
           params, i, j, &pred_x, &pred_y);
-#if 0
-      mv = &encoder->motion_vectors_none[j*(4*params->x_num_mb) + i];
-      cost_none = cost(mv->x - pred_x) + cost(mv->y - pred_y);
-      cost_none += encoder->metric_to_cost * mv->metric;
-
-      mv = &encoder->motion_vectors_scan[j*(4*params->x_num_mb) + i];
-      cost_scan = cost(mv->x - pred_x) + cost(mv->y - pred_y);
-      cost_scan += encoder->metric_to_cost * mv->metric;
-#endif
       mv = &encoder->motion_vectors[j*(4*params->x_num_mb) + i];
       cost_scan = cost(mv->x - pred_x) + cost(mv->y - pred_y);
       cost_scan += encoder->metric_to_cost * mv->metric;
@@ -218,38 +128,9 @@ mv->dc[2] = 128;
       encoder->motion_vectors[j*(4*params->x_num_mb) + i].split = 2;
     }
   }
-#if 0
-  for(j=0;j<4*params->y_num_mb;j+=4) {
-    for(i=0;i<4*params->x_num_mb;i+=4) {
-      schro_encoder_choose_split (encoder, i, j);
-    }
-  }
-#endif
 
   sum_pred_x = 0;
   sum_pred_y = 0;
-#if 0
-  for(j=0;j<4*params->y_num_mb;j++){
-    for(i=0;i<4*params->x_num_mb;i++){
-      int x,y;
-      SchroMotionVector *mv =
-        &encoder->motion_vectors[j*(4*params->x_num_mb) + i];
-
-      x = i*params->xbsep_luma;
-      y = j*params->ybsep_luma;
-
-      predict_dc (mv, frame, x, y, params->xbsep_luma, params->ybsep_luma);
-
-      predict_motion (mv, frame, ref_frame, x, y,
-          params->xbsep_luma, params->ybsep_luma);
-
-      if (mv->pred_mode != 0) {
-        sum_pred_x += mv->x;
-        sum_pred_y += mv->y;
-      }
-    }
-  }
-#endif
 
   pan_x = ((double)sum_pred_x)/(16*params->x_num_mb*params->y_num_mb);
   pan_y = ((double)sum_pred_y)/(16*params->x_num_mb*params->y_num_mb);
@@ -305,311 +186,11 @@ mv->dc[2] = 128;
 
 }
 
-#if 0
-static int
-calculate_metric (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
-    int width, int height)
-{
-  int i;
-  int j;
-  int metric = 0;
-
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      metric += abs (a[j*a_stride + i] - b[j*b_stride + i]);
-    }
-  }
-
-  return metric;
-}
-#endif
-
-#if 0
-static int
-calculate_metric2 (SchroFrame *frame1, int x1, int y1,
-    SchroFrame *frame2, int x2, int y2, int width, int height)
-{
-  int i;
-  int j;
-  int metric = 0;
-  uint8_t *a;
-  int a_stride;
-  uint8_t *b;
-  int b_stride;
-
-  a_stride = frame1->components[0].stride;
-  a = frame1->components[0].data + x1 + y1 * a_stride;
-  b_stride = frame2->components[0].stride;
-  b = frame2->components[0].data + x2 + y2 * b_stride;
-
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      metric += abs (a[j*a_stride + i] - b[j*b_stride + i]);
-    }
-  }
-
-  return metric;
-}
-#endif
-
-static int
-calculate_haar_metric (int16_t *diff)
-{
-  int i,j;
-  int a,b;
-  int metric;
-
-if(1){
-  for(j=0;j<8;j++){
-    for(i=0;i<8;i+=2){
-      a = (diff[8*j+i] + diff[8*j+i+1])/2;
-      b = diff[8*j+i+1] - a;
-      diff[8*j+i] = a;
-      diff[8*j+i+1] = b;
-    }
-  }
-  for(j=0;j<8;j++){
-    for(i=0;i<8;i+=2){
-      a = (diff[j+8*i] + diff[j+8*(i+1)])/2;
-      b = diff[j+8*(i+1)] - a;
-      diff[j+8*i] = a;
-      diff[j+8*(i+1)] = b;
-    }
-  }
-  for(j=0;j<8;j+=2){
-    for(i=0;i<8;i+=4){
-      a = (diff[8*j+i] + diff[8*j+i+2])/2;
-      b = diff[8*j+i+2] - a;
-      diff[8*j+i] = a;
-      diff[8*j+i+2] = b;
-    }
-  }
-  for(j=0;j<8;j+=2){
-    for(i=0;i<8;i+=4){
-      a = (diff[j+8*i] + diff[j+8*(i+2)])/2;
-      b = diff[j+8*(i+2)] - a;
-      diff[j+8*i] = a;
-      diff[j+8*(i+2)] = b;
-    }
-  }
-  for(j=0;j<8;j+=4){
-    for(i=0;i<8;i+=8){
-      a = (diff[8*j+i] + diff[8*j+i+4])/2;
-      b = diff[8*j+i+4] - a;
-      diff[8*j+i] = a;
-      diff[8*j+i+4] = b;
-    }
-  }
-  for(j=0;j<8;j+=4){
-    for(i=0;i<8;i+=8){
-      a = (diff[j+8*i] + diff[j+8*(i+4)])/2;
-      b = diff[j+8*(i+4)] - a;
-      diff[j+8*i] = a;
-      diff[j+8*(i+4)] = b;
-    }
-  }
-}
-  metric = 0;
-  for(j=0;j<8;j++){
-    for(i=0;i<8;i++){
-      metric+=abs(diff[j*8+i]);
-    }
-  }
-
-  return metric;
-}
-
-static int
-calculate_metric3 (SchroFrame *frame1, int x1, int y1,
-    SchroFrame *frame2, int x2, int y2, int width, int height)
-{
-  int16_t diff[64];
-  int i;
-  int j;
-  uint8_t *a;
-  int a_stride;
-  uint8_t *b;
-  int b_stride;
-
-  a_stride = frame1->components[0].stride;
-  a = frame1->components[0].data + x1 + y1 * a_stride;
-  b_stride = frame2->components[0].stride;
-  b = frame2->components[0].data + x2 + y2 * b_stride;
-
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      diff[j*8+i] = a[j*a_stride + i] - b[j*b_stride + i];
-    }
-  }
-
-  return calculate_haar_metric(diff);
-}
-
-static int
-calculate_dc_metric (SchroFrame *frame1, int x1, int y1, int dc_value,
-    int width, int height)
-{
-  int16_t diff[64];
-  int i;
-  int j;
-  uint8_t *a;
-  int a_stride;
-
-  a_stride = frame1->components[0].stride;
-  a = frame1->components[0].data + x1 + y1 * a_stride;
-
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      diff[j*8+i] = a[j*a_stride + i] - dc_value;
-    }
-  }
-
-  return calculate_haar_metric(diff);
-}
-
-#if 0
-static void
-predict_motion_search (SchroMotionVector *mv, SchroFrame *frame,
-    SchroFrame *reference_frame, int x, int y, int w, int h)
-{
-  int dx, dy;
-  //uint8_t *data = frame->components[0].data;
-  //int stride = frame->components[0].stride;
-  //uint8_t *ref_data = reference_frame->components[0].data;
-  //int ref_stride = reference_frame->components[0].stride;
-  int metric;
-  int min_metric;
-  int step_size;
-
-#if 0
-  min_metric = calculate_metric (data + y * stride + x, stride,
-      ref_data + y * ref_stride + x, ref_stride, w, h);
-  *pred_x = 0;
-  *pred_y = 0;
-
-  printf("mp %d %d metric %d\n", x, y, min_metric);
-#endif
-
-  dx = 0;
-  dy = 0;
-  step_size = 4;
-  while (step_size > 0) {
-    static const int hx[5] = { 0, 0, -1, 0, 1 };
-    static const int hy[5] = { 0, -1, 0, 1, 0 };
-    int px, py;
-    int min_index;
-    int i;
-
-    min_index = 0;
-    min_metric = calculate_metric2 (frame, x, y, reference_frame, x+dx, y+dy,
-        w, h);
-    for(i=1;i<5;i++){
-      px = x + dx + hx[i] * step_size;
-      py = y + dy + hy[i] * step_size;
-      if (px < 0 || py < 0 || 
-          px + w > reference_frame->components[0].width ||
-          py + h > reference_frame->components[0].height) {
-        continue;
-      }
-
-      metric = calculate_metric2 (frame, x, y, reference_frame, px, py,
-          w, h);
-
-      if (metric < min_metric) {
-        min_metric = metric;
-        min_index = i;
-      }
-    }
-
-    if (min_index == 0) {
-      step_size >>= 1;
-    } else {
-      dx += hx[min_index] * step_size;
-      dy += hy[min_index] * step_size;
-    }
-  }
-  mv->x = dx;
-  mv->y = dy;
-  mv->metric = min_metric;
-  mv->pred_mode = 1;
-}
-#endif
-
-#if 0
-static void
-predict_motion_scan (SchroMotionVector *mv, SchroFrame *frame,
-    SchroFrame *reference_frame, int x, int y, int w, int h)
-{
-  int dx,dy;
-  int metric;
-
-  for(dy = -4; dy <= 4; dy++) {
-    for(dx = -4; dx <= 4; dx++) {
-      if (y + dy < 0) continue;
-      if (x + dx < 0) continue;
-      if (y + dy + h > reference_frame->components[0].height) continue;
-      if (x + dx + w > reference_frame->components[0].width) continue;
-
-      metric = calculate_metric2 (frame, x, y, reference_frame,
-          x + dx, y + dy, w, h);
-
-      if (metric < mv->metric) {
-        mv->metric = metric;
-        mv->x = dx;
-        mv->y = dy;
-        mv->pred_mode = 1;
-      }
-
-    }
-  }
-}
-#endif
-
-#if 0
-static void
-predict_motion_none (SchroMotionVector *mv, SchroFrame *frame,
-    SchroFrame *reference_frame, int x, int y, int w, int h)
-{
-  int metric;
-
-  metric = calculate_metric2 (frame, x, y, reference_frame, x, y, w, h);
-  mv->x = 0;
-  mv->y = 0;
-  mv->metric = metric;
-  mv->pred_mode = 1;
-}
-#endif
-
-#if 0
-static void
-predict_motion (SchroMotionVector *mv, SchroFrame *frame,
-    SchroFrame *reference_frame, int x, int y, int w, int h)
-{
-  int how = 2;
-
-  switch(how) {
-    case 0:
-      predict_motion_scan (mv, frame, reference_frame, x, y, w, h);
-      break;
-    case 1:
-      predict_motion_search (mv, frame, reference_frame, x, y, w, h);
-      break;
-    case 2:
-      predict_motion_none (mv, frame, reference_frame, x, y, w, h);
-      break;
-  }
-}
-#endif
-
 static void
 predict_dc (SchroMotionVector *mv, SchroFrame *frame, int x, int y,
     int width, int height)
 {
-  int i;
-  int j;
-  int metric = 0;
-  uint8_t *a;
-  int a_stride;
+  int stride;
   int sum;
 
   if (height == 0 || width == 0) {
@@ -621,135 +202,30 @@ predict_dc (SchroMotionVector *mv, SchroFrame *frame, int x, int y,
   SCHRO_ASSERT(x + width <= frame->components[0].width);
   SCHRO_ASSERT(y + height <= frame->components[0].height);
 
-  a_stride = frame->components[0].stride;
-  a = frame->components[0].data + x + y * a_stride;
-  sum = 0;
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      sum += a[j*a_stride + i];
-    }
-  }
+  stride = frame->components[0].stride;
+  sum = schro_metric_sum_u8 (frame->components[0].data + x + y * stride,
+      stride, width, height);
   mv->dc[0] = (sum+height*width/2)/(height*width);
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      metric += abs (a[j*a_stride + i] - mv->dc[0]);
-    }
-  }
-  mv->metric = calculate_dc_metric(frame,x,y,mv->dc[0],width,height);
+  mv->metric = schro_metric_haar_const (frame->components[0].data + x + y*stride,
+      stride, mv->dc[0], width, height);
 
   width/=2;
   height/=2;
   x/=2;
   y/=2;
 
-  a_stride = frame->components[1].stride;
-  a = frame->components[1].data + x + y * a_stride;
-  sum = 0;
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      sum += a[j*a_stride + i];
-    }
-  }
+  stride = frame->components[1].stride;
+  sum = schro_metric_sum_u8 (frame->components[1].data + x + y * stride,
+      stride, width, height);
   mv->dc[1] = (sum+height*width/2)/(height*width);
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      metric += abs (a[j*a_stride + i] - mv->dc[1]);
-    }
-  }
 
-  a_stride = frame->components[2].stride;
-  a = frame->components[2].data + x + y * a_stride;
-  sum = 0;
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      sum += a[j*a_stride + i];
-    }
-  }
+  stride = frame->components[2].stride;
+  sum = schro_metric_sum_u8 (frame->components[2].data + x + y * stride,
+      stride, width, height);
   mv->dc[2] = (sum+height*width/2)/(height*width);
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      metric += abs (a[j*a_stride + i] - mv->dc[2]);
-    }
-  }
 
   mv->pred_mode = 0;
 }
-
-
-#if 0
-static void
-schro_encoder_rough_global_prediction (SchroEncoder *encoder)
-{
-  SchroParams *params = &encoder->params;
-  int i;
-  int j;
-  int x_blocks;
-  int y_blocks;
-  SchroFrame *downsampled_ref;
-  SchroFrame *downsampled_frame;
-  SchroMotionVector *motion_vectors;
-
-  downsampled_ref = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-      params->width/8, params->height/8, 2, 2);
-  schro_frame_downsample (downsampled_ref, encoder->ref_frame0, 3);
-
-  downsampled_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-      params->width/8, params->height/8, 2, 2);
-  schro_frame_downsample (downsampled_frame, encoder->encode_frame, 3);
-
-  x_blocks = params->width/8/8;
-  y_blocks = params->height/8/8;
-
-  motion_vectors = malloc (x_blocks*y_blocks*sizeof(SchroMotionVector));
-  memset (motion_vectors, 0, x_blocks*y_blocks*sizeof(SchroMotionVector));
-
-  for(j=0;j<y_blocks;j++){
-    for(i=0;i<x_blocks;i++){
-      schro_block_search (motion_vectors + j*x_blocks + i,
-          downsampled_frame, downsampled_ref, i*8, j*8, 8);
-    }
-  }
-
-  free(motion_vectors);
-}
-#endif
-
-#if 0
-static void
-schro_block_search (SchroMotionVector *est, SchroFrame *frame,
-    SchroFrame *ref, int x, int y, int distance)
-{
-  int i,j;
-  int min_metric;
-  int new_dx;
-  int new_dy;
-
-  new_dx = est->x;
-  new_dy = est->y;
-  min_metric = calculate_metric2 (frame, x, y, ref, x + est->x, y + est->y,
-      8, 8);
-
-  for(j=est->y-distance;j<=est->y+distance;j++){
-    if (y + j < 0 || y + j + 8 >= frame->components[0].height) continue;
-    for(i=est->x - distance;i<=est->x + distance;i++){
-      int metric;
-
-      if (x + i < 0 || x + i + 8 >= frame->components[0].width) continue;
-      metric = calculate_metric2 (frame, x, y, ref, x + i, y + j, 8, 8);
-      if (metric < min_metric) {
-        new_dx = i;
-        new_dy = j;
-        min_metric = metric;
-      }
-    }
-  }
-
-  est->x = new_dx;
-  est->y = new_dx;
-  est->metric = min_metric;
-}
-#endif
-
 
 
 /* Prediction List */
@@ -808,7 +284,11 @@ schro_prediction_list_scan (SchroPredictionList *list, SchroFrame *frame,
     for(i=xmin;i<=xmax;i++){
       vec.dx = i - x;
       vec.dy = j - y;
-      vec.metric = calculate_metric3 (frame, x, y, ref, i, j, 8, 8);
+      vec.metric = schro_metric_haar (
+          frame->components[0].data + x + y*frame->components[0].stride,
+          frame->components[0].stride,
+          ref->components[0].data + i + j*ref->components[0].stride,
+          ref->components[0].stride, 8, 8);
       schro_prediction_list_insert (list, &vec);
     }
   }

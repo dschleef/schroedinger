@@ -24,6 +24,8 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schroframe.h \
 	schrobuffer.c \
 	schrobuffer.h \
+	schrometric.c \
+	schrometric.h \
 	schromotion.c \
 	schromotion.h \
 	schroparams.c \

@@ -16,6 +16,7 @@
 #include <schroedinger/schropredict.h>
 #include <schroedinger/schrotables.h>
 #include <schroedinger/schrowavelet.h>
+#include <schroedinger/schrometric.h>
 
 
 void schro_init(void);
