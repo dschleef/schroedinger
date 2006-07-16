@@ -10,14 +10,6 @@ void
 schro_deinterleave (int16_t *d_n, int16_t *s_n, int n)
 {
   oil_deinterleave (d_n, s_n, n/2);
-#if 0
-  int i;
-
-  for(i=0;i<n/2;i++) {
-    d_n[i] = s_n[2*i];
-    d_n[n/2 + i] = s_n[2*i + 1];
-  }
-#endif
 }
 
 void

@@ -129,7 +129,6 @@ void schro_frame_set_free_callback (SchroFrame *frame,
 
 static void schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src);
-//static void schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src);
 
 void
 schro_frame_convert (SchroFrame *dest, SchroFrame *src)
@@ -206,31 +205,7 @@ schro_frame_subtract (SchroFrame *dest, SchroFrame *src)
   SCHRO_ERROR("unimplemented");
 }
 
-#if 0
-static void
-oil_convert4_s16_u8 (int16_t *d_n, uint8_t *s_n, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    d_n[i] = s_n[i];
-  }
-}
-#endif
-
 #define CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
-
-#if 0
-static void
-oil_convert4_u8_s16 (uint8_t *d_n, int16_t *s_n, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    d_n[i] = CLAMP(s_n[i],0,255);
-  }
-}
-#endif
 
 #define OFFSET(ptr,offset) ((void *)(((uint8_t *)(ptr)) + (offset)))
 #define MIN(a,b) ((a)<(b) ? (a) : (b))
@@ -260,36 +235,6 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
       ddata = OFFSET(ddata, dcomp->stride);
       sdata = OFFSET(sdata, scomp->stride);
     }
-
-#if 0
-    if (dcomp->width <= scomp->width && dcomp->height <= scomp->height) {
-      for(y=0;y<dcomp->height;y++){
-        oil_convert4_u8_s16 (ddata, sdata, dcomp->width);
-        ddata = OFFSET(ddata, dcomp->stride);
-        sdata = OFFSET(sdata, scomp->stride);
-      }
-    } else {
-      void *last_ddata;
-
-      if (dcomp->width < scomp->width || dcomp->height < scomp->height) {
-        SCHRO_ERROR("unimplemented");
-      }
-
-      for(y=0;y<scomp->height;y++){
-        oil_convert4_u8_s16 (ddata, sdata, scomp->width);
-        oil_splat_u8_ns (ddata + scomp->width,
-            ddata + scomp->width - 1,
-            dcomp->width - scomp->width);
-        ddata = OFFSET(ddata, dcomp->stride);
-        sdata = OFFSET(sdata, scomp->stride);
-      }
-      last_ddata = OFFSET(ddata, -dcomp->stride);
-      for(;y<dcomp->height;y++){
-        oil_memcpy (ddata, last_ddata, dcomp->width * sizeof (int16_t));
-        ddata = OFFSET(ddata, dcomp->stride);
-      }
-    }
-#endif
   }
 
   schro_frame_edge_extend (dest, src->components[0].width,
@@ -323,88 +268,12 @@ schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
       ddata = OFFSET(ddata, dcomp->stride);
       sdata = OFFSET(sdata, scomp->stride);
     }
-#if 0
-    if (dcomp->width <= scomp->width && dcomp->height <= scomp->height) {
-      for(y=0;y<dcomp->height;y++){
-        oil_convert4_s16_u8 (ddata, sdata, dcomp->width);
-        ddata = OFFSET(ddata, dcomp->stride);
-        sdata = OFFSET(sdata, scomp->stride);
-      }
-    } else {
-      void *last_ddata;
-
-      if (dcomp->width < scomp->width || dcomp->height < scomp->height) {
-        SCHRO_ERROR("unimplemented");
-      }
-
-      for(y=0;y<scomp->height;y++){
-        oil_convert4_s16_u8 (ddata, sdata, scomp->width);
-        oil_splat_u16_ns ((uint16_t *)ddata + scomp->width,
-            (uint16_t *)ddata + scomp->width - 1,
-            dcomp->width - scomp->width);
-        ddata = OFFSET(ddata, dcomp->stride);
-        sdata = OFFSET(sdata, scomp->stride);
-      }
-      last_ddata = OFFSET(ddata, -dcomp->stride);
-      for(;y<dcomp->height;y++){
-        oil_memcpy (ddata, last_ddata, dcomp->width * sizeof (int16_t));
-        ddata = OFFSET(ddata, dcomp->stride);
-      }
-    }
-#endif
   }
 
   schro_frame_edge_extend (dest, src->components[0].width,
       src->components[0].height);
 }
 
-
-#if 0
-static void
-schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src)
-{
-  SchroFrameComponent *dcomp;
-  SchroFrameComponent *scomp;
-  uint8_t *ddata;
-  uint8_t *sdata;
-  int i;
-  int y;
-
-  for(i=0;i<3;i++){
-    dcomp = &dest->components[i];
-    scomp = &src->components[i];
-    ddata = dcomp->data;
-    sdata = scomp->data;
-
-    if (dcomp->width <= scomp->width && dcomp->height <= scomp->height) {
-      for(y=0;y<dcomp->height;y++){
-        oil_memcpy (ddata, sdata, dcomp->width);
-        ddata = OFFSET(ddata, dcomp->stride);
-        sdata = OFFSET(sdata, scomp->stride);
-      }
-    } else {
-      void *last_ddata;
-
-      if (dcomp->width < scomp->width || dcomp->height < scomp->height) {
-        SCHRO_ERROR("unimplemented");
-      }
-
-      for(y=0;y<scomp->height;y++){
-        oil_memcpy (ddata, sdata, scomp->width);
-        oil_splat_u8_ns (ddata + scomp->width, ddata + scomp->width - 1,
-            dcomp->width - scomp->width);
-        ddata = OFFSET(ddata, dcomp->stride);
-        sdata = OFFSET(sdata, scomp->stride);
-      }
-      last_ddata = OFFSET(ddata, -dcomp->stride);
-      for(;y<dcomp->height;y++){
-        oil_memcpy (ddata, last_ddata, dcomp->width);
-        ddata = OFFSET(ddata, dcomp->stride);
-      }
-    }
-  }
-}
-#endif
 
 static void
 oil_add_s16(int16_t *d_n, int16_t *s1_n, int16_t *s2_n, int n)

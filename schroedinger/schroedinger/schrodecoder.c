@@ -15,9 +15,6 @@ static void schro_decoder_decode_macroblock(SchroDecoder *decoder,
     SchroArith *arith, int i, int j);
 static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
     SchroArith *arith, SchroMotionVector *motion_vectors, int x, int y);
-#if 0
-static void schro_decoder_predict (SchroDecoder *decoder);
-#endif
 
 static void schro_decoder_reference_add (SchroDecoder *decoder, SchroFrame *frame);
 static SchroFrame * schro_decoder_reference_get (SchroDecoder *decoder, int frame_number);
@@ -107,16 +104,6 @@ schro_decoder_is_rap (SchroBuffer *buffer)
   return 0;
 }
 
-
-#if 0
-static int
-round_up_pow2 (int x, int pow)
-{
-  x += (1<<pow) - 1;
-  x &= ~((1<<pow) - 1);
-  return x;
-}
-#endif
 
 SchroFrame *
 schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
@@ -259,40 +246,6 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
 
   return NULL;
 }
-
-#if 0
-void
-schro_decoder_copy_from_frame_buffer (SchroDecoder *decoder, SchroBuffer *buffer)
-{
-  SchroParams *params = &decoder->params;
-  int i;
-  uint8_t *data;
-  int16_t *frame_data;
-
-  data = buffer->data;
-
-  frame_data = (int16_t *)decoder->frame_buffer[0]->data;
-  for(i=0;i<params->height;i++){
-    oil_convert_u8_s16 (data, frame_data, params->width);
-    data += params->width;
-    frame_data += params->iwt_luma_width;
-  }
-
-  frame_data = (int16_t *)decoder->frame_buffer[1]->data;
-  for(i=0;i<params->height/2;i++){
-    oil_convert_u8_s16 (data, frame_data, params->width/2);
-    data += params->width/2;
-    frame_data += params->iwt_chroma_width;
-  }
-
-  frame_data = (int16_t *)decoder->frame_buffer[2]->data;
-  for(i=0;i<params->height/2;i++){
-    oil_convert_u8_s16 (data, frame_data, params->width/2);
-    data += params->width/2;
-    frame_data += params->iwt_chroma_width;
-  }
-}
-#endif
 
 void
 schro_decoder_iwt_transform (SchroDecoder *decoder, int component)
@@ -915,14 +868,6 @@ schro_decoder_decode_transform_data (SchroDecoder *decoder, int component)
 {
   int i;
   SchroParams *params = &decoder->params;
-
-#if 0
-  for (i=0;i<3;i++){
-    uint8_t value = 0;
-    oil_splat_u8_ns (decoder->frame->components[component].data, &value,
-        decoder->frame->components[component].length);
-  }
-#endif
 
   schro_decoder_init_subbands (decoder);
 
