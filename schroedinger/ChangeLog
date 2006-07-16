@@ -1,3 +1,10 @@
+2006-07-16  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c: use zero-extending instead of
+	  edge-extending inter frames.
+	* schroedinger/schroframe.c: Add zero-extending code.
+	* schroedinger/schroframe.h:
+
 2006-07-10  David Schleef  <ds@schleef.org>
 
 	* gst/gstschrodec.c:

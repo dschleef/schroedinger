@@ -51,6 +51,7 @@ void schro_frame_subtract (SchroFrame *dest, SchroFrame *src);
 void schro_frame_shift_left (SchroFrame *frame, int shift);
 void schro_frame_shift_right (SchroFrame *frame, int shift);
 void schro_frame_edge_extend (SchroFrame *frame, int width, int height);
+void schro_frame_zero_extend (SchroFrame *frame, int width, int height);
 
 void schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp);

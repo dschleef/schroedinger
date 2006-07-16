@@ -773,6 +773,78 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
   }
 }
 
+void
+schro_frame_zero_extend (SchroFrame *frame, int width, int height)
+{
+  SchroFrameComponent *comp;
+  int i;
+  int y;
+
+  SCHRO_DEBUG("extending %d %d -> %d %d", width, height,
+      frame->components[0].width, frame->components[0].height);
+
+  switch(frame->format) {
+    case SCHRO_FRAME_FORMAT_U8:
+      for(i=0;i<3;i++){
+        uint8_t zero = 0;
+        uint8_t *data;
+        int w,h;
+
+        comp = &frame->components[i];
+        data = comp->data;
+
+        if (i>0) {
+          w = width/2;
+          h = height/2;
+        } else {
+          w = width;
+          h = height;
+        }
+        if (w < comp->width) {
+          for(y = 0; y<h; y++) {
+            data = OFFSET(comp->data, comp->stride * y);
+            oil_splat_u8_ns (data + w, &zero, comp->width - w);
+          }
+        }
+        for(y=h; y < comp->height; y++) {
+          oil_splat_u8_ns (OFFSET(comp->data, comp->stride * y), &zero,
+              comp->width);
+        }
+      }
+      break;
+    case SCHRO_FRAME_FORMAT_S16:
+      for(i=0;i<3;i++){
+        int16_t *data;
+        int w,h;
+        int16_t zero = 0;
+
+        comp = &frame->components[i];
+        data = comp->data;
+
+        if (i>0) {
+          w = width/2;
+          h = height/2;
+        } else {
+          w = width;
+          h = height;
+        }
+        if (w < comp->width) {
+          for(y = 0; y<h; y++) {
+            data = OFFSET(comp->data, comp->stride * y);
+            oil_splat_s16_ns (data + w, &zero, comp->width - w);
+          }
+        }
+        for(y=h; y < comp->height; y++) {
+          oil_splat_s16_ns (OFFSET(comp->data, comp->stride * y), &zero,
+              comp->width * 2);
+        }
+      }
+      break;
+    default:
+      SCHRO_ERROR("unimplemented case");
+      break;
+  }
+}
 
 static int
 average_block_u8 (uint8_t *src, int stride, int width, int height)

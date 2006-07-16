@@ -451,7 +451,7 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
 
   schro_frame_subtract (encoder->tmp_frame0, encoder->tmp_frame1);
 
-  schro_frame_edge_extend (encoder->tmp_frame0, params->width, params->height);
+  schro_frame_zero_extend (encoder->tmp_frame0, params->width, params->height);
 
   schro_encoder_encode_transform_parameters (encoder);
 
@@ -466,8 +466,8 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
   encoder->metric_to_cost =
     (double)(encoder->bits->offset - residue_bits_start) /
     encoder->stats_metric;
-  SCHRO_ERROR("residue bits %d, stats_metric %d, m_to_c = %g, dc_blocks %d, scan blocks %d",
-      encoder->bits->offset - residue_bits_start,
+  SCHRO_ERROR("pred bits %d, residue bits %d, stats_metric %d, m_to_c = %g, dc_blocks %d, scan blocks %d",
+      residue_bits_start, encoder->bits->offset - residue_bits_start,
       encoder->stats_metric, encoder->metric_to_cost,
       encoder->stats_dc_blocks, encoder->stats_scan_blocks);
 
