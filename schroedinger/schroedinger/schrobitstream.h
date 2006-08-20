@@ -4,19 +4,24 @@
 
 typedef enum _SchroParseCode SchroParseCode;
 enum _SchroParseCode {
-  SCHRO_PARSE_CODE_RAP = 0xd7,
-  SCHRO_PARSE_CODE_INTRA_REF = 0xd1,
-  SCHRO_PARSE_CODE_INTRA_NON_REF = 0xd2,
-  SCHRO_PARSE_CODE_INTER_REF = 0xd3,
-  SCHRO_PARSE_CODE_INTER_NON_REF = 0xd4,
-  SCHRO_PARSE_CODE_SEQUENCE_STOP = 0xd0,
-  SCHRO_PARSE_CODE_DATA = 0xff
+  SCHRO_PARSE_CODE_ACCESS_UNIT = 0x00,
+  SCHRO_PARSE_CODE_INTRA_REF = 0x0c,
+  SCHRO_PARSE_CODE_INTRA_NON_REF = 0x08,
+  SCHRO_PARSE_CODE_INTER_REF_1 = 0x0d,
+  SCHRO_PARSE_CODE_INTER_REF_2 = 0x0e,
+  SCHRO_PARSE_CODE_INTER_NON_REF_1 = 0x09,
+  SCHRO_PARSE_CODE_INTER_NON_REF_2 = 0x0a,
+  SCHRO_PARSE_CODE_END_SEQUENCE = 0x10
 };
+
+#define SCHRO_PARSE_CODE_PICTURE(is_ref,n_refs) (8 | ((is_ref)<<2) | (n_refs))
+
+#define SCHRO_PARSE_CODE_IS_PICTURE(x) ((x) & 0x8)
+#define SCHRO_PARSE_CODE_NUM_REFS(x) ((x) & 0x3)
+#define SCHRO_PARSE_CODE_IS_REF(x) ((x) & 0x4)
 
 typedef struct _SchroSignalRange SchroSignalRange;
 struct _SchroSignalRange {
-  int bit_depth;
-  int accuracy_bits;
   int luma_offset;
   int luma_excursion;
   int chroma_offset;

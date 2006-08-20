@@ -30,7 +30,7 @@ struct _SchroDecoder {
   int16_t *tmpbuf2;
 
   int code;
-  int rap_frame_number;
+  int au_frame_number;
   int next_parse_offset;
   int prev_parse_offset;
 
@@ -53,10 +53,10 @@ SchroDecoder * schro_decoder_new (void);
 void schro_decoder_free (SchroDecoder *decoder);
 void schro_decoder_add_output_frame (SchroDecoder *decoder, SchroFrame *frame);
 int schro_decoder_is_parse_header (SchroBuffer *buffer);
-int schro_decoder_is_rap (SchroBuffer *buffer);
+int schro_decoder_is_access_unit (SchroBuffer *buffer);
 SchroFrame *schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer);
 void schro_decoder_decode_parse_header (SchroDecoder *decoder);
-void schro_decoder_decode_rap (SchroDecoder *decoder);
+void schro_decoder_decode_access_unit (SchroDecoder *decoder);
 void schro_decoder_decode_frame_header (SchroDecoder *decoder);
 void schro_decoder_decode_frame_prediction (SchroDecoder *decoder);
 void schro_decoder_decode_prediction_data (SchroDecoder *decoder);

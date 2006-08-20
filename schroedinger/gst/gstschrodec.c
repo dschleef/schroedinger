@@ -698,10 +698,10 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
   
   input_buffer = gst_schro_wrap_gst_buffer (buf);
 
-  if (schro_decoder_is_rap (input_buffer)) {
+  if (schro_decoder_is_access_unit (input_buffer)) {
     GstCaps *caps;
 
-    GST_DEBUG("random access point");
+    GST_DEBUG("access unit");
     schro_decoder_decode (schro_dec->decoder, input_buffer);
 
     caps = gst_caps_new_simple ("video/x-raw-yuv",
@@ -712,8 +712,8 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
         schro_dec->decoder->params.frame_rate_numerator,
         schro_dec->decoder->params.frame_rate_denominator,
         "pixel-aspect-ratio", GST_TYPE_FRACTION,
-        schro_dec->decoder->params.pixel_aspect_ratio_numerator,
-        schro_dec->decoder->params.pixel_aspect_ratio_denominator,
+        schro_dec->decoder->params.aspect_ratio_numerator,
+        schro_dec->decoder->params.aspect_ratio_denominator,
         NULL);
 
     GST_DEBUG("setting caps %" GST_PTR_FORMAT, caps);

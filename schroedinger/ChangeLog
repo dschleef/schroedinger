@@ -1,3 +1,22 @@
+2006-08-20  David Schleef  <ds@schleef.org>
+
+	* gst/gstschrodec.c:
+	* schroedinger/schrobits.c:
+	* schroedinger/schrobits.h:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* testsuite/Makefile.am:
+	* testsuite/dump_packets.c:
+	  "...And Moses came down from the mountain after 40 days and 40
+	  nights, and delivered unto the people two stone tablets
+	  containing a massive patch, saying 'With this patch, schroedinger
+	  is bistream compliant.'  And it was good."  Changes BISTREAM.
+
 2006-07-16  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:

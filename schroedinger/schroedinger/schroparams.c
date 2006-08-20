@@ -68,20 +68,20 @@ struct _SchroVideoFormat {
   char *name;
   int width;
   int height;
-  int interlace;
+  int interlaced_source;
   int top_field_first;
   int frame_rate_numerator;
   int frame_rate_denominator;
-  int pixel_aspect_ratio_numerator;
-  int pixel_aspect_ratio_denominator;
-  int clean_tl_x;
-  int clean_tl_y;
+  int aspect_ratio_numerator;
+  int aspect_ratio_denominator;
+  int left_offset;
+  int top_offset;
   int clean_height;
   int clean_width;
-  int colour_matrix_index;
-  int signal_range_index;
-  int colour_primaries_index;
-  int transfer_char_index;
+  int colour_matrix;
+  int signal_range;
+  int colour_primaries;
+  int transfer_function;
   int block_params_index;
 };
 
@@ -126,21 +126,21 @@ void schro_params_set_video_format (SchroParams *params, int index)
 
   params->width = format->width;
   params->height = format->height;
-  params->interlace = format->interlace;
+  params->interlaced_source = format->interlaced_source;
   params->top_field_first = format->top_field_first;
   params->frame_rate_numerator = format->frame_rate_numerator;
   params->frame_rate_denominator = format->frame_rate_denominator;
-  params->pixel_aspect_ratio_numerator = format->pixel_aspect_ratio_numerator;
-  params->pixel_aspect_ratio_denominator =
-    format->pixel_aspect_ratio_denominator;
-  params->clean_tl_x = format->clean_tl_x;
-  params->clean_tl_x = format->clean_tl_y;
+  params->aspect_ratio_numerator = format->aspect_ratio_numerator;
+  params->aspect_ratio_denominator =
+    format->aspect_ratio_denominator;
+  params->left_offset = format->left_offset;
+  params->top_offset = format->top_offset;
   params->clean_width = format->clean_width;
   params->clean_height = format->clean_height;
-  params->colour_matrix_index = format->colour_matrix_index;
-  params->signal_range_index = format->signal_range_index;
-  params->colour_primaries_index = format->colour_primaries_index;
-  params->transfer_char_index = format->transfer_char_index;
+  params->colour_matrix = format->colour_matrix;
+  //params->signal_range = format->signal_range;
+  params->colour_primaries = format->colour_primaries;
+  params->transfer_function = format->transfer_function;
 
   schro_params_set_block_params (params, format->block_params_index);
 }
@@ -159,7 +159,7 @@ schro_params_get_video_format_metric (SchroParams *params, int i)
   if (params->height != format->height) {
     metric++;
   }
-  if (params->interlace != format->interlace) {
+  if (params->interlaced_source != format->interlaced_source) {
     metric++;
   }
   if (params->top_field_first != format->top_field_first) {
@@ -171,16 +171,16 @@ schro_params_get_video_format_metric (SchroParams *params, int i)
   if (params->frame_rate_denominator != format->frame_rate_denominator) {
     metric++;
   }
-  if (params->pixel_aspect_ratio_numerator != format->pixel_aspect_ratio_numerator) {
+  if (params->aspect_ratio_numerator != format->aspect_ratio_numerator) {
     metric++;
   }
-  if (params->pixel_aspect_ratio_denominator != format->pixel_aspect_ratio_denominator) {
+  if (params->aspect_ratio_denominator != format->aspect_ratio_denominator) {
     metric++;
   }
-  if (params->clean_tl_x != format->clean_tl_x) {
+  if (params->left_offset != format->left_offset) {
     metric++;
   }
-  if (params->clean_tl_x != format->clean_tl_y) {
+  if (params->top_offset != format->top_offset) {
     metric++;
   }
   if (params->clean_width != format->clean_width) {
@@ -189,16 +189,18 @@ schro_params_get_video_format_metric (SchroParams *params, int i)
   if (params->clean_height != format->clean_height) {
     metric++;
   }
-  if (params->colour_matrix_index != format->colour_matrix_index) {
+  if (params->colour_matrix != format->colour_matrix) {
     metric++;
   }
-  if (params->signal_range_index != format->signal_range_index) {
+#if 0
+  if (params->signal_range != format->signal_range) {
     metric++;
   }
-  if (params->colour_primaries_index != format->colour_primaries_index) {
+#endif
+  if (params->colour_primaries != format->colour_primaries) {
     metric++;
   }
-  if (params->transfer_char_index != format->transfer_char_index) {
+  if (params->transfer_function != format->transfer_function) {
     metric++;
   }
 
@@ -324,37 +326,115 @@ struct _SchroPixelAspectRatio {
   int denominator;
 };
 
-static SchroPixelAspectRatio
-schro_pixel_aspect_ratios[] = {
+static const SchroPixelAspectRatio
+schro_aspect_ratios[] = {
   { 0, 0 },
   { 1, 1 },
   { 10, 11 },
   { 59, 54 }
 };
 
-void schro_params_set_pixel_aspect_ratio (SchroParams *params, int index)
+void schro_params_set_aspect_ratio (SchroParams *params, int index)
 {
-  if (index < 0 || index >= ARRAY_SIZE(schro_pixel_aspect_ratios)) {
+  if (index < 0 || index >= ARRAY_SIZE(schro_aspect_ratios)) {
     SCHRO_ERROR("illegal pixel aspect ratio index");
     return;
   }
 
-  params->pixel_aspect_ratio_numerator =
-    schro_pixel_aspect_ratios[index].numerator;
-  params->pixel_aspect_ratio_denominator =
-    schro_pixel_aspect_ratios[index].denominator;
+  params->aspect_ratio_numerator =
+    schro_aspect_ratios[index].numerator;
+  params->aspect_ratio_denominator =
+    schro_aspect_ratios[index].denominator;
 
 }
 
-int schro_params_get_pixel_aspect_ratio (SchroParams *params)
+int schro_params_get_aspect_ratio (SchroParams *params)
 {
   int i;
 
-  for(i=1;i<ARRAY_SIZE(schro_pixel_aspect_ratios);i++){
-    if (params->pixel_aspect_ratio_numerator ==
-        schro_pixel_aspect_ratios[i].numerator &&
-        params->pixel_aspect_ratio_denominator ==
-        schro_pixel_aspect_ratios[i].denominator) {
+  for(i=1;i<ARRAY_SIZE(schro_aspect_ratios);i++){
+    if (params->aspect_ratio_numerator ==
+        schro_aspect_ratios[i].numerator &&
+        params->aspect_ratio_denominator ==
+        schro_aspect_ratios[i].denominator) {
+      return i;
+    }
+  }
+
+  return 0;
+}
+
+#if 0
+typedef struct _SchroSignalRange SchroSignalRange;
+struct _SchroSignalRange {
+  int luma_offset;
+  int luma_excursion;
+  int chroma_offset;
+  int chroma_excursion;
+};
+#endif
+
+static const SchroSignalRange schro_signal_ranges[] = {
+  { 0, 0, 0, 0 },
+  { 0, 255, 128, 255 },
+  { 16, 235, 128, 224 },
+  { 64, 876, 512, 896 }
+};
+
+void schro_params_set_signal_range (SchroParams *params, int i)
+{
+  params->luma_offset = schro_signal_ranges[i].luma_offset;
+  params->luma_excursion = schro_signal_ranges[i].luma_excursion;
+  params->chroma_excursion = schro_signal_ranges[i].chroma_excursion;
+  params->chroma_excursion = schro_signal_ranges[i].chroma_excursion;
+}
+
+int schro_params_get_signal_range (SchroParams *params)
+{
+  int i;
+
+  for(i=1;i<ARRAY_SIZE(schro_signal_ranges);i++){
+    if (params->luma_offset == schro_signal_ranges[i].luma_offset &&
+        params->luma_excursion == schro_signal_ranges[i].luma_excursion &&
+        params->chroma_excursion == schro_signal_ranges[i].chroma_excursion &&
+        params->chroma_excursion == schro_signal_ranges[i].chroma_excursion) {
+      return i;
+    }
+  }
+
+  return 0;
+
+}
+
+typedef struct _SchroColourSpec SchroColourSpec;
+struct _SchroColourSpec {
+  int colour_primaries;
+  int colour_matrix;
+  int transfer_function;
+};
+
+static const SchroColourSpec schro_colour_specs[] = {
+  { 0, 0, 0 },
+  { 1, 1, 0 },
+  { 2, 1, 0 },
+  { 3, 2, 3 }
+};
+
+void schro_params_set_colour_spec (SchroParams *params, int i)
+{
+  params->colour_primaries = schro_colour_specs[i].colour_primaries;
+  params->colour_matrix = schro_colour_specs[i].colour_matrix;
+  params->transfer_function = schro_colour_specs[i].transfer_function;
+}
+
+int schro_params_get_colour_spec (SchroParams *params)
+{
+  int i;
+
+  for(i=1;i<ARRAY_SIZE(schro_colour_specs);i++){
+    if (params->colour_primaries == schro_colour_specs[i].colour_primaries &&
+        params->colour_matrix == schro_colour_specs[i].colour_matrix &&
+        params->transfer_function == schro_colour_specs[i].transfer_function) {
       return i;
     }
   }

@@ -94,10 +94,9 @@ schro_bits_encode_bit (SchroBits *bits, int value)
 }
 
 void
-schro_bits_encode_bits (SchroBits *bits, int n, int value)
+schro_bits_encode_bits (SchroBits *bits, int n, unsigned int value)
 {
   int i;
-  SCHRO_ASSERT (value < (1<<n));
   for(i=0;i<n;i++){
     schro_bits_encode_bit (bits, (value>>(n - 1 - i)) & 1);
   }
@@ -344,6 +343,36 @@ int schro_bits_decode_segol (SchroBits *bits)
   int value;
 
   value = schro_bits_decode_uegol (bits);
+  if (value) {
+    if (!schro_bits_decode_bit (bits)) {
+      value = -value;
+    }
+  }
+
+  return value;
+}
+
+int schro_bits_decode_uint (SchroBits *bits)
+{
+  int count;
+  int value;
+
+  count = 0;
+  value = 0;
+  while(!schro_bits_decode_bit (bits)) {
+    count++;
+    value <<= 1;
+    value |= schro_bits_decode_bit (bits);
+  }
+
+  return (1<<count) - 1 + value;
+}
+
+int schro_bits_decode_sint (SchroBits *bits)
+{
+  int value;
+
+  value = schro_bits_decode_uint (bits);
   if (value) {
     if (!schro_bits_decode_bit (bits)) {
       value = -value;
