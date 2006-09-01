@@ -268,8 +268,8 @@ schro_arith_context_update (SchroArith *arith, int i, int value)
 
 
 
-static int
-schro_arith_context_binary_decode (SchroArith *arith, int i)
+int
+schro_arith_context_decode_bit (SchroArith *arith, int i)
 {
   unsigned int count;
   int value;
@@ -332,8 +332,8 @@ schro_arith_context_binary_decode (SchroArith *arith, int i)
 }
 
 
-static void
-schro_arith_context_binary_encode (SchroArith *arith, int i, int value)
+void
+schro_arith_context_encode_bit (SchroArith *arith, int i, int value)
 {
   int range;
   int scaled_count0;
@@ -373,88 +373,6 @@ schro_arith_context_binary_encode (SchroArith *arith, int i, int value)
   } while (1);
 }
 
-
-
-
-void
-schro_arith_context_encode_bit (SchroArith *arith, int context, int value)
-{
-  schro_arith_context_binary_encode (arith, context, value);
-}
-
-void
-schro_arith_context_encode_uu (SchroArith *arith, int context, int context2, int value)
-{
-  switch (value) {
-    case 0:
-      schro_arith_context_binary_encode (arith, context, 1);
-      break;
-    case 1:
-      schro_arith_context_binary_encode (arith, context, 0);
-      schro_arith_context_binary_encode (arith, context2, 1);
-      break;
-    case 2:
-      schro_arith_context_binary_encode (arith, context, 0);
-      schro_arith_context_binary_encode (arith, context2, 0);
-      schro_arith_context_binary_encode (arith, context2 + 1, 1);
-      break;
-    case 3:
-      schro_arith_context_binary_encode (arith, context, 0);
-      schro_arith_context_binary_encode (arith, context2, 0);
-      schro_arith_context_binary_encode (arith, context2 + 1, 0);
-      schro_arith_context_binary_encode (arith, context2 + 2, 1);
-      break;
-    default:
-      schro_arith_context_binary_encode (arith, context, 0);
-      schro_arith_context_binary_encode (arith, context2, 0);
-      schro_arith_context_binary_encode (arith, context2 + 1, 0);
-      schro_arith_context_binary_encode (arith, context2 + 2, 0);
-      value -= 4;
-      while (value > 0) {
-        schro_arith_context_binary_encode (arith, context2 + 3, 0);
-        value--;
-      }
-      schro_arith_context_binary_encode (arith, context2 + 3, 1);
-      break;
-  }
-}
-
-void
-schro_arith_context_encode_su (SchroArith *arith, int context, int value)
-{
-  int i;
-  int sign;
-
-  if (value==0) {
-    schro_arith_context_binary_encode (arith, context, 1);
-    return;
-  }
-  if (value < 0) {
-    sign = 0;
-    value = -value;
-  } else {
-    sign = 1;
-  }
-  for(i=0;i<value;i++){
-    schro_arith_context_binary_encode (arith, context, 0);
-  }
-  schro_arith_context_binary_encode (arith, context, 1);
-  schro_arith_context_binary_encode (arith, context, sign);
-}
-
-void
-schro_arith_context_encode_ut (SchroArith *arith, int context, int value, int max)
-{
-  int i;
-
-  for(i=0;i<value;i++){
-    schro_arith_context_binary_encode (arith, context, 0);
-  }
-  if (value < max) {
-    schro_arith_context_binary_encode (arith, context, 1);
-  }
-}
-
 static int
 maxbit (unsigned int x)
 {
@@ -463,71 +381,6 @@ maxbit (unsigned int x)
     x >>= 1;
   }
   return i;
-}
-
-void
-schro_arith_context_encode_uegol (SchroArith *arith, int context, int value)
-{
-  int i;
-  int n_bits;
-
-  value++;
-  n_bits = maxbit(value);
-  for(i=0;i<n_bits - 1;i++){
-    schro_arith_context_binary_encode (arith, context, 0);
-  }
-  schro_arith_context_binary_encode (arith, context, 1);
-  for(i=0;i<n_bits - 1;i++){
-    schro_arith_context_binary_encode (arith, context, (value>>(n_bits - 2 - i))&1);
-  }
-}
-
-void
-schro_arith_context_encode_segol (SchroArith *arith, int context, int value)
-{
-  int sign;
-
-  if (value < 0) {
-    sign = 0;
-    value = -value;
-  } else {
-    sign = 1;
-  }
-  schro_arith_context_encode_uegol (arith, context, value);
-  if (value) {
-    schro_arith_context_binary_encode (arith, context, sign);
-  }
-}
-
-void
-schro_arith_context_encode_ue2gol (SchroArith *arith, int context, int value)
-{
-  int i;
-  int n_bits;
-
-  value++;
-  n_bits = maxbit(value);
-  schro_arith_context_encode_uegol (arith, context, n_bits - 1);
-  for(i=0;i<n_bits - 1;i++){
-    schro_arith_context_binary_encode (arith, context, (value>>(n_bits - 2 - i))&1);
-  }
-}
-
-void
-schro_arith_context_encode_se2gol (SchroArith *arith, int context, int value)
-{
-  int sign;
-
-  if (value < 0) {
-    sign = 0;
-    value = -value;
-  } else {
-    sign = 1;
-  }
-  schro_arith_context_encode_ue2gol (arith, context, value);
-  if (value) {
-    schro_arith_context_binary_encode (arith, context, sign);
-  }
 }
 
 void
@@ -540,12 +393,12 @@ schro_arith_context_encode_uint (SchroArith *arith, int cont_context,
   value++;
   n_bits = maxbit(value);
   for(i=0;i<n_bits - 1;i++){
-    schro_arith_context_binary_encode (arith, cont_context, 0);
-    schro_arith_context_binary_encode (arith, value_context,
+    schro_arith_context_encode_bit (arith, cont_context, 0);
+    schro_arith_context_encode_bit (arith, value_context,
         (value>>(n_bits - 2 - i))&1);
     cont_context = arith->contexts[cont_context].next;
   }
-  schro_arith_context_binary_encode (arith, cont_context, 1);
+  schro_arith_context_encode_bit (arith, cont_context, 1);
 }
 
 void
@@ -562,7 +415,7 @@ schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
   }
   schro_arith_context_encode_uint (arith, cont_context, value_context, value);
   if (value) {
-    schro_arith_context_binary_encode (arith, sign_context, sign);
+    schro_arith_context_encode_bit (arith, sign_context, sign);
   }
 }
 
@@ -572,27 +425,19 @@ schro_arith_encode_mode (SchroArith *arith, int context0, int context1,
 {
   switch (value) {
     case 0:
-      schro_arith_context_binary_encode (arith, context0, 1);
+      schro_arith_context_encode_bit (arith, context0, 1);
       break;
     case 1:
-      schro_arith_context_binary_encode (arith, context0, 0);
-      schro_arith_context_binary_encode (arith, context1, 1);
+      schro_arith_context_encode_bit (arith, context0, 0);
+      schro_arith_context_encode_bit (arith, context1, 1);
       break;
     case 2:
-      schro_arith_context_binary_encode (arith, context0, 0);
-      schro_arith_context_binary_encode (arith, context1, 0);
+      schro_arith_context_encode_bit (arith, context0, 0);
+      schro_arith_context_encode_bit (arith, context1, 0);
       break;
   }
 }
 
-
-
-
-int
-schro_arith_context_decode_bit (SchroArith *arith, int context)
-{
-  return schro_arith_context_binary_decode (arith, context);
-}
 
 int
 schro_arith_context_decode_bits (SchroArith *arith, int context, int n)
@@ -601,114 +446,9 @@ schro_arith_context_decode_bits (SchroArith *arith, int context, int n)
   int i;
   
   for(i=0;i<n;i++){
-    value = (value << 1) | schro_arith_context_binary_decode (arith, context);
+    value = (value << 1) | schro_arith_context_decode_bit (arith, context);
   } 
   
-  return value;
-}
-
-int
-schro_arith_context_decode_uu (SchroArith *arith, int context, int context2)
-{
-  int value;
-
-  if (schro_arith_context_binary_decode (arith, context)) return 0;
-  if (schro_arith_context_binary_decode (arith, context2)) return 1;
-  if (schro_arith_context_binary_decode (arith, context2 + 1)) return 2;
-  if (schro_arith_context_binary_decode (arith, context2 + 2)) return 3;
-  value = 4;
-  while (schro_arith_context_binary_decode (arith, context2 + 3) == 0) {
-    value++;
-  }
-  return value;
-}
-
-int
-schro_arith_context_decode_su (SchroArith *arith, int context)
-{
-  int value = 0;
-
-  if (schro_arith_context_binary_decode (arith, context) == 1) {
-    return 0;
-  }
-  value = 1;
-  while (schro_arith_context_binary_decode (arith, context) == 0) {
-    value++;
-  }
-  if (schro_arith_context_binary_decode (arith, context) == 0) {
-    value = -value;
-  }
-
-  return value;
-}
-
-int
-schro_arith_context_decode_ut (SchroArith *arith, int context, int max)
-{
-  int value;
-
-  for(value=0;value<max;value++){
-    if (schro_arith_context_binary_decode (arith, context)) {
-      return value;
-    }
-  }
-  return value;
-}
-
-int
-schro_arith_context_decode_uegol (SchroArith *arith, int context)
-{
-  int count;
-  int value;
-
-  count = 0;
-  while(!schro_arith_context_binary_decode (arith, context)) {
-    count++;
-  }
-  value = (1<<count) - 1 + schro_arith_context_decode_bits (arith, context, count);
-
-  return value;
-}
-
-int
-schro_arith_context_decode_segol (SchroArith *arith, int context)
-{
-  int value;
-
-  value = schro_arith_context_decode_uegol (arith, context);
-  if (value) {
-    if (!schro_arith_context_binary_decode (arith, context)) {
-      value = -value;
-    }
-  }
-
-  return value;
-}
-
-int
-schro_arith_context_decode_ue2gol (SchroArith *arith, int context)
-{
-  int count;
-  int value;
-
-  count = schro_arith_context_decode_uegol (arith, context);
-  value = (1<<count) - 1 + schro_arith_context_decode_bits (arith, context, count);
-
-  return value;
-}
-
-int
-schro_arith_context_decode_se2gol (SchroArith *arith, int context)
-{
-  int value;
-
-  value = schro_arith_context_decode_ue2gol (arith, context);
-  if (value) {
-    if (!schro_arith_context_binary_decode (arith, context)) {
-      value = -value;
-    }
-  }
-
   return value;
 }
 
@@ -720,9 +460,9 @@ schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
   int count=0;
 
   bits = 0;
-  while(!schro_arith_context_binary_decode (arith, cont_context)) {
+  while(!schro_arith_context_decode_bit (arith, cont_context)) {
     bits <<= 1;
-    bits |= schro_arith_context_binary_decode (arith, value_context);
+    bits |= schro_arith_context_decode_bit (arith, value_context);
     cont_context = arith->contexts[cont_context].next;
     count++;
   }
@@ -737,7 +477,7 @@ schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
 
   value = schro_arith_context_decode_uint (arith, cont_context, value_context);
   if (value) {
-    if (!schro_arith_context_binary_decode (arith, sign_context)) {
+    if (!schro_arith_context_decode_bit (arith, sign_context)) {
       value = -value;
     }
   }
@@ -748,10 +488,10 @@ schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
 int
 schro_arith_decode_mode (SchroArith *arith, int context0, int context1)
 {
-  if (schro_arith_context_binary_decode (arith, context0)) {
+  if (schro_arith_context_decode_bit (arith, context0)) {
     return 0;
   }
-  if (schro_arith_context_binary_decode (arith, context1)) {
+  if (schro_arith_context_decode_bit (arith, context1)) {
     return 1;
   }
   return 2;

@@ -1,5 +1,17 @@
 2006-09-01  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrobits.c:
+	* schroedinger/schrobits.h:
+	* testsuite/Makefile.am:
+	* testsuite/bits.c:
+	* testsuite/bits2.c:
+	* testsuite/codes.c:
+	  Remove old bit encoding methods.
+
+2006-09-01  David Schleef  <ds@schleef.org>
+
 	* schroedinger/Makefile.am:
 	* schroedinger/schro.c:
 	* schroedinger/schro.h:

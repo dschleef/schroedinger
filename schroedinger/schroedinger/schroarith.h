@@ -122,13 +122,6 @@ void schro_arith_flush (SchroArith *arith) INTERNAL;
 void schro_arith_init_contexts (SchroArith *arith) INTERNAL;
 
 void schro_arith_context_encode_bit (SchroArith *arith, int context, int value) INTERNAL;
-void schro_arith_context_encode_uu (SchroArith *arith, int context, int context2, int value) INTERNAL;
-void schro_arith_context_encode_su (SchroArith *arith, int context, int value) INTERNAL;
-void schro_arith_context_encode_ut (SchroArith *arith, int context, int value, int max) INTERNAL;
-void schro_arith_context_encode_uegol (SchroArith *arith, int context, int value) INTERNAL;
-void schro_arith_context_encode_segol (SchroArith *arith, int context, int value) INTERNAL;
-void schro_arith_context_encode_ue2gol (SchroArith *arith, int context, int value) INTERNAL;
-void schro_arith_context_encode_se2gol (SchroArith *arith, int context, int value) INTERNAL;
 void schro_arith_context_encode_uint (SchroArith *arith, int cont_context,
     int value_context, int value) INTERNAL;
 void schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
@@ -138,13 +131,6 @@ void schro_arith_encode_mode (SchroArith *arith, int context0, int context1,
 
 int schro_arith_context_decode_bit (SchroArith *arith, int context) INTERNAL;
 int schro_arith_context_decode_bits (SchroArith *arith, int context, int max) INTERNAL;
-int schro_arith_context_decode_uu (SchroArith *arith, int context, int context2) INTERNAL;
-int schro_arith_context_decode_su (SchroArith *arith, int context) INTERNAL;
-int schro_arith_context_decode_ut (SchroArith *arith, int context, int max) INTERNAL;
-int schro_arith_context_decode_uegol (SchroArith *arith, int context) INTERNAL;
-int schro_arith_context_decode_segol (SchroArith *arith, int context) INTERNAL;
-int schro_arith_context_decode_ue2gol (SchroArith *arith, int context) INTERNAL;
-int schro_arith_context_decode_se2gol (SchroArith *arith, int context) INTERNAL;
 int schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
     int value_context) INTERNAL;
 int schro_arith_context_decode_sint (SchroArith *arith, int cont_context,

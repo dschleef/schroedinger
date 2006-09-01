@@ -34,27 +34,13 @@ void schro_bits_append (SchroBits *bits, uint8_t *data, int len);
 
 void schro_bits_encode_bit (SchroBits *bits, int value);
 void schro_bits_encode_bits (SchroBits *bits, int n, unsigned int value);
-void schro_bits_encode_uu (SchroBits *bits, int value);
-void schro_bits_encode_su (SchroBits *bits, int value);
-void schro_bits_encode_ut (SchroBits *bits, int value, int max);
-void schro_bits_encode_uegol (SchroBits *bits, int value);
-void schro_bits_encode_segol (SchroBits *bits, int value);
 void schro_bits_encode_uint (SchroBits *bits, int value);
 void schro_bits_encode_sint (SchroBits *bits, int value);
-void schro_bits_encode_ue2gol (SchroBits *bits, int value);
-void schro_bits_encode_se2gol (SchroBits *bits, int value);
 
 int schro_bits_decode_bit (SchroBits *bits);
 int schro_bits_decode_bits (SchroBits *bits, int n);
-int schro_bits_decode_uu (SchroBits *bits);
-int schro_bits_decode_su (SchroBits *bits);
-int schro_bits_decode_ut (SchroBits *bits, int max);
-int schro_bits_decode_uegol (SchroBits *bits);
-int schro_bits_decode_segol (SchroBits *bits);
 int schro_bits_decode_uint (SchroBits *bits);
 int schro_bits_decode_sint (SchroBits *bits);
-int schro_bits_decode_ue2gol (SchroBits *bits);
-int schro_bits_decode_se2gol (SchroBits *bits);
 
 #endif
 

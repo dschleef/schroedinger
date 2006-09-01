@@ -1,6 +1,6 @@
 
 
-noinst_PROGRAMS = arith arith_encode arith_decode codes bits bits2 \
+noinst_PROGRAMS = arith arith_encode arith_decode bits bits2 \
 	 encode wavelet wavelet2 tables wavelet_2d arith_speed utils \
 	 obmc predict dump_packets
 
@@ -31,9 +31,9 @@ bits2_CFLAGS = $(SCHRO_CFLAGS)
 bits2_LDADD = $(SCHRO_LIBS)
 bits2_SOURCES = bits2.c
 
-codes_CFLAGS = $(SCHRO_CFLAGS)
-codes_LDADD = $(SCHRO_LIBS)
-codes_SOURCES = codes.c ../schroedinger/schroarith.c
+#codes_CFLAGS = $(SCHRO_CFLAGS)
+#codes_LDADD = $(SCHRO_LIBS)
+#codes_SOURCES = codes.c ../schroedinger/schroarith.c
 
 dump_packets_CFLAGS = $(SCHRO_CFLAGS) $(GST_CFLAGS)
 dump_packets_LDADD = $(SCHRO_LIBS) $(GST_LIBS)
