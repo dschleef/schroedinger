@@ -5,6 +5,7 @@
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schroframe.h>
+#include <schroedinger/schrobits.h>
 
 
 typedef struct _SchroDecoder SchroDecoder;

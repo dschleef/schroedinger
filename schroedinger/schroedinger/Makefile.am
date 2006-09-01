@@ -28,12 +28,16 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrometric.h \
 	schromotion.c \
 	schromotion.h \
+	schrooil.h \
+	schrooil.c \
 	schroparams.c \
 	schroparams.h \
 	schropredict.c \
 	schropredict.h \
 	schrotables.c \
 	schrotables.h \
+	schroutils.c \
+	schroutils.h \
 	schrowavelet.c \
 	schrowavelet.h \
 	schrobitstream.h

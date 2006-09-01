@@ -2,13 +2,11 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <schroedinger/schro.h>
+#include <schroedinger/schrointernal.h>
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
-#define CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
 
 static void predict_dc (SchroMotionVector *mv, SchroFrame *frame,
     int x, int y, int w, int h);
@@ -262,9 +260,6 @@ void schro_prediction_list_insert (SchroPredictionList *pred,
   }
   pred->vectors[0] = *vec;
 }
-
-#define MIN(a,b) ((a)<(b) ? (a) : (b))
-#define MAX(a,b) ((a)>(b) ? (a) : (b))
 
 void
 schro_prediction_list_scan (SchroPredictionList *list, SchroFrame *frame,

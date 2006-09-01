@@ -4,7 +4,7 @@
 #include <config.h>
 #endif
 
-#include <schroedinger/schro.h>
+#include <schroedinger/schrointernal.h>
 #include <schroedinger/schroframe.h>
 #include <liboil/liboil.h>
 
@@ -205,11 +205,6 @@ schro_frame_subtract (SchroFrame *dest, SchroFrame *src)
   SCHRO_ERROR("unimplemented");
 }
 
-#define CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
-
-#define OFFSET(ptr,offset) ((void *)(((uint8_t *)(ptr)) + (offset)))
-#define MIN(a,b) ((a)<(b) ? (a) : (b))
-
 static void
 schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
 {
@@ -276,26 +271,6 @@ schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
 
 
 static void
-oil_add_s16(int16_t *d_n, int16_t *s1_n, int16_t *s2_n, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    d_n[i] = s1_n[i] + s2_n[i];
-  }
-}
-
-static void
-oil_add_s16_u8(int16_t *d_n, int16_t *s1_n, uint8_t *s2_n, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    d_n[i] = s1_n[i] + s2_n[i];
-  }
-}
-
-static void
 schro_frame_add_s16_s16 (SchroFrame *dest, SchroFrame *src)
 {
   SchroFrameComponent *dcomp;
@@ -348,26 +323,6 @@ schro_frame_add_s16_u8 (SchroFrame *dest, SchroFrame *src)
       ddata = OFFSET(ddata, dcomp->stride);
       sdata = OFFSET(sdata, scomp->stride);
     }
-  }
-}
-
-static void
-oil_subtract_s16(int16_t *d_n, int16_t *s1_n, int16_t *s2_n, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    d_n[i] = s1_n[i] - s2_n[i];
-  }
-}
-
-static void
-oil_subtract_s16_u8(int16_t *d_n, int16_t *s1_n, uint8_t *s2_n, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    d_n[i] = s1_n[i] - (s2_n[i]<<4);
   }
 }
 
@@ -502,15 +457,6 @@ schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
 }
 
 
-void
-oil_leftshift_s16(int16_t *data, int *shift, int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    data[i] <<= *shift;
-  }
-}
-
 void schro_frame_shift_left (SchroFrame *frame, int shift)
 {
   SchroFrameComponent *comp;
@@ -526,23 +472,6 @@ void schro_frame_shift_left (SchroFrame *frame, int shift)
       oil_leftshift_s16 (data, &shift, comp->width);
       data = OFFSET(data, comp->stride);
     }
-  }
-}
-
-void
-oil_divpow2_s16(int16_t *data, int *shift, int n)
-{
-  int i;
-  int16_t round;
- 
-  if (*shift > 1) {
-    round = 1<<(*shift-1);
-  } else {
-    round = 0;
-  }
-
-  for(i=0;i<n;i++){
-    data[i] = (data[i] + round) >> *shift;
   }
 }
 
@@ -564,12 +493,6 @@ void schro_frame_shift_right (SchroFrame *frame, int shift)
   }
 }
 
-
-static void
-oil_splat_s16_ns (int16_t *dest, int16_t *src, int n)
-{
-  oil_splat_u16_ns ((uint16_t *)dest, (uint16_t *)src, n);
-}
 
 void
 schro_frame_edge_extend (SchroFrame *frame, int width, int height)

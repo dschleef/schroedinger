@@ -3,7 +3,7 @@
 #include "config.h"
 #endif
 
-#include <schroedinger/schro.h>
+#include <schroedinger/schroutils.h>
 
 
 int
@@ -18,5 +18,14 @@ ilog2(unsigned int x)
   }
 
   return shift;
+}
+
+unsigned int
+round_up_pow2(unsigned int x, int p)
+{
+  int y = (1<<p) - 1;
+  x += y;
+  x &= ~y;
+  return x;
 }
 

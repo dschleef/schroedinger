@@ -4,6 +4,7 @@
 #endif
 
 #include <schroedinger/schro.h>
+#include <schroedinger/schrowavelet.h>
 
 #include <stdio.h>
 #include <string.h>

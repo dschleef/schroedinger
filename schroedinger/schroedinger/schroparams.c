@@ -2,24 +2,11 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <schroedinger/schro.h>
+#include <schroedinger/schrointernal.h>
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <string.h>
 
-
-#define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
-
-static int
-round_up_pow2 (int x, int p)
-{
-  int y = (1<<p) - 1;
-  x += y;
-  x &= ~y;
-  return x;
-}
-
-#define DIVIDE_ROUND_UP(a,b) (((a) + (b) - 1)/(b))
 
 void
 schro_params_calculate_mc_sizes (SchroParams *params)

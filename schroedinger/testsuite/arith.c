@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <schroedinger/schro.h>
+#include <schroedinger/schroarith.h>
 
 #define BUFFER_SIZE 10000
 

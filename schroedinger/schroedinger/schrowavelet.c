@@ -1,5 +1,5 @@
 
-#include <schroedinger/schro.h>
+#include <schroedinger/schrointernal.h>
 #include <string.h>
 #include <stdio.h>
 #include <liboil/liboil.h>
@@ -559,48 +559,6 @@ schro_lift_synth_135_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
     }
     d_n[(n-3)*dstr] = s_n[n-3] + ((9*(d_n[(n-4)*dstr] + d_n[(n-2)*dstr]) - (d_n[(n-6)*dstr] + d_n[(n-2)*dstr])) >> 4);
     d_n[(n-1)*dstr] = s_n[n-1] + ((9*d_n[(n-2)*dstr] - d_n[(n-4)*dstr]) >> 3);
-  }
-}
-
-void
-oil_lift_haar_split (int16_t *i1, int16_t *i2, int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    i2[i] -= i1[i];
-    i1[i] += i2[i]>>1;
-  }
-}
-
-void
-oil_lift_haar_synth (int16_t *i1, int16_t *i2, int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    i1[i] -= i2[i]>>1;
-    i2[i] += i1[i];
-  }
-}
-
-void
-oil_synth_haar (int16_t *d, int16_t *s, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    d[2*i] = s[2*i] - (s[2*i+1]>>1);
-    d[2*i + 1] = s[2*i+1] + d[2*i];
-  }
-}
-
-void
-oil_split_haar (int16_t *d, int16_t *s, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    d[2*i+1] = s[2*i+1] - s[2*i];
-    d[2*i] = s[2*i] + (d[2*i + 1]>>1);
   }
 }
 

@@ -2,7 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <schroedinger/schro.h>
+#include <schroedinger/schrointernal.h>
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <string.h>
@@ -128,8 +128,6 @@ splat_block (uint8_t *dest, int dstr, int value, int w, int h)
   }
 }
 #endif
-
-#define SCHRO_GET(ptr, offset, type) (*(type *)((uint8_t *)(ptr) + (offset)) )
 
 void
 schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
@@ -290,19 +288,6 @@ splat_block_general (SchroFrameComponent *dest, int x, int y, int value,
 }
 
 void
-notoil_multiply_and_add_s16 (int16_t *dest, int16_t *src1, uint8_t *src2,
-    int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    dest[i] += src1[i] * src2[i];
-  }
-}
-
-#define OFFSET(ptr,offset) ((void *)((uint8_t *)ptr + offset))
-#define CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
-
-void
 copy_block_general (SchroFrameComponent *dest, int x, int y,
     SchroFrameComponent *src, int sx, int sy, SchroObmc *obmc)
 {
@@ -346,7 +331,7 @@ copy_block_general (SchroFrameComponent *dest, int x, int y,
     }
   } else {
     for(j=region->start_y;j<region->end_y;j++){
-      notoil_multiply_and_add_s16 (
+      oil_multiply_and_add_s16 (
           OFFSET(dest->data, dest->stride*(y+j) + 2*(x + region->start_x)),
           OFFSET(region->weights, obmc->stride*j + 2*region->start_x),
           OFFSET(src->data, src->stride * (sy + j) + sx + region->start_x),
@@ -362,39 +347,6 @@ copy_block_general (SchroFrameComponent *dest, int x, int y,
     }
   }
 }
-
-static void
-oil_divpow2_s16(int16_t *data, int *shift, int n)
-{
-  int i;
-  int16_t round;
-
-  if (*shift > 1) {
-    round = 1<<(*shift-1);
-  } else {
-    round = 0;
-  }
-
-  for(i=0;i<n;i++){
-    data[i] = (data[i] + round) >> (*shift);
-  }
-}
-
-static int
-ilog2(unsigned int x)
-{
-  int shift=0;
-  
-  x>>=1;
-  while(x) {
-    x>>=1;
-    shift++;
-  }
-
-  return shift;
-}
-
-#define OFFSET(ptr,offset) ((void *)((uint8_t *)ptr + offset))
 
 void
 schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,

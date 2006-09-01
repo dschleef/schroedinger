@@ -5,6 +5,7 @@
 
 #include <gst/gst.h>
 #include <schroedinger/schro.h>
+#include <schroedinger/schrobitstream.h>
 #include <glib.h>
 #include <string.h>
 

@@ -2,7 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <schroedinger/schro.h>
+#include <schroedinger/schrointernal.h>
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <string.h>
@@ -145,7 +145,6 @@ schro_encoder_end_of_stream (SchroEncoder *encoder)
   encoder->end_of_stream = TRUE;
 }
 
-#define CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
 static void
 schro_encoder_choose_quantisers (SchroEncoder *encoder)
 {
@@ -848,7 +847,6 @@ schro_encoder_init_subbands (SchroEncoder *encoder)
 
 }
 
-#define ROUND_UP_SHIFT(x,y) (((x))>>(y))
 void
 schro_encoder_clean_up_transform (SchroEncoder *encoder, int component,
     int index)
@@ -1096,7 +1094,6 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
     return;
   }
 
-#define MIN(a,b) ((a)<(b) ? (a) : (b))
   for(y=0;y<height;y+=params->codeblock_height[subband->scale_factor_shift]) {
     int ymax = MIN(y + params->codeblock_height[subband->scale_factor_shift],
         height);

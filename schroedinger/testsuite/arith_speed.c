@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <schroedinger/schro.h>
+#include <schroedinger/schroarith.h>
 
 #include <liboil/liboilprofile.h>
 #include <liboil/liboilrandom.h>

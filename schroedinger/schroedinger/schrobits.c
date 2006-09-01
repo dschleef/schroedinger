@@ -9,7 +9,7 @@
 #include <liboil/liboil.h>
 
 #include <schroedinger/schrobits.h>
-#include <schroedinger/schro.h>
+#include <schroedinger/schrointernal.h>
 
 
 SchroBits *

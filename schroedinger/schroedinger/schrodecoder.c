@@ -2,7 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <schroedinger/schro.h>
+#include <schroedinger/schrointernal.h>
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1054,7 +1054,6 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     schro_arith_decode_init (arith, buffer);
     schro_arith_init_contexts (arith);
 
-#define MIN(a,b) ((a)<(b) ? (a) : (b))
     for(y=0;y<height;y+=params->codeblock_height[subband->scale_factor_shift]) {
       int ymax = MIN(y + params->codeblock_height[subband->scale_factor_shift],
           height);

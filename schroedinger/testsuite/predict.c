@@ -4,6 +4,8 @@
 #endif
 
 #include <schroedinger/schro.h>
+#include <schroedinger/schropredict.h>
+#include <schroedinger/schrodebug.h>
 #include <stdio.h>
 #include <stdlib.h>
 

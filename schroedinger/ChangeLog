@@ -1,3 +1,38 @@
+2006-09-01  David Schleef  <ds@schleef.org>
+
+	* schroedinger/Makefile.am:
+	* schroedinger/schro.c:
+	* schroedinger/schro.h:
+	* schroedinger/schrobits.c:
+	* schroedinger/schrodebug.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schrointernal.h:
+	* schroedinger/schrometric.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schrooil.c:
+	* schroedinger/schrooil.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schropredict.c:
+	* schroedinger/schroutils.c:
+	* schroedinger/schroutils.h:
+	* schroedinger/schrowavelet.c:
+	* testsuite/arith.c:
+	* testsuite/arith_decode.c:
+	* testsuite/arith_encode.c:
+	* testsuite/arith_speed.c:
+	* testsuite/codes.c:
+	* testsuite/dump_packets.c:
+	* testsuite/obmc.c:
+	* testsuite/predict.c:
+	* testsuite/wavelet2.c:
+	* testsuite/wavelet_2d.c:
+	  Code cleanup.  Move internal headers out of schro.h.  Move
+	  (future) oil code to separate file.  Move code to schroutils.c.
+
 2006-08-20  David Schleef  <ds@schleef.org>
 
 	* gst/gstschrodec.c:

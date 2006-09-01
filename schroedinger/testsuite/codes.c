@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include <schroedinger/schro.h>
+#include <schroedinger/schroarith.h>
 
 
 
