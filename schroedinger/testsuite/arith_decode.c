@@ -23,7 +23,7 @@ main (int argc, char *argv[])
   }
 
   schro_arith_decode_init (a);
-  schro_arith_context_init (a, 0, 1, 1);
+  schro_arith_init_contexts (a);
 
   for(i=0;i<10000;i++){
     printf("hi=%d lo=%d code=%04x count0=%d count1=%d\n",
@@ -60,7 +60,7 @@ main (int argc, char *argv[])
   a = schro_arith_new();
 
   schro_arith_decode_init (a, input_buffer);
-  schro_arith_context_init (a, 0, 1, 1);
+  schro_arith_init_contexts (a);
 
   i = 0;
   while (a->offset < n_bytes) {

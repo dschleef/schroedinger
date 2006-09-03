@@ -499,11 +499,11 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
       split_prediction = schro_motion_split_prediction (
           encoder->motion_vectors, params, i, j);
       split_residual = (mv->split - split_prediction)%3;
-      schro_arith_encode_mode (arith, SCHRO_CTX_SPLIT_0, SCHRO_CTX_SPLIT_1,
+      _schro_arith_encode_mode (arith, SCHRO_CTX_SPLIT_0, SCHRO_CTX_SPLIT_1,
           split_residual);
 
       if (global_motion) {
-        schro_arith_context_encode_bit (arith, SCHRO_CTX_GLOBAL_BLOCK,
+        _schro_arith_context_encode_bit (arith, SCHRO_CTX_GLOBAL_BLOCK,
             mb_using_global);
       } else {
         SCHRO_ASSERT(mb_using_global == FALSE);
@@ -514,7 +514,7 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
         SCHRO_ASSERT(mv->split == 2);
       }
       if (mv->split != 0) {
-        schro_arith_context_encode_bit (arith, SCHRO_CTX_COMMON,
+        _schro_arith_context_encode_bit (arith, SCHRO_CTX_COMMON,
             mb_common);
       }
 
@@ -523,9 +523,9 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
           SchroMotionVector *mv =
             &encoder->motion_vectors[(j+l)*(4*params->x_num_mb) + i + k];
 
-          schro_arith_context_encode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF1,
+          _schro_arith_context_encode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF1,
               mv->pred_mode & 1);
-          schro_arith_context_encode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF2,
+          _schro_arith_context_encode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF2,
               mv->pred_mode >> 1);
           if (mv->pred_mode == 0) {
             int pred[3];
@@ -533,15 +533,15 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
             schro_motion_dc_prediction (encoder->motion_vectors,
                 params, i+k, j+l, pred);
 
-            schro_arith_context_encode_sint (arith,
+            _schro_arith_context_encode_sint (arith,
                 SCHRO_CTX_LUMA_DC_CONT_BIN1, SCHRO_CTX_LUMA_DC_VALUE,
                 SCHRO_CTX_LUMA_DC_SIGN,
                 mv->dc[0] - pred[0]);
-            schro_arith_context_encode_sint (arith,
+            _schro_arith_context_encode_sint (arith,
                 SCHRO_CTX_CHROMA1_DC_CONT_BIN1, SCHRO_CTX_CHROMA1_DC_VALUE,
                 SCHRO_CTX_CHROMA1_DC_SIGN,
                 mv->dc[1] - pred[1]);
-            schro_arith_context_encode_sint (arith,
+            _schro_arith_context_encode_sint (arith,
                 SCHRO_CTX_CHROMA2_DC_CONT_BIN1, SCHRO_CTX_CHROMA2_DC_VALUE,
                 SCHRO_CTX_CHROMA2_DC_SIGN,
                 mv->dc[2] - pred[2]);
@@ -551,12 +551,12 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
             schro_motion_vector_prediction (encoder->motion_vectors,
                 params, i+k, j+l, &pred_x, &pred_y);
 
-            schro_arith_context_encode_sint(arith,
+            _schro_arith_context_encode_sint(arith,
                 SCHRO_CTX_MV_REF1_H_CONT_BIN1,
                 SCHRO_CTX_MV_REF1_H_VALUE,
                 SCHRO_CTX_MV_REF1_H_SIGN,
                 mv->x - pred_x);
-            schro_arith_context_encode_sint(arith,
+            _schro_arith_context_encode_sint(arith,
                 SCHRO_CTX_MV_REF1_V_CONT_BIN1,
                 SCHRO_CTX_MV_REF1_V_VALUE,
                 SCHRO_CTX_MV_REF1_V_SIGN,
@@ -1111,7 +1111,7 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
       }
     }
   }
-  schro_arith_context_encode_bit (arith, SCHRO_CTX_ZERO_CODEBLOCK, zero_codeblock);
+  _schro_arith_context_encode_bit (arith, SCHRO_CTX_ZERO_CODEBLOCK, zero_codeblock);
   if (zero_codeblock) {
     continue;
   }
@@ -1198,7 +1198,7 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
         }
       }
 
-      schro_arith_context_encode_sint (arith, cont_context, value_context,
+      _schro_arith_context_encode_sint (arith, cont_context, value_context,
           sign_context, quant_data[j*width + i]);
     }
   }
@@ -1345,7 +1345,7 @@ codeblock_line_encode (SchroSubband *subband, int16_t *data,
       table_index |= (nhood_sum[i] > ntop)<<1;
       table_index |= (nhood_sum[i] > 0)<<0;
 
-      schro_arith_context_encode_sint (arith, table[table_index][0],
+      _schro_arith_context_encode_sint (arith, table[table_index][0],
           table[table_index][1], table[table_index][2], quant_data[i]);
     }
   } else {
@@ -1358,7 +1358,7 @@ codeblock_line_encode (SchroSubband *subband, int16_t *data,
       table_index |= (nhood_sum[i] > ntop)<<1;
       table_index |= (nhood_sum[i] > 0)<<0;
 
-      schro_arith_context_encode_sint (arith, table[table_index][0],
+      _schro_arith_context_encode_sint (arith, table[table_index][0],
           table[table_index][1], table[table_index][2], quant_data[i]);
     }
   }

@@ -24,7 +24,7 @@ decode(SchroBuffer *buffer, int n, OilProfile *prof)
     a = schro_arith_new();
 
     schro_arith_decode_init (a, buffer);
-    schro_arith_context_init (a, 0, 1, 1);
+    schro_arith_init_contexts (a);
 
     oil_profile_start (prof);
     for(i=0;i<n;i++){
@@ -46,7 +46,7 @@ encode (SchroBuffer *buffer, int n, int freq)
   a = schro_arith_new();
 
   schro_arith_encode_init (a, buffer);
-  schro_arith_context_init (a, 0, 1, 1);
+  schro_arith_init_contexts (a);
 
   for(i=0;i<n;i++){
     bit = oil_rand_u8() < freq;

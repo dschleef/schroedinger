@@ -24,7 +24,7 @@ decode(uint8_t *dest, uint8_t *src, int n_bytes)
 
   buffer = schro_buffer_new_with_data (src, n_bytes);
   schro_arith_decode_init (a, buffer);
-  schro_arith_context_init (a, 0, 1, 1);
+  schro_arith_init_contexts (a);
 
   for(i=0;i<n_bytes;i++){
     value = 0;
@@ -54,7 +54,7 @@ encode (uint8_t *dest, uint8_t *src, int n_bytes)
 
   buffer = schro_buffer_new_with_data (dest, BUFFER_SIZE);
   schro_arith_encode_init (a, buffer);
-  schro_arith_context_init (a, 0, 1, 1);
+  schro_arith_init_contexts (a);
 
   for(i=0;i<n_bytes;i++){
     if (verbose) printf("%d:\n", i);

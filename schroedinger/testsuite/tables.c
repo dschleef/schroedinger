@@ -26,7 +26,7 @@ main (int argc, char *argv[])
   int i;
 
   printf("\n");
-  printf("#include <schro/schro-stdint.h>\n");
+  printf("#include <schroedinger/schrotables.h>\n");
   printf("\n");
 
   /* schro_table_offset */
@@ -56,15 +56,15 @@ main (int argc, char *argv[])
   printf("\n");
 
   /* schro_table_quant */
-  printf("uint32_t schro_table_division_factor[1024] = {\n");
-  for(i=0;i<1020;i+=4) {
-    printf("  %10u, %10u, %10u, %10u,\n",
+  printf("uint32_t schro_table_division_factor[256] = {\n");
+  for(i=0;i<252;i+=4) {
+    printf("  %10uu, %10uu, %10uu, %10uu,\n",
         get_factor(i),
         get_factor(i+1),
         get_factor(i+2),
         get_factor(i+3));
   }
-  printf("  %10u, %10u, %10u, %10u\n",
+  printf("  %10uu, %10uu, %10uu, %10uu\n",
       get_factor(i),
       get_factor(i+1),
       get_factor(i+2),

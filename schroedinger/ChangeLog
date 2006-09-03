@@ -1,3 +1,21 @@
+2006-09-03  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schrointernal.h:
+	* schroedinger/schrotables.c:
+	* schroedinger/schrotables.h:
+	* schroedinger/schroutils.h:
+	* testsuite/arith.c:
+	* testsuite/arith_decode.c:
+	* testsuite/arith_encode.c:
+	* testsuite/arith_speed.c:
+	* testsuite/tables.c:
+	  Add "internal" tag to schro_arith functions, add wrappers that
+	  are exported by the library for testing.
+
 2006-09-01  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroarith.c:

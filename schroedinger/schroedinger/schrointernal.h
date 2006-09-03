@@ -1,6 +1,6 @@
 
-#ifndef __SCHRO_SCHRO_H__
-#define __SCHRO_SCHRO_H__
+#ifndef __SCHRO_SCHRO_INTERNAL_H__
+#define __SCHRO_SCHRO_INTERNAL_H__
 
 #include <schroedinger/schro.h>
 
@@ -21,9 +21,6 @@
 #include <schroedinger/schrowavelet.h>
 #include <schroedinger/schrometric.h>
 #include <schroedinger/schroutils.h>
-
-
-void schro_init(void);
 
 #endif
 

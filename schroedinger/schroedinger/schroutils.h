@@ -19,6 +19,18 @@
 #define SCHRO_GET(ptr, offset, type) (*(type *)((uint8_t *)(ptr) + (offset)) )
 
 
+#if defined(__GNUC__) && defined(__GNUC_MINOR__)
+#define SCHRO_GNUC_PREREQ(maj, min) \
+  ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
+#else
+#define SCHRO_GNUC_PREREQ(maj, min) 0
+#endif
+  
+#if SCHRO_GNUC_PREREQ(3,2)
+#define SCHRO_INTERNAL __attribute__ ((visibility ("internal")))
+#else
+#define SCHRO_INTERNAL
+#endif
 
 int ilog2(unsigned int x);
 unsigned int round_up_pow2(unsigned int x, int p);
