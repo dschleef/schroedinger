@@ -2,6 +2,18 @@
 
 	* schroedinger/schroarith.c:
 	* schroedinger/schroarith.h:
+	* schroedinger/schroframe.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schrooil.c:
+	* schroedinger/schrooil.h:
+	* schroedinger/schrotables.c:
+	  remove access to global variable in schro_arith_context_decode_bit,
+	  rearrange some (soon to be) oil functions.
+
+2006-09-03  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schrointernal.h:

@@ -8,25 +8,11 @@
 #include <string.h>
 
 #include <schroedinger/schroarith.h>
+#include <schroedinger/schrotables.h>
 
-
-static unsigned int division_factor[256];
 
 static void _schro_arith_input_bit (SchroArith *arith);
 static void _schro_arith_output_bit (SchroArith *arith);
-
-static void
-_schro_arith_division_factor_init (void)
-{
-  static int inited = 0;
-
-  if (!inited) {
-    int i;
-    for(i=0;i<256;i++){
-      division_factor[i] = (1U<<31)/(i+1);
-    }
-  }
-}
 
 SchroArith *
 schro_arith_new (void)
@@ -36,7 +22,7 @@ schro_arith_new (void)
   arith = malloc (sizeof(*arith));
   memset (arith, 0, sizeof(*arith));
 
-  _schro_arith_division_factor_init();
+  arith->division_factor = schro_table_division_factor;
 
   return arith;
 }
@@ -273,7 +259,8 @@ _schro_arith_context_decode_bit (SchroArith *arith, int i)
   count = ((arith->code - arith->low + 1)<<10) - 1;
   range = arith->high - arith->low + 1;
   weight = arith->contexts[i].count0 + arith->contexts[i].count1;
-  scaled_count0 = ((unsigned int)arith->contexts[i].count0 * division_factor[weight - 1]) >> 21;
+  scaled_count0 = ((unsigned int)arith->contexts[i].count0 *
+      arith->division_factor[weight - 1]) >> 21;
 #ifdef READABLE
   if (count < range * scaled_count0) {
     value = 0;
@@ -334,7 +321,7 @@ _schro_arith_context_encode_bit (SchroArith *arith, int i, int value)
 
   range = arith->high - arith->low + 1;
   weight = arith->contexts[i].count0 + arith->contexts[i].count1;
-  scaled_count0 = ((unsigned int)arith->contexts[i].count0 * division_factor[weight - 1]) >> 21;
+  scaled_count0 = ((unsigned int)arith->contexts[i].count0 * arith->division_factor[weight - 1]) >> 21;
 
   _schro_arith_context_update (arith, i, value);
   

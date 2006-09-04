@@ -109,6 +109,8 @@ struct _SchroArith {
   int offset;
   uint8_t nextcode;
   int nextbits;
+
+  uint32_t *division_factor;
 };
 
 SchroArith * schro_arith_new (void);
