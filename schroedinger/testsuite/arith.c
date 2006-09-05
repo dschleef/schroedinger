@@ -30,7 +30,7 @@ decode(uint8_t *dest, uint8_t *src, int n_bytes)
     value = 0;
     if (verbose) printf("%d:\n", i);
     for(j=0;j<8;j++){
-      if (verbose) printf("[%04x %04x] %04x -> ", a->low, a->high, a->code);
+      if (verbose) printf("[%04x %04x] %04x -> ", a->range[0], a->range[1], a->code);
       bit = schro_arith_context_decode_bit (a, 0);
       if (verbose) printf("%d\n", bit);
       value |= bit << (7-j);
@@ -60,7 +60,7 @@ encode (uint8_t *dest, uint8_t *src, int n_bytes)
     if (verbose) printf("%d:\n", i);
     for(j=0;j<8;j++){
       bit = (src[i]>>(7-j))&1;
-      if (verbose) printf("[%04x %04x] %d\n", a->low, a->high, bit);
+      if (verbose) printf("[%04x %04x] %d\n", a->range[0], a->range[1], bit);
       schro_arith_context_encode_bit (a, 0, bit);
     }
   }

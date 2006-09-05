@@ -36,8 +36,8 @@ schro_arith_free (SchroArith *arith)
 void
 schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
 {
-  arith->low = 0;
-  arith->high = 0xffff;
+  arith->range[0] = 0;
+  arith->range[1] = 0xffff;
   arith->code = 0;
 
   arith->buffer = buffer;
@@ -52,8 +52,8 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
 void
 schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer)
 {
-  arith->low = 0;
-  arith->high = 0xffff;
+  arith->range[0] = 0;
+  arith->range[1] = 0xffff;
   arith->code = 0;
 
   arith->buffer = buffer;
@@ -95,7 +95,7 @@ _schro_arith_output_bit (SchroArith *arith)
 {
   int value;
 
-  value = arith->low >> 15;
+  value = arith->range[0] >> 15;
 
   _schro_arith_push_bit (arith, value);
   
@@ -205,8 +205,8 @@ schro_arith_init_contexts (SchroArith *arith)
 {
   int i;
   for(i=0;i<SCHRO_CTX_LAST;i++){
-    arith->contexts[i].count0 = 1;
-    arith->contexts[i].count1 = 1;
+    arith->contexts[i].count[0] = 1;
+    arith->contexts[i].count[1] = 1;
     arith->contexts[i].next = next_list[i];
   }
 }
@@ -214,10 +214,10 @@ schro_arith_init_contexts (SchroArith *arith)
 static void
 _schro_arith_context_halve_counts (SchroArith *arith, int i)
 {
-  arith->contexts[i].count0 >>= 1;
-  arith->contexts[i].count0++;
-  arith->contexts[i].count1 >>= 1;
-  arith->contexts[i].count1++;
+  arith->contexts[i].count[0] >>= 1;
+  arith->contexts[i].count[0]++;
+  arith->contexts[i].count[1] >>= 1;
+  arith->contexts[i].count[1]++;
 }
 
 void
@@ -225,22 +225,18 @@ schro_arith_halve_all_counts (SchroArith *arith)
 {
   int i;
   for(i=0;i<arith->n_contexts;i++) {
-    arith->contexts[i].count0 >>= 1;
-    arith->contexts[i].count0++;
-    arith->contexts[i].count1 >>= 1;
-    arith->contexts[i].count1++;
+    arith->contexts[i].count[0] >>= 1;
+    arith->contexts[i].count[0]++;
+    arith->contexts[i].count[1] >>= 1;
+    arith->contexts[i].count[1]++;
   }
 }
 
 static void
 _schro_arith_context_update (SchroArith *arith, int i, int value)
 {
-  if (value) {
-    arith->contexts[i].count1++;
-  } else {
-    arith->contexts[i].count0++;
-  }
-  if (arith->contexts[i].count0 + arith->contexts[i].count1 > 255) {
+  arith->contexts[i].count[value]++;
+  if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 255) {
     _schro_arith_context_halve_counts (arith, i);
   }
 }
@@ -256,54 +252,40 @@ _schro_arith_context_decode_bit (SchroArith *arith, int i)
   int scaled_count0;
   int weight;
 
-  count = ((arith->code - arith->low + 1)<<10) - 1;
-  range = arith->high - arith->low + 1;
-  weight = arith->contexts[i].count0 + arith->contexts[i].count1;
-  scaled_count0 = ((unsigned int)arith->contexts[i].count0 *
+  count = ((arith->code - arith->range[0] + 1)<<10) - 1;
+  range = arith->range[1] - arith->range[0] + 1;
+  weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
+  scaled_count0 = ((unsigned int)arith->contexts[i].count[0] *
       arith->division_factor[weight - 1]) >> 21;
-#ifdef READABLE
-  if (count < range * scaled_count0) {
-    value = 0;
-  } else {
-    value = 1;
-  }
-#else
   value = (count >= range * scaled_count0);
-#endif
 
-  _schro_arith_context_update (arith, i, value);
+  arith->contexts[i].count[value]++;
+  if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 255) {
+    arith->contexts[i].count[0] >>= 1;
+    arith->contexts[i].count[0]++;
+    arith->contexts[i].count[1] >>= 1;
+    arith->contexts[i].count[1]++;
+  }
   
-#ifdef READABLE
-  if (value == 0) {
-    arith->high = arith->low + ((range * scaled_count0)>>10) - 1;
-  } else {
-    arith->low = arith->low + ((range * scaled_count0)>>10);
-  }
-#else
   {
-    int newval = arith->low + ((range * scaled_count0)>>10);
-    if (value == 0) {
-      arith->high = newval - 1;
-    } else {
-      arith->low = newval;
-    }
+    int newval = arith->range[0] + ((range * scaled_count0)>>10);
+    arith->range[1 - value] = newval - 1 + value;
   }
-#endif
 
   do {
-    if ((arith->high & (1<<15)) == (arith->low & (1<<15))) {
+    if ((arith->range[1] & (1<<15)) == (arith->range[0] & (1<<15))) {
       /* do nothing */
-    } else if ((arith->low & (1<<14)) && !(arith->high & (1<<14))) {
+    } else if ((arith->range[0] & (1<<14)) && !(arith->range[1] & (1<<14))) {
       arith->code ^= (1<<14);
-      arith->low ^= (1<<14);
-      arith->high ^= (1<<14);
+      arith->range[0] ^= (1<<14);
+      arith->range[1] ^= (1<<14);
     } else {
       break;
     }
 
-    arith->low <<= 1;
-    arith->high <<= 1;
-    arith->high++;
+    arith->range[0] <<= 1;
+    arith->range[1] <<= 1;
+    arith->range[1]++;
 
     _schro_arith_input_bit(arith);
   } while (1);
@@ -319,32 +301,30 @@ _schro_arith_context_encode_bit (SchroArith *arith, int i, int value)
   int scaled_count0;
   int weight;
 
-  range = arith->high - arith->low + 1;
-  weight = arith->contexts[i].count0 + arith->contexts[i].count1;
-  scaled_count0 = ((unsigned int)arith->contexts[i].count0 * arith->division_factor[weight - 1]) >> 21;
+  range = arith->range[1] - arith->range[0] + 1;
+  weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
+  scaled_count0 = ((unsigned int)arith->contexts[i].count[0] *
+      arith->division_factor[weight - 1]) >> 21;
 
   _schro_arith_context_update (arith, i, value);
   
-  if (value == 0) {
-    arith->high = arith->low + ((range * scaled_count0)>>10) - 1;
-  } else {
-    arith->low = arith->low + ((range * scaled_count0)>>10);
-  }
+  arith->range[1-value] = arith->range[0] +
+    ((range * scaled_count0)>>10) - 1 + value;
 
   do {
-    if ((arith->high & (1<<15)) == (arith->low & (1<<15))) {
+    if ((arith->range[1] & (1<<15)) == (arith->range[0] & (1<<15))) {
       _schro_arith_output_bit(arith);
 
-      arith->low <<= 1;
-      arith->high <<= 1;
-      arith->high++;
-    } else if ((arith->low & (1<<14)) && !(arith->high & (1<<14))) {
-      arith->low ^= (1<<14);
-      arith->high ^= (1<<14);
+      arith->range[0] <<= 1;
+      arith->range[1] <<= 1;
+      arith->range[1]++;
+    } else if ((arith->range[0] & (1<<14)) && !(arith->range[1] & (1<<14))) {
+      arith->range[0] ^= (1<<14);
+      arith->range[1] ^= (1<<14);
 
-      arith->low <<= 1;
-      arith->high <<= 1;
-      arith->high++;
+      arith->range[0] <<= 1;
+      arith->range[1] <<= 1;
+      arith->range[1]++;
       arith->cntr++;
     } else {
       break;

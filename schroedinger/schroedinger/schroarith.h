@@ -90,15 +90,13 @@ typedef struct _SchroArith SchroArith;
 typedef struct _SchroArithContext SchroArithContext;
 
 struct _SchroArithContext {
-  int count0;
-  int count1;
+  int count[2];
   int next;
 };
 
 struct _SchroArith {
   uint16_t code;
-  uint16_t low;
-  uint16_t high;
+  uint16_t range[2];
 
   int cntr;
 

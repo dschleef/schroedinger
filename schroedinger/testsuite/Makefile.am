@@ -9,19 +9,19 @@ TESTS = arith bits bits2 encode wavelet wavelet2 tables wavelet_2d utils
 
 arith_CFLAGS = $(SCHRO_CFLAGS)
 arith_LDADD = $(SCHRO_LIBS)
-arith_SOURCES = arith.c ../schroedinger/schroarith.c
+arith_SOURCES = arith.c
 
 arith_encode_CFLAGS = $(SCHRO_CFLAGS)
 arith_encode_LDADD = $(SCHRO_LIBS)
-arith_encode_SOURCES = arith_encode.c ../schroedinger/schroarith.c
+arith_encode_SOURCES = arith_encode.c
 
 arith_decode_CFLAGS = $(SCHRO_CFLAGS)
 arith_decode_LDADD = $(SCHRO_LIBS)
-arith_decode_SOURCES = arith_decode.c ../schroedinger/schroarith.c
+arith_decode_SOURCES = arith_decode.c
 
 arith_speed_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 arith_speed_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
-arith_speed_SOURCES = arith_speed.c ../schroedinger/schroarith.c
+arith_speed_SOURCES = arith_speed.c
 
 bits_CFLAGS = $(SCHRO_CFLAGS)
 bits_LDADD = $(SCHRO_LIBS)
@@ -33,7 +33,7 @@ bits2_SOURCES = bits2.c
 
 #codes_CFLAGS = $(SCHRO_CFLAGS)
 #codes_LDADD = $(SCHRO_LIBS)
-#codes_SOURCES = codes.c ../schroedinger/schroarith.c
+#codes_SOURCES = codes.c
 
 dump_packets_CFLAGS = $(SCHRO_CFLAGS) $(GST_CFLAGS)
 dump_packets_LDADD = $(SCHRO_LIBS) $(GST_LIBS)
