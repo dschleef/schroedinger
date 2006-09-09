@@ -482,6 +482,8 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
       schro_params_set_colour_spec (&decoder->params, index);
     }
   }
+
+  schro_params_validate (&decoder->params);
 }
 
 void

@@ -8,6 +8,21 @@
 #include <string.h>
 
 
+int
+schro_params_validate (SchroParams *params)
+{
+  if (params->aspect_ratio_numerator == 0) {
+    SCHRO_ERROR("aspect_ratio_numerator is 0");
+    params->aspect_ratio_numerator = 1;
+  }
+  if (params->aspect_ratio_denominator == 0) {
+    SCHRO_ERROR("aspect_ratio_denominator is 0");
+    params->aspect_ratio_denominator = 1;
+  }
+
+  return 1;
+}
+
 void
 schro_params_calculate_mc_sizes (SchroParams *params)
 {

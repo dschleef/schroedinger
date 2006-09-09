@@ -28,6 +28,7 @@
 GType gst_schrotoy_get_type (void);
 GType gst_schro_enc_get_type (void);
 GType gst_schro_dec_get_type (void);
+GType gst_schro_parse_get_type (void);
 GType gst_waveletvisualizer_get_type (void);
 
 GST_DEBUG_CATEGORY (schro_debug);
@@ -48,6 +49,8 @@ plugin_init (GstPlugin * plugin)
       gst_schro_enc_get_type ());
   gst_element_register (plugin, "schrodec", GST_RANK_PRIMARY,
       gst_schro_dec_get_type ());
+  gst_element_register (plugin, "schroparse", GST_RANK_PRIMARY,
+      gst_schro_parse_get_type ());
 #if 0
   gst_element_register (plugin, "waveletvisualizer", GST_RANK_NONE,
       gst_waveletvisualizer_get_type ());

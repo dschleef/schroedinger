@@ -139,6 +139,8 @@ struct _SchroPicture {
 void schro_params_calculate_mc_sizes (SchroParams *params);
 void schro_params_calculate_iwt_sizes (SchroParams *params);
 
+int schro_params_validate (SchroParams *params);
+
 void schro_params_set_video_format (SchroParams *params, int index);
 int schro_params_get_video_format (SchroParams *params);
 void schro_params_set_chroma_format (SchroParams *params, int index);

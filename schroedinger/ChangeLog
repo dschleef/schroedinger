@@ -1,3 +1,16 @@
+2006-09-09  David Schleef  <ds@schleef.org>
+
+	* gst/Makefile.am:
+	* gst/gstschro.c:
+	* gst/gstschroparse.c:
+	  Add schroparse, to parse raw dirac streams.
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	  Check parameters we get from a stream.
+	* testsuite/dump_packets.c:
+	  Add comments plus filename parsing.
+
 2006-09-05  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroarith.c:

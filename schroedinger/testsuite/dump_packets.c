@@ -21,10 +21,18 @@ main (int argc, char *argv[])
   GstElement *pipeline;
   GstElement *fakesink;
   GstElement *filesrc;
+  char *fn;
+
+  if (argc > 1) {
+    fn = argv[1];
+  } else {
+    fn = "output.ogg";
+  }
 
   gst_init(NULL,NULL);
 
-  pipeline = gst_parse_launch("filesrc ! oggdemux ! video/x-dirac ! fakesink", NULL);
+  //pipeline = gst_parse_launch("filesrc ! oggdemux ! video/x-dirac ! fakesink", NULL);
+  pipeline = gst_parse_launch("filesrc ! schroparse ! video/x-dirac ! fakesink", NULL);
 
   fakesink = gst_bin_get_by_name (GST_BIN(pipeline), "fakesink0");
   g_assert(fakesink != NULL);
@@ -37,7 +45,7 @@ main (int argc, char *argv[])
   filesrc = gst_bin_get_by_name (GST_BIN(pipeline), "filesrc0");
   g_assert(filesrc != NULL);
 
-  g_object_set (G_OBJECT(filesrc), "location", "../output.ogg", NULL);
+  g_object_set (G_OBJECT(filesrc), "location", fn, NULL);
 
   gst_element_set_state (pipeline, GST_STATE_PLAYING);
 
@@ -136,12 +144,14 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
   if (data[4] == SCHRO_PARSE_CODE_ACCESS_UNIT) {
     int bit;
 
+    /* parse parameters */
     g_print("  au_picture_number: %u\n", schro_bits_decode_bits(bits, 32));
     g_print("  version.major: %d\n", schro_bits_decode_uint(bits));
     g_print("  version.minor: %d\n", schro_bits_decode_uint(bits));
     g_print("  profile: %d\n", schro_bits_decode_uint(bits));
     g_print("  level: %d\n", schro_bits_decode_uint(bits));
 
+    /* sequence parameters */
     g_print("  video_format: %d\n", schro_bits_decode_uint(bits));
 
     bit = schro_bits_decode_bit(bits);
