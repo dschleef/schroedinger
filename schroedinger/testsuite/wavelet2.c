@@ -181,11 +181,11 @@ main (int argc, char *argv[])
 {
   schro_init();
 
-  check_output (SCHRO_WAVELET_DAUB97, 1);
-  check_output (SCHRO_WAVELET_DAUB97, 0);
+  check_output (SCHRO_WAVELET_DAUB_9_7, 1);
+  check_output (SCHRO_WAVELET_DAUB_9_7, 0);
 
-  check_output (SCHRO_WAVELET_APPROX97, 1);
-  check_output (SCHRO_WAVELET_APPROX97, 0);
+  check_output (SCHRO_WAVELET_DESL_9_3, 1);
+  check_output (SCHRO_WAVELET_DESL_9_3, 0);
 
   check_output (SCHRO_WAVELET_5_3, 1);
   check_output (SCHRO_WAVELET_5_3, 0);
@@ -193,11 +193,11 @@ main (int argc, char *argv[])
   check_output (SCHRO_WAVELET_13_5, 1);
   check_output (SCHRO_WAVELET_13_5, 0);
   
-  check_endpoints (SCHRO_WAVELET_DAUB97, 1);
-  check_endpoints (SCHRO_WAVELET_DAUB97, 0);
+  check_endpoints (SCHRO_WAVELET_DAUB_9_7, 1);
+  check_endpoints (SCHRO_WAVELET_DAUB_9_7, 0);
 
-  check_endpoints (SCHRO_WAVELET_APPROX97, 1);
-  check_endpoints (SCHRO_WAVELET_APPROX97, 0);
+  check_endpoints (SCHRO_WAVELET_DESL_9_3, 1);
+  check_endpoints (SCHRO_WAVELET_DESL_9_3, 0);
 
   check_endpoints (SCHRO_WAVELET_5_3, 1);
   check_endpoints (SCHRO_WAVELET_5_3, 0);
@@ -206,14 +206,14 @@ main (int argc, char *argv[])
   check_endpoints (SCHRO_WAVELET_13_5, 0);
   
 
-  check_constant (SCHRO_WAVELET_DAUB97);
-  check_constant (SCHRO_WAVELET_APPROX97);
+  check_constant (SCHRO_WAVELET_DAUB_9_7);
+  check_constant (SCHRO_WAVELET_DESL_9_3);
   check_constant (SCHRO_WAVELET_5_3);
   check_constant (SCHRO_WAVELET_13_5);
 
 
-  check_random (SCHRO_WAVELET_DAUB97);
-  check_random (SCHRO_WAVELET_APPROX97);
+  check_random (SCHRO_WAVELET_DAUB_9_7);
+  check_random (SCHRO_WAVELET_DESL_9_3);
   check_random (SCHRO_WAVELET_5_3);
   check_random (SCHRO_WAVELET_13_5);
 

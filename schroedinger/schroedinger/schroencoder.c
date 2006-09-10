@@ -50,8 +50,6 @@ schro_encoder_new (void)
   params->ybsep_luma = 8;
   params->wavelet_filter_index = SCHRO_WAVELET_5_3;
 
-  schro_params_set_default_codeblock (params);
-
   encoder->base_quant = 20;
 
   encoder->encoder_params.quant_index_dc = 4;
@@ -243,6 +241,7 @@ schro_encoder_encode (SchroEncoder *encoder)
   SCHRO_DEBUG("frame number %d", encoder->frame_number);
 
   encoder->params.num_refs = encoder->picture->n_refs;
+  schro_params_set_default_codeblock (&encoder->params);
   if (encoder->picture->n_refs > 0) {
     schro_encoder_encode_inter (encoder);
   } else {
@@ -730,7 +729,7 @@ schro_encoder_encode_transform_parameters (SchroEncoder *encoder)
   }
 
   /* transform */
-  if (params->wavelet_filter_index == SCHRO_WAVELET_APPROX97) {
+  if (params->wavelet_filter_index == SCHRO_WAVELET_DESL_9_3) {
     schro_bits_encode_bit (encoder->bits, 0);
   } else {
     schro_bits_encode_bit (encoder->bits, 1);
@@ -748,12 +747,14 @@ schro_encoder_encode_transform_parameters (SchroEncoder *encoder)
   /* spatial partitioning */
   schro_bits_encode_bit (encoder->bits, params->spatial_partition_flag);
   if (params->spatial_partition_flag) {
-    int i;
-
     schro_bits_encode_bit (encoder->bits, params->nondefault_partition_flag);
-    for(i=0;i<params->transform_depth+1;i++){
-      schro_bits_encode_uint (encoder->bits, params->codeblock_width[i]);
-      schro_bits_encode_uint (encoder->bits, params->codeblock_height[i]);
+    if (params->nondefault_partition_flag) {
+      int i;
+
+      for(i=0;i<params->transform_depth+1;i++){
+        schro_bits_encode_uint (encoder->bits, params->horiz_codeblocks[i]);
+        schro_bits_encode_uint (encoder->bits, params->vert_codeblocks[i]);
+      }
     }
     schro_bits_encode_uint (encoder->bits, params->codeblock_mode_index);
   }
@@ -1053,6 +1054,9 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   int offset;
   int16_t *quant_data;
   int x,y;
+  int horiz_codeblocks;
+  int vert_codeblocks;
+  int have_zero_flags;
 
   if (component == 0) {
     stride = subband->stride >> 1;
@@ -1103,30 +1107,43 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
     return;
   }
 
-  for(y=0;y<height;y+=params->codeblock_height[subband->scale_factor_shift]) {
-    int ymax = MIN(y + params->codeblock_height[subband->scale_factor_shift],
-        height);
+  if (params->spatial_partition_flag) {
+    horiz_codeblocks = params->horiz_codeblocks[subband->scale_factor_shift];
+    vert_codeblocks = params->vert_codeblocks[subband->scale_factor_shift];
+  } else {
+    horiz_codeblocks = 1;
+    vert_codeblocks = 1;
+  }
+  if (horiz_codeblocks > 1 && vert_codeblocks > 1 && index > 0) {
+    have_zero_flags = TRUE;
+  } else {
+    have_zero_flags = FALSE;
+  }
+  for(y=0;y<vert_codeblocks;y++){
+    int ymin = (height*y)/vert_codeblocks;
+    int ymax = (height*(y+1))/vert_codeblocks;
 
-    for(x=0;x<width;x+=params->codeblock_width[subband->scale_factor_shift]) {
-      int xmax = MIN(x + params->codeblock_width[subband->scale_factor_shift],
-          width);
-      int zero_codeblock = 1;
+    for(x=0;x<horiz_codeblocks;x++){
+      int xmin = (width*x)/horiz_codeblocks;
+      int xmax = (width*(x+1))/horiz_codeblocks;
 
-  if (index == 0) zero_codeblock = 0;
-  for(j=y;j<ymax;j++){
-    for(i=x;i<xmax;i++){
-      if (quant_data[j*width + i] != 0) {
-        zero_codeblock = 0;
+  if (have_zero_flags) {
+    int zero_codeblock = 1;
+    for(j=ymin;j<ymax;j++){
+      for(i=xmin;i<xmax;i++){
+        if (quant_data[j*width + i] != 0) {
+          zero_codeblock = 0;
+        }
       }
     }
-  }
-  _schro_arith_context_encode_bit (arith, SCHRO_CTX_ZERO_CODEBLOCK, zero_codeblock);
-  if (zero_codeblock) {
-    continue;
+    _schro_arith_context_encode_bit (arith, SCHRO_CTX_ZERO_CODEBLOCK, zero_codeblock);
+    if (zero_codeblock) {
+      continue;
+    }
   }
 
-  for(j=y;j<ymax;j++){
-    for(i=x;i<xmax;i++){
+  for(j=ymin;j<ymax;j++){
+    for(i=xmin;i<xmax;i++){
       int parent_zero;
       int cont_context;
       int value_context;

@@ -161,7 +161,7 @@ schro_lift_split_daub97_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 
 
 void
-schro_lift_split_approx97 (int16_t *d_n, int16_t *s_n, int n)
+schro_lift_split_desl93 (int16_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
@@ -195,7 +195,7 @@ schro_lift_split_approx97 (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-schro_lift_synth_approx97 (int16_t *d_n, int16_t *s_n, int n)
+schro_lift_synth_desl93 (int16_t *d_n, int16_t *s_n, int n)
 {
   int i;
 
@@ -228,7 +228,7 @@ schro_lift_synth_approx97 (int16_t *d_n, int16_t *s_n, int n)
 }
 
 void
-schro_lift_split_approx97_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
+schro_lift_split_desl93_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 {
   int i;
 
@@ -263,7 +263,7 @@ schro_lift_split_approx97_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
 }
 
 void
-schro_lift_synth_approx97_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
+schro_lift_synth_desl93_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 {
   int i;
 
@@ -568,10 +568,10 @@ void
 schro_lift_split (int type, int16_t *d_n, int16_t *s_n, int n)
 {
   switch (type) {
-    case SCHRO_WAVELET_DAUB97:
+    case SCHRO_WAVELET_DAUB_9_7:
       oil_split_daub97 (d_n, s_n, n/2);
       break;
-    case SCHRO_WAVELET_APPROX97:
+    case SCHRO_WAVELET_DESL_9_3:
       oil_split_approx97 (d_n, s_n, n/2);
       break;
     case SCHRO_WAVELET_5_3:
@@ -590,11 +590,11 @@ void
 schro_lift_split_str (int type, int16_t *d_n, int16_t *s_n, int sstr, int n)
 {
   switch (type) {
-    case SCHRO_WAVELET_DAUB97:
+    case SCHRO_WAVELET_DAUB_9_7:
       schro_lift_split_daub97_str (d_n, s_n, sstr, n);
       break;
-    case SCHRO_WAVELET_APPROX97:
-      schro_lift_split_approx97_str (d_n, s_n, sstr, n);
+    case SCHRO_WAVELET_DESL_9_3:
+      schro_lift_split_desl93_str (d_n, s_n, sstr, n);
       break;
     case SCHRO_WAVELET_5_3:
       schro_lift_split_53_str (d_n, s_n, sstr, n);
@@ -612,10 +612,10 @@ void
 schro_lift_synth (int type, int16_t *d_n, int16_t *s_n, int n)
 {
   switch (type) {
-    case SCHRO_WAVELET_DAUB97:
+    case SCHRO_WAVELET_DAUB_9_7:
       oil_synth_daub97 (d_n, s_n, n/2);
       break;
-    case SCHRO_WAVELET_APPROX97:
+    case SCHRO_WAVELET_DESL_9_3:
       oil_synth_approx97 (d_n, s_n, n/2);
       break;
     case SCHRO_WAVELET_5_3:
@@ -634,11 +634,11 @@ void
 schro_lift_synth_str (int type, int16_t *d_n, int dstr, int16_t *s_n, int n)
 {
   switch (type) {
-    case SCHRO_WAVELET_DAUB97:
+    case SCHRO_WAVELET_DAUB_9_7:
       schro_lift_synth_daub97_str (d_n, dstr, s_n, n);
       break;
-    case SCHRO_WAVELET_APPROX97:
-      schro_lift_synth_approx97_str (d_n, dstr, s_n, n);
+    case SCHRO_WAVELET_DESL_9_3:
+      schro_lift_synth_desl93_str (d_n, dstr, s_n, n);
       break;
     case SCHRO_WAVELET_5_3:
       schro_lift_synth_53_str (d_n, dstr, s_n, n);
@@ -756,7 +756,7 @@ schro_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
   stride >>= 1;
   n = width/2;
   switch (type) {
-    case SCHRO_WAVELET_DAUB97:
+    case SCHRO_WAVELET_DAUB_9_7:
       for(i=0;i<height-2;i+=2) {
         oil_lift_sub_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
             i_n + stride * (i+0), i_n + stride * (i+2), &c6497, width);
@@ -865,7 +865,7 @@ schro_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int widt
   stride >>= 1;
   n = width/2;
   switch (type) {
-    case SCHRO_WAVELET_DAUB97:
+    case SCHRO_WAVELET_DAUB_9_7:
       for(i=0;i<height;i++) {
         oil_interleave (tmp, i_n + stride * i, n);
         oil_synth_daub97 (i_n + stride * i, tmp, n);
@@ -901,6 +901,16 @@ schro_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int widt
       oil_lift_add_mult_shift12 (i_n + stride * (i+1), i_n + stride * (i+1),
           i_n + stride * (i+0), i_n + stride * (i+0), &c6497, width);
 
+      break;
+    case SCHRO_WAVELET_DESL_9_3:
+      for(i=0;i<height;i++) {
+        oil_interleave (tmp, i_n + stride * i, n);
+        oil_synth_approx97 (i_n + stride * i, tmp, n);
+      }
+      for(i=0;i<height;i+=2){
+        /* FIXME */
+        oil_lift_haar_synth (i_n + stride * i, i_n + stride * (i+1), width);
+      }
       break;
     case SCHRO_WAVELET_5_3:
       oil_interleave (tmp, i_n + stride * (0), n);

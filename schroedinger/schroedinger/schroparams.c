@@ -480,10 +480,28 @@ schro_params_set_default_codeblock (SchroParams *params)
   int i;
 
   params->spatial_partition_flag = TRUE;
-  params->nondefault_partition_flag = TRUE;
-  for(i=0;i<8;i++){
-    params->codeblock_width[i] = 10;
-    params->codeblock_height[i] = 10;
+  params->nondefault_partition_flag = FALSE;
+
+  if (params->num_refs == 0) {
+    for(i=0;i<3;i++) {
+      params->horiz_codeblocks[i] = 1;
+      params->vert_codeblocks[i] = 1;
+    }
+    for(i=3;i<8;i++){
+      params->horiz_codeblocks[i] = 4;
+      params->vert_codeblocks[i] = 3;
+    }
+  } else {
+    for(i=0;i<2;i++) {
+      params->horiz_codeblocks[i] = 1;
+      params->vert_codeblocks[i] = 1;
+    }
+    params->horiz_codeblocks[2] = 8;
+    params->vert_codeblocks[2] = 6;
+    for(i=3;i<8;i++){
+      params->horiz_codeblocks[i] = 12;
+      params->vert_codeblocks[i] = 8;
+    }
   }
   params->codeblock_mode_index = 1;
 

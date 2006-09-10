@@ -133,10 +133,10 @@ schro_bits_encode_sint (SchroBits *bits, int value)
   int sign;
 
   if (value < 0) {
-    sign = 0;
+    sign = 1;
     value = -value;
   } else {
-    sign = 1;
+    sign = 0;
   }
   schro_bits_encode_uint (bits, value);
   if (value) {
@@ -190,7 +190,7 @@ int schro_bits_decode_sint (SchroBits *bits)
 
   value = schro_bits_decode_uint (bits);
   if (value) {
-    if (!schro_bits_decode_bit (bits)) {
+    if (schro_bits_decode_bit (bits)) {
       value = -value;
     }
   }

@@ -1,3 +1,18 @@
+2006-09-10  David Schleef  <ds@schleef.org>
+
+	* gst/gstschrodec.c:
+	* schroedinger/schroarith.c:
+	* schroedinger/schrobits.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schrowavelet.c:
+	* schroedinger/schrowavelet.h:
+	* testsuite/wavelet2.c:
+	  More updates for new spec.  Fix the way codeblocks are handled.
+	  Changes BITSTREAM.
+
 2006-09-09  David Schleef  <ds@schleef.org>
 
 	* gst/gstschro.c:

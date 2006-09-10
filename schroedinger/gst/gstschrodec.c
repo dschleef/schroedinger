@@ -66,6 +66,8 @@ struct _GstSchroDec
   int bytes_per_picture;
   int fps_numerator;
   int fps_denominator;
+
+  gboolean have_access_unit;
 };
 
 struct _GstSchroDecClass
@@ -701,6 +703,11 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
   if (schro_decoder_is_access_unit (input_buffer)) {
     GstCaps *caps;
 
+    if (schro_dec->have_access_unit) {
+      schro_buffer_unref (input_buffer);
+      return GST_FLOW_OK;
+    }
+
     GST_DEBUG("access unit");
     schro_decoder_decode (schro_dec->decoder, input_buffer);
 
@@ -728,6 +735,8 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
       (schro_dec->decoder->params.width * schro_dec->decoder->params.height * 3) / 4;
 
     gst_caps_unref (caps);
+
+    schro_dec->have_access_unit = TRUE;
     
     return GST_FLOW_OK;
   } else {

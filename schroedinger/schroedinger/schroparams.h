@@ -58,8 +58,8 @@ struct _SchroParams {
   int transform_depth;
   int spatial_partition_flag;
   int nondefault_partition_flag;
-  int codeblock_width[8];
-  int codeblock_height[8];
+  int horiz_codeblocks[8];
+  int vert_codeblocks[8];
   int codeblock_mode_index;
 
   /* motion prediction parameters */

@@ -368,10 +368,10 @@ _schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
   int sign;
 
   if (value < 0) {
-    sign = 0;
+    sign = 1;
     value = -value;
   } else {
-    sign = 1;
+    sign = 0;
   }
   _schro_arith_context_encode_uint (arith, cont_context, value_context, value);
   if (value) {
@@ -437,7 +437,7 @@ _schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
 
   value = _schro_arith_context_decode_uint (arith, cont_context, value_context);
   if (value) {
-    if (!_schro_arith_context_decode_bit (arith, sign_context)) {
+    if (_schro_arith_context_decode_bit (arith, sign_context)) {
       value = -value;
     }
   }
