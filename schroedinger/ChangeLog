@@ -1,5 +1,14 @@
 2006-09-10  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	  Updates for new spec related to default video formats.  Changes
+	  BITSTREAM.
+
+2006-09-10  David Schleef  <ds@schleef.org>
+
 	* gst/gstschrodec.c:
 	* schroedinger/schroarith.c:
 	* schroedinger/schrobits.c:

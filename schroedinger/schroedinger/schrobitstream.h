@@ -28,6 +28,12 @@ struct _SchroSignalRange {
   int chroma_excursion;
 };
 
+enum _SchroChromaFormat {
+  SCHRO_CHROMA_444 = 0,
+  SCHRO_CHROMA_420,
+  SCHRO_CHROMA_422,
+};
+
 enum _SchroColourMatrix {
   SCHRO_COLOUR_MATRIX_CUSTOM = 0,
   SCHRO_COLOUR_MATRIX_SDTV = 1,

@@ -65,54 +65,86 @@ schro_params_calculate_iwt_sizes (SchroParams *params)
       params->iwt_luma_height);
 }
 
-typedef struct _SchroVideoFormat SchroVideoFormat;
-struct _SchroVideoFormat {
-  char *name;
-  int width;
-  int height;
-  int interlaced_source;
-  int top_field_first;
-  int frame_rate_numerator;
-  int frame_rate_denominator;
-  int aspect_ratio_numerator;
-  int aspect_ratio_denominator;
-  int left_offset;
-  int top_offset;
-  int clean_height;
-  int clean_width;
-  int colour_matrix;
-  int signal_range;
-  int colour_primaries;
-  int transfer_function;
-  int block_params_index;
-};
-
 static SchroVideoFormat
 schro_video_formats[] = {
-  { "custom", 640, 480, FALSE, TRUE, 30, 1, 1, 1, 0, 0, 640, 480,
-    1, 1, 1, 0, 2 },
-  { "QSIF", 176, 120, FALSE, TRUE, 15, 1, 10, 11, 0, 0, 176, 120,
-    1, 1, 1, 0, 1 },
-  { "QCIF", 176, 144, FALSE, TRUE, 25, 2, 59, 54, 0, 0, 176, 144,
-    1, 1, 2, 0, 1 },
-  { "SIF", 352, 240, FALSE, TRUE, 15, 1, 10, 11, 0, 0, 352, 240,
-    1, 1, 1, 0, 2 },
-  { "CIF", 352, 288, FALSE, TRUE, 25, 2, 59, 54, 0, 0, 352, 288,
-    1, 1, 2, 0, 2 },
-  { "SD (NTSC)", 704, 480, TRUE, TRUE, 30000, 1001, 10, 11, 0, 0, 704, 480,
-    1, 2, 1, 0, 2 },
-  { "SD (PAL)", 704, 576, TRUE, TRUE, 25, 1, 59, 54, 0, 0, 704, 576,
-    1, 2, 2, 0, 2 },
-  { "SD (525 Digital)", 720, 480, TRUE, TRUE, 30000, 1001, 10, 11, 0, 0, 720, 480,
-    1, 2, 1, 0, 2 },
-  { "SD (625 Digital)", 720, 576, TRUE, TRUE, 30, 1, 59, 54, 0, 0, 720, 576,
-    1, 2, 2, 0, 2 },
-  { "HD 720", 1280, 720, FALSE, TRUE, 24, 1, 1, 1, 0, 0, 1280, 720,
-    2, 2, 3, 0, 3 },
-  { "HD 1080", 1920, 1080, FALSE, TRUE, 24, 1, 1, 1, 0, 0, 1920, 1080,
-    2, 2, 3, 0, 4 },
-  { "Advanced Video Format", 1920, 1080, FALSE, TRUE, 50, 1, 1, 1, 0, 0, 1920, 1080,
-    3, 5, 3, 1, 4 }
+  { "custom", 640, 480, SCHRO_CHROMA_420, 8,
+    FALSE, TRUE, FALSE,
+    30, 1, 1, 1,
+    640, 480, 0, 0,
+    0, 255, 128, 254,
+    0 },
+  { "QSIF", 176, 120, SCHRO_CHROMA_420, 8,
+    FALSE, TRUE, FALSE,
+    15000, 1001, 10, 11,
+    176, 120, 0, 0,
+    0, 255, 128, 254,
+    1 },
+  { "QCIF", 176, 144, SCHRO_CHROMA_420, 8,
+    FALSE, TRUE, FALSE,
+    25, 2, 12, 11,
+    176, 144, 0, 0,
+    0, 255, 128, 254,
+    2 },
+  { "SIF", 352, 240, SCHRO_CHROMA_420, 8,
+    FALSE, TRUE, FALSE,
+    15000, 1001, 10, 11,
+    352, 240, 0, 0,
+    0, 255, 128, 254,
+    1 },
+  { "CIF", 352, 288, SCHRO_CHROMA_420, 8,
+    FALSE, TRUE, FALSE,
+    25, 2, 12, 11,
+    352, 288, 0, 0,
+    0, 255, 128, 254,
+    2 },
+  { "4SIF", 704, 480, SCHRO_CHROMA_420, 8,
+    FALSE, TRUE, FALSE,
+    15000, 1001, 10, 11,
+    704, 480, 0, 0,
+    0, 255, 128, 254,
+    1 },
+  { "4CIF", 704, 576, SCHRO_CHROMA_420, 8,
+    FALSE, TRUE, FALSE,
+    25, 2, 12, 11,
+    704, 576, 0, 0,
+    0, 255, 128, 254,
+    2 },
+  { "SD480", 720, 480, SCHRO_CHROMA_420, 8,
+    FALSE, TRUE, FALSE,
+    24000, 1001, 10, 11,
+    720, 480, 0, 0,
+    16, 235, 128, 244,
+    1 },
+  { "SD576", 720, 576, SCHRO_CHROMA_420, 8,
+    FALSE, TRUE, FALSE,
+    25, 1, 12, 11,
+    720, 576, 0, 0,
+    16, 235, 128, 244,
+    2 },
+  { "HD720", 1280, 720, SCHRO_CHROMA_420, 8,
+    FALSE, TRUE, FALSE,
+    24, 1, 1, 1,
+    1280, 720, 0, 0,
+    16, 235, 128, 244,
+    0 },
+  { "HD1080", 1920, 1080, SCHRO_CHROMA_420, 8,
+    FALSE, TRUE, FALSE,
+    24, 1, 1, 1,
+    1920, 1080, 0, 0,
+    16, 235, 128, 244,
+    0 },
+  { "2KCinema", 2048, 1556, SCHRO_CHROMA_444, 16,
+    FALSE, TRUE, FALSE,
+    24, 1, 1, 1,
+    2048, 1536, 
+    0, 65535, 32768, 65534,
+    3 },
+  { "4KCinema", 4096, 3072, SCHRO_CHROMA_444, 16,
+    FALSE, TRUE, FALSE,
+    24, 1, 1, 1,
+    2048, 1536, 
+    0, 65535, 32768, 65534,
+    3 },
 };
 
 void schro_params_set_video_format (SchroParams *params, int index)
@@ -139,12 +171,13 @@ void schro_params_set_video_format (SchroParams *params, int index)
   params->top_offset = format->top_offset;
   params->clean_width = format->clean_width;
   params->clean_height = format->clean_height;
+#if 0
   params->colour_matrix = format->colour_matrix;
-  //params->signal_range = format->signal_range;
   params->colour_primaries = format->colour_primaries;
   params->transfer_function = format->transfer_function;
 
   schro_params_set_block_params (params, format->block_params_index);
+#endif
 }
 
 static int
@@ -191,20 +224,20 @@ schro_params_get_video_format_metric (SchroParams *params, int i)
   if (params->clean_height != format->clean_height) {
     metric++;
   }
+#if 0
   if (params->colour_matrix != format->colour_matrix) {
     metric++;
   }
-#if 0
   if (params->signal_range != format->signal_range) {
     metric++;
   }
-#endif
   if (params->colour_primaries != format->colour_primaries) {
     metric++;
   }
   if (params->transfer_function != format->transfer_function) {
     metric++;
   }
+#endif
 
   return metric;
 }
@@ -226,52 +259,6 @@ int schro_params_get_video_format (SchroParams *params)
     }
   }
   return min_index;
-}
-
-typedef struct _SchroChromaFormat SchroChromaFormat;
-struct _SchroChromaFormat {
-  int chroma_h_scale;
-  int chroma_v_scale;
-  int have_chroma;
-};
-
-static SchroChromaFormat
-schro_chroma_formats[] = {
-  { 2, 2, TRUE },
-  { 2, 1, TRUE },
-  { 4, 4, TRUE },
-  { 1, 1, TRUE },
-  { 1, 1, FALSE }
-};
-
-void schro_params_set_chroma_format (SchroParams *params, int index)
-{
-  if (index < 0 || index >= ARRAY_SIZE(schro_chroma_formats)) {
-    SCHRO_ERROR("illegal chroma format index");
-    return;
-  }
-
-  params->chroma_h_scale = schro_chroma_formats[index].chroma_h_scale;
-  params->chroma_v_scale = schro_chroma_formats[index].chroma_v_scale;
-  params->have_chroma = schro_chroma_formats[index].have_chroma;
-
-}
-
-int schro_params_get_chroma_format (SchroParams *params)
-{
-  int i;
-
-  for(i=0;i<ARRAY_SIZE(schro_chroma_formats);i++){
-    if (params->chroma_h_scale == schro_chroma_formats[i].chroma_h_scale &&
-        params->chroma_v_scale == schro_chroma_formats[i].chroma_v_scale &&
-        params->have_chroma == schro_chroma_formats[i].have_chroma) {
-      return i;
-    }
-  }
-
-  SCHRO_ERROR("illegal chroma format");
-
-  return -1;
 }
 
 typedef struct _SchroFrameRate SchroFrameRate;

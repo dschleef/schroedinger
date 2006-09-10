@@ -561,6 +561,9 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
     } else {
       schro_params_set_block_params (params, index);
     }
+  } else {
+    /* FIXME */
+    schro_params_set_block_params (params, 2);
   }
   SCHRO_DEBUG("blen_luma %d %d bsep_luma %d %d",
       params->xblen_luma, params->yblen_luma,
@@ -1069,7 +1072,6 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     SCHRO_DEBUG("quant index %d", quant_index);
     if ((unsigned int)quant_index > 60) {
       SCHRO_ERROR("quant_index too big (%u > 60)", quant_index);
-      params->non_spec_input = TRUE;
       return;
     }
     quant_factor = schro_table_quant[quant_index];

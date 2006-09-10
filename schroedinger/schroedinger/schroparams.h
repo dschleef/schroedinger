@@ -2,10 +2,40 @@
 #ifndef __SCHRO_PARAMS_H__
 #define __SCHRO_PARAMS_H__
 
+typedef struct _SchroVideoFormat SchroVideoFormat;
 typedef struct _SchroParams SchroParams;
 typedef struct _SchroSubband SchroSubband;
 typedef struct _SchroMotionVector SchroMotionVector;
 typedef struct _SchroPicture SchroPicture;
+
+struct _SchroVideoFormat {
+  char *name;
+  int width;
+  int height;
+  int chroma_format;
+  int video_depth;
+    
+  int interlaced_source;
+  int top_field_first;
+  int sequential_fields;
+  
+  int frame_rate_numerator;
+  int frame_rate_denominator;
+  int aspect_ratio_numerator;
+  int aspect_ratio_denominator;
+    
+  int clean_width;
+  int clean_height;
+  int left_offset;
+  int top_offset;
+    
+  int luma_offset;
+  int luma_excursion;
+  int chroma_offset;
+  int chroma_excursion;
+    
+  int colour_spec;
+};  
 
 struct _SchroParams {
 
@@ -40,9 +70,6 @@ struct _SchroParams {
   int colour_matrix;
   int transfer_function;
 
-  int non_spec_input;
-
-  int have_chroma;
   int chroma_h_scale;
   int chroma_v_scale;
   int chroma_width;
@@ -142,8 +169,6 @@ int schro_params_validate (SchroParams *params);
 
 void schro_params_set_video_format (SchroParams *params, int index);
 int schro_params_get_video_format (SchroParams *params);
-void schro_params_set_chroma_format (SchroParams *params, int index);
-int schro_params_get_chroma_format (SchroParams *params);
 void schro_params_set_frame_rate (SchroParams *params, int index);
 int schro_params_get_frame_rate (SchroParams *params);
 void schro_params_set_aspect_ratio (SchroParams *params, int index);
