@@ -74,7 +74,6 @@ struct _SchroParams {
   int x_num_blocks;
   int y_num_blocks;
   int mv_precision;
-  int global_only_flag;
   int b_1[2];
   int b_2[2];
   int a_11[2];

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#define DIRAC_COMPAT
 
 //#define DECODE_PREDICTION_ONLY
 
@@ -556,8 +557,6 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
   if (params->global_motion) {
     int i;
 
-    params->global_only_flag = schro_bits_decode_bit (decoder->bits);
-
     for (i=0;i<params->num_refs;i++) {
       /* pan/tilt */
       bit = schro_bits_decode_bit (decoder->bits);
@@ -623,10 +622,10 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
     /* FIXME */
     precision = schro_bits_decode_uint (decoder->bits);
     if (params->num_refs > 0) {
-      params->picture_weight_1 = schro_bits_decode_uint (decoder->bits);
+      params->picture_weight_1 = schro_bits_decode_sint (decoder->bits);
     }
     if (params->num_refs > 1) {
-      params->picture_weight_2 = schro_bits_decode_uint (decoder->bits);
+      params->picture_weight_2 = schro_bits_decode_sint (decoder->bits);
     }
   }
 
@@ -794,6 +793,10 @@ schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
     SCHRO_DEBUG ("zero residual %d", bit);
     /* FIXME */
     SCHRO_ASSERT(bit == 0);
+  } else {
+#ifdef DIRAC_COMPAT
+    schro_bits_sync (decoder->bits);
+#endif
   }
 
   params->wavelet_filter_index = SCHRO_WAVELET_APPROX97;
@@ -1023,7 +1026,9 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     }
   }
 
+#ifdef DIRAC_COMPAT
   schro_bits_sync (decoder->bits);
+#endif
 
   subband_length = schro_bits_decode_uint (decoder->bits);
   SCHRO_DEBUG("subband length %d", subband_length);

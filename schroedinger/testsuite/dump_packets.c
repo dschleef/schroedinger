@@ -9,6 +9,7 @@
 #include <glib.h>
 #include <string.h>
 
+#define DIRAC_COMPAT 1
 
 
 static void fakesink_handoff (GstElement *fakesink, GstBuffer *buffer,
@@ -31,8 +32,8 @@ main (int argc, char *argv[])
 
   gst_init(NULL,NULL);
 
-  //pipeline = gst_parse_launch("filesrc ! oggdemux ! video/x-dirac ! fakesink", NULL);
-  pipeline = gst_parse_launch("filesrc ! schroparse ! video/x-dirac ! fakesink", NULL);
+  pipeline = gst_parse_launch("filesrc ! oggdemux ! video/x-dirac ! fakesink", NULL);
+  //pipeline = gst_parse_launch("filesrc ! schroparse ! video/x-dirac ! fakesink", NULL);
 
   fakesink = gst_bin_get_by_name (GST_BIN(pipeline), "fakesink0");
   g_assert(fakesink != NULL);
@@ -289,7 +290,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       g_print("    %d: %d\n", i, schro_bits_decode_sint(bits));
     }
 
-    if (num_refs > 1) {
+    if (num_refs > 0) {
       schro_bits_sync(bits);
       bit = schro_bits_decode_bit(bits);
       g_print("  block parameters flag: %s\n", bit ? "yes" : "no");
@@ -313,36 +314,35 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       
       bit = schro_bits_decode_bit(bits);
       g_print("  using global motion flag: %s\n", bit ? "yes" : "no");
-      if (bit) {
-        bit = schro_bits_decode_bit(bits);
-        g_print("  global motion only: %s\n", bit ? "yes" : "no");
 
+      if (bit) {
         for(i=0;i<num_refs;i++){
-          g_print("  global motion ref%d:\n", i+1);
+          g_print("    global motion ref%d:\n", i+1);
           bit = schro_bits_decode_bit(bits);
-          g_print("  non-zero pan/tilt flag: %s\n", bit ? "yes" : "no");
+          g_print("      non-zero pan/tilt flag: %s\n", bit ? "yes" : "no");
           if (bit) {
-            g_print("    pan %d\n", schro_bits_decode_sint(bits));
-            g_print("    tilt %d\n", schro_bits_decode_sint(bits));
+            g_print("        pan %d\n", schro_bits_decode_sint(bits));
+            g_print("        tilt %d\n", schro_bits_decode_sint(bits));
           }
           bit = schro_bits_decode_bit(bits);
-          g_print("  non-zero zoom rot shear flag: %s\n", bit ? "yes" : "no");
+          g_print("      non-zero zoom rot shear flag: %s\n", bit ? "yes" : "no");
           if (bit) {
-            g_print("    exponent %d\n", schro_bits_decode_uint(bits));
-            g_print("    A11 %d\n", schro_bits_decode_sint(bits));
-            g_print("    A12 %d\n", schro_bits_decode_sint(bits));
-            g_print("    A21 %d\n", schro_bits_decode_sint(bits));
-            g_print("    A22 %d\n", schro_bits_decode_sint(bits));
+            g_print("       exponent %d\n", schro_bits_decode_uint(bits));
+            g_print("       A11 %d\n", schro_bits_decode_sint(bits));
+            g_print("       A12 %d\n", schro_bits_decode_sint(bits));
+            g_print("       A21 %d\n", schro_bits_decode_sint(bits));
+            g_print("       A22 %d\n", schro_bits_decode_sint(bits));
           }
           bit = schro_bits_decode_bit(bits);
-          g_print("  non-zero perspective flag: %s\n", bit ? "yes" : "no");
+          g_print("     non-zero perspective flag: %s\n", bit ? "yes" : "no");
           if (bit) {
-            g_print("    exponent %d\n", schro_bits_decode_uint(bits));
-            g_print("    perspective_x %d\n", schro_bits_decode_sint(bits));
-            g_print("    perspective_y %d\n", schro_bits_decode_sint(bits));
+            g_print("       exponent %d\n", schro_bits_decode_uint(bits));
+            g_print("       perspective_x %d\n", schro_bits_decode_sint(bits));
+            g_print("       perspective_y %d\n", schro_bits_decode_sint(bits));
           }
         }
       }
+
       bit = schro_bits_decode_bit(bits);
       g_print("  picture prediction mode flag: %s\n", bit ? "yes" : "no");
       if (bit) {
@@ -356,11 +356,11 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
             schro_bits_decode_uint(bits));
         for(i=0;i<num_refs;i++){
           g_print("  picture weight ref%d: %d\n", i+1,
-              schro_bits_decode_uint(bits));
+              schro_bits_decode_sint(bits));
         }
       }
 
-      schro_bits_sync (bits);
+      schro_bits_sync(bits);
       n = schro_bits_decode_uint(bits);
       g_print("  block data length: %d\n", n);
       schro_bits_sync (bits);
@@ -368,6 +368,9 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     }
 
     if (num_refs == 0) {
+#ifdef DIRAC_COMPAT
+      schro_bits_sync(bits);
+#endif
       bit = 0;
     } else {
       bit = schro_bits_decode_bit (bits);
@@ -412,6 +415,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
 
       for(j=0;j<3;j++){
         g_print("  component %d:\n",j);
+        g_print("    subband  length  quantiser_index\n");
         for(i=0;i<1+depth*3;i++){
           int length;
 
@@ -420,15 +424,18 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
             continue;
           }
 
+#ifdef DIRAC_COMPAT
           schro_bits_sync(bits);
-          g_print("    subband %d:\n", i);
+#endif
           length = schro_bits_decode_uint(bits);
-          g_print("      length: %d\n", length);
-          if (length) {
-            g_print("      quantiser index: %d\n", schro_bits_decode_uint(bits));
+          if (length > 0) {
+            g_print("    %4d:   %6d    %3d\n", i, length,
+                schro_bits_decode_uint(bits));
+            schro_bits_sync(bits);
+            bits->offset += length * 8;
+          } else {
+            g_print("    %4d:   %6d\n", i, length);
           }
-          schro_bits_sync(bits);
-          bits->offset += length * 8;
         }
       }
     }

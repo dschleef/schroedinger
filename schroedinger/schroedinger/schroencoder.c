@@ -24,6 +24,7 @@ static void schro_encoder_reference_retire (SchroEncoder *encoder,
     int frame_number);
 void schro_encoder_encode_picture_header (SchroEncoder *encoder);
 
+#define DIRAC_COMPAT 1
 
 
 SchroEncoder *
@@ -369,6 +370,8 @@ schro_encoder_encode_intra (SchroEncoder *encoder)
   schro_encoder_encode_transform_data (encoder, 1);
   schro_encoder_encode_transform_data (encoder, 2);
 
+  schro_bits_sync (encoder->bits);
+
   if (encoder->picture->is_ref) {
     SchroFrame *ref_frame;
 
@@ -432,6 +435,8 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
   schro_encoder_encode_transform_data (encoder, 0);
   schro_encoder_encode_transform_data (encoder, 1);
   schro_encoder_encode_transform_data (encoder, 2);
+
+  schro_bits_sync (encoder->bits);
 
   encoder->metric_to_cost =
     (double)(encoder->bits->offset - residue_bits_start) /
@@ -718,6 +723,10 @@ schro_encoder_encode_transform_parameters (SchroEncoder *encoder)
   if (params->num_refs > 0) {
     /* zero residual */
     schro_bits_encode_bit (encoder->bits, FALSE);
+  } else {
+#ifdef DIRAC_COMPAT
+    schro_bits_sync (encoder->bits);
+#endif
   }
 
   /* transform */
@@ -887,8 +896,8 @@ schro_encoder_clean_up_transform (SchroEncoder *encoder, int component,
       width, height, offset, stride, w, h);
 
   /* FIXME this is dependent on the particular wavelet transform */
-  h+=1;
-  w+=1;
+  if (h < height) h+=1;
+  if (w < width) w+=1;
 
   for(j=0;j<h;j++){
     for(i=w;i<width;i++){
@@ -1208,7 +1217,9 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
 
   schro_arith_flush (arith);
 
+#ifdef DIRAC_COMPAT
   schro_bits_sync (encoder->bits);
+#endif
   schro_bits_encode_uint (encoder->bits, arith->offset);
   if (arith->offset > 0) {
     schro_bits_encode_uint (encoder->bits, subband->quant_index);
@@ -1217,7 +1228,6 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
 
     schro_bits_append (encoder->bits, arith->buffer->data, arith->offset);
   }
-  schro_bits_sync (encoder->bits);
   schro_arith_free (arith);
 }
 

@@ -1,5 +1,15 @@
 2006-09-09  David Schleef  <ds@schleef.org>
 
+	* gst/gstschro.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroparams.h:
+	* testsuite/dump_packets.c:
+	  Update for new spec.  Add compatibility mode for Dirac codebase.
+	  Changes BITSTREAM.
+
+2006-09-09  David Schleef  <ds@schleef.org>
+
 	* gst/Makefile.am:
 	* gst/gstschro.c:
 	* gst/gstschroparse.c:
