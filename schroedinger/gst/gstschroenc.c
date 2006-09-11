@@ -25,6 +25,7 @@
 #include <gst/video/video.h>
 #include <string.h>
 #include <schroedinger/schro.h>
+#include <schroedinger/schrobitstream.h>
 #include <liboil/liboil.h>
 #include <math.h>
 
@@ -69,6 +70,7 @@ struct _GstSchroEnc
   guint64 timestamp_offset;
 
   SchroEncoder *encoder;
+  SchroVideoFormat *video_format;
 };
 
 struct _GstSchroEncClass
@@ -165,6 +167,8 @@ gst_schro_enc_init (GstSchroEnc *schro_enc, GstSchroEncClass *klass)
   GST_DEBUG ("gst_schro_enc_init");
 
   schro_enc->encoder = schro_encoder_new ();
+  schro_enc->video_format =
+    schro_encoder_get_video_format (schro_enc->encoder);
 
   schro_enc->sinkpad = gst_pad_new_from_static_template (&gst_schro_enc_sink_template, "sink");
   gst_pad_set_chain_function (schro_enc->sinkpad, gst_schro_enc_chain);
@@ -174,7 +178,6 @@ gst_schro_enc_init (GstSchroEnc *schro_enc, GstSchroEncClass *klass)
 
   schro_enc->srcpad = gst_pad_new_from_static_template (&gst_schro_enc_src_template, "src");
   gst_element_add_pad (GST_ELEMENT(schro_enc), schro_enc->srcpad);
-
 }
 
 static gboolean
@@ -192,12 +195,22 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
   gst_structure_get_fraction (structure, "pixel-aspect-ratio",
       &schro_enc->par_n, &schro_enc->par_d);
 
-  /* FIXME init encoder */
+  /* SD480 has most of the defaults that GStreamer assumes */
+  schro_params_set_video_format (schro_enc->video_format,
+      SCHRO_VIDEO_FORMAT_SD480);
 
-  schro_encoder_set_framerate (schro_enc->encoder, schro_enc->fps_n,
-      schro_enc->fps_d);
-  schro_encoder_set_size (schro_enc->encoder, schro_enc->width,
-      schro_enc->height);
+  schro_enc->video_format->frame_rate_numerator = schro_enc->fps_n;
+  schro_enc->video_format->frame_rate_denominator = schro_enc->fps_d;
+
+  schro_enc->video_format->width = schro_enc->width;
+  schro_enc->video_format->height = schro_enc->height;
+  schro_enc->video_format->clean_width = schro_enc->width;
+  schro_enc->video_format->clean_height = schro_enc->height;
+
+  schro_enc->video_format->aspect_ratio_numerator = schro_enc->par_n;
+  schro_enc->video_format->aspect_ratio_denominator = schro_enc->par_d;
+
+  schro_encoder_set_video_format (schro_enc->encoder, schro_enc->video_format);
 
   schro_enc->duration = gst_util_uint64_scale_int (GST_SECOND,
           schro_enc->fps_d, schro_enc->fps_n);
@@ -384,8 +397,7 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
     schro_enc->granulepos = 1;
   }
 
-  frame = gst_schro_buffer_wrap (buf,
-      schro_enc->encoder->params.width, schro_enc->encoder->params.height);
+  frame = gst_schro_buffer_wrap (buf, schro_enc->width, schro_enc->height);
   gst_buffer_unref (buf);
 
   GST_DEBUG ("pushing frame");

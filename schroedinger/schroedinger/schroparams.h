@@ -34,7 +34,9 @@ struct _SchroVideoFormat {
   int chroma_offset;
   int chroma_excursion;
     
-  int colour_spec;
+  int colour_primaries;
+  int colour_matrix;
+  int transfer_function;
 };  
 
 struct _SchroParams {
@@ -44,6 +46,7 @@ struct _SchroParams {
   int profile;
   int level;
 
+#if 0
   int height;
   int width;
 
@@ -69,6 +72,7 @@ struct _SchroParams {
   int colour_primaries;
   int colour_matrix;
   int transfer_function;
+#endif
 
   int chroma_h_scale;
   int chroma_v_scale;
@@ -165,19 +169,20 @@ struct _SchroPicture {
 void schro_params_calculate_mc_sizes (SchroParams *params);
 void schro_params_calculate_iwt_sizes (SchroParams *params);
 
-int schro_params_validate (SchroParams *params);
+int schro_params_validate (SchroVideoFormat *format);
 
-void schro_params_set_video_format (SchroParams *params, int index);
-int schro_params_get_video_format (SchroParams *params);
-void schro_params_set_frame_rate (SchroParams *params, int index);
-int schro_params_get_frame_rate (SchroParams *params);
-void schro_params_set_aspect_ratio (SchroParams *params, int index);
-int schro_params_get_aspect_ratio (SchroParams *params);
-void schro_params_set_signal_range (SchroParams *params, int index);
-int schro_params_get_signal_range (SchroParams *params);
-void schro_params_set_colour_spec (SchroParams *params, int index);
-int schro_params_get_colour_spec (SchroParams *params);
+void schro_params_set_video_format (SchroVideoFormat *format, int index);
+int schro_params_get_video_format (SchroVideoFormat *format);
+void schro_params_set_frame_rate (SchroVideoFormat *format, int index);
+int schro_params_get_frame_rate (SchroVideoFormat *format);
+void schro_params_set_aspect_ratio (SchroVideoFormat *format, int index);
+int schro_params_get_aspect_ratio (SchroVideoFormat *format);
+void schro_params_set_signal_range (SchroVideoFormat *format, int index);
+int schro_params_get_signal_range (SchroVideoFormat *format);
+void schro_params_set_colour_spec (SchroVideoFormat *format, int index);
+int schro_params_get_colour_spec (SchroVideoFormat *format);
 void schro_params_set_block_params (SchroParams *params, int index);
+
 void schro_params_set_default_codeblock (SchroParams *params);
 
 

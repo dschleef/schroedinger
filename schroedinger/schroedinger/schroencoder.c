@@ -41,6 +41,11 @@ schro_encoder_new (void)
 
   encoder->subband_buffer = schro_buffer_new_and_alloc (1000000);
 
+  encoder->version_major = 0;
+  encoder->version_minor = 0;
+  encoder->profile = 0;
+  encoder->level = 0;
+
   params = &encoder->params;
   params->is_intra = TRUE;
   params->chroma_h_scale = 2;
@@ -95,38 +100,26 @@ schro_encoder_free (SchroEncoder *encoder)
   free (encoder);
 }
 
-void
-schro_encoder_set_size (SchroEncoder *encoder, int width, int height)
+SchroVideoFormat *
+schro_encoder_get_video_format (SchroEncoder *encoder)
 {
-  SchroParams *params = &encoder->params;
+  SchroVideoFormat *format;
 
-  if (params->width == width && params->height == height) return;
+  format = malloc(sizeof(SchroVideoFormat));
+  memcpy (format, &encoder->video_format, sizeof(SchroVideoFormat));
 
-  params->width = width;
-  params->height = height;
-  params->chroma_width =
-    (width + params->chroma_h_scale - 1) / params->chroma_h_scale;
-  params->chroma_height =
-    (height + params->chroma_v_scale - 1) / params->chroma_v_scale;
-
-  if (encoder->tmp_frame0) {
-    schro_frame_free (encoder->tmp_frame0);
-    encoder->tmp_frame0 = NULL;
-  }
-  if (encoder->tmp_frame1) {
-    schro_frame_free (encoder->tmp_frame1);
-    encoder->tmp_frame1 = NULL;
-  }
-
-  encoder->need_rap = TRUE;
+  return format;
 }
 
 void
-schro_encoder_set_framerate (SchroEncoder *encoder, int numerator,
-    int denominator)
+schro_encoder_set_video_format (SchroEncoder *encoder,
+    SchroVideoFormat *format)
 {
-  encoder->params.frame_rate_numerator = numerator;
-  encoder->params.frame_rate_denominator = denominator;
+  /* FIXME check that we're in the right state to do this */
+  memcpy (&encoder->video_format, format, sizeof(SchroVideoFormat));
+
+  encoder->video_format_index =
+    schro_params_get_video_format (&encoder->video_format);
 }
 
 void
@@ -343,6 +336,7 @@ void
 schro_encoder_encode_intra (SchroEncoder *encoder)
 {
   SchroParams *params = &encoder->params;
+  SchroVideoFormat *format = &encoder->video_format;
 
   schro_params_calculate_iwt_sizes (params);
 
@@ -378,7 +372,7 @@ schro_encoder_encode_intra (SchroEncoder *encoder)
         encoder->tmpbuf);
 
     ref_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-        params->width, params->height, 2, 2);
+        format->width, format->height, 2, 2);
     schro_frame_shift_right (encoder->tmp_frame0, 4);
     schro_frame_convert (ref_frame, encoder->tmp_frame0);
 
@@ -423,7 +417,8 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
 
   schro_frame_subtract (encoder->tmp_frame0, encoder->tmp_frame1);
 
-  schro_frame_zero_extend (encoder->tmp_frame0, params->width, params->height);
+  schro_frame_zero_extend (encoder->tmp_frame0, encoder->video_format.width,
+      encoder->video_format.height);
 
   schro_encoder_encode_transform_parameters (encoder);
 
@@ -454,7 +449,7 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
     schro_frame_add (encoder->tmp_frame0, encoder->tmp_frame1);
 
     ref_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-        params->width, params->height, 2, 2);
+        encoder->video_format.width, encoder->video_format.height, 2, 2);
     schro_frame_convert (ref_frame, encoder->tmp_frame0);
   }
 }
@@ -592,7 +587,10 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
 void
 schro_encoder_encode_access_unit_header (SchroEncoder *encoder)
 {
-  SchroParams *params = &encoder->params;
+  SchroVideoFormat *format = &encoder->video_format;
+  SchroVideoFormat _std_format;
+  SchroVideoFormat *std_format = &_std_format;
+  int i;
 
   schro_encoder_encode_parse_info (encoder, SCHRO_PARSE_CODE_ACCESS_UNIT);
   
@@ -600,77 +598,127 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder)
   /* FIXME au picture number */
   schro_bits_encode_bits (encoder->bits, 32, 0);
 
-  /* FIXME version number */
-  schro_bits_encode_uint (encoder->bits, 1);
-  schro_bits_encode_uint (encoder->bits, 0);
-
-  /* FIXME profile */
-  schro_bits_encode_uint (encoder->bits, 0);
-
-  /* FIXME level */
-  schro_bits_encode_uint (encoder->bits, 0);
+  schro_bits_encode_uint (encoder->bits, encoder->version_major);
+  schro_bits_encode_uint (encoder->bits, encoder->version_minor);
+  schro_bits_encode_uint (encoder->bits, encoder->profile);
+  schro_bits_encode_uint (encoder->bits, encoder->level);
 
   /* sequence parameters */
-  /* FIXME video format */
-  schro_bits_encode_uint (encoder->bits, 5);
+  schro_bits_encode_uint (encoder->bits, encoder->video_format_index);
+  schro_params_set_video_format (std_format, encoder->video_format_index);
 
-  /* FIXME custom dimensions */
-  schro_bits_encode_bit (encoder->bits, TRUE);
-  schro_bits_encode_uint (encoder->bits, params->width);
-  schro_bits_encode_uint (encoder->bits, params->height);
+  if (std_format->width == format->width &&
+      std_format->height == format->height) {
+    schro_bits_encode_bit (encoder->bits, FALSE);
+  } else {
+    schro_bits_encode_bit (encoder->bits, TRUE);
+    schro_bits_encode_uint (encoder->bits, format->width);
+    schro_bits_encode_uint (encoder->bits, format->height);
+  }
 
-  /* FIXME chroma format */
-  schro_bits_encode_bit (encoder->bits, FALSE);
-  //schro_bits_encode_uint (encoder->bits, 0);
+  if (std_format->chroma_format == format->chroma_format) {
+    schro_bits_encode_bit (encoder->bits, FALSE);
+  } else {
+    schro_bits_encode_bit (encoder->bits, TRUE);
+    schro_bits_encode_uint (encoder->bits, format->chroma_format);
+  }
 
-  /* FIXME video depth */
-  schro_bits_encode_bit (encoder->bits, FALSE);
-  //schro_bits_encode_uint (encoder->bits, 0);
+  if (std_format->video_depth == format->video_depth) {
+    schro_bits_encode_bit (encoder->bits, FALSE);
+  } else {
+    schro_bits_encode_bit (encoder->bits, TRUE);
+    schro_bits_encode_uint (encoder->bits, format->video_depth);
+  }
 
   /* source parameters */
-  /* FIXME scan format */
-  schro_bits_encode_bit (encoder->bits, FALSE);
-  /* FIXME ... */
+  /* rather than figure out all the logic to encode this optimally, punt. */
+  schro_bits_encode_bit (encoder->bits, TRUE);
+  schro_bits_encode_bit (encoder->bits, format->interlaced_source);
+  if(format->interlaced_source) {
+    schro_bits_encode_bit (encoder->bits, TRUE);
+    schro_bits_encode_bit (encoder->bits, format->top_field_first);
+    schro_bits_encode_bit (encoder->bits, TRUE);
+    schro_bits_encode_bit (encoder->bits, format->sequential_fields);
+  }
 
   /* frame rate */
-  schro_bits_encode_bit (encoder->bits, TRUE);
-  schro_bits_encode_uint (encoder->bits, 0);
-  schro_bits_encode_uint (encoder->bits, params->frame_rate_numerator);
-  schro_bits_encode_uint (encoder->bits, params->frame_rate_denominator);
+  if (std_format->frame_rate_numerator == format->frame_rate_numerator &&
+      std_format->frame_rate_denominator == format->frame_rate_denominator) {
+    schro_bits_encode_bit (encoder->bits, FALSE);
+  } else {
+    schro_bits_encode_bit (encoder->bits, TRUE);
+    i = schro_params_get_frame_rate (format);
+    schro_bits_encode_uint (encoder->bits, i);
+    if (i==0) {
+      schro_bits_encode_uint (encoder->bits, format->frame_rate_numerator);
+      schro_bits_encode_uint (encoder->bits, format->frame_rate_denominator);
+    }
+  }
 
   /* pixel aspect ratio */
-  schro_bits_encode_bit (encoder->bits, TRUE);
-  schro_bits_encode_uint (encoder->bits, 0);
-  schro_bits_encode_uint (encoder->bits, 1);
-  schro_bits_encode_uint (encoder->bits, 1);
+  if (std_format->aspect_ratio_numerator == format->aspect_ratio_numerator &&
+      std_format->aspect_ratio_denominator == format->aspect_ratio_denominator) {
+    schro_bits_encode_bit (encoder->bits, FALSE);
+  } else {
+    schro_bits_encode_bit (encoder->bits, TRUE);
+    i = schro_params_get_aspect_ratio (format);
+    schro_bits_encode_uint (encoder->bits, i);
+    if (i==0) {
+      schro_bits_encode_uint (encoder->bits, format->aspect_ratio_numerator);
+      schro_bits_encode_uint (encoder->bits, format->aspect_ratio_denominator);
+    }
+  }
 
   /* clean area */
-  schro_bits_encode_bit (encoder->bits, TRUE);
-  schro_bits_encode_uint (encoder->bits, params->clean_width);
-  schro_bits_encode_uint (encoder->bits, params->clean_height);
-  schro_bits_encode_uint (encoder->bits, params->left_offset);
-  schro_bits_encode_uint (encoder->bits, params->top_offset);
+  if (std_format->clean_width == format->clean_width &&
+      std_format->clean_height == format->clean_height &&
+      std_format->left_offset == format->left_offset &&
+      std_format->top_offset == format->top_offset) {
+    schro_bits_encode_bit (encoder->bits, FALSE);
+  } else {
+    schro_bits_encode_bit (encoder->bits, TRUE);
+    schro_bits_encode_uint (encoder->bits, format->clean_width);
+    schro_bits_encode_uint (encoder->bits, format->clean_height);
+    schro_bits_encode_uint (encoder->bits, format->left_offset);
+    schro_bits_encode_uint (encoder->bits, format->top_offset);
+  }
 
   /* signal range */
-  schro_bits_encode_bit (encoder->bits, TRUE);
-  schro_bits_encode_uint (encoder->bits, 0);
-  schro_bits_encode_uint (encoder->bits, params->luma_offset);
-  schro_bits_encode_uint (encoder->bits, params->luma_excursion);
-  schro_bits_encode_uint (encoder->bits, params->chroma_offset);
-  schro_bits_encode_uint (encoder->bits, params->chroma_excursion);
+  if (std_format->luma_offset == format->luma_offset &&
+      std_format->luma_excursion == format->luma_excursion &&
+      std_format->chroma_offset == format->chroma_offset &&
+      std_format->chroma_excursion == format->chroma_excursion) {
+    schro_bits_encode_bit (encoder->bits, FALSE);
+  } else {
+    schro_bits_encode_bit (encoder->bits, TRUE);
+    i = schro_params_get_signal_range (format);
+    schro_bits_encode_uint (encoder->bits, i);
+    if (i == 0) {
+      schro_bits_encode_uint (encoder->bits, format->luma_offset);
+      schro_bits_encode_uint (encoder->bits, format->luma_excursion);
+      schro_bits_encode_uint (encoder->bits, format->chroma_offset);
+      schro_bits_encode_uint (encoder->bits, format->chroma_excursion);
+    }
+  }
 
   /* colour spec */
-  schro_bits_encode_bit (encoder->bits, TRUE);
-  schro_bits_encode_uint (encoder->bits, 0);
-  /* colour primaries */
-  schro_bits_encode_bit (encoder->bits, TRUE);
-  schro_bits_encode_uint (encoder->bits, params->colour_primaries);
-  /* colour matrix */
-  schro_bits_encode_bit (encoder->bits, TRUE);
-  schro_bits_encode_uint (encoder->bits, params->colour_matrix);
-  /* transfer function */
-  schro_bits_encode_bit (encoder->bits, TRUE);
-  schro_bits_encode_uint (encoder->bits, params->transfer_function);
+  if (std_format->colour_primaries == format->colour_primaries &&
+      std_format->colour_matrix == format->colour_matrix &&
+      std_format->transfer_function == format->transfer_function) {
+    schro_bits_encode_bit (encoder->bits, FALSE);
+  } else {
+    schro_bits_encode_bit (encoder->bits, TRUE);
+    i = schro_params_get_colour_spec (format);
+    schro_bits_encode_uint (encoder->bits, i);
+    if (i == 0) {
+      schro_bits_encode_bit (encoder->bits, TRUE);
+      schro_bits_encode_uint (encoder->bits, format->colour_primaries);
+      schro_bits_encode_bit (encoder->bits, TRUE);
+      schro_bits_encode_uint (encoder->bits, format->colour_matrix);
+      schro_bits_encode_bit (encoder->bits, TRUE);
+      schro_bits_encode_uint (encoder->bits, format->transfer_function);
+    }
+  }
 
   schro_bits_sync (encoder->bits);
 }
@@ -878,16 +926,16 @@ schro_encoder_clean_up_transform (SchroEncoder *encoder, int component,
   if (component == 0) {
     stride = subband->stride >> 1;
     width = subband->w;
-    w = ROUND_UP_SHIFT(params->width, shift);
+    w = ROUND_UP_SHIFT(encoder->video_format.width, shift);
     height = subband->h;
-    h = ROUND_UP_SHIFT(params->height, shift);
+    h = ROUND_UP_SHIFT(encoder->video_format.height, shift);
     offset = subband->offset;
   } else {
     stride = subband->chroma_stride >> 1;
     width = subband->chroma_w;
-    w = ROUND_UP_SHIFT(params->width/2, shift);
+    w = ROUND_UP_SHIFT(encoder->video_format.width/2, shift);
     height = subband->chroma_h;
-    h = ROUND_UP_SHIFT(params->height/2, shift);
+    h = ROUND_UP_SHIFT(encoder->video_format.height/2, shift);
     offset = subband->chroma_offset;
   }
 

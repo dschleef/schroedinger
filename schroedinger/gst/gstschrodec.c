@@ -64,10 +64,13 @@ struct _GstSchroDec
   gboolean discont;
 
   int bytes_per_picture;
-  int fps_numerator;
-  int fps_denominator;
+  int fps_n;
+  int fps_d;
 
   gboolean have_access_unit;
+
+  int width;
+  int height;
 };
 
 struct _GstSchroDecClass
@@ -296,7 +299,7 @@ gst_schro_dec_src_convert (GstPad *pad,
       switch (*dest_format) {
         case GST_FORMAT_TIME:
           *dest_value = gst_util_uint64_scale (src_value,
-              GST_SECOND * dec->fps_denominator, dec->fps_numerator);
+              GST_SECOND * dec->fps_d, dec->fps_n);
           break;
         case GST_FORMAT_BYTES:
           *dest_value = gst_util_uint64_scale_int (src_value,
@@ -338,7 +341,7 @@ gst_schro_dec_sink_convert (GstPad *pad,
       switch (*dest_format) {
         case GST_FORMAT_TIME:
           *dest_value = gst_util_uint64_scale (granulepos_to_frame (src_value),
-              dec->fps_denominator * GST_SECOND, dec->fps_numerator);
+              dec->fps_d * GST_SECOND, dec->fps_n);
           break;
         default:
           res = FALSE;
@@ -349,7 +352,7 @@ gst_schro_dec_sink_convert (GstPad *pad,
         case GST_FORMAT_DEFAULT:
         {
           *dest_value = gst_util_uint64_scale (src_value,
-              dec->fps_numerator, dec->fps_denominator * GST_SECOND);
+              dec->fps_n, dec->fps_d * GST_SECOND);
           break;
         }
         default:
@@ -385,7 +388,7 @@ gst_schro_dec_src_query (GstPad *pad, GstQuery *query)
       gst_query_parse_position (query, &format, NULL);
 
       time = gst_util_uint64_scale (granulepos_to_frame (dec->granulepos),
-              dec->fps_numerator, dec->fps_denominator);
+              dec->fps_n, dec->fps_d);
       //time -= dec->segment.start;
       time += dec->segment.time;
       GST_DEBUG("query position %lld", time);
@@ -660,7 +663,7 @@ gst_schro_wrap_frame (GstSchroDec *schro_dec, GstBuffer *buffer)
 
   gst_buffer_ref (buffer);
   frame = schro_frame_new_I420 (GST_BUFFER_DATA (buffer),
-      schro_dec->decoder->params.width, schro_dec->decoder->params.height);
+      schro_dec->width, schro_dec->height);
   frame->free = gst_schro_frame_free;
   frame->priv = buffer;
 
@@ -702,6 +705,7 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
 
   if (schro_decoder_is_access_unit (input_buffer)) {
     GstCaps *caps;
+    SchroVideoFormat *format;
 
     if (schro_dec->have_access_unit) {
       schro_buffer_unref (input_buffer);
@@ -711,30 +715,30 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
     GST_DEBUG("access unit");
     schro_decoder_decode (schro_dec->decoder, input_buffer);
 
+    format = schro_decoder_get_video_format (schro_dec->decoder);
+    schro_dec->width = format->width;
+    schro_dec->height = format->height;
+
     caps = gst_caps_new_simple ("video/x-raw-yuv",
         "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('I','4','2','0'),
-        "width", G_TYPE_INT, schro_dec->decoder->params.width,
-        "height", G_TYPE_INT, schro_dec->decoder->params.height,
+        "width", G_TYPE_INT, format->width,
+        "height", G_TYPE_INT, format->height,
         "framerate", GST_TYPE_FRACTION,
-        schro_dec->decoder->params.frame_rate_numerator,
-        schro_dec->decoder->params.frame_rate_denominator,
+        format->frame_rate_numerator, format->frame_rate_denominator,
         "pixel-aspect-ratio", GST_TYPE_FRACTION,
-        schro_dec->decoder->params.aspect_ratio_numerator,
-        schro_dec->decoder->params.aspect_ratio_denominator,
+        format->aspect_ratio_numerator, format->aspect_ratio_denominator,
         NULL);
 
     GST_DEBUG("setting caps %" GST_PTR_FORMAT, caps);
 
     gst_pad_set_caps (schro_dec->srcpad, caps);
 
-    schro_dec->fps_numerator =
-      schro_dec->decoder->params.frame_rate_numerator;
-    schro_dec->fps_denominator =
-      schro_dec->decoder->params.frame_rate_denominator;
-    schro_dec->bytes_per_picture =
-      (schro_dec->decoder->params.width * schro_dec->decoder->params.height * 3) / 4;
+    schro_dec->fps_n = format->frame_rate_numerator;
+    schro_dec->fps_d = format->frame_rate_denominator;
+    schro_dec->bytes_per_picture = (format->width * format->height * 3) / 4;
 
     gst_caps_unref (caps);
+    free (format);
 
     schro_dec->have_access_unit = TRUE;
     
@@ -742,7 +746,7 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
   } else {
     int size;
 
-    size = schro_dec->decoder->params.width * schro_dec->decoder->params.height;
+    size = schro_dec->width * schro_dec->height;
     size += size/2;
     ret = gst_pad_alloc_buffer_and_set_caps (schro_dec->srcpad,
         GST_BUFFER_OFFSET_NONE, size,
@@ -770,13 +774,11 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
       }
 
       GST_BUFFER_TIMESTAMP(outbuf) = gst_util_uint64_scale_int (
-          schro_dec->n_frames,
-          schro_dec->decoder->params.frame_rate_denominator * GST_SECOND,
-          schro_dec->decoder->params.frame_rate_numerator) +
+          schro_dec->n_frames, schro_dec->fps_d * GST_SECOND,
+          schro_dec->fps_n) +
         schro_dec->segment.start;
       GST_BUFFER_DURATION(outbuf) = gst_util_uint64_scale_int (GST_SECOND,
-         schro_dec->decoder->params.frame_rate_denominator,
-         schro_dec->decoder->params.frame_rate_numerator);
+         schro_dec->fps_d, schro_dec->fps_n);
       //GST_BUFFER_OFFSET(outbuf) = schro_dec->n_frames;
 
       schro_frame_free (frame);

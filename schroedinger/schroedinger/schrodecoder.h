@@ -37,6 +37,7 @@ struct _SchroDecoder {
 
   SchroBits *bits;
 
+  SchroVideoFormat video_format;
   SchroParams params;
 
   SchroSubband subbands[1+6*3];
@@ -52,6 +53,7 @@ struct _SchroDecoder {
 
 SchroDecoder * schro_decoder_new (void);
 void schro_decoder_free (SchroDecoder *decoder);
+SchroVideoFormat * schro_decoder_get_video_format (SchroDecoder *decoder);
 void schro_decoder_add_output_frame (SchroDecoder *decoder, SchroFrame *frame);
 int schro_decoder_is_parse_header (SchroBuffer *buffer);
 int schro_decoder_is_access_unit (SchroBuffer *buffer);

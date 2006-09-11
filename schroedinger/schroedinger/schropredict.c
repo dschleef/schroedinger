@@ -73,8 +73,8 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
       x = i*params->xbsep_luma;
       y = j*params->ybsep_luma;
       
-      w = CLAMP(params->width - x, 0, params->xbsep_luma);
-      h = CLAMP(params->height - y, 0, params->ybsep_luma);
+      w = CLAMP(encoder->video_format.width - x, 0, params->xbsep_luma);
+      h = CLAMP(encoder->video_format.height - y, 0, params->ybsep_luma);
 
       predict_dc (&encoder->motion_vectors_dc[j*(4*params->x_num_mb) + i],
           frame, x, y, w, h);
@@ -311,18 +311,19 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
   prev_pred_lists = NULL;
 
   for(shift=3;shift>=0;shift--) {
+    /* FIXME downsampled size is wrong */
     downsampled_ref0 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-        params->width>>shift, params->height>>shift, 2, 2);
+        encoder->video_format.width>>shift, encoder->video_format.height>>shift, 2, 2);
     schro_frame_downsample (downsampled_ref0, encoder->ref_frame0, shift);
 
     if (params->num_refs == 2) {
       downsampled_ref1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-          params->width>>shift, params->height>>shift, 2, 2);
+          encoder->video_format.width>>shift, encoder->video_format.height>>shift, 2, 2);
       schro_frame_downsample (downsampled_ref1, encoder->ref_frame1, shift);
     }
 
     downsampled_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-        params->width>>shift, params->height>>shift, 2, 2);
+        encoder->video_format.width>>shift, encoder->video_format.height>>shift, 2, 2);
     schro_frame_downsample (downsampled_frame, encoder->encode_frame, shift);
 
     x_blocks = params->x_num_blocks>>shift;

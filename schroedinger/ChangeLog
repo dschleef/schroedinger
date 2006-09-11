@@ -1,5 +1,19 @@
 2006-09-10  David Schleef  <ds@schleef.org>
 
+	* gst/gstschrodec.c:
+	* gst/gstschroenc.c:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.c:
+	  First stage of splitting SchroParams.  Currently broken.
+
+2006-09-10  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrobitstream.h:
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroparams.c:

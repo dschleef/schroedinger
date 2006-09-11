@@ -20,12 +20,20 @@ enum _SchroParseCode {
 #define SCHRO_PARSE_CODE_NUM_REFS(x) ((x) & 0x3)
 #define SCHRO_PARSE_CODE_IS_REF(x) ((x) & 0x4)
 
-typedef struct _SchroSignalRange SchroSignalRange;
-struct _SchroSignalRange {
-  int luma_offset;
-  int luma_excursion;
-  int chroma_offset;
-  int chroma_excursion;
+enum _SchroVideoFormatEnum {
+  SCHRO_VIDEO_FORMAT_CUSTOM = 0,
+  SCHRO_VIDEO_FORMAT_QSIF,
+  SCHRO_VIDEO_FORMAT_QCIF,
+  SCHRO_VIDEO_FORMAT_SIF,
+  SCHRO_VIDEO_FORMAT_CIF,
+  SCHRO_VIDEO_FORMAT_4SIF,
+  SCHRO_VIDEO_FORMAT_4CIF,
+  SCHRO_VIDEO_FORMAT_SD480,
+  SCHRO_VIDEO_FORMAT_SD576,
+  SCHRO_VIDEO_FORMAT_HD720,
+  SCHRO_VIDEO_FORMAT_HD1080,
+  SCHRO_VIDEO_FORMAT_2KCINEMA,
+  SCHRO_VIDEO_FORMAT_4KCINEMA
 };
 
 enum _SchroChromaFormat {

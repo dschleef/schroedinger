@@ -38,6 +38,14 @@ struct _SchroEncoder {
 
   int wavelet_type;
 
+  int version_major;
+  int version_minor;
+  int profile;
+  int level;
+
+  int video_format_index;
+
+  SchroVideoFormat video_format;
   SchroParams params;
   SchroEncoderParams encoder_params;
 
@@ -81,11 +89,13 @@ struct _SchroEncoder {
 
 SchroEncoder * schro_encoder_new (void);
 void schro_encoder_free (SchroEncoder *encoder);
-void schro_encoder_set_size (SchroEncoder *encoder, int width, int height);
-void schro_encoder_set_framerate (SchroEncoder *encoder, int numerator, int denominator);
+SchroVideoFormat * schro_encoder_get_video_format (SchroEncoder *encoder);
+void schro_encoder_set_video_format (SchroEncoder *encoder,
+    SchroVideoFormat *video_format);
 void schro_encoder_end_of_stream (SchroEncoder *encoder);
 void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
 SchroBuffer * schro_encoder_encode (SchroEncoder *encoder);
+
 void schro_encoder_copy_to_frame_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_encode_access_unit_header (SchroEncoder *encoder);
 void schro_encoder_encode_intra (SchroEncoder *encoder);
