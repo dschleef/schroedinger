@@ -36,7 +36,6 @@ schro_decoder_new (void)
 
   params = &decoder->params;
 
-  params->is_intra = TRUE;
   params->chroma_h_scale = 2;
   params->chroma_v_scale = 2;
 
@@ -367,14 +366,14 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
   /* parse parameters */
   decoder->au_frame_number = schro_bits_decode_bits (decoder->bits, 32);
   SCHRO_DEBUG("au frame number = %d", decoder->au_frame_number);
-  decoder->params.major_version = schro_bits_decode_uint (decoder->bits);
-  SCHRO_DEBUG("major_version = %d", decoder->params.major_version);
-  decoder->params.minor_version = schro_bits_decode_uint (decoder->bits);
-  SCHRO_DEBUG("minor_version = %d", decoder->params.minor_version);
-  decoder->params.profile = schro_bits_decode_uint (decoder->bits);
-  SCHRO_DEBUG("profile = %d", decoder->params.profile);
-  decoder->params.level = schro_bits_decode_uint (decoder->bits);
-  SCHRO_DEBUG("level = %d", decoder->params.level);
+  decoder->major_version = schro_bits_decode_uint (decoder->bits);
+  SCHRO_DEBUG("major_version = %d", decoder->major_version);
+  decoder->minor_version = schro_bits_decode_uint (decoder->bits);
+  SCHRO_DEBUG("minor_version = %d", decoder->minor_version);
+  decoder->profile = schro_bits_decode_uint (decoder->bits);
+  SCHRO_DEBUG("profile = %d", decoder->profile);
+  decoder->level = schro_bits_decode_uint (decoder->bits);
+  SCHRO_DEBUG("level = %d", decoder->level);
 
   /* sequence parameters */
   index = schro_bits_decode_uint (decoder->bits);
@@ -659,7 +658,7 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
     }
   }
 
-  schro_params_calculate_mc_sizes (params);
+  schro_params_calculate_sizes (params);
 }
 
 void
@@ -864,7 +863,7 @@ schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
     params->codeblock_mode_index = schro_bits_decode_uint (decoder->bits);
   }
 
-  schro_params_calculate_iwt_sizes (params);
+  schro_params_calculate_sizes (params);
 }
 
 void

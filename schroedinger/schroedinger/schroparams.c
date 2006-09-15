@@ -24,9 +24,45 @@ schro_params_validate (SchroVideoFormat *format)
 }
 
 void
-schro_params_calculate_mc_sizes (SchroParams *params)
+schro_params_calculate_sizes (SchroParams *params)
 {
-#if 0
+  switch (params->chroma_format) {
+    case SCHRO_CHROMA_444:
+      params->chroma_width = params->width;
+      params->chroma_height = params->height;
+      params->chroma_h_scale = 1;
+      params->chroma_v_scale = 1;
+      break;
+    case SCHRO_CHROMA_422:
+      params->chroma_width = round_up_pow2(params->width,1);
+      params->chroma_height = params->height;
+      params->chroma_h_scale = 2;
+      params->chroma_v_scale = 1;
+      break;
+    case SCHRO_CHROMA_420:
+      params->chroma_width = round_up_pow2(params->width,1);
+      params->chroma_height = round_up_pow2(params->height,1);
+      params->chroma_h_scale = 2;
+      params->chroma_v_scale = 2;
+      break;
+  }
+  SCHRO_DEBUG ("chroma size %d x %d", params->chroma_width,
+      params->chroma_height);
+
+  params->iwt_chroma_width =
+    round_up_pow2(params->chroma_width,params->transform_depth);
+  params->iwt_chroma_height =
+    round_up_pow2(params->chroma_height, params->transform_depth);
+  
+  SCHRO_DEBUG ("iwt chroma size %d x %d", params->iwt_chroma_width,
+      params->iwt_chroma_height);
+  params->iwt_luma_width =
+    params->iwt_chroma_width * params->chroma_h_scale;
+  params->iwt_luma_height =
+    params->iwt_chroma_height * params->chroma_v_scale;
+  SCHRO_DEBUG ("iwt luma size %d x %d", params->iwt_luma_width,
+      params->iwt_luma_height);
+
   params->x_num_mb =
     DIVIDE_ROUND_UP(params->width, 4*params->xbsep_luma);
   params->y_num_mb =
@@ -38,117 +74,101 @@ schro_params_calculate_mc_sizes (SchroParams *params)
   params->mc_luma_height = 4 * params->y_num_mb * params->ybsep_luma;
   params->mc_chroma_width = params->mc_luma_width / params->chroma_h_scale;
   params->mc_chroma_height = params->mc_luma_width / params->chroma_v_scale;
-#endif
-}
-
-void
-schro_params_calculate_iwt_sizes (SchroParams *params)
-{
-#if 0
-  SCHRO_DEBUG ("chroma size %d x %d", params->chroma_width,
-      params->chroma_height);
-  if (params->is_intra) {
-    params->iwt_chroma_width =
-      round_up_pow2(params->chroma_width,params->transform_depth);
-    params->iwt_chroma_height =
-      round_up_pow2(params->chroma_height, params->transform_depth);
-  } else {
-    params->iwt_chroma_width =
-      round_up_pow2(params->mc_chroma_width, params->transform_depth);
-    params->iwt_chroma_height =
-      round_up_pow2(params->mc_chroma_height, params->transform_depth);
-  }
-  SCHRO_DEBUG ("iwt chroma size %d x %d", params->iwt_chroma_width,
-      params->iwt_chroma_height);
-  params->iwt_luma_width =
-    params->iwt_chroma_width * params->chroma_h_scale;
-  params->iwt_luma_height =
-    params->iwt_chroma_height * params->chroma_v_scale;
-  SCHRO_DEBUG ("iwt luma size %d x %d", params->iwt_luma_width,
-      params->iwt_luma_height);
-#endif
 }
 
 static SchroVideoFormat
 schro_video_formats[] = {
-  { "custom", 640, 480, SCHRO_CHROMA_420, 8,
+  { /* custom */
+    640, 480, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     30, 1, 1, 1,
     640, 480, 0, 0,
     0, 255, 128, 254,
-    0 },
-  { "QSIF", 176, 120, SCHRO_CHROMA_420, 8,
+    0, 0, 0 },
+  { /* QSIF */
+    176, 120, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     15000, 1001, 10, 11,
     176, 120, 0, 0,
     0, 255, 128, 254,
-    1 },
-  { "QCIF", 176, 144, SCHRO_CHROMA_420, 8,
+    1, 1, 0 },
+  { /* QCIF */
+    176, 144, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     25, 2, 12, 11,
     176, 144, 0, 0,
     0, 255, 128, 254,
-    2 },
-  { "SIF", 352, 240, SCHRO_CHROMA_420, 8,
+    2, 1, 0 },
+  { /* SIF */
+    352, 240, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     15000, 1001, 10, 11,
     352, 240, 0, 0,
     0, 255, 128, 254,
-    1 },
-  { "CIF", 352, 288, SCHRO_CHROMA_420, 8,
+    1, 1, 0 },
+  { /* CIF */
+    352, 288, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     25, 2, 12, 11,
     352, 288, 0, 0,
     0, 255, 128, 254,
-    2 },
-  { "4SIF", 704, 480, SCHRO_CHROMA_420, 8,
+    2, 1, 0 },
+  { /* 4SIF */
+    704, 480, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     15000, 1001, 10, 11,
     704, 480, 0, 0,
     0, 255, 128, 254,
-    1 },
-  { "4CIF", 704, 576, SCHRO_CHROMA_420, 8,
+    1, 1, 0 },
+  { /* 4CIF */
+    704, 576, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     25, 2, 12, 11,
     704, 576, 0, 0,
     0, 255, 128, 254,
-    2 },
-  { "SD480", 720, 480, SCHRO_CHROMA_420, 8,
+    2, 1, 0 },
+  { /* SD480 */
+    720, 480, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     24000, 1001, 10, 11,
     720, 480, 0, 0,
     16, 235, 128, 244,
-    1 },
-  { "SD576", 720, 576, SCHRO_CHROMA_420, 8,
+    1, 1, 0 },
+  { /* SD576 */
+    720, 576, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     25, 1, 12, 11,
     720, 576, 0, 0,
     16, 235, 128, 244,
-    2 },
-  { "HD720", 1280, 720, SCHRO_CHROMA_420, 8,
+    2, 1, 0 },
+  { /* HD720 */
+    1280, 720, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     24, 1, 1, 1,
     1280, 720, 0, 0,
     16, 235, 128, 244,
-    0 },
-  { "HD1080", 1920, 1080, SCHRO_CHROMA_420, 8,
+    0, 0, 0 },
+  { /* HD1080 */
+    1920, 1080, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     24, 1, 1, 1,
     1920, 1080, 0, 0,
     16, 235, 128, 244,
-    0 },
-  { "2KCinema", 2048, 1556, SCHRO_CHROMA_444, 16,
+    0, 0, 0 },
+  { /* 2KCinema */
+    2048, 1556, SCHRO_CHROMA_444, 16,
     FALSE, TRUE, FALSE,
     24, 1, 1, 1,
     2048, 1536, 
     0, 65535, 32768, 65534,
-    3 },
-  { "4KCinema", 4096, 3072, SCHRO_CHROMA_444, 16,
+    3, 2, 3 },
+  { /* 4KCinema */
+    4096, 3072, SCHRO_CHROMA_444, 16,
     FALSE, TRUE, FALSE,
     24, 1, 1, 1,
     2048, 1536, 
     0, 65535, 32768, 65534,
-    3 },
+    3, 2, 3 },
 };
 
 void schro_params_set_video_format (SchroVideoFormat *format, int index)

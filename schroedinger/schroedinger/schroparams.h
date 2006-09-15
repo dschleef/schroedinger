@@ -2,6 +2,8 @@
 #ifndef __SCHRO_PARAMS_H__
 #define __SCHRO_PARAMS_H__
 
+#include <schroedinger/schrobitstream.h>
+
 typedef struct _SchroVideoFormat SchroVideoFormat;
 typedef struct _SchroParams SchroParams;
 typedef struct _SchroSubband SchroSubband;
@@ -9,7 +11,6 @@ typedef struct _SchroMotionVector SchroMotionVector;
 typedef struct _SchroPicture SchroPicture;
 
 struct _SchroVideoFormat {
-  char *name;
   int width;
   int height;
   int chroma_format;
@@ -41,15 +42,18 @@ struct _SchroVideoFormat {
 
 struct _SchroParams {
 
+#if 0
   int major_version;
   int minor_version;
   int profile;
   int level;
+#endif
 
-#if 0
   int height;
   int width;
+  SchroChromaFormat chroma_format;
 
+#if 0
   /* */
 
   int chroma_format_index;
@@ -74,23 +78,13 @@ struct _SchroParams {
   int transfer_function;
 #endif
 
-  int chroma_h_scale;
-  int chroma_v_scale;
-  int chroma_width;
-  int chroma_height;
-  int mc_chroma_width;
-  int mc_chroma_height;
-  int mc_luma_width;
-  int mc_luma_height;
-  int is_intra;
-
   /* transform parameters */
   int wavelet_filter_index;
   int transform_depth;
   int spatial_partition_flag;
   int nondefault_partition_flag;
-  int horiz_codeblocks[8];
-  int vert_codeblocks[8];
+  int horiz_codeblocks[SCHRO_MAX_TRANSFORM_DEPTH + 1];
+  int vert_codeblocks[SCHRO_MAX_TRANSFORM_DEPTH + 1];
   int codeblock_mode_index;
 
   /* motion prediction parameters */
@@ -117,13 +111,19 @@ struct _SchroParams {
   int picture_weight_1;
   int picture_weight_2;
 
-  /* frame padding */
+  /* calculated sizes */
+  int chroma_h_scale;
+  int chroma_v_scale;
+  int chroma_width;
+  int chroma_height;
   int iwt_chroma_width;
   int iwt_chroma_height;
   int iwt_luma_width;
   int iwt_luma_height;
-
-
+  int mc_chroma_width;
+  int mc_chroma_height;
+  int mc_luma_width;
+  int mc_luma_height;
 };
 
 struct _SchroSubband {
@@ -163,11 +163,10 @@ struct _SchroPicture {
   int reference_frame_number[2];
 
   int n_retire;
-  int retire[10];
+  int retire[SCHRO_MAX_REFERENCE_FRAMES];
 };
 
-void schro_params_calculate_mc_sizes (SchroParams *params);
-void schro_params_calculate_iwt_sizes (SchroParams *params);
+void schro_params_calculate_sizes (SchroParams *params);
 
 int schro_params_validate (SchroVideoFormat *format);
 

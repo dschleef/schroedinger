@@ -12,7 +12,7 @@ typedef struct _SchroEncoderParams SchroEncoderParams;
 
 struct _SchroEncoderParams {
   int quant_index_dc;
-  int quant_index[6];
+  int quant_index[SCHRO_MAX_TRANSFORM_DEPTH];
 };
 
 struct _SchroEncoder {
@@ -23,12 +23,12 @@ struct _SchroEncoder {
 
   SchroBits *bits;
 
-  SchroFrame *frame_queue[10];
+  SchroFrame *frame_queue[SCHRO_MAX_REFERENCE_FRAMES];
   int frame_queue_length;
 
   int frame_queue_index;
 
-  SchroFrame *reference_frames[10];
+  SchroFrame *reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
   int n_reference_frames;
 
   int need_rap;
@@ -51,7 +51,7 @@ struct _SchroEncoder {
 
   SchroBuffer *subband_buffer;
 
-  SchroSubband subbands[1+6*3];
+  SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
 
   int frame_number;
   int end_of_stream;

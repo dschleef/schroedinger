@@ -47,7 +47,6 @@ schro_encoder_new (void)
   encoder->level = 0;
 
   params = &encoder->params;
-  params->is_intra = TRUE;
   params->chroma_h_scale = 2;
   params->chroma_v_scale = 2;
   params->transform_depth = 4;
@@ -338,7 +337,7 @@ schro_encoder_encode_intra (SchroEncoder *encoder)
   SchroParams *params = &encoder->params;
   SchroVideoFormat *format = &encoder->video_format;
 
-  schro_params_calculate_iwt_sizes (params);
+  schro_params_calculate_sizes (params);
 
   if (encoder->tmp_frame0 == NULL) {
     encoder->tmp_frame0 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
@@ -388,8 +387,7 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
   int is_ref = 0;
   int residue_bits_start;
 
-  schro_params_calculate_mc_sizes (params);
-  schro_params_calculate_iwt_sizes (params);
+  schro_params_calculate_sizes (params);
 
   if (encoder->tmp_frame0 == NULL) {
     encoder->tmp_frame0 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,

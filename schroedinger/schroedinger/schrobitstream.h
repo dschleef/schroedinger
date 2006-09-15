@@ -2,6 +2,9 @@
 #ifndef _SCHRO_BITSTREAM_H_
 #define _SCHRO_BITSTREAM_H_
 
+#define SCHRO_MAX_TRANSFORM_DEPTH 8
+#define SCHRO_MAX_REFERENCE_FRAMES 10
+
 typedef enum _SchroParseCode SchroParseCode;
 enum _SchroParseCode {
   SCHRO_PARSE_CODE_ACCESS_UNIT = 0x00,
@@ -36,10 +39,11 @@ enum _SchroVideoFormatEnum {
   SCHRO_VIDEO_FORMAT_4KCINEMA
 };
 
+typedef enum _SchroChromaFormat SchroChromaFormat;
 enum _SchroChromaFormat {
   SCHRO_CHROMA_444 = 0,
-  SCHRO_CHROMA_420,
   SCHRO_CHROMA_422,
+  SCHRO_CHROMA_420
 };
 
 enum _SchroColourMatrix {
@@ -60,6 +64,17 @@ enum _SchroTransferChar {
   SCHRO_TRANSFER_CHAR_TV = 0,
   SCHRO_TRANSFER_CHAR_EXTENDED = 1,
   SCHRO_TRANSFER_CHAR_LINEAR = 2
+};
+
+enum _SchroWaveletIndex {
+  SCHRO_WAVELET_DESL_9_3,
+  SCHRO_WAVELET_5_3,
+  SCHRO_WAVELET_13_5,
+  SCHRO_WAVELET_HAAR,
+  SCHRO_WAVELET_HAAR_SHIFT_1,
+  SCHRO_WAVELET_HAAR_SHIFT_2,
+  SCHRO_WAVELET_FIDELITY,
+  SCHRO_WAVELET_DAUB_9_7
 };
 
 #endif

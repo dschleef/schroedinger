@@ -1,3 +1,15 @@
+2006-09-15  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schrowavelet.h:
+	  Code cleanup.  Still broken.  Changes BITSTREAM.
+
 2006-09-10  David Schleef  <ds@schleef.org>
 
 	* gst/gstschrodec.c:

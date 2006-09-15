@@ -6,6 +6,7 @@
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schrobits.h>
+#include <schroedinger/schrobitstream.h>
 
 
 typedef struct _SchroDecoder SchroDecoder;
@@ -14,8 +15,8 @@ struct _SchroDecoder {
   SchroFrame *frame;
   SchroFrame *mc_tmp_frame;
   int n_reference_frames;
-  SchroFrame *reference_frames[10];
-  SchroFrame *output_frames[10];
+  SchroFrame *reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
+  SchroFrame *output_frames[SCHRO_MAX_REFERENCE_FRAMES];
   int n_output_frames;
 
   int next_frame_number;
@@ -37,18 +38,22 @@ struct _SchroDecoder {
 
   SchroBits *bits;
 
+  int major_version;
+  int minor_version;
+  int profile;
+  int level;
   SchroVideoFormat video_format;
   SchroParams params;
 
-  SchroSubband subbands[1+6*3];
+  SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
 
   SchroMotionVector *motion_vectors;
 
   int n_retire;
-  int retire_list[10];
+  int retire_list[SCHRO_MAX_REFERENCE_FRAMES];
 
   int frame_queue_length;
-  SchroFrame *frame_queue[10];
+  SchroFrame *frame_queue[SCHRO_MAX_REFERENCE_FRAMES];
 };
 
 SchroDecoder * schro_decoder_new (void);
