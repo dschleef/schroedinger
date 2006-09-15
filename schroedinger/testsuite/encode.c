@@ -28,9 +28,13 @@ test (int w, int h)
   SchroEncoder *encoder;
   SchroBuffer *buffer;
   SchroFrame *frame;
+  SchroVideoFormat *format;
 
   encoder = schro_encoder_new();
-  schro_encoder_set_size (encoder, w, h);
+  format = schro_encoder_get_video_format(encoder);
+  format->width = w;
+  format->height = h;
+  schro_encoder_set_video_format (encoder, format);
 
   size = ROUND_UP_4 (w) * ROUND_UP_2 (h);
   size += (ROUND_UP_8 (w)/2) * (ROUND_UP_2 (h)/2);

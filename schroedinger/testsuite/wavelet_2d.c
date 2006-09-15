@@ -153,7 +153,7 @@ main (int argc, char *argv[])
 {
   schro_init();
 
-#if 0
+#if 1
   basic_test(SCHRO_WAVELET_5_3, 640,512,6);
 
   constant_test(SCHRO_WAVELET_5_3, 32,20);
@@ -162,12 +162,14 @@ main (int argc, char *argv[])
   vramp_test(SCHRO_WAVELET_5_3, 16, 16);
 #endif
 
+#if 0
   basic_test(SCHRO_WAVELET_HAAR, 640,512,6);
 
   constant_test(SCHRO_WAVELET_HAAR, 32,20);
   constant_test(SCHRO_WAVELET_HAAR, 10,2);
 
   vramp_test(SCHRO_WAVELET_HAAR, 16, 16);
+#endif
 
 #if 0
   constant_test(SCHRO_WAVELET_DAUB97, 10, 10);

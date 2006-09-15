@@ -1,5 +1,14 @@
 2006-09-15  David Schleef  <ds@schleef.org>
 
+	* configure.ac:
+	  Remove AM_MAINTAINER_MODE.  I want the Makefiles to be
+	  updated from Makefile.am's unconditionally.
+	* testsuite/encode.c:
+	* testsuite/wavelet_2d.c:
+	  Fix for recent API changes.
+
+2006-09-15  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrobitstream.h:
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schrodecoder.h:
