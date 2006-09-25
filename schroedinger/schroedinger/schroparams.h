@@ -166,7 +166,8 @@ struct _SchroPicture {
   int retire[SCHRO_MAX_REFERENCE_FRAMES];
 };
 
-void schro_params_calculate_sizes (SchroParams *params);
+void schro_params_calculate_iwt_sizes (SchroParams *params);
+void schro_params_calculate_mc_sizes (SchroParams *params);
 
 int schro_params_validate (SchroVideoFormat *format);
 

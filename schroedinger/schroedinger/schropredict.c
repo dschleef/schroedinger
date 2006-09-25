@@ -106,7 +106,8 @@ mv->dc[2] = 128;
 #endif
       /* FIXME the metric underestimates the cost of DC blocks, so we
        * bump it up a bit here */
-      cost_dc += 64;
+      //cost_dc += 64;
+      cost_dc += 10;
 
       schro_motion_vector_prediction (encoder->motion_vectors,
           params, i, j, &pred_x, &pred_y);

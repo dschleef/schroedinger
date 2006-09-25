@@ -24,7 +24,7 @@ schro_params_validate (SchroVideoFormat *format)
 }
 
 void
-schro_params_calculate_sizes (SchroParams *params)
+schro_params_calculate_iwt_sizes (SchroParams *params)
 {
   switch (params->chroma_format) {
     case SCHRO_CHROMA_444:
@@ -34,14 +34,14 @@ schro_params_calculate_sizes (SchroParams *params)
       params->chroma_v_scale = 1;
       break;
     case SCHRO_CHROMA_422:
-      params->chroma_width = round_up_pow2(params->width,1);
+      params->chroma_width = round_up_pow2(params->width,1)/2;
       params->chroma_height = params->height;
       params->chroma_h_scale = 2;
       params->chroma_v_scale = 1;
       break;
     case SCHRO_CHROMA_420:
-      params->chroma_width = round_up_pow2(params->width,1);
-      params->chroma_height = round_up_pow2(params->height,1);
+      params->chroma_width = round_up_pow2(params->width,1)/2;
+      params->chroma_height = round_up_pow2(params->height,1)/2;
       params->chroma_h_scale = 2;
       params->chroma_v_scale = 2;
       break;
@@ -62,6 +62,33 @@ schro_params_calculate_sizes (SchroParams *params)
     params->iwt_chroma_height * params->chroma_v_scale;
   SCHRO_DEBUG ("iwt luma size %d x %d", params->iwt_luma_width,
       params->iwt_luma_height);
+}
+
+void
+schro_params_calculate_mc_sizes (SchroParams *params)
+{
+  switch (params->chroma_format) {
+    case SCHRO_CHROMA_444:
+      params->chroma_width = params->width;
+      params->chroma_height = params->height;
+      params->chroma_h_scale = 1;
+      params->chroma_v_scale = 1;
+      break;
+    case SCHRO_CHROMA_422:
+      params->chroma_width = round_up_pow2(params->width,1)/2;
+      params->chroma_height = params->height;
+      params->chroma_h_scale = 2;
+      params->chroma_v_scale = 1;
+      break;
+    case SCHRO_CHROMA_420:
+      params->chroma_width = round_up_pow2(params->width,1)/2;
+      params->chroma_height = round_up_pow2(params->height,1)/2;
+      params->chroma_h_scale = 2;
+      params->chroma_v_scale = 2;
+      break;
+  }
+  SCHRO_DEBUG ("chroma size %d x %d", params->chroma_width,
+      params->chroma_height);
 
   params->x_num_mb =
     DIVIDE_ROUND_UP(params->width, 4*params->xbsep_luma);

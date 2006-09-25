@@ -524,7 +524,7 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
           h = height;
         }
         if (w < comp->width) {
-          for(y = 0; y<h; y++) {
+          for(y = 0; y<MIN(h,comp->height); y++) {
             data = OFFSET(comp->data, comp->stride * y);
             oil_splat_u8_ns (data + w, data + w - 1, comp->width - w);
           }
@@ -551,7 +551,7 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
           h = height;
         }
         if (w < comp->width) {
-          for(y = 0; y<h; y++) {
+          for(y = 0; y<MIN(h,comp->height); y++) {
             data = OFFSET(comp->data, comp->stride * y);
             oil_splat_s16_ns (data + w, data + w - 1, comp->width - w);
           }

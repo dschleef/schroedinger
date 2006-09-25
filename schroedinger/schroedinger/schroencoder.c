@@ -45,6 +45,7 @@ schro_encoder_new (void)
   encoder->version_minor = 0;
   encoder->profile = 0;
   encoder->level = 0;
+  encoder->need_rap = TRUE;
 
   params = &encoder->params;
   params->chroma_h_scale = 2;
@@ -117,8 +118,10 @@ schro_encoder_set_video_format (SchroEncoder *encoder,
   /* FIXME check that we're in the right state to do this */
   memcpy (&encoder->video_format, format, sizeof(SchroVideoFormat));
 
+  SCHRO_ERROR("wxh %d %d", format->width, format->height);
   encoder->video_format_index =
     schro_params_get_video_format (&encoder->video_format);
+
 }
 
 void
@@ -139,10 +142,10 @@ schro_encoder_end_of_stream (SchroEncoder *encoder)
 static void
 schro_encoder_choose_quantisers (SchroEncoder *encoder)
 {
-  if (encoder->picture->n_refs > 0) {
-    encoder->base_quant = 26;
-  } else {
+  if (encoder->picture->is_ref) {
     encoder->base_quant = 24;
+  } else {
+    encoder->base_quant = 28;
   }
 #if 0
   if ((encoder->picture->frame_number & 0x1f) > 0x10) {
@@ -151,13 +154,24 @@ schro_encoder_choose_quantisers (SchroEncoder *encoder)
     encoder->base_quant = 24;
   }
 #endif
-  encoder->encoder_params.quant_index_dc = 20;
-  encoder->encoder_params.quant_index[0] = CLAMP(encoder->base_quant, 0, 63);
-  encoder->encoder_params.quant_index[1] = CLAMP(encoder->base_quant, 0, 63);
-  encoder->encoder_params.quant_index[2] = CLAMP(encoder->base_quant, 0, 63);
-  encoder->encoder_params.quant_index[3] = CLAMP(encoder->base_quant, 0, 63);
-  encoder->encoder_params.quant_index[4] = CLAMP(encoder->base_quant, 0, 63);
-  encoder->encoder_params.quant_index[5] = CLAMP(encoder->base_quant, 0, 63);
+  if (encoder->picture->is_ref) {
+    encoder->encoder_params.quant_index_dc = 0;
+    encoder->encoder_params.quant_index[0] = CLAMP(encoder->base_quant, 0, 63);
+    encoder->encoder_params.quant_index[1] = CLAMP(encoder->base_quant, 0, 63);
+    encoder->encoder_params.quant_index[2] = CLAMP(encoder->base_quant, 0, 63);
+    encoder->encoder_params.quant_index[3] = CLAMP(encoder->base_quant, 0, 63);
+    encoder->encoder_params.quant_index[4] = CLAMP(encoder->base_quant, 0, 63);
+    encoder->encoder_params.quant_index[5] = CLAMP(encoder->base_quant, 0, 63);
+  } else {
+    encoder->encoder_params.quant_index_dc = 0;
+    encoder->encoder_params.quant_index[0] = CLAMP(encoder->base_quant, 0, 63);
+    encoder->encoder_params.quant_index[1] = CLAMP(encoder->base_quant + 2, 0, 63);
+    encoder->encoder_params.quant_index[2] = CLAMP(encoder->base_quant + 4, 0, 63);
+    encoder->encoder_params.quant_index[3] = CLAMP(encoder->base_quant + 6, 0, 63);
+    encoder->encoder_params.quant_index[4] = CLAMP(encoder->base_quant + 8, 0, 63);
+    encoder->encoder_params.quant_index[5] = CLAMP(encoder->base_quant + 10, 0, 63);
+    //encoder->encoder_params.quant_index_dc = CLAMP(encoder->base_quant, 0, 63);
+  }
 #if 0
   encoder->encoder_params.quant_index_dc = CLAMP(encoder->base_quant - 8, 0, 63);
   encoder->encoder_params.quant_index[0] = CLAMP(encoder->base_quant - 8, 0, 63);
@@ -177,6 +191,7 @@ schro_encoder_encode (SchroEncoder *encoder)
   int i;
   
   if (encoder->need_rap) {
+SCHRO_ERROR("encoding rap");
     outbuffer = schro_buffer_new_and_alloc (0x100);
 
     encoder->bits = schro_bits_new ();
@@ -337,7 +352,11 @@ schro_encoder_encode_intra (SchroEncoder *encoder)
   SchroParams *params = &encoder->params;
   SchroVideoFormat *format = &encoder->video_format;
 
-  schro_params_calculate_sizes (params);
+  params->width = format->width;
+  params->height = format->height;
+  params->chroma_format = format->chroma_format;
+
+  schro_params_calculate_iwt_sizes (params);
 
   if (encoder->tmp_frame0 == NULL) {
     encoder->tmp_frame0 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
@@ -387,7 +406,8 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
   int is_ref = 0;
   int residue_bits_start;
 
-  schro_params_calculate_sizes (params);
+  schro_params_calculate_mc_sizes (params);
+  schro_params_calculate_iwt_sizes (params);
 
   if (encoder->tmp_frame0 == NULL) {
     encoder->tmp_frame0 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,

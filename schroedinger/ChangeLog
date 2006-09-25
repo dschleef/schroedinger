@@ -1,5 +1,19 @@
 2006-09-24  David Schleef  <ds@schleef.org>
 
+	* gst/gstschro.c:
+	* gst/gstschrodec.c:
+	* gst/gstschroenc.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.c:
+	  Fix a bunch of stuff.  Changes BITSTREAM.  But break some
+	  other stuff and make the library annoyingly verbose.
+
+2006-09-24  David Schleef  <ds@schleef.org>
+
 	* testsuite/wavelet.c:
 	  Fix compilation problem in last checkin.
 

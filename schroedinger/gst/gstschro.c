@@ -23,7 +23,6 @@
 
 #include <gst/gst.h>
 #include <schroedinger/schro.h>
-#include <liboil/liboil.h>
 
 GType gst_schrotoy_get_type (void);
 GType gst_schro_enc_get_type (void);
@@ -38,7 +37,6 @@ static gboolean
 plugin_init (GstPlugin * plugin)
 {
   schro_init();
-  oil_init();
 
   GST_DEBUG_CATEGORY_INIT (schro_debug, "schro", 0, "Schroedinger");
 #if 0

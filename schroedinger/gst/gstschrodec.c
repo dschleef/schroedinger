@@ -26,7 +26,6 @@
 #include <gst/video/video.h>
 #include <string.h>
 #include <schroedinger/schro.h>
-#include <liboil/liboil.h>
 #include <math.h>
 
 GST_DEBUG_CATEGORY_EXTERN (schro_debug);

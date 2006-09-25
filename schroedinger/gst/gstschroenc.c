@@ -26,7 +26,6 @@
 #include <string.h>
 #include <schroedinger/schro.h>
 #include <schroedinger/schrobitstream.h>
-#include <liboil/liboil.h>
 #include <math.h>
 
 #define GST_TYPE_SCHRO_ENC \
@@ -363,7 +362,7 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
 
     encoded_buffer = schro_encoder_encode (schro_enc->encoder);
 
-    GST_ERROR ("encoder produced %d bytes", encoded_buffer->length);
+    GST_DEBUG ("encoder produced %d bytes", encoded_buffer->length);
 
     outbuf = gst_buffer_new_and_alloc (encoded_buffer->length);
 
