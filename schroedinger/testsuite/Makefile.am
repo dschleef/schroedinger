@@ -43,8 +43,8 @@ encode_CFLAGS = $(SCHRO_CFLAGS)
 encode_LDADD = $(SCHRO_LIBS)
 encode_SOURCES = encode.c
 
-wavelet_CFLAGS = $(SCHRO_CFLAGS)
-wavelet_LDADD = $(SCHRO_LIBS)
+wavelet_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+wavelet_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_SOURCES = wavelet.c
 
 wavelet2_CFLAGS = $(SCHRO_CFLAGS)

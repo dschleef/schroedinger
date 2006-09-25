@@ -1,3 +1,14 @@
+2006-09-24  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrowavelet.c:
+	* schroedinger/schrowavelet.h:
+	* schroedinger/schrooil.c:
+	* schroedinger/schrooil.h:
+	* testsuite/Makefile.am:
+	* testsuite/wavelet.c:
+	  Update wavelets for spec.  Rewrite test.  Changes BITSTREAM.
+
 2006-09-15  David Schleef  <ds@schleef.org>
 
 	* configure.ac:

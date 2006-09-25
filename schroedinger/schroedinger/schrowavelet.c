@@ -167,28 +167,28 @@ schro_lift_split_desl93 (int16_t *d_n, int16_t *s_n, int n)
 
   if (n==2) {
     d_n[1] = s_n[1] - s_n[0];
-    d_n[0] = s_n[0] + (d_n[1] >> 1);
+    d_n[0] = s_n[0] + ((d_n[1] + 1) >> 1);
   } else if (n==4) {
     /* predict */
-    d_n[1] = s_n[1] - ((9*(s_n[0] + s_n[2]) - (s_n[2] + s_n[2])) >> 4);
-    d_n[3] = s_n[3] - ((9*s_n[2] - s_n[0]) >> 3);
+    d_n[1] = s_n[1] - ((9*(s_n[0] + s_n[2]) - (s_n[2] + s_n[2]) + 8) >> 4);
+    d_n[3] = s_n[3] - ((9*s_n[2] - s_n[0] + 4) >> 3);
 
     /* update */
-    d_n[0] = s_n[0] + (d_n[1] >> 1);
-    d_n[2] = s_n[2] + ((d_n[1] + d_n[3]) >> 2);
+    d_n[0] = s_n[0] + ((d_n[1] + 1) >> 1);
+    d_n[2] = s_n[2] + ((d_n[1] + d_n[3] + 2) >> 2);
   } else {
     /* predict */
-    d_n[1] = s_n[1] - ((9*(s_n[0] + s_n[2]) - (s_n[2] + s_n[4])) >> 4);
+    d_n[1] = s_n[1] - ((9*(s_n[0] + s_n[2]) - (s_n[2] + s_n[4]) + 8) >> 4);
     for(i=3;i<n-4;i+=2){
-      d_n[i] = s_n[i] - ((9*(s_n[i-1] + s_n[i+1]) - (s_n[i-3] + s_n[i+3])) >> 4);
+      d_n[i] = s_n[i] - ((9*(s_n[i-1] + s_n[i+1]) - (s_n[i-3] + s_n[i+3]) + 8) >> 4);
     }
-    d_n[n-3] = s_n[n-3] - ((9*(s_n[n-4] + s_n[n-2]) - (s_n[n-6] + s_n[n-2])) >> 4);
-    d_n[n-1] = s_n[n-1] - ((9*s_n[n-2] - s_n[n-4]) >> 3);
+    d_n[n-3] = s_n[n-3] - ((9*(s_n[n-4] + s_n[n-2]) - (s_n[n-6] + s_n[n-2]) + 8) >> 4);
+    d_n[n-1] = s_n[n-1] - ((9*s_n[n-2] - s_n[n-4] + 4) >> 3);
 
     /* update */
-    d_n[0] = s_n[0] + (d_n[1] >> 1);
+    d_n[0] = s_n[0] + ((d_n[1] + 1) >> 1);
     for(i=2;i<n;i+=2){
-      d_n[i] = s_n[i] + ((d_n[i-1] + d_n[i+1]) >> 2);
+      d_n[i] = s_n[i] + ((d_n[i-1] + d_n[i+1] + 2) >> 2);
     }
   }
 
@@ -200,30 +200,30 @@ schro_lift_synth_desl93 (int16_t *d_n, int16_t *s_n, int n)
   int i;
 
   if (n==2) {
-    d_n[0] = s_n[0] - (s_n[1] >> 1);
+    d_n[0] = s_n[0] - ((s_n[1] + 1) >> 1);
     d_n[1] = s_n[1] + d_n[0];
   } else if (n==4) {
     /* predict */
-    d_n[0] = s_n[0] - (s_n[1] >> 1);
-    d_n[2] = s_n[2] - ((s_n[1] + s_n[3]) >> 2);
+    d_n[0] = s_n[0] - ((s_n[1] + 1)>> 1);
+    d_n[2] = s_n[2] - ((s_n[1] + s_n[3] + 2) >> 2);
 
     /* update */
-    d_n[1] = s_n[1] + ((9*(d_n[0] + d_n[2]) - (d_n[2] + d_n[2])) >> 4);
-    d_n[3] = s_n[3] + ((9*d_n[2] - d_n[0]) >> 3);
+    d_n[1] = s_n[1] + ((9*(d_n[0] + d_n[2]) - (d_n[2] + d_n[2]) + 8) >> 4);
+    d_n[3] = s_n[3] + ((9*d_n[2] - d_n[0] + 4) >> 3);
   } else {
     /* predict */
-    d_n[0] = s_n[0] - (s_n[1] >> 1);
+    d_n[0] = s_n[0] - ((s_n[1] + 1) >> 1);
     for(i=2;i<n;i+=2){
-      d_n[i] = s_n[i] - ((s_n[i-1] + s_n[i+1]) >> 2);
+      d_n[i] = s_n[i] - ((s_n[i-1] + s_n[i+1] + 2) >> 2);
     }
 
     /* update */
-    d_n[1] = s_n[1] + ((9*(d_n[0] + d_n[2]) - (d_n[2] + d_n[4])) >> 4);
+    d_n[1] = s_n[1] + ((9*(d_n[0] + d_n[2]) - (d_n[2] + d_n[4]) + 8) >> 4);
     for(i=3;i<n-4;i+=2){
-      d_n[i] = s_n[i] + ((9*(d_n[i-1] + d_n[i+1]) - (d_n[i-3] + d_n[i+3])) >> 4);
+      d_n[i] = s_n[i] + ((9*(d_n[i-1] + d_n[i+1]) - (d_n[i-3] + d_n[i+3]) + 8) >> 4);
     }
-    d_n[n-3] = s_n[n-3] + ((9*(d_n[n-4] + d_n[n-2]) - (d_n[n-6] + d_n[n-2])) >> 4);
-    d_n[n-1] = s_n[n-1] + ((9*d_n[n-2] - d_n[n-4]) >> 3);
+    d_n[n-3] = s_n[n-3] + ((9*(d_n[n-4] + d_n[n-2]) - (d_n[n-6] + d_n[n-2]) + 8) >> 4);
+    d_n[n-1] = s_n[n-1] + ((9*d_n[n-2] - d_n[n-4] + 4) >> 3);
   }
 }
 
@@ -235,28 +235,28 @@ schro_lift_split_desl93_str (int16_t *d_n, int16_t *s_n, int sstr, int n)
   sstr >>= 1;
   if (n==2) {
     d_n[1] = s_n[1] - s_n[0*sstr];
-    d_n[0] = s_n[0] + (d_n[1] >> 1);
+    d_n[0] = s_n[0] + ((d_n[1] + 1) >> 1);
   } else if (n==4) {
     /* predict */
-    d_n[1] = s_n[1*sstr] - ((9*(s_n[0*sstr] + s_n[2*sstr]) - (s_n[2*sstr] + s_n[2*sstr])) >> 4);
-    d_n[3] = s_n[3*sstr] - ((9*s_n[2*sstr] - s_n[0*sstr]) >> 3);
+    d_n[1] = s_n[1*sstr] - ((9*(s_n[0*sstr] + s_n[2*sstr]) - (s_n[2*sstr] + s_n[2*sstr]) + 8) >> 4);
+    d_n[3] = s_n[3*sstr] - ((9*s_n[2*sstr] - s_n[0*sstr] + 4) >> 3);
 
     /* update */
-    d_n[0] = s_n[0*sstr] + (d_n[1] >> 1);
-    d_n[2] = s_n[2*sstr] + ((d_n[1] + d_n[3]) >> 2);
+    d_n[0] = s_n[0*sstr] + ((d_n[1] + 1) >> 1);
+    d_n[2] = s_n[2*sstr] + ((d_n[1] + d_n[3] + 2) >> 2);
   } else {
     /* predict */
-    d_n[1] = s_n[1*sstr] - ((9*(s_n[0*sstr] + s_n[2*sstr]) - (s_n[2*sstr] + s_n[4*sstr])) >> 4);
+    d_n[1] = s_n[1*sstr] - ((9*(s_n[0*sstr] + s_n[2*sstr]) - (s_n[2*sstr] + s_n[4*sstr]) + 8) >> 4);
     for(i=3;i<n-4;i+=2){
-      d_n[i] = s_n[i*sstr] - ((9*(s_n[(i-1)*sstr] + s_n[(i+1)*sstr]) - (s_n[(i-3)*sstr] + s_n[(i+3)*sstr])) >> 4);
+      d_n[i] = s_n[i*sstr] - ((9*(s_n[(i-1)*sstr] + s_n[(i+1)*sstr]) - (s_n[(i-3)*sstr] + s_n[(i+3)*sstr]) + 8) >> 4);
     }
-    d_n[n-3] = s_n[(n-3)*sstr] - ((9*(s_n[(n-4)*sstr] + s_n[(n-2)*sstr]) - (s_n[(n-6)*sstr] + s_n[(n-2)*sstr])) >> 4);
-    d_n[n-1] = s_n[(n-1)*sstr] - ((9*s_n[(n-2)*sstr] - s_n[(n-4)*sstr]) >> 3);
+    d_n[n-3] = s_n[(n-3)*sstr] - ((9*(s_n[(n-4)*sstr] + s_n[(n-2)*sstr]) - (s_n[(n-6)*sstr] + s_n[(n-2)*sstr]) + 8) >> 4);
+    d_n[n-1] = s_n[(n-1)*sstr] - ((9*s_n[(n-2)*sstr] - s_n[(n-4)*sstr] + 4) >> 3);
 
     /* update */
-    d_n[0] = s_n[0*sstr] + (d_n[1] >> 1);
+    d_n[0] = s_n[0*sstr] + ((d_n[1] + 1) >> 1);
     for(i=2;i<n;i+=2){
-      d_n[i] = s_n[i*sstr] + ((d_n[i-1] + d_n[i+1]) >> 2);
+      d_n[i] = s_n[i*sstr] + ((d_n[i-1] + d_n[i+1] + 2) >> 2);
     }
   }
 
@@ -269,30 +269,30 @@ schro_lift_synth_desl93_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
 
   dstr >>= 1;
   if (n==2) {
-    d_n[0*dstr] = s_n[0] - (s_n[1] >> 1);
+    d_n[0*dstr] = s_n[0] - ((s_n[1] + 1) >> 1);
     d_n[1*dstr] = s_n[1] + d_n[0*dstr];
   } else if (n==4) {
     /* predict */
-    d_n[0*dstr] = s_n[0] - (s_n[1] >> 1);
-    d_n[2*dstr] = s_n[2] - ((s_n[1] + s_n[3]) >> 2);
+    d_n[0*dstr] = s_n[0] - ((s_n[1] + 1) >> 1);
+    d_n[2*dstr] = s_n[2] - ((s_n[1] + s_n[3] + 2) >> 2);
 
     /* update */
-    d_n[1*dstr] = s_n[1] + ((9*(d_n[0*dstr] + d_n[2*dstr]) - (d_n[2*dstr] + d_n[2*dstr])) >> 4);
-    d_n[3*dstr] = s_n[3] + ((9*d_n[2*dstr] - d_n[0*dstr]) >> 3);
+    d_n[1*dstr] = s_n[1] + ((9*(d_n[0*dstr] + d_n[2*dstr]) - (d_n[2*dstr] + d_n[2*dstr]) + 8) >> 4);
+    d_n[3*dstr] = s_n[3] + ((9*d_n[2*dstr] - d_n[0*dstr] + 4) >> 3);
   } else {
     /* predict */
-    d_n[0*dstr] = s_n[0] - (s_n[1] >> 1);
+    d_n[0*dstr] = s_n[0] - ((s_n[1] + 1) >> 1);
     for(i=2;i<n;i+=2){
-      d_n[i*dstr] = s_n[i] - ((s_n[i-1] + s_n[i+1]) >> 2);
+      d_n[i*dstr] = s_n[i] - ((s_n[i-1] + s_n[i+1] + 2) >> 2);
     }
 
     /* update */
-    d_n[1*dstr] = s_n[1] + ((9*(d_n[0*dstr] + d_n[2*dstr]) - (d_n[2*dstr] + d_n[4*dstr])) >> 4);
+    d_n[1*dstr] = s_n[1] + ((9*(d_n[0*dstr] + d_n[2*dstr]) - (d_n[2*dstr] + d_n[4*dstr]) + 8) >> 4);
     for(i=3;i<n-4;i+=2){
-      d_n[i*dstr] = s_n[i] + ((9*(d_n[(i-1)*dstr] + d_n[(i+1)*dstr]) - (d_n[(i-3)*dstr] + d_n[(i+3)*dstr])) >> 4);
+      d_n[i*dstr] = s_n[i] + ((9*(d_n[(i-1)*dstr] + d_n[(i+1)*dstr]) - (d_n[(i-3)*dstr] + d_n[(i+3)*dstr]) + 8) >> 4);
     }
-    d_n[(n-3)*dstr] = s_n[n-3] + ((9*(d_n[(n-4)*dstr] + d_n[(n-2)*dstr]) - (d_n[(n-6)*dstr] + d_n[(n-2)*dstr])) >> 4);
-    d_n[(n-1)*dstr] = s_n[n-1] + ((9*d_n[(n-2)*dstr] - d_n[(n-4)*dstr]) >> 3);
+    d_n[(n-3)*dstr] = s_n[n-3] + ((9*(d_n[(n-4)*dstr] + d_n[(n-2)*dstr]) - (d_n[(n-6)*dstr] + d_n[(n-2)*dstr]) + 8) >> 4);
+    d_n[(n-1)*dstr] = s_n[n-1] + ((9*d_n[(n-2)*dstr] - d_n[(n-4)*dstr] + 4) >> 3);
   }
 }
 
@@ -815,9 +815,11 @@ schro_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
       oil_deinterleave (i_n + stride * (height-1), tmp, n);
 
       break;
-    case SCHRO_WAVELET_HAAR:
+    case SCHRO_WAVELET_HAAR_0:
+    case SCHRO_WAVELET_HAAR_1:
+    case SCHRO_WAVELET_HAAR_2:
       for(i=0;i<height;i+=2){
-        oil_lift_haar_split (i_n + stride * i, i_n + stride * (i+1), width);
+        oil_split_haar (i_n + stride * i, i_n + stride * (i+1), width);
         oil_split_haar (tmp, i_n + stride * i, n);
         oil_deinterleave (i_n + stride * i, tmp, n);
         oil_split_haar (tmp, i_n + stride * (i+1), n);
@@ -907,9 +909,9 @@ schro_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int widt
         oil_interleave (tmp, i_n + stride * i, n);
         oil_synth_approx97 (i_n + stride * i, tmp, n);
       }
-      for(i=0;i<height;i+=2){
-        /* FIXME */
-        oil_lift_haar_synth (i_n + stride * i, i_n + stride * (i+1), width);
+      for(i=0;i<width;i+=2){
+        schro_interleave_str (tmp, i_n + i, stride/2, height/2);
+        schro_lift_synth_desl93_str (i_n + i, stride/2, tmp, n);
       }
       break;
     case SCHRO_WAVELET_5_3:
@@ -934,7 +936,9 @@ schro_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int widt
           i_n + stride * (i-2), i_n + stride * (i-2), width);
 
       break;
-    case SCHRO_WAVELET_HAAR:
+    case SCHRO_WAVELET_HAAR_0:
+    case SCHRO_WAVELET_HAAR_1:
+    case SCHRO_WAVELET_HAAR_2:
       for(i=0;i<height;i+=2){
         oil_interleave (tmp, i_n + stride * (i + 0), n);
         oil_synth_haar (i_n + stride * (i + 0), tmp, n);
