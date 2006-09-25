@@ -1,5 +1,10 @@
 2006-09-24  David Schleef  <ds@schleef.org>
 
+	* testsuite/wavelet.c:
+	  Fix compilation problem in last checkin.
+
+2006-09-24  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrobitstream.h:
 	* schroedinger/schrowavelet.c:
 	* schroedinger/schrowavelet.h:

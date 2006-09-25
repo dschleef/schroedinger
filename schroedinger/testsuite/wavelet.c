@@ -880,6 +880,17 @@ schro_split_135 (int16_t *a, int n)
 }
 
 void
+schro_split_haar (int16_t *a, int n)
+{
+  int i;
+
+  for(i=0;i<n;i++) {
+    a[2*i + 1] = a[2*i+1] - a[2*i];
+    a[2*i] = a[2*i] + ((a[2*i+1] + 1)>>1);
+  }
+}
+
+void
 schro_split_fidelity (int16_t *a, int n)
 {
   static int16_t stage1_weights[] = { -8, 21, -46, 161, 161, -46, 21, -8 };
@@ -991,7 +1002,7 @@ split_schro (int16_t *a, int n, int filter)
     case SCHRO_WAVELET_HAAR_0:
     case SCHRO_WAVELET_HAAR_1:
     case SCHRO_WAVELET_HAAR_2:
-      oil_split_haar (a, a, n/2);
+      schro_split_haar (a, n/2);
       break;
     case SCHRO_WAVELET_FIDELITY:
       schro_split_fidelity (a, n/2);
