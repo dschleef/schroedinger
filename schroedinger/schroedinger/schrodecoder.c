@@ -239,10 +239,16 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     }
 
     decoder->ref0 = schro_decoder_reference_get (decoder, decoder->reference1);
+    if (decoder->ref0 == NULL) {
+      SCHRO_ERROR("Could not find reference picture %d\n", decoder->reference1);
+    }
     SCHRO_ASSERT (decoder->ref0 != NULL);
 
     if (decoder->n_refs > 1) {
       decoder->ref1 = schro_decoder_reference_get (decoder, decoder->reference2);
+      if (decoder->ref1 == NULL) {
+        SCHRO_ERROR("Could not find reference picture %d\n", decoder->reference2);
+      }
       SCHRO_ASSERT (decoder->ref1 != NULL);
     }
 

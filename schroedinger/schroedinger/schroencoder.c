@@ -183,6 +183,25 @@ schro_encoder_choose_quantisers (SchroEncoder *encoder)
 #endif
 }
 
+static void
+schro_decoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer)
+{
+  uint8_t *data = buffer->data;
+
+  if (buffer->length < 11) {
+    SCHRO_ERROR("packet too short");
+  }
+
+  data[5] = (buffer->length >> 16) & 0xff;
+  data[6] = (buffer->length >> 8) & 0xff;
+  data[7] = (buffer->length >> 0) & 0xff;
+  data[8] = (encoder->prev_offset >> 16) & 0xff;
+  data[9] = (encoder->prev_offset >> 8) & 0xff;
+  data[10] = (encoder->prev_offset >> 0) & 0xff;
+
+  encoder->prev_offset = buffer->length;
+}
+
 SchroBuffer *
 schro_encoder_encode (SchroEncoder *encoder)
 {
@@ -208,6 +227,8 @@ SCHRO_ERROR("encoding rap");
     }
     schro_bits_free (encoder->bits);
     schro_buffer_unref (outbuffer);
+
+    schro_decoder_fixup_offsets (encoder, subbuffer);
 
     return subbuffer;
   }
@@ -272,6 +293,8 @@ SCHRO_ERROR("encoding rap");
   }
   schro_bits_free (encoder->bits);
   schro_buffer_unref (outbuffer);
+
+  schro_decoder_fixup_offsets (encoder, subbuffer);
 
   return subbuffer;
 }

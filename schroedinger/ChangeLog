@@ -1,3 +1,10 @@
+2006-09-26  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  To Jan with love.  Set the offsets on buffers.
+
 2006-09-24  David Schleef  <ds@schleef.org>
 
 	* gst/gstschro.c:

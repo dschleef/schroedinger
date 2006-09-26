@@ -55,6 +55,7 @@ struct _SchroEncoder {
 
   int frame_number;
   int end_of_stream;
+  int prev_offset;
 
   SchroMotionVector *motion_vectors;
   SchroMotionVector *motion_vectors_dc;
