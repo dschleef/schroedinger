@@ -86,7 +86,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
 
   data = GST_BUFFER_DATA(buffer);
 
-  if (memcmp (data, "KW-DIRAC", 7) == 0) {
+  if (memcmp (data, "KW-DIRAC", 8) == 0) {
     g_print("KW-DIRAC header\n");
     return;
   }

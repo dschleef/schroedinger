@@ -25,141 +25,6 @@ void deinterleave (int16_t *a, int n);
 void interleave (int16_t *a, int n);
 void dump (int16_t *a, int n);
 
-#if 0
-int
-basic_test(int filter_index, int width, int height, int transform_depth)
-{
-  int level;
-
-  frame_data = malloc(width*height*2);
-  tmp = malloc(1024*2);
-  memset (frame_data, 0, width*height*2);
-
-  for(level=0;level<transform_depth;level++) {
-    int w;
-    int h;
-    int stride;
-
-    w = width >> level;
-    h = height >> level;
-    stride = width << level;
-
-    schro_wavelet_transform_2d (filter_index,
-        frame_data, stride, w, h, tmp);
-  }
-
-  free(frame_data);
-  free(tmp);
-
-  return 0;
-}
-
-int
-constant_test(int filter_index, int width, int height)
-{
-  int i;
-  int j;
-
-  frame_data = malloc(width*height*2);
-  tmp = malloc(1024*2);
-
-  for(i=0;i<height*width;i++){
-    frame_data[i] = 10;
-  }
-
-  schro_wavelet_transform_2d (filter_index,
-        frame_data, width*2, width, height, tmp);
-
-#if 1
-  for(i=0;i<height;i++){
-    for(j=0;j<width;j++){
-      printf("%d ", frame_data[i*width + j]);
-    }
-    printf("\n");
-  }
-  printf("\n");
-#endif
-
-  schro_wavelet_inverse_transform_2d (filter_index,
-        frame_data, width*2, width, height, tmp);
-
-#if 1
-  for(i=0;i<height;i++){
-    for(j=0;j<width;j++){
-      printf("%d ", frame_data[i*width + j]);
-    }
-    printf("\n");
-  }
-  printf("\n");
-#endif
-
-  free(frame_data);
-  free(tmp);
-
-  return 0;
-}
-
-int
-vramp_test(int filter_index, int width, int height)
-{
-  int i;
-  int j;
-
-  frame_data = malloc(width*height*2);
-  tmp = malloc(1024*2);
-
-  for (j=0;j<width;j++) {
-    for(i=0;i<width;i++){
-      //frame_data[j*width + i] = j;
-      frame_data[j*width + i] = i;
-    }
-  }
-
-  schro_wavelet_transform_2d (filter_index,
-        frame_data, width*2, width, height, tmp);
-#if 1
-  for(i=0;i<height;i++){
-    for(j=0;j<width;j++){
-      printf("%d ", frame_data[i*width + j]);
-    }
-    printf("\n");
-  }
-  printf("\n");
-#endif
-  schro_wavelet_transform_2d (filter_index,
-        frame_data, width*4, width/2, height/2, tmp);
-
-#if 1
-  for(i=0;i<height;i++){
-    for(j=0;j<width;j++){
-      printf("%d ", frame_data[i*width + j]);
-    }
-    printf("\n");
-  }
-  printf("\n");
-#endif
-
-  schro_wavelet_inverse_transform_2d (filter_index,
-        frame_data, width*4, width/2, height/2, tmp);
-  schro_wavelet_inverse_transform_2d (filter_index,
-        frame_data, width*2, width, height, tmp);
-
-#if 1
-  for(i=0;i<height;i++){
-    for(j=0;j<width;j++){
-      printf("%d ", frame_data[i*width + j]);
-    }
-    printf("\n");
-  }
-  printf("\n");
-#endif
-
-  free(frame_data);
-  free(tmp);
-
-  return 0;
-}
-#endif
 
 void
 gen_const(int16_t *a, int n)
@@ -301,40 +166,11 @@ main (int argc, char *argv[])
 
   schro_init();
 
-#if 0
-  for(filter=0;filter<=SCHRO_WAVELET_DAUB_9_7;filter++){
-    printf("Filter %d:\n", filter);
-    local_test(filter);
-  }
-#endif
-
   for(filter=0;filter<=SCHRO_WAVELET_DAUB_9_7;filter++){
     printf("Filter %d:\n", filter);
     local_test(filter);
     random_test(filter);
   }
-
-#if 0
-  basic_test(SCHRO_WAVELET_5_3, 640,512,6);
-
-  constant_test(SCHRO_WAVELET_5_3, 32,20);
-  constant_test(SCHRO_WAVELET_5_3, 10,2);
-
-  vramp_test(SCHRO_WAVELET_5_3, 16, 16);
-#endif
-
-#if 0
-  basic_test(SCHRO_WAVELET_HAAR, 640,512,6);
-
-  constant_test(SCHRO_WAVELET_HAAR, 32,20);
-  constant_test(SCHRO_WAVELET_HAAR, 10,2);
-
-  vramp_test(SCHRO_WAVELET_HAAR, 16, 16);
-#endif
-
-#if 0
-  constant_test(SCHRO_WAVELET_DAUB97, 10, 10);
-#endif
 
   return 0;
 }
@@ -637,20 +473,6 @@ notoil_mas2_s16 (int16_t *i1, int16_t *s1, int16_t *s2_2, int16_t *s3_1,
 }
 
 void
-notoil_mas2_sub_s16 (int16_t *i1, int16_t *s1, int16_t *s2_2, int16_t *s3_1,
-    int16_t *s4_1, int n)
-{
-  int i;
-  int x;
-
-  for(i=0;i<n;i++){
-    x = s3_1[0] + s1[i]*s2_2[0] + s1[i+1]*s2_2[1];
-    x >>= s4_1[0];
-    i1[i] -= x;
-  }
-}
-
-void
 notoil_mas4_s16 (int16_t *i1, int16_t *s1, int16_t *s2_2, int16_t *s3_1,
     int16_t *s4_1, int n)
 {
@@ -662,21 +484,6 @@ notoil_mas4_s16 (int16_t *i1, int16_t *s1, int16_t *s2_2, int16_t *s3_1,
       s1[i+3]*s2_2[3];
     x >>= s4_1[0];
     i1[i] += x;
-  }
-}
-
-void
-notoil_mas4_sub_s16 (int16_t *i1, int16_t *s1, int16_t *s2_2, int16_t *s3_1,
-    int16_t *s4_1, int n)
-{
-  int i;
-  int x;
-
-  for(i=0;i<n;i++){
-    x = s3_1[0] + s1[i]*s2_2[0] + s1[i+1]*s2_2[1] + s1[i+2]*s2_2[2] +
-      s1[i+3]*s2_2[3];
-    x >>= s4_1[0];
-    i1[i] -= x;
   }
 }
 
@@ -699,24 +506,6 @@ notoil_mas8_s16 (int16_t *i1, int16_t *s1, int16_t *s2_8, int16_t *s3_1,
 }
 
 void
-notoil_mas8_sub_s16 (int16_t *i1, int16_t *s1, int16_t *s2_8, int16_t *s3_1,
-    int16_t *s4_1, int n)
-{
-  int i;
-  int j;
-  int x;
-
-  for(i=0;i<n;i++){
-    x = s3_1[0];
-    for(j=0;j<8;j++){
-      x += s1[i+j] * s2_8[j];
-    }
-    x >>= s4_1[0];
-    i1[i] -= x;
-  }
-}
-
-void
 notoil_deinterleave (int16_t *d1, int16_t *d2, int16_t *s, int n)
 {
   int i;
@@ -726,49 +515,10 @@ notoil_deinterleave (int16_t *d1, int16_t *d2, int16_t *s, int n)
   }
 }
 
-#if 0
 void
 schro_split_desl93 (int16_t *a, int n)
 {
-  static int16_t stage1_weights[] = { -1, -1 };
-  static int16_t stage2_weights[] = { -1, 9, 9, -1 };
-  int16_t tmp1[100];
-  int16_t tmp2[100];
-  int16_t offset;
-  int16_t shift;
-  int i;
-
-  notoil_deinterleave (tmp1 + 4, tmp2 + 4, a, n);
-
-  tmp1[3] = tmp1[4];
-  tmp1[n+4] = tmp1[n+2];
-  tmp1[2] = tmp1[5];
-  tmp1[n+5] = tmp1[n+1];
-
-  offset = 2;
-  shift = 2;
-  notoil_mas2_s16 (tmp1, tmp2, stage1_weights, &offset, &shift, n);
-
-  tmp2[3] = tmp2[5];
-  tmp2[n+4] = tmp2[n+3];
-  tmp2[2] = tmp2[6];
-  tmp2[n+5] = tmp2[n+2];
-
-  offset = 8;
-  shift = 4;
-  notoil_mas4_s16 (a, tmp2, stage2_weights, &offset, &shift, n);
-
-  for(i=0;i<n;i++){
-    a[n/2+i] = tmp2[i];
-  }
-
-}
-#endif
-
-void
-schro_split_desl93 (int16_t *a, int n)
-{
-  static int16_t stage1_weights[] = { -1, 9, 9, -1 };
+  static int16_t stage1_weights[] = { 1, -9, -9, 1 };
   static int16_t stage2_weights[] = { 1, 1 };
   int16_t tmp1[100], *hi;
   int16_t tmp2[100], *lo;
@@ -786,9 +536,9 @@ schro_split_desl93 (int16_t *a, int n)
   hi[n] = hi[n-1];
   hi[n+1] = hi[n-2];
 
-  offset = 8;
+  offset = 7;
   shift = 4;
-  notoil_mas4_sub_s16 (lo, hi - 1, stage1_weights, &offset, &shift, n);
+  notoil_mas4_s16 (lo, hi - 1, stage1_weights, &offset, &shift, n);
 
   lo[-2] = lo[1];
   lo[-1] = lo[0];
@@ -808,7 +558,7 @@ schro_split_desl93 (int16_t *a, int n)
 void
 schro_split_53 (int16_t *a, int n)
 {
-  static int16_t stage1_weights[] = { 1, 1 };
+  static int16_t stage1_weights[] = { -1, -1 };
   static int16_t stage2_weights[] = { 1, 1 };
   int16_t tmp1[100], *hi;
   int16_t tmp2[100], *lo;
@@ -824,9 +574,9 @@ schro_split_53 (int16_t *a, int n)
   hi[-1] = hi[1];
   hi[n] = hi[n-1];
 
-  offset = 1;
+  offset = 0;
   shift = 1;
-  notoil_mas2_sub_s16 (lo, hi, stage1_weights, &offset, &shift, n);
+  notoil_mas2_s16 (lo, hi, stage1_weights, &offset, &shift, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n-2];
@@ -844,7 +594,7 @@ schro_split_53 (int16_t *a, int n)
 void
 schro_split_135 (int16_t *a, int n)
 {
-  static int16_t stage1_weights[] = { -1, 9, 9, -1 };
+  static int16_t stage1_weights[] = { 1, -9, -9, 1 };
   static int16_t stage2_weights[] = { -1, 9, 9, -1 };
   int16_t tmp1[100], *hi;
   int16_t tmp2[100], *lo;
@@ -861,9 +611,9 @@ schro_split_135 (int16_t *a, int n)
   hi[n] = hi[n-1];
   hi[n+1] = hi[n-2];
 
-  offset = 8;
+  offset = 7;
   shift = 4;
-  notoil_mas4_sub_s16 (lo, hi-1, stage1_weights, &offset, &shift, n);
+  notoil_mas4_s16 (lo, hi-1, stage1_weights, &offset, &shift, n);
 
   lo[-1] = lo[0];
   lo[-2] = lo[1];
@@ -894,7 +644,6 @@ void
 schro_split_fidelity (int16_t *a, int n)
 {
   static int16_t stage1_weights[] = { -8, 21, -46, 161, 161, -46, 21, -8 };
-  //static int16_t stage2_weights[] = { -2, 10, -25, 81, 81, -25, 10, -2 };
   static int16_t stage2_weights[] = { 2, -10, 25, -81, -81, 25, -10, 2 };
   int16_t tmp1[100], *hi;
   int16_t tmp2[100], *lo;
@@ -927,10 +676,8 @@ schro_split_fidelity (int16_t *a, int n)
   hi[n+2] = hi[n-3];
   hi[n+3] = hi[n-4];
 
-  //offset = 128;
   offset = 127;
   shift = 8;
-  //notoil_mas8_sub_s16 (lo, hi - 3, stage2_weights, &offset, &shift, n);
   notoil_mas8_s16 (lo, hi - 3, stage2_weights, &offset, &shift, n);
 
   for(i=0;i<n;i++){
@@ -942,8 +689,8 @@ schro_split_fidelity (int16_t *a, int n)
 void
 schro_split_daub97 (int16_t *a, int n)
 {
-  static int16_t stage1_weights[] = { 6497, 6497 };
-  static int16_t stage2_weights[] = {  217,  217 };
+  static int16_t stage1_weights[] = { -6497, -6497 };
+  static int16_t stage2_weights[] = { -217, -217 };
   static int16_t stage3_weights[] = { 3616, 3616 };
   static int16_t stage4_weights[] = { 1817, 1817 };
   int16_t tmp1[100], *hi;
@@ -955,29 +702,34 @@ schro_split_daub97 (int16_t *a, int n)
   hi = tmp1 + 4;
   lo = tmp2 + 4;
 
-  offset = 2048;
-  shift = 12;
-
   notoil_deinterleave (hi, lo, a, n);
 
   hi[-1] = hi[1];
   hi[n] = hi[n-1];
 
-  notoil_mas2_sub_s16 (lo, hi, stage1_weights, &offset, &shift, n);
+  offset = 2047;
+  shift = 12;
+  notoil_mas2_s16 (lo, hi, stage1_weights, &offset, &shift, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n-2];
 
-  notoil_mas2_sub_s16 (hi, lo - 1, stage2_weights, &offset, &shift, n);
+  offset = 2047;
+  shift = 12;
+  notoil_mas2_s16 (hi, lo - 1, stage2_weights, &offset, &shift, n);
 
   hi[-1] = hi[1];
   hi[n] = hi[n-1];
 
+  offset = 2048;
+  shift = 12;
   notoil_mas2_s16 (lo, hi, stage3_weights, &offset, &shift, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n-2];
 
+  offset = 2048;
+  shift = 12;
   notoil_mas2_s16 (hi, lo - 1, stage4_weights, &offset, &shift, n);
 
   for(i=0;i<n;i++){

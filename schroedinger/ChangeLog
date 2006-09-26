@@ -1,5 +1,12 @@
 2006-09-26  David Schleef  <ds@schleef.org>
 
+	* testsuite/dump_packets.c:
+	  Minor fix.
+	* testsuite/wavelet.c:
+	  Remove disabled code.
+
+2006-09-26  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:
