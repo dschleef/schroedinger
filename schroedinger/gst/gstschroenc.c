@@ -310,6 +310,7 @@ gst_schro_buffer_wrap (GstBuffer *buf, int width, int height)
   return frame;
 }
 
+#if 0
 static GstCaps *
 gst_schro_enc_set_header_on_caps (GstCaps * caps, GstBuffer *buf1, GstBuffer * buf2)
 {
@@ -336,6 +337,7 @@ gst_schro_enc_set_header_on_caps (GstCaps * caps, GstBuffer *buf1, GstBuffer * b
 
   return caps;
 }
+#endif
 
 static GstFlowReturn
 gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
@@ -350,15 +352,6 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
 
   if (schro_enc->sent_header == 0) {
     GstCaps *caps;
-    GstBuffer *outbuf1;
-
-    outbuf1 = gst_buffer_new_and_alloc (16);
-    memcpy(GST_BUFFER_DATA(outbuf1), "KW-DIRAC", 8);
-    GST_WRITE_UINT32_BE(GST_BUFFER_DATA(outbuf1) + 8, schro_enc->fps_n);
-    GST_WRITE_UINT32_BE(GST_BUFFER_DATA(outbuf1) + 12, schro_enc->fps_d);
-    GST_BUFFER_FLAG_SET (outbuf1, GST_BUFFER_FLAG_IN_CAPS);
-    GST_BUFFER_OFFSET (outbuf1) = 0;
-    GST_BUFFER_OFFSET_END (outbuf1) = 0;
 
     encoded_buffer = schro_encoder_encode (schro_enc->encoder);
 
@@ -368,21 +361,13 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
 
     memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data,
         encoded_buffer->length);
-    GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_IN_CAPS);
     GST_BUFFER_OFFSET (outbuf) = 0;
     GST_BUFFER_OFFSET_END (outbuf) = 0;
 
     schro_buffer_unref (encoded_buffer);
 
     caps = gst_pad_get_caps (schro_enc->srcpad);
-    caps = gst_schro_enc_set_header_on_caps (caps, outbuf1, outbuf);
-
-    gst_pad_set_caps (schro_enc->srcpad, caps);
-
     gst_buffer_set_caps (outbuf, caps);
-
-    ret = gst_pad_push (schro_enc->srcpad, outbuf1);
-    if (ret!= GST_FLOW_OK) return ret;
 
     ret = gst_pad_push (schro_enc->srcpad, outbuf);
     if (ret!= GST_FLOW_OK) return ret;

@@ -686,20 +686,6 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
 
   schro_dec = GST_SCHRO_DEC (GST_PAD_PARENT (pad));
 
-  if (GST_BUFFER_SIZE(buf) >= 8 && !memcmp(GST_BUFFER_DATA(buf),"KW-DIRAC",8)) {
-    GstBuffer *sub;
-    GST_DEBUG_OBJECT (schro_dec, "found bos");
-
-    if (GST_BUFFER_SIZE (buf) == 8) {
-      gst_buffer_unref(buf);
-      return GST_FLOW_OK;
-    }
-
-    sub = gst_buffer_create_sub (buf, 8, GST_BUFFER_SIZE (buf) - 8);
-    gst_buffer_unref(buf);
-    buf = sub;
-  }
-
   if (G_UNLIKELY (GST_BUFFER_FLAG_IS_SET (buf, GST_BUFFER_FLAG_DISCONT))) {
     GST_DEBUG_OBJECT (schro_dec, "received DISCONT buffer");
     //dec->need_keyframe = TRUE;

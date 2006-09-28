@@ -1,5 +1,13 @@
 2006-09-28  David Schleef  <ds@schleef.org>
 
+	* gst/gstschrodec.c:
+	* gst/gstschroenc.c:
+	* gst/gstschroparse.c:
+	  Don't handle "KW-DIRAC" packets.  Make ogg[de]mux do it, since
+	  it's ogg-specific.
+
+2006-09-28  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	  Disable DECODE_PREDICTION_ONLY again.
 	* schroedinger/schrometric.c:
