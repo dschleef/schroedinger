@@ -29,6 +29,8 @@
 #include <liboil/liboil.h>
 #include <math.h>
 
+#include "parsehelper.h"
+
 GST_DEBUG_CATEGORY_EXTERN (schro_debug);
 #define GST_CAT_DEFAULT schro_debug
 
@@ -67,8 +69,7 @@ struct _GstSchroParse
   int fps_numerator;
   int fps_denominator;
 
-  GQueue *queue;
-  int queue_size;
+  ParseHelper parse_helper;
 };
 
 struct _GstSchroParseClass
@@ -103,6 +104,8 @@ static gboolean gst_schro_parse_src_event (GstPad *pad, GstEvent *event);
 static gboolean gst_schro_parse_sink_event (GstPad *pad, GstEvent *event);
 static GstStateChangeReturn gst_schro_parse_change_state (GstElement *element,
     GstStateChange transition);
+static GstFlowReturn gst_schro_parse_push_all (GstSchroParse *schro_parse, 
+    gboolean at_eos);
 static GstFlowReturn gst_schro_parse_chain (GstPad *pad, GstBuffer *buf);
 
 static GstStaticPadTemplate gst_schro_parse_sink_template =
@@ -172,7 +175,7 @@ gst_schro_parse_init (GstSchroParse *schro_parse, GstSchroParseClass *klass)
   gst_pad_set_event_function (schro_parse->srcpad, gst_schro_parse_src_event);
   gst_element_add_pad (GST_ELEMENT(schro_parse), schro_parse->srcpad);
 
-  schro_parse->queue = g_queue_new();
+  parse_helper_init (&schro_parse->parse_helper);
 }
 
 static void
@@ -184,6 +187,7 @@ gst_schro_parse_reset (GstSchroParse *dec)
   dec->n_frames = 0;
 
   gst_segment_init (&dec->segment, GST_FORMAT_TIME);
+  parse_helper_flush (&dec->parse_helper);
 }
 
 static void
@@ -197,6 +201,8 @@ gst_schro_parse_finalize (GObject *object)
   if (schro_parse->decoder) {
     schro_decoder_free (schro_parse->decoder);
   }
+
+  parse_helper_free (&schro_parse->parse_helper);
 
   G_OBJECT_CLASS (parent_class)->finalize (object);
 }
@@ -510,6 +516,11 @@ gst_schro_parse_sink_event (GstPad *pad, GstEvent *event)
       ret = gst_pad_push_event (dec->srcpad, event);
       break;
     case GST_EVENT_EOS:
+      if (gst_schro_parse_push_all (dec, FALSE) == GST_FLOW_ERROR) {
+        gst_event_unref (event);
+        return FALSE;
+      }
+
       ret = gst_pad_push_event (dec->srcpad, event);
       break;
     case GST_EVENT_NEWSEGMENT:
@@ -590,84 +601,67 @@ gst_schro_parse_change_state (GstElement *element, GstStateChange transition)
   return ret;
 }
 
-static void
-queue_peek (GQueue *queue, guint8 *buffer, int len)
+static GstFlowReturn
+gst_schro_parse_push_all (GstSchroParse *schro_parse, gboolean at_eos)
 {
-  GstBuffer *buf;
-  int n;
-  int i = 0;
+  GstFlowReturn ret = GST_FLOW_OK;
+  GstBuffer *outbuf;
 
-  while(len) {
-    buf = g_queue_peek_nth(queue, i);
-    i++;
+  while (TRUE) {
+    int next;
+    int skipped = 0;
 
-    n = GST_BUFFER_SIZE(buf);
-    if (n > len) n = len;
-
-    memcpy (buffer, GST_BUFFER_DATA(buf), n);
-    buffer += n;
-    len -= n;
-  }
-}
-
-static GstBuffer *
-queue_pull (GQueue *queue, int len)
-{
-  GstBuffer *result;
-  GstBuffer *buf;
-  guint8 *data;
-
-  buf = g_queue_peek_head(queue);
-  if (GST_BUFFER_SIZE(buf) == len) {
-    buf = g_queue_pop_head(queue);
-    return buf;
-  }
-  if (GST_BUFFER_SIZE(buf) > len) {
-    GstBuffer *remainder;
-
-    buf = g_queue_pop_head(queue);
-    result = gst_buffer_create_sub (buf, 0, len);
-    remainder = gst_buffer_create_sub (buf, len, GST_BUFFER_SIZE(buf) - len);
-    gst_buffer_unref (buf);
-    g_queue_push_head (queue, remainder);
-
-    return result;
-  }
-
-  result = gst_buffer_new_and_alloc (len);
-  data = GST_BUFFER_DATA(result);
-  while(len) {
-    buf = g_queue_pop_head (queue);
-    if (GST_BUFFER_SIZE (buf) < len) {
-      memcpy (data, GST_BUFFER_DATA(buf), GST_BUFFER_SIZE(buf));
-      len -= GST_BUFFER_SIZE (buf);
-      data += GST_BUFFER_SIZE (buf);
-    } else {
-      GstBuffer *remainder;
-      memcpy (data, GST_BUFFER_DATA(buf), len);
-      remainder = gst_buffer_create_sub (buf, len, GST_BUFFER_SIZE(buf) - len);
-      g_queue_push_head (queue, remainder);
-      len -= len;
-      data += len;
+    if (!parse_helper_skip_to_next_parse_unit (&schro_parse->parse_helper, 
+        &skipped, &next)) {
+      /* Need more data */
+      return GST_FLOW_OK;
     }
-    gst_buffer_unref (buf);
+
+    if (next == 0) {
+      /* Need to wait for EOS or next parse marker */
+      if (at_eos)
+        next = parse_helper_avail (&schro_parse->parse_helper);
+      else {
+        /* Scan for next parse marker */
+        if (!parse_helper_have_next_parse_unit (&schro_parse->parse_helper, 
+           &next))
+          return GST_FLOW_OK;
+      }
+    }
+
+    if (parse_helper_avail (&schro_parse->parse_helper) < next) 
+      return GST_FLOW_OK; /* break for more data */
+
+    GST_LOG ("Have complete parse unit of %d bytes after skipping %d", 
+        next, skipped);
+
+    outbuf = parse_helper_pull (&schro_parse->parse_helper, next);
+
+    ret = gst_pad_push (schro_parse->srcpad, outbuf);
+    if (ret != GST_FLOW_OK)
+      break;
   }
 
-  return result;
+  return ret;
 }
 
 static GstFlowReturn
 gst_schro_parse_chain (GstPad *pad, GstBuffer *buf)
 {
   GstSchroParse *schro_parse;
-  GstBuffer *outbuf;
 
   schro_parse = GST_SCHRO_PARSE (GST_PAD_PARENT (pad));
 
   if (GST_BUFFER_SIZE(buf) >= 8 && !memcmp(GST_BUFFER_DATA(buf),"KW-DIRAC",8)) {
+    GstBuffer *sub;
     GST_DEBUG("bos");
+    if (GST_BUFFER_SIZE(buf) == 8) {
+      gst_buffer_unref(buf);
+      return GST_FLOW_OK;
+    }
+    sub = gst_buffer_create_sub (buf, 8, GST_BUFFER_SIZE (buf) - 8);  
     gst_buffer_unref(buf);
-    return GST_FLOW_OK;
+    buf = sub;
   }
 
   if (G_UNLIKELY (GST_BUFFER_FLAG_IS_SET (buf, GST_BUFFER_FLAG_DISCONT))) {
@@ -678,45 +672,8 @@ gst_schro_parse_chain (GstPad *pad, GstBuffer *buf)
     schro_parse->discont = TRUE;
   }
 
-  g_queue_push_tail (schro_parse->queue, buf);
-  schro_parse->queue_size += GST_BUFFER_SIZE(buf);
+  parse_helper_push (&schro_parse->parse_helper, buf);
 
-  while(1) {
-    guint8 header[11];
-    int next;
-
-    if (schro_parse->queue_size < 11) {
-      return GST_FLOW_OK;
-    }
-
-    queue_peek (schro_parse->queue, header, 11);
-
-    GST_DEBUG(
-        "header %02x %02x %02x %02x  %02x  %02x %02x %02x  %02x %02x %02x",
-        header[0], header[1], header[2], header[3], header[4], header[5],
-        header[6], header[7], header[8], header[9], header[10]);
-
-    if (memcmp(header, "BBCD", 4) != 0) {
-      GST_ERROR("header not BBCD");
-    }
-    next = (header[5]<<16) | (header[6]<<8) | header[7];
-
-    /* FIXME: hack */
-    if (next == 0) {
-      next = schro_parse->queue_size;
-    }
-
-    if (schro_parse->queue_size < next) {
-      break;
-    }
-
-    outbuf = queue_pull (schro_parse->queue, next);
-    schro_parse->queue_size -= next;
-
-    gst_pad_push (schro_parse->srcpad, outbuf);
-  }
-
-  return GST_FLOW_OK;
+  return gst_schro_parse_push_all (schro_parse, FALSE);
 }
-
 

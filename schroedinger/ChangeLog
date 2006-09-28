@@ -1,3 +1,28 @@
+2006-09-28  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* configure.ac:
+	  Report the actual version of liboil needed when the found version is
+	  not sufficient.
+
+	* gst/Makefile.am:
+	* gst/gstschrodec.c: (gst_schro_dec_init), (gst_schro_dec_reset),
+	(gst_schro_dec_finalize), (gst_schro_dec_chain),
+	(gst_schro_dec_push_all):
+	* gst/gstschroparse.c: (gst_schro_parse_init),
+	(gst_schro_parse_reset), (gst_schro_parse_finalize),
+	(gst_schro_parse_sink_event), (gst_schro_parse_push_all),
+	(gst_schro_parse_chain):
+	* gst/parsehelper.c: (parse_helper_init), (parse_helper_flush),
+	(parse_helper_free), (parse_helper_push),
+	(parse_helper_have_next_parse_unit), (parse_helper_peek),
+	(parse_helper_skip), (parse_helper_pull),
+	(parse_helper_skip_to_next_parse_unit):
+	* gst/parsehelper.h:
+
+	  Factor out code to collect dirac parse units and feed them to the
+	  decoder as a single buffer. Makes schrodec able to work on random
+	  sized input, rather than just packets coming from oggdemux.
+
 2006-09-26  David Schleef  <ds@schleef.org>
 
 	* testsuite/dump_packets.c:
