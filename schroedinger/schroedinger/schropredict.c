@@ -359,15 +359,16 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
           }
           for(k=0;k<MIN(4,list->n_vectors);k++){
             if (list->vectors[k].ref == 0) {
+#define SIZE2 1
               schro_prediction_list_scan (pred_lists + j*x_blocks + i,
                   downsampled_frame, downsampled_ref0, 0, i*8, j*8,
-                  i*8 - 1 + list->vectors[k].dx*2,
-                  j*8 - 1 + list->vectors[k].dy*2, 3, 3);
+                  i*8 - SIZE2 + list->vectors[k].dx*2,
+                  j*8 - SIZE2 + list->vectors[k].dy*2, 2*SIZE2+1, 2*SIZE2+1);
             } else {
               schro_prediction_list_scan (pred_lists + j*x_blocks + i,
                   downsampled_frame, downsampled_ref1, 1, i*8, j*8,
-                  i*8 - 1 + list->vectors[k].dx*2,
-                  j*8 - 1 + list->vectors[k].dy*2, 3, 3);
+                  i*8 - SIZE2 + list->vectors[k].dx*2,
+                  j*8 - SIZE2 + list->vectors[k].dy*2, 2*SIZE2+1, 2*SIZE2+1);
             }
           }
         }
@@ -377,13 +378,14 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
       for(i=0;i<x_blocks;i++){
         SchroPredictionList *list = pred_lists + j*x_blocks + i;
         if (list->n_vectors == 0) {
+#define SIZE 8
           schro_prediction_list_scan (pred_lists + j*x_blocks + i,
               downsampled_frame, downsampled_ref0, 0, i*8, j*8,
-              i*8 - 8, j*8 - 8, 17, 17);
+              i*8 - SIZE, j*8 - SIZE, 2*SIZE + 1, 2*SIZE + 1);
           if (params->num_refs == 2) {
             schro_prediction_list_scan (pred_lists + j*x_blocks + i,
                 downsampled_frame, downsampled_ref1, 1, i*8, j*8,
-                i*8 - 8, j*8 - 8, 17, 17);
+                i*8 - SIZE, j*8 - SIZE, 2*SIZE + 1, 2*SIZE + 1);
           }
         }
       }

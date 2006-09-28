@@ -26,6 +26,7 @@ schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
   return metric;
 }
 
+#if 0
 static void
 schro_metric_haar_transform (int16_t *diff)
 {
@@ -119,6 +120,7 @@ schro_metric_haar_transform (int16_t *diff)
   }
 #endif
 }
+#endif
 
 int
 schro_metric_haar (uint8_t *src1, int stride1, uint8_t *src2, int stride2,
@@ -137,7 +139,7 @@ schro_metric_haar (uint8_t *src1, int stride1, uint8_t *src2, int stride2,
     }
   }
 
-  schro_metric_haar_transform (diff);
+  //schro_metric_haar_transform (diff);
 
   return schro_metric_abssum_s16 (diff, sizeof(int16_t)*8, 8, 8);
 }
@@ -159,7 +161,7 @@ schro_metric_haar_const (uint8_t *data, int stride, int dc_value,
     }
   }
 
-  schro_metric_haar_transform (diff);
+  //schro_metric_haar_transform (diff);
 
   return schro_metric_abssum_s16 (diff, sizeof(int16_t)*8, 8, 8);
 }

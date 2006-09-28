@@ -10,7 +10,7 @@
 
 #define DIRAC_COMPAT
 
-#define DECODE_PREDICTION_ONLY
+//#define DECODE_PREDICTION_ONLY
 
 static void schro_decoder_decode_macroblock(SchroDecoder *decoder,
     SchroArith *arith, int i, int j);
