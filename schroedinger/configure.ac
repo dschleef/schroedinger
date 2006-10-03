@@ -38,7 +38,7 @@ dnl the version check needs to stay here because autopoint greps for it
 #GST_GETTEXT([schroedinger-$SCHRO_MAJORMINOR])
 
 dnl liboil is required
-OIL_VER="0.3.8"
+OIL_VER="0.3.9.1"
 PKG_CHECK_MODULES(LIBOIL, liboil-0.3 >= $OIL_VER, HAVE_LIBOIL=yes, HAVE_LIBOIL=no)
 if test "x${HAVE_LIBOIL}" != xyes ; then
   AC_ERROR([liboil-0.3 >= $OIL_VER is required])
