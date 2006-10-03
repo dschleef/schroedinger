@@ -1,5 +1,9 @@
 2006-10-02  David Schleef  <ds@schleef.org>
 
+	* testsuite/wavelet.c: another checkpoint
+
+2006-10-02  David Schleef  <ds@schleef.org>
+
 	* testsuite/wavelet.c:
 	  Checkpoint the code.
 

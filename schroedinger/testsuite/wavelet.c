@@ -444,7 +444,7 @@ schro_split_desl93 (int16_t *a, int n)
 }
 
 void
-schro_split_53 (int16_t *a, int n)
+schro_split_53 (int16_t *hi, int16_t *lo, int n)
 {
   static int16_t stage1_weights[] = { -1, -1 };
   static int16_t stage2_weights[] = { 1, 1 };
@@ -504,12 +504,23 @@ schro_split_135 (int16_t *a, int n)
 void
 schro_split_haar (int16_t *a, int n)
 {
+  int16_t tmp1[100], *hi;
+  int16_t tmp2[100], *lo;
   int i;
 
+  hi = tmp1 + 4;
+  lo = tmp2 + 4;
+
+  oil_deinterleave2_s16 (hi, lo, a, n);
+
   for(i=0;i<n;i++) {
-    a[2*i + 1] = a[2*i+1] - a[2*i];
-    a[2*i] = a[2*i] + ((a[2*i+1] + 1)>>1);
+    lo[i] -= hi[i];
   }
+  for(i=0;i<n;i++) {
+    hi[i] += ((lo[i] + 1)>>1);
+  }
+
+  oil_interleave2_s16 (a, hi, lo, n);
 }
 
 void
@@ -744,6 +755,8 @@ schro_synth_135 (int16_t *a, int n)
 void
 schro_synth_haar (int16_t *a, int n)
 {
+  int16_t tmp1[100], *hi;
+  int16_t tmp2[100], *lo;
   int i;
 
 #if 0
@@ -755,10 +768,19 @@ schro_synth_haar (int16_t *a, int n)
       }
 #endif
 
+  hi = tmp1 + 4;
+  lo = tmp2 + 4;
+
+  oil_deinterleave2_s16 (hi, lo, a, n);
+
   for(i=0;i<n;i++) {
-    a[2*i] = a[2*i] - ((a[2*i+1] + 1)>>1);
-    a[2*i + 1] = a[2*i+1] + a[2*i];
+    hi[i] -= ((lo[i] + 1)>>1);
   }
+  for(i=0;i<n;i++) {
+    lo[i] += hi[i];
+  }
+
+  oil_interleave2_s16 (a, hi, lo, n);
 }
 
 void
