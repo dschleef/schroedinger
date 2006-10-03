@@ -51,8 +51,8 @@ wavelet2_CFLAGS = $(SCHRO_CFLAGS)
 wavelet2_LDADD = $(SCHRO_LIBS)
 wavelet2_SOURCES = wavelet2.c
 
-wavelet_2d_CFLAGS = $(SCHRO_CFLAGS)
-wavelet_2d_LDADD = $(SCHRO_LIBS)
+wavelet_2d_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+wavelet_2d_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_2d_SOURCES = wavelet_2d.c
 
 tables_CFLAGS = 

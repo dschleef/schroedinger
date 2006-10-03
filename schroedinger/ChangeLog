@@ -1,5 +1,12 @@
 2006-10-03  David Schleef  <ds@schleef.org>
 
+	* testsuite/Makefile.am:
+	* testsuite/wavelet.c:
+	* testsuite/wavelet_2d.c:
+	  Checkpoint 2-d code.
+
+2006-10-03  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrowavelet.c:
 	* testsuite/wavelet.c:
 	  Delete old and disabled code.
