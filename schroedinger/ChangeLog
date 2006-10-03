@@ -1,6 +1,12 @@
 2006-10-03  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrowavelet.c:
+	* testsuite/wavelet.c:
+	  Delete old and disabled code.
+
+2006-10-03  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrowavelet.c:
 	* schroedinger/schrowavelet.h:
 	* testsuite/wavelet.c:
 	  Move working code into the library.

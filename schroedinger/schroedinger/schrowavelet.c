@@ -40,14 +40,6 @@ void
 schro_interleave (int16_t *d_n, int16_t *s_n, int n)
 {
   oil_interleave (d_n, s_n, n/2);
-#if 0
-  int i;
-
-  for(i=0;i<n/2;i++) {
-    d_n[2*i] = s_n[i];
-    d_n[2*i + 1] = s_n[n/2 + i];
-  }
-#endif
 }
 
 void
@@ -295,45 +287,6 @@ schro_lift_synth_desl93_str (int16_t *d_n, int dstr, int16_t *s_n, int n)
     d_n[(n-1)*dstr] = s_n[n-1] + ((9*d_n[(n-2)*dstr] - d_n[(n-4)*dstr] + 4) >> 3);
   }
 }
-
-#if 0
-/* original */
-void
-schro_lift_split_53 (int16_t *i_n, int n)
-{
-  int i;
-
-  /* predict */
-  for(i=1;i<n-2;i+=2){
-    i_n[i] -= (i_n[i-1] + i_n[i+1]) >> 1;
-  }
-  i_n[n-1] -= i_n[n-2];
-
-  /* update */
-  i_n[0] += i_n[1] >> 1;
-  for(i=2;i<n;i+=2){
-    i_n[i] += (i_n[i-1] + i_n[i+1]) >> 2;
-  }
-}
-
-void
-schro_lift_synth_53 (int16_t *i_n, int n)
-{
-  int i;
-
-  /* predict */
-  i_n[0] -= i_n[1] >> 1;
-  for(i=2;i<n;i+=2){
-    i_n[i] -= (i_n[i-1] + i_n[i+1]) >> 2;
-  }
-
-  /* update */
-  for(i=1;i<n-2;i+=2){
-    i_n[i] += (i_n[i+1] + i_n[i-1]) >> 1;
-  }
-  i_n[n-1] += i_n[n-2];
-}
-#endif
 
 void
 schro_lift_split_53 (int16_t *d_n, int16_t *s_n, int n)
@@ -651,95 +604,6 @@ schro_lift_synth_str (int type, int16_t *d_n, int dstr, int16_t *s_n, int n)
       break;
   }
 }
-
-#if 0
-void
-schro_wt_2d (int type, int16_t *i_n, int n, int stride)
-{
-  int16_t tmp[256];
-  int16_t tmp2[256];
-  int i;
-  int j;
-
-  while(n>=MIN_SIZE) {
-    for(i=0;i<n;i++) {
-      oil_memcpy (tmp, i_n + i*stride, n * 2);
-      schro_lift_split (type, tmp, n);
-      schro_deinterleave (i_n + i*stride, tmp, n);
-    }
-    for(i=0;i<n;i++) {
-      for(j=0;j<n;j++) {
-        tmp[j] = i_n[j*stride + i];
-      }
-      schro_lift_split (type, tmp, n);
-      schro_deinterleave (tmp2, tmp, n);
-      for(j=0;j<n;j++) {
-        i_n[j*stride + i] = tmp2[j];
-      }
-    }
-
-    n>>=1;
-  }
-}
-
-void
-schro_iwt_2d (int type, int16_t *i_n, int n, int stride)
-{
-  int16_t tmp[256];
-  int16_t tmp2[256];
-  int i;
-  int j;
-  int m;
-
-  m = MIN_SIZE;
-  while(m<=n) {
-    for(i=0;i<m;i++) {
-      for(j=0;j<m;j++) {
-        tmp[j] = i_n[j*stride + i];
-      }
-      schro_interleave (tmp2, tmp, m);
-      schro_lift_synth (type, tmp2, m);
-      for(j=0;j<m;j++) {
-        i_n[j*stride + i] = tmp2[j];
-      }
-    }
-    for(i=0;i<m;i++) {
-      schro_interleave (tmp2, i_n + i*stride, m);
-      schro_lift_synth (type, tmp2, m);
-      oil_memcpy (i_n + i*stride, tmp2, m * 2);
-    }
-
-    m<<=1;
-  }
-}
-#endif
-
-#if 0
-void
-schro_wt (int type, int16_t *d_n, int16_t *s_n, int n)
-{
-  int16_t tmp[256];
-
-  schro_lift_split (type, tmp, s_n, n);
-  schro_deinterleave (d_n, s_n, n);
-}
-
-void
-schro_iwt (int type, int16_t *i_n, int n)
-{
-  int16_t tmp[256];
-  int m;
-
-  m = MIN_SIZE;
-  while(m<=n) {
-    schro_interleave (tmp, i_n, m);
-    schro_lift_synth (type, tmp, m);
-    oil_memcpy (i_n, tmp, m * 2);
-
-    m<<=1;
-  }
-}
-#endif
 
 void
 schro_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width,
