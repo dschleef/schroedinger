@@ -3,6 +3,11 @@
 	* testsuite/wavelet_2d.c:
 	  Another checkpoint.
 
+2006-10-06  David Schleef  <ds@schleef.org>
+
+	* testsuite/wavelet_2d.c:
+	  Another checkpoint.
+
 2006-10-03  David Schleef  <ds@schleef.org>
 
 	* testsuite/Makefile.am:
