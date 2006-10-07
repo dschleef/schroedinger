@@ -522,76 +522,11 @@ schro_synth_ext (int16_t *hi, int16_t *lo, int n, int filter)
   }
 }
 
-void notoil_lshift_s16 (int16_t *dest, int16_t *src, int32_t *shift, int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    dest[i] = src[i]<<(*shift);
-  }
-}
-
-void notoil_rshift_s16 (int16_t *dest, int16_t *src, int32_t *shift, int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    dest[i] = src[i]>>(*shift);
-  }
-}
-
-void
-notoil_cross_mas2_add_s16 (int16_t *d, int16_t *s1,
-    int16_t *s2, int16_t *s3, const int16_t *s4, const int16_t *s5, int n)
-{
-  int i;
-  int x;
-  for(i=0;i<n;i++){
-    x = s5[0];
-    x += s2[i]*s4[0] + s3[i]*s4[1];
-    x >>= s5[1];
-    d[i] = s1[i] + x;
-  }
-}
-
-#define OIL_GET(ptr, offset, type) (*(type *)((uint8_t *)(ptr) + (offset)) )
-void
-notoil_cross_mas4_add_s16 (int16_t *d, int16_t *s1,
-    int16_t *s2, int sstr2, const int16_t *s3, const int16_t *s4, int n)
-{
-  int i;
-  int j;
-  int x;
-  for(i=0;i<n;i++){
-    x = s4[0];
-    for(j=0;j<4;j++){
-      x += OIL_GET(s2, i*sizeof(int16_t) + j*sstr2, int16_t)*s3[j];
-    }
-    x >>= s4[1];
-    d[i] = s1[i] + x;
-  }
-}
-
-void
-notoil_cross_mas8_add_s16 (int16_t *d, int16_t *s1,
-    int16_t *s2, int sstr2, const int16_t *s3, const int16_t *s4, int n)
-{
-  int i;
-  int j;
-  int x;
-  for(i=0;i<n;i++){
-    x = s4[0];
-    for(j=0;j<8;j++){
-      x += OIL_GET(s2, i*sizeof(int16_t) + j*sstr2, int16_t)*s3[j];
-    }
-    x >>= s4[1];
-    d[i] = s1[i] + x;
-  }
-}
-
 void x_schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
     int16_t *tmp)
 {
   int i;
-  int one = 1;
+  int16_t one = 1;
 
 #define ROW(row) ((int16_t *)OFFSET(data, (row)*stride))
 
@@ -601,7 +536,7 @@ void x_schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
     if (i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
-      notoil_lshift_s16(ROW(i), ROW(i), &one, width);
+      oil_lshift_s16(ROW(i), ROW(i), &one, width);
       oil_deinterleave2_s16 (hi, lo, ROW(i), width/2);
       schro_split_ext_desl93 (hi, lo, width/2);
       oil_memcpy (ROW(i), hi, width/2*sizeof(int16_t));
@@ -611,25 +546,25 @@ void x_schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
       static const int16_t stage1_offset_shift[] = { 7, 4 };
       if (i1 == 0) {
         static const int16_t stage1_weights[] = { -9, -8, 1, 0 };
-        notoil_cross_mas4_add_s16 (
+        oil_mas4_across_add_s16 (
             OFFSET(data,(i1+1)*stride), OFFSET(data, (i1+1)*stride),
             OFFSET(data, i1*stride), stride * 2,
             stage1_weights, stage1_offset_shift, width);
       } else if (i1 == height-4) {
         static const int16_t stage1_weights[] = { 0, 1, -9, -8 };
-        notoil_cross_mas4_add_s16 (
+        oil_mas4_across_add_s16 (
             OFFSET(data,(i1+1)*stride), OFFSET(data, (i1+1)*stride),
             OFFSET(data, (i1-4)*stride), stride * 2,
             stage1_weights, stage1_offset_shift, width);
       } else if (i1 == height-2) {
         static const int16_t stage1_weights[] = { 2, -18 };
-        notoil_cross_mas2_add_s16 (
+        oil_mas2_across_add_s16 (
             OFFSET(data,(i1+1)*stride), OFFSET(data, (i1+1)*stride),
             OFFSET(data, (i1-2)*stride), OFFSET(data, i1*stride),
             stage1_weights, stage1_offset_shift, width);
       } else {
         static const int16_t stage1_weights[] = { 1, -9, -9, 1 };
-        notoil_cross_mas4_add_s16 (
+        oil_mas4_across_add_s16 (
             OFFSET(data,(i1+1)*stride), OFFSET(data,(i1+1)*stride),
             OFFSET(data,(i1-2)*stride), stride * 2,
             stage1_weights, stage1_offset_shift, width);
@@ -639,13 +574,13 @@ void x_schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
       static const int16_t stage2_offset_shift[] = { 2, 2 };
       if (i2 == 0) {
         static const int16_t stage2_weights[] = { 1, 1 };
-        notoil_cross_mas2_add_s16 (
+        oil_mas2_across_add_s16 (
             OFFSET(data,i2*stride), OFFSET(data, i2*stride),
             OFFSET(data, (i2+1)*stride), OFFSET(data, (i2+1)*stride),
             stage2_weights, stage2_offset_shift, width);
       } else {
         static const int16_t stage2_weights[] = { 1, 1 };
-        notoil_cross_mas2_add_s16 (
+        oil_mas2_across_add_s16 (
             OFFSET(data,i2*stride), OFFSET(data, i2*stride),
             OFFSET(data, (i2-1)*stride), OFFSET(data, (i2+1)*stride),
             stage2_weights, stage2_offset_shift, width);
@@ -662,14 +597,14 @@ void x_schro_iwt_5_3 (int16_t *data, int stride, int width, int height,
   static const int16_t stage1_offset_shift[] = { 0, 1 };
   static const int16_t stage2_offset_shift[] = { 2, 2 };
   int i;
-  int32_t one = 1;
+  int16_t one = 1;
 
 #define ROW(row) ((int16_t *)OFFSET(data, (row)*stride))
   for(i=0;i<height + 2;i++){
     if (i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
-      notoil_lshift_s16(ROW(i), ROW(i), &one, width);
+      oil_lshift_s16(ROW(i), ROW(i), &one, width);
       oil_deinterleave2_s16 (hi, lo, ROW(i), width/2);
       schro_split_ext_53 (hi, lo, width/2);
       oil_memcpy (ROW(i), hi, width/2*sizeof(int16_t));
@@ -683,7 +618,7 @@ void x_schro_iwt_5_3 (int16_t *data, int stride, int width, int height,
       } else {
         d = OFFSET(data,(height-2)*stride);
       }
-      notoil_cross_mas2_add_s16 (
+      oil_mas2_across_add_s16 (
           OFFSET(data, (i-1)*stride),
           OFFSET(data, (i-1)*stride),
           OFFSET(data, (i-2)*stride),
@@ -695,7 +630,7 @@ void x_schro_iwt_5_3 (int16_t *data, int stride, int width, int height,
       } else {
         d = OFFSET(data, 1*stride);
       }
-      notoil_cross_mas2_add_s16 (
+      oil_mas2_across_add_s16 (
           OFFSET(data, (i-2)*stride),
           OFFSET(data, (i-2)*stride),
           d,
@@ -710,7 +645,7 @@ void x_schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
     int16_t *tmp)
 {
   int i;
-  int one = 1;
+  int16_t one = 1;
 
 #define ROW(row) ((int16_t *)OFFSET(data, (row)*stride))
   for(i=0;i<height + 8;i++){
@@ -719,7 +654,7 @@ void x_schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
     if (i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
-      notoil_lshift_s16(ROW(i), ROW(i), &one, width);
+      oil_lshift_s16(ROW(i), ROW(i), &one, width);
       oil_deinterleave2_s16 (hi, lo, ROW(i), width/2);
       schro_split_ext_135 (hi, lo, width/2);
       oil_memcpy (ROW(i), hi, width/2*sizeof(int16_t));
@@ -729,22 +664,22 @@ void x_schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
       static const int16_t stage1_offset_shift[] = { 7, 4 };
       if (i1 == 0) {
         static const int16_t stage1_weights[] = { -9, -8, 1, 0 };
-        notoil_cross_mas4_add_s16 (
+        oil_mas4_across_add_s16 (
             ROW(i1+1), ROW(i1+1), ROW(i1), stride * 2,
             stage1_weights, stage1_offset_shift, width);
       } else if (i1 == height-4) {
         static const int16_t stage1_weights[] = { 0, 1, -9, -8 };
-        notoil_cross_mas4_add_s16 (
+        oil_mas4_across_add_s16 (
             ROW(i1+1), ROW(i1+1), ROW(i1-4), stride * 2,
             stage1_weights, stage1_offset_shift, width);
       } else if (i1 == height-2) {
         static const int16_t stage1_weights[] = { 2, -18 };
-        notoil_cross_mas2_add_s16 (
+        oil_mas2_across_add_s16 (
             ROW(i1+1), ROW(i1+1), ROW(i1-2), ROW(i1),
             stage1_weights, stage1_offset_shift, width);
       } else {
         static const int16_t stage1_weights[] = { 1, -9, -9, 1 };
-        notoil_cross_mas4_add_s16 (
+        oil_mas4_across_add_s16 (
             ROW(i1+1), ROW(i1+1), ROW(i1-2), stride * 2,
             stage1_weights, stage1_offset_shift, width);
       }
@@ -753,22 +688,22 @@ void x_schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
       static const int16_t stage2_offset_shift[] = { 16, 5 };
       if (i2 == 0) {
         static const int16_t stage2_weights[] = { 18, -2 };
-        notoil_cross_mas2_add_s16 (
+        oil_mas2_across_add_s16 (
             ROW(i2), ROW(i2), ROW(i2+1), ROW(i2+3),
             stage2_weights, stage2_offset_shift, width);
       } else if (i2 == 2) {
         static const int16_t stage2_weights[] = { 8, 9, -1, 0 };
-        notoil_cross_mas4_add_s16 (
+        oil_mas4_across_add_s16 (
             ROW(i2), ROW(i2), ROW(i2-1), stride * 2,
             stage2_weights, stage2_offset_shift, width);
       } else if (i2 == height-2) {
         static const int16_t stage2_weights[] = { 0, -1, 8, 9 };
-        notoil_cross_mas4_add_s16 (
+        oil_mas4_across_add_s16 (
             ROW(i2), ROW(i2), ROW(i2-5), stride * 2,
             stage2_weights, stage2_offset_shift, width);
       } else {
         static const int16_t stage2_weights[] = { -1, 9, 9, -1 };
-        notoil_cross_mas4_add_s16 (
+        oil_mas4_across_add_s16 (
             ROW(i2), ROW(i2), ROW(i2-3), stride * 2,
             stage2_weights, stage2_offset_shift, width);
       }
@@ -778,7 +713,7 @@ void x_schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
 }
 
 void x_schro_iwt_haar (int16_t *data, int stride, int width, int height,
-    int16_t *tmp, int shift)
+    int16_t *tmp, int16_t shift)
 {
   int16_t *data1;
   int16_t *data2;
@@ -788,7 +723,7 @@ void x_schro_iwt_haar (int16_t *data, int stride, int width, int height,
   for(i=0;i<height;i+=2){
     data1 = OFFSET(data,i*stride);
     if (shift) {
-      notoil_lshift_s16(tmp, data1, &shift, width);
+      oil_lshift_s16(tmp, data1, &shift, width);
     } else {
       oil_memcpy (tmp, data1, width*sizeof(int16_t));
     }
@@ -797,7 +732,7 @@ void x_schro_iwt_haar (int16_t *data, int stride, int width, int height,
 
     data2 = OFFSET(data,(i+1)*stride);
     if (shift) {
-      notoil_lshift_s16(tmp, data2, &shift, width);
+      oil_lshift_s16(tmp, data2, &shift, width);
     } else {
       oil_memcpy (tmp, data2, width*sizeof(int16_t));
     }
@@ -867,7 +802,7 @@ void x_schro_iwt_fidelity (int16_t *data, int stride, int width, int height,
         weights = stage1_weights[4];
         offset = i1 - 7;
       }
-      notoil_cross_mas8_add_s16 (
+      oil_mas8_across_add_s16 (
           ROW(i1), ROW(i1), ROW(offset), stride * 2,
           weights, stage1_offset_shift, width);
     }
@@ -895,7 +830,7 @@ void x_schro_iwt_fidelity (int16_t *data, int stride, int width, int height,
         weights = stage2_weights[3];
         offset = i2 - 6;
       }
-      notoil_cross_mas8_add_s16 (
+      oil_mas8_across_add_s16 (
           ROW(i2+1), ROW(i2+1), ROW(offset), stride * 2,
           weights, stage2_offset_shift, width);
     }
@@ -913,7 +848,7 @@ void x_schro_iwt_daub_9_7 (int16_t *data, int stride, int width, int height,
   static const int16_t stage12_offset_shift[] = { 2047, 12 };
   static const int16_t stage34_offset_shift[] = { 2048, 12 };
   int i;
-  int one = 1;
+  int16_t one = 1;
   int i1;
   int i2;
 
@@ -924,7 +859,7 @@ void x_schro_iwt_daub_9_7 (int16_t *data, int stride, int width, int height,
     if (i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
-      notoil_lshift_s16(ROW(i), ROW(i), &one, width);
+      oil_lshift_s16(ROW(i), ROW(i), &one, width);
       oil_deinterleave2_s16 (hi, lo, ROW(i), width/2);
       schro_split_ext_daub97 (hi, lo, width/2);
       oil_memcpy (ROW(i), hi, width/2*sizeof(int16_t));
@@ -938,7 +873,7 @@ void x_schro_iwt_daub_9_7 (int16_t *data, int stride, int width, int height,
       } else {
         d = ROW(height-2);
       }
-      notoil_cross_mas2_add_s16 (ROW(i1+1), ROW(i1+1), ROW(i1), d,
+      oil_mas2_across_add_s16 (ROW(i1+1), ROW(i1+1), ROW(i1), d,
           stage1_weights, stage12_offset_shift, width);
 
       if (i1-1>=0) {
@@ -946,7 +881,7 @@ void x_schro_iwt_daub_9_7 (int16_t *data, int stride, int width, int height,
       } else {
         d = ROW(1);
       }
-      notoil_cross_mas2_add_s16 (ROW(i1), ROW(i1), d, ROW(i1+1),
+      oil_mas2_across_add_s16 (ROW(i1), ROW(i1), d, ROW(i1+1),
           stage2_weights, stage12_offset_shift, width);
     }
     if ((i2&1) == 0 && i2 >=0 && i2 < height) {
@@ -956,7 +891,7 @@ void x_schro_iwt_daub_9_7 (int16_t *data, int stride, int width, int height,
       } else {
         d = ROW(height-2);
       }
-      notoil_cross_mas2_add_s16 (ROW(i2+1), ROW(i2+1), ROW(i2), d,
+      oil_mas2_across_add_s16 (ROW(i2+1), ROW(i2+1), ROW(i2), d,
           stage3_weights, stage34_offset_shift, width);
 
       if (i2-1>=0) {
@@ -964,7 +899,7 @@ void x_schro_iwt_daub_9_7 (int16_t *data, int stride, int width, int height,
       } else {
         d = ROW(1);
       }
-      notoil_cross_mas2_add_s16 (ROW(i2), ROW(i2), d, ROW(i2+1),
+      oil_mas2_across_add_s16 (ROW(i2), ROW(i2), d, ROW(i2+1),
           stage4_weights, stage34_offset_shift, width);
     }
   }
