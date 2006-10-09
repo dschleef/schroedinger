@@ -1,5 +1,10 @@
 2006-10-08  David Schleef  <ds@schleef.org>
 
+	* testsuite/ack.c:
+	  This doesn't belong here.
+
+2006-10-08  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroframe.c:
 	* schroedinger/schromotion.c:
