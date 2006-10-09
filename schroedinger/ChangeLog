@@ -1,5 +1,10 @@
 2006-10-09  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schropredict.c:
+	  Fix bug reading past the end of the block prediction array.
+
+2006-10-09  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:

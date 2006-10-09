@@ -99,11 +99,6 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
       cost_dc = cost(mv->dc[0] - pred[0]) + cost(mv->dc[1] - pred[1]) +
         cost(mv->dc[2] - pred[2]);
       cost_dc += encoder->metric_to_cost * mv->metric;
-#if 0
-mv->dc[0] = 128;
-mv->dc[1] = 128;
-mv->dc[2] = 128;
-#endif
       /* FIXME the metric underestimates the cost of DC blocks, so we
        * bump it up a bit here */
       //cost_dc += 64;
@@ -196,6 +191,9 @@ predict_dc (SchroMotionVector *mv, SchroFrame *frame, int x, int y,
 
   if (height == 0 || width == 0) {
     mv->pred_mode = 0;
+    mv->dc[0] = 0;
+    mv->dc[1] = 0;
+    mv->dc[2] = 0;
     mv->metric = 1000000;
     return;
   }
@@ -327,8 +325,8 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
         encoder->video_format.width>>shift, encoder->video_format.height>>shift, 2, 2);
     schro_frame_downsample (downsampled_frame, encoder->encode_frame, shift);
 
-    x_blocks = params->x_num_blocks>>shift;
-    y_blocks = params->y_num_blocks>>shift;
+    x_blocks = ROUND_UP_SHIFT(params->x_num_blocks,shift);
+    y_blocks = ROUND_UP_SHIFT(params->y_num_blocks,shift);
 
     pred_lists = malloc (x_blocks*y_blocks*sizeof(SchroPredictionList));
     for(j=0;j<y_blocks;j++){
@@ -344,6 +342,11 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
           int parent_i = i>>1;
           int k;
           SchroPredictionList *list;
+
+          if ((i<<shift) >= params->x_num_blocks ||
+              (j<<shift) >= params->y_num_blocks) {
+            continue;
+          }
 
           list = prev_pred_lists + parent_j*(x_blocks>>1) + parent_i;
           if (list->n_vectors == 0) {
