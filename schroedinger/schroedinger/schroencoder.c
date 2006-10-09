@@ -53,7 +53,8 @@ schro_encoder_new (void)
   params->transform_depth = 4;
   params->xbsep_luma = 8;
   params->ybsep_luma = 8;
-  params->wavelet_filter_index = SCHRO_WAVELET_5_3;
+  //params->wavelet_filter_index = SCHRO_WAVELET_5_3;
+  params->wavelet_filter_index = 6;
 
   encoder->base_quant = 20;
 
@@ -302,7 +303,7 @@ SCHRO_ERROR("encoding rap");
 static void
 schro_encoder_create_picture_list (SchroEncoder *encoder)
 {
-  int type = 2;
+  int type = 0;
   int i;
 
   switch(type) {

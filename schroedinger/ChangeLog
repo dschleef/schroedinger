@@ -1,5 +1,17 @@
 2006-10-08  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schrooil.c:
+	* schroedinger/schrooil.h:
+	* schroedinger/schrowavelet.c:
+	* schroedinger/schrowavelet.h:
+	  Move wavelet code into the library.  Fix up some of the liboil
+	  related code, since names of functions have changed.
+
+2006-10-08  David Schleef  <ds@schleef.org>
+
 	* testsuite/Makefile.am:
 	* testsuite/phasecorrelation.c:
 	  Add phase correlation demonstration code.

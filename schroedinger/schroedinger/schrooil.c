@@ -48,29 +48,9 @@ oil_subtract_s16_u8(int16_t *d_n, int16_t *s1_n, uint8_t *s2_n, int n)
 }
 
 void
-oil_lshift_s16(int16_t *data, int *shift, int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    data[i] <<= *shift;
-  }
-}
-
-void
 oil_splat_s16_ns (int16_t *dest, int16_t *src, int n)
 {
   oil_splat_u16_ns ((uint16_t *)dest, (uint16_t *)src, n);
-}
-
-void
-oil_add_and_rshift_s16(int16_t *dest, int16_t *src, int32_t *add,
-    int32_t *shift, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    dest[i] = (src[i] + *add) >> (*shift);
-  }
 }
 
 void

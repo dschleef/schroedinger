@@ -412,28 +412,24 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
   }
   {
     int16_t *data;
-    int32_t shift;
-    int32_t add;
+    int16_t s[2];
     data = frame->components[0].data;
-    shift = ilog2(obmc_luma.max_weight);
-    add = (1<<shift)>>1;
+    s[1] = ilog2(obmc_luma.max_weight);
+    s[0] = (1<<s[1])>>1;
     for(j=0;j<frame->components[0].height;j++){
-      oil_add_and_rshift_s16(data, data, &add, &shift,
-          frame->components[0].width);
+      oil_add_const_rshift_s16(data, data, s, frame->components[0].width);
       data = OFFSET(data, frame->components[0].stride);
     }
     data = frame->components[1].data;
-    shift = ilog2(obmc_chroma.max_weight);
-    add = (1<<shift)>>1;
+    s[1] = ilog2(obmc_chroma.max_weight);
+    s[0] = (1<<s[1])>>1;
     for(j=0;j<frame->components[1].height;j++){
-      oil_add_and_rshift_s16(data, data, &add, &shift,
-          frame->components[1].width);
+      oil_add_const_rshift_s16(data, data, s, frame->components[1].width);
       data = OFFSET(data, frame->components[1].stride);
     }
     data = frame->components[2].data;
     for(j=0;j<frame->components[2].height;j++){
-      oil_add_and_rshift_s16(data, data, &add, &shift,
-          frame->components[2].width);
+      oil_add_const_rshift_s16(data, data, s, frame->components[2].width);
       data = OFFSET(data, frame->components[2].stride);
     }
   }

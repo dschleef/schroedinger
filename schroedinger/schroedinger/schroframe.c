@@ -463,13 +463,14 @@ void schro_frame_shift_left (SchroFrame *frame, int shift)
   int16_t *data;
   int i;
   int y;
+  int16_t x = shift;
 
   for(i=0;i<3;i++){
     comp = &frame->components[i];
     data = comp->data;
 
     for(y=0;y<comp->height;y++){
-      oil_lshift_s16 (data, &shift, comp->width);
+      oil_lshift_s16 (data, data, &x, comp->width);
       data = OFFSET(data, comp->stride);
     }
   }
@@ -481,16 +482,14 @@ void schro_frame_shift_right (SchroFrame *frame, int shift)
   int16_t *data;
   int i;
   int y;
-  int32_t add;
-  int32_t local_shift = shift;
+  int16_t s[2] = { (1<<shift)>>1, shift };
 
-  add = (1<<shift) >> 1;
   for(i=0;i<3;i++){
     comp = &frame->components[i];
     data = comp->data;
 
     for(y=0;y<comp->height;y++){
-      oil_add_and_rshift_s16 (data, data, &add, &local_shift, comp->width);
+      oil_add_const_rshift_s16 (data, data, s, comp->width);
       data = OFFSET(data, comp->stride);
     }
   }
