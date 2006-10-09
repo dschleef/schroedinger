@@ -1,3 +1,17 @@
+2006-10-09  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Rearrange how quantisers are assigned to subbands in a way that
+	  takes into account wavelet gains.  Performance enhancements.
+	  Fix some stuff to get encoding/decoding working again, and
+	  closer to the spec.  Changes BITSTREAM.
+	* schroedinger/schrotables.c:
+	* schroedinger/schrotables.h:
+	* testsuite/tables.c:
+	  Add inverse quantisers.
+
 2006-10-08  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrowavelet.c:

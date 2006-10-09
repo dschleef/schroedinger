@@ -53,18 +53,7 @@ schro_encoder_new (void)
   params->transform_depth = 4;
   params->xbsep_luma = 8;
   params->ybsep_luma = 8;
-  //params->wavelet_filter_index = SCHRO_WAVELET_5_3;
-  params->wavelet_filter_index = 6;
-
-  encoder->base_quant = 20;
-
-  encoder->encoder_params.quant_index_dc = 4;
-  encoder->encoder_params.quant_index[0] = 4;
-  encoder->encoder_params.quant_index[1] = 4;
-  encoder->encoder_params.quant_index[2] = 6;
-  encoder->encoder_params.quant_index[3] = 8;
-  encoder->encoder_params.quant_index[4] = 10;
-  encoder->encoder_params.quant_index[5] = 12;
+  params->wavelet_filter_index = SCHRO_WAVELET_5_3;
 
   return encoder;
 }
@@ -140,48 +129,56 @@ schro_encoder_end_of_stream (SchroEncoder *encoder)
   encoder->end_of_stream = TRUE;
 }
 
+static int
+schro_gain_to_index (int value)
+{
+  value = (value + 8)>>4;
+  return CLAMP(value, 0, 63);
+}
+
 static void
 schro_encoder_choose_quantisers (SchroEncoder *encoder)
 {
+  /* This is 64*log2 of the gain of the DC part of the wavelet transform */
+  static const int wavelet_gain[] = { 64, 64, 64, 0, 64, 128, 128, 103 };
+  /* horizontal/vertical part */
+  static const int wavelet_gain_hv[] = { 64, 64, 64, 0, 64, 128, 0, 65 };
+  /* diagonal part */
+  static const int wavelet_gain_diag[] = { 128, 128, 128, 64, 128, 256, -64, 90 };
+  SchroSubband *subbands = encoder->subbands;
+  int base;
+  int gain;
+  int gain_hv;
+  int gain_diag;
+  int nonref;
+  int depth;
+  int i;
+
+  depth = encoder->params.transform_depth;
+  gain = wavelet_gain[encoder->params.wavelet_filter_index];
+  gain_hv = wavelet_gain_hv[encoder->params.wavelet_filter_index];
+  gain_diag = wavelet_gain_diag[encoder->params.wavelet_filter_index];
+
   if (encoder->picture->is_ref) {
-    encoder->base_quant = 24;
+    base = 4 << 4;
+    nonref = 0;
   } else {
-    encoder->base_quant = 28;
+    base = 8 << 4;
+    nonref = 2<<4;
   }
-#if 0
-  if ((encoder->picture->frame_number & 0x1f) > 0x10) {
-    encoder->base_quant = 28;
-  } else {
-    encoder->base_quant = 24;
+
+  subbands[0].quant_index = schro_gain_to_index (0 + gain*depth);
+  for(i=0; i<depth; i++) {
+    subbands[1+3*i].quant_index =
+      schro_gain_to_index (base + nonref * (i+1) + gain*(depth - (i+1))
+            + gain_diag);
+    subbands[2+3*i].quant_index =
+      schro_gain_to_index (base + nonref * (i+1) + gain*(depth - (i+1))
+            + gain_hv);
+    subbands[3+3*i].quant_index =
+      schro_gain_to_index (base + nonref * (i+1) + gain*(depth - (i+1))
+            + gain_hv);
   }
-#endif
-  if (encoder->picture->is_ref) {
-    encoder->encoder_params.quant_index_dc = 0;
-    encoder->encoder_params.quant_index[0] = CLAMP(encoder->base_quant, 0, 63);
-    encoder->encoder_params.quant_index[1] = CLAMP(encoder->base_quant, 0, 63);
-    encoder->encoder_params.quant_index[2] = CLAMP(encoder->base_quant, 0, 63);
-    encoder->encoder_params.quant_index[3] = CLAMP(encoder->base_quant, 0, 63);
-    encoder->encoder_params.quant_index[4] = CLAMP(encoder->base_quant, 0, 63);
-    encoder->encoder_params.quant_index[5] = CLAMP(encoder->base_quant, 0, 63);
-  } else {
-    encoder->encoder_params.quant_index_dc = 0;
-    encoder->encoder_params.quant_index[0] = CLAMP(encoder->base_quant, 0, 63);
-    encoder->encoder_params.quant_index[1] = CLAMP(encoder->base_quant + 2, 0, 63);
-    encoder->encoder_params.quant_index[2] = CLAMP(encoder->base_quant + 4, 0, 63);
-    encoder->encoder_params.quant_index[3] = CLAMP(encoder->base_quant + 6, 0, 63);
-    encoder->encoder_params.quant_index[4] = CLAMP(encoder->base_quant + 8, 0, 63);
-    encoder->encoder_params.quant_index[5] = CLAMP(encoder->base_quant + 10, 0, 63);
-    //encoder->encoder_params.quant_index_dc = CLAMP(encoder->base_quant, 0, 63);
-  }
-#if 0
-  encoder->encoder_params.quant_index_dc = CLAMP(encoder->base_quant - 8, 0, 63);
-  encoder->encoder_params.quant_index[0] = CLAMP(encoder->base_quant - 8, 0, 63);
-  encoder->encoder_params.quant_index[1] = CLAMP(encoder->base_quant - 8, 0, 63);
-  encoder->encoder_params.quant_index[2] = CLAMP(encoder->base_quant - 6, 0, 63);
-  encoder->encoder_params.quant_index[3] = CLAMP(encoder->base_quant - 4, 0, 63);
-  encoder->encoder_params.quant_index[4] = CLAMP(encoder->base_quant - 2, 0, 63);
-  encoder->encoder_params.quant_index[5] = CLAMP(encoder->base_quant, 0, 63);
-#endif
 }
 
 static void
@@ -211,7 +208,6 @@ schro_encoder_encode (SchroEncoder *encoder)
   int i;
   
   if (encoder->need_rap) {
-SCHRO_ERROR("encoding rap");
     outbuffer = schro_buffer_new_and_alloc (0x100);
 
     encoder->bits = schro_bits_new ();
@@ -239,8 +235,6 @@ SCHRO_ERROR("encoding rap");
   }
   encoder->picture = &encoder->picture_list[encoder->picture_index];
 
-  schro_encoder_choose_quantisers (encoder);
-
   encoder->encode_frame = schro_encoder_frame_queue_get (encoder,
       encoder->picture->frame_number);
   if (encoder->encode_frame == NULL) return NULL;
@@ -262,7 +256,7 @@ SCHRO_ERROR("encoding rap");
 
   schro_encoder_frame_queue_remove (encoder, encoder->picture->frame_number);
 
-  outbuffer = schro_buffer_new_and_alloc (0x40000);
+  outbuffer = schro_buffer_new_and_alloc (0x100000);
 
   encoder->bits = schro_bits_new ();
   schro_bits_encode_init (encoder->bits, outbuffer);
@@ -283,8 +277,8 @@ SCHRO_ERROR("encoding rap");
 
   encoder->picture_index++;
 
-  SCHRO_ERROR("frame %d encoded %d bits (q=%d)", encoder->picture->frame_number,
-      encoder->bits->offset, encoder->base_quant);
+  SCHRO_ERROR("frame %d encoded %d bits", encoder->picture->frame_number,
+      encoder->bits->offset);
 
   if (encoder->bits->offset > 0) {
     subbuffer = schro_buffer_new_subbuffer (outbuffer, 0,
@@ -303,7 +297,7 @@ SCHRO_ERROR("encoding rap");
 static void
 schro_encoder_create_picture_list (SchroEncoder *encoder)
 {
-  int type = 0;
+  int type = 2;
   int i;
 
   switch(type) {
@@ -386,13 +380,17 @@ schro_encoder_encode_intra (SchroEncoder *encoder)
     encoder->tmp_frame0 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
         params->iwt_luma_width, params->iwt_luma_height, 2, 2);
   }
+  if (encoder->quant_data == NULL) {
+    encoder->quant_data = malloc (sizeof(int16_t) *
+        (params->iwt_luma_width/2) * (params->iwt_luma_height/2));
+  }
 
   schro_encoder_encode_parse_info (encoder,
       SCHRO_PARSE_CODE_PICTURE(encoder->picture->is_ref, encoder->picture->n_refs));
   schro_encoder_encode_picture_header (encoder);
 
   schro_frame_convert (encoder->tmp_frame0, encoder->encode_frame);
-  schro_frame_shift_left (encoder->tmp_frame0, 4);
+  //schro_frame_shift_left (encoder->tmp_frame0, 4);
 
   schro_frame_free (encoder->encode_frame);
 
@@ -415,7 +413,7 @@ schro_encoder_encode_intra (SchroEncoder *encoder)
 
     ref_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
         format->width, format->height, 2, 2);
-    schro_frame_shift_right (encoder->tmp_frame0, 4);
+    //schro_frame_shift_right (encoder->tmp_frame0, 4);
     schro_frame_convert (ref_frame, encoder->tmp_frame0);
 
     schro_encoder_reference_add (encoder, ref_frame);
@@ -441,6 +439,10 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
     encoder->tmp_frame1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
         params->mc_luma_width, params->mc_luma_height, 2, 2);
   }
+  if (encoder->quant_data == NULL) {
+    encoder->quant_data = malloc (sizeof(int16_t) *
+        (params->iwt_luma_width/2) * (params->iwt_luma_height/2));
+  }
 
   schro_encoder_encode_parse_info (encoder,
       SCHRO_PARSE_CODE_PICTURE(encoder->picture->is_ref, encoder->picture->n_refs));
@@ -464,7 +466,7 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
 
   schro_encoder_encode_transform_parameters (encoder);
 
-  schro_frame_shift_left (encoder->tmp_frame0, 4);
+  //schro_frame_shift_left (encoder->tmp_frame0, 4);
   schro_frame_iwt_transform (encoder->tmp_frame0, &encoder->params,
       encoder->tmpbuf);
   residue_bits_start = encoder->bits->offset;
@@ -487,7 +489,7 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
 
     schro_frame_inverse_iwt_transform (encoder->tmp_frame0,
         &encoder->params, encoder->tmpbuf);
-    schro_frame_shift_right (encoder->tmp_frame0, 4);
+    //schro_frame_shift_right (encoder->tmp_frame0, 4);
     schro_frame_add (encoder->tmp_frame0, encoder->tmp_frame1);
 
     ref_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
@@ -850,6 +852,7 @@ schro_encoder_encode_transform_parameters (SchroEncoder *encoder)
   }
 }
 
+
 void
 schro_encoder_init_subbands (SchroEncoder *encoder)
 {
@@ -883,7 +886,6 @@ schro_encoder_init_subbands (SchroEncoder *encoder)
   encoder->subbands[0].scale_factor_shift = 0;
   encoder->subbands[0].horizontally_oriented = 0;
   encoder->subbands[0].vertically_oriented = 0;
-  encoder->subbands[0].quant_index = encoder->encoder_params.quant_index_dc;
 
   for(i=0; i<params->transform_depth; i++) {
     encoder->subbands[1+3*i].x = 1;
@@ -900,8 +902,6 @@ schro_encoder_init_subbands (SchroEncoder *encoder)
     encoder->subbands[1+3*i].scale_factor_shift = i;
     encoder->subbands[1+3*i].horizontally_oriented = 0;
     encoder->subbands[1+3*i].vertically_oriented = 0;
-    encoder->subbands[1+3*i].quant_index =
-      encoder->encoder_params.quant_index[i];
 
     encoder->subbands[2+3*i].x = 0;
     encoder->subbands[2+3*i].y = 1;
@@ -917,8 +917,6 @@ schro_encoder_init_subbands (SchroEncoder *encoder)
     encoder->subbands[2+3*i].scale_factor_shift = i;
     encoder->subbands[2+3*i].horizontally_oriented = 0;
     encoder->subbands[2+3*i].vertically_oriented = 1;
-    encoder->subbands[2+3*i].quant_index =
-      encoder->encoder_params.quant_index[i];
 
     encoder->subbands[3+3*i].x = 1;
     encoder->subbands[3+3*i].y = 0;
@@ -934,8 +932,6 @@ schro_encoder_init_subbands (SchroEncoder *encoder)
     encoder->subbands[3+3*i].scale_factor_shift = i;
     encoder->subbands[3+3*i].horizontally_oriented = 1;
     encoder->subbands[3+3*i].vertically_oriented = 0;
-    encoder->subbands[3+3*i].quant_index =
-      encoder->encoder_params.quant_index[i];
 
     w <<= 1;
     h <<= 1;
@@ -951,6 +947,7 @@ void
 schro_encoder_clean_up_transform (SchroEncoder *encoder, int component,
     int index)
 {
+  static const int wavelet_extent[8] = { 2, 1, 2, 0, 0, 0, 4, 2 };
   SchroSubband *subband = encoder->subbands + index;
   SchroParams *params = &encoder->params;
   int stride;
@@ -986,13 +983,14 @@ schro_encoder_clean_up_transform (SchroEncoder *encoder, int component,
   SCHRO_DEBUG("subband index=%d %d x %d at offset %d with stride %d; clean area %d %d", index,
       width, height, offset, stride, w, h);
 
-  /* FIXME this is dependent on the particular wavelet transform */
-  if (h < height) h+=1;
-  if (w < width) w+=1;
+  h = MIN (h + wavelet_extent[encoder->params.wavelet_filter_index], height);
+  w = MIN (w + wavelet_extent[encoder->params.wavelet_filter_index], width);
 
-  for(j=0;j<h;j++){
-    for(i=w;i<width;i++){
-      data[j*stride + i] = 0;
+  if (w < width) {
+    for(j=0;j<h;j++){
+      for(i=w;i<width;i++){
+        data[j*stride + i] = 0;
+      }
     }
   }
   for(j=h;j<height;j++){
@@ -1009,6 +1007,8 @@ schro_encoder_encode_transform_data (SchroEncoder *encoder, int component)
   SchroParams *params = &encoder->params;
 
   schro_encoder_init_subbands (encoder);
+
+  schro_encoder_choose_quantisers (encoder);
 
   for (i=0;i < 1 + 3*params->transform_depth; i++) {
     schro_encoder_clean_up_transform (encoder, component, i);
@@ -1028,13 +1028,20 @@ dequantize (int q, int quant_factor, int quant_offset)
 }
 
 static int
-quantize (int value, int quant_factor, int quant_offset)
+quantize (int value, int quant_factor, int quant_offset,
+    unsigned int inv_quant_factor)
 {
+  unsigned int x;
+
   if (value == 0) return 0;
   if (value < 0) {
-    value = - (-value - quant_offset + quant_factor/2)/quant_factor;
+    x = -value - quant_offset + (quant_factor>>1);
+    x = (x*(uint64_t)inv_quant_factor)>>32;
+    value = -x;
   } else {
-    value = (value - quant_offset + quant_factor/2)/quant_factor;
+    x = value - quant_offset + (quant_factor>>1);
+    x = (x*(uint64_t)inv_quant_factor)>>32;
+    value = x;
   }
   return value;
 }
@@ -1046,6 +1053,7 @@ schro_encoder_quantize_subband (SchroEncoder *encoder, int component, int index,
   SchroSubband *subband = encoder->subbands + index;
   int pred_value;
   int quant_factor;
+  unsigned int inv_quant_factor;
   int quant_offset;
   int stride;
   int width;
@@ -1058,6 +1066,7 @@ schro_encoder_quantize_subband (SchroEncoder *encoder, int component, int index,
   subband_zero_flag = 1;
 
   quant_factor = schro_table_quant[subband->quant_index];
+  inv_quant_factor = schro_table_inverse_quant[subband->quant_index];
   quant_offset = schro_table_offset[subband->quant_index];
 
   if (component == 0) {
@@ -1094,7 +1103,8 @@ schro_encoder_quantize_subband (SchroEncoder *encoder, int component, int index,
           }
         }
 
-        q = quantize(data[j*stride + i] - pred_value, quant_factor, quant_offset);
+        q = quantize(data[j*stride + i] - pred_value, quant_factor,
+            quant_offset, inv_quant_factor);
         data[j*stride + i] = dequantize(q, quant_factor, quant_offset) +
           pred_value;
         quant_data[j*width + i] = q;
@@ -1109,7 +1119,8 @@ schro_encoder_quantize_subband (SchroEncoder *encoder, int component, int index,
       for(i=0;i<width;i++){
         int q;
 
-        q = quantize(data[j*stride + i], quant_factor, quant_offset);
+        q = quantize(data[j*stride + i], quant_factor, quant_offset,
+            inv_quant_factor);
         data[j*stride + i] = dequantize(q, quant_factor, quant_offset);
         quant_data[j*width + i] = q;
         if (data[j*stride + i] != 0) {
@@ -1184,7 +1195,7 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   schro_arith_encode_init (arith, encoder->subband_buffer);
   schro_arith_init_contexts (arith);
 
-  quant_data = malloc (sizeof(int16_t) * height * width);
+  quant_data = encoder->quant_data;
   subband_zero_flag = schro_encoder_quantize_subband (encoder, component,
       index, quant_data);
   if (subband_zero_flag) {
@@ -1193,7 +1204,6 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
     schro_bits_encode_uint (encoder->bits, 0);
     schro_bits_sync (encoder->bits);
     schro_arith_free (arith);
-    free (quant_data);
     return;
   }
 
@@ -1320,7 +1330,6 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   }
     }
   }
-  free (quant_data);
 
   schro_arith_flush (arith);
 

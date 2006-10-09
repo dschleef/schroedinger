@@ -11,8 +11,7 @@ typedef struct _SchroEncoder SchroEncoder;
 typedef struct _SchroEncoderParams SchroEncoderParams;
 
 struct _SchroEncoderParams {
-  int quant_index_dc;
-  int quant_index[SCHRO_MAX_TRANSFORM_DEPTH];
+  int ignore;
 };
 
 struct _SchroEncoder {
@@ -35,8 +34,6 @@ struct _SchroEncoder {
 
   int16_t *tmpbuf;
   int16_t *tmpbuf2;
-
-  int wavelet_type;
 
   int version_major;
   int version_minor;
@@ -79,13 +76,13 @@ struct _SchroEncoder {
   double mag_x, mag_y;
   double skew_x, skew_y;
 
-  int base_quant;
-
   double metric_to_cost;
   int stats_metric;
   int stats_dc_blocks;
   int stats_none_blocks;
   int stats_scan_blocks;
+
+  int16_t *quant_data;
 };
 
 SchroEncoder * schro_encoder_new (void);

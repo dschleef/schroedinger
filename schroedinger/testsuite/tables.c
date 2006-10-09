@@ -8,6 +8,13 @@ get_quant (int i)
   return floor(pow(2.0,i/4.0) + 0.5);
 }
 
+unsigned int
+get_inv_quant (int i)
+{
+  int q = get_quant(i);
+  return (1ULL<<32)/q;
+}
+
 int
 get_offset (int i)
 {
@@ -52,6 +59,19 @@ main (int argc, char *argv[])
         get_quant(i+3));
   }
   printf("  %5d\n", get_quant(i));
+  printf("};\n");
+  printf("\n");
+
+  /* schro_table_quant */
+  printf("uint32_t schro_table_inverse_quant[61] = {\n");
+  for(i=0;i<60;i+=4) {
+    printf("  %10uu, %10uu, %10uu, %10uu,\n",
+        get_inv_quant(i),
+        get_inv_quant(i+1),
+        get_inv_quant(i+2),
+        get_inv_quant(i+3));
+  }
+  printf("  %10uu\n", get_inv_quant(i));
   printf("};\n");
   printf("\n");
 

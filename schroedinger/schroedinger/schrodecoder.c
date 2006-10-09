@@ -59,6 +59,8 @@ schro_decoder_free (SchroDecoder *decoder)
   for(i=0;i<decoder->frame_queue_length;i++){
     schro_frame_free (decoder->frame_queue[i]);
   }
+  if (decoder->motion_vectors) free (decoder->motion_vectors);
+  if (decoder->mc_tmp_frame) schro_frame_free (decoder->mc_tmp_frame);
 
   if (decoder->tmpbuf) free (decoder->tmpbuf);
   if (decoder->tmpbuf2) free (decoder->tmpbuf2);
@@ -204,7 +206,7 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
         decoder->tmpbuf);
 
-    schro_frame_shift_right (decoder->frame, 4);
+    //schro_frame_shift_right (decoder->frame, 4);
     schro_frame_convert (output_frame, decoder->frame);
 
     output_frame->frame_number = decoder->picture_number;
@@ -267,7 +269,7 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
         decoder->tmpbuf);
 
-    schro_frame_shift_right (decoder->frame, 4);
+    //schro_frame_shift_right (decoder->frame, 4);
 
 #ifndef DECODE_PREDICTION_ONLY
     schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
@@ -704,6 +706,7 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
   }
 
   schro_arith_free (arith);
+  schro_buffer_unref (buffer);
 
   decoder->bits->offset += length<<3;
 }
