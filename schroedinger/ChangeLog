@@ -1,5 +1,12 @@
 2006-10-08  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrowavelet.c:
+	* schroedinger/schrowavelet.h:
+	* testsuite/wavelet_2d.c:
+	  Add inverse wavelet transform plus testing.
+
+2006-10-08  David Schleef  <ds@schleef.org>
+
 	* testsuite/ack.c:
 	  This doesn't belong here.
 
