@@ -1,3 +1,9 @@
+2006-10-08  David Schleef  <ds@schleef.org>
+
+	* testsuite/Makefile.am:
+	* testsuite/phasecorrelation.c:
+	  Add phase correlation demonstration code.
+
 2006-10-06  David Schleef  <ds@schleef.org>
 
 	* testsuite/wavelet_2d.c:

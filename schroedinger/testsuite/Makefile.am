@@ -2,7 +2,7 @@
 
 noinst_PROGRAMS = arith arith_encode arith_decode bits bits2 \
 	 encode wavelet wavelet2 tables wavelet_2d arith_speed utils \
-	 obmc predict dump_packets
+	 obmc predict dump_packets phasecorrelation
 
 TESTS = arith bits bits2 encode wavelet wavelet2 tables wavelet_2d utils
 
@@ -70,5 +70,9 @@ obmc_SOURCES = obmc.c
 predict_CFLAGS = $(SCHRO_CFLAGS)
 predict_LDADD = $(SCHRO_LIBS)
 predict_SOURCES = predict.c
+
+phasecorrelation_CFLAGS = $(SCHRO_CFLAGS)
+phasecorrelation_LDADD = $(SCHRO_LIBS) -lm
+phasecorrelation_SOURCES = phasecorrelation.c
 
 
