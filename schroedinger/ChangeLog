@@ -1,3 +1,9 @@
+2006-10-10  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.h:
+	  Oops, this wasn't supposed to be checked in with the last
+	  changelog entry.
+
 2006-10-09  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:
