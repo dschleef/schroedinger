@@ -133,6 +133,12 @@ schro_metric_haar (uint8_t *src1, int stride1, uint8_t *src2, int stride2,
   SCHRO_ASSERT(width==8);
   SCHRO_ASSERT(height==8);
 
+  {
+    unsigned int m;
+    oil_sad8x8_u8(&m, src1, stride1, src2, stride2);
+    return m;
+  }
+
   for(j=0;j<height;j++){
     for(i=0;i<width;i++){
       diff[j*8+i] = src1[j*stride1 + i] - src2[j*stride2 + i];

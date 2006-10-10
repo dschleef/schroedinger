@@ -1,5 +1,16 @@
 2006-10-09  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schrometric.c:
+	* schroedinger/schropredict.c:
+	  Move DC subband prediction out of the loop, as it affects
+	  neighborhood summing.  Changes BITSTREAM.  Use liboil for
+	  sad8x8 summing.
+
+2006-10-09  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schropredict.c:
 	  Fix bug reading past the end of the block prediction array.
 

@@ -300,6 +300,7 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
   int j;
   int x_blocks;
   int y_blocks;
+  int prev_x_blocks;
   SchroFrame *downsampled_ref0;
   SchroFrame *downsampled_ref1 = NULL;
   SchroFrame *downsampled_frame;
@@ -308,6 +309,7 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
   int shift;
 
   prev_pred_lists = NULL;
+  prev_x_blocks = 0;
 
   for(shift=3;shift>=0;shift--) {
     /* FIXME downsampled size is wrong */
@@ -348,7 +350,7 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
             continue;
           }
 
-          list = prev_pred_lists + parent_j*(x_blocks>>1) + parent_i;
+          list = prev_pred_lists + parent_j*prev_x_blocks + parent_i;
           if (list->n_vectors == 0) {
             /* probably on bottom or side, so we'll pull from neighbor
              * parent */
@@ -358,7 +360,7 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
             if (i >= x_blocks + 2) {
               parent_i--;
             }
-            list = prev_pred_lists + parent_j*(x_blocks>>1) + parent_i;
+            list = prev_pred_lists + parent_j*prev_x_blocks + parent_i;
           }
           for(k=0;k<MIN(4,list->n_vectors);k++){
             if (list->vectors[k].ref == 0) {
@@ -439,6 +441,7 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
       free(prev_pred_lists);
     }
     prev_pred_lists = pred_lists;
+    prev_x_blocks = x_blocks;
     pred_lists = NULL;
   }
 

@@ -1026,6 +1026,17 @@ static int table[32][3] = {
   { 0, 0, 0 },
 };
 
+static int
+dequantize (int q, int quant_factor, int quant_offset)
+{
+  if (q == 0) return 0;
+  if (q < 0) {
+    return q * quant_factor - quant_offset;
+  } else {
+    return q * quant_factor + quant_offset;
+  }
+}
+
 void
 schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
 {
@@ -1154,7 +1165,6 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
         int previous_value;
         int sign_context;
         int value_context;
-        int pred_value;
         int table_index;
         int16_t *p = data + j*stride + i;
 
@@ -1170,25 +1180,6 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
         }
 //nhood_sum = 0;
         
-        if (index == 0) {
-          if (j>0) {
-            if (i>0) {
-              pred_value = (p[-1] + p[-stride] + p[-stride-1] + 1)/3;
-            } else {
-              pred_value = p[-stride];
-            }
-          } else {
-            if (i>0) {
-              pred_value = p[-1];
-            } else {
-              pred_value = 0;
-            }
-          }
-        } else {
-          pred_value = 0;
-        }
-//pred_value = 0;
-
         if (subband->has_parent) {
           if (parent_data[(j>>1)*(stride<<1) + (i>>1)]==0) {
             parent_zero = 1;
@@ -1271,15 +1262,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
 
         v = _schro_arith_context_decode_sint (arith, cont_context,
             value_context, sign_context);
-        if (v) {
-          if (v>0) {
-            data[j*stride + i] = pred_value + quant_offset + quant_factor * v;
-          } else {
-            data[j*stride + i] = pred_value - quant_offset + quant_factor * v;
-          }
-        } else {
-          data[j*stride + i] = pred_value;
-        }
+        p[0] = dequantize(v, quant_factor, quant_offset);
       }
     }
       }
@@ -1289,6 +1272,31 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     schro_buffer_unref (buffer);
 
     decoder->bits->offset += subband_length * 8;
+
+    if (index == 0 && decoder->n_refs == 0) {
+      for(j=0;j<height;j++){
+        for(i=0;i<width;i++){
+          int16_t *p = data + j*stride + i;
+          int pred_value;
+
+          if (j>0) {
+            if (i>0) {
+              pred_value = (p[-1] + p[-stride] + p[-stride-1] + 1)/3;
+            } else {
+              pred_value = p[-stride];
+            }
+          } else {
+            if (i>0) {
+              pred_value = p[-1];
+            } else {
+              pred_value = 0;
+            }
+          }
+
+          p[0] += pred_value;
+        }
+      }
+    }
   } else {
     int i,j;
 

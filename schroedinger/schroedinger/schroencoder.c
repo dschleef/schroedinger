@@ -1233,10 +1233,13 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
       for(i=xmin;i<xmax;i++){
         if (quant_data[j*width + i] != 0) {
           zero_codeblock = 0;
+          goto out;
         }
       }
     }
-    _schro_arith_context_encode_bit (arith, SCHRO_CTX_ZERO_CODEBLOCK, zero_codeblock);
+out:
+    _schro_arith_context_encode_bit (arith, SCHRO_CTX_ZERO_CODEBLOCK,
+        zero_codeblock);
     if (zero_codeblock) {
       continue;
     }
@@ -1251,15 +1254,23 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
       int previous_value;
       int sign_context;
 
+      /* FIXME This code is so ugly.  Most of these if statements
+       * are constant over the entire codeblock.  Also, we're doing a
+       * gratuitous dequantization for the neighborhood sum because
+       * subband 0 doesn't always have the right information in it. */
+
       nhood_sum = 0;
       if (j>0) {
-        nhood_sum += abs(data[(j-1)*stride + i]);
+        nhood_sum += abs(dequantize(quant_data[(j-1)*width + i],
+              quant_factor,quant_offset));
       }
       if (i>0) {
-        nhood_sum += abs(data[j*stride + i - 1]);
+        nhood_sum += abs(dequantize(quant_data[j*width + i - 1],
+              quant_factor,quant_offset));
       }
       if (i>0 && j>0) {
-        nhood_sum += abs(data[(j-1)*stride + i - 1]);
+        nhood_sum += abs(dequantize(quant_data[(j-1)*width + i - 1],
+              quant_factor,quant_offset));
       }
 //nhood_sum = 0;
       
