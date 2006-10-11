@@ -34,7 +34,6 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
   SchroParams *params = &encoder->params;
   int i;
   int j;
-  SchroFrame *ref_frame;
   SchroFrame *frame;
   int sum_pred_x;
   int sum_pred_y;
@@ -55,10 +54,6 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
         params->x_num_mb*params->y_num_mb*16);
   }
 
-  ref_frame = encoder->ref_frame0;
-  if (!ref_frame) {
-    SCHRO_ERROR("no reference frame");
-  }
   frame = encoder->encode_frame;
 
   SCHRO_ASSERT(params->num_refs > 0);
@@ -303,7 +298,9 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
   int prev_x_blocks;
   SchroFrame *downsampled_ref0;
   SchroFrame *downsampled_ref1 = NULL;
+  SchroFrame *downsampled[4];
   SchroFrame *downsampled_frame;
+  SchroFrame *frame = encoder->encode_frame;
   SchroPredictionList *pred_lists;
   SchroPredictionList *prev_pred_lists;
   int shift;
@@ -311,21 +308,35 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
   prev_pred_lists = NULL;
   prev_x_blocks = 0;
 
+  downsampled[0] = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
+      ROUND_UP_SHIFT(frame->components[0].width, 1),
+      ROUND_UP_SHIFT(frame->components[0].height, 1), 2, 2);
+  schro_frame_downsample(downsampled[0], encoder->encode_frame, 1);
+
+  downsampled[1] = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
+      ROUND_UP_SHIFT(frame->components[0].width, 2),
+      ROUND_UP_SHIFT(frame->components[0].height, 2), 2, 2);
+  schro_frame_downsample(downsampled[1], downsampled[0], 1);
+
+  downsampled[2] = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
+      ROUND_UP_SHIFT(frame->components[0].width, 3),
+      ROUND_UP_SHIFT(frame->components[0].height, 3), 2, 2);
+  schro_frame_downsample(downsampled[2], downsampled[1], 1);
+
   for(shift=3;shift>=0;shift--) {
-    /* FIXME downsampled size is wrong */
-    downsampled_ref0 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-        encoder->video_format.width>>shift, encoder->video_format.height>>shift, 2, 2);
-    schro_frame_downsample (downsampled_ref0, encoder->ref_frame0, shift);
-
-    if (params->num_refs == 2) {
-      downsampled_ref1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-          encoder->video_format.width>>shift, encoder->video_format.height>>shift, 2, 2);
-      schro_frame_downsample (downsampled_ref1, encoder->ref_frame1, shift);
+    if (shift == 0) {
+      downsampled_ref0 = encoder->ref_frame0->frames[shift];
+      if (params->num_refs == 2) {
+        downsampled_ref1 = encoder->ref_frame1->frames[shift];
+      }
+      downsampled_frame = encoder->encode_frame;
+    } else {
+      downsampled_ref0 = encoder->ref_frame0->frames[shift];
+      if (params->num_refs == 2) {
+        downsampled_ref1 = encoder->ref_frame1->frames[shift];
+      }
+      downsampled_frame = downsampled[shift-1];
     }
-
-    downsampled_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-        encoder->video_format.width>>shift, encoder->video_format.height>>shift, 2, 2);
-    schro_frame_downsample (downsampled_frame, encoder->encode_frame, shift);
 
     x_blocks = ROUND_UP_SHIFT(params->x_num_blocks,shift);
     y_blocks = ROUND_UP_SHIFT(params->y_num_blocks,shift);
@@ -431,12 +442,6 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
     }
 #endif
 
-    schro_frame_free (downsampled_ref0);
-    if (downsampled_ref1) {
-      schro_frame_free (downsampled_ref1);
-    }
-    schro_frame_free (downsampled_frame);
-
     if (prev_pred_lists) {
       free(prev_pred_lists);
     }
@@ -444,6 +449,10 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
     prev_x_blocks = x_blocks;
     pred_lists = NULL;
   }
+
+  schro_frame_free(downsampled[0]);
+  schro_frame_free(downsampled[1]);
+  schro_frame_free(downsampled[2]);
 
   for(j=0;j<4*params->y_num_mb;j++){
     for(i=0;i<4*params->x_num_mb;i++){ 

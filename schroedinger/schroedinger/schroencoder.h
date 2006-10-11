@@ -9,9 +9,16 @@
 
 typedef struct _SchroEncoder SchroEncoder;
 typedef struct _SchroEncoderParams SchroEncoderParams;
+typedef struct _SchroEncoderReference SchroEncoderReference;
 
 struct _SchroEncoderParams {
   int ignore;
+};
+
+struct _SchroEncoderReference {
+  int valid;
+  int frame_number;
+  SchroFrame *frames[5];
 };
 
 struct _SchroEncoder {
@@ -27,7 +34,7 @@ struct _SchroEncoder {
 
   int frame_queue_index;
 
-  SchroFrame *reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
+  SchroEncoderReference reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
   int n_reference_frames;
 
   int need_rap;
@@ -69,8 +76,8 @@ struct _SchroEncoder {
   SchroPicture *picture;
 
   /* current reference frames */
-  SchroFrame *ref_frame0;
-  SchroFrame *ref_frame1;
+  SchroEncoderReference *ref_frame0;
+  SchroEncoderReference *ref_frame1;
 
   double pan_x, pan_y;
   double mag_x, mag_y;
@@ -83,6 +90,8 @@ struct _SchroEncoder {
   int stats_scan_blocks;
 
   int16_t *quant_data;
+  
+  int engine_init;
 };
 
 SchroEncoder * schro_encoder_new (void);
