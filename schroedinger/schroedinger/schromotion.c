@@ -333,6 +333,7 @@ copy_block_general (SchroFrameComponent *dest, int x, int y,
     for(j=region->start_y;j<region->end_y;j++){
       oil_multiply_and_add_s16 (
           OFFSET(dest->data, dest->stride*(y+j) + 2*(x + region->start_x)),
+          OFFSET(dest->data, dest->stride*(y+j) + 2*(x + region->start_x)),
           OFFSET(region->weights, obmc->stride*j + 2*region->start_x),
           OFFSET(src->data, src->stride * (sy + j) + sx + region->start_x),
           region->end_x - region->start_x);
