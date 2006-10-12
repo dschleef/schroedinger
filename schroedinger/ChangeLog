@@ -1,6 +1,11 @@
 2006-10-11  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schromotion.c:
+	  Fix last checkin.
+
+2006-10-11  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schromotion.c:
 	* schroedinger/schrooil.c:
 	* schroedinger/schrooil.h:
 	  Move some stuff to liboil.  Requires up-to-date liboil CVS.

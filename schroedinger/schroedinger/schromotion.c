@@ -13,122 +13,6 @@ void schro_decoder_predict (SchroDecoder *decoder);
 
 
 
-#if 0
-static void
-copy_block_4x4 (uint8_t *dest, int dstr, uint8_t *src, int sstr)
-{
-  int j;
-
-  for(j=0;j<4;j++){
-    *(uint32_t *)(dest + dstr*j) = *(uint32_t *)(src + sstr*j);
-  }
-}
-
-static void
-copy_block_8x8 (uint8_t *dest, int dstr, uint8_t *src, int sstr)
-{
-  int j;
-
-  for(j=0;j<8;j++){
-    *(uint64_t *)(dest + dstr*j) = *(uint64_t *)(src + sstr*j);
-  }
-}
-#endif
-
-#if 0
-static void
-copy_block_6x6_4x4 (int16_t *dest, int dstr, uint8_t *src, int sstr)
-{
-  int i, j;
-  const int weights[6] = { 1, 3, 4, 4, 3, 1 };
-
-  for(j=0;j<6;j++){
-    for(i=0;i<6;i++){
-      dest[i] += weights[i]*weights[j]*src[i];
-    }
-    dest = (int16_t *)((uint8_t *)dest + dstr);
-    src += sstr;
-  }
-}
-#endif
-
-#if 0
-static void
-copy_block_12x12_8x8 (int16_t *dest, int dstr, uint8_t *src, int sstr)
-{
-  int i, j;
-  const int weights[12] = { 1, 3, 5, 7, 8, 8, 8, 8, 7, 5, 3, 1 };
-
-  for(j=0;j<12;j++){
-    for(i=0;i<12;i++){
-      dest[i] += weights[i]*weights[j]*src[i];
-    }
-    dest = (int16_t *)((uint8_t *)dest + dstr);
-    src += sstr;
-  }
-}
-#endif
-
-#if 0
-static void
-splat_block_6x6_4x4 (int16_t *dest, int dstr, int value)
-{
-  int i, j;
-  const int weights[6] = { 1, 3, 4, 4, 3, 1 };
-
-  for(j=0;j<6;j++){
-    for(i=0;i<6;i++){
-      dest[i] += weights[i]*weights[j]*value;
-    }
-    dest = (int16_t *)((uint8_t *)dest + dstr);
-  }
-}
-#endif
-
-#if 0
-static void
-splat_block_12x12_8x8 (int16_t *dest, int dstr, int value)
-{
-  int i, j;
-  const int weights[12] = { 1, 3, 5, 7, 8, 8, 8, 8, 7, 5, 3, 1 };
-
-  for(j=0;j<12;j++){
-    for(i=0;i<12;i++){
-      dest[i] += weights[i]*weights[j]*value;
-    }
-    dest = (int16_t *)((uint8_t *)dest + dstr);
-  }
-}
-#endif
-
-#if 0
-static void
-copy_block (uint8_t *dest, int dstr, uint8_t *src, int sstr, int w, int h)
-{
-  int i,j;
-
-  for(j=0;j<h;j++){
-    for(i=0;i<w;i++) {
-      dest[dstr*j+i] = src[sstr*j+i];
-    }
-  }
-}
-#endif
-
-#if 0
-static void
-splat_block (uint8_t *dest, int dstr, int value, int w, int h)
-{
-  int i,j;
-
-  for(j=0;j<h;j++){
-    for(i=0;i<w;i++) {
-      dest[dstr*j+i] = value;
-    }
-  }
-}
-#endif
-
 void
 schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
 {
@@ -301,7 +185,6 @@ copy_block_general (SchroFrameComponent *dest, int x, int y,
   SCHRO_ASSERT(y>=0);
   SCHRO_ASSERT(x + obmc->x_sep<=dest->width);
   SCHRO_ASSERT(y + obmc->y_sep<=dest->height);
-//SCHRO_ERROR("xy %d %d sxy %d %d", x, y, sx, sy);
 
   x -= obmc->x_ramp/2;
   y -= obmc->y_ramp/2;
@@ -331,20 +214,12 @@ copy_block_general (SchroFrameComponent *dest, int x, int y,
     }
   } else {
     for(j=region->start_y;j<region->end_y;j++){
-      oil_multiply_and_add_s16 (
+      oil_multiply_and_add_s16_u8 (
           OFFSET(dest->data, dest->stride*(y+j) + 2*(x + region->start_x)),
           OFFSET(dest->data, dest->stride*(y+j) + 2*(x + region->start_x)),
           OFFSET(region->weights, obmc->stride*j + 2*region->start_x),
           OFFSET(src->data, src->stride * (sy + j) + sx + region->start_x),
           region->end_x - region->start_x);
-#if 0
-      for(i=region->start_x;i<region->end_x;i++){
-        weight = SCHRO_GET(region->weights, obmc->stride*j + 2*i, int16_t);
-        value = SCHRO_GET(src->data, src->stride * (sy + j) + sx+i, uint8_t);
-        SCHRO_GET(dest->data, dest->stride*(y+j) + 2*(x+i), int16_t) +=
-          weight * value;
-      }
-#endif
     }
   }
 }
