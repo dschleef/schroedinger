@@ -1,6 +1,18 @@
 2006-10-11  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schromotion.c:
+	  Interleave clear/copy/shift stages in order to make better
+	  use of the cache.
+	* schroedinger/schroparams.h:
+	  Decrease size of SchroMotionVector from 40 bytes to 12.  It
+	  really adds up.
+	* testsuite/Makefile.am:
+	* testsuite/motion.c:
+	  New test for testing schro_frame_copy_with_motion().
+
+2006-10-11  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schromotion.c:
 	  Fix last checkin.
 
 2006-10-11  David Schleef  <ds@schleef.org>

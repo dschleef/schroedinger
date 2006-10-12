@@ -3,6 +3,7 @@
 #define __SCHRO_PARAMS_H__
 
 #include <schroedinger/schrobitstream.h>
+#include <schroedinger/schro-stdint.h>
 
 typedef struct _SchroVideoFormat SchroVideoFormat;
 typedef struct _SchroParams SchroParams;
@@ -145,13 +146,13 @@ struct _SchroSubband {
 };
 
 struct _SchroMotionVector {
-  int pred_mode;
-  int using_global;
-  int split;
-  int common;
-  int x;
-  int y;
-  int dc[3];
+  unsigned int pred_mode : 2;
+  unsigned int using_global : 1;
+  unsigned int split : 2;
+  unsigned int common : 1;
+  uint8_t dc[3];
+  int16_t x;
+  int16_t y;
   int metric;
 };
 
