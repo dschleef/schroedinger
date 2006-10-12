@@ -816,7 +816,7 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
     int pred_x, pred_y;
 
     schro_motion_vector_prediction (motion_vectors, &decoder->params, x, y,
-        &pred_x, &pred_y);
+        &pred_x, &pred_y, mv->pred_mode);
 
     mv->x = pred_x + _schro_arith_context_decode_sint (arith,
          SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,

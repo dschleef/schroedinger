@@ -100,7 +100,7 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
       cost_dc += 10;
 
       schro_motion_vector_prediction (encoder->motion_vectors,
-          params, i, j, &pred_x, &pred_y);
+          params, i, j, &pred_x, &pred_y, 1);
       mv = &encoder->motion_vectors[j*(4*params->x_num_mb) + i];
       cost_scan = cost(mv->x - pred_x) + cost(mv->y - pred_y);
       cost_scan += encoder->metric_to_cost * mv->metric;
@@ -375,7 +375,7 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
           }
           for(k=0;k<MIN(4,list->n_vectors);k++){
             if (list->vectors[k].ref == 0) {
-#define SIZE2 1
+#define SIZE2 2
               schro_prediction_list_scan (pred_lists + j*x_blocks + i,
                   downsampled_frame, downsampled_ref0, 0, i*8, j*8,
                   i*8 - SIZE2 + list->vectors[k].dx*2,
@@ -394,7 +394,7 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
       for(i=0;i<x_blocks;i++){
         SchroPredictionList *list = pred_lists + j*x_blocks + i;
         if (list->n_vectors == 0) {
-#define SIZE 8
+#define SIZE 12
           schro_prediction_list_scan (pred_lists + j*x_blocks + i,
               downsampled_frame, downsampled_ref0, 0, i*8, j*8,
               i*8 - SIZE, j*8 - SIZE, 2*SIZE + 1, 2*SIZE + 1);

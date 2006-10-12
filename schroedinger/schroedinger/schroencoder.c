@@ -168,7 +168,7 @@ schro_encoder_choose_quantisers (SchroEncoder *encoder)
   gain_diag = wavelet_gain_diag[encoder->params.wavelet_filter_index];
 
   if (encoder->picture->is_ref) {
-    base = 4 << 4;
+    base = 6 << 4;
     nonref = 0;
   } else {
     base = 8 << 4;
@@ -405,6 +405,7 @@ schro_encoder_encode_intra (SchroEncoder *encoder)
   params->width = format->width;
   params->height = format->height;
   params->chroma_format = format->chroma_format;
+  params->wavelet_filter_index = SCHRO_WAVELET_5_3;
 
   schro_params_calculate_iwt_sizes (params);
 
@@ -459,6 +460,7 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
   int is_ref = 0;
   int residue_bits_start;
 
+  params->wavelet_filter_index = SCHRO_WAVELET_5_3;
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
 
@@ -623,7 +625,7 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
             int pred_x, pred_y;
 
             schro_motion_vector_prediction (encoder->motion_vectors,
-                params, i+k, j+l, &pred_x, &pred_y);
+                params, i+k, j+l, &pred_x, &pred_y, mv->pred_mode);
 
             _schro_arith_context_encode_sint(arith,
                 SCHRO_CTX_MV_REF1_H_CONT_BIN1,

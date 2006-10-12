@@ -450,7 +450,7 @@ schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
 
 void
 schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
-    SchroParams *params, int x, int y, int *pred_x, int *pred_y)
+    SchroParams *params, int x, int y, int *pred_x, int *pred_y, int mode)
 {
   SchroMotionVector *mv = &motion_vectors[y*(4*params->x_num_mb) + x];
   int sum_x = 0;
@@ -459,7 +459,7 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
 
   if (x>0) {
     mv = &motion_vectors[y*(4*params->x_num_mb) + (x-1)];
-    if (mv->pred_mode == 1) {
+    if (mv->pred_mode == mode) {
       sum_x += mv->x;
       sum_y += mv->y;
       n++;
@@ -467,7 +467,7 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
   }
   if (y>0) {
     mv = &motion_vectors[(y-1)*(4*params->x_num_mb) + x];
-    if (mv->pred_mode == 1) {
+    if (mv->pred_mode == mode) {
       sum_x += mv->x;
       sum_y += mv->y;
       n++;
@@ -475,7 +475,7 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
   }
   if (x>0 && y>0) {
     mv = &motion_vectors[(y-1)*(4*params->x_num_mb) + (x-1)];
-    if (mv->pred_mode == 1) {
+    if (mv->pred_mode == mode) {
       sum_x += mv->x;
       sum_y += mv->y;
       n++;
