@@ -1,5 +1,17 @@
 2006-10-12  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrotables.c:
+	* schroedinger/schrotables.h:
+	* testsuite/arith_speed.c:
+	* testsuite/tables.c:
+	  Update the arithmetic encoder to match the spec.  Changes
+	  BITSTREAM.  One of these days, I'll finally catch all the
+	  differences.
+
+2006-10-12  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schromotion.c:

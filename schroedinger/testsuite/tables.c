@@ -24,7 +24,8 @@ get_offset (int i)
 int
 get_factor (int i)
 {
-  return (1U<<31)/(i+1);
+  if (i<2) return 0;
+  return (0x10000 + i/2)/i;
 }
 
 int
@@ -76,19 +77,15 @@ main (int argc, char *argv[])
   printf("\n");
 
   /* schro_table_quant */
-  printf("uint32_t schro_table_division_factor[256] = {\n");
-  for(i=0;i<252;i+=4) {
-    printf("  %10uu, %10uu, %10uu, %10uu,\n",
+  printf("uint16_t schro_table_division_factor[257] = {\n");
+  for(i=0;i<256;i+=4) {
+    printf("  %5u, %5u, %5u, %5u,\n",
         get_factor(i),
         get_factor(i+1),
         get_factor(i+2),
         get_factor(i+3));
   }
-  printf("  %10uu, %10uu, %10uu, %10uu\n",
-      get_factor(i),
-      get_factor(i+1),
-      get_factor(i+2),
-      get_factor(i+3));
+  printf("  %5u\n", get_factor(i));
   printf("};\n");
 
   return 0;

@@ -9,6 +9,7 @@
 
 #include <schroedinger/schroarith.h>
 #include <schroedinger/schrotables.h>
+#include <schroedinger/schrodebug.h>
 
 
 static void _schro_arith_input_bit (SchroArith *arith);
@@ -211,15 +212,6 @@ schro_arith_init_contexts (SchroArith *arith)
   }
 }
 
-static void
-_schro_arith_context_halve_counts (SchroArith *arith, int i)
-{
-  arith->contexts[i].count[0] >>= 1;
-  arith->contexts[i].count[0]++;
-  arith->contexts[i].count[1] >>= 1;
-  arith->contexts[i].count[1]++;
-}
-
 void
 schro_arith_halve_all_counts (SchroArith *arith)
 {
@@ -232,44 +224,34 @@ schro_arith_halve_all_counts (SchroArith *arith)
   }
 }
 
-static void
-_schro_arith_context_update (SchroArith *arith, int i, int value)
-{
-  arith->contexts[i].count[value]++;
-  if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 255) {
-    _schro_arith_context_halve_counts (arith, i);
-  }
-}
-
-
 
 int
 _schro_arith_context_decode_bit (SchroArith *arith, int i)
 {
   unsigned int count;
-  int value;
-  int range;
-  int scaled_count0;
-  int weight;
+  unsigned int value;
+  unsigned int range;
+  unsigned int scaler;
+  unsigned int weight;
+  unsigned int probability0;
+  unsigned int range_x_prob;
 
-  count = ((arith->code - arith->range[0] + 1)<<10) - 1;
-  range = arith->range[1] - arith->range[0] + 1;
   weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
-  scaled_count0 = ((unsigned int)arith->contexts[i].count[0] *
-      arith->division_factor[weight - 1]) >> 21;
-  value = (count >= range * scaled_count0);
+  scaler = arith->division_factor[weight];
+  probability0 = arith->contexts[i].count[0] * scaler;
+  count = arith->code - arith->range[0] + 1;
+  range = arith->range[1] - arith->range[0] + 1;
+  range_x_prob = (range * probability0) >> 16;
+  value = (count > range_x_prob);
 
+  arith->range[1 - value] = arith->range[0] + range_x_prob - 1 + value;
   arith->contexts[i].count[value]++;
+
   if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 255) {
     arith->contexts[i].count[0] >>= 1;
     arith->contexts[i].count[0]++;
     arith->contexts[i].count[1] >>= 1;
     arith->contexts[i].count[1]++;
-  }
-  
-  {
-    int newval = arith->range[0] + ((range * scaled_count0)>>10);
-    arith->range[1 - value] = newval - 1 + value;
   }
 
   do {
@@ -297,19 +279,30 @@ _schro_arith_context_decode_bit (SchroArith *arith, int i)
 void
 _schro_arith_context_encode_bit (SchroArith *arith, int i, int value)
 {
-  int range;
-  int scaled_count0;
-  int weight;
+  unsigned int count;
+  unsigned int range;
+  unsigned int scaler;
+  unsigned int weight;
+  unsigned int probability0;
+  unsigned int range_x_prob;
 
-  range = arith->range[1] - arith->range[0] + 1;
   weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
-  scaled_count0 = ((unsigned int)arith->contexts[i].count[0] *
-      arith->division_factor[weight - 1]) >> 21;
+  scaler = arith->division_factor[weight];
+  probability0 = arith->contexts[i].count[0] * scaler;
+  count = arith->code - arith->range[0] + 1;
+  range = arith->range[1] - arith->range[0] + 1;
+  range_x_prob = (range * probability0) >> 16;
+//SCHRO_ERROR("scaler %d count0 %d prob0 %d range_x_prob %d", scaler, arith->contexts[i].count[0], probability0, range_x_prob);
+  //value = (count > range_x_prob);
 
-  _schro_arith_context_update (arith, i, value);
-  
-  arith->range[1-value] = arith->range[0] +
-    ((range * scaled_count0)>>10) - 1 + value;
+  arith->range[1 - value] = arith->range[0] + range_x_prob - 1 + value;
+  arith->contexts[i].count[value]++;
+  if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 255) {
+    arith->contexts[i].count[0] >>= 1;
+    arith->contexts[i].count[0]++;
+    arith->contexts[i].count[1] >>= 1;
+    arith->contexts[i].count[1]++;
+  }
 
   do {
     if ((arith->range[1] & (1<<15)) == (arith->range[0] & (1<<15))) {
