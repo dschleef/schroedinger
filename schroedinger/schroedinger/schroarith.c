@@ -12,7 +12,6 @@
 #include <schroedinger/schrodebug.h>
 
 
-static void _schro_arith_input_bit (SchroArith *arith);
 static void _schro_arith_output_bit (SchroArith *arith);
 
 SchroArith *
@@ -34,6 +33,33 @@ schro_arith_free (SchroArith *arith)
   free(arith);
 }
 
+static void
+schro_arith_reload_nextcode (SchroArith *arith)
+{
+  arith->nextbits = 32;
+  if (arith->offset < arith->buffer->length - 3) {
+    arith->nextcode = arith->buffer->data[arith->offset] << 24;
+    arith->nextcode |= arith->buffer->data[arith->offset + 1] << 16;
+    arith->nextcode |= arith->buffer->data[arith->offset + 2] << 8;
+    arith->nextcode |= arith->buffer->data[arith->offset + 3];
+  } else {
+    arith->nextcode = 0;
+    if (arith->offset < arith->buffer->length) {
+      arith->nextcode = arith->buffer->data[arith->offset] << 24;
+    }
+    if (arith->offset + 1 < arith->buffer->length) {
+      arith->nextcode |= arith->buffer->data[arith->offset + 1] << 16;
+    }
+    if (arith->offset + 2 < arith->buffer->length) {
+      arith->nextcode |= arith->buffer->data[arith->offset + 2] << 8;
+    }
+    if (arith->offset + 3 < arith->buffer->length) {
+      arith->nextcode |= arith->buffer->data[arith->offset + 3];
+    }
+  }
+  arith->offset += 4;
+}
+
 void
 schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
 {
@@ -45,9 +71,8 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
 
   arith->code = arith->buffer->data[0] << 8;
   arith->code |= arith->buffer->data[1];
-  arith->nextcode = arith->buffer->data[2];
-  arith->nextbits = 8;
-  arith->offset=3;
+  arith->offset = 2;
+  schro_arith_reload_nextcode(arith);
 }
 
 void
@@ -61,20 +86,6 @@ schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer)
   arith->offset = 0;
   arith->nextbits = 0;
   arith->nextcode = 0;
-}
-
-static void
-_schro_arith_input_bit (SchroArith *arith)
-{
-  arith->code <<= 1;
-  arith->code |= (arith->nextcode >> 7);
-  arith->nextcode <<= 1;
-  arith->nextbits--;
-  if (arith->nextbits == 0) {
-    arith->nextbits = 8;
-    arith->nextcode = arith->buffer->data[arith->offset];
-    arith->offset++;
-  }
 }
 
 static void
@@ -110,17 +121,15 @@ _schro_arith_output_bit (SchroArith *arith)
 void
 schro_arith_flush (SchroArith *arith)
 {
-  _schro_arith_push_bit (arith, 1);
+  int i;
+  for(i=0;i<16;i++){
+    _schro_arith_output_bit (arith);
+    arith->range[0] <<= 1;
+  }
   while(arith->nextbits < 8) {
     arith->nextcode <<= 1;
     arith->nextbits++;
   }
-  arith->buffer->data[arith->offset] = arith->nextcode;
-  arith->nextbits = 0;
-  arith->nextcode = 0;
-  arith->offset++;
-  arith->buffer->data[arith->offset] = arith->nextcode;
-  arith->offset++;
   arith->buffer->data[arith->offset] = arith->nextcode;
   arith->offset++;
 }
@@ -269,7 +278,13 @@ _schro_arith_context_decode_bit (SchroArith *arith, int i)
     arith->range[1] <<= 1;
     arith->range[1]++;
 
-    _schro_arith_input_bit(arith);
+    arith->code <<= 1;
+    arith->code |= (arith->nextcode >> 31);
+    arith->nextcode <<= 1;
+    arith->nextbits--;
+    if (arith->nextbits == 0) {
+      schro_arith_reload_nextcode(arith);
+    }
   } while (1);
 
   return value;

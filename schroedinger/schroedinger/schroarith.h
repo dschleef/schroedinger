@@ -105,7 +105,7 @@ struct _SchroArith {
 
   SchroBuffer *buffer;
   int offset;
-  uint8_t nextcode;
+  uint32_t nextcode;
   int nextbits;
 
   uint16_t *division_factor;

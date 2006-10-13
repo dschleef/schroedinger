@@ -2,6 +2,13 @@
 
 	* schroedinger/schroarith.c:
 	* schroedinger/schroarith.h:
+	  Fix up flushing.  Expand nextbits to 32 bits, although it
+	  doesn't seem to make a performance difference.
+
+2006-10-12  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
 	* schroedinger/schrotables.c:
 	* schroedinger/schrotables.h:
 	* testsuite/arith_speed.c:
