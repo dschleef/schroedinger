@@ -1,5 +1,14 @@
 2006-10-12  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  Update the arithmetic bins to match the spec.  Changes
+	  BITSTREAM.
+
+2006-10-12  David Schleef  <ds@schleef.org>
+
 	* testsuite/arith.c:
 	  Test that notices flushing bug fixed by the last checkin.
 

@@ -46,15 +46,23 @@ schro_arith_reload_nextcode (SchroArith *arith)
     arith->nextcode = 0;
     if (arith->offset < arith->buffer->length) {
       arith->nextcode = arith->buffer->data[arith->offset] << 24;
+    } else {
+      arith->nextcode = 0xff<<24;
     }
     if (arith->offset + 1 < arith->buffer->length) {
       arith->nextcode |= arith->buffer->data[arith->offset + 1] << 16;
+    } else {
+      arith->nextcode |= 0xff<<16;
     }
     if (arith->offset + 2 < arith->buffer->length) {
       arith->nextcode |= arith->buffer->data[arith->offset + 2] << 8;
+    } else {
+      arith->nextcode |= 0xff<<8;
     }
     if (arith->offset + 3 < arith->buffer->length) {
       arith->nextcode |= arith->buffer->data[arith->offset + 3];
+    } else {
+      arith->nextcode |= 0xff<<0;
     }
   }
   arith->offset += 4;
@@ -139,23 +147,20 @@ static const int next_list[] = {
   SCHRO_CTX_QUANTISER_CONT,
   0,
   0,
-  SCHRO_CTX_Z_BIN2,
-  SCHRO_CTX_Z_BIN2,
-  SCHRO_CTX_Z_BIN3,
-  SCHRO_CTX_Z_BIN4,
-  SCHRO_CTX_Z_BIN5,
-  SCHRO_CTX_Z_BIN5,
-  0,
-  0,
-  0,
-  0,
-  SCHRO_CTX_NZ_BIN2,
-  SCHRO_CTX_NZ_BIN2,
-  SCHRO_CTX_NZ_BIN2,
-  SCHRO_CTX_NZ_BIN3,
-  SCHRO_CTX_NZ_BIN4,
-  SCHRO_CTX_NZ_BIN5,
-  SCHRO_CTX_NZ_BIN5,
+  SCHRO_CTX_ZP_F2,
+  SCHRO_CTX_ZP_F2,
+  SCHRO_CTX_ZP_F3,
+  SCHRO_CTX_ZP_F4,
+  SCHRO_CTX_ZP_F5,
+  SCHRO_CTX_ZP_F6p,
+  SCHRO_CTX_ZP_F6p,
+  SCHRO_CTX_NP_F2,
+  SCHRO_CTX_NP_F2,
+  SCHRO_CTX_NP_F3,
+  SCHRO_CTX_NP_F4,
+  SCHRO_CTX_NP_F5,
+  SCHRO_CTX_NP_F6p,
+  SCHRO_CTX_NP_F6p,
   0,
   0,
   0,

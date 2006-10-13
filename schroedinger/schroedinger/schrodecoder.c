@@ -705,6 +705,14 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
     }
   }
 
+  if (arith->offset < buffer->length) {
+    SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
+        arith->offset, buffer->length);
+  }
+  if (arith->offset > buffer->length + 3) {
+    SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
+        arith->offset, buffer->length);
+  }
   schro_arith_free (arith);
   schro_buffer_unref (buffer);
 
@@ -984,48 +992,6 @@ schro_decoder_decode_transform_data (SchroDecoder *decoder, int component)
   }
 }
 
-static int table[32][3] = {
-  { SCHRO_CTX_Z_BIN1_0, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_2 },
-  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_2 },
-  { 0, 0, 0 },
-  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_2 },
-
-  { SCHRO_CTX_Z_BIN1_0, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_0 },
-  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_0 },
-  { 0, 0, 0 },
-  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_0 },
-
-  { SCHRO_CTX_Z_BIN1_0, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_1 },
-  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_1 },
-  { 0, 0, 0 },
-  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_1 },
-
-  { 0, 0, 0 },
-  { 0, 0, 0 },
-  { 0, 0, 0 },
-  { 0, 0, 0 },
-
-  { SCHRO_CTX_NZ_BIN1_0, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_2 },
-  { SCHRO_CTX_NZ_BIN1_1, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_2 },
-  { 0, 0, 0 },
-  { SCHRO_CTX_NZ_BIN1_2, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_2 },
-
-  { SCHRO_CTX_NZ_BIN1_0, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_0 },
-  { SCHRO_CTX_NZ_BIN1_1, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_0 },
-  { 0, 0, 0 },
-  { SCHRO_CTX_NZ_BIN1_2, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_0 },
-
-  { SCHRO_CTX_NZ_BIN1_0, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_1 },
-  { SCHRO_CTX_NZ_BIN1_1, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_1 },
-  { 0, 0, 0 },
-  { SCHRO_CTX_NZ_BIN1_2, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_1 },
-
-  { 0, 0, 0 },
-  { 0, 0, 0 },
-  { 0, 0, 0 },
-  { 0, 0, 0 },
-};
-
 static int
 dequantize (int q, int quant_factor, int quant_offset)
 {
@@ -1159,42 +1125,33 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     for(j=ymin;j<ymax;j++){
       for(i=xmin;i<xmax;i++){
         int v;
-        int parent_zero;
+        int parent;
         int cont_context;
-        int nhood_sum;
+        int nhood_or;
         int previous_value;
         int sign_context;
         int value_context;
-        int table_index;
         int16_t *p = data + j*stride + i;
 
-        nhood_sum = 0;
+        if (subband->has_parent) {
+          parent = parent_data[(j>>1)*(stride<<1) + (i>>1)];
+        } else {
+          parent = 0;
+        }
+//parent = 0;
+
+        nhood_or = 0;
         if (j>0) {
-          nhood_sum += abs(p[-stride]);
+          nhood_or |= p[-stride];
         }
         if (i>0) {
-          nhood_sum += abs(p[-1]);
+          nhood_or |= p[-1];
         }
         if (i>0 && j>0) {
-          nhood_sum += abs(p[-stride-1]);
+          nhood_or |= p[-stride-1];
         }
-//nhood_sum = 0;
+//nhood_or = 0;
         
-        if (subband->has_parent) {
-          if (parent_data[(j>>1)*(stride<<1) + (i>>1)]==0) {
-            parent_zero = 1;
-          } else {
-            parent_zero = 0;
-          }
-        } else {
-          if (subband->x == 0 && subband->y == 0) {
-            parent_zero = 0;
-          } else {
-            parent_zero = 1;
-          }
-        }
-//parent_zero = 0;
-
         previous_value = 0;
         if (subband->horizontally_oriented) {
           if (i > 0) {
@@ -1207,58 +1164,31 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
         }
 //previous_value = 0;
 
-        table_index = (parent_zero == 0)<<4;
-        table_index |= (previous_value < 0)<<3;
-        table_index |= (previous_value > 0)<<2;
-        table_index |= (nhood_sum > ntop)<<1;
-        table_index |= (nhood_sum > 0)<<0;
-
-#if 0
-        if (parent_zero) {
-          if (nhood_sum == 0) {
-            cont_context = SCHRO_CTX_Z_BIN1_0;
-          } else {
-            cont_context = SCHRO_CTX_Z_BIN1_1;
-          }
-          value_context = SCHRO_CTX_Z_VALUE;
+        if (previous_value < 0) {
+          sign_context = SCHRO_CTX_SIGN_NEG;
+        } else {
           if (previous_value > 0) {
-            sign_context = SCHRO_CTX_Z_SIGN_0;
-          } else if (previous_value < 0) {
-            sign_context = SCHRO_CTX_Z_SIGN_1;
+            sign_context = SCHRO_CTX_SIGN_POS;
           } else {
-            sign_context = SCHRO_CTX_Z_SIGN_2;
+            sign_context = SCHRO_CTX_SIGN_ZERO;
+          }
+        }
+
+        if (parent == 0) {
+          if (nhood_or == 0) {
+            cont_context = SCHRO_CTX_ZPZN_F1;
+          } else {
+            cont_context = SCHRO_CTX_ZPNN_F1;
           }
         } else {
-          if (nhood_sum == 0) {
-            cont_context = SCHRO_CTX_NZ_BIN1_0;
+          if (nhood_or == 0) {
+            cont_context = SCHRO_CTX_NPZN_F1;
           } else {
-            if (nhood_sum <= ntop) {
-              cont_context = SCHRO_CTX_NZ_BIN1_1;
-            } else {
-              cont_context = SCHRO_CTX_NZ_BIN1_2;
-            }
-          }
-          value_context = SCHRO_CTX_NZ_VALUE;
-          if (previous_value > 0) {
-            sign_context = SCHRO_CTX_NZ_SIGN_0;
-          } else if (previous_value < 0) {
-            sign_context = SCHRO_CTX_NZ_SIGN_1;
-          } else {
-            sign_context = SCHRO_CTX_NZ_SIGN_2;
+            cont_context = SCHRO_CTX_NPNN_F1;
           }
         }
-        if (cont_context != table[table_index][0] ||
-            value_context != table[table_index][1] ||
-            sign_context != table[table_index][2]) { 
-          SCHRO_ERROR("c,v,s %d %d %d : %d %d %d [%d]",
-              cont_context, value_context, sign_context,
-              table[table_index][0], table[table_index][1],
-              table[table_index][2], table_index);
-        }
-#endif
-        cont_context = table[table_index][0];
-        value_context = table[table_index][1];
-        sign_context = table[table_index][2];
+
+        value_context = SCHRO_CTX_COEFF_DATA;
 
         v = _schro_arith_context_decode_sint (arith, cont_context,
             value_context, sign_context);
@@ -1267,7 +1197,14 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     }
       }
     }
-//SCHRO_ERROR("index %d arith %d of %d", index, arith->offset, arith->buffer->length);
+    if (arith->offset < buffer->length) {
+      SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
+          arith->offset, buffer->length);
+    }
+    if (arith->offset > buffer->length + 3) {
+      SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
+          arith->offset, buffer->length);
+    }
     schro_arith_free (arith);
     schro_buffer_unref (buffer);
 

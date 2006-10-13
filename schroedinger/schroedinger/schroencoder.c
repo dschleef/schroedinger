@@ -1280,10 +1280,10 @@ out:
 
   for(j=ymin;j<ymax;j++){
     for(i=xmin;i<xmax;i++){
-      int parent_zero;
+      int parent;
       int cont_context;
       int value_context;
-      int nhood_sum;
+      int nhood_or;
       int previous_value;
       int sign_context;
 
@@ -1292,81 +1292,62 @@ out:
        * gratuitous dequantization for the neighborhood sum because
        * subband 0 doesn't always have the right information in it. */
 
-      nhood_sum = 0;
+      if (subband->has_parent) {
+        parent = parent_data[(j>>1)*(stride<<1) + (i>>1)];
+      } else {
+        parent = 0;
+      }
+//parent = 0;
+
+      nhood_or = 0;
       if (j>0) {
-        nhood_sum += abs(dequantize(quant_data[(j-1)*width + i],
-              quant_factor,quant_offset));
+        nhood_or |= quant_data[(j-1)*width + i];
       }
       if (i>0) {
-        nhood_sum += abs(dequantize(quant_data[j*width + i - 1],
-              quant_factor,quant_offset));
+        nhood_or |= quant_data[j*width + i - 1];
       }
       if (i>0 && j>0) {
-        nhood_sum += abs(dequantize(quant_data[(j-1)*width + i - 1],
-              quant_factor,quant_offset));
+        nhood_or |= quant_data[(j-1)*width + i - 1];
       }
-//nhood_sum = 0;
+//nhood_or = 0;
       
-      if (subband->has_parent) {
-        if (parent_data[(j>>1)*(stride<<1) + (i>>1)]==0) {
-          parent_zero = 1;
-        } else {
-          parent_zero = 0;
-        }
-      } else {
-        if (subband->x == 0 && subband->y == 0) {
-          parent_zero = 0;
-        } else {
-          parent_zero = 1;
-        }
-      }
-//parent_zero = 0;
-
       previous_value = 0;
       if (subband->horizontally_oriented) {
         if (i > 0) {
-          previous_value = data[j*stride + i - 1];
+          previous_value = quant_data[j*width + i - 1];
         }
       } else if (subband->vertically_oriented) {
         if (j > 0) {
-          previous_value = data[(j-1)*stride + i];
+          previous_value = quant_data[(j-1)*width + i];
         }
       }
 //previous_value = 0;
 
-      if (parent_zero) {
-        if (nhood_sum == 0) {
-          cont_context = SCHRO_CTX_Z_BIN1_0;
-        } else {
-          cont_context = SCHRO_CTX_Z_BIN1_1;
-        }
-        value_context = SCHRO_CTX_Z_VALUE;
-        if (previous_value > 0) {
-          sign_context = SCHRO_CTX_Z_SIGN_0;
-        } else if (previous_value < 0) {
-          sign_context = SCHRO_CTX_Z_SIGN_1;
-        } else {
-          sign_context = SCHRO_CTX_Z_SIGN_2;
-        }
+      if (previous_value < 0) {
+        sign_context = SCHRO_CTX_SIGN_NEG;
       } else {
-        if (nhood_sum == 0) {
-          cont_context = SCHRO_CTX_NZ_BIN1_0;
-        } else {
-          if (nhood_sum <= ntop) {
-            cont_context = SCHRO_CTX_NZ_BIN1_1;
-          } else {
-            cont_context = SCHRO_CTX_NZ_BIN1_2;
-          }
-        }
-        value_context = SCHRO_CTX_NZ_VALUE;
         if (previous_value > 0) {
-          sign_context = SCHRO_CTX_NZ_SIGN_0;
-        } else if (previous_value < 0) {
-          sign_context = SCHRO_CTX_NZ_SIGN_1;
+          sign_context = SCHRO_CTX_SIGN_POS;
         } else {
-          sign_context = SCHRO_CTX_NZ_SIGN_2;
+          sign_context = SCHRO_CTX_SIGN_ZERO;
         }
       }
+
+      if (parent == 0) {
+        if (nhood_or == 0) {
+          cont_context = SCHRO_CTX_ZPZN_F1;
+        } else {
+          cont_context = SCHRO_CTX_ZPNN_F1;
+        }
+      } else {
+        if (nhood_or == 0) {
+          cont_context = SCHRO_CTX_NPZN_F1;
+        } else {
+          cont_context = SCHRO_CTX_NPNN_F1;
+        }
+      }
+
+      value_context = SCHRO_CTX_COEFF_DATA;
 
       _schro_arith_context_encode_sint (arith, cont_context, value_context,
           sign_context, quant_data[j*width + i]);
@@ -1390,150 +1371,6 @@ out:
   }
   schro_arith_free (arith);
 }
-
-static int table[32][3] = {
-  { SCHRO_CTX_Z_BIN1_0, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_2 },
-  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_2 },
-  { 0, 0, 0 },
-  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_2 },
-
-  { SCHRO_CTX_Z_BIN1_0, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_0 },
-  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_0 },
-  { 0, 0, 0 },
-  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_0 },
-
-  { SCHRO_CTX_Z_BIN1_0, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_1 },
-  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_1 },
-  { 0, 0, 0 },
-  { SCHRO_CTX_Z_BIN1_1, SCHRO_CTX_Z_VALUE, SCHRO_CTX_Z_SIGN_1 },
-
-  { 0, 0, 0 },
-  { 0, 0, 0 },
-  { 0, 0, 0 },
-  { 0, 0, 0 },
-
-  { SCHRO_CTX_NZ_BIN1_0, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_2 },
-  { SCHRO_CTX_NZ_BIN1_1, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_2 },
-  { 0, 0, 0 },
-  { SCHRO_CTX_NZ_BIN1_2, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_2 },
-
-  { SCHRO_CTX_NZ_BIN1_0, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_0 },
-  { SCHRO_CTX_NZ_BIN1_1, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_0 },
-  { 0, 0, 0 },
-  { SCHRO_CTX_NZ_BIN1_2, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_0 },
-
-  { SCHRO_CTX_NZ_BIN1_0, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_1 },
-  { SCHRO_CTX_NZ_BIN1_1, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_1 },
-  { 0, 0, 0 },
-  { SCHRO_CTX_NZ_BIN1_2, SCHRO_CTX_NZ_VALUE, SCHRO_CTX_NZ_SIGN_1 },
-
-  { 0, 0, 0 },
-  { 0, 0, 0 },
-  { 0, 0, 0 },
-  { 0, 0, 0 },
-};
-
-void
-codeblock_line_encode (SchroSubband *subband, int16_t *data,
-    int16_t *quant_data, int x, int y, int n,
-    int16_t *tmp, SchroArith *arith, int stride, int ntop,
-    int16_t *parent_data)
-{
-  int16_t *nhood_sum = tmp;
-  int16_t *previous_value = tmp+n;
-  int16_t *parent_zero = tmp + 2*n;
-  int i;
-
-  if (x>0) {
-    for(i=0;i<n;i++){
-      nhood_sum[i] = abs(data[i-1]);
-    }
-  } else {
-    nhood_sum[0] = 0;
-    for(i=1;i<n;i++){
-      nhood_sum[i] = abs(data[i-1]);
-    }
-  }
-  if (y>0) {
-    if (x>0) {
-      for(i=0;i<n;i++){
-        nhood_sum[i] += abs(data[-stride + i]) + abs(data[-stride-1+i]);
-      }
-    } else {
-      nhood_sum[i] += abs(data[-stride + i]);
-      for(i=1;i<n;i++){
-        nhood_sum[i] += abs(data[-stride + i]) + abs(data[-stride-1+i]);
-      }
-    }
-  }
-
-  if (subband->has_parent) {
-    for(i=0;i<n;i++){
-      if (parent_data[(y>>1)*(stride<<1) + ((x+i)>>1)]==0) {
-        parent_zero[i] = 1;
-      } else {
-        parent_zero[i] = 0;
-      }
-    }
-  } else {
-    if (subband->x == 0 && subband->y == 0) {
-      for(i=0;i<n;i++){
-        parent_zero[i] = 0;
-      }
-    } else {
-      for(i=0;i<n;i++){
-        parent_zero[i] = 1;
-      }
-    }
-  }
-
-  if (subband->vertically_oriented && y>0) {
-    for(i=0;i<n;i++){
-      previous_value[i] = data[-stride+i];
-    }
-  } else {
-    for(i=0;i<n;i++){
-      previous_value[i] = 0;
-    }
-  }
-
-
-  if (subband->horizontally_oriented) {
-    int prev_value;
-
-    if (x>0) {
-      prev_value = data[-1];
-    } else {
-      prev_value = 0;
-    }
-    for(i=0;i<n;i++){
-      int table_index;
-
-      table_index = (parent_zero[i] == 0)<<4;
-      table_index |= (prev_value < 0)<<3;
-      table_index |= (prev_value > 0)<<2;
-      table_index |= (nhood_sum[i] > ntop)<<1;
-      table_index |= (nhood_sum[i] > 0)<<0;
-
-      _schro_arith_context_encode_sint (arith, table[table_index][0],
-          table[table_index][1], table[table_index][2], quant_data[i]);
-    }
-  } else {
-    for(i=0;i<n;i++){
-      int table_index;
-
-      table_index = (parent_zero[i] == 0)<<4;
-      table_index |= (previous_value[i] < 0)<<3;
-      table_index |= (previous_value[i] > 0)<<2;
-      table_index |= (nhood_sum[i] > ntop)<<1;
-      table_index |= (nhood_sum[i] > 0)<<0;
-
-      _schro_arith_context_encode_sint (arith, table[table_index][0],
-          table[table_index][1], table[table_index][2], quant_data[i]);
-    }
-  }
-}
-
 
 /* frame queue */
 
