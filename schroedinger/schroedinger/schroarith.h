@@ -97,7 +97,6 @@ struct _SchroArith {
 
   int cntr;
 
-  int n_contexts;
   SchroArithContext contexts[SCHRO_CTX_LAST];
 
   SchroBuffer *buffer;

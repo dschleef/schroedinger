@@ -27,8 +27,6 @@ void schro_encoder_encode_picture_header (SchroEncoder *encoder);
 
 static void schro_encoder_engine_init (SchroEncoder *encoder);
 
-#define DIRAC_COMPAT 1
-
 
 SchroEncoder *
 schro_encoder_new (void)

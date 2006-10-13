@@ -230,11 +230,20 @@ void
 schro_arith_halve_all_counts (SchroArith *arith)
 {
   int i;
-  for(i=0;i<arith->n_contexts;i++) {
+  for(i=0;i<SCHRO_CTX_LAST;i++) {
+#if DIRAC_COMPAT
+    if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 16) {
+      arith->contexts[i].count[0] >>= 1;
+      arith->contexts[i].count[0]++;
+      arith->contexts[i].count[1] >>= 1;
+      arith->contexts[i].count[1]++;
+    }
+#else
     arith->contexts[i].count[0] >>= 1;
     arith->contexts[i].count[0]++;
     arith->contexts[i].count[1] >>= 1;
     arith->contexts[i].count[1]++;
+#endif
   }
 }
 

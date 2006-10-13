@@ -8,8 +8,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#define DIRAC_COMPAT
-
 //#define DECODE_PREDICTION_ONLY
 
 static void schro_decoder_decode_macroblock(SchroDecoder *decoder,
@@ -195,8 +193,9 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     schro_params_calculate_iwt_sizes (params);
 
     if (decoder->frame == NULL) {
-      decoder->frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
-          params->iwt_luma_width, params->iwt_luma_height, 2, 2);
+      decoder->frame = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
+          params->iwt_luma_width, params->iwt_luma_height,
+          params->iwt_chroma_width, params->iwt_chroma_height);
     }
 
     schro_decoder_decode_transform_data (decoder, 0);
@@ -951,8 +950,8 @@ schro_decoder_init_subbands (SchroDecoder *decoder)
     decoder->subbands[2+3*i].chroma_stride = chroma_stride;
     decoder->subbands[2+3*i].has_parent = (i>0);
     decoder->subbands[2+3*i].scale_factor_shift = i;
-    decoder->subbands[2+3*i].horizontally_oriented = 0;
-    decoder->subbands[2+3*i].vertically_oriented = 1;
+    decoder->subbands[2+3*i].horizontally_oriented = 1;
+    decoder->subbands[2+3*i].vertically_oriented = 0;
 
     decoder->subbands[3+3*i].x = 1;
     decoder->subbands[3+3*i].y = 0;
@@ -966,8 +965,8 @@ schro_decoder_init_subbands (SchroDecoder *decoder)
     decoder->subbands[3+3*i].chroma_stride = chroma_stride;
     decoder->subbands[3+3*i].has_parent = (i>0);
     decoder->subbands[3+3*i].scale_factor_shift = i;
-    decoder->subbands[3+3*i].horizontally_oriented = 1;
-    decoder->subbands[3+3*i].vertically_oriented = 0;
+    decoder->subbands[3+3*i].horizontally_oriented = 0;
+    decoder->subbands[3+3*i].vertically_oriented = 1;
 
     w <<= 1;
     h <<= 1;
@@ -1016,7 +1015,6 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
   int quant_offset;
   int subband_length;
   int scale_factor;
-  int ntop;
   int height;
   int width;
   int stride;
@@ -1064,6 +1062,8 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     int vert_codeblocks;
     int horiz_codeblocks;
     int have_zero_flags;
+    int coeff_reset;
+    int coeff_count = 0;
 
     quant_index = schro_bits_decode_uint (decoder->bits);
     SCHRO_DEBUG("quant index %d", quant_index);
@@ -1071,12 +1071,8 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
       SCHRO_ERROR("quant_index too big (%u > 60)", quant_index);
       return;
     }
-    quant_factor = schro_table_quant[quant_index];
-    quant_offset = schro_table_offset[quant_index];
-    SCHRO_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
 
     scale_factor = 1<<(params->transform_depth - subband->scale_factor_shift);
-    ntop = (scale_factor>>1) * quant_factor;
 
     schro_bits_sync (decoder->bits);
 
@@ -1087,6 +1083,9 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     schro_arith_decode_init (arith, buffer);
     schro_arith_init_contexts (arith);
 
+    coeff_reset = CLAMP(((width*height)>>5), 25, 800);
+SCHRO_ERROR("%dx%d coeff_reset %d", width, height, coeff_reset);
+//if (index > 0) coeff_reset = 100;
     if (params->spatial_partition_flag) {
       vert_codeblocks = params->vert_codeblocks[subband->scale_factor_shift];
       horiz_codeblocks = params->horiz_codeblocks[subband->scale_factor_shift];
@@ -1094,7 +1093,8 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
       vert_codeblocks = 1;
       horiz_codeblocks = 1;
     }
-    if (horiz_codeblocks > 1 && vert_codeblocks > 1 && index > 0) {
+//SCHRO_ERROR("codeblocks %d x %d", horiz_codeblocks, vert_codeblocks);
+    if ((horiz_codeblocks > 1 || vert_codeblocks > 1) && index > 0) {
       have_zero_flags = TRUE;
     } else {
       have_zero_flags = FALSE;
@@ -1122,6 +1122,15 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
           }
         }
 
+        if (params->codeblock_mode_index == 1) {
+          quant_index += _schro_arith_context_decode_sint (arith,
+              SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
+              SCHRO_CTX_QUANTISER_SIGN);
+        }
+        quant_factor = schro_table_quant[quant_index];
+        quant_offset = schro_table_offset[quant_index];
+        SCHRO_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
+
     for(j=ymin;j<ymax;j++){
       for(i=xmin;i<xmax;i++){
         int v;
@@ -1147,9 +1156,11 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
         if (i>0) {
           nhood_or |= p[-1];
         }
+#if !DIRAC_COMPAT
         if (i>0 && j>0) {
           nhood_or |= p[-stride-1];
         }
+#endif
 //nhood_or = 0;
         
         previous_value = 0;
@@ -1188,11 +1199,20 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
           }
         }
 
+//cont_context = SCHRO_CTX_ZP_F6p;
+//cont_context = SCHRO_CTX_ZPZN_F1;
+//sign_context = SCHRO_CTX_SIGN_ZERO;
         value_context = SCHRO_CTX_COEFF_DATA;
 
         v = _schro_arith_context_decode_sint (arith, cont_context,
             value_context, sign_context);
         p[0] = dequantize(v, quant_factor, quant_offset);
+
+        coeff_count++;
+        if (coeff_count == coeff_reset) {
+          coeff_count = 0;
+          schro_arith_halve_all_counts (arith);
+        }
       }
     }
       }
@@ -1201,7 +1221,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
       SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
           arith->offset, buffer->length);
     }
-    if (arith->offset > buffer->length + 3) {
+    if (arith->offset > buffer->length + 4) {
       SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
           arith->offset, buffer->length);
     }

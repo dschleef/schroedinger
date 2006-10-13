@@ -42,6 +42,8 @@ struct _SchroFrame {
 SchroFrame * schro_frame_new (void);
 SchroFrame * schro_frame_new_and_alloc (SchroFrameFormat format, int width,
     int height, int sub_x, int sub_y);
+SchroFrame * schro_frame_new_and_alloc2 (SchroFrameFormat format, int width,
+    int height, int width2, int height2);
 SchroFrame * schro_frame_new_I420 (void *data, int width, int height);
 void schro_frame_set_free_callback (SchroFrame *frame,
     SchroFrameFreeFunc free_func, void *priv);

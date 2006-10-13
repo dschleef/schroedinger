@@ -25,6 +25,14 @@ schro_frame_new (void)
 SchroFrame *
 schro_frame_new_and_alloc (SchroFrameFormat format, int width, int height, int sub_x, int sub_y)
 {
+  return schro_frame_new_and_alloc2 (format, width, height,
+      width/sub_x, height/sub_y);
+}
+
+SchroFrame *
+schro_frame_new_and_alloc2 (SchroFrameFormat format, int width, int height,
+    int width2, int height2)
+{
   SchroFrame *frame = schro_frame_new();
   int bytes_pp;
   
@@ -48,14 +56,14 @@ schro_frame_new_and_alloc (SchroFrameFormat format, int width, int height, int s
   frame->components[0].length = 
     frame->components[0].stride * frame->components[0].height;
 
-  frame->components[1].width = width / sub_x;
-  frame->components[1].height = height / sub_y;
+  frame->components[1].width = width2;
+  frame->components[1].height = height2;
   frame->components[1].stride = frame->components[1].width * bytes_pp;
   frame->components[1].length = 
     frame->components[1].stride * frame->components[0].height;
 
-  frame->components[2].width = width / sub_x;
-  frame->components[2].height = height / sub_y;
+  frame->components[2].width = width2;
+  frame->components[2].height = height2;
   frame->components[2].stride = frame->components[2].width * bytes_pp;
   frame->components[2].length = 
     frame->components[2].stride * frame->components[0].height;
@@ -395,6 +403,8 @@ schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
   SCHRO_ASSERT(frame->format == SCHRO_FRAME_FORMAT_S16);
 
   for(component=0;component<3;component++){
+    SchroFrameComponent *comp = &frame->components[component];
+
     if (component == 0) {
       width = params->iwt_luma_width;
       height = params->iwt_luma_height;
@@ -403,7 +413,7 @@ schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
       height = params->iwt_chroma_height;
     }
     
-    frame_data = (int16_t *)frame->components[component].data;
+    frame_data = (int16_t *)comp->data;
     for(level=0;level<params->transform_depth;level++) {
       int w;
       int h;
@@ -411,10 +421,10 @@ schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
 
       w = width >> level;
       h = height >> level;
-      stride = width << level;
+      stride = comp->stride << level;
 
       schro_wavelet_transform_2d (params->wavelet_filter_index,
-          frame_data, stride*2, w, h, tmp);
+          frame_data, stride, w, h, tmp);
     }
   }
 }
@@ -432,6 +442,8 @@ schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
   SCHRO_ASSERT(frame->format == SCHRO_FRAME_FORMAT_S16);
 
   for(component=0;component<3;component++){
+    SchroFrameComponent *comp = &frame->components[component];
+
     if (component == 0) {
       width = params->iwt_luma_width;
       height = params->iwt_luma_height;
@@ -440,7 +452,7 @@ schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
       height = params->iwt_chroma_height;
     }
     
-    frame_data = (int16_t *)frame->components[component].data;
+    frame_data = (int16_t *)comp->data;
     for(level=params->transform_depth-1; level >=0;level--) {
       int w;
       int h;
@@ -448,10 +460,10 @@ schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
 
       w = width >> level;
       h = height >> level;
-      stride = width << level;
+      stride = comp->stride << level;
 
       schro_wavelet_inverse_transform_2d (params->wavelet_filter_index,
-          frame_data, stride*2, w, h, tmp);
+          frame_data, stride, w, h, tmp);
     }
   }
 }

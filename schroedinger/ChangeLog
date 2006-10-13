@@ -1,3 +1,20 @@
+2006-10-13  David Schleef  <ds@schleef.org>
+
+	* configure.ac:
+	  Put DIRAC_COMPAT into config.h
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schroparams.c:
+	  Changes to make schro closer to Dirac (the code).  We'll
+	  figure out later if it matches the spec.  Changes BITSTREAM.
+	  WARNING: the encoder and decoder do not currently match
+	  bitstreams, so if you want to encode something and play it
+	  back, you'll need to use the last revision.
+
 2006-10-12  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:
