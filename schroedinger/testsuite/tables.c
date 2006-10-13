@@ -5,7 +5,24 @@
 int
 get_quant (int i)
 {
-  return floor(pow(2.0,i/4.0) + 0.5);
+  unsigned long long base;
+  base = 1<<(i/4);
+  switch(i&3) {
+    case 0:
+      return 4*base;
+    case 1:
+      return (78892 * base + 8292) / 16585;
+    case 2:
+      return (228486 * base + 20195) / 40391;
+    case 3:
+      return (440253 * base + 32722) / 65444;
+  }
+}
+
+int
+get_offset (int i)
+{
+  return (get_quant(i) * 3 + 4)/8;
 }
 
 unsigned int
@@ -13,12 +30,6 @@ get_inv_quant (int i)
 {
   int q = get_quant(i);
   return (1ULL<<32)/q;
-}
-
-int
-get_offset (int i)
-{
-  return floor(get_quant(i)*0.375 + 0.5);
 }
 
 int
@@ -38,28 +49,28 @@ main (int argc, char *argv[])
   printf("\n");
 
   /* schro_table_offset */
-  printf("int16_t schro_table_offset[61] = {\n");
+  printf("uint32_t schro_table_offset[61] = {\n");
   for(i=0;i<60;i+=4) {
-    printf("  %5d, %5d, %5d, %5d,\n",
+    printf("  %7d, %7d, %7d, %7d,\n",
         get_offset(i),
         get_offset(i+1),
         get_offset(i+2),
         get_offset(i+3));
   }
-  printf("  %5d\n", get_offset(i));
+  printf("  %7d\n", get_offset(i));
   printf("};\n");
   printf("\n");
 
   /* schro_table_quant */
-  printf("int16_t schro_table_quant[61] = {\n");
+  printf("uint32_t schro_table_quant[61] = {\n");
   for(i=0;i<60;i+=4) {
-    printf("  %5d, %5d, %5d, %5d,\n",
+    printf("  %7d, %7d, %7d, %7d,\n",
         get_quant(i),
         get_quant(i+1),
         get_quant(i+2),
         get_quant(i+3));
   }
-  printf("  %5d\n", get_quant(i));
+  printf("  %7d\n", get_quant(i));
   printf("};\n");
   printf("\n");
 

@@ -997,9 +997,9 @@ dequantize (int q, int quant_factor, int quant_offset)
 {
   if (q == 0) return 0;
   if (q < 0) {
-    return q * quant_factor - quant_offset;
+    return -((-q * quant_factor + quant_offset)>>2);
   } else {
-    return q * quant_factor + quant_offset;
+    return (q * quant_factor + quant_offset)>>2;
   }
 }
 

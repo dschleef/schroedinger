@@ -1054,9 +1054,9 @@ dequantize (int q, int quant_factor, int quant_offset)
 {
   if (q == 0) return 0;
   if (q < 0) {
-    return q * quant_factor - quant_offset;
+    return -((-q * quant_factor + quant_offset)>>2);
   } else {
-    return q * quant_factor + quant_offset;
+    return (q * quant_factor + quant_offset)>>2;
   }
 }
 
@@ -1068,12 +1068,14 @@ quantize (int value, int quant_factor, int quant_offset,
 
   if (value == 0) return 0;
   if (value < 0) {
-    x = -value - quant_offset + (quant_factor>>1);
-    x = (x*(uint64_t)inv_quant_factor)>>32;
+    x = ((-value)<<2) - quant_offset + (quant_factor>>1);
+    //x = (x*(uint64_t)inv_quant_factor)>>32;
+    x /= quant_factor;
     value = -x;
   } else {
-    x = value - quant_offset + (quant_factor>>1);
-    x = (x*(uint64_t)inv_quant_factor)>>32;
+    x = (value<<2) - quant_offset + (quant_factor>>1);
+    //x = (x*(uint64_t)inv_quant_factor)>>32;
+    x /= quant_factor;
     value = x;
   }
   return value;

@@ -1,5 +1,15 @@
 2006-10-12  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schrotables.c:
+	* schroedinger/schrotables.h:
+	* testsuite/tables.c:
+	  Update the quantisation tables to match the spec.  Only
+	  changes BITSTREAM slightly.
+
+2006-10-12  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroarith.c:
 	* schroedinger/schroarith.h:
 	* schroedinger/schrodecoder.c:
