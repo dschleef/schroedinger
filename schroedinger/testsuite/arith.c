@@ -11,10 +11,9 @@ int debug=1;
 int verbose = 0;
 
 void
-decode(uint8_t *dest, uint8_t *src, int n_bytes)
+decode(SchroBuffer *dest, SchroBuffer *src)
 {
   SchroArith *a;
-  SchroBuffer *buffer;
   int i;
   int j;
   int value;
@@ -22,70 +21,72 @@ decode(uint8_t *dest, uint8_t *src, int n_bytes)
 
   a = schro_arith_new();
 
-  buffer = schro_buffer_new_with_data (src, n_bytes);
-  schro_arith_decode_init (a, buffer);
+  schro_arith_decode_init (a, src);
   schro_arith_init_contexts (a);
 
-  for(i=0;i<n_bytes;i++){
+  for(i=0;i<dest->length;i++){
     value = 0;
     if (verbose) printf("%d:\n", i);
     for(j=0;j<8;j++){
-      if (verbose) printf("[%04x %04x] %04x -> ", a->range[0], a->range[1], a->code);
+      if (verbose) printf("[%04x %04x] %04x -> ", a->range[0], a->range[1],
+          a->code);
       bit = schro_arith_context_decode_bit (a, 0);
       if (verbose) printf("%d\n", bit);
       value |= bit << (7-j);
     }
-    dest[i] = value;
+    dest->data[i] = value;
   }
 
   schro_arith_free(a);
 }
 
 void
-encode (uint8_t *dest, uint8_t *src, int n_bytes)
+encode (SchroBuffer *dest, SchroBuffer *src)
 {
   SchroArith *a;
-  SchroBuffer *buffer;
   int i;
   int j;
   int bit;
 
   a = schro_arith_new();
 
-  buffer = schro_buffer_new_with_data (dest, BUFFER_SIZE);
-  schro_arith_encode_init (a, buffer);
+  schro_arith_encode_init (a, dest);
   schro_arith_init_contexts (a);
 
-  for(i=0;i<n_bytes;i++){
+  for(i=0;i<src->length;i++){
     if (verbose) printf("%d:\n", i);
     for(j=0;j<8;j++){
-      bit = (src[i]>>(7-j))&1;
+      bit = (src->data[i]>>(7-j))&1;
       if (verbose) printf("[%04x %04x] %d\n", a->range[0], a->range[1], bit);
       schro_arith_context_encode_bit (a, 0, bit);
     }
   }
   schro_arith_flush (a);
 
+  dest->length = a->offset;
+
   schro_arith_free(a);
 }
 
-uint8_t buffer1[BUFFER_SIZE];
-uint8_t buffer2[BUFFER_SIZE];
-uint8_t buffer3[BUFFER_SIZE];
+SchroBuffer *buffer1;
+SchroBuffer *buffer2;
+SchroBuffer *buffer3;
 
 int
 check (int n)
 {
+  buffer1->length = n;
+  buffer3->length = n;
 
-  encode(buffer2, buffer1, n);
+  encode(buffer2, buffer1);
 #if 0
   for(i=0;i<4;i++){
     printf("%02x\n", buffer2[i]);
   }
 #endif
-  decode(buffer3, buffer2, n);
+  decode(buffer3, buffer2);
 
-  if (memcmp (buffer1, buffer3, n)) {
+  if (memcmp (buffer1->data, buffer3->data, n)) {
     return 0;
   }
   return 1;
@@ -101,12 +102,16 @@ main (int argc, char *argv[])
 
   schro_init();
 
+  buffer1 = schro_buffer_new_and_alloc (100);
+  buffer2 = schro_buffer_new_and_alloc (100);
+  buffer3 = schro_buffer_new_and_alloc (100);
+
   for (j = 0; j < 40; j++){
     int value;
     value = 0xff & random();
 
     for(i=0;i<100;i++){
-      buffer1[i] = value;
+      buffer1->data[i] = value;
     }
 
     for(n=0;n<100;n++){
@@ -126,7 +131,7 @@ main (int argc, char *argv[])
     int mask;
     mask = (1<<(j+1)) - 1;
     for(i=0;i<100;i++){
-      buffer1[i] = mask & random();
+      buffer1->data[i] = mask & random();
     }
 
     for(n=0;n<100;n++){
@@ -146,7 +151,7 @@ main (int argc, char *argv[])
     int mask;
     mask = (1<<(j+1)) - 1;
     for(i=0;i<100;i++){
-      buffer1[i] = mask & random();
+      buffer1->data[i] = mask & random();
     }
 
     for(n=0;n<100;n++){
