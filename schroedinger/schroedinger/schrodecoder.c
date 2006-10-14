@@ -1084,16 +1084,18 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     schro_arith_init_contexts (arith);
 
     coeff_reset = CLAMP(((width*height)>>5), 25, 800);
-SCHRO_ERROR("%dx%d coeff_reset %d", width, height, coeff_reset);
-//if (index > 0) coeff_reset = 100;
     if (params->spatial_partition_flag) {
-      vert_codeblocks = params->vert_codeblocks[subband->scale_factor_shift];
-      horiz_codeblocks = params->horiz_codeblocks[subband->scale_factor_shift];
+      if (index == 0) {
+        vert_codeblocks = params->vert_codeblocks[0];
+        horiz_codeblocks = params->horiz_codeblocks[0];
+      } else {
+        vert_codeblocks = params->vert_codeblocks[subband->scale_factor_shift+1];
+        horiz_codeblocks = params->horiz_codeblocks[subband->scale_factor_shift+1];
+      }
     } else {
       vert_codeblocks = 1;
       horiz_codeblocks = 1;
     }
-//SCHRO_ERROR("codeblocks %d x %d", horiz_codeblocks, vert_codeblocks);
     if ((horiz_codeblocks > 1 || vert_codeblocks > 1) && index > 0) {
       have_zero_flags = TRUE;
     } else {
@@ -1126,6 +1128,7 @@ SCHRO_ERROR("%dx%d coeff_reset %d", width, height, coeff_reset);
           quant_index += _schro_arith_context_decode_sint (arith,
               SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
               SCHRO_CTX_QUANTISER_SIGN);
+          quant_index = CLAMP(quant_index, 0, 60);
         }
         quant_factor = schro_table_quant[quant_index];
         quant_offset = schro_table_offset[quant_index];
@@ -1142,12 +1145,18 @@ SCHRO_ERROR("%dx%d coeff_reset %d", width, height, coeff_reset);
         int value_context;
         int16_t *p = data + j*stride + i;
 
+//#define SUPPRESS_PARENT
+//#define SUPPRESS_NHOOD
+//#define SUPPRESS_ZERO
+
         if (subband->has_parent) {
           parent = parent_data[(j>>1)*(stride<<1) + (i>>1)];
         } else {
           parent = 0;
         }
-//parent = 0;
+#ifdef SUPPRESS_PARENT
+parent = 0;
+#endif
 
         nhood_or = 0;
         if (j>0) {
@@ -1161,7 +1170,9 @@ SCHRO_ERROR("%dx%d coeff_reset %d", width, height, coeff_reset);
           nhood_or |= p[-stride-1];
         }
 #endif
-//nhood_or = 0;
+#ifdef SUPPRESS_NHOOD
+nhood_or = 0;
+#endif
         
         previous_value = 0;
         if (subband->horizontally_oriented) {
@@ -1173,7 +1184,9 @@ SCHRO_ERROR("%dx%d coeff_reset %d", width, height, coeff_reset);
             previous_value = p[-stride];
           }
         }
-//previous_value = 0;
+#ifdef SUPPRESS_ZERO
+previous_value = 0;
+#endif
 
         if (previous_value < 0) {
           sign_context = SCHRO_CTX_SIGN_NEG;
