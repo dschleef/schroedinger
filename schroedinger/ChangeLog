@@ -1,3 +1,9 @@
+2006-10-15  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  Rearrange the main picture encoding/decoding function.
+
 2006-10-14  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:

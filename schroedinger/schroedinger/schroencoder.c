@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 static void schro_encoder_create_picture_list (SchroEncoder *encoder);
+static void schro_encoder_encode_picture (SchroEncoder *encoder);
 
 static void schro_encoder_frame_queue_push (SchroEncoder *encoder,
     SchroFrame *frame);
@@ -280,11 +281,7 @@ schro_encoder_encode (SchroEncoder *encoder)
   encoder->params.spatial_partition_flag = FALSE;
   encoder->params.codeblock_mode_index = 0;
 
-  if (encoder->picture->n_refs > 0) {
-    schro_encoder_encode_inter (encoder);
-  } else {
-    schro_encoder_encode_intra (encoder);
-  }
+  schro_encoder_encode_picture (encoder);
 
   for(i=0;i<encoder->picture->n_retire;i++){
     schro_encoder_reference_retire (encoder, encoder->picture->retire[i]);
@@ -400,75 +397,24 @@ schro_encoder_create_picture_list (SchroEncoder *encoder)
   encoder->picture_index = 0;
 }
 
-void
-schro_encoder_encode_intra (SchroEncoder *encoder)
+static void
+schro_encoder_encode_picture (SchroEncoder *encoder)
 {
   SchroParams *params = &encoder->params;
   SchroVideoFormat *format = &encoder->video_format;
+  int residue_bits_start;
 
+  /* set up encoder parameters */
+  params->wavelet_filter_index = SCHRO_WAVELET_5_3;
   params->width = format->width;
   params->height = format->height;
   params->chroma_format = format->chroma_format;
-  params->wavelet_filter_index = SCHRO_WAVELET_5_3;
 
-  schro_params_calculate_iwt_sizes (params);
-
-  if (encoder->tmp_frame0 == NULL) {
-    encoder->tmp_frame0 = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
-        params->iwt_luma_width, params->iwt_luma_height,
-        params->iwt_chroma_width, params->iwt_chroma_height);
-  }
-  if (encoder->quant_data == NULL) {
-    encoder->quant_data = malloc (sizeof(int16_t) *
-        (params->iwt_luma_width/2) * (params->iwt_luma_height/2));
-  }
-
-  schro_encoder_encode_parse_info (encoder,
-      SCHRO_PARSE_CODE_PICTURE(encoder->picture->is_ref, encoder->picture->n_refs));
-  schro_encoder_encode_picture_header (encoder);
-
-  schro_frame_convert (encoder->tmp_frame0, encoder->encode_frame);
-  //schro_frame_shift_left (encoder->tmp_frame0, 4);
-
-  schro_frame_free (encoder->encode_frame);
-
-  schro_encoder_encode_transform_parameters (encoder);
-
-  schro_frame_iwt_transform (encoder->tmp_frame0, &encoder->params,
-      encoder->tmpbuf);
-
-  schro_encoder_encode_transform_data (encoder, 0);
-  schro_encoder_encode_transform_data (encoder, 1);
-  schro_encoder_encode_transform_data (encoder, 2);
-
-  schro_bits_sync (encoder->bits);
-
-  if (encoder->picture->is_ref) {
-    SchroEncoderReference *ref;
-
-    schro_frame_inverse_iwt_transform (encoder->tmp_frame0, &encoder->params,
-        encoder->tmpbuf);
-
-    ref = schro_encoder_reference_add (encoder);
-    ref->frame_number = encoder->tmp_frame0->frame_number;
-    schro_frame_convert (ref->frames[0], encoder->tmp_frame0);
-
-    schro_encoder_reference_analyse (encoder, ref);
-  }
-
-}
-
-void
-schro_encoder_encode_inter (SchroEncoder *encoder)
-{
-  SchroParams *params = &encoder->params;
-  int is_ref = 0;
-  int residue_bits_start;
-
-  params->wavelet_filter_index = SCHRO_WAVELET_5_3;
+  /* calculate sizes */
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
 
+  /* allocate temps if not yet allocated (FIXME: move) */
   if (encoder->tmp_frame0 == NULL) {
     encoder->tmp_frame0 = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
         params->iwt_luma_width, params->iwt_luma_height,
@@ -484,29 +430,35 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
         (params->iwt_luma_width/2) * (params->iwt_luma_height/2));
   }
 
+  /* encode header */
   schro_encoder_encode_parse_info (encoder,
       SCHRO_PARSE_CODE_PICTURE(encoder->picture->is_ref, encoder->picture->n_refs));
   schro_encoder_encode_picture_header (encoder);
 
-  schro_encoder_motion_predict (encoder);
+  if (encoder->picture->n_refs > 0) {
+    schro_encoder_motion_predict (encoder);
 
-  schro_encoder_encode_frame_prediction (encoder);
+    schro_encoder_encode_frame_prediction (encoder);
 
-  schro_frame_convert (encoder->tmp_frame0, encoder->encode_frame);
-  schro_frame_free (encoder->encode_frame);
+    schro_frame_convert (encoder->tmp_frame0, encoder->encode_frame);
+    schro_frame_free (encoder->encode_frame);
 
-  schro_frame_copy_with_motion (encoder->tmp_frame1,
-      encoder->ref_frame0->frames[0], encoder->ref_frame1->frames[0],
-      encoder->motion_vectors, &encoder->params);
+    schro_frame_copy_with_motion (encoder->tmp_frame1,
+        encoder->ref_frame0->frames[0], encoder->ref_frame1->frames[0],
+        encoder->motion_vectors, &encoder->params);
 
-  schro_frame_subtract (encoder->tmp_frame0, encoder->tmp_frame1);
+    schro_frame_subtract (encoder->tmp_frame0, encoder->tmp_frame1);
 
-  schro_frame_zero_extend (encoder->tmp_frame0, encoder->video_format.width,
-      encoder->video_format.height);
+    schro_frame_zero_extend (encoder->tmp_frame0, encoder->video_format.width,
+        encoder->video_format.height);
+  } else {
+    schro_frame_convert (encoder->tmp_frame0, encoder->encode_frame);
+
+    schro_frame_free (encoder->encode_frame);
+  }
 
   schro_encoder_encode_transform_parameters (encoder);
 
-  //schro_frame_shift_left (encoder->tmp_frame0, 4);
   schro_frame_iwt_transform (encoder->tmp_frame0, &encoder->params,
       encoder->tmpbuf);
   residue_bits_start = encoder->bits->offset;
@@ -516,27 +468,27 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
 
   schro_bits_sync (encoder->bits);
 
-  encoder->metric_to_cost =
-    (double)(encoder->bits->offset - residue_bits_start) /
-    encoder->stats_metric;
-  SCHRO_ERROR("pred bits %d, residue bits %d, stats_metric %d, m_to_c = %g, dc_blocks %d, scan blocks %d",
-      residue_bits_start, encoder->bits->offset - residue_bits_start,
-      encoder->stats_metric, encoder->metric_to_cost,
-      encoder->stats_dc_blocks, encoder->stats_scan_blocks);
+  if (encoder->picture->n_refs > 0) {
+    encoder->metric_to_cost =
+      (double)(encoder->bits->offset - residue_bits_start) /
+      encoder->stats_metric;
+    SCHRO_ERROR("pred bits %d, residue bits %d, stats_metric %d, m_to_c = %g, dc_blocks %d, scan blocks %d",
+        residue_bits_start, encoder->bits->offset - residue_bits_start,
+        encoder->stats_metric, encoder->metric_to_cost,
+        encoder->stats_dc_blocks, encoder->stats_scan_blocks);
+  }
 
-  if (is_ref) {
-    SchroFrame *ref_frame;
+  if (encoder->picture->is_ref) {
+    SchroEncoderReference *ref;
 
-    schro_frame_inverse_iwt_transform (encoder->tmp_frame0,
-        &encoder->params, encoder->tmpbuf);
-    //schro_frame_shift_right (encoder->tmp_frame0, 4);
-    schro_frame_add (encoder->tmp_frame0, encoder->tmp_frame1);
+    schro_frame_inverse_iwt_transform (encoder->tmp_frame0, &encoder->params,
+        encoder->tmpbuf);
 
-    ref_frame = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
-        encoder->video_format.width, encoder->video_format.height,
-        ROUND_UP_SHIFT(encoder->video_format.width, 1),
-        ROUND_UP_SHIFT(encoder->video_format.height, 1));
-    schro_frame_convert (ref_frame, encoder->tmp_frame0);
+    ref = schro_encoder_reference_add (encoder);
+    ref->frame_number = encoder->tmp_frame0->frame_number;
+    schro_frame_convert (ref->frames[0], encoder->tmp_frame0);
+
+    schro_encoder_reference_analyse (encoder, ref);
   }
 }
 

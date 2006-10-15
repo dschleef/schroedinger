@@ -186,42 +186,7 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
   params->height = decoder->video_format.height;
   params->chroma_format = decoder->video_format.chroma_format;
 
-  if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) == 0) {
-    SCHRO_DEBUG("intra");
-    schro_decoder_decode_transform_parameters (decoder);
-
-    schro_params_calculate_iwt_sizes (params);
-
-    if (decoder->frame == NULL) {
-      decoder->frame = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
-          params->iwt_luma_width, params->iwt_luma_height,
-          params->iwt_chroma_width, params->iwt_chroma_height);
-    }
-
-    schro_decoder_decode_transform_data (decoder, 0);
-    schro_decoder_decode_transform_data (decoder, 1);
-    schro_decoder_decode_transform_data (decoder, 2);
-
-    schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
-        decoder->tmpbuf);
-
-    //schro_frame_shift_right (decoder->frame, 4);
-    schro_frame_convert (output_frame, decoder->frame);
-
-    output_frame->frame_number = decoder->picture_number;
-
-    if (SCHRO_PARSE_CODE_IS_REF(decoder->code)) {
-      SchroFrame *ref;
-
-      ref = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
-          decoder->video_format.width, decoder->video_format.height,
-          ROUND_UP_SHIFT(decoder->video_format.width,1),
-          ROUND_UP_SHIFT(decoder->video_format.height,1));
-      schro_frame_convert (ref, decoder->frame);
-      ref->frame_number = decoder->picture_number;
-      schro_decoder_reference_add (decoder, ref);
-    }
-  } else {
+  if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) > 0) {
     SCHRO_DEBUG("inter");
 
     schro_decoder_decode_frame_prediction (decoder);
@@ -260,19 +225,25 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     schro_frame_copy_with_motion (decoder->mc_tmp_frame,
         decoder->ref0, decoder->ref1,
         decoder->motion_vectors, &decoder->params);
+  }
 
-    schro_decoder_decode_transform_parameters (decoder);
-    schro_params_calculate_iwt_sizes (params);
+  schro_decoder_decode_transform_parameters (decoder);
+  schro_params_calculate_iwt_sizes (params);
 
-    schro_decoder_decode_transform_data (decoder, 0);
-    schro_decoder_decode_transform_data (decoder, 1);
-    schro_decoder_decode_transform_data (decoder, 2);
+  if (decoder->frame == NULL) {
+    decoder->frame = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
+        params->iwt_luma_width, params->iwt_luma_height,
+        params->iwt_chroma_width, params->iwt_chroma_height);
+  }
 
-    schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
-        decoder->tmpbuf);
+  schro_decoder_decode_transform_data (decoder, 0);
+  schro_decoder_decode_transform_data (decoder, 1);
+  schro_decoder_decode_transform_data (decoder, 2);
 
-    //schro_frame_shift_right (decoder->frame, 4);
+  schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
+      decoder->tmpbuf);
 
+  if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) > 0) {
 #ifndef DECODE_PREDICTION_ONLY
     schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
 
@@ -281,18 +252,22 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     schro_frame_convert (output_frame, decoder->mc_tmp_frame);
 #endif
     output_frame->frame_number = decoder->picture_number;
+  } else {
+    schro_frame_convert (output_frame, decoder->frame);
 
-    if (SCHRO_PARSE_CODE_IS_REF(decoder->code)) {
-      SchroFrame *ref;
+    output_frame->frame_number = decoder->picture_number;
+  }
 
-      ref = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
-          decoder->video_format.width, decoder->video_format.height,
-          ROUND_UP_SHIFT(decoder->video_format.width, 1),
-          ROUND_UP_SHIFT(decoder->video_format.height, 1));
-      schro_frame_convert (ref, decoder->frame);
-      ref->frame_number = decoder->picture_number;
-      schro_decoder_reference_add (decoder, ref);
-    }
+  if (SCHRO_PARSE_CODE_IS_REF(decoder->code)) {
+    SchroFrame *ref;
+
+    ref = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
+        decoder->video_format.width, decoder->video_format.height,
+        ROUND_UP_SHIFT(decoder->video_format.width,1),
+        ROUND_UP_SHIFT(decoder->video_format.height,1));
+    schro_frame_convert (ref, decoder->frame);
+    ref->frame_number = decoder->picture_number;
+    schro_decoder_reference_add (decoder, ref);
   }
 
   for(i=0;i<decoder->n_retire;i++){
