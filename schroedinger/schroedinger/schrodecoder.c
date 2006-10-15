@@ -213,8 +213,10 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     if (SCHRO_PARSE_CODE_IS_REF(decoder->code)) {
       SchroFrame *ref;
 
-      ref = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-          decoder->video_format.width, decoder->video_format.height, 2, 2);
+      ref = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
+          decoder->video_format.width, decoder->video_format.height,
+          ROUND_UP_SHIFT(decoder->video_format.width,1),
+          ROUND_UP_SHIFT(decoder->video_format.height,1));
       schro_frame_convert (ref, decoder->frame);
       ref->frame_number = decoder->picture_number;
       schro_decoder_reference_add (decoder, ref);
@@ -230,8 +232,9 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     SCHRO_ASSERT(params->ybsep_luma == 8);
 
     if (decoder->mc_tmp_frame == NULL) {
-      decoder->mc_tmp_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
-          params->mc_luma_width, params->mc_luma_height, 2, 2);
+      decoder->mc_tmp_frame = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
+          params->mc_luma_width, params->mc_luma_height,
+          params->mc_chroma_width, params->mc_chroma_height);
     }
 
     if (decoder->motion_vectors == NULL) {
@@ -282,8 +285,10 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     if (SCHRO_PARSE_CODE_IS_REF(decoder->code)) {
       SchroFrame *ref;
 
-      ref = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-          decoder->video_format.width, decoder->video_format.height, 2, 2);
+      ref = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
+          decoder->video_format.width, decoder->video_format.height,
+          ROUND_UP_SHIFT(decoder->video_format.width, 1),
+          ROUND_UP_SHIFT(decoder->video_format.height, 1));
       schro_frame_convert (ref, decoder->frame);
       ref->frame_number = decoder->picture_number;
       schro_decoder_reference_add (decoder, ref);
@@ -1062,6 +1067,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     int vert_codeblocks;
     int horiz_codeblocks;
     int have_zero_flags;
+    int have_quant_offset;
     int coeff_reset;
     int coeff_count = 0;
 
@@ -1101,6 +1107,15 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     } else {
       have_zero_flags = FALSE;
     }
+    if (horiz_codeblocks > 1 || vert_codeblocks > 1) {
+      if (params->codeblock_mode_index == 1) {
+        have_quant_offset = TRUE;
+      } else {
+        have_quant_offset = FALSE;
+      }
+    } else {
+      have_quant_offset = FALSE;
+    }
 
     for(y=0;y<vert_codeblocks;y++){
       int ymin = (height*y)/vert_codeblocks;
@@ -1124,7 +1139,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
           }
         }
 
-        if (params->codeblock_mode_index == 1) {
+        if (have_quant_offset) {
           quant_index += _schro_arith_context_decode_sint (arith,
               SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
               SCHRO_CTX_QUANTISER_SIGN);

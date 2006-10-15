@@ -1,3 +1,13 @@
+2006-10-14  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schropredict.c:
+	* testsuite/motion.c:
+	  Make encoder match up with decoder.  Sort of.
+
 2006-10-13  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:

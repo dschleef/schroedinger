@@ -276,6 +276,10 @@ schro_encoder_encode (SchroEncoder *encoder)
 
   encoder->params.num_refs = encoder->picture->n_refs;
   schro_params_set_default_codeblock (&encoder->params);
+  
+  encoder->params.spatial_partition_flag = FALSE;
+  encoder->params.codeblock_mode_index = 0;
+
   if (encoder->picture->n_refs > 0) {
     schro_encoder_encode_inter (encoder);
   } else {
@@ -317,9 +321,11 @@ schro_encoder_engine_init (SchroEncoder *encoder)
 
     memset(ref, 0, sizeof(*ref));
     for(j=0;j<5;j++){
-      ref->frames[j] = schro_frame_new_and_alloc(SCHRO_FRAME_FORMAT_U8,
+      ref->frames[j] = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
           ROUND_UP_SHIFT(encoder->video_format.width, j),
-          ROUND_UP_SHIFT(encoder->video_format.height, j), 2, 2);
+          ROUND_UP_SHIFT(encoder->video_format.height, j),
+          ROUND_UP_SHIFT(encoder->video_format.width, j + 1),
+          ROUND_UP_SHIFT(encoder->video_format.height, j + 1));
     }
   }
 }
@@ -408,8 +414,9 @@ schro_encoder_encode_intra (SchroEncoder *encoder)
   schro_params_calculate_iwt_sizes (params);
 
   if (encoder->tmp_frame0 == NULL) {
-    encoder->tmp_frame0 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
-        params->iwt_luma_width, params->iwt_luma_height, 2, 2);
+    encoder->tmp_frame0 = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
+        params->iwt_luma_width, params->iwt_luma_height,
+        params->iwt_chroma_width, params->iwt_chroma_height);
   }
   if (encoder->quant_data == NULL) {
     encoder->quant_data = malloc (sizeof(int16_t) *
@@ -463,12 +470,14 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
   schro_params_calculate_iwt_sizes (params);
 
   if (encoder->tmp_frame0 == NULL) {
-    encoder->tmp_frame0 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
-        params->iwt_luma_width, params->iwt_luma_height, 2, 2);
+    encoder->tmp_frame0 = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
+        params->iwt_luma_width, params->iwt_luma_height,
+        params->iwt_chroma_width, params->iwt_chroma_height);
   }
   if (encoder->tmp_frame1 == NULL) {
-    encoder->tmp_frame1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
-        params->mc_luma_width, params->mc_luma_height, 2, 2);
+    encoder->tmp_frame1 = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
+        params->mc_luma_width, params->mc_luma_height,
+        params->mc_chroma_width, params->mc_chroma_height);
   }
   if (encoder->quant_data == NULL) {
     encoder->quant_data = malloc (sizeof(int16_t) *
@@ -523,8 +532,10 @@ schro_encoder_encode_inter (SchroEncoder *encoder)
     //schro_frame_shift_right (encoder->tmp_frame0, 4);
     schro_frame_add (encoder->tmp_frame0, encoder->tmp_frame1);
 
-    ref_frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-        encoder->video_format.width, encoder->video_format.height, 2, 2);
+    ref_frame = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
+        encoder->video_format.width, encoder->video_format.height,
+        ROUND_UP_SHIFT(encoder->video_format.width, 1),
+        ROUND_UP_SHIFT(encoder->video_format.height, 1));
     schro_frame_convert (ref_frame, encoder->tmp_frame0);
   }
 }
@@ -946,8 +957,8 @@ schro_encoder_init_subbands (SchroEncoder *encoder)
     encoder->subbands[2+3*i].chroma_stride = chroma_stride;
     encoder->subbands[2+3*i].has_parent = (i>0);
     encoder->subbands[2+3*i].scale_factor_shift = i;
-    encoder->subbands[2+3*i].horizontally_oriented = 0;
-    encoder->subbands[2+3*i].vertically_oriented = 1;
+    encoder->subbands[2+3*i].horizontally_oriented = 1;
+    encoder->subbands[2+3*i].vertically_oriented = 0;
 
     encoder->subbands[3+3*i].x = 1;
     encoder->subbands[3+3*i].y = 0;
@@ -961,8 +972,8 @@ schro_encoder_init_subbands (SchroEncoder *encoder)
     encoder->subbands[3+3*i].chroma_stride = chroma_stride;
     encoder->subbands[3+3*i].has_parent = (i>0);
     encoder->subbands[3+3*i].scale_factor_shift = i;
-    encoder->subbands[3+3*i].horizontally_oriented = 1;
-    encoder->subbands[3+3*i].vertically_oriented = 0;
+    encoder->subbands[3+3*i].horizontally_oriented = 0;
+    encoder->subbands[3+3*i].vertically_oriented = 1;
 
     w <<= 1;
     h <<= 1;
@@ -1098,6 +1109,8 @@ schro_encoder_quantize_subband (SchroEncoder *encoder, int component, int index,
 
   subband_zero_flag = 1;
 
+  /* FIXME doesn't handle quantisation of codeblocks */
+
   quant_factor = schro_table_quant[subband->quant_index];
   inv_quant_factor = schro_table_inverse_quant[subband->quant_index];
   quant_offset = schro_table_offset[subband->quant_index];
@@ -1181,7 +1194,6 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   int quant_offset;
   int scale_factor;
   int subband_zero_flag;
-  int ntop;
   int stride;
   int width;
   int height;
@@ -1191,6 +1203,9 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   int horiz_codeblocks;
   int vert_codeblocks;
   int have_zero_flags;
+  int coeff_reset;
+  int coeff_count = 0;
+  int have_quant_offset;
 
   if (component == 0) {
     stride = subband->stride >> 1;
@@ -1222,7 +1237,6 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   quant_offset = schro_table_offset[subband->quant_index];
 
   scale_factor = 1<<(params->transform_depth - subband->scale_factor_shift);
-  ntop = (scale_factor>>1) * quant_factor;
 
   arith = schro_arith_new ();
   schro_arith_encode_init (arith, encoder->subband_buffer);
@@ -1240,18 +1254,35 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
     return;
   }
 
+  coeff_reset = CLAMP(((width*height)>>5), 25, 800);
   if (params->spatial_partition_flag) {
-    horiz_codeblocks = params->horiz_codeblocks[subband->scale_factor_shift];
-    vert_codeblocks = params->vert_codeblocks[subband->scale_factor_shift];
+    if (index == 0) {
+      horiz_codeblocks = params->horiz_codeblocks[subband->scale_factor_shift];
+      vert_codeblocks = params->vert_codeblocks[subband->scale_factor_shift];
+    } else {
+      horiz_codeblocks = params->horiz_codeblocks[0];
+      vert_codeblocks = params->vert_codeblocks[0];
+    }
   } else {
     horiz_codeblocks = 1;
     vert_codeblocks = 1;
   }
-  if (horiz_codeblocks > 1 && vert_codeblocks > 1 && index > 0) {
+  if ((horiz_codeblocks > 1 || vert_codeblocks > 1) && index > 0) {
     have_zero_flags = TRUE;
   } else {
     have_zero_flags = FALSE;
   }
+  if (horiz_codeblocks > 1 || vert_codeblocks > 1) {
+    if (params->codeblock_mode_index == 1) {
+      have_quant_offset = TRUE;
+      SCHRO_ASSERT(0);
+    } else {
+      have_quant_offset = FALSE;
+    }
+  } else {
+    have_quant_offset = FALSE;
+  }
+
   for(y=0;y<vert_codeblocks;y++){
     int ymin = (height*y)/vert_codeblocks;
     int ymax = (height*(y+1))/vert_codeblocks;
@@ -1288,9 +1319,7 @@ out:
       int sign_context;
 
       /* FIXME This code is so ugly.  Most of these if statements
-       * are constant over the entire codeblock.  Also, we're doing a
-       * gratuitous dequantization for the neighborhood sum because
-       * subband 0 doesn't always have the right information in it. */
+       * are constant over the entire codeblock. */
 
       if (subband->has_parent) {
         parent = parent_data[(j>>1)*(stride<<1) + (i>>1)];
@@ -1306,9 +1335,11 @@ out:
       if (i>0) {
         nhood_or |= quant_data[j*width + i - 1];
       }
+#if !DIRAC_COMPAT
       if (i>0 && j>0) {
         nhood_or |= quant_data[(j-1)*width + i - 1];
       }
+#endif
 //nhood_or = 0;
       
       previous_value = 0;
@@ -1351,6 +1382,12 @@ out:
 
       _schro_arith_context_encode_sint (arith, cont_context, value_context,
           sign_context, quant_data[j*width + i]);
+
+      coeff_count++;
+      if (coeff_count == coeff_reset) {
+        coeff_count = 0;
+        schro_arith_halve_all_counts(arith);
+      }
     }
   }
     }

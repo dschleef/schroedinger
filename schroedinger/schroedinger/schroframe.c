@@ -23,13 +23,6 @@ schro_frame_new (void)
 }
 
 SchroFrame *
-schro_frame_new_and_alloc (SchroFrameFormat format, int width, int height, int sub_x, int sub_y)
-{
-  return schro_frame_new_and_alloc2 (format, width, height,
-      width/sub_x, height/sub_y);
-}
-
-SchroFrame *
 schro_frame_new_and_alloc2 (SchroFrameFormat format, int width, int height,
     int width2, int height2)
 {
@@ -652,35 +645,24 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
   }
 }
 
-static int
-average_block_u8 (uint8_t *src, int stride, int width, int height)
+void
+notoil_downsample2x2_u8 (uint8_t *dest, uint8_t *src1, uint8_t *src2,
+    int n)
 {
-  int i,j;
-  int sum;
-
-  SCHRO_ASSERT(width > 0);
-  SCHRO_ASSERT(height > 0);
-
-  sum = 0;
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      sum += src[i];
-    }
-    src += stride;
+  int i;
+  for(i=0;i<n;i++){
+    dest[i] = (src1[i*2] + src1[i*2+1] + src2[i*2] + src2[i*2 + 1] + 2)>>2;
   }
-  sum += width * height / 2;
-
-  return sum / (width * height);
 }
-
 
 void
 schro_frame_downsample (SchroFrame *dest, SchroFrame *src, int shift)
 {
-  int factor = 1<<shift;
-  int i, j, k;
+  int j, k;
   SchroFrameComponent *dcomp;
   SchroFrameComponent *scomp;
+
+  SCHRO_ASSERT(shift == 1);
 
   if (dest->format != SCHRO_FRAME_FORMAT_U8 ||
       src->format != SCHRO_FRAME_FORMAT_U8) {
@@ -689,20 +671,40 @@ schro_frame_downsample (SchroFrame *dest, SchroFrame *src, int shift)
   }
 
   for(k=0;k<3;k++){
+    uint8_t *sdata;
+    uint8_t *ddata;
+
     dcomp = &dest->components[k];
     scomp = &src->components[k];
 
-    SCHRO_ASSERT(dcomp->width * factor <= scomp->width);
-    SCHRO_ASSERT(dcomp->height * factor <= scomp->height);
+    SCHRO_ASSERT(ROUND_UP_SHIFT(scomp->width,1) == dcomp->width);
+    SCHRO_ASSERT(ROUND_UP_SHIFT(scomp->height,1) == dcomp->height);
 
-    for(j=0;j<dcomp->height;j++){
-      for(i=0;i<dcomp->width;i++){
-        *((uint8_t *)dcomp->data + dcomp->stride * j + i) =
-          average_block_u8 (scomp->data + scomp->stride * j*factor + i * factor,
-              scomp->stride, factor, factor);
+    sdata = scomp->data;
+    ddata = dcomp->data;
+    for(j=0;j<scomp->height/2;j++){
+      notoil_downsample2x2_u8 (ddata + dcomp->stride * j,
+          sdata + scomp->stride * j * 2,
+          sdata + scomp->stride * (j * 2 + 1),
+          scomp->width/2);
+    }
+    if (dcomp->height > scomp->height/2) {
+      notoil_downsample2x2_u8 (ddata + dcomp->stride * (dcomp->height - 1),
+          sdata + scomp->stride * (scomp->height - 1),
+          sdata + scomp->stride * (scomp->height - 1),
+          dcomp->width/2);
+    }
+    if (dcomp->width/2 < scomp->width) {
+      for(j = 0; j< scomp->height/2; j++){
+        ddata[dcomp->stride * j + dcomp->width - 1] =
+          (sdata[scomp->stride * (j*2) + scomp->width - 1] + 
+          sdata[scomp->stride * (j*2 + 1) + scomp->width - 1] + 1)/2;
+      }
+      if (dcomp->height > scomp->height/2) {
+        ddata[dcomp->stride * (dcomp->height - 1) + dcomp->width - 1] =
+          sdata[scomp->stride * (scomp->height - 1) + scomp->width - 1];
       }
     }
-
   }
 }
 

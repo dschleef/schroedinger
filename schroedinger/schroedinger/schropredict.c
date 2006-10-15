@@ -308,19 +308,25 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
   prev_pred_lists = NULL;
   prev_x_blocks = 0;
 
-  downsampled[0] = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
+  downsampled[0] = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
       ROUND_UP_SHIFT(frame->components[0].width, 1),
-      ROUND_UP_SHIFT(frame->components[0].height, 1), 2, 2);
+      ROUND_UP_SHIFT(frame->components[0].height, 1),
+      ROUND_UP_SHIFT(frame->components[0].width, 2),
+      ROUND_UP_SHIFT(frame->components[0].height, 2));
   schro_frame_downsample(downsampled[0], encoder->encode_frame, 1);
 
-  downsampled[1] = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
+  downsampled[1] = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
       ROUND_UP_SHIFT(frame->components[0].width, 2),
-      ROUND_UP_SHIFT(frame->components[0].height, 2), 2, 2);
+      ROUND_UP_SHIFT(frame->components[0].height, 2),
+      ROUND_UP_SHIFT(frame->components[0].width, 3),
+      ROUND_UP_SHIFT(frame->components[0].height, 3));
   schro_frame_downsample(downsampled[1], downsampled[0], 1);
 
-  downsampled[2] = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
+  downsampled[2] = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
       ROUND_UP_SHIFT(frame->components[0].width, 3),
-      ROUND_UP_SHIFT(frame->components[0].height, 3), 2, 2);
+      ROUND_UP_SHIFT(frame->components[0].height, 3),
+      ROUND_UP_SHIFT(frame->components[0].width, 4),
+      ROUND_UP_SHIFT(frame->components[0].height, 4));
   schro_frame_downsample(downsampled[2], downsampled[1], 1);
 
   for(shift=3;shift>=0;shift--) {

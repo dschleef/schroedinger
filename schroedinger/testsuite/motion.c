@@ -43,10 +43,12 @@ main (int argc, char *argv[])
 
   schro_params_calculate_mc_sizes(&params);
 
-  dest = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16,
-      params.mc_luma_width, params.mc_luma_height, 2, 2);
-  ref = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8,
-      params.width, params.height, 2, 2);
+  dest = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
+      params.mc_luma_width, params.mc_luma_height,
+      params.mc_chroma_width, params.mc_chroma_height);
+  ref = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
+      params.width, params.height,
+      (params.width + 1)/2, (params.height + 1)/2);
 
   schro_frame_clear(dest);
   schro_frame_clear(ref);
