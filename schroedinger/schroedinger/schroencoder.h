@@ -94,6 +94,23 @@ struct _SchroEncoder {
   int engine_init;
 };
 
+struct _SchroEncoderSettings {
+  int transform_depth;
+  int wavelet_filter_index;
+
+#if 0
+  /* stuff we don't handle yet */
+  int profile;
+  int level;
+
+  int xbsep_luma;
+  int ybsep_luma;
+  int xblen_luma;
+  int yblen_luma;
+#endif
+
+};
+
 SchroEncoder * schro_encoder_new (void);
 void schro_encoder_free (SchroEncoder *encoder);
 SchroVideoFormat * schro_encoder_get_video_format (SchroEncoder *encoder);

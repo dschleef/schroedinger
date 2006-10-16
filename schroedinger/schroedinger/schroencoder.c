@@ -49,9 +49,9 @@ schro_encoder_new (void)
   encoder->level = 0;
   encoder->need_rap = TRUE;
 
+  /* FIXME settings */
   params = &encoder->params;
-  params->chroma_h_scale = 2;
-  params->chroma_v_scale = 2;
+  params->video_format = &encoder->video_format;
   params->transform_depth = 4;
   params->xbsep_luma = 8;
   params->ybsep_luma = 8;
@@ -111,9 +111,12 @@ schro_encoder_set_video_format (SchroEncoder *encoder,
     SchroVideoFormat *format)
 {
   /* FIXME check that we're in the right state to do this */
+
   memcpy (&encoder->video_format, format, sizeof(SchroVideoFormat));
 
-  SCHRO_ERROR("wxh %d %d", format->width, format->height);
+  schro_params_validate (&encoder->video_format);
+
+  SCHRO_DEBUG("wxh %d %d", format->width, format->height);
   encoder->video_format_index =
     schro_params_get_video_format (&encoder->video_format);
 }
@@ -398,14 +401,10 @@ static void
 schro_encoder_encode_picture (SchroEncoder *encoder)
 {
   SchroParams *params = &encoder->params;
-  SchroVideoFormat *format = &encoder->video_format;
   int residue_bits_start;
 
   /* set up encoder parameters */
   params->wavelet_filter_index = SCHRO_WAVELET_5_3;
-  params->width = format->width;
-  params->height = format->height;
-  params->chroma_format = format->chroma_format;
 
   /* calculate sizes */
   schro_params_calculate_mc_sizes (params);
@@ -520,15 +519,15 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
   schro_arith_encode_init (arith, encoder->subband_buffer);
   schro_arith_init_contexts (arith);
 
-  for(j=0;j<4*params->y_num_mb;j+=4){
-    for(i=0;i<4*params->x_num_mb;i+=4){
+  for(j=0;j<params->y_num_blocks;j+=4){
+    for(i=0;i<params->x_num_blocks;i+=4){
       int k,l;
       int mb_using_global = FALSE;
       int mb_common = FALSE;
       int split_prediction;
       int split_residual;
       SchroMotionVector *mv =
-        &encoder->motion_vectors[j*(4*params->x_num_mb) + i];
+        &encoder->motion_vectors[j*params->x_num_blocks + i];
 
       split_prediction = schro_motion_split_prediction (
           encoder->motion_vectors, params, i, j);
@@ -555,7 +554,7 @@ schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
       for(l=0;l<4;l+=(4>>mv->split)) {
         for(k=0;k<4;k+=(4>>mv->split)) {
           SchroMotionVector *mv =
-            &encoder->motion_vectors[(j+l)*(4*params->x_num_mb) + i + k];
+            &encoder->motion_vectors[(j+l)*params->x_num_blocks + i + k];
 
           _schro_arith_context_encode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF1,
               mv->pred_mode & 1);

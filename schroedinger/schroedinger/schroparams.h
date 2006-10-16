@@ -39,44 +39,34 @@ struct _SchroVideoFormat {
   int colour_primaries;
   int colour_matrix;
   int transfer_function;
+
+  /* calculated values */
+
+  int chroma_h_scale;
+  int chroma_v_scale;
+  int chroma_width;
+  int chroma_height;
 };  
 
+struct _SchroProfile {
+  int max_pixels_per_second;
+  int max_blocks_per_second;
+  int max_arith_ops_per_second;
+
+  int max_transform_depth;
+
+  int allow_global_motion;
+  int allow_spatial_partition;
+  int allow_inter;
+};
+
 struct _SchroParams {
+  SchroVideoFormat *video_format;
 
 #if 0
-  int major_version;
-  int minor_version;
-  int profile;
-  int level;
-#endif
-
   int height;
   int width;
   SchroChromaFormat chroma_format;
-
-#if 0
-  /* */
-
-  int chroma_format_index;
-  int video_depth;
-  int luma_offset;
-  int luma_excursion;
-  int chroma_offset;
-  int chroma_excursion;
-  int interlaced_source;
-  int top_field_first;
-  int sequential_fields;
-  int frame_rate_numerator;
-  int frame_rate_denominator;
-  int aspect_ratio_numerator;
-  int aspect_ratio_denominator;
-  int clean_width;
-  int clean_height;
-  int top_offset;
-  int left_offset;
-  int colour_primaries;
-  int colour_matrix;
-  int transfer_function;
 #endif
 
   /* transform parameters */
@@ -95,10 +85,6 @@ struct _SchroParams {
   int yblen_luma;
   int xbsep_luma;
   int ybsep_luma;
-  int x_num_mb;
-  int y_num_mb;
-  int x_num_blocks;
-  int y_num_blocks;
   int mv_precision;
   int b_1[2];
   int b_2[2];
@@ -113,10 +99,6 @@ struct _SchroParams {
   int picture_weight_2;
 
   /* calculated sizes */
-  int chroma_h_scale;
-  int chroma_v_scale;
-  int chroma_width;
-  int chroma_height;
   int iwt_chroma_width;
   int iwt_chroma_height;
   int iwt_luma_width;
@@ -125,6 +107,8 @@ struct _SchroParams {
   int mc_chroma_height;
   int mc_luma_width;
   int mc_luma_height;
+  int x_num_blocks;
+  int y_num_blocks;
 };
 
 struct _SchroSubband {

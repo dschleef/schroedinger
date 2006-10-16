@@ -24,7 +24,6 @@ SchroDecoder *
 schro_decoder_new (void)
 {
   SchroDecoder *decoder;
-  SchroParams *params;
 
   decoder = malloc(sizeof(SchroDecoder));
   memset (decoder, 0, sizeof(SchroDecoder));
@@ -32,10 +31,7 @@ schro_decoder_new (void)
   decoder->tmpbuf = malloc(1024 * 2);
   decoder->tmpbuf2 = malloc(1024 * 2);
 
-  params = &decoder->params;
-
-  params->chroma_h_scale = 2;
-  params->chroma_v_scale = 2;
+  decoder->params.video_format = &decoder->video_format;
 
   return decoder;
 }
@@ -182,9 +178,6 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
   decoder->n_output_frames--;
 
   params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->code);
-  params->width = decoder->video_format.width;
-  params->height = decoder->video_format.height;
-  params->chroma_format = decoder->video_format.chroma_format;
 
   if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) > 0) {
     SCHRO_DEBUG("inter");
@@ -679,8 +672,8 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
   schro_arith_decode_init (arith, buffer);
   schro_arith_init_contexts (arith);
 
-  for(j=0;j<4*params->y_num_mb;j+=4){
-    for(i=0;i<4*params->x_num_mb;i+=4){
+  for(j=0;j<params->y_num_blocks;j+=4){
+    for(i=0;i<params->x_num_blocks;i+=4){
       schro_decoder_decode_macroblock(decoder, arith, i, j);
 
       superblock_count++;
@@ -710,7 +703,7 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith *arith,
     int i, int j)
 {
   SchroParams *params = &decoder->params;
-  SchroMotionVector *mv = &decoder->motion_vectors[j*4*params->x_num_mb + i];
+  SchroMotionVector *mv = &decoder->motion_vectors[j*params->x_num_blocks + i];
   int k,l;
   int split_prediction;
 
@@ -786,7 +779,7 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
     SchroMotionVector *motion_vectors, int x, int y)
 {
   SchroParams *params = &decoder->params;
-  SchroMotionVector *mv = &motion_vectors[y*4*params->x_num_mb + x];
+  SchroMotionVector *mv = &motion_vectors[y*params->x_num_blocks + x];
 
   mv->pred_mode = 
     _schro_arith_context_decode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF1) |

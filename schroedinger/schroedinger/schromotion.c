@@ -456,13 +456,13 @@ void
 schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
     SchroParams *params, int x, int y, int *pred_x, int *pred_y, int mode)
 {
-  SchroMotionVector *mv = &motion_vectors[y*(4*params->x_num_mb) + x];
+  SchroMotionVector *mv = &motion_vectors[y*params->x_num_blocks + x];
   int sum_x = 0;
   int sum_y = 0;
   int n = 0;
 
   if (x>0) {
-    mv = &motion_vectors[y*(4*params->x_num_mb) + (x-1)];
+    mv = &motion_vectors[y*params->x_num_blocks + (x-1)];
     if (mv->pred_mode == mode) {
       sum_x += mv->x;
       sum_y += mv->y;
@@ -470,7 +470,7 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
     }
   }
   if (y>0) {
-    mv = &motion_vectors[(y-1)*(4*params->x_num_mb) + x];
+    mv = &motion_vectors[(y-1)*params->x_num_blocks + x];
     if (mv->pred_mode == mode) {
       sum_x += mv->x;
       sum_y += mv->y;
@@ -478,7 +478,7 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
     }
   }
   if (x>0 && y>0) {
-    mv = &motion_vectors[(y-1)*(4*params->x_num_mb) + (x-1)];
+    mv = &motion_vectors[(y-1)*params->x_num_blocks + (x-1)];
     if (mv->pred_mode == mode) {
       sum_x += mv->x;
       sum_y += mv->y;
@@ -519,12 +519,12 @@ schro_motion_split_prediction (SchroMotionVector *motion_vectors,
     }
   } else {
     if (x == 0) {
-      return motion_vectors[(y-4)*(4*params->x_num_mb)].split;
+      return motion_vectors[(y-4)*params->x_num_blocks].split;
     } else {
       int value;
-      value = (motion_vectors[(y-4)*(4*params->x_num_mb) + (x-4)].split +
-          motion_vectors[(y-4)*(4*params->x_num_mb) + x].split +
-          motion_vectors[y*(4*params->x_num_mb) + (x-4)].split + 1) / 3;
+      value = (motion_vectors[(y-4)*params->x_num_blocks + (x-4)].split +
+          motion_vectors[(y-4)*params->x_num_blocks + x].split +
+          motion_vectors[y*params->x_num_blocks + (x-4)].split + 1) / 3;
       return value;
     }
   }

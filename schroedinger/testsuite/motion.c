@@ -25,6 +25,7 @@ main (int argc, char *argv[])
   SchroFrame *dest;
   SchroFrame *ref;
   SchroParams params;
+  SchroVideoFormat video_format;
   SchroMotionVector *motion_vectors;
   int i;
   int j;
@@ -33,9 +34,11 @@ main (int argc, char *argv[])
 
   schro_init();
 
-  params.chroma_format = SCHRO_CHROMA_420;
-  params.width = 720;
-  params.height = 480;
+  video_format.width = 720;
+  video_format.height = 480;
+  video_format.chroma_format = SCHRO_CHROMA_420;
+
+  params.video_format = &video_format;
   params.xbsep_luma = 8;
   params.ybsep_luma = 8;
   params.xblen_luma = 12;
@@ -47,8 +50,8 @@ main (int argc, char *argv[])
       params.mc_luma_width, params.mc_luma_height,
       params.mc_chroma_width, params.mc_chroma_height);
   ref = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
-      params.width, params.height,
-      (params.width + 1)/2, (params.height + 1)/2);
+      video_format.width, video_format.height,
+      (video_format.width + 1)/2, (video_format.height + 1)/2);
 
   schro_frame_clear(dest);
   schro_frame_clear(ref);

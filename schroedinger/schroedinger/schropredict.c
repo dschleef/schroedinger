@@ -42,8 +42,8 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
   double skew_x, skew_y;
   double sum_x, sum_y;
 
-  SCHRO_ASSERT(params->x_num_mb != 0);
-  SCHRO_ASSERT(params->y_num_mb != 0);
+  SCHRO_ASSERT(params->x_num_blocks != 0);
+  SCHRO_ASSERT(params->y_num_blocks != 0);
 
   if (encoder->motion_vectors == NULL) {
     encoder->motion_vectors = malloc(sizeof(SchroMotionVector)*
@@ -144,8 +144,8 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
   sum_pred_x = 0;
   sum_pred_y = 0;
 
-  pan_x = ((double)sum_pred_x)/(16*params->x_num_mb*params->y_num_mb);
-  pan_y = ((double)sum_pred_y)/(16*params->x_num_mb*params->y_num_mb);
+  pan_x = ((double)sum_pred_x)/(params->x_num_blocks*params->y_num_blocks);
+  pan_y = ((double)sum_pred_y)/(params->x_num_blocks*params->y_num_blocks);
 
   mag_x = 0;
   mag_y = 0;
@@ -153,19 +153,19 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
   skew_y = 0;
   sum_x = 0;
   sum_y = 0;
-  for(j=0;j<4*params->y_num_mb;j++) {
-    for(i=0;i<4*params->x_num_mb;i++) {
+  for(j=0;j<params->y_num_blocks;j++) {
+    for(i=0;i<params->x_num_blocks;i++) {
       double x;
       double y;
 
-      x = i*params->xbsep_luma - (2*params->x_num_mb - 0.5);
-      y = j*params->ybsep_luma - (2*params->y_num_mb - 0.5);
+      x = i*params->xbsep_luma - (params->x_num_blocks/2 - 0.5);
+      y = j*params->ybsep_luma - (params->y_num_blocks/2 - 0.5);
 
-      mag_x += encoder->motion_vectors[j*(4*params->x_num_mb) + i].x * x;
-      mag_y += encoder->motion_vectors[j*(4*params->x_num_mb) + i].y * y;
+      mag_x += encoder->motion_vectors[j*params->x_num_blocks + i].x * x;
+      mag_y += encoder->motion_vectors[j*params->x_num_blocks + i].y * y;
 
-      skew_x += encoder->motion_vectors[j*(4*params->x_num_mb) + i].x * y;
-      skew_y += encoder->motion_vectors[j*(4*params->x_num_mb) + i].y * x;
+      skew_x += encoder->motion_vectors[j*params->x_num_blocks + i].x * y;
+      skew_y += encoder->motion_vectors[j*params->x_num_blocks + i].y * x;
 
       sum_x += x * x;
       sum_y += y * y;
