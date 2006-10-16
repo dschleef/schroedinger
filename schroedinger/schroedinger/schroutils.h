@@ -15,6 +15,7 @@
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
 #define CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
 #define ROUND_UP_SHIFT(x,y) (((x) + (1<<(y)) - 1)>>(y))
+#define ROUND_UP_POW2(x,y) (((x) + (1<<(y)) - 1)&((~0)<<(y)))
 #define OFFSET(ptr,offset) ((void *)(((uint8_t *)(ptr)) + (offset)))
 #define SCHRO_GET(ptr, offset, type) (*(type *)((uint8_t *)(ptr) + (offset)) )
 
@@ -31,8 +32,5 @@
 #else
 #define SCHRO_INTERNAL
 #endif
-
-int ilog2(unsigned int x);
-unsigned int round_up_pow2(unsigned int x, int p);
 
 #endif

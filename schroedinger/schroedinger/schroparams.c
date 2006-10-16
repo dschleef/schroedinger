@@ -34,14 +34,14 @@ schro_params_calculate_iwt_sizes (SchroParams *params)
       params->chroma_v_scale = 1;
       break;
     case SCHRO_CHROMA_422:
-      params->chroma_width = round_up_pow2(params->width,1)/2;
+      params->chroma_width = ROUND_UP_SHIFT(params->width,1);
       params->chroma_height = params->height;
       params->chroma_h_scale = 2;
       params->chroma_v_scale = 1;
       break;
     case SCHRO_CHROMA_420:
-      params->chroma_width = round_up_pow2(params->width,1)/2;
-      params->chroma_height = round_up_pow2(params->height,1)/2;
+      params->chroma_width = ROUND_UP_SHIFT(params->width,1);
+      params->chroma_height = ROUND_UP_SHIFT(params->height,1);
       params->chroma_h_scale = 2;
       params->chroma_v_scale = 2;
       break;
@@ -50,16 +50,16 @@ schro_params_calculate_iwt_sizes (SchroParams *params)
       params->chroma_height);
 
   params->iwt_chroma_width =
-    round_up_pow2(params->chroma_width,params->transform_depth);
+    ROUND_UP_POW2(params->chroma_width,params->transform_depth);
   params->iwt_chroma_height =
-    round_up_pow2(params->chroma_height, params->transform_depth);
+    ROUND_UP_POW2(params->chroma_height, params->transform_depth);
   SCHRO_DEBUG ("iwt chroma size %d x %d", params->iwt_chroma_width,
       params->iwt_chroma_height);
 
   params->iwt_luma_width =
-    round_up_pow2(params->width,params->transform_depth);
+    ROUND_UP_POW2(params->width,params->transform_depth);
   params->iwt_luma_height =
-    round_up_pow2(params->height,params->transform_depth);
+    ROUND_UP_POW2(params->height,params->transform_depth);
   SCHRO_DEBUG ("iwt luma size %d x %d", params->iwt_luma_width,
       params->iwt_luma_height);
 }
@@ -75,14 +75,14 @@ schro_params_calculate_mc_sizes (SchroParams *params)
       params->chroma_v_scale = 1;
       break;
     case SCHRO_CHROMA_422:
-      params->chroma_width = round_up_pow2(params->width,1)/2;
+      params->chroma_width = ROUND_UP_SHIFT(params->width,1);
       params->chroma_height = params->height;
       params->chroma_h_scale = 2;
       params->chroma_v_scale = 1;
       break;
     case SCHRO_CHROMA_420:
-      params->chroma_width = round_up_pow2(params->width,1)/2;
-      params->chroma_height = round_up_pow2(params->height,1)/2;
+      params->chroma_width = ROUND_UP_SHIFT(params->width,1);
+      params->chroma_height = ROUND_UP_SHIFT(params->height,1);
       params->chroma_h_scale = 2;
       params->chroma_v_scale = 2;
       break;

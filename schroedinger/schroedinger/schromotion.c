@@ -21,6 +21,7 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
   int k;
   int x_ramp;
   int y_ramp;
+  int weight;
 
   memset (obmc, 0, sizeof(*obmc));
 
@@ -40,7 +41,10 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
     obmc->regions[i].end_y = y_len;
   }
   obmc->stride = sizeof(int16_t) * x_len;
-  obmc->max_weight = 4 * x_ramp * y_ramp;
+  obmc->shift = -1;
+  for(weight = 4 * x_ramp * y_ramp; weight; weight>>=1) {
+    obmc->shift++;
+  }
   obmc->x_ramp = x_ramp;
   obmc->y_ramp = y_ramp;
   obmc->x_len = x_len;
@@ -290,13 +294,13 @@ clear_rows (SchroFrameComponent *comp, int y, int n)
 }
 
 static void
-shift_rows (SchroFrameComponent *comp, int y, int n, int weight)
+shift_rows (SchroFrameComponent *comp, int y, int n, int shift)
 {
   int ymax;
   int16_t *data;
   int16_t s[2];
 
-  s[1] = ilog2(weight);
+  s[1] = shift;
   s[0] = (1<<s[1])>>1;
 
   ymax = MIN (y + n, comp->height);
@@ -377,21 +381,21 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
     }
 
     shift_rows (dest->components + 0, y - obmc_luma.y_ramp/2,
-        obmc_luma.y_sep, obmc_luma.max_weight);
+        obmc_luma.y_sep, obmc_luma.shift);
     shift_rows (dest->components + 1, y/2 - obmc_chroma.y_ramp/2,
-        obmc_chroma.y_sep, obmc_chroma.max_weight);
+        obmc_chroma.y_sep, obmc_chroma.shift);
     shift_rows (dest->components + 2, y/2 - obmc_chroma.y_ramp/2,
-        obmc_chroma.y_sep, obmc_chroma.max_weight);
+        obmc_chroma.y_sep, obmc_chroma.shift);
 
   }
 
   y = params->y_num_blocks*params->ybsep_luma;
   shift_rows (dest->components + 0, y - obmc_luma.y_ramp/2,
-      obmc_luma.y_ramp/2, obmc_luma.max_weight);
+      obmc_luma.y_ramp/2, obmc_luma.shift);
   shift_rows (dest->components + 1, y/2 - obmc_chroma.y_ramp/2,
-      obmc_chroma.y_ramp/2, obmc_chroma.max_weight);
+      obmc_chroma.y_ramp/2, obmc_chroma.shift);
   shift_rows (dest->components + 2, y/2 - obmc_chroma.y_ramp/2,
-      obmc_chroma.y_ramp/2, obmc_chroma.max_weight);
+      obmc_chroma.y_ramp/2, obmc_chroma.shift);
 
   schro_obmc_cleanup (&obmc_luma);
   schro_obmc_cleanup (&obmc_chroma);

@@ -1,10 +1,10 @@
 
 
 noinst_PROGRAMS = arith arith_encode arith_decode bits bits2 \
-	 encode wavelet wavelet2 tables wavelet_2d arith_speed utils \
+	 encode wavelet wavelet2 tables wavelet_2d arith_speed \
 	 obmc predict dump_packets phasecorrelation motion
 
-TESTS = arith bits bits2 encode wavelet wavelet2 tables wavelet_2d utils
+TESTS = arith bits bits2 encode wavelet wavelet2 tables wavelet_2d
 
 
 arith_CFLAGS = $(SCHRO_CFLAGS)
@@ -58,10 +58,6 @@ wavelet_2d_SOURCES = wavelet_2d.c
 tables_CFLAGS = 
 tables_LDADD = -lm
 tables_SOURCES = tables.c
-
-utils_CFLAGS = $(SCHRO_CFLAGS)
-utils_LDADD = $(SCHRO_LIBS)
-utils_SOURCES = utils.c ../schroedinger/schroutils.c
 
 obmc_CFLAGS = $(SCHRO_CFLAGS)
 obmc_LDADD = $(SCHRO_LIBS)

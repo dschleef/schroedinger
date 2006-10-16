@@ -1,5 +1,17 @@
 2006-10-15  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroutils.c:
+	* schroedinger/schroutils.h:
+	* testsuite/Makefile.am:
+	* testsuite/utils.c:
+	  Clean up code.  Remove some utility functions that are better
+	  implemented as macros.
+
+2006-10-15  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	  Rearrange the main picture encoding/decoding function.

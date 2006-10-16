@@ -18,7 +18,7 @@ struct _SchroObmcRegion {
 struct _SchroObmc {
   SchroObmcRegion regions[9];
   int stride;
-  int max_weight;
+  int shift;
   int x_ramp;
   int y_ramp;
   int x_len;
