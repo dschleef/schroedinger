@@ -8,18 +8,22 @@
 
 #define SCHRO_PREDICTION_METRIC_INVALID (-1)
 
-typedef struct _SchroPredictionList SchroPredictionList;
-typedef struct _SchroPredictionVector SchroPredictionVector;
+//typedef struct _SchroPredictionList SchroPredictionList;
+//typedef struct _SchroPredictionVector SchroPredictionVector;
 
 struct _SchroPredictionVector {
-  int ref;
-  int dx;
-  int dy;
+  unsigned int pred_mode : 2;
+  unsigned int using_global : 1;
+  unsigned int split : 2;
+  unsigned int common : 1;
+  uint8_t dc[3];
+  int16_t dx;
+  int16_t dy;
   int metric;
+  int cost;
 };
 
 struct _SchroPredictionList {
-  int n_vectors;
   SchroPredictionVector vectors[SCHRO_PREDICTION_LIST_LENGTH];
 };
 
@@ -31,7 +35,7 @@ void schro_prediction_list_init (SchroPredictionList *pred);
 void schro_prediction_list_insert (SchroPredictionList *pred,
     SchroPredictionVector *vec);
 void schro_prediction_list_scan (SchroPredictionList *list, SchroFrame *frame,
-    SchroFrame *ref, int refnum, int x, int y, int sx, int sy, int sw, int sh);
+    SchroFrame *ref, int refnum, int x, int y, int dx, int dy, int dist);
 
 #endif
 

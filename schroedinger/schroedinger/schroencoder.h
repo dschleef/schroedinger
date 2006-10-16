@@ -11,6 +11,10 @@ typedef struct _SchroEncoder SchroEncoder;
 typedef struct _SchroEncoderParams SchroEncoderParams;
 typedef struct _SchroEncoderReference SchroEncoderReference;
 
+/* forward reference */
+typedef struct _SchroPredictionVector SchroPredictionVector;
+typedef struct _SchroPredictionList SchroPredictionList;
+
 struct _SchroEncoderParams {
   int ignore;
 };
@@ -62,11 +66,7 @@ struct _SchroEncoder {
   int prev_offset;
 
   SchroMotionVector *motion_vectors;
-  SchroMotionVector *motion_vectors_dc;
-#if 0
-  SchroMotionVector *motion_vectors_none;
-  SchroMotionVector *motion_vectors_scan;
-#endif
+  SchroPredictionList *predict_lists;
 
   SchroPicture picture_list[10];
   int n_pictures;

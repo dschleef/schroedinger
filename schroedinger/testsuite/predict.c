@@ -22,7 +22,7 @@ int
 main (int argc, char *argv[])
 {
   SchroPredictionList list;
-  SchroPredictionVector vec;
+  SchroPredictionVector vec = { 0 };
   int n;
   int i;
 
@@ -37,14 +37,14 @@ main (int argc, char *argv[])
     }
     qsort (array, n, sizeof(int), compare);
 
-    for(i=0;i<list.n_vectors;i++){
-#if 0
+    for(i=0;i<SCHRO_PREDICTION_LIST_LENGTH;i++){
+#if 1
       printf("%d: %d %d %c\n", i, array[i], list.vectors[i].metric,
           (array[i] == list.vectors[i].metric) ? ' ' : '*');
 #endif
       SCHRO_ASSERT(array[i] == list.vectors[i].metric);
     }
-#if 0
+#if 1
     printf("\n");
 #endif
   }

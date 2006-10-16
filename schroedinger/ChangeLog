@@ -1,3 +1,14 @@
+2006-10-16  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schromotion.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.c:
+	* schroedinger/schropredict.h:
+	* testsuite/predict.c:
+	  Refactor the prediction code so that it makes sense (?).
+
 2006-10-15  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schromotion.c:

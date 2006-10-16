@@ -153,7 +153,6 @@ struct _SchroMotionVector {
   uint8_t dc[3];
   int16_t x;
   int16_t y;
-  int metric;
 };
 
 struct _SchroPicture {

@@ -72,11 +72,8 @@ schro_encoder_free (SchroEncoder *encoder)
   if (encoder->tmp_frame1) {
     schro_frame_free (encoder->tmp_frame1);
   }
-  if (encoder->motion_vectors_dc) {
+  if (encoder->motion_vectors) {
     free (encoder->motion_vectors);
-  }
-  if (encoder->motion_vectors_dc) {
-    free (encoder->motion_vectors_dc);
   }
   for(i=0;i<encoder->n_reference_frames; i++) {
     SchroEncoderReference *ref = encoder->reference_frames + i;
