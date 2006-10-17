@@ -10,8 +10,8 @@
 
 #define SCHRO_METRIC_INVALID (1<<24)
 
-void schro_encoder_hierarchical_prediction (SchroEncoder *encoder);
-void schro_encoder_dc_prediction (SchroEncoder *encoder);
+void schro_encoder_hierarchical_prediction (SchroEncoderTask *task);
+void schro_encoder_dc_prediction (SchroEncoderTask *task);
 
 
 int cost (int value)
@@ -29,39 +29,33 @@ int cost (int value)
 }
 
 void
-schro_encoder_motion_predict (SchroEncoder *encoder)
+schro_encoder_motion_predict (SchroEncoderTask *task)
 {
-  SchroParams *params = &encoder->params;
+  SchroParams *params = &task->params;
   int i;
   int j;
   SchroFrame *frame;
-  int sum_pred_x;
-  int sum_pred_y;
-  double pan_x, pan_y;
-  double mag_x, mag_y;
-  double skew_x, skew_y;
-  double sum_x, sum_y;
 
   SCHRO_ASSERT(params->x_num_blocks != 0);
   SCHRO_ASSERT(params->y_num_blocks != 0);
 
-  if (encoder->motion_vectors == NULL) {
-    encoder->motion_vectors = malloc(sizeof(SchroMotionVector)*
+  if (task->motion_vectors == NULL) {
+    task->motion_vectors = malloc(sizeof(SchroMotionVector)*
         params->x_num_blocks*params->y_num_blocks);
   }
 
-  frame = encoder->encode_frame;
+  frame = task->encode_frame;
 
   SCHRO_ASSERT(params->num_refs > 0);
 
-  schro_encoder_hierarchical_prediction (encoder);
+  schro_encoder_hierarchical_prediction (task);
 
-  schro_encoder_dc_prediction (encoder);
+  schro_encoder_dc_prediction (task);
 
-  encoder->stats_metric = 0;
-  encoder->stats_dc_blocks = 0;
-  encoder->stats_none_blocks = 0;
-  encoder->stats_scan_blocks = 0;
+  task->stats_metric = 0;
+  task->stats_dc_blocks = 0;
+  task->stats_none_blocks = 0;
+  task->stats_scan_blocks = 0;
   for(j=0;j<params->y_num_blocks;j++){
     for(i=0;i<params->x_num_blocks;i++){
       int dc_pred[3];
@@ -74,20 +68,20 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
       int best_index = 0;
       int best_cost = 0;
       
-      list = encoder->predict_lists + j*params->x_num_blocks + i;
+      list = task->predict_lists + j*params->x_num_blocks + i;
 
-      schro_motion_dc_prediction (encoder->motion_vectors,
+      schro_motion_dc_prediction (task->motion_vectors,
           params, i, j, dc_pred);
-      schro_motion_vector_prediction (encoder->motion_vectors,
+      schro_motion_vector_prediction (task->motion_vectors,
           params, i, j, &pred1_x, &pred1_y, 1);
-      schro_motion_vector_prediction (encoder->motion_vectors,
+      schro_motion_vector_prediction (task->motion_vectors,
           params, i, j, &pred2_x, &pred2_y, 2);
 
-      schro_prediction_list_scan (list, encoder->encode_frame,
-          encoder->ref_frame0->frames[0], 1, i*8, j*8, pred1_x, pred1_y, 0);
+      schro_prediction_list_scan (list, task->encode_frame,
+          task->ref_frame0->frames[0], 1, i*8, j*8, pred1_x, pred1_y, 0);
       if (params->num_refs == 2) {
-        schro_prediction_list_scan (list, encoder->encode_frame,
-            encoder->ref_frame1->frames[0], 2, i*8, j*8, pred2_x, pred2_y, 0);
+        schro_prediction_list_scan (list, task->encode_frame,
+            task->ref_frame1->frames[0], 2, i*8, j*8, pred2_x, pred2_y, 0);
       }
 
       for(k=0;k<SCHRO_PREDICTION_LIST_LENGTH;k++){
@@ -111,7 +105,7 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
             SCHRO_ASSERT(0);
             break;
         }
-        vec->cost += vec->metric * encoder->metric_to_cost;
+        vec->cost += vec->metric * task->metric_to_cost;
 
         if (k==0 || vec->cost < best_cost) {
           best_cost = vec->cost;
@@ -122,7 +116,7 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
       /* FIXME choose based on cost as well */
       vec = list->vectors + best_index;
 
-      mv = &encoder->motion_vectors[j*params->x_num_blocks + i];
+      mv = &task->motion_vectors[j*params->x_num_blocks + i];
       mv->pred_mode = vec->pred_mode;
       mv->using_global = 0;
       mv->split = 2;
@@ -131,15 +125,31 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
         mv->dc[0] = vec->dc[0];
         mv->dc[1] = vec->dc[1];
         mv->dc[2] = vec->dc[2];
-        encoder->stats_dc_blocks++;
+        task->stats_dc_blocks++;
       } else {
         mv->x = vec->dx;
         mv->y = vec->dy;
-        encoder->stats_scan_blocks++;
+        task->stats_scan_blocks++;
       }
-      encoder->stats_metric += vec->metric;
+      task->stats_metric += vec->metric;
     }
   }
+}
+
+
+
+void
+schro_encoder_global_motion_predict (SchroEncoderTask *task)
+{
+  SchroParams *params = &task->params;
+  int i;
+  int j;
+  int sum_pred_x;
+  int sum_pred_y;
+  double pan_x, pan_y;
+  double mag_x, mag_y;
+  double skew_x, skew_y;
+  double sum_x, sum_y;
 
   sum_pred_x = 0;
   sum_pred_y = 0;
@@ -161,11 +171,11 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
       x = i*params->xbsep_luma - (params->x_num_blocks/2 - 0.5);
       y = j*params->ybsep_luma - (params->y_num_blocks/2 - 0.5);
 
-      mag_x += encoder->motion_vectors[j*params->x_num_blocks + i].x * x;
-      mag_y += encoder->motion_vectors[j*params->x_num_blocks + i].y * y;
+      mag_x += task->motion_vectors[j*params->x_num_blocks + i].x * x;
+      mag_y += task->motion_vectors[j*params->x_num_blocks + i].y * y;
 
-      skew_x += encoder->motion_vectors[j*params->x_num_blocks + i].x * y;
-      skew_y += encoder->motion_vectors[j*params->x_num_blocks + i].y * x;
+      skew_x += task->motion_vectors[j*params->x_num_blocks + i].x * y;
+      skew_y += task->motion_vectors[j*params->x_num_blocks + i].y * x;
 
       sum_x += x * x;
       sum_y += y * y;
@@ -186,12 +196,14 @@ schro_encoder_motion_predict (SchroEncoder *encoder)
     skew_y = 0;
   }
 
-  encoder->pan_x = pan_x;
-  encoder->pan_y = pan_y;
-  encoder->mag_x = mag_x;
-  encoder->mag_y = mag_y;
-  encoder->skew_x = skew_x;
-  encoder->skew_y = skew_y;
+#if 0
+  task->pan_x = pan_x;
+  task->pan_y = pan_y;
+  task->mag_x = mag_x;
+  task->mag_y = mag_y;
+  task->skew_x = skew_x;
+  task->skew_y = skew_y;
+#endif
 
   SCHRO_DEBUG("pan %g %g mag %g %g skew %g %g",
       pan_x, pan_y, mag_x, mag_y, skew_x, skew_y);
@@ -270,9 +282,9 @@ schro_prediction_list_scan (SchroPredictionList *list, SchroFrame *frame,
 
 
 void
-schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
+schro_encoder_hierarchical_prediction (SchroEncoderTask *task)
 {
-  SchroParams *params = &encoder->params;
+  SchroParams *params = &task->params;
   int i;
   int j;
   int x_blocks;
@@ -281,11 +293,11 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
   SchroFrame *downsampled_ref1 = NULL;
   SchroFrame *downsampled[4];
   SchroFrame *downsampled_frame;
-  SchroFrame *frame = encoder->encode_frame;
+  SchroFrame *frame = task->encode_frame;
   SchroPredictionList *pred_lists;
   int shift;
 
-  downsampled[0] = encoder->encode_frame;
+  downsampled[0] = task->encode_frame;
   for(i=1;i<4;i++){
     downsampled[i] = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
         ROUND_UP_SHIFT(frame->components[0].width, i),
@@ -295,18 +307,18 @@ schro_encoder_hierarchical_prediction (SchroEncoder *encoder)
     schro_frame_downsample(downsampled[i], downsampled[i-1], 1);
   }
 
-  if (encoder->predict_lists == NULL) {
-    encoder->predict_lists = malloc (params->x_num_blocks*params->y_num_blocks*
+  if (task->predict_lists == NULL) {
+    task->predict_lists = malloc (params->x_num_blocks*params->y_num_blocks*
         sizeof(SchroPredictionList));
   }
-  pred_lists = encoder->predict_lists;
+  pred_lists = task->predict_lists;
 
   for(shift=3;shift>=0;shift--) {
     int skip = 1<<shift;
 
-    downsampled_ref0 = encoder->ref_frame0->frames[shift];
+    downsampled_ref0 = task->ref_frame0->frames[shift];
     if (params->num_refs == 2) {
-      downsampled_ref1 = encoder->ref_frame1->frames[shift];
+      downsampled_ref1 = task->ref_frame1->frames[shift];
     }
     downsampled_frame = downsampled[shift];
 
@@ -474,14 +486,14 @@ schro_block_average (uint8_t *dest, SchroFrameComponent *comp,
 }
 
 void
-schro_encoder_dc_prediction (SchroEncoder *encoder)
+schro_encoder_dc_prediction (SchroEncoderTask *task)
 {
-  SchroParams *params = &encoder->params;
+  SchroParams *params = &task->params;
   int i;
   int j;
   SchroPredictionVector vec;
-  SchroFrame *frame = encoder->encode_frame;
-  SchroPredictionList *pred_lists = encoder->predict_lists;
+  SchroFrame *frame = task->encode_frame;
+  SchroPredictionList *pred_lists = task->predict_lists;
 
   vec.pred_mode = 0;
 

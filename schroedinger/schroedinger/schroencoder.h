@@ -9,6 +9,7 @@
 
 typedef struct _SchroEncoder SchroEncoder;
 typedef struct _SchroEncoderParams SchroEncoderParams;
+typedef struct _SchroEncoderTask SchroEncoderTask;
 typedef struct _SchroEncoderReference SchroEncoderReference;
 
 /* forward reference */
@@ -26,12 +27,14 @@ struct _SchroEncoderReference {
 };
 
 struct _SchroEncoder {
-  SchroFrame *tmp_frame0;
-  SchroFrame *tmp_frame1;
+  //SchroFrame *tmp_frame0;
+  //SchroFrame *tmp_frame1;
 
-  SchroFrame *encode_frame;
+  //SchroFrame *encode_frame;
 
-  SchroBits *bits;
+  //SchroBits *bits;
+  
+  SchroEncoderTask *task;
 
   SchroFrame *frame_queue[SCHRO_MAX_REFERENCE_FRAMES];
   int frame_queue_length;
@@ -43,8 +46,8 @@ struct _SchroEncoder {
 
   int need_rap;
 
-  int16_t *tmpbuf;
-  int16_t *tmpbuf2;
+  //int16_t *tmpbuf;
+  //int16_t *tmpbuf2;
 
   int version_major;
   int version_minor;
@@ -54,44 +57,76 @@ struct _SchroEncoder {
   int video_format_index;
 
   SchroVideoFormat video_format;
-  SchroParams params;
+  //SchroParams params;
   SchroEncoderParams encoder_params;
 
-  SchroBuffer *subband_buffer;
+  //SchroBuffer *subband_buffer;
 
-  SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
+  //SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
 
   int frame_number;
   int end_of_stream;
   int prev_offset;
 
-  SchroMotionVector *motion_vectors;
-  SchroPredictionList *predict_lists;
+  //SchroMotionVector *motion_vectors;
+  //SchroPredictionList *predict_lists;
 
   SchroPicture picture_list[10];
   int n_pictures;
   int picture_index;
 
   /* picture that is currently being encoded */
-  SchroPicture *picture;
+  //SchroPicture *picture;
 
   /* current reference frames */
-  SchroEncoderReference *ref_frame0;
-  SchroEncoderReference *ref_frame1;
+  //SchroEncoderReference *ref_frame0;
+  //SchroEncoderReference *ref_frame1;
 
   double pan_x, pan_y;
   double mag_x, mag_y;
   double skew_x, skew_y;
+
+  //double metric_to_cost;
+  //int stats_metric;
+  //int stats_dc_blocks;
+  //int stats_none_blocks;
+  //int stats_scan_blocks;
+
+  //int16_t *quant_data;
+  
+  int engine_init;
+};
+
+struct _SchroEncoderTask {
+  SchroEncoder *encoder;
+  SchroParams params;
+  
+  SchroPicture *picture;
+  SchroBits *bits;
+  SchroFrame *encode_frame;
+
+  SchroFrame *tmp_frame0;
+  SchroFrame *tmp_frame1;
+
+  int16_t *tmpbuf;
+  int16_t *tmpbuf2;
+
+  SchroBuffer *subband_buffer;
+  SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
+
+  SchroEncoderReference *ref_frame0;
+  SchroEncoderReference *ref_frame1;
+
+  int16_t *quant_data;
+
+  SchroMotionVector *motion_vectors;
+  SchroPredictionList *predict_lists;
 
   double metric_to_cost;
   int stats_metric;
   int stats_dc_blocks;
   int stats_none_blocks;
   int stats_scan_blocks;
-
-  int16_t *quant_data;
-  
-  int engine_init;
 };
 
 struct _SchroEncoderSettings {
@@ -121,10 +156,8 @@ void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
 SchroBuffer * schro_encoder_encode (SchroEncoder *encoder);
 
 void schro_encoder_copy_to_frame_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
-void schro_encoder_encode_access_unit_header (SchroEncoder *encoder);
-void schro_encoder_encode_intra (SchroEncoder *encoder);
-void schro_encoder_encode_inter (SchroEncoder *encoder);
-void schro_encoder_encode_parse_info (SchroEncoder *encoder, int parse_code);
+void schro_encoder_encode_access_unit_header (SchroEncoder *encoder, SchroBits *bits);
+void schro_encoder_encode_parse_info (SchroBits *bits, int parse_code);
 void schro_encoder_encode_frame_prediction (SchroEncoder *encoder);
 void schro_encoder_encode_transform_parameters (SchroEncoder *encoder);
 void schro_encoder_encode_transform_data (SchroEncoder *encoder, int component);

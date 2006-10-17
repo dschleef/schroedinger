@@ -1,3 +1,14 @@
+2006-10-17  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.c:
+	* schroedinger/schropredict.h:
+	  More code cleanup.  Stage one of separating encoding of
+	  individual pictures out of SchroEncoder (so we can encode
+	  multiple pictures on different CPUs, woohoo!)
+
 2006-10-16  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:

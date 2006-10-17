@@ -29,7 +29,7 @@ struct _SchroPredictionList {
 
 
 
-void schro_encoder_motion_predict (SchroEncoder *encoder);
+void schro_encoder_motion_predict (SchroEncoderTask *task);
 
 void schro_prediction_list_init (SchroPredictionList *pred);
 void schro_prediction_list_insert (SchroPredictionList *pred,

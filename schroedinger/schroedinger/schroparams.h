@@ -63,12 +63,6 @@ struct _SchroProfile {
 struct _SchroParams {
   SchroVideoFormat *video_format;
 
-#if 0
-  int height;
-  int width;
-  SchroChromaFormat chroma_format;
-#endif
-
   /* transform parameters */
   int wavelet_filter_index;
   int transform_depth;
