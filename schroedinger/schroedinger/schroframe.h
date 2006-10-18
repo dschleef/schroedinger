@@ -25,7 +25,7 @@ struct _SchroFrameComponent {
 };
 
 struct _SchroFrame {
-  SchroBuffer *buffer;
+  //SchroBuffer *buffer;
 
   SchroFrameFreeFunc free;
   void *regions[3];

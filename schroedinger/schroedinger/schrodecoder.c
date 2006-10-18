@@ -33,6 +33,9 @@ schro_decoder_new (void)
 
   decoder->params.video_format = &decoder->video_format;
 
+  decoder->skip_value = 1.0;
+  decoder->skip_ratio = 1.0;
+
   return decoder;
 }
 
@@ -77,6 +80,37 @@ schro_decoder_add_output_frame (SchroDecoder *decoder, SchroFrame *frame)
 {
   decoder->output_frames[decoder->n_output_frames] = frame;
   decoder->n_output_frames++;
+}
+
+void
+schro_decoder_set_earliest_frame (SchroDecoder *decoder, int earliest_frame)
+{
+  decoder->earliest_frame = earliest_frame;
+}
+
+void
+schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio)
+{
+  if (ratio > 1.0) ratio = 1.0;
+  if (ratio < 0.0) ratio = 0.0;
+  decoder->skip_ratio = ratio;
+}
+
+int
+schro_decoder_is_intra (SchroBuffer *buffer)
+{
+  uint8_t *data;
+
+  if (buffer->length < 5) return 0;
+
+  data = buffer->data;
+  if (data[0] != 'B' || data[1] != 'B' || data[2] != 'C' || data[3] != 'D') {
+    return 0;
+  }
+
+  if (SCHRO_PARSE_CODE_NUM_REFS(data[4] == 0)) return 1;
+
+  return 1;
 }
 
 int
@@ -128,56 +162,113 @@ schro_decoder_is_end_sequence (SchroBuffer *buffer)
   return 0;
 }
 
-
 SchroFrame *
-schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
+schro_decoder_pull (SchroDecoder *decoder)
+{
+  int i;
+
+  SCHRO_DEBUG("searching for frame %d", decoder->next_frame_number);
+  for(i=0;i<decoder->frame_queue_length;i++) {
+    if (decoder->frame_queue[i]->frame_number == decoder->next_frame_number) {
+      SchroFrame *frame = decoder->frame_queue[i];
+
+      for(;i<decoder->frame_queue_length-1;i++){
+        decoder->frame_queue[i] = decoder->frame_queue[i+1];
+      }
+      decoder->frame_queue_length--;
+      decoder->next_frame_number++;
+
+      return frame;
+    }
+  }
+
+  return NULL;
+}
+
+void
+schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
+{
+  SCHRO_ASSERT(decoder->input_buffer == NULL);
+
+  decoder->input_buffer = buffer;
+}
+
+
+int
+schro_decoder_iterate (SchroDecoder *decoder)
 {
   SchroParams *params = &decoder->params;
   int i;
   SchroFrame *output_frame;
   
-  if (buffer == NULL) {
-    SCHRO_DEBUG("searching for frame %d", decoder->next_frame_number);
-    for(i=0;i<decoder->frame_queue_length;i++) {
-      if (decoder->frame_queue[i]->frame_number == decoder->next_frame_number) {
-        SchroFrame *frame = decoder->frame_queue[i];
-
-        for(;i<decoder->frame_queue_length-1;i++){
-          decoder->frame_queue[i] = decoder->frame_queue[i+1];
-        }
-        decoder->frame_queue_length--;
-        decoder->next_frame_number++;
-
-        return frame;
-      }
-    }
-
-    return NULL;
+  if (decoder->input_buffer == NULL) {
+    return SCHRO_DECODER_NEED_BITS;
   }
 
   decoder->bits = schro_bits_new ();
-  schro_bits_decode_init (decoder->bits, buffer);
+  schro_bits_decode_init (decoder->bits, decoder->input_buffer);
 
-  if (schro_decoder_is_access_unit (buffer)) {
+  if (schro_decoder_is_access_unit (decoder->input_buffer)) {
     schro_decoder_decode_parse_header(decoder);
     schro_decoder_decode_access_unit(decoder);
 
-    schro_buffer_unref (buffer);
+    schro_buffer_unref (decoder->input_buffer);
+    decoder->input_buffer = NULL;
     schro_bits_free (decoder->bits);
-    return NULL;
+    
+    if (decoder->have_access_unit) {
+      return SCHRO_DECODER_OK;
+    }
+    decoder->have_access_unit = TRUE;
+    return SCHRO_DECODER_FIRST_ACCESS_UNIT;
   }
 
-  if (schro_decoder_is_end_sequence (buffer)) {
-    return NULL;
+  if (schro_decoder_is_end_sequence (decoder->input_buffer)) {
+    schro_buffer_unref (decoder->input_buffer);
+    decoder->input_buffer = NULL;
+    schro_bits_free (decoder->bits);
+    return SCHRO_DECODER_EOS;
+  }
+
+  if (decoder->n_output_frames == 0) {
+    schro_bits_free (decoder->bits);
+    return SCHRO_DECODER_NEED_FRAME;
   }
 
   schro_decoder_decode_parse_header(decoder);
   schro_decoder_decode_frame_header(decoder);
 
+  params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->code);
+
+  if (!SCHRO_PARSE_CODE_IS_REF (decoder->code) &&
+      (decoder->picture_number < decoder->earliest_frame ||
+       decoder->skip_value > decoder->skip_ratio)) {
+
+    decoder->skip_value = 0.8 * decoder->skip_value;
+SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
+
+    for(i=0;i<decoder->n_retire;i++){
+      schro_decoder_reference_retire (decoder, decoder->retire_list[i]);
+    }
+
+    schro_buffer_unref (decoder->input_buffer);
+    decoder->input_buffer = NULL;
+    schro_bits_free (decoder->bits);
+
+    output_frame = schro_frame_new ();
+    output_frame->frame_number = decoder->picture_number;
+
+    decoder->frame_queue[decoder->frame_queue_length] = output_frame;
+    decoder->frame_queue_length++;
+
+    return SCHRO_DECODER_OK;
+  }
+
+  decoder->skip_value = 0.8 * decoder->skip_value + 0.2;
+SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
+
   output_frame = decoder->output_frames[decoder->n_output_frames-1];
   decoder->n_output_frames--;
-
-  params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->code);
 
   if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) > 0) {
     SCHRO_DEBUG("inter");
@@ -267,19 +358,15 @@ schro_decoder_decode (SchroDecoder *decoder, SchroBuffer *buffer)
     schro_decoder_reference_retire (decoder, decoder->retire_list[i]);
   }
 
-  schro_buffer_unref (buffer);
+  schro_buffer_unref (decoder->input_buffer);
+  decoder->input_buffer = NULL;
   schro_bits_free (decoder->bits);
 
-  if (output_frame->frame_number == decoder->next_frame_number) {
-    decoder->next_frame_number++;
-    return output_frame;
-  } else {
-    SCHRO_DEBUG("adding %d to queue", output_frame->frame_number);
-    decoder->frame_queue[decoder->frame_queue_length] = output_frame;
-    decoder->frame_queue_length++;
-  }
+  SCHRO_DEBUG("adding %d to queue", output_frame->frame_number);
+  decoder->frame_queue[decoder->frame_queue_length] = output_frame;
+  decoder->frame_queue_length++;
 
-  return NULL;
+  return SCHRO_DECODER_OK;
 }
 
 void

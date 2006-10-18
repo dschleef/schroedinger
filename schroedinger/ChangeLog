@@ -1,3 +1,23 @@
+2006-10-18  David Schleef  <ds@schleef.org>
+
+	* gst/gstschrodec.c:
+	  Handle QoS events and frame dropping.
+	* gst/gstschroenc.c:
+	  Rewrite handling of granulepos.  Use new information from the
+	  encoder.
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	  Implement frame skipping.  Restructure decoding around _iterate()
+	  function.
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Implement the intra-only engine.  Restructure encoding around
+	  _iterate().  Remove SchroPicture (mostly).  Stage 2 of
+	  separating encoding into tasks.
+	* schroedinger/schroframe.h:
+	  Clean up.
+	  
+
 2006-10-18  Jan Schmidt  <thaytan@mad.scientist.com>
 
 	* testsuite/motion.c: (main):

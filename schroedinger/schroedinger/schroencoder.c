@@ -8,8 +8,8 @@
 #include <string.h>
 #include <stdio.h>
 
-static void schro_encoder_create_picture_list (SchroEncoder *encoder);
-static void schro_encoder_encode_picture (SchroEncoder *encoder);
+//static void schro_encoder_create_picture_list (SchroEncoder *encoder);
+static void schro_encoder_encode_picture (SchroEncoderTask *task);
 
 SchroEncoderTask * schro_encoder_task_new (SchroEncoder *encoder);
 void schro_encoder_task_free (SchroEncoderTask *task);
@@ -19,16 +19,26 @@ static SchroFrame * schro_encoder_frame_queue_get (SchroEncoder *encoder,
     int frame_number);
 static void schro_encoder_frame_queue_remove (SchroEncoder *encoder,
     int frame_number);
+#if 0
 static SchroEncoderReference * schro_encoder_reference_add (SchroEncoder *encoder);
-static SchroEncoderReference * schro_encoder_reference_get (SchroEncoder *encoder,
-    int frame_number);
-static void schro_encoder_reference_analyse (SchroEncoder *encoder,
-    SchroEncoderReference *ref);
-static void schro_encoder_reference_retire (SchroEncoder *encoder,
-    int frame_number);
-void schro_encoder_encode_picture_header (SchroEncoder *encoder);
+#endif
+//static SchroEncoderReference * schro_encoder_reference_get (SchroEncoder *encoder,
+//    int frame_number);
+static void schro_encoder_reference_analyse (SchroEncoderReference *ref);
+//static void schro_encoder_reference_retire (SchroEncoder *encoder,
+//    int frame_number);
+void schro_encoder_encode_picture_header (SchroEncoderTask *task);
 
-static void schro_encoder_engine_init (SchroEncoder *encoder);
+//static void schro_encoder_engine_init (SchroEncoder *encoder);
+static void schro_encoder_encode_frame_prediction (SchroEncoderTask *task);
+static void schro_encoder_encode_transform_parameters (SchroEncoderTask *task);
+static void schro_encoder_encode_transform_data (SchroEncoderTask *task, int component);
+static void schro_encoder_init_subbands (SchroEncoderTask *task);
+static void schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index);
+static SchroBuffer * schro_encoder_encode_access_unit (SchroEncoder *encoder);
+
+static void schro_encoder_output_push (SchroEncoder *encoder,
+    SchroBuffer *buffer, int slot, int presentation_frame);
 
 
 SchroEncoder *
@@ -43,7 +53,9 @@ schro_encoder_new (void)
   encoder->version_minor = 0;
   encoder->profile = 0;
   encoder->level = 0;
-  encoder->need_rap = TRUE;
+
+  encoder->last_au_frame = -1;
+  encoder->au_distance = 24;
 
   return encoder;
 }
@@ -87,7 +99,7 @@ schro_encoder_task_new (SchroEncoder *encoder)
   task->tmpbuf = malloc(1024 * 2);
   task->tmpbuf2 = malloc(1024 * 2);
 
-  task->subband_buffer = schro_buffer_new_and_alloc (1000000);
+  task->subband_buffer = schro_buffer_new_and_alloc (100000);
 
   /* FIXME settings */
   params = &task->params;
@@ -127,6 +139,7 @@ schro_encoder_task_new (SchroEncoder *encoder)
 void
 schro_encoder_task_free (SchroEncoderTask *task)
 {
+SCHRO_ERROR("here");
   if (task->tmp_frame0) {
     schro_frame_free (task->tmp_frame0);
   }
@@ -138,6 +151,9 @@ schro_encoder_task_free (SchroEncoderTask *task)
   }
   if (task->subband_buffer) {
     schro_buffer_unref (task->subband_buffer);
+  }
+  if (task->quant_data) {
+    free (task->quant_data);
   }
 
   free (task->tmpbuf);
@@ -216,12 +232,13 @@ schro_encoder_choose_quantisers (SchroEncoderTask *task)
   gain_hv = wavelet_gain_hv[task->params.wavelet_filter_index];
   gain_diag = wavelet_gain_diag[task->params.wavelet_filter_index];
 
-  if (task->picture->is_ref) {
+  if (task->is_ref) {
     base = 6 << 4;
     nonref = 0;
   } else {
     base = 8 << 4;
-    nonref = 2<<4;
+    //nonref = 2<<4;
+    nonref = 0;
   }
 
   subbands[0].quant_index = schro_gain_to_index (0 + gain*depth);
@@ -257,6 +274,125 @@ schro_decoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer)
   encoder->prev_offset = buffer->length;
 }
 
+int
+schro_encoder_engine_intra_only (SchroEncoder *encoder)
+{
+  SchroEncoderTask *task;
+  SchroParams *params;
+
+  task = encoder->task;
+  SCHRO_ASSERT(task != NULL);
+
+  if (encoder->last_au_frame == -1 ||
+      encoder->next_frame - encoder->last_au_frame >= encoder->au_distance) {
+    SchroBuffer *buffer;
+
+    buffer = schro_encoder_encode_access_unit (encoder);
+
+    schro_encoder_output_push (encoder, buffer, encoder->next_slot,
+        task->frame_number - 1);
+    encoder->next_slot++;
+
+    encoder->last_au_frame = encoder->next_frame;
+  }
+
+  task->encode_frame = schro_encoder_frame_queue_get (encoder,
+      encoder->next_frame);
+  if (task->encode_frame == NULL) return FALSE;
+
+  schro_encoder_frame_queue_remove (encoder, encoder->next_frame);
+  task->frame_number = encoder->next_frame;
+  encoder->next_frame++;
+  task->presentation_frame = task->frame_number;
+
+  task->slot = encoder->next_slot;
+  encoder->next_slot++;
+
+  task->outbuffer = schro_buffer_new_and_alloc (0x100000);
+
+  task->bits = schro_bits_new ();
+  schro_bits_encode_init (task->bits, task->outbuffer);
+
+  /* set up params */
+  params = &task->params;
+  params->video_format = &encoder->video_format;
+  params->wavelet_filter_index = SCHRO_WAVELET_5_3;
+  params->transform_depth = 4;
+  schro_params_set_default_codeblock (params);
+  params->spatial_partition_flag = FALSE;
+  params->codeblock_mode_index = 0;
+
+  params->num_refs = 0;
+  params->global_motion = FALSE;
+  params->xblen_luma = 12;
+  params->yblen_luma = 12;
+  params->xbsep_luma = 8;
+  params->ybsep_luma = 8;
+  params->mv_precision = 0;
+  params->picture_pred_mode = 0;
+  params->picture_weight_1 = 1;
+  params->picture_weight_2 = 1;
+
+  schro_params_calculate_mc_sizes (params);
+  schro_params_calculate_iwt_sizes (params);
+
+  SCHRO_ERROR("frame %d start", task->frame_number);
+  schro_encoder_encode_picture (task);
+  SCHRO_ERROR("frame %d end bits=%d", task->frame_number,
+      task->outbuffer->length*8);
+
+  schro_encoder_output_push (encoder, task->outbuffer, task->slot,
+      task->presentation_frame);
+
+  schro_bits_free (task->bits);
+  //schro_decoder_fixup_offsets (encoder, subbuffer);
+
+  return TRUE;
+}
+
+static SchroBuffer *
+schro_encoder_encode_access_unit (SchroEncoder *encoder)
+{
+  SchroBits *bits;
+  SchroBuffer *buffer;
+  SchroBuffer *subbuffer;
+
+  buffer = schro_buffer_new_and_alloc (0x100);
+
+  bits = schro_bits_new ();
+  schro_bits_encode_init (bits, buffer);
+
+  schro_encoder_encode_access_unit_header (encoder, bits);
+
+  subbuffer = schro_buffer_new_subbuffer (buffer, 0, bits->offset/8);
+  schro_bits_free (bits);
+  schro_buffer_unref (buffer);
+
+  return subbuffer;
+}
+
+int
+schro_encoder_iterate (SchroEncoder *encoder)
+{
+  if (encoder->task == NULL) {
+    encoder->task = schro_encoder_task_new (encoder);
+  }
+
+  return schro_encoder_engine_intra_only (encoder);
+}
+
+SchroBuffer *
+schro_encoder_encode (SchroEncoder *encoder)
+{
+  SchroBuffer *buffer;
+
+  schro_encoder_iterate (encoder);
+
+  buffer = schro_encoder_pull (encoder, NULL);
+  return buffer;
+}
+
+#if 0
 SchroBuffer *
 schro_encoder_encode (SchroEncoder *encoder)
 {
@@ -363,7 +499,9 @@ schro_encoder_encode (SchroEncoder *encoder)
 
   return subbuffer;
 }
+#endif
 
+#if 0
 static void
 schro_encoder_engine_init (SchroEncoder *encoder)
 {
@@ -384,7 +522,9 @@ schro_encoder_engine_init (SchroEncoder *encoder)
     }
   }
 }
+#endif
 
+#if 0
 static void
 schro_encoder_create_picture_list (SchroEncoder *encoder)
 {
@@ -454,22 +594,23 @@ schro_encoder_create_picture_list (SchroEncoder *encoder)
   }
   encoder->picture_index = 0;
 }
+#endif
 
 static void
-schro_encoder_encode_picture (SchroEncoder *encoder)
+schro_encoder_encode_picture (SchroEncoderTask *task)
 {
-  SchroEncoderTask *task = encoder->task;
   int residue_bits_start;
+  SchroBuffer *subbuffer;
 
   /* encode header */
   schro_encoder_encode_parse_info (task->bits,
-      SCHRO_PARSE_CODE_PICTURE(task->picture->is_ref, task->picture->n_refs));
-  schro_encoder_encode_picture_header (encoder);
+      SCHRO_PARSE_CODE_PICTURE(task->is_ref, task->params.num_refs));
+  schro_encoder_encode_picture_header (task);
 
-  if (task->picture->n_refs > 0) {
+  if (task->params.num_refs > 0) {
     schro_encoder_motion_predict (task);
 
-    schro_encoder_encode_frame_prediction (encoder);
+    schro_encoder_encode_frame_prediction (task);
 
     schro_frame_convert (task->tmp_frame0, task->encode_frame);
     schro_frame_free (task->encode_frame);
@@ -480,26 +621,32 @@ schro_encoder_encode_picture (SchroEncoder *encoder)
 
     schro_frame_subtract (task->tmp_frame0, task->tmp_frame1);
 
-    schro_frame_zero_extend (task->tmp_frame0, encoder->video_format.width,
-        encoder->video_format.height);
+    schro_frame_zero_extend (task->tmp_frame0,
+        task->params.video_format->width,
+        task->params.video_format->height);
   } else {
     schro_frame_convert (task->tmp_frame0, task->encode_frame);
 
     schro_frame_free (task->encode_frame);
   }
 
-  schro_encoder_encode_transform_parameters (encoder);
+  schro_encoder_encode_transform_parameters (task);
 
   schro_frame_iwt_transform (task->tmp_frame0, &task->params,
       task->tmpbuf);
   residue_bits_start = task->bits->offset;
-  schro_encoder_encode_transform_data (encoder, 0);
-  schro_encoder_encode_transform_data (encoder, 1);
-  schro_encoder_encode_transform_data (encoder, 2);
+  schro_encoder_encode_transform_data (task, 0);
+  schro_encoder_encode_transform_data (task, 1);
+  schro_encoder_encode_transform_data (task, 2);
 
   schro_bits_sync (task->bits);
 
-  if (task->picture->n_refs > 0) {
+  subbuffer = schro_buffer_new_subbuffer (task->outbuffer, 0,
+      task->bits->offset/8);
+  schro_buffer_unref (task->outbuffer);
+  task->outbuffer = subbuffer;
+
+  if (task->params.num_refs > 0) {
     task->metric_to_cost =
       (double)(task->bits->offset - residue_bits_start) /
       task->stats_metric;
@@ -509,24 +656,24 @@ schro_encoder_encode_picture (SchroEncoder *encoder)
         task->stats_dc_blocks, task->stats_scan_blocks);
   }
 
-  if (task->picture->is_ref) {
-    SchroEncoderReference *ref;
-
+  if (task->is_ref) {
     schro_frame_inverse_iwt_transform (task->tmp_frame0, &task->params,
         task->tmpbuf);
 
+#if 0
     ref = schro_encoder_reference_add (encoder);
     ref->frame_number = task->tmp_frame0->frame_number;
     schro_frame_convert (ref->frames[0], task->tmp_frame0);
+#endif
+    schro_frame_convert (task->dest_ref->frames[0], task->tmp_frame0);
 
-    schro_encoder_reference_analyse (encoder, ref);
+    schro_encoder_reference_analyse (task->dest_ref);
   }
 }
 
-void
-schro_encoder_encode_frame_prediction (SchroEncoder *encoder)
+static void
+schro_encoder_encode_frame_prediction (SchroEncoderTask *task)
 {
-  SchroEncoderTask *task = encoder->task;
   SchroParams *params = &task->params;
   int i,j;
   int global_motion;
@@ -811,33 +958,29 @@ schro_encoder_encode_parse_info (SchroBits *bits,
 }
 
 void
-schro_encoder_encode_picture_header (SchroEncoder *encoder)
+schro_encoder_encode_picture_header (SchroEncoderTask *task)
 {
-  SchroEncoderTask *task = encoder->task;
   int i;
 
   schro_bits_sync(task->bits);
-  schro_bits_encode_bits (task->bits, 32, task->picture->frame_number);
+  schro_bits_encode_bits (task->bits, 32, task->frame_number);
 
-  for(i=0;i<task->picture->n_refs;i++){
+  for(i=0;i<task->params.num_refs;i++){
     schro_bits_encode_sint (task->bits,
-        task->picture->reference_frame_number[i] -
-        task->picture->frame_number);
+        task->reference_frame_number[i] - task->frame_number);
   }
 
   /* retire list */
-  schro_bits_encode_uint (task->bits, task->picture->n_retire);
-  for(i=0;i<task->picture->n_retire;i++){
-    schro_bits_encode_sint (task->bits,
-        task->picture->retire[i] - task->picture->frame_number);
+  schro_bits_encode_uint (task->bits, task->n_retire);
+  for(i=0;i<task->n_retire;i++){
+    schro_bits_encode_sint (task->bits, task->retire[i] - task->frame_number);
   }
 }
 
 
-void
-schro_encoder_encode_transform_parameters (SchroEncoder *encoder)
+static void
+schro_encoder_encode_transform_parameters (SchroEncoderTask *task)
 {
-  SchroEncoderTask *task = encoder->task;
   SchroParams *params = &task->params;
 
   if (params->num_refs > 0) {
@@ -882,10 +1025,9 @@ schro_encoder_encode_transform_parameters (SchroEncoder *encoder)
 }
 
 
-void
-schro_encoder_init_subbands (SchroEncoder *encoder)
+static void
+schro_encoder_init_subbands (SchroEncoderTask *task)
 {
-  SchroEncoderTask *task = encoder->task;
   SchroParams *params = &task->params;
   int i;
   int w;
@@ -975,11 +1117,10 @@ schro_encoder_init_subbands (SchroEncoder *encoder)
 }
 
 void
-schro_encoder_clean_up_transform (SchroEncoder *encoder, int component,
+schro_encoder_clean_up_transform (SchroEncoderTask *task, int component,
     int index)
 {
   static const int wavelet_extent[8] = { 2, 1, 2, 0, 0, 0, 4, 2 };
-  SchroEncoderTask *task = encoder->task;
   SchroSubband *subband = task->subbands + index;
   SchroParams *params = &task->params;
   int stride;
@@ -997,16 +1138,16 @@ schro_encoder_clean_up_transform (SchroEncoder *encoder, int component,
   if (component == 0) {
     stride = subband->stride >> 1;
     width = subband->w;
-    w = ROUND_UP_SHIFT(encoder->video_format.width, shift);
+    w = ROUND_UP_SHIFT(params->video_format->width, shift);
     height = subband->h;
-    h = ROUND_UP_SHIFT(encoder->video_format.height, shift);
+    h = ROUND_UP_SHIFT(params->video_format->height, shift);
     offset = subband->offset;
   } else {
     stride = subband->chroma_stride >> 1;
     width = subband->chroma_w;
-    w = ROUND_UP_SHIFT(encoder->video_format.width/2, shift);
+    w = ROUND_UP_SHIFT(params->video_format->width/2, shift);
     height = subband->chroma_h;
-    h = ROUND_UP_SHIFT(encoder->video_format.height/2, shift);
+    h = ROUND_UP_SHIFT(params->video_format->height/2, shift);
     offset = subband->chroma_offset;
   }
 
@@ -1032,20 +1173,19 @@ schro_encoder_clean_up_transform (SchroEncoder *encoder, int component,
   }
 }
 
-void
-schro_encoder_encode_transform_data (SchroEncoder *encoder, int component)
+static void
+schro_encoder_encode_transform_data (SchroEncoderTask *task, int component)
 {
   int i;
-  SchroEncoderTask *task = encoder->task;
   SchroParams *params = &task->params;
 
-  schro_encoder_init_subbands (encoder);
+  schro_encoder_init_subbands (task);
 
   schro_encoder_choose_quantisers (task);
 
   for (i=0;i < 1 + 3*params->transform_depth; i++) {
-    schro_encoder_clean_up_transform (encoder, component, i);
-    schro_encoder_encode_subband (encoder, component, i);
+    schro_encoder_clean_up_transform (task, component, i);
+    schro_encoder_encode_subband (task, component, i);
   }
 }
 
@@ -1082,10 +1222,9 @@ quantize (int value, int quant_factor, int quant_offset,
 }
 
 static int
-schro_encoder_quantize_subband (SchroEncoder *encoder, int component, int index,
+schro_encoder_quantize_subband (SchroEncoderTask *task, int component, int index,
     int16_t *quant_data)
 {
-  SchroEncoderTask *task = encoder->task;
   SchroSubband *subband = task->subbands + index;
   int pred_value;
   int quant_factor;
@@ -1172,10 +1311,9 @@ schro_encoder_quantize_subband (SchroEncoder *encoder, int component, int index,
   return subband_zero_flag;
 }
 
-void
-schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
+static void
+schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index)
 {
-  SchroEncoderTask *task = encoder->task;
   SchroParams *params = &task->params;
   SchroSubband *subband = task->subbands + index;
   SchroSubband *parent_subband = NULL;
@@ -1236,7 +1374,7 @@ schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index)
   schro_arith_init_contexts (arith);
 
   quant_data = task->quant_data;
-  subband_zero_flag = schro_encoder_quantize_subband (encoder, component,
+  subband_zero_flag = schro_encoder_quantize_subband (task, component,
       index, quant_data);
   if (subband_zero_flag) {
     SCHRO_DEBUG ("subband is zero");
@@ -1441,8 +1579,7 @@ schro_encoder_frame_queue_remove (SchroEncoder *encoder, int frame_index)
 /* reference pool */
 
 static void
-schro_encoder_reference_analyse (SchroEncoder *encoder,
-    SchroEncoderReference *ref)
+schro_encoder_reference_analyse (SchroEncoderReference *ref)
 {
   int i;
 
@@ -1451,6 +1588,7 @@ schro_encoder_reference_analyse (SchroEncoder *encoder,
   }
 }
 
+#if 0
 static SchroEncoderReference *
 schro_encoder_reference_add (SchroEncoder *encoder)
 {
@@ -1469,7 +1607,9 @@ schro_encoder_reference_add (SchroEncoder *encoder)
 
   return NULL;
 }
+#endif
 
+#if 0
 static SchroEncoderReference *
 schro_encoder_reference_get (SchroEncoder *encoder, int frame_number)
 {
@@ -1486,7 +1626,9 @@ schro_encoder_reference_get (SchroEncoder *encoder, int frame_number)
   }
   return NULL;
 }
+#endif
 
+#if 0
 static void
 schro_encoder_reference_retire (SchroEncoder *encoder, int frame_number)
 {
@@ -1504,5 +1646,55 @@ schro_encoder_reference_retire (SchroEncoder *encoder, int frame_number)
   }
 
   SCHRO_ASSERT(0);
+}
+#endif
+
+/* output queue */
+
+static void
+schro_encoder_output_push (SchroEncoder *encoder, SchroBuffer *buffer,
+    int slot, int presentation_frame)
+{
+  int i;
+
+  SCHRO_DEBUG("pushing slot %d", slot);
+  for(i=0;i<ARRAY_SIZE(encoder->output_queue);i++){
+    if (encoder->output_queue[i].buffer == NULL) {
+      encoder->output_queue[i].slot = slot;
+      encoder->output_queue[i].buffer = buffer;
+      encoder->output_queue[i].presentation_frame = presentation_frame;
+      return;
+    }
+  }
+  SCHRO_ERROR("no slot available in output queue");
+  SCHRO_ASSERT(0);
+}
+
+SchroBuffer *
+schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
+{
+  int i;
+
+  SCHRO_DEBUG("pulling slot %d", encoder->output_slot);
+  for(i=0;i<ARRAY_SIZE(encoder->output_queue);i++){
+    if (encoder->output_queue[i].buffer != NULL &&
+        encoder->output_queue[i].slot == encoder->output_slot) {
+      SchroBuffer *buffer = encoder->output_queue[i].buffer;
+
+      encoder->output_queue[i].buffer = NULL;
+      encoder->output_slot++;
+      if (presentation_frame) {
+        *presentation_frame = encoder->output_queue[i].presentation_frame;
+      }
+      schro_decoder_fixup_offsets (encoder, buffer);
+
+      SCHRO_DEBUG("got buffer length=%d", buffer->length);
+
+      return buffer;
+    }
+  }
+
+  SCHRO_DEBUG("got nothing");
+  return NULL;
 }
 

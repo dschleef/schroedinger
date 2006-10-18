@@ -68,6 +68,18 @@ struct _SchroEncoder {
   int end_of_stream;
   int prev_offset;
 
+  int last_au_frame;
+  int au_distance;
+  int next_slot;
+  int next_frame;
+
+  int output_slot;
+  struct {
+    int slot;
+    int presentation_frame;
+    SchroBuffer *buffer;
+  } output_queue[10];
+
   //SchroMotionVector *motion_vectors;
   //SchroPredictionList *predict_lists;
 
@@ -98,10 +110,12 @@ struct _SchroEncoder {
 };
 
 struct _SchroEncoderTask {
+  int state;
+
   SchroEncoder *encoder;
   SchroParams params;
   
-  SchroPicture *picture;
+  SchroBuffer *outbuffer;
   SchroBits *bits;
   SchroFrame *encode_frame;
 
@@ -127,6 +141,18 @@ struct _SchroEncoderTask {
   int stats_dc_blocks;
   int stats_none_blocks;
   int stats_scan_blocks;
+
+  SchroEncoderReference *dest_ref;
+
+  int slot;
+  int is_ref;
+  int frame_number;
+  int reference_frame_number[2];
+
+  int n_retire;
+  int retire[SCHRO_MAX_REFERENCE_FRAMES];
+
+  int presentation_frame;
 };
 
 struct _SchroEncoderSettings {
@@ -153,17 +179,15 @@ void schro_encoder_set_video_format (SchroEncoder *encoder,
     SchroVideoFormat *video_format);
 void schro_encoder_end_of_stream (SchroEncoder *encoder);
 void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
+int schro_encoder_iterate (SchroEncoder *encoder);
 SchroBuffer * schro_encoder_encode (SchroEncoder *encoder);
 
 void schro_encoder_copy_to_frame_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_encode_access_unit_header (SchroEncoder *encoder, SchroBits *bits);
 void schro_encoder_encode_parse_info (SchroBits *bits, int parse_code);
-void schro_encoder_encode_frame_prediction (SchroEncoder *encoder);
-void schro_encoder_encode_transform_parameters (SchroEncoder *encoder);
-void schro_encoder_encode_transform_data (SchroEncoder *encoder, int component);
-void schro_encoder_encode_subband (SchroEncoder *encoder, int component, int index);
-void schro_encoder_inverse_iwt_transform (SchroEncoder *encoder, int component);
-void schro_encoder_copy_from_frame_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
+
+SchroBuffer * schro_encoder_pull (SchroEncoder *encoder,
+    int *n_decodable_frames);
 
 #endif
 

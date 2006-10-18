@@ -28,6 +28,9 @@
 #include <schroedinger/schrobitstream.h>
 #include <math.h>
 
+GST_DEBUG_CATEGORY_EXTERN (schro_debug);
+#define GST_CAT_DEFAULT schro_debug
+
 #define GST_TYPE_SCHRO_ENC \
   (gst_schro_enc_get_type())
 #define GST_SCHRO_ENC(obj) \
@@ -60,13 +63,9 @@ struct _GstSchroEnc
   guint64 duration;
 
   /* state */
-  gboolean sent_header;
-  int n_frames;
-  int offset;
-  int granulepos;
-
-  guint64 granulepos_offset;
-  guint64 timestamp_offset;
+  gboolean first_frame;
+  uint64_t granulepos_low;
+  uint64_t granulepos_hi;
 
   SchroEncoder *encoder;
   SchroVideoFormat *video_format;
@@ -100,6 +99,8 @@ static gboolean gst_schro_enc_sink_event (GstPad *pad, GstEvent *event);
 static GstFlowReturn gst_schro_enc_chain (GstPad *pad, GstBuffer *buf);
 static GstStateChangeReturn gst_schro_enc_change_state (GstElement *element,
     GstStateChange transition);
+static const GstQueryType * gst_schro_enc_get_query_types (GstPad *pad);
+static gboolean gst_schro_enc_src_query (GstPad *pad, GstQuery *query);
 
 static GstStaticPadTemplate gst_schro_enc_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
@@ -173,9 +174,12 @@ gst_schro_enc_init (GstSchroEnc *schro_enc, GstSchroEncClass *klass)
   gst_pad_set_chain_function (schro_enc->sinkpad, gst_schro_enc_chain);
   gst_pad_set_event_function (schro_enc->sinkpad, gst_schro_enc_sink_event);
   gst_pad_set_setcaps_function (schro_enc->sinkpad, gst_schro_enc_sink_setcaps);
+  //gst_pad_set_query_function (schro_enc->sinkpad, gst_schro_enc_sink_query);
   gst_element_add_pad (GST_ELEMENT(schro_enc), schro_enc->sinkpad);
 
   schro_enc->srcpad = gst_pad_new_from_static_template (&gst_schro_enc_src_template, "src");
+  gst_pad_set_query_type_function (schro_enc->srcpad, gst_schro_enc_get_query_types);
+  gst_pad_set_query_function (schro_enc->srcpad, gst_schro_enc_src_query);
   gst_element_add_pad (GST_ELEMENT(schro_enc), schro_enc->srcpad);
 }
 
@@ -191,6 +195,8 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
   gst_structure_get_int (structure, "height", &schro_enc->height);
   gst_structure_get_fraction (structure, "framerate", &schro_enc->fps_n,
       &schro_enc->fps_d);
+  schro_enc->par_n = 1;
+  schro_enc->par_d = 1;
   gst_structure_get_fraction (structure, "pixel-aspect-ratio",
       &schro_enc->par_n, &schro_enc->par_d);
 
@@ -214,6 +220,8 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
   schro_enc->duration = gst_util_uint64_scale_int (GST_SECOND,
           schro_enc->fps_d, schro_enc->fps_n);
 
+  gst_object_unref (GST_OBJECT(schro_enc));
+
   return TRUE;
 }
 
@@ -225,8 +233,10 @@ gst_schro_enc_finalize (GObject *object)
   g_return_if_fail (GST_IS_SCHRO_ENC (object));
   schro_enc = GST_SCHRO_ENC (object);
 
+GST_ERROR("got here");
   if (schro_enc->encoder) {
     schro_encoder_free (schro_enc->encoder);
+    schro_enc->encoder = NULL;
   }
 
   G_OBJECT_CLASS (parent_class)->finalize (object);
@@ -310,34 +320,170 @@ gst_schro_buffer_wrap (GstBuffer *buf, int width, int height)
   return frame;
 }
 
-#if 0
-static GstCaps *
-gst_schro_enc_set_header_on_caps (GstCaps * caps, GstBuffer *buf1, GstBuffer * buf2)
+#define OGG_DIRAC_GRANULE_SHIFT 30
+#define OGG_DIRAC_GRANULE_LOW_MASK ((1<<OGG_DIRAC_GRANULE_SHIFT)-1)
+
+static gint64
+granulepos_to_frame (gint64 granulepos)
 {
-  GstStructure *structure;
-  GValue array = { 0 };
-  GValue value = { 0 };
+  if (granulepos == -1) return -1;
 
-  caps = gst_caps_make_writable (caps);
-  structure = gst_caps_get_structure (caps, 0);
+  return (granulepos >> OGG_DIRAC_GRANULE_SHIFT) +
+    (granulepos & OGG_DIRAC_GRANULE_LOW_MASK);
+}
 
-  /* mark buffers */
-  GST_BUFFER_FLAG_SET (buf1, GST_BUFFER_FLAG_IN_CAPS);
+static const GstQueryType *
+gst_schro_enc_get_query_types (GstPad *pad)
+{
+  static const GstQueryType query_types[] = {
+    //GST_QUERY_POSITION,
+    //GST_QUERY_DURATION,
+    GST_QUERY_CONVERT,
+    0
+  };
 
-  /* put buffers in a fixed list */
-  g_value_init (&array, GST_TYPE_ARRAY);
-  g_value_init (&value, GST_TYPE_BUFFER);
-  gst_value_set_buffer (&value, buf1);
-  gst_value_array_append_value (&array, &value);
-  gst_value_set_buffer (&value, buf2);
-  gst_value_array_append_value (&array, &value);
-  g_value_unset (&value);
-  gst_structure_set_value (structure, "streamheader", &array);
-  g_value_unset (&array);
+  return query_types;
+}
 
-  return caps;
+#if 0
+static gboolean
+gst_schro_enc_sink_convert (GstPad *pad,
+    GstFormat src_format, gint64 src_value,
+    GstFormat * dest_format, gint64 *dest_value)
+{
+  gboolean res = TRUE;
+  GstSchroEnc *enc;
+
+  if (src_format == *dest_format) {
+    *dest_value = src_value;
+    return TRUE;
+  }
+
+  enc = GST_SCHRO_ENC (gst_pad_get_parent (pad));
+
+  /* FIXME: check if we are in a decoding state */
+
+  switch (src_format) {
+    case GST_FORMAT_BYTES:
+      switch (*dest_format) {
+#if 0
+        case GST_FORMAT_DEFAULT:
+          *dest_value = gst_util_uint64_scale_int (src_value, 1,
+              enc->bytes_per_picture);
+          break;
+#endif
+        case GST_FORMAT_TIME:
+          /* seems like a rather silly conversion, implement me if you like */
+        default:
+          res = FALSE;
+      }
+      break;
+    case GST_FORMAT_DEFAULT:
+      switch (*dest_format) {
+        case GST_FORMAT_TIME:
+          *dest_value = gst_util_uint64_scale (src_value,
+              GST_SECOND * enc->fps_d, enc->fps_n);
+          break;
+#if 0
+        case GST_FORMAT_BYTES:
+          *dest_value = gst_util_uint64_scale_int (src_value,
+              enc->bytes_per_picture, 1);
+          break;
+#endif
+        default:
+          res = FALSE;
+      }
+      break;
+    default:
+      res = FALSE;
+      break;
+  }
 }
 #endif
+
+static gboolean
+gst_schro_enc_src_convert (GstPad *pad,
+    GstFormat src_format, gint64 src_value,
+    GstFormat * dest_format, gint64 *dest_value)
+{ 
+  gboolean res = TRUE;
+  GstSchroEnc *enc;
+
+  if (src_format == *dest_format) {
+    *dest_value = src_value;
+    return TRUE;
+  } 
+
+  enc = GST_SCHRO_ENC (gst_pad_get_parent (pad));
+
+  /* FIXME: check if we are in a encoding state */
+
+  switch (src_format) {
+    case GST_FORMAT_DEFAULT:
+      switch (*dest_format) {
+        case GST_FORMAT_TIME:
+          *dest_value = gst_util_uint64_scale (granulepos_to_frame (src_value),
+              enc->fps_d * GST_SECOND, enc->fps_n);
+          break;
+        default:
+          res = FALSE;
+      }
+      break;
+    case GST_FORMAT_TIME:
+      switch (*dest_format) {
+        case GST_FORMAT_DEFAULT:
+          {
+            *dest_value = gst_util_uint64_scale (src_value,
+                enc->fps_n, enc->fps_d * GST_SECOND);
+            break;
+          }
+        default:
+          res = FALSE;
+          break;
+      }
+      break;
+    default:
+      res = FALSE; 
+      break;
+  }
+
+  gst_object_unref (enc);
+
+  return res;
+}
+
+static gboolean
+gst_schro_enc_src_query (GstPad *pad, GstQuery *query)
+{
+  GstSchroEnc *enc;
+  gboolean res;
+
+  enc = GST_SCHRO_ENC (gst_pad_get_parent (pad));
+
+  switch GST_QUERY_TYPE (query) {
+    case GST_QUERY_CONVERT:
+      {
+        GstFormat src_fmt, dest_fmt;
+        gint64 src_val, dest_val;
+
+GST_ERROR("convert");
+        gst_query_parse_convert (query, &src_fmt, &src_val, &dest_fmt, &dest_val);
+        res = gst_schro_enc_src_convert (pad, src_fmt, src_val, &dest_fmt,
+            &dest_val);
+        if (!res) goto error;
+        gst_query_set_convert (query, src_fmt, src_val, dest_fmt, dest_val);
+        break;
+      }
+    default:
+      res = gst_pad_query_default (pad, query);
+  }
+  gst_object_unref (enc);
+  return res;
+error:
+  GST_DEBUG_OBJECT (enc, "query failed");
+  gst_object_unref (enc);
+  return res;
+}
 
 static GstFlowReturn
 gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
@@ -350,35 +496,12 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
 
   schro_enc = GST_SCHRO_ENC (GST_PAD_PARENT (pad));
 
-  if (schro_enc->sent_header == 0) {
-    GstCaps *caps;
-
-    encoded_buffer = schro_encoder_encode (schro_enc->encoder);
-
-    GST_DEBUG ("encoder produced %d bytes", encoded_buffer->length);
-
-    outbuf = gst_buffer_new_and_alloc (encoded_buffer->length);
-
-    memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data,
-        encoded_buffer->length);
-    GST_BUFFER_OFFSET (outbuf) = 0;
-    GST_BUFFER_OFFSET_END (outbuf) = 0;
-
-    schro_buffer_unref (encoded_buffer);
-
-    caps = gst_pad_get_caps (schro_enc->srcpad);
-    gst_buffer_set_caps (outbuf, caps);
-
-    ret = gst_pad_push (schro_enc->srcpad, outbuf);
-    if (ret!= GST_FLOW_OK) return ret;
-
-    schro_enc->timestamp_offset = GST_BUFFER_TIMESTAMP (buf);
-    schro_enc->granulepos_offset =
+  if (schro_enc->first_frame) {
+    schro_enc->granulepos_low =
       gst_util_uint64_scale (GST_BUFFER_TIMESTAMP(buf), schro_enc->fps_n,
           GST_SECOND * schro_enc->fps_d);
 
-    schro_enc->sent_header = 1;
-    schro_enc->granulepos = 1;
+    schro_enc->granulepos_hi = 0;
   }
 
   frame = gst_schro_buffer_wrap (buf, schro_enc->width, schro_enc->height);
@@ -387,46 +510,52 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
   GST_DEBUG ("pushing frame");
   schro_encoder_push_frame (schro_enc->encoder, frame);
 
+  while(schro_encoder_iterate (schro_enc->encoder));
   while (1) {
-    encoded_buffer = schro_encoder_encode (schro_enc->encoder);
+    int presentation_frame;
+
+    encoded_buffer = schro_encoder_pull (schro_enc->encoder,
+        &presentation_frame);
     if (encoded_buffer == NULL) break;
 
-#if 0
-    ret = gst_pad_alloc_buffer_and_set_caps (schro_enc->srcpad,
-        GST_BUFFER_OFFSET_NONE, encoded_buffer->length,
-        GST_PAD_CAPS (schro_enc->srcpad), &outbuf);
-    if (ret != GST_FLOW_OK) {
-      schro_buffer_unref (encoded_buffer);
-      return ret;
+    if (schro_decoder_is_access_unit (encoded_buffer)) {
+      schro_enc->granulepos_hi = presentation_frame + 1;
     }
-#endif
+
+    schro_enc->granulepos_low = presentation_frame + 1 - schro_enc->granulepos_hi;
+
     outbuf = gst_buffer_new_and_alloc (encoded_buffer->length);
+    memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data,
+        encoded_buffer->length);
+    gst_buffer_set_caps (outbuf, gst_pad_get_caps(schro_enc->srcpad));
 
-    gst_buffer_set_caps (outbuf, GST_PAD_CAPS(schro_enc->srcpad));
+    GST_BUFFER_OFFSET_END (outbuf) =
+      (schro_enc->granulepos_hi<<30) + schro_enc->granulepos_low;
+    GST_BUFFER_OFFSET (outbuf) = gst_util_uint64_scale_int (
+        (schro_enc->granulepos_hi + schro_enc->granulepos_low),
+        schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
 
-    memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data, encoded_buffer->length);
-    GST_BUFFER_OFFSET_END (outbuf) = schro_enc->granulepos +
-      schro_enc->granulepos_offset;
-    GST_BUFFER_OFFSET (outbuf) = 
-      gst_util_uint64_scale_int (GST_BUFFER_OFFSET_END (outbuf) * GST_SECOND,
-          schro_enc->fps_d, schro_enc->fps_n);
-    GST_BUFFER_TIMESTAMP (outbuf) = 
-      gst_util_uint64_scale_int (schro_enc->n_frames * GST_SECOND,
-          schro_enc->fps_d, schro_enc->fps_n) + schro_enc->timestamp_offset;
-    GST_BUFFER_DURATION (outbuf) = schro_enc->duration;
+    GST_BUFFER_TIMESTAMP (outbuf) = gst_util_uint64_scale_int (
+        (schro_enc->granulepos_hi + schro_enc->granulepos_low),
+        schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
+    if (schro_decoder_is_access_unit (encoded_buffer)) {
+      GST_BUFFER_DURATION (outbuf) = 0;
+    } else {
+      GST_BUFFER_DURATION (outbuf) = schro_enc->duration;
+    }
 
-    GST_DEBUG("offset %lld offset_end %lld timestamp %lld duration %lld",
+    GST_INFO("offset %lld granulepos %llu:%llu timestamp %lld duration %lld",
         GST_BUFFER_OFFSET (outbuf),
-        GST_BUFFER_OFFSET_END (outbuf),
+        GST_BUFFER_OFFSET_END (outbuf)>>30,
+        GST_BUFFER_OFFSET_END (outbuf)&((1<<30) - 1),
         GST_BUFFER_TIMESTAMP (outbuf),
         GST_BUFFER_DURATION (outbuf));
 
     /* mark all as key frames */
-    GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
+    if (schro_decoder_is_intra (encoded_buffer)) {
+      GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
+    }
 
-    schro_enc->offset += encoded_buffer->length;
-    schro_enc->granulepos++;
-    schro_enc->n_frames++;
 
     schro_buffer_unref (encoded_buffer);
     
