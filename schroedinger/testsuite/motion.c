@@ -61,7 +61,7 @@ main (int argc, char *argv[])
   memset (motion_vectors, 0, sizeof(SchroMotionVector) *
       params.x_num_blocks * params.y_num_blocks);
   
-  printf("sizeof(SchroMotionVector) = %d\n",sizeof(SchroMotionVector));
+  printf("sizeof(SchroMotionVector) = %lu\n",(unsigned long) sizeof(SchroMotionVector));
   printf("num blocks %d x %d\n", params.x_num_blocks, params.y_num_blocks);
   for(i=0;i<params.x_num_blocks*params.y_num_blocks;i++){
     motion_vectors[i].x = 0;
