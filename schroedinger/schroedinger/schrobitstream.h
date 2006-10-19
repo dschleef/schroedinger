@@ -4,6 +4,7 @@
 
 #define SCHRO_MAX_TRANSFORM_DEPTH 8
 #define SCHRO_MAX_REFERENCE_FRAMES 10
+#define SCHRO_FRAME_QUEUE_LENGTH 40
 
 typedef enum _SchroParseCode SchroParseCode;
 enum _SchroParseCode {

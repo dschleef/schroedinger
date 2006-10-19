@@ -1,3 +1,14 @@
+2006-10-19  David Schleef  <ds@schleef.org>
+
+	* gst/gstschroenc.c:
+	  remove debug
+	* schroedinger/schrobitstream.h:
+	  Increase frame queue length.
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Implement backref, tworef, fourref engines.
+
 2006-10-18  David Schleef  <ds@schleef.org>
 
 	* gst/gstschrodec.c:

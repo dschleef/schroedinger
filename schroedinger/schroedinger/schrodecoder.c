@@ -320,12 +320,18 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
         params->iwt_chroma_width, params->iwt_chroma_height);
   }
 
+#ifdef DECODE_PREDICTION_ONLY
+  if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) == 0) {
+#endif
   schro_decoder_decode_transform_data (decoder, 0);
   schro_decoder_decode_transform_data (decoder, 1);
   schro_decoder_decode_transform_data (decoder, 2);
 
   schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
       decoder->tmpbuf);
+#ifdef DECODE_PREDICTION_ONLY
+  }
+#endif
 
   if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) > 0) {
 #ifndef DECODE_PREDICTION_ONLY

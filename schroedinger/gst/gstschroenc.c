@@ -233,7 +233,6 @@ gst_schro_enc_finalize (GObject *object)
   g_return_if_fail (GST_IS_SCHRO_ENC (object));
   schro_enc = GST_SCHRO_ENC (object);
 
-GST_ERROR("got here");
   if (schro_enc->encoder) {
     schro_encoder_free (schro_enc->encoder);
     schro_enc->encoder = NULL;

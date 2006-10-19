@@ -36,7 +36,7 @@ struct _SchroEncoder {
   
   SchroEncoderTask *task;
 
-  SchroFrame *frame_queue[SCHRO_MAX_REFERENCE_FRAMES];
+  SchroFrame *frame_queue[SCHRO_FRAME_QUEUE_LENGTH];
   int frame_queue_length;
 
   int frame_queue_index;
@@ -78,12 +78,12 @@ struct _SchroEncoder {
     int slot;
     int presentation_frame;
     SchroBuffer *buffer;
-  } output_queue[10];
+  } output_queue[SCHRO_FRAME_QUEUE_LENGTH];
 
   //SchroMotionVector *motion_vectors;
   //SchroPredictionList *predict_lists;
 
-  SchroPicture picture_list[10];
+  SchroPicture picture_list[SCHRO_FRAME_QUEUE_LENGTH];
   int n_pictures;
   int picture_index;
 
@@ -107,6 +107,15 @@ struct _SchroEncoder {
   //int16_t *quant_data;
   
   int engine_init;
+  int engine;
+
+  /* engine specific stuff */
+
+  int last_ref;
+  int ref_distance;
+  int next_ref;
+  int mid1_ref;
+  int mid2_ref;
 };
 
 struct _SchroEncoderTask {
@@ -136,12 +145,6 @@ struct _SchroEncoderTask {
   SchroMotionVector *motion_vectors;
   SchroPredictionList *predict_lists;
 
-  double metric_to_cost;
-  int stats_metric;
-  int stats_dc_blocks;
-  int stats_none_blocks;
-  int stats_scan_blocks;
-
   SchroEncoderReference *dest_ref;
 
   int slot;
@@ -153,6 +156,19 @@ struct _SchroEncoderTask {
   int retire[SCHRO_MAX_REFERENCE_FRAMES];
 
   int presentation_frame;
+
+  /* engine specific stuff */
+
+  /* intra_only */
+
+  /* backref */
+
+  /* tworef */
+  double metric_to_cost;
+  int stats_metric;
+  int stats_dc_blocks;
+  int stats_none_blocks;
+  int stats_scan_blocks;
 };
 
 struct _SchroEncoderSettings {
