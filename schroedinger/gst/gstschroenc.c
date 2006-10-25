@@ -62,8 +62,13 @@ struct _GstSchroEnc
   int par_n, par_d;
   guint64 duration;
 
+  /* segment properties */
+  gint64 segment_start;
+  gint64 segment_position;
+
   /* state */
-  gboolean first_frame;
+  gboolean got_offset;
+  uint64_t granulepos_offset;
   uint64_t granulepos_low;
   uint64_t granulepos_hi;
 
@@ -292,6 +297,26 @@ gst_schro_enc_sink_event (GstPad *pad, GstEvent *event)
       /* FIXME: flush */
       ret = gst_pad_push_event (schro_enc->srcpad, event);
       break;
+    case GST_EVENT_NEWSEGMENT:
+      {
+        gboolean update;
+        double rate;
+        double applied_rate;
+        GstFormat format;
+        gint64 start;
+        gint64 stop;
+        gint64 position;
+
+        gst_event_parse_new_segment_full (event, &update, &rate,
+            &applied_rate, &format, &start, &stop, &position);
+
+        GST_ERROR("new segment %lld %lld", start, position);
+        schro_enc->segment_start = start;
+        schro_enc->segment_position = position;
+
+        ret = gst_pad_push_event (schro_enc->srcpad, event);
+      }
+      break;
     default:
       ret = gst_pad_push_event (schro_enc->srcpad, event);
       break;
@@ -495,12 +520,17 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
 
   schro_enc = GST_SCHRO_ENC (GST_PAD_PARENT (pad));
 
-  if (schro_enc->first_frame) {
-    schro_enc->granulepos_low =
+  if (GST_BUFFER_TIMESTAMP (buf) < schro_enc->segment_start) {
+    GST_ERROR("dropping early buffer");
+    return GST_FLOW_OK;
+  }
+  if (!schro_enc->got_offset) {
+    schro_enc->granulepos_offset =
       gst_util_uint64_scale (GST_BUFFER_TIMESTAMP(buf), schro_enc->fps_n,
           GST_SECOND * schro_enc->fps_d);
 
     schro_enc->granulepos_hi = 0;
+    schro_enc->got_offset = TRUE;
   }
 
   frame = gst_schro_buffer_wrap (buf, schro_enc->width, schro_enc->height);
@@ -518,10 +548,12 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
     if (encoded_buffer == NULL) break;
 
     if (schro_decoder_is_access_unit (encoded_buffer)) {
-      schro_enc->granulepos_hi = presentation_frame + 1;
+      schro_enc->granulepos_hi = schro_enc->granulepos_offset +
+        presentation_frame + 1;
     }
 
-    schro_enc->granulepos_low = presentation_frame + 1 - schro_enc->granulepos_hi;
+    schro_enc->granulepos_low = schro_enc->granulepos_offset +
+      presentation_frame + 1 - schro_enc->granulepos_hi;
 
     outbuf = gst_buffer_new_and_alloc (encoded_buffer->length);
     memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data,
@@ -530,11 +562,11 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
 
     GST_BUFFER_OFFSET_END (outbuf) =
       (schro_enc->granulepos_hi<<30) + schro_enc->granulepos_low;
-    GST_BUFFER_OFFSET (outbuf) = gst_util_uint64_scale_int (
+    GST_BUFFER_OFFSET (outbuf) = gst_util_uint64_scale (
         (schro_enc->granulepos_hi + schro_enc->granulepos_low),
         schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
 
-    GST_BUFFER_TIMESTAMP (outbuf) = gst_util_uint64_scale_int (
+    GST_BUFFER_TIMESTAMP (outbuf) = gst_util_uint64_scale (
         (schro_enc->granulepos_hi + schro_enc->granulepos_low),
         schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
     if (schro_decoder_is_access_unit (encoded_buffer)) {
@@ -550,7 +582,6 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
         GST_BUFFER_TIMESTAMP (outbuf),
         GST_BUFFER_DURATION (outbuf));
 
-    /* mark all as key frames */
     if (schro_decoder_is_intra (encoded_buffer)) {
       GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
     }

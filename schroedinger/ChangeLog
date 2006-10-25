@@ -1,3 +1,24 @@
+2006-10-25  David Schleef  <ds@schleef.org>
+
+	* gst/gstschrodec.c:
+	* gst/gstschroenc.c:
+	  Random hacking in circles.
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrotables.c:
+	* schroedinger/schrotables.h:
+	* testsuite/tables.c:
+	  Add a table of information to make shifting bits faster.
+	* schroedinger/schrobitstream.h:
+	  Add SCHRO_LIMIT_WIDTH.
+	* schroedinger/schroutils.h:
+	  Add schro_divide()
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  Use SCHRO_LIMIT_WIDTH and schro_divide().
+	* testsuite/arith_speed.c:
+	  Assembly code testing.  Sorry, only compiles on i386.
+
 2006-10-19  David Schleef  <ds@schleef.org>
 
 	* gst/gstschroenc.c:

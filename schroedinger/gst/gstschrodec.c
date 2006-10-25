@@ -77,6 +77,8 @@ struct _GstSchroDec
 
   gdouble proportion;
   GstClockTime earliest_time;
+  GstClockTime timestamp_offset;
+  gint64 granulepos_offset;
 };
 
 struct _GstSchroDecClass
@@ -198,6 +200,8 @@ gst_schro_dec_reset (GstSchroDec *dec)
   dec->granulepos = 0;
   dec->discont = TRUE;
   dec->n_frames = 0;
+  dec->timestamp_offset = GST_CLOCK_TIME_NONE;
+  dec->granulepos_offset = -1;
 
   gst_segment_init (&dec->segment, GST_FORMAT_TIME);
   parse_helper_flush (&dec->parse_helper);
@@ -577,7 +581,7 @@ gst_schro_dec_sink_event (GstPad *pad, GstEvent *event)
       if (rate <= 0.0)
         goto newseg_wrong_rate;
 
-      GST_DEBUG("newsegment %lld %lld", start, time);
+      GST_ERROR("newsegment %lld %lld", start, time);
       gst_segment_set_newsegment (&dec->segment, update, rate, format,
           start, stop, time);
 
@@ -687,12 +691,28 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
 
   schro_dec = GST_SCHRO_DEC (GST_PAD_PARENT (pad));
 
+  GST_DEBUG("timestamp offset %lld, buffer %lld gp %lld, size %d",
+    schro_dec->timestamp_offset, GST_BUFFER_TIMESTAMP(buf),
+    GST_BUFFER_OFFSET_END(buf), GST_BUFFER_SIZE(buf));
+
   if (G_UNLIKELY (GST_BUFFER_FLAG_IS_SET (buf, GST_BUFFER_FLAG_DISCONT))) {
     GST_DEBUG_OBJECT (schro_dec, "received DISCONT buffer");
     //dec->need_keyframe = TRUE;
-    //dec->last_timestamp = -1;
+    schro_dec->timestamp_offset = GST_CLOCK_TIME_NONE;
+    schro_dec->granulepos_offset = -1;
     schro_dec->granulepos = -1;
     schro_dec->discont = TRUE;
+  }
+
+  if (!GST_CLOCK_TIME_IS_VALID(schro_dec->timestamp_offset) &&
+      GST_BUFFER_TIMESTAMP_IS_VALID(buf)) {
+    schro_dec->timestamp_offset = GST_BUFFER_TIMESTAMP(buf);
+    GST_DEBUG("setting timestamp offset to %lld", schro_dec->timestamp_offset);
+  }
+  if (schro_dec->granulepos_offset == -1 &&
+      GST_BUFFER_OFFSET_END(buf) != -1) {
+    schro_dec->granulepos_offset = GST_BUFFER_OFFSET_END(buf);
+    GST_DEBUG("setting granulepos offset to %lld", GST_BUFFER_OFFSET_END(buf));
   }
 
   parse_helper_push (&schro_dec->parse_helper, buf);
@@ -752,7 +772,7 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
             schro_dec->earliest_time - schro_dec->segment.start,
             schro_dec->fps_n, schro_dec->fps_d * GST_SECOND);
 
-GST_DEBUG("earliest frame %d", earliest_frame);
+        GST_DEBUG("earliest frame %d", earliest_frame);
         schro_decoder_set_earliest_frame (schro_dec->decoder, earliest_frame);
 
         schro_decoder_set_skip_ratio (schro_dec->decoder,
@@ -789,6 +809,12 @@ GST_DEBUG("earliest frame %d", earliest_frame);
             schro_dec->fps_n = format->frame_rate_numerator;
             schro_dec->fps_d = format->frame_rate_denominator;
             schro_dec->bytes_per_picture = (format->width * format->height * 3) / 4;
+
+            if (!GST_CLOCK_TIME_IS_VALID(schro_dec->timestamp_offset)) {
+              schro_dec->timestamp_offset = gst_util_uint64_scale (
+                  granulepos_to_frame (schro_dec->granulepos_offset),
+                  schro_dec->fps_d * GST_SECOND, schro_dec->fps_n);
+            }
         
             gst_caps_unref (caps);
             free (format);
@@ -830,10 +856,11 @@ GST_DEBUG("earliest frame %d", earliest_frame);
                   schro_dec->discont = FALSE;
                 }
           
+//schro_dec->timestamp_offset = 30*GST_SECOND;
                 GST_BUFFER_TIMESTAMP(outbuf) = gst_util_uint64_scale (
                     schro_dec->n_frames, schro_dec->fps_d * GST_SECOND,
                     schro_dec->fps_n) +
-                  schro_dec->segment.start;
+                  schro_dec->timestamp_offset;
                 GST_BUFFER_DURATION(outbuf) = gst_util_uint64_scale_int (GST_SECOND,
                    schro_dec->fps_d, schro_dec->fps_n);
 

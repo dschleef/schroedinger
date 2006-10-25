@@ -62,7 +62,7 @@ schro_encoder_new (void)
   encoder->mid2_ref = -1;
   encoder->ref_distance = 8;
 
-  encoder->engine = 3;
+  encoder->engine = 2;
 
   return encoder;
 }
@@ -103,8 +103,8 @@ schro_encoder_task_new (SchroEncoder *encoder)
 
   task->encoder = encoder;
 
-  task->tmpbuf = malloc(1024 * 2);
-  task->tmpbuf2 = malloc(1024 * 2);
+  task->tmpbuf = malloc(SCHRO_LIMIT_WIDTH * 2);
+  task->tmpbuf2 = malloc(SCHRO_LIMIT_WIDTH * 2);
 
   task->subband_buffer = schro_buffer_new_and_alloc (100000);
 
@@ -546,11 +546,13 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
     task->is_ref = TRUE;
     task->n_retire = 0;
     params->num_refs = 0;
+    task->presentation_frame = 0;
   } else if (encoder->next_ref == -1) {
     type = 1;
     task->frame_number = encoder->last_ref + encoder->ref_distance;
     task->is_ref = TRUE;
     params->num_refs = 0;
+    task->presentation_frame = encoder->next_frame - 1;
   } else {
     type = 2;
     task->frame_number = encoder->next_frame;
@@ -558,6 +560,7 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
     params->num_refs = 2;
     task->reference_frame_number[0] = encoder->last_ref;
     task->reference_frame_number[1] = encoder->next_ref;
+    task->presentation_frame = encoder->next_frame;
   }
 
   task->encode_frame = schro_encoder_frame_queue_get (encoder,
@@ -608,10 +611,9 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
         encoder->next_ref = -1;
         encoder->next_frame++;
       }
+      task->presentation_frame = task->frame_number;
       break;
   }
-
-  task->presentation_frame = task->frame_number;
 
   task->slot = encoder->next_slot;
   encoder->next_slot++;
@@ -1743,9 +1745,9 @@ dequantize (int q, int quant_factor, int quant_offset)
 {
   if (q == 0) return 0;
   if (q < 0) {
-    return -((-q * quant_factor + quant_offset)>>2);
+    return ((q * quant_factor - quant_offset + 2)>>2);
   } else {
-    return (q * quant_factor + quant_offset)>>2;
+    return (q * quant_factor + quant_offset + 2)>>2;
   }
 }
 
@@ -1816,8 +1818,8 @@ schro_encoder_quantize_subband (SchroEncoderTask *task, int component, int index
 
         if (j>0) {
           if (i>0) {
-            pred_value = (data[j*stride + i - 1] +
-                data[(j-1)*stride + i] + data[(j-1)*stride + i - 1] + 1)/3;
+            pred_value = schro_divide(data[j*stride + i - 1] +
+                data[(j-1)*stride + i] + data[(j-1)*stride + i - 1] + 1,3);
           } else {
             pred_value = data[(j-1)*stride + i];
           }

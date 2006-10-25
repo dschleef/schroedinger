@@ -87,24 +87,28 @@ typedef struct _SchroArith SchroArith;
 typedef struct _SchroArithContext SchroArithContext;
 
 struct _SchroArithContext {
-  int count[2];
+  uint16_t count[2];
   int next;
 };
 
 struct _SchroArith {
   uint16_t code;
   uint16_t range[2];
+  uint16_t value;
 
-  int cntr;
+  unsigned int probability0;
+  unsigned int count;
+  unsigned int range_value;
 
+  uint16_t division_factor[256];
+  uint16_t fixup_shift[256];
   SchroArithContext contexts[SCHRO_CTX_LAST];
 
+  int cntr;
   SchroBuffer *buffer;
   int offset;
   uint32_t nextcode;
   int nextbits;
-
-  uint16_t *division_factor;
 };
 
 SchroArith * schro_arith_new (void);

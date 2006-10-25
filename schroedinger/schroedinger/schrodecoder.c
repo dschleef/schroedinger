@@ -28,8 +28,8 @@ schro_decoder_new (void)
   decoder = malloc(sizeof(SchroDecoder));
   memset (decoder, 0, sizeof(SchroDecoder));
 
-  decoder->tmpbuf = malloc(1024 * 2);
-  decoder->tmpbuf2 = malloc(1024 * 2);
+  decoder->tmpbuf = malloc(SCHRO_LIMIT_WIDTH * 2);
+  decoder->tmpbuf2 = malloc(SCHRO_LIMIT_WIDTH * 2);
 
   decoder->params.video_format = &decoder->video_format;
 
@@ -1334,7 +1334,7 @@ previous_value = 0;
 
           if (j>0) {
             if (i>0) {
-              pred_value = (p[-1] + p[-stride] + p[-stride-1] + 1)/3;
+              pred_value = schro_divide(p[-1] + p[-stride] + p[-stride-1] + 1,3);
             } else {
               pred_value = p[-stride];
             }

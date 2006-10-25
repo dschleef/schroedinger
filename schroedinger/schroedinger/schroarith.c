@@ -22,7 +22,10 @@ schro_arith_new (void)
   arith = malloc (sizeof(*arith));
   memset (arith, 0, sizeof(*arith));
 
-  arith->division_factor = schro_table_division_factor;
+  memcpy (arith->division_factor, schro_table_division_factor,
+      sizeof(arith->division_factor));
+  memcpy (arith->fixup_shift, schro_table_arith_shift,
+      sizeof(arith->fixup_shift));
 
   return arith;
 }
@@ -36,36 +39,16 @@ schro_arith_free (SchroArith *arith)
 static void
 schro_arith_reload_nextcode (SchroArith *arith)
 {
-  arith->nextbits = 32;
-  if (arith->offset < arith->buffer->length - 3) {
-    arith->nextcode = arith->buffer->data[arith->offset] << 24;
-    arith->nextcode |= arith->buffer->data[arith->offset + 1] << 16;
-    arith->nextcode |= arith->buffer->data[arith->offset + 2] << 8;
-    arith->nextcode |= arith->buffer->data[arith->offset + 3];
-  } else {
-    arith->nextcode = 0;
+  while(arith->nextbits <= 24) {
     if (arith->offset < arith->buffer->length) {
-      arith->nextcode = arith->buffer->data[arith->offset] << 24;
+      arith->nextcode |= 
+        arith->buffer->data[arith->offset] << (24-arith->nextbits);
     } else {
-      arith->nextcode = 0xff<<24;
+      arith->nextcode |= 0xff << (24-arith->nextbits);
     }
-    if (arith->offset + 1 < arith->buffer->length) {
-      arith->nextcode |= arith->buffer->data[arith->offset + 1] << 16;
-    } else {
-      arith->nextcode |= 0xff<<16;
-    }
-    if (arith->offset + 2 < arith->buffer->length) {
-      arith->nextcode |= arith->buffer->data[arith->offset + 2] << 8;
-    } else {
-      arith->nextcode |= 0xff<<8;
-    }
-    if (arith->offset + 3 < arith->buffer->length) {
-      arith->nextcode |= arith->buffer->data[arith->offset + 3];
-    } else {
-      arith->nextcode |= 0xff<<0;
-    }
+    arith->nextbits+=8;
+    arith->offset++;
   }
-  arith->offset += 4;
 }
 
 void

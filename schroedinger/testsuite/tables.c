@@ -40,6 +40,34 @@ get_factor (int i)
 }
 
 int
+get_arith_shift (int i)
+{
+  int range1 = (i&0xf0)<<8;
+  int range0 = (i&0xf)<<12;
+  int n = 0;
+  int flip = 0;
+
+  if (range1 < range0) {
+    return 0;
+  }
+  while (((range0 ^ range1)&(1<<15)) == 0 && n<4) {
+    range0 <<= 1;
+    range1 <<= 1;
+    n++;
+  }
+  while (((range0 & ~range1)&(1<<14)) && n<3) {
+    range0 <<= 1;
+    range1 <<= 1;
+    range0 ^= (1<<15);
+    range1 ^= (1<<15);
+    flip = 1;
+    n++;
+  }
+
+  return (flip<<15) | n;
+}
+
+int
 main (int argc, char *argv[])
 {
   int i;
@@ -98,6 +126,24 @@ main (int argc, char *argv[])
   }
   printf("  %5u\n", get_factor(i));
   printf("};\n");
+
+  /* arith shift table */
+  printf("\n");
+  printf("uint16_t schro_table_arith_shift[256] = {\n");
+  for(i=0;i<252;i+=4) {
+    printf("  /* 0x%02x */ 0x%04x, 0x%04x, 0x%04x, 0x%04x,\n", i,
+        get_arith_shift(i),
+        get_arith_shift(i+1),
+        get_arith_shift(i+2),
+        get_arith_shift(i+3));
+  }
+  printf("  /* 0x%02x */ 0x%04x, 0x%04x, 0x%04x, 0x%04x\n", i,
+      get_arith_shift(i),
+      get_arith_shift(i+1),
+      get_arith_shift(i+2),
+      get_arith_shift(i+3));
+  printf("};\n");
+
 
   return 0;
 }

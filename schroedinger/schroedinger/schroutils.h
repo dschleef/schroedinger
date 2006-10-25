@@ -19,6 +19,7 @@
 #define OFFSET(ptr,offset) ((void *)(((uint8_t *)(ptr)) + (offset)))
 #define SCHRO_GET(ptr, offset, type) (*(type *)((uint8_t *)(ptr) + (offset)) )
 
+#define schro_divide(a,b) (((a)<0)?(((a) - (b) + 1)/(b)):((a)/(b)))
 
 #if defined(__GNUC__) && defined(__GNUC_MINOR__)
 #define SCHRO_GNUC_PREREQ(maj, min) \
