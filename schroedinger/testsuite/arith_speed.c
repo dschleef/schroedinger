@@ -440,7 +440,7 @@ fixup_range (SchroArith *arith)
     n--;
   }
 #endif
-#if 1
+#if 0
   int i;
   int n;
   int flip;
@@ -490,6 +490,108 @@ fixup_range (SchroArith *arith)
   if (arith->nextbits <= 16) {
     test_arith_reload_nextcode(arith);
   }
+#endif
+#if 1
+  //int i;
+  //int n;
+  int fixup;
+
+  //i = ((arith->range[1]&0xf000)>>8) | ((arith->range[0]&0xf000)>>12);
+  __asm__ __volatile__ (
+      "  movzwl 4(%1), %%eax\n"
+      "  shrw $12, %%ax\n"
+      "  movw 2(%1), %%cx\n"
+      "  shldw $4, %%cx, %%ax\n"
+      "  movzwl 0x214(%1,%%eax,2), %%eax\n"
+
+      "  test %%eax, %%eax\n"
+      "  je fixup_done\n"
+
+      : "=a" (fixup)
+      : "r" (arith)
+      : "ecx");
+
+  //fixup = arith->fixup_shift[i];
+  //if (fixup == 0) return;
+
+  __asm__ __volatile__ (
+      "  movl %0, %%ecx\n"
+      "  andw $0x1f, %%cx\n"
+      "  shlw %%cl, 2(%1)\n"
+      "  addw $1, 4(%1)\n"
+      "  shlw %%cl, 4(%1)\n"
+      "  addw $-1, 4(%1)\n"
+      "  movw 0x642(%1), %%ax\n"
+      "  shldw %%cl, %%ax, 0(%1)\n"
+      "  shll %%cl, 0x640(%1)\n"
+      "  subl %%ecx, 0x644(%1)\n"
+
+      "  movl %0, %%eax\n"
+      "  andw $0x8000, %%ax\n"
+      "  xorw %%ax, 0(%1)\n"
+      "  xorw %%ax, 2(%1)\n"
+      "  xorw %%ax, 4(%1)\n"
+
+      "  cmpw $3, %%cx\n"
+      "  jl fixup_nextcode\n"
+      :
+      : "r" (fixup), "r" (arith)
+      : "ecx", "eax", "memory");
+
+#if 0
+  n = fixup & 0xf;
+  while (n>=3 ) {
+#endif
+    __asm__ __volatile__ ("\n"
+        "fixup_loop:\n"
+        "  movzwl 4(%1), %%eax\n"
+        "  shrw $12, %%ax\n"
+        "  movw 2(%1), %%cx\n"
+        "  shldw $4, %%cx, %%ax\n"
+        "  movzwl 0x214(%1,%%eax,2), %%eax\n"
+
+      "  test %%eax, %%eax\n"
+      "  je fixup_nextcode\n"
+
+        : "=a" (fixup)
+        : "r" (arith)
+        : "ecx");
+
+    //if (fixup == 0) break;
+  
+    __asm__ __volatile__ (
+        "  movl %0, %%ecx\n"
+        "  andw $0x1f, %%cx\n"
+        "  shlw %%cl, 2(%1)\n"
+        "  addw $1, 4(%1)\n"
+        "  shlw %%cl, 4(%1)\n"
+        "  addw $-1, 4(%1)\n"
+        "  movw 0x642(%1), %%ax\n"
+        "  shldw %%cl, %%ax, 0(%1)\n"
+        "  shll %%cl, 0x640(%1)\n"
+        "  subl %%ecx, 0x644(%1)\n"
+
+        "  movl %0, %%eax\n"
+        "  andw $0x8000, %%ax\n"
+        "  xorw %%ax, 0(%1)\n"
+        "  xorw %%ax, 2(%1)\n"
+        "  xorw %%ax, 4(%1)\n"
+
+      "  cmpw $3, %%cx\n"
+      "  jge fixup_loop\n"
+      "fixup_nextcode:\n"
+
+        :
+        : "r" (fixup), "r" (arith)
+        : "ecx", "eax", "memory");
+
+  //}
+  if (arith->nextbits <= 16) {
+    test_arith_reload_nextcode(arith);
+  }
+  __asm__ __volatile__ ("\n"
+      "fixup_done:\n"
+      );
 #endif
 }
 
@@ -574,7 +676,7 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
       : "r" (context), "r" (arith)
       : "ecx", "eax", "memory");
 
-#if 1
+#if 0
   {
     unsigned int value;
     unsigned int range_x_prob;
@@ -588,23 +690,33 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
     arith->value = value;
   }
 #else
-  //calc_value(arith, context);
   __asm__ __volatile__ (
       "  movl 16(%0), %%eax\n"
       "  imul 8(%0), %%eax\n"
       "  shrl $16, %%eax\n"
       "  movl 12(%0), %%ecx\n"
+
+#if 0
       "  subl %%eax, %%ecx\n"
+      "  neg %%ecx\n"
       "  shrl $31, %%ecx\n"
-      "  movw %%cx, 6(%0)\n"
-      "  addw $1, (%1,%%ecx,2)\n"
+      "  and $1, %%ecx\n"
+#else
+      "  cmpl %%eax, %%ecx\n"
+      "  setg %%cl\n"
+      "  movzbl %%cl, %%ecx\n"
+#endif
+
       "  xor $1, %%ecx\n"
-      "  subl %%ecx, %%eax\n"
       "  addw 2(%0), %%ax\n"
+      "  subw %%cx, %%ax\n"
       "  movw %%ax, 2(%0,%%ecx,2)\n"
+      "  xor $1, %%ecx\n"
+      "  addw $1, 0(%1, %%ecx, 2)\n"
+      "  movw %%cx, 6(%0)\n"
       :
       : "r" (arith), "r" (context)
-      : "memory", "ecx"
+      : "memory", "eax", "ecx"
       );
 #endif
 
