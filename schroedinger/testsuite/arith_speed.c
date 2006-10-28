@@ -51,6 +51,7 @@ decode(SchroBuffer *buffer, int n, OilProfile *prof, int type)
         break;
     }
 
+    a->buffer = NULL;
     schro_arith_free(a);
   }
 
@@ -75,6 +76,7 @@ encode (SchroBuffer *buffer, int n, int freq)
   }
   schro_arith_flush (a);
 
+  a->buffer = NULL;
   schro_arith_free(a);
 }
 
@@ -87,7 +89,7 @@ check (int n, int freq)
   int x;
   int y;
 
-  buffer = schro_buffer_new_and_alloc (1000000);
+  buffer = schro_buffer_new_and_alloc (100000);
 
   encode(buffer, n, freq);
 
@@ -101,6 +103,8 @@ check (int n, int freq)
   if (x != y) {
     printf("BROKEN\n");
   }
+
+  schro_buffer_unref (buffer);
 
   return 0;
 }
@@ -118,6 +122,7 @@ main (int argc, char *argv[])
   x = &test_arith_context_decode_bit;
   x = &test_arith_context_decode_bit_2;
 
+  //while(1) check(1000, 128);
   check(1000, 128);
   for(i=100;i<=1000;i+=100) {
     //check(i, 128);
@@ -660,33 +665,36 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
       "  subl %%ecx, %%edx\n"
 #else
       "  negl %%ecx\n"
-      "  leal 1(%%edx,%%ecx,1), %%edx\n"
-      "  leal 1(%%eax,%%ecx,1), %%ecx\n"
+      "  leal 1(%%eax,%%ecx,1), %%esi\n"
+      "  leal 1(%%edx,%%ecx,1), %%ecx\n"
 #endif
       //"  movl %%esi, a_count(%0)\n"
-      //"  movl %%edx, a_range_value(%0)\n"
+      //"  movl %%ecx, a_range_value(%0)\n"
 
       //calc_prob0(arith, context);
       "  movzwl c_count(%1), %%eax\n"
       "  addw (c_count + 2)(%1), %%ax\n"
       "  movzwl a_division_factor(%0,%%eax,2), %%eax\n"
-      "  movzwl c_count(%1), %%esi\n"
 #if 1
-      "  imul %%si, %%ax\n"
+      "  mulw c_count(%1)\n"
 #else
-      "  imul %%esi, %%eax\n"
+      "  movzwl c_count(%1), %%edx\n"
+      "  imul %%edx, %%eax\n"
 #endif
 
       // calc_value()
 #if 1
-      "  imul %%edx, %%eax\n"
+      "  imul %%ecx, %%eax\n"
       "  shrl $16, %%eax\n"
 #else
-      "  imul %%dx\n"
-      //"  shrl $16, %%eax\n"
+      "  cmp $0x10000, %%ecx\n"
+      "  je skipmul\n"
+      "  mul %%cx\n"
       "  mov %%dx, %%ax\n"
+      "skipmul:\n"
 #endif
 
+      "  mov %%esi, %%ecx\n"
 #if 0
       "  subl %%eax, %%ecx\n"
       "  neg %%ecx\n"
@@ -707,18 +715,49 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
       "  movw %%cx, a_value(%0)\n"
 
       //maybe_shift_context(context);
+#if 0
       "  movw c_count(%1), %%cx\n"
       "  addw c_count + 2(%1), %%cx\n"
       "  shrw $8, %%cx\n"
+#if 0
       "  shrw %%cl, c_count(%1)\n"
       "  addw %%cx, c_count(%1)\n"
       "  shrw %%cl, c_count+2(%1)\n"
       "  addw %%cx, c_count+2(%1)\n"
+#else
+      "  movw %%cx, %%ax\n"
+      "  shl $16, %%eax\n"
+      "  orl %%ecx, %%eax\n"
+      "  movl c_count(%1), %%edx\n"
+      "  shrl %%cl, %%edx\n"
+      "  addl %%eax, %%edx\n"
+      "  and $0x00ff00ff, %%edx\n"
+      "  movl %%edx, c_count(%1)\n"
+#endif
+#else
+      "  movw c_count(%1), %%cx\n"
+      "  addw c_count + 2(%1), %%cx\n"
+      "  cmp $255, %%cx\n"
+      "  jle noshift\n"
+#if 0
+      "  shrw $1, c_count(%1)\n"
+      "  addw $1, c_count(%1)\n"
+      "  shrw $1, c_count+2(%1)\n"
+      "  addw $1, c_count+2(%1)\n"
+#else
+      "  movl c_count(%1), %%ecx\n"
+      "  shrl $1, %%ecx\n"
+      "  addl $0x00010001, %%ecx\n"
+      "  and $0x00ff00ff, %%ecx\n"
+      "  mov %%ecx, c_count(%1)\n"
+#endif
+      "noshift:\n"
+#endif
 
       //fixup_range(arith);
       // i = ((arith->range[1]&0xf000)>>8) | ((arith->range[0]&0xf000)>>12);
       // fixup = arith->fixup_shift[i];
-      "  movzwl a_range + 2(%0), %%eax\n"
+      "  movw a_range + 2(%0), %%ax\n"
       "  shrw $12, %%ax\n"
       "  movw a_range(%0), %%cx\n"
       "  shldw $4, %%cx, %%ax\n"
