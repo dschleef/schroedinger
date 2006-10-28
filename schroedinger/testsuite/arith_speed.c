@@ -647,32 +647,16 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
   SchroArithContext *context = arith->contexts + i;
 
   //calc_prob0(arith, context);
+#include "offsets.h"
   __asm__ __volatile__ (
-      "  movzwl 0(%0), %%eax\n"
-      "  addw 2(%0), %%ax\n"
-      "  movzwl 20(%1,%%eax,2), %%eax\n"
-      "  movzwl 0(%0), %%ecx\n"
+      "  movzwl 0(%1), %%eax\n"
+      "  addw 2(%1), %%ax\n"
+      "  movzwl 20(%0,%%eax,2), %%eax\n"
+      "  movzwl 0(%1), %%ecx\n"
       "  imul %%ecx, %%eax\n"
-      "  movl %%eax, 8(%1)\n"
-      :
-      : "r" (context), "r" (arith)
-      : "ecx", "eax", "memory");
+      "  movl %%eax, 8(%0)\n"
 
-#if 0
-  {
-    unsigned int value;
-    unsigned int range_x_prob;
-
-    range_x_prob = (arith->range_value * arith->probability0) >> 16;
-    value = (arith->count > range_x_prob);
-
-    arith->range[1 - value] = arith->range[0] + range_x_prob - 1 + value;
-    context->count[value]++;
-
-    arith->value = value;
-  }
-#else
-  __asm__ __volatile__ (
+      // calc_value()
       "  movl 16(%0), %%eax\n"
       "  imul 8(%0), %%eax\n"
       "  shrl $16, %%eax\n"
@@ -696,28 +680,17 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
       "  xor $1, %%ecx\n"
       "  addw $1, 0(%1, %%ecx, 2)\n"
       "  movw %%cx, 6(%0)\n"
-      :
-      : "r" (arith), "r" (context)
-      : "memory", "eax", "ecx"
-      );
-#endif
 
-  //maybe_shift_context(context);
-  __asm__ __volatile__ (
-      "  movw 0(%0), %%cx\n"
-      "  addw 2(%0), %%cx\n"
+      //maybe_shift_context(context);
+      "  movw 0(%1), %%cx\n"
+      "  addw 2(%1), %%cx\n"
       "  shrw $8, %%cx\n"
-      "  shrw %%cl, 0(%0)\n"
-      "  addw %%cx, 0(%0)\n"
-      "  shrw %%cl, 2(%0)\n"
-      "  addw %%cx, 2(%0)\n"
-      :
-      : "r" (context)
-      : "memory", "ecx"
-      );
+      "  shrw %%cl, 0(%1)\n"
+      "  addw %%cx, 0(%1)\n"
+      "  shrw %%cl, 2(%1)\n"
+      "  addw %%cx, 2(%1)\n"
 
-  //fixup_range(arith);
-  __asm__ __volatile__ (
+      //fixup_range(arith);
       // i = ((arith->range[1]&0xf000)>>8) | ((arith->range[0]&0xf000)>>12);
       // fixup = arith->fixup_shift[i];
       "  movzwl 4(%0), %%eax\n"
@@ -813,12 +786,8 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
       "  jmp fixup_nextcode\n"
 
       "fixup_done:\n"
-      :
-      : "r" (arith)
-      : "eax", "ecx", "edx", "memory");
 
-  //calc_count_range(arith);
-  __asm__ __volatile__ (
+      //calc_count_range(arith);
       "  movzwl 2(%0), %%ecx\n"
       "  subl $1, %%ecx\n"
       "  movzwl 0(%0), %%eax\n"
@@ -828,8 +797,8 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
       "  subl %%ecx, %%eax\n"
       "  movl %%eax, 16(%0)\n"
       :
-      : "r" (arith)
-      : "ecx", "eax", "memory");
+      : "r" (arith), "r" (context)
+      : "eax", "ecx", "edx", "memory");
 
   return arith->value;
 }
