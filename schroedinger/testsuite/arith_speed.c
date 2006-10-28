@@ -649,18 +649,18 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
   //calc_prob0(arith, context);
 #include "offsets.h"
   __asm__ __volatile__ (
-      "  movzwl 0(%1), %%eax\n"
-      "  addw 2(%1), %%ax\n"
-      "  movzwl 20(%0,%%eax,2), %%eax\n"
-      "  movzwl 0(%1), %%ecx\n"
+      "  movzwl c_count(%1), %%eax\n"
+      "  addw (c_count + 2)(%1), %%ax\n"
+      "  movzwl a_division_factor(%0,%%eax,2), %%eax\n"
+      "  movzwl c_count(%1), %%ecx\n"
       "  imul %%ecx, %%eax\n"
-      "  movl %%eax, 8(%0)\n"
+      "  movl %%eax, a_probability0(%0)\n"
 
       // calc_value()
-      "  movl 16(%0), %%eax\n"
-      "  imul 8(%0), %%eax\n"
+      "  movl a_range_value(%0), %%eax\n"
+      "  imul a_probability0(%0), %%eax\n"
       "  shrl $16, %%eax\n"
-      "  movl 12(%0), %%ecx\n"
+      "  movl a_count(%0), %%ecx\n"
 
 #if 0
       "  subl %%eax, %%ecx\n"
@@ -674,30 +674,30 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
 #endif
 
       "  xor $1, %%ecx\n"
-      "  addw 2(%0), %%ax\n"
+      "  addw a_range(%0), %%ax\n"
       "  subw %%cx, %%ax\n"
-      "  movw %%ax, 2(%0,%%ecx,2)\n"
+      "  movw %%ax, a_range(%0,%%ecx,2)\n"
       "  xor $1, %%ecx\n"
-      "  addw $1, 0(%1, %%ecx, 2)\n"
-      "  movw %%cx, 6(%0)\n"
+      "  addw $1, c_count(%1, %%ecx, 2)\n"
+      "  movw %%cx, a_value(%0)\n"
 
       //maybe_shift_context(context);
-      "  movw 0(%1), %%cx\n"
-      "  addw 2(%1), %%cx\n"
+      "  movw c_count(%1), %%cx\n"
+      "  addw c_count + 2(%1), %%cx\n"
       "  shrw $8, %%cx\n"
-      "  shrw %%cl, 0(%1)\n"
-      "  addw %%cx, 0(%1)\n"
-      "  shrw %%cl, 2(%1)\n"
-      "  addw %%cx, 2(%1)\n"
+      "  shrw %%cl, c_count(%1)\n"
+      "  addw %%cx, c_count(%1)\n"
+      "  shrw %%cl, c_count+2(%1)\n"
+      "  addw %%cx, c_count+2(%1)\n"
 
       //fixup_range(arith);
       // i = ((arith->range[1]&0xf000)>>8) | ((arith->range[0]&0xf000)>>12);
       // fixup = arith->fixup_shift[i];
-      "  movzwl 4(%0), %%eax\n"
+      "  movzwl a_range + 2(%0), %%eax\n"
       "  shrw $12, %%ax\n"
-      "  movw 2(%0), %%cx\n"
+      "  movw a_range(%0), %%cx\n"
       "  shldw $4, %%cx, %%ax\n"
-      "  movzwl 0x214(%0,%%eax,2), %%eax\n"
+      "  movzwl a_fixup_shift(%0,%%eax,2), %%eax\n"
 
       // if (n == 0) return;
       "  test %%eax, %%eax\n"
@@ -707,67 +707,67 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
       "  movl %%eax, %%ecx\n"
       "  andw $0x1f, %%cx\n"
       // arith->range[0] <<= n;
-      "  shlw %%cl, 2(%0)\n"
+      "  shlw %%cl, a_range(%0)\n"
       // arith->range[1] <<= n;
       // arith->range[1] |= (1<<n)-1;
-      "  addw $1, 4(%0)\n"
-      "  shlw %%cl, 4(%0)\n"
-      "  addw $-1, 4(%0)\n"
+      "  addw $1, a_range+2(%0)\n"
+      "  shlw %%cl, a_range+2(%0)\n"
+      "  addw $-1, a_range+2(%0)\n"
       // arith->code <<= n;
       // arith->code |= (arith->nextcode >> ((32-n)&0x1f));
-      "  movw 0x642(%0), %%dx\n"
-      "  shldw %%cl, %%dx, 0(%0)\n"
+      "  movw a_nextcode+2(%0), %%dx\n"
+      "  shldw %%cl, %%dx, a_code(%0)\n"
       // arith->nextcode <<= n;
-      "  shll %%cl, 0x640(%0)\n"
+      "  shll %%cl, a_nextcode(%0)\n"
       // arith->nextbits-=n;
-      "  subl %%ecx, 0x644(%0)\n"
+      "  subl %%ecx, a_nextbits(%0)\n"
 
       // flip = arith->fixup_shift[i] & 0x8000;
       "  andw $0x8000, %%ax\n"
       // arith->code ^= flip;
-      "  xorw %%ax, 0(%0)\n"
+      "  xorw %%ax, a_code(%0)\n"
       // arith->range[0] ^= flip;
-      "  xorw %%ax, 2(%0)\n"
+      "  xorw %%ax, a_range(%0)\n"
       // arith->range[1] ^= flip;
-      "  xorw %%ax, 4(%0)\n"
+      "  xorw %%ax, a_range+2(%0)\n"
 
       "  cmpw $3, %%cx\n"
       "  jl fixup_nextcode\n"
       "fixup_loop:\n"
-      "  movzwl 4(%0), %%eax\n"
+      "  movzwl a_range+2(%0), %%eax\n"
       "  shrw $12, %%ax\n"
-      "  movw 2(%0), %%cx\n"
+      "  movw a_range(%0), %%cx\n"
       "  shldw $4, %%cx, %%ax\n"
-      "  movzwl 0x214(%0,%%eax,2), %%eax\n"
+      "  movzwl a_fixup_shift(%0,%%eax,2), %%eax\n"
 
       "  test %%eax, %%eax\n"
       "  je fixup_nextcode\n"
 
       "  movl %%eax, %%ecx\n"
       "  andw $0x1f, %%cx\n"
-      "  shlw %%cl, 2(%0)\n"
-      "  addw $1, 4(%0)\n"
-      "  shlw %%cl, 4(%0)\n"
-      "  addw $-1, 4(%0)\n"
-      "  movw 0x642(%0), %%dx\n"
-      "  shldw %%cl, %%dx, 0(%0)\n"
-      "  shll %%cl, 0x640(%0)\n"
-      "  subl %%ecx, 0x644(%0)\n"
+      "  shlw %%cl, a_range(%0)\n"
+      "  addw $1, a_range+2(%0)\n"
+      "  shlw %%cl, a_range+2(%0)\n"
+      "  addw $-1, a_range+2(%0)\n"
+      "  movw a_nextcode+2(%0), %%dx\n"
+      "  shldw %%cl, %%dx, a_code(%0)\n"
+      "  shll %%cl, a_nextcode(%0)\n"
+      "  subl %%ecx, a_nextbits(%0)\n"
 
       "  andw $0x8000, %%ax\n"
-      "  xorw %%ax, 0(%0)\n"
-      "  xorw %%ax, 2(%0)\n"
-      "  xorw %%ax, 4(%0)\n"
+      "  xorw %%ax, a_code(%0)\n"
+      "  xorw %%ax, a_range(%0)\n"
+      "  xorw %%ax, a_range+2(%0)\n"
 
       "  cmpw $3, %%cx\n"
       "  jge fixup_loop\n"
       "fixup_nextcode:\n"
       "  movl $24, %%ecx\n"
-      "  subl 0x644(%0), %%ecx\n"
+      "  subl a_nextbits(%0), %%ecx\n"
       "  jb fixup_done\n"
 
-      "  movl 0x648(%0), %%eax\n"
-      "  cmpl 0x64c(%0), %%eax\n"
+      "  movl a_dataptr(%0), %%eax\n"
+      "  cmpl a_maxdataptr(%0), %%eax\n"
       "  jge past_end\n"
 
       "  movzbl 0(%%eax), %%edx\n"
@@ -778,24 +778,24 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
 
       "cont:\n"
       "  shll %%cl, %%edx\n"
-      "  orl %%edx, 0x640(%0)\n"
+      "  orl %%edx, a_nextcode(%0)\n"
 
-      "  addl $8, 0x644(%0)\n"
-      "  addl $1, 0x648(%0)\n"
-      "  addl $1, 0x63c(%0)\n"
+      "  addl $8, a_nextbits(%0)\n"
+      "  addl $1, a_dataptr(%0)\n"
+      "  addl $1, a_offset(%0)\n"
       "  jmp fixup_nextcode\n"
 
       "fixup_done:\n"
 
       //calc_count_range(arith);
-      "  movzwl 2(%0), %%ecx\n"
+      "  movzwl a_range(%0), %%ecx\n"
       "  subl $1, %%ecx\n"
-      "  movzwl 0(%0), %%eax\n"
+      "  movzwl a_code(%0), %%eax\n"
       "  subl %%ecx, %%eax\n"
-      "  movl %%eax, 12(%0)\n"
-      "  movzwl 4(%0), %%eax\n"
+      "  movl %%eax, a_count(%0)\n"
+      "  movzwl a_range+2(%0), %%eax\n"
       "  subl %%ecx, %%eax\n"
-      "  movl %%eax, 16(%0)\n"
+      "  movl %%eax, a_range_value(%0)\n"
       :
       : "r" (arith), "r" (context)
       : "eax", "ecx", "edx", "memory");

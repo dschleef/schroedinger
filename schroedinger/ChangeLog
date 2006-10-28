@@ -1,6 +1,11 @@
 2006-10-27  David Schleef  <ds@schleef.org>
 
 	* testsuite/arith_speed.c:
+	  another checkpoint
+
+2006-10-27  David Schleef  <ds@schleef.org>
+
+	* testsuite/arith_speed.c:
 	  Checkpoint.  Code cleanup.
 
 2006-10-27  David Schleef  <ds@schleef.org>
