@@ -60,8 +60,10 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
 
   arith->buffer = buffer;
 
-  arith->code = arith->buffer->data[0] << 8;
-  arith->code |= arith->buffer->data[1];
+  arith->dataptr = arith->buffer->data;
+  arith->maxdataptr = arith->buffer->data + arith->buffer->length;
+  arith->code = arith->dataptr[0] << 8;
+  arith->code |= arith->dataptr[1];
   arith->offset = 2;
   schro_arith_reload_nextcode(arith);
 }

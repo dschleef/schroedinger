@@ -1,5 +1,13 @@
 2006-10-27  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	  Add data pointer in SchroArith to decrease register pressure.
+	* testsuite/arith_speed.c:
+	  Checkpoint.  Decode is 100% assembly now.  But not faster.
+
+2006-10-27  David Schleef  <ds@schleef.org>
+
 	* testsuite/arith_speed.c: checkpoint
 
 2006-10-25  David Schleef  <ds@schleef.org>

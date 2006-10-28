@@ -109,6 +109,8 @@ struct _SchroArith {
   int offset;
   uint32_t nextcode;
   int nextbits;
+  uint8_t *dataptr;
+  uint8_t *maxdataptr;
 };
 
 SchroArith * schro_arith_new (void);
