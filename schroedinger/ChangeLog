@@ -1,5 +1,17 @@
 2006-10-27  David Schleef  <ds@schleef.org>
 
+	* schroedinger/Makefile.am:
+	* schroedinger/schrooffsets.h:
+	* schroedinger/schroarith-i386.c:
+	* schroedinger/schroarith.c:
+	* testsuite/Makefile.am:
+	* testsuite/arith_speed.c:
+	* testsuite/arith_fixup_shift.c:
+	* testsuite/quant.c:
+	  Copy over assembly code for arith decoding.
+
+2006-10-27  David Schleef  <ds@schleef.org>
+
 	* testsuite/arith_speed.c:
 	  another checkpoint.
 

@@ -11,8 +11,8 @@
 #include <schroedinger/schrotables.h>
 #include <schroedinger/schrodebug.h>
 
-
 static void _schro_arith_output_bit (SchroArith *arith);
+static int __schro_arith_context_decode_bit (SchroArith *arith, int i);
 
 SchroArith *
 schro_arith_new (void)
@@ -27,6 +27,8 @@ schro_arith_new (void)
   memcpy (arith->fixup_shift, schro_table_arith_shift,
       sizeof(arith->fixup_shift));
 
+  (void)&__schro_arith_context_decode_bit;
+
   return arith;
 }
 
@@ -40,13 +42,13 @@ static void
 schro_arith_reload_nextcode (SchroArith *arith)
 {
   while(arith->nextbits <= 24) {
-    if (arith->offset < arith->buffer->length) {
-      arith->nextcode |= 
-        arith->buffer->data[arith->offset] << (24-arith->nextbits);
+    if (arith->dataptr < arith->maxdataptr) {
+      arith->nextcode |= arith->dataptr[0] << (24-arith->nextbits);
     } else {
       arith->nextcode |= 0xff << (24-arith->nextbits);
     }
     arith->nextbits+=8;
+    arith->dataptr++;
     arith->offset++;
   }
 }
@@ -64,6 +66,7 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
   arith->maxdataptr = arith->buffer->data + arith->buffer->length;
   arith->code = arith->dataptr[0] << 8;
   arith->code |= arith->dataptr[1];
+  arith->dataptr+=2;
   arith->offset = 2;
   schro_arith_reload_nextcode(arith);
 }
@@ -232,9 +235,17 @@ schro_arith_halve_all_counts (SchroArith *arith)
   }
 }
 
-
 int
 _schro_arith_context_decode_bit (SchroArith *arith, int i)
+{
+  return __schro_arith_context_decode_bit (arith, i);
+}
+
+#ifdef __i386__
+#include "schroarith-i386.c"
+#else
+static int
+__schro_arith_context_decode_bit (SchroArith *arith, int i)
 {
   unsigned int count;
   unsigned int value;
@@ -288,6 +299,7 @@ _schro_arith_context_decode_bit (SchroArith *arith, int i)
 
   return value;
 }
+#endif
 
 
 void
@@ -413,7 +425,7 @@ _schro_arith_context_decode_bits (SchroArith *arith, int context, int n)
   int i;
   
   for(i=0;i<n;i++){
-    value = (value << 1) | _schro_arith_context_decode_bit (arith, context);
+    value = (value << 1) | __schro_arith_context_decode_bit (arith, context);
   } 
   
   return value;
@@ -427,9 +439,9 @@ _schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
   int count=0;
 
   bits = 0;
-  while(!_schro_arith_context_decode_bit (arith, cont_context)) {
+  while(!__schro_arith_context_decode_bit (arith, cont_context)) {
     bits <<= 1;
-    bits |= _schro_arith_context_decode_bit (arith, value_context);
+    bits |= __schro_arith_context_decode_bit (arith, value_context);
     cont_context = arith->contexts[cont_context].next;
     count++;
   }
@@ -444,7 +456,7 @@ _schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
 
   value = _schro_arith_context_decode_uint (arith, cont_context, value_context);
   if (value) {
-    if (_schro_arith_context_decode_bit (arith, sign_context)) {
+    if (__schro_arith_context_decode_bit (arith, sign_context)) {
       value = -value;
     }
   }
@@ -455,10 +467,10 @@ _schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
 int
 _schro_arith_decode_mode (SchroArith *arith, int context0, int context1)
 {
-  if (_schro_arith_context_decode_bit (arith, context0)) {
+  if (__schro_arith_context_decode_bit (arith, context0)) {
     return 0;
   }
-  if (_schro_arith_context_decode_bit (arith, context1)) {
+  if (__schro_arith_context_decode_bit (arith, context1)) {
     return 1;
   }
   return 2;
@@ -497,7 +509,7 @@ schro_arith_encode_mode (SchroArith *arith, int context0, int context1,
 int
 schro_arith_context_decode_bit (SchroArith *arith, int context)
 {
-  return _schro_arith_context_decode_bit (arith, context);
+  return __schro_arith_context_decode_bit (arith, context);
 }
 
 int

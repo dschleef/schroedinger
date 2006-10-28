@@ -5,6 +5,8 @@ lib_LTLIBRARIES = libschroedinger-@SCHRO_MAJORMINOR@.la
 
 DISTCLEANFILES = schro-stdint.h
 
+EXTRA_DIST = schroarith-i386.c
+
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schro-stdint.h \
 	schro.h \
@@ -34,6 +36,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schroparams.h \
 	schropredict.c \
 	schropredict.h \
+	schrooffsets.h \
 	schrotables.c \
 	schrotables.h \
 	schroutils.c \
