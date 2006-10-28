@@ -118,8 +118,10 @@ main (int argc, char *argv[])
   x = &test_arith_context_decode_bit;
   x = &test_arith_context_decode_bit_2;
 
+  check(1000, 128);
   for(i=100;i<=1000;i+=100) {
-    check(i, 128);
+    //check(i, 128);
+    check(i, 0);
   }
 #if 0
   for(i=0;i<=256;i+=16) {
@@ -646,21 +648,44 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
 {
   SchroArithContext *context = arith->contexts + i;
 
-  //calc_prob0(arith, context);
 #include "offsets.h"
   __asm__ __volatile__ (
+      //calc_count_range(arith);
+      "  movzwl a_range(%0), %%ecx\n"
+      "  movzwl a_code(%0), %%eax\n"
+      "  movzwl a_range+2(%0), %%edx\n"
+#if 0
+      "  subl $1, %%ecx\n"
+      "  subl %%ecx, %%esi\n"
+      "  subl %%ecx, %%edx\n"
+#else
+      "  negl %%ecx\n"
+      "  leal 1(%%edx,%%ecx,1), %%edx\n"
+      "  leal 1(%%eax,%%ecx,1), %%ecx\n"
+#endif
+      //"  movl %%esi, a_count(%0)\n"
+      //"  movl %%edx, a_range_value(%0)\n"
+
+      //calc_prob0(arith, context);
       "  movzwl c_count(%1), %%eax\n"
       "  addw (c_count + 2)(%1), %%ax\n"
       "  movzwl a_division_factor(%0,%%eax,2), %%eax\n"
-      "  movzwl c_count(%1), %%ecx\n"
-      "  imul %%ecx, %%eax\n"
-      "  movl %%eax, a_probability0(%0)\n"
+      "  movzwl c_count(%1), %%esi\n"
+#if 1
+      "  imul %%si, %%ax\n"
+#else
+      "  imul %%esi, %%eax\n"
+#endif
 
       // calc_value()
-      "  movl a_range_value(%0), %%eax\n"
-      "  imul a_probability0(%0), %%eax\n"
+#if 1
+      "  imul %%edx, %%eax\n"
       "  shrl $16, %%eax\n"
-      "  movl a_count(%0), %%ecx\n"
+#else
+      "  imul %%dx\n"
+      //"  shrl $16, %%eax\n"
+      "  mov %%dx, %%ax\n"
+#endif
 
 #if 0
       "  subl %%eax, %%ecx\n"
@@ -787,18 +812,9 @@ test_arith_context_decode_bit_2 (SchroArith *arith, int i)
 
       "fixup_done:\n"
 
-      //calc_count_range(arith);
-      "  movzwl a_range(%0), %%ecx\n"
-      "  subl $1, %%ecx\n"
-      "  movzwl a_code(%0), %%eax\n"
-      "  subl %%ecx, %%eax\n"
-      "  movl %%eax, a_count(%0)\n"
-      "  movzwl a_range+2(%0), %%eax\n"
-      "  subl %%ecx, %%eax\n"
-      "  movl %%eax, a_range_value(%0)\n"
       :
       : "r" (arith), "r" (context)
-      : "eax", "ecx", "edx", "memory");
+      : "esi", "eax", "ecx", "edx", "memory");
 
   return arith->value;
 }
