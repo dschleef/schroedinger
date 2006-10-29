@@ -198,11 +198,8 @@ splat_block_general (SchroFrameComponent *dest, int x, int y, int value,
     int16_t *s1 = region->weights;
 
     for(i=0;i<12;i++) tmp[i] = value;
-    for(i=0;i<12;i++){
-      oil_multiply_and_add_s16_u8 (d1, d1, s1, tmp, 12);
-      d1 = OFFSET(d1, dest->stride);
-      s1 = OFFSET(s1, obmc->stride);
-    }
+    oil_multiply_and_acc_12xn_s16_u8 (d1, dest->stride, s1, obmc->stride,
+        tmp, 0, 12);
   } else {
     for(j=region->start_y;j<region->end_y;j++){
       for(i=region->start_x;i<region->end_x;i++){
@@ -256,17 +253,13 @@ copy_block_general (SchroFrameComponent *dest, int x, int y,
       }
     }
   } else {
-    if (k==4 && obmc->x_sep == 12) {
+    if (k==4 && obmc->x_len == 12) {
       int16_t *d1 = OFFSET(dest->data, dest->stride*y + 2*x);
       int16_t *s1 = region->weights;
       uint8_t *s2 = OFFSET(src->data, src->stride * sy + sx);
 
-      for(j=0;j<12;j++){
-        oil_multiply_and_add_s16_u8 (d1, d1, s1, s2, 12);
-        d1 = OFFSET(d1, dest->stride);
-        s1 = OFFSET(s1, obmc->stride);
-        s2 = OFFSET(s2, src->stride);
-      }
+      oil_multiply_and_acc_12xn_s16_u8 (d1, dest->stride, s1, obmc->stride,
+          s2, src->stride, 12);
     } else {
       for(j=region->start_y;j<region->end_y;j++){
         oil_multiply_and_add_s16_u8 (

@@ -39,10 +39,10 @@ __schro_arith_context_decode_bit (SchroArith *arith, int i)
       "  shrl $16, %%eax\n"
 #else
       "  cmp $0x10000, %%ecx\n"
-      "  je skipmul\n"
+      "  je .Lskipmul\n"
       "  mul %%cx\n"
       "  mov %%dx, %%ax\n"
-      "skipmul:\n"
+      ".Lskipmul:\n"
 #endif
 
       "  mov a_count(%0), %%ecx\n"
@@ -89,7 +89,7 @@ __schro_arith_context_decode_bit (SchroArith *arith, int i)
       "  movw c_count(%1), %%cx\n"
       "  addw c_count + 2(%1), %%cx\n"
       "  cmp $255, %%cx\n"
-      "  jle noshift\n"
+      "  jle .Lnoshift\n"
 #if 0
       "  shrw $1, c_count(%1)\n"
       "  addw $1, c_count(%1)\n"
@@ -102,7 +102,7 @@ __schro_arith_context_decode_bit (SchroArith *arith, int i)
       "  and $0x00ff00ff, %%ecx\n"
       "  mov %%ecx, c_count(%1)\n"
 #endif
-      "noshift:\n"
+      ".Lnoshift:\n"
 #endif
 
       //fixup_range(arith);
@@ -116,7 +116,7 @@ __schro_arith_context_decode_bit (SchroArith *arith, int i)
 
       // if (n == 0) return;
       "  test %%eax, %%eax\n"
-      "  je fixup_done\n"
+      "  je .Lfixup_done\n"
 
       // n = arith->fixup_shift[i] & 0xf;
       "  movl %%eax, %%ecx\n"
@@ -147,8 +147,8 @@ __schro_arith_context_decode_bit (SchroArith *arith, int i)
       "  xorw %%ax, a_range+2(%0)\n"
 
       "  cmpw $3, %%cx\n"
-      "  jl fixup_nextcode\n"
-      "fixup_loop:\n"
+      "  jl .Lfixup_nextcode\n"
+      ".Lfixup_loop:\n"
       "  movzwl a_range+2(%0), %%eax\n"
       "  shrw $12, %%ax\n"
       "  movw a_range(%0), %%cx\n"
@@ -156,7 +156,7 @@ __schro_arith_context_decode_bit (SchroArith *arith, int i)
       "  movzwl a_fixup_shift(%0,%%eax,2), %%eax\n"
 
       "  test %%eax, %%eax\n"
-      "  je fixup_nextcode\n"
+      "  je .Lfixup_nextcode\n"
 
       "  movl %%eax, %%ecx\n"
       "  andw $0x1f, %%cx\n"
@@ -175,32 +175,32 @@ __schro_arith_context_decode_bit (SchroArith *arith, int i)
       "  xorw %%ax, a_range+2(%0)\n"
 
       "  cmpw $3, %%cx\n"
-      "  jge fixup_loop\n"
-      "fixup_nextcode:\n"
+      "  jge .Lfixup_loop\n"
+      ".Lfixup_nextcode:\n"
       "  movl $24, %%ecx\n"
       "  subl a_nextbits(%0), %%ecx\n"
-      "  jb fixup_done\n"
+      "  jb .Lfixup_done\n"
 
       "  movl a_dataptr(%0), %%eax\n"
       "  cmpl a_maxdataptr(%0), %%eax\n"
-      "  jge past_end\n"
+      "  jge .Lpast_end\n"
 
       "  movzbl 0(%%eax), %%edx\n"
-      "  jmp cont\n"
+      "  jmp .Lcont\n"
 
-      "past_end:\n"
+      ".Lpast_end:\n"
       "  movl $0xff, %%edx\n"
 
-      "cont:\n"
+      ".Lcont:\n"
       "  shll %%cl, %%edx\n"
       "  orl %%edx, a_nextcode(%0)\n"
 
       "  addl $8, a_nextbits(%0)\n"
       "  addl $1, a_dataptr(%0)\n"
       "  addl $1, a_offset(%0)\n"
-      "  jmp fixup_nextcode\n"
+      "  jmp .Lfixup_nextcode\n"
 
-      "fixup_done:\n"
+      ".Lfixup_done:\n"
 
       :
       : "r" (arith), "r" (context)

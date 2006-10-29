@@ -452,9 +452,19 @@ int
 _schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context)
 {
+  int bits;
+  int count=0;
   int value;
 
-  value = _schro_arith_context_decode_uint (arith, cont_context, value_context);
+  bits = 0;
+  while(!__schro_arith_context_decode_bit (arith, cont_context)) {
+    bits <<= 1;
+    bits |= __schro_arith_context_decode_bit (arith, value_context);
+    cont_context = arith->contexts[cont_context].next;
+    count++;
+  }
+  value = (1<<count) - 1 + bits;
+
   if (value) {
     if (__schro_arith_context_decode_bit (arith, sign_context)) {
       value = -value;

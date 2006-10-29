@@ -19,6 +19,7 @@ static void schro_decoder_reference_add (SchroDecoder *decoder, SchroFrame *fram
 static SchroFrame * schro_decoder_reference_get (SchroDecoder *decoder, int frame_number);
 static void schro_decoder_reference_retire (SchroDecoder *decoder, int frame_number);
 
+int16_t schro_zero[SCHRO_LIMIT_WIDTH];
 
 SchroDecoder *
 schro_decoder_new (void)
@@ -1064,6 +1065,7 @@ schro_decoder_decode_transform_data (SchroDecoder *decoder, int component)
   }
 }
 
+#if 0
 static int
 dequantize (int q, int quant_factor, int quant_offset)
 {
@@ -1072,6 +1074,212 @@ dequantize (int q, int quant_factor, int quant_offset)
     return -((-q * quant_factor + quant_offset)>>2);
   } else {
     return (q * quant_factor + quant_offset)>>2;
+  }
+}
+#endif
+
+void
+codeblock_line_decode_generic (int16_t *p, int stride, int j, int xmin, int xmax,
+    int16_t *parent_data, int horizontally_oriented,
+    int vertically_oriented, SchroArith *arith, int quant_factor,
+    int quant_offset, int *coeff_count, int coeff_reset)
+{
+  int i;
+
+  p += xmin;
+  for(i=xmin;i<xmax;i++){
+    int v;
+    int parent;
+    int nhood_or;
+    int previous_value;
+
+    if (parent_data) {
+      parent = parent_data[(i>>1)];
+    } else {
+      parent = 0;
+    }
+
+    nhood_or = 0;
+    if (j>0) nhood_or |= p[-stride];
+    if (i>0) nhood_or |= p[-1];
+#if !DIRAC_COMPAT
+    if (i>0 && j>0) nhood_or |= p[-stride-1];
+#endif
+
+    previous_value = 0;
+    if (horizontally_oriented) {
+      if (i > 0) previous_value = p[-1];
+    } else if (vertically_oriented) {
+      if (j > 0) previous_value = p[-stride];
+    }
+
+#define STUFF \
+  do { \
+    int cont_context, sign_context, value_context; \
+    \
+    if (parent == 0) { \
+      cont_context = nhood_or ? SCHRO_CTX_ZPNN_F1 : SCHRO_CTX_ZPZN_F1; \
+    } else { \
+      cont_context = nhood_or ? SCHRO_CTX_NPNN_F1 : SCHRO_CTX_NPZN_F1; \
+    } \
+     \
+    if (previous_value < 0) { \
+      sign_context = SCHRO_CTX_SIGN_NEG; \
+    } else { \
+      sign_context = (previous_value > 0) ? SCHRO_CTX_SIGN_POS : \
+        SCHRO_CTX_SIGN_ZERO; \
+    } \
+ \
+    value_context = SCHRO_CTX_COEFF_DATA; \
+ \
+    v = _schro_arith_context_decode_uint (arith, cont_context, \
+        value_context); \
+    if (v) { \
+      v = (quant_offset + quant_factor * v)>>2; \
+      if (_schro_arith_context_decode_bit (arith, sign_context)) { \
+        v = -v; \
+      } \
+      p[0] = v; \
+    } else { \
+      p[0] = 0; \
+    } \
+ \
+    (*coeff_count)++; \
+    if (*coeff_count == coeff_reset) { \
+      *coeff_count = 0; \
+      schro_arith_halve_all_counts (arith); \
+    } \
+    p++; \
+  } while(0)
+
+    STUFF;
+  }
+}
+
+void
+codeblock_line_decode_p_horiz (int16_t *p, int stride, int j, int xmin, int xmax,
+    int16_t *parent_data, SchroArith *arith, int quant_factor,
+    int quant_offset, int *coeff_count, int coeff_reset, int16_t *prev)
+{
+  int i;
+
+  p += xmin;
+  if (xmin == 0) {
+    int v;
+    int parent;
+    int nhood_or;
+    int previous_value;
+
+    i = 0;
+    parent = parent_data[(i>>1)];
+    nhood_or = prev[i];
+    previous_value = 0;
+
+    STUFF;
+    xmin++;
+  }
+  for(i=xmin;i<xmax;i++){
+    int v;
+    int parent;
+    int nhood_or;
+    int previous_value;
+
+    parent = parent_data[(i>>1)];
+
+    nhood_or = prev[i];
+    nhood_or |= p[-1];
+#if !DIRAC_COMPAT
+    nhood_or |= prev[i-1];
+#endif
+
+    previous_value = 0;
+    previous_value = p[-1];
+
+    STUFF;
+  }
+}
+
+void
+codeblock_line_decode_p_vert (int16_t *p, int stride, int j, int xmin, int xmax,
+    int16_t *parent_data, SchroArith *arith, int quant_factor,
+    int quant_offset, int *coeff_count, int coeff_reset, int16_t *prev)
+{
+  int i;
+
+  p += xmin;
+  if (xmin == 0) {
+    int v;
+    int parent;
+    int nhood_or;
+    int previous_value;
+
+    i = 0;
+
+    parent = parent_data[(i>>1)];
+    nhood_or = prev[i];
+    previous_value = prev[i];
+
+    STUFF;
+    xmin++;
+  }
+  for(i=xmin;i<xmax;i++){
+    int v;
+    int parent;
+    int nhood_or;
+    int previous_value;
+
+    parent = parent_data[(i>>1)];
+
+    nhood_or = prev[i];
+    nhood_or |= p[-1];
+#if !DIRAC_COMPAT
+    nhood_or |= prev[i-1];
+#endif
+
+    previous_value = prev[i];
+
+    STUFF;
+  }
+}
+
+void
+codeblock_line_decode_p_diag (int16_t *p, int stride, int j, int xmin, int xmax,
+    int16_t *parent_data, SchroArith *arith, int quant_factor,
+    int quant_offset, int *coeff_count, int coeff_reset, int16_t *prev)
+{
+  int i;
+
+  p += xmin;
+  if (xmin == 0) {
+    int v;
+    int parent;
+    int nhood_or;
+    int previous_value;
+
+    i = 0;
+    parent = parent_data[(i>>1)];
+    nhood_or = prev[i];
+    previous_value = 0;
+
+    STUFF;
+    xmin++;
+  }
+  for(i=xmin;i<xmax;i++){
+    int v;
+    int parent;
+    int nhood_or;
+    int previous_value;
+
+    parent = parent_data[(i>>1)];
+
+    nhood_or = prev[i];
+    nhood_or |= p[-1];
+#if !DIRAC_COMPAT
+    nhood_or |= prev[i-1];
+#endif
+    previous_value = 0;
+
+    STUFF;
   }
 }
 
@@ -1218,97 +1426,37 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
         SCHRO_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
 
     for(j=ymin;j<ymax;j++){
-      for(i=xmin;i<xmax;i++){
-        int v;
-        int parent;
-        int cont_context;
-        int nhood_or;
-        int previous_value;
-        int sign_context;
-        int value_context;
-        int16_t *p = data + j*stride + i;
-
-//#define SUPPRESS_PARENT
-//#define SUPPRESS_NHOOD
-//#define SUPPRESS_ZERO
-
-        if (subband->has_parent) {
-          parent = parent_data[(j>>1)*(stride<<1) + (i>>1)];
-        } else {
-          parent = 0;
-        }
-#ifdef SUPPRESS_PARENT
-parent = 0;
-#endif
-
-        nhood_or = 0;
-        if (j>0) {
-          nhood_or |= p[-stride];
-        }
-        if (i>0) {
-          nhood_or |= p[-1];
-        }
-#if !DIRAC_COMPAT
-        if (i>0 && j>0) {
-          nhood_or |= p[-stride-1];
-        }
-#endif
-#ifdef SUPPRESS_NHOOD
-nhood_or = 0;
-#endif
-        
-        previous_value = 0;
+      int16_t *p = data + j*stride;
+      int16_t *parent_line;
+      int16_t *prev_line;
+      if (subband->has_parent) {
+        parent_line = parent_data + (j>>1)*(stride<<1);
+      } else {
+        parent_line = NULL;
+      }
+      if (j==0) {
+        prev_line = schro_zero;
+      } else {
+        prev_line = data + (j-1)*stride;
+      }
+      if (subband->has_parent) {
         if (subband->horizontally_oriented) {
-          if (i > 0) {
-            previous_value = p[-1];
-          }
+          codeblock_line_decode_p_horiz (p, stride, j, xmin, xmax, parent_line,
+              arith, quant_factor, quant_offset, &coeff_count, coeff_reset,
+              prev_line);
         } else if (subband->vertically_oriented) {
-          if (j > 0) {
-            previous_value = p[-stride];
-          }
-        }
-#ifdef SUPPRESS_ZERO
-previous_value = 0;
-#endif
-
-        if (previous_value < 0) {
-          sign_context = SCHRO_CTX_SIGN_NEG;
+          codeblock_line_decode_p_vert (p, stride, j, xmin, xmax, parent_line,
+              arith, quant_factor, quant_offset, &coeff_count, coeff_reset,
+              prev_line);
         } else {
-          if (previous_value > 0) {
-            sign_context = SCHRO_CTX_SIGN_POS;
-          } else {
-            sign_context = SCHRO_CTX_SIGN_ZERO;
-          }
+          codeblock_line_decode_p_diag (p, stride, j, xmin, xmax, parent_line,
+              arith, quant_factor, quant_offset, &coeff_count, coeff_reset,
+              prev_line);
         }
-
-        if (parent == 0) {
-          if (nhood_or == 0) {
-            cont_context = SCHRO_CTX_ZPZN_F1;
-          } else {
-            cont_context = SCHRO_CTX_ZPNN_F1;
-          }
-        } else {
-          if (nhood_or == 0) {
-            cont_context = SCHRO_CTX_NPZN_F1;
-          } else {
-            cont_context = SCHRO_CTX_NPNN_F1;
-          }
-        }
-
-//cont_context = SCHRO_CTX_ZP_F6p;
-//cont_context = SCHRO_CTX_ZPZN_F1;
-//sign_context = SCHRO_CTX_SIGN_ZERO;
-        value_context = SCHRO_CTX_COEFF_DATA;
-
-        v = _schro_arith_context_decode_sint (arith, cont_context,
-            value_context, sign_context);
-        p[0] = dequantize(v, quant_factor, quant_offset);
-
-        coeff_count++;
-        if (coeff_count == coeff_reset) {
-          coeff_count = 0;
-          schro_arith_halve_all_counts (arith);
-        }
+      } else {
+        codeblock_line_decode_generic (p, stride, j, xmin, xmax, parent_line,
+            subband->horizontally_oriented, subband->vertically_oriented,
+            arith, quant_factor, quant_offset, &coeff_count, coeff_reset);
       }
     }
       }

@@ -1,3 +1,17 @@
+2006-10-28  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroarith-i386.c:
+	  Make the branch targets local.  Helps for profiling and
+	  debugging.
+	* schroedinger/schroarith.c:
+	  Improve decode_sint performance a bit.
+	* schroedinger/schrodecoder.c:
+	  Split out codeblock line decoding into a separate function,
+	  then duplicate the function for the various codeblocks cases.
+	  Moves most conditionals outside of the inner loop.
+	* schroedinger/schromotion.c:
+	  Use new liboil class.
+
 2006-10-27  David Schleef  <ds@schleef.org>
 
 	* schroedinger/Makefile.am:
