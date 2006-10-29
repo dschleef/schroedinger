@@ -1082,7 +1082,7 @@ void
 codeblock_line_decode_generic (int16_t *p, int stride, int j, int xmin, int xmax,
     int16_t *parent_data, int horizontally_oriented,
     int vertically_oriented, SchroArith *arith, int quant_factor,
-    int quant_offset, int *coeff_count, int coeff_reset)
+    int quant_offset)
 {
   int i;
 
@@ -1143,12 +1143,6 @@ codeblock_line_decode_generic (int16_t *p, int stride, int j, int xmin, int xmax
     } else { \
       p[0] = 0; \
     } \
- \
-    (*coeff_count)++; \
-    if (*coeff_count == coeff_reset) { \
-      *coeff_count = 0; \
-      schro_arith_halve_all_counts (arith); \
-    } \
     p++; \
   } while(0)
 
@@ -1159,7 +1153,7 @@ codeblock_line_decode_generic (int16_t *p, int stride, int j, int xmin, int xmax
 void
 codeblock_line_decode_p_horiz (int16_t *p, int stride, int j, int xmin, int xmax,
     int16_t *parent_data, SchroArith *arith, int quant_factor,
-    int quant_offset, int *coeff_count, int coeff_reset, int16_t *prev)
+    int quant_offset, int16_t *prev)
 {
   int i;
 
@@ -1202,7 +1196,7 @@ codeblock_line_decode_p_horiz (int16_t *p, int stride, int j, int xmin, int xmax
 void
 codeblock_line_decode_p_vert (int16_t *p, int stride, int j, int xmin, int xmax,
     int16_t *parent_data, SchroArith *arith, int quant_factor,
-    int quant_offset, int *coeff_count, int coeff_reset, int16_t *prev)
+    int quant_offset, int16_t *prev)
 {
   int i;
 
@@ -1245,7 +1239,7 @@ codeblock_line_decode_p_vert (int16_t *p, int stride, int j, int xmin, int xmax,
 void
 codeblock_line_decode_p_diag (int16_t *p, int stride, int j, int xmin, int xmax,
     int16_t *parent_data, SchroArith *arith, int quant_factor,
-    int quant_offset, int *coeff_count, int coeff_reset, int16_t *prev)
+    int quant_offset, int16_t *prev)
 {
   int i;
 
@@ -1345,7 +1339,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     int have_zero_flags;
     int have_quant_offset;
     int coeff_reset;
-    int coeff_count = 0;
+    int coeff_count;
 
     quant_index = schro_bits_decode_uint (decoder->bits);
     SCHRO_DEBUG("quant index %d", quant_index);
@@ -1366,6 +1360,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     schro_arith_init_contexts (arith);
 
     coeff_reset = CLAMP(((width*height)>>5), 25, 800);
+    coeff_count = coeff_reset;
     if (params->spatial_partition_flag) {
       if (index == 0) {
         vert_codeblocks = params->vert_codeblocks[0];
@@ -1429,6 +1424,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
       int16_t *p = data + j*stride;
       int16_t *parent_line;
       int16_t *prev_line;
+      int x,x2;
       if (subband->has_parent) {
         parent_line = parent_data + (j>>1)*(stride<<1);
       } else {
@@ -1439,24 +1435,41 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
       } else {
         prev_line = data + (j-1)*stride;
       }
-      if (subband->has_parent) {
-        if (subband->horizontally_oriented) {
-          codeblock_line_decode_p_horiz (p, stride, j, xmin, xmax, parent_line,
-              arith, quant_factor, quant_offset, &coeff_count, coeff_reset,
-              prev_line);
-        } else if (subband->vertically_oriented) {
-          codeblock_line_decode_p_vert (p, stride, j, xmin, xmax, parent_line,
-              arith, quant_factor, quant_offset, &coeff_count, coeff_reset,
-              prev_line);
-        } else {
-          codeblock_line_decode_p_diag (p, stride, j, xmin, xmax, parent_line,
-              arith, quant_factor, quant_offset, &coeff_count, coeff_reset,
-              prev_line);
+#if 0
+    (*coeff_count)++;
+    if (*coeff_count == coeff_reset) {
+      *coeff_count = 0;
+      schro_arith_halve_all_counts (arith);
+    }
+#endif
+      x = xmin;
+      while(x < xmax) {
+        x2 = xmax;
+        if (x2 - x > coeff_count) {
+          x2 = x + coeff_count;
         }
-      } else {
-        codeblock_line_decode_generic (p, stride, j, xmin, xmax, parent_line,
-            subband->horizontally_oriented, subband->vertically_oriented,
-            arith, quant_factor, quant_offset, &coeff_count, coeff_reset);
+        if (subband->has_parent) {
+          if (subband->horizontally_oriented) {
+            codeblock_line_decode_p_horiz (p, stride, j, x, x2, parent_line,
+                arith, quant_factor, quant_offset, prev_line);
+          } else if (subband->vertically_oriented) {
+            codeblock_line_decode_p_vert (p, stride, j, x, x2, parent_line,
+                arith, quant_factor, quant_offset, prev_line);
+          } else {
+            codeblock_line_decode_p_diag (p, stride, j, x, x2, parent_line,
+                arith, quant_factor, quant_offset, prev_line);
+          }
+        } else {
+          codeblock_line_decode_generic (p, stride, j, x, x2, parent_line,
+              subband->horizontally_oriented, subband->vertically_oriented,
+              arith, quant_factor, quant_offset);
+        }
+        coeff_count -= x2 - x;
+        if (coeff_count == 0) {
+          schro_arith_halve_all_counts (arith);
+          coeff_count = coeff_reset;
+        }
+        x = x2;
       }
     }
       }

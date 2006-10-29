@@ -308,8 +308,8 @@ void
 schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
     SchroFrame *src2, SchroMotionVector *motion_vectors, SchroParams *params)
 {
-  SchroFrame *frame = dest;
   int i, j;
+  int k;
   int dx, dy;
   int x, y;
   SchroObmc obmc_luma;
@@ -318,32 +318,30 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
   schro_obmc_init (&obmc_luma, 12, 12, 8, 8);
   schro_obmc_init (&obmc_chroma, 6, 6, 4, 4);
 
-  clear_rows (dest->components + 0, 0, obmc_luma.y_ramp/2);
-  clear_rows (dest->components + 1, 0, obmc_chroma.y_ramp/2);
-  clear_rows (dest->components + 2, 0, obmc_chroma.y_ramp/2);
+  for(k=0;k<3;k++){
+    SchroFrameComponent *component = dest->components + k;
+    SchroObmc *obmc;
+
+    if (k == 0) {
+      obmc = &obmc_luma;
+    } else {
+      obmc = &obmc_chroma;
+    }
+
+    clear_rows (component, 0, obmc->y_ramp/2);
 
   for(j=0;j<params->y_num_blocks;j++){
-    y = j*params->ybsep_luma;
+    y = j*obmc->y_sep;
 
-    clear_rows (dest->components + 0, y + obmc_luma.y_ramp/2,
-        obmc_luma.y_sep);
-    clear_rows (dest->components + 1, y/2 + obmc_chroma.y_ramp/2,
-        obmc_chroma.y_sep);
-    clear_rows (dest->components + 2, y/2 + obmc_chroma.y_ramp/2,
-        obmc_chroma.y_sep);
+    clear_rows (component, y + obmc->y_ramp/2, obmc->y_sep);
 
     for(i=0;i<params->x_num_blocks;i++){
       SchroMotionVector *mv = &motion_vectors[j*params->x_num_blocks + i];
 
-      x = i*params->xbsep_luma;
+      x = i*obmc->x_sep;
 
       if (mv->pred_mode == 0) {
-        splat_block_general (&frame->components[0], x, y, mv->dc[0],
-            &obmc_luma);
-        splat_block_general (&frame->components[1], x/2, y/2, mv->dc[1],
-            &obmc_chroma);
-        splat_block_general (&frame->components[2], x/2, y/2, mv->dc[2],
-            &obmc_chroma);
+        splat_block_general (component, x, y, mv->dc[k], obmc);
       } else {
         SchroFrame *ref;
 
@@ -356,6 +354,7 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
         dx = mv->x;
         dy = mv->y;
 
+#if 0
         /* FIXME This is only roughly correct */
         SCHRO_ASSERT(x + dx >= 0);
         //SCHRO_ASSERT(x + dx < params->mc_luma_width - params->xbsep_luma);
@@ -363,32 +362,24 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
         SCHRO_ASSERT(y + dy >= 0);
         //SCHRO_ASSERT(y + dy < params->mc_luma_height - params->ybsep_luma);
         SCHRO_ASSERT(y + dy < params->mc_luma_height);
+#endif
 
-        copy_block_general (&frame->components[0], x, y,
-            &ref->components[0], x+dx, y+dy, &obmc_luma);
-        copy_block_general (&frame->components[1], x/2, y/2,
-            &ref->components[1], (x+dx)/2, (y+dy)/2, &obmc_chroma);
-        copy_block_general (&frame->components[2], x/2, y/2,
-            &ref->components[2], (x+dx)/2, (y+dy)/2, &obmc_chroma);
+        if (k == 0) {
+          copy_block_general (component, x, y, &ref->components[k],
+              x+dx, y+dy, obmc);
+        } else {
+          copy_block_general (component, x, y, &ref->components[k],
+              (x*2+dx)>>1, (y*2+dy)>>1, obmc);
+        }
       }
     }
 
-    shift_rows (dest->components + 0, y - obmc_luma.y_ramp/2,
-        obmc_luma.y_sep, obmc_luma.shift);
-    shift_rows (dest->components + 1, y/2 - obmc_chroma.y_ramp/2,
-        obmc_chroma.y_sep, obmc_chroma.shift);
-    shift_rows (dest->components + 2, y/2 - obmc_chroma.y_ramp/2,
-        obmc_chroma.y_sep, obmc_chroma.shift);
-
+    shift_rows (component, y - obmc->y_ramp/2, obmc->y_sep, obmc->shift);
   }
 
-  y = params->y_num_blocks*params->ybsep_luma;
-  shift_rows (dest->components + 0, y - obmc_luma.y_ramp/2,
-      obmc_luma.y_ramp/2, obmc_luma.shift);
-  shift_rows (dest->components + 1, y/2 - obmc_chroma.y_ramp/2,
-      obmc_chroma.y_ramp/2, obmc_chroma.shift);
-  shift_rows (dest->components + 2, y/2 - obmc_chroma.y_ramp/2,
-      obmc_chroma.y_ramp/2, obmc_chroma.shift);
+  y = params->y_num_blocks*obmc->y_sep;
+  shift_rows (component, y - obmc->y_ramp/2, obmc->y_ramp/2, obmc->shift);
+}
 
   schro_obmc_cleanup (&obmc_luma);
   schro_obmc_cleanup (&obmc_chroma);
