@@ -118,16 +118,36 @@ void
 schro_arith_flush (SchroArith *arith)
 {
   int i;
+
+#ifdef ENABLE_ARITH_REAPING
+  {
+    int n;
+    for(n=0;n<16;n++){
+      if ((arith->range[0] | ((1<<(n+1))-1)) > arith->range[1]) {
+        break;
+      }
+    }
+    arith->range[0] |= (1<<n)-1;
+  }
+#endif
+
   for(i=0;i<16;i++){
     _schro_arith_output_bit (arith);
     arith->range[0] <<= 1;
   }
   while(arith->nextbits < 8) {
     arith->nextcode <<= 1;
+    arith->nextcode |= 1;
     arith->nextbits++;
   }
   arith->buffer->data[arith->offset] = arith->nextcode;
   arith->offset++;
+
+#ifdef ENABLE_ARITH_REAPING
+  while (arith->offset > 1 && arith->buffer->data[arith->offset - 1] == 0xff) {
+    arith->offset--;
+  }
+#endif
 }
 
 static const int next_list[] = {

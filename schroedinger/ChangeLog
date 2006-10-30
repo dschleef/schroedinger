@@ -1,3 +1,8 @@
+2006-10-30  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroarith.c:
+	  Add code to reap 0xff bytes off the end of an arith block.
+
 2006-10-28  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:
