@@ -1,5 +1,10 @@
 2006-11-02  David Schleef  <ds@schleef.org>
 
+	* misc/any-to-ogg:
+	  Random fixes.
+
+2006-11-02  David Schleef  <ds@schleef.org>
+
 	* schroedinger/Makefile.am:
 	  Dist schrointernal.h
 

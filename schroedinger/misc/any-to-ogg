@@ -1,1 +1,17 @@
-gst-launch-0.10 filesrc location=nwnintro640x480.mpg ! decodebin name="decode" decode. ! ffmpegcolorspace ! schroenc ! queue ! oggmux name=mux ! gnomevfssink location=file:///home/cschalle/nwn.ogg decode. ! audioconvert ! vorbisenc ! queue ! mux.
+#!/bin/sh
+
+in=/home/ds/320-256kbits-NVIDIA-MadModMike.wmv
+out=madmodmike.ogg
+
+gst-launch-0.10 \
+  filesrc location=$in ! \
+  decodebin name="decode" \
+    decode. ! \
+    ffmpegcolorspace ! \
+    schroenc ! \
+    queue ! \
+    oggmux name=mux ! \
+    filesink location=$out \
+    decode. ! \
+    audioconvert ! vorbisenc ! queue ! mux.
+
