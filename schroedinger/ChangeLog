@@ -1,6 +1,16 @@
 2006-11-02  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Add encoding preferences for a bunch of parameters.  They're
+	  "preferences", because the encoding engine is free to ignore
+	  them.
+	* gst/gstschroenc.c:
+	  Add properties for encoder preferences.
+
+2006-11-02  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
 	  Fix spatial partitioning.
 	* schroedinger/schroframe.c:
 	  Fix calculation of I420 sizes.

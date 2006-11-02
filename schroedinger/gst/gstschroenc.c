@@ -90,7 +90,16 @@ enum
 enum
 {
   ARG_0,
-  ARG_LEVEL
+  ARG_ENGINE,
+  ARG_REF_DISTANCE,
+  ARG_TRANSFORM_DEPTH,
+  ARG_INTRA_WAVELET,
+  ARG_INTER_WAVELET,
+  ARG_QUANT_BASE,
+  ARG_QUANT_OFFSET_NONREF,
+  ARG_QUANT_OFFSET_SUBBAND,
+  ARG_QUANT_DC,
+  ARG_QUANT_DC_OFFSET_NONREF
 };
 
 static void gst_schro_enc_finalize (GObject *object);
@@ -146,6 +155,12 @@ gst_schro_enc_class_init (GstSchroEncClass * klass)
 {
   GObjectClass *gobject_class;
   GstElementClass *gstelement_class;
+  static const char *arg_names[] = {
+    "engine", "ref_distance", "transform_depth", "intra_wavelet",
+    "inter_wavelet", "quant_base", "quant_offset_nonref",
+    "quant_offset_subband", "quant_dc", "quant_dc_offset_nonref" };
+  int i;
+  SchroEncoder *enc;
 
   gobject_class = G_OBJECT_CLASS (klass);
   gstelement_class = GST_ELEMENT_CLASS (klass);
@@ -154,14 +169,17 @@ gst_schro_enc_class_init (GstSchroEncClass * klass)
   gobject_class->get_property = gst_schro_enc_get_property;
   gobject_class->finalize = gst_schro_enc_finalize;
 
-#if 0
-  g_object_class_install_property (gobject_class, ARG_WAVELET_TYPE,
-      g_param_spec_int ("wavelet-type", "wavelet type", "wavelet type",
-        0, 4, 2, G_PARAM_READWRITE));
-#endif
-  g_object_class_install_property (gobject_class, ARG_LEVEL,
-      g_param_spec_int ("level", "level", "level",
-        0, 100, 0, G_PARAM_READWRITE));
+  enc = schro_encoder_new ();
+  for(i=0;i<10;i++){
+    int min, max, val;
+    schro_encoder_preference_get_range (enc, i, &min, &max);
+    val = schro_encoder_preference_get (enc, i);
+    g_object_class_install_property (gobject_class, ARG_ENGINE + i,
+        g_param_spec_int (arg_names[i], arg_names[i], arg_names[i],
+          min, max, val, G_PARAM_READWRITE));
+  }
+
+  schro_encoder_free (enc);
 
   gstelement_class->change_state = gst_schro_enc_change_state;
 }
@@ -257,8 +275,18 @@ gst_schro_enc_set_property (GObject * object, guint prop_id,
 
   GST_DEBUG ("gst_schro_enc_set_property");
   switch (prop_id) {
-    case ARG_LEVEL:
-      src->level = g_value_get_int (value);
+    case ARG_ENGINE:
+    case ARG_REF_DISTANCE:
+    case ARG_TRANSFORM_DEPTH:
+    case ARG_INTRA_WAVELET:
+    case ARG_INTER_WAVELET:
+    case ARG_QUANT_BASE:
+    case ARG_QUANT_OFFSET_NONREF:
+    case ARG_QUANT_OFFSET_SUBBAND:
+    case ARG_QUANT_DC:
+    case ARG_QUANT_DC_OFFSET_NONREF:
+      schro_encoder_preference_set (src->encoder, prop_id - ARG_ENGINE,
+          g_value_get_int(value));
       break;
     default:
       break;
@@ -275,8 +303,18 @@ gst_schro_enc_get_property (GObject * object, guint prop_id, GValue * value,
   src = GST_SCHRO_ENC (object);
 
   switch (prop_id) {
-    case ARG_LEVEL:
-      g_value_set_int (value, src->level);
+    case ARG_ENGINE:
+    case ARG_REF_DISTANCE:
+    case ARG_TRANSFORM_DEPTH:
+    case ARG_INTRA_WAVELET:
+    case ARG_INTER_WAVELET:
+    case ARG_QUANT_BASE:
+    case ARG_QUANT_OFFSET_NONREF:
+    case ARG_QUANT_OFFSET_SUBBAND:
+    case ARG_QUANT_DC:
+    case ARG_QUANT_DC_OFFSET_NONREF:
+      g_value_set_int (value,
+          schro_encoder_preference_get (src->encoder, prop_id - ARG_ENGINE));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
