@@ -36,14 +36,14 @@ decode(SchroBuffer *buffer, int n, OilProfile *prof, int type)
       case 0:
         oil_profile_start (prof);
         for(i=0;i<n;i++){
-          x += arith_context_decode_bit_ref (a, i&3);
+          x += arith_context_decode_bit_ref (a, 0);
         }
         oil_profile_stop (prof);
         break;
       case 1:
         oil_profile_start (prof);
         for(i=0;i<n;i++){
-          x += arith_context_decode_bit_test (a, i&3);
+          x += arith_context_decode_bit_test (a, 0);
         }
         oil_profile_stop (prof);
         break;
@@ -54,6 +54,20 @@ decode(SchroBuffer *buffer, int n, OilProfile *prof, int type)
   }
 
   return x;
+}
+
+void
+dump_bits (SchroBuffer *buffer, int n)
+{
+  int i;
+
+  for(i=0;i<n;i++){
+    printf("%02x ", buffer->data[i]);
+    if ((i&15)==15) {
+      printf ("\n");
+    }
+  }
+  printf ("\n");
 }
 
 void
@@ -70,7 +84,7 @@ encode (SchroBuffer *buffer, int n, int freq)
 
   for(i=0;i<n;i++){
     bit = oil_rand_u8() < freq;
-    schro_arith_context_encode_bit (a, i&3, bit);
+    schro_arith_context_encode_bit (a, 0, bit);
   }
   schro_arith_flush (a);
 
@@ -120,12 +134,17 @@ main (int argc, char *argv[])
   x = &arith_context_decode_bit_ref;
   x = &arith_context_decode_bit_test;
 
-  while(1) check(1000, 128);
+  //while(1) check(1000, 128);
   check(1000, 128);
   for(i=100;i<=1000;i+=100) {
-    check(i, 128);
-    //check(i, 0);
+    //check(i, 128);
+    check(i, 256);
   }
+  check(2000, 256);
+  check(3000, 256);
+  check(4000, 256);
+  check(5000, 256);
+  check(100000, 256);
 #if 0
   for(i=0;i<=256;i+=16) {
     check(100, i);
@@ -216,7 +235,7 @@ arith_context_decode_bit_test (SchroArith *arith, int i)
 {
   SchroArithContext *context = arith->contexts + i;
 
-#include "offsets.h"
+#include <schroedinger/schrooffsets.h>
   __asm__ __volatile__ (
       //calc_count_range(arith);
       "  movzwl a_range(%0), %%ecx\n"
@@ -428,7 +447,7 @@ arith_context_decode_bit_test (SchroArith *arith, int i)
 {
   SchroArithContext *context = arith->contexts + i;
 
-#include "offsets.h"
+#include <schroedinger/schrooffsets.h>
   __asm__ __volatile__ (
       //calc_count_range(arith);
       "  movzwl a_range(%0), %%ecx\n"

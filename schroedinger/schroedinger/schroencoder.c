@@ -63,6 +63,8 @@ schro_encoder_new (void)
   encoder->ref_distance = 8;
 
   encoder->engine = 2;
+  schro_params_set_video_format (&encoder->video_format,
+      SCHRO_VIDEO_FORMAT_SD576);
 
   return encoder;
 }
@@ -229,8 +231,10 @@ schro_encoder_choose_quantisers (SchroEncoderTask *task)
   int gain;
   int gain_hv;
   int gain_diag;
-  int nonref;
+  int percep;
   int depth;
+  int band;
+  int dc;
   int i;
 
   depth = task->params.transform_depth;
@@ -239,26 +243,24 @@ schro_encoder_choose_quantisers (SchroEncoderTask *task)
   gain_diag = wavelet_gain_diag[task->params.wavelet_filter_index];
 
   if (task->is_ref) {
-    base = 4 << 4;
-    //nonref = 0;
-    nonref = 2<<4;
-  } else {
     base = 8 << 4;
-    nonref = 2<<4;
-    //nonref = 0;
+    percep = -(1<<4);
+    dc = 4<<4;
+  } else {
+    base = 12 << 4;
+    percep = -(1<<4);
+    dc = 8<<4;
   }
 
-  subbands[0].quant_index = schro_gain_to_index (base + gain*depth);
+  subbands[0].quant_index = schro_gain_to_index (dc);
   for(i=0; i<depth; i++) {
+    band = depth - 1 - i;
     subbands[1+3*i].quant_index =
-      schro_gain_to_index (base + nonref * (i+1) + gain*(depth - (i+1))
-            + gain_diag);
+      schro_gain_to_index (base + (percep + gain)*band + gain_diag);
     subbands[2+3*i].quant_index =
-      schro_gain_to_index (base + nonref * (i+1) + gain*(depth - (i+1))
-            + gain_hv);
+      schro_gain_to_index (base + (percep + gain)*band + gain_hv);
     subbands[3+3*i].quant_index =
-      schro_gain_to_index (base + nonref * (i+1) + gain*(depth - (i+1))
-            + gain_hv);
+      schro_gain_to_index (base + (percep + gain)*band + gain_hv);
   }
 }
 
@@ -339,7 +341,7 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
   params->wavelet_filter_index = SCHRO_WAVELET_5_3;
   params->transform_depth = 4;
   schro_params_set_default_codeblock (params);
-  params->spatial_partition_flag = FALSE;
+  params->spatial_partition_flag = TRUE;
   params->codeblock_mode_index = 0;
 
   params->num_refs = 0;
@@ -633,7 +635,7 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
   }
   params->transform_depth = 4;
   schro_params_set_default_codeblock (params);
-  params->spatial_partition_flag = FALSE;
+  params->spatial_partition_flag = TRUE;
   params->codeblock_mode_index = 0;
 
   params->global_motion = FALSE;
@@ -1764,12 +1766,12 @@ quantize (int value, int quant_factor, int quant_offset,
 
   if (value == 0) return 0;
   if (value < 0) {
-    x = ((-value)<<2) - quant_offset + (quant_factor>>1);
+    x = (-value)<<2;
     //x = (x*(uint64_t)inv_quant_factor)>>32;
     x /= quant_factor;
     value = -x;
   } else {
-    x = (value<<2) - quant_offset + (quant_factor>>1);
+    x = value<<2;
     //x = (x*(uint64_t)inv_quant_factor)>>32;
     x /= quant_factor;
     value = x;
@@ -1944,11 +1946,11 @@ schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index)
   coeff_reset = CLAMP(((width*height)>>5), 25, 800);
   if (params->spatial_partition_flag) {
     if (index == 0) {
-      horiz_codeblocks = params->horiz_codeblocks[subband->scale_factor_shift];
-      vert_codeblocks = params->vert_codeblocks[subband->scale_factor_shift];
-    } else {
       horiz_codeblocks = params->horiz_codeblocks[0];
       vert_codeblocks = params->vert_codeblocks[0];
+    } else {
+      horiz_codeblocks = params->horiz_codeblocks[subband->scale_factor_shift+1];
+      vert_codeblocks = params->vert_codeblocks[subband->scale_factor_shift+1];
     }
   } else {
     horiz_codeblocks = 1;
@@ -1962,7 +1964,6 @@ schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index)
   if (horiz_codeblocks > 1 || vert_codeblocks > 1) {
     if (params->codeblock_mode_index == 1) {
       have_quant_offset = TRUE;
-      SCHRO_ASSERT(0);
     } else {
       have_quant_offset = FALSE;
     }
@@ -1994,6 +1995,12 @@ out:
     if (zero_codeblock) {
       continue;
     }
+  }
+
+  if (have_quant_offset) {
+    _schro_arith_context_encode_sint (arith,
+        SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
+        SCHRO_CTX_QUANTISER_SIGN, 0);
   }
 
   for(j=ymin;j<ymax;j++){

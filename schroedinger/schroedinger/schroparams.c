@@ -74,10 +74,17 @@ schro_params_calculate_mc_sizes (SchroParams *params)
   params->y_num_blocks =
     4 * DIVIDE_ROUND_UP(video_format->height, 4*params->ybsep_luma);
 
+  SCHRO_DEBUG("picture %dx%d, num_blocks %dx%d", video_format->width,
+      video_format->height, params->x_num_blocks, params->y_num_blocks);
+
   params->mc_luma_width = params->x_num_blocks * params->xbsep_luma;
   params->mc_luma_height = params->y_num_blocks * params->ybsep_luma;
   params->mc_chroma_width = params->mc_luma_width / video_format->chroma_h_scale;
-  params->mc_chroma_height = params->mc_luma_width / video_format->chroma_v_scale;
+  params->mc_chroma_height = params->mc_luma_height / video_format->chroma_v_scale;
+
+  SCHRO_DEBUG("mc_luma %dx%d, mc_chroma %dx%d",
+      params->mc_luma_width, params->mc_luma_height,
+      params->mc_chroma_width, params->mc_chroma_height);
 }
 
 static SchroVideoFormat

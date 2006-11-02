@@ -1,3 +1,15 @@
+2006-11-02  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	  Fix spatial partitioning.
+	* schroedinger/schroframe.c:
+	  Fix calculation of I420 sizes.
+	* schroedinger/schroparams.c:
+	  Fix mc_chroma_height claculation.
+	* testsuite/arith_speed.c:
+	* testsuite/encode.c:
+	  Make these complile and pass.
+
 2006-11-01  David Schleef  <ds@schleef.org>
 
 	* gst/gstschroenc.c:

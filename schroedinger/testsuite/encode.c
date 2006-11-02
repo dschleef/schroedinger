@@ -73,7 +73,6 @@ main (int argc, char *argv[])
   for(w=64;w<64+16;w++){
     for(h=64;h<64+16;h++){
       test(w,h);
-      exit(0);
     }
   }
 
