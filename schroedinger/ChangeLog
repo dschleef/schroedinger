@@ -1,5 +1,10 @@
 2006-11-02  David Schleef  <ds@schleef.org>
 
+	* misc/pydvdrip:
+	  I use this a lot.  Maybe it should be in svn.
+
+2006-11-02  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:
 	  Add encoding preferences for a bunch of parameters.  They're
