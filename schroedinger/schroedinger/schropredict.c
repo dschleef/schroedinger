@@ -392,7 +392,7 @@ schro_encoder_hierarchical_prediction (SchroEncoderTask *task)
         }
       }
 
-#if 1
+#if 0
       /* predict from neighbor */
       for(j=0;j<params->y_num_blocks;j+=skip){
         for(i=0;i<params->x_num_blocks;i+=skip){

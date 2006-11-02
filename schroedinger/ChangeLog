@@ -1,3 +1,23 @@
+2006-11-01  David Schleef  <ds@schleef.org>
+
+	* gst/gstschroenc.c:
+	  Change ERRORs to DEBUGs
+	* misc/dvd-to-ogg:
+	* misc/leakcheck_enc:
+	* misc/oggtest:
+	* misc/vtstest:
+	  might as well check these in.
+	* schroedinger/schroarith.c:
+	  enable arith block reaping
+	* schroedinger/schrodecoder.c:
+	  Ignore earliest_frame for now.  Ignore overrunning the end of
+	  an arith block, since it's allowed now.
+	* schroedinger/schroencoder.c:
+	  random change to quality level.  Imagine this being externalized
+	  at some point.
+	* schroedinger/schropredict.c:
+	  Disable predict-from-neighbor, because it's slow.
+
 2006-10-31  David Schleef  <ds@schleef.org>
 
 	* testsuite/struct_offsets.c:

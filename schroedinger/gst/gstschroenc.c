@@ -310,7 +310,7 @@ gst_schro_enc_sink_event (GstPad *pad, GstEvent *event)
         gst_event_parse_new_segment_full (event, &update, &rate,
             &applied_rate, &format, &start, &stop, &position);
 
-        GST_ERROR("new segment %lld %lld", start, position);
+        GST_DEBUG("new segment %lld %lld", start, position);
         schro_enc->segment_start = start;
         schro_enc->segment_position = position;
 
@@ -521,7 +521,7 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
   schro_enc = GST_SCHRO_ENC (GST_PAD_PARENT (pad));
 
   if (GST_BUFFER_TIMESTAMP (buf) < schro_enc->segment_start) {
-    GST_ERROR("dropping early buffer");
+    GST_DEBUG("dropping early buffer");
     return GST_FLOW_OK;
   }
   if (!schro_enc->got_offset) {

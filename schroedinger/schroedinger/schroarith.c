@@ -119,6 +119,7 @@ schro_arith_flush (SchroArith *arith)
 {
   int i;
 
+#define ENABLE_ARITH_REAPING
 #ifdef ENABLE_ARITH_REAPING
   {
     int n;
@@ -144,9 +145,21 @@ schro_arith_flush (SchroArith *arith)
   arith->offset++;
 
 #ifdef ENABLE_ARITH_REAPING
+#if 1
+  if (arith->offset > 1 && arith->buffer->data[arith->offset - 1] == 0xff) {
+    arith->offset--;
+  }
+  if (arith->offset > 1 && arith->buffer->data[arith->offset - 1] == 0xff) {
+    arith->offset--;
+  }
+  if (arith->offset > 1 && arith->buffer->data[arith->offset - 1] == 0xff) {
+    arith->offset--;
+  }
+#else
   while (arith->offset > 1 && arith->buffer->data[arith->offset - 1] == 0xff) {
     arith->offset--;
   }
+#endif
 #endif
 }
 

@@ -1,6 +1,8 @@
 #!/bin/sh
 
 gdb -args  \
-gst-launch-0.10 videotestsrc ! schroenc ! schrodec ! xvimagesink sync=false
+gst-launch-0.10 videotestsrc ! \
+	video/x-raw-yuv,width=320,height=240 ! \
+	schroenc ! schrodec ! xvimagesink sync=false
 
 

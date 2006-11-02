@@ -1,8 +1,13 @@
 #!/bin/sh
 
-VALGRIND_OPTS=""
-valgrind.bin --tool=massif --depth=5 --alloc-fn=g_malloc --alloc-fn=g_malloc0 \
-  --alloc-fn=g_realloc \
-gst-launch-0.10 videotestsrc num-buffers=10 ! schroenc ! fakesink
+#VALGRIND_OPTS=""
+#valgrind.bin --tool=massif --depth=5 --alloc-fn=g_malloc --alloc-fn=g_malloc0 \
+#  --alloc-fn=g_realloc \
+
+#VALGRIND_OPTS="$VALGRIND_OPTS --show-reachable=yes"
+valgrind \
+gst-launch-0.10 videotestsrc num-buffers=10 ! \
+	video/x-raw-yuv,width=360,height=240 ! \
+	schroenc ! schrodec ! fakesink
 
 

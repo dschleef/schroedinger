@@ -239,12 +239,13 @@ schro_encoder_choose_quantisers (SchroEncoderTask *task)
   gain_diag = wavelet_gain_diag[task->params.wavelet_filter_index];
 
   if (task->is_ref) {
-    base = 6 << 4;
-    nonref = 0;
+    base = 4 << 4;
+    //nonref = 0;
+    nonref = 2<<4;
   } else {
     base = 8 << 4;
-    //nonref = 2<<4;
-    nonref = 0;
+    nonref = 2<<4;
+    //nonref = 0;
   }
 
   subbands[0].quant_index = schro_gain_to_index (base + gain*depth);
@@ -625,7 +626,11 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
 
   /* set up params */
   params->video_format = &encoder->video_format;
-  params->wavelet_filter_index = SCHRO_WAVELET_5_3;
+  if (params->num_refs > 0) {
+    params->wavelet_filter_index = SCHRO_WAVELET_5_3;
+  } else {
+    params->wavelet_filter_index = SCHRO_WAVELET_5_3;
+  }
   params->transform_depth = 4;
   schro_params_set_default_codeblock (params);
   params->spatial_partition_flag = FALSE;

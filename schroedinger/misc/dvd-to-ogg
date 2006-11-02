@@ -8,19 +8,22 @@ else
   title=5
 fi
 
+
+#valgrind \
+#gdb -args \
 gst-launch-0.10 \
   dvdreadsrc title="$title" ! \
-  dvddemux name="dvd" \
-  dvd.current_video ! \
+  flupsdemux name="dvd" \
+  dvd. ! \
     mpeg2dec ! \
     ffmpegcolorspace ! \
     videorate ! \
-    video/x-raw-yuv,framerate=12/1 ! \
+    video/x-raw-yuv,framerate=24/1 ! \
     schroenc ! \
     queue ! \
   oggmux name=mux ! \
   filesink location=output.ogg \
-  dvd.current_audio ! \
+  dvd. ! \
     a52dec ! \
     audioconvert ! \
     vorbisenc ! \

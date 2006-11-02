@@ -242,11 +242,11 @@ schro_decoder_iterate (SchroDecoder *decoder)
   params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->code);
 
   if (!SCHRO_PARSE_CODE_IS_REF (decoder->code) &&
-      (decoder->picture_number < decoder->earliest_frame ||
-       decoder->skip_value > decoder->skip_ratio)) {
+       decoder->skip_value > decoder->skip_ratio) {
 
     decoder->skip_value = 0.8 * decoder->skip_value;
-SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
+    SCHRO_INFO("skipping frame %d", decoder->picture_number);
+    SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
     for(i=0;i<decoder->n_retire;i++){
       schro_decoder_reference_retire (decoder, decoder->retire_list[i]);
@@ -782,10 +782,12 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
     SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
         arith->offset, buffer->length);
   }
-  if (arith->offset > buffer->length + 3) {
+#if 0
+  if (arith->offset > buffer->length + 6) {
     SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
         arith->offset, buffer->length);
   }
+#endif
   schro_arith_free (arith);
   schro_buffer_unref (buffer);
 
@@ -1478,10 +1480,12 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
       SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
           arith->offset, buffer->length);
     }
-    if (arith->offset > buffer->length + 4) {
+#if 0
+    if (arith->offset > buffer->length + 6) {
       SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
           arith->offset, buffer->length);
     }
+#endif
     schro_arith_free (arith);
     schro_buffer_unref (buffer);
 
