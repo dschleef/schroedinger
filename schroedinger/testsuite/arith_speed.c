@@ -445,6 +445,7 @@ arith_context_decode_bit_test (SchroArith *arith, int i)
 static int
 arith_context_decode_bit_test (SchroArith *arith, int i)
 {
+#ifdef __i386__
   SchroArithContext *context = arith->contexts + i;
 
 #include <schroedinger/schrooffsets.h>
@@ -648,6 +649,7 @@ arith_context_decode_bit_test (SchroArith *arith, int i)
       :
       : "r" (arith), "r" (context)
       : "eax", "ecx", "edx", "memory");
+#endif
 
   return arith->value;
 }

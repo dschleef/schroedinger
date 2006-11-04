@@ -1,3 +1,12 @@
+2006-11-04  David Schleef  <ds@schleef.org>
+
+	* configure.ac:
+	  Bump version.
+	* testsuite/Makefile.am:
+	  Disable wavelet2 due to last checkin
+	* testsuite/arith_speed.c:
+	  Disable code on non-i386.
+
 2006-11-03  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrowavelet.c:

@@ -1,11 +1,11 @@
 
 
 noinst_PROGRAMS = arith arith_encode arith_decode bits bits2 \
-	 encode wavelet wavelet2 tables wavelet_2d arith_speed \
+	 encode wavelet tables wavelet_2d arith_speed \
 	 obmc predict dump_packets phasecorrelation motion \
 	 arith_fixup_shift quant struct_offsets
 
-TESTS = arith bits bits2 encode wavelet wavelet2 tables wavelet_2d
+TESTS = arith bits bits2 encode wavelet tables wavelet_2d
 
 AM_CFLAGS = $(SCHRO_CFLAGS)
 AM_LIBS = $(SCHRO_LIBS)
