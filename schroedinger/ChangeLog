@@ -1,3 +1,8 @@
+2006-11-03  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrowavelet.c:
+	  remove dead code.
+
 2006-11-02  David Schleef  <ds@schleef.org>
 
 	* misc/any-to-ogg:
