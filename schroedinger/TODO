@@ -1,0 +1,72 @@
+
+
+  add copyright blocks
+
+  stabilize API
+
+  add profile support
+
+
+schroarith.c:
+
+  demote schro_arith_new()
+
+  move next_list to elsewhere
+
+schrobits.c:
+
+  fix FIXME
+
+  move dumpbits
+
+  figure out how to push disjoint buffers if possible
+
+schrobitstream.h:
+
+  limits of the codec should be moved elsewhere
+
+schrodecoder.c:
+
+  trick modes (decode_prediction_only) should be made into parameters
+
+  add seeking
+
+  allocate buffers once as per profile
+
+  separate video_format and params
+
+  determine a code ordering strategy
+
+  move reference pool handling elsewhere
+
+schroencoder.c:
+
+  don't use metric in SchroMotionVector
+
+  handle EOS gracefully
+
+  allocate temps once, as per profile
+
+schroframe.c:
+
+  handle subsampling properly
+
+schrometric.c:
+
+  handle non-8x8 blocks
+
+schromotion.c:
+
+  remove #if 0 code
+
+schroparams.c:
+
+  write function for determining optimal index for various parameters
+
+  move data to schrobitstream.c
+
+schropredict.c:
+
+  implement "how did we get this" bitfield
+
+

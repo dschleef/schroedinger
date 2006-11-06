@@ -1,0 +1,10 @@
+
+0.2.1
+=====
+
+ - Encoder and decoder nearly complete.  The bitstream is nearly
+   compatible with Dirac, except in a few cases for predicted frames.
+   Note that the Dirac bitstream isn't frozen, so that's kind of
+   irrelevant.
+ - Requires liboil-0.3.10.
+

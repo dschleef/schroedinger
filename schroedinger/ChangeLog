@@ -1,5 +1,14 @@
 2006-11-06  David Schleef  <ds@schleef.org>
 
+	* Makefile.am:
+	* NEWS:
+	* TODO:
+	  Add some docos
+	* testsuite/Makefile.am:
+	  Fix automake warning.
+
+2006-11-06  David Schleef  <ds@schleef.org>
+
 	* configure.ac: bump liboil version
 
 2006-11-04  David Schleef  <ds@schleef.org>

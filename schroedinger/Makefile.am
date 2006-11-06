@@ -3,7 +3,8 @@ AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = doc schroedinger gst testsuite
 
-EXTRA_DIST = COPYING COPYING.GPL COPYING.LGPL COPYING.MIT COPYING.MPL autogen.sh libschroedinger.spec
+EXTRA_DIST = COPYING COPYING.GPL COPYING.LGPL COPYING.MIT COPYING.MPL \
+	     autogen.sh libschroedinger.spec TODO NEWS
 
 pkgconfig_DATA = schroedinger-$(SCHRO_MAJORMINOR).pc
 
