@@ -1575,11 +1575,19 @@ static int
 dequantize (int q, int quant_factor, int quant_offset)
 {
   if (q == 0) return 0;
+#ifdef DIRAC_OFFSET_EXPERIMENT
   if (q < 0) {
     return ((q * quant_factor - quant_offset + 2)>>2);
   } else {
     return (q * quant_factor + quant_offset + 2)>>2;
   }
+#else
+  if (q < 0) {
+    return ((q * quant_factor - quant_offset)>>2);
+  } else {
+    return (q * quant_factor + quant_offset)>>2;
+  }
+#endif
 }
 
 static int
@@ -1626,7 +1634,15 @@ schro_encoder_quantize_subband (SchroEncoderTask *task, int component, int index
 
   quant_factor = schro_table_quant[subband->quant_index];
   inv_quant_factor = schro_table_inverse_quant[subband->quant_index];
-  quant_offset = schro_table_offset[subband->quant_index];
+#ifdef DIRAC_OFFSET_EXPERIMENT
+  if (task->params.num_refs > 0) {
+    quant_offset = schro_table_offset_1_4[subband->quant_index];
+  } else {
+    quant_offset = schro_table_offset_1_2[subband->quant_index];
+  }
+#else
+  quant_offset = schro_table_offset_3_8[subband->quant_index];
+#endif
 
   if (component == 0) {
     stride = subband->stride >> 1;
@@ -1747,7 +1763,15 @@ schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index)
     }
   }
   quant_factor = schro_table_quant[subband->quant_index];
-  quant_offset = schro_table_offset[subband->quant_index];
+#ifdef DIRAC_OFFSET_EXPERIMENT
+  if (task->params.num_refs > 0) {
+    quant_offset = schro_table_offset_1_4[subband->quant_index];
+  } else {
+    quant_offset = schro_table_offset_1_2[subband->quant_index];
+  }
+#else
+  quant_offset = schro_table_offset_3_8[subband->quant_index];
+#endif
 
   scale_factor = 1<<(params->transform_depth - subband->scale_factor_shift);
 

@@ -1,5 +1,22 @@
 2006-11-06  David Schleef  <ds@schleef.org>
 
+	* configure.ac: bump nano
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schrotables.c:
+	* schroedinger/schrotables.h:
+	* testsuite/tables.c:
+	  Implement Tim's offset experiment.  Disabled by default.
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	  Refactor code to separate block retrieval from weight
+	  multiplication.
+
+=== 0.2.1 ===
+
+2006-11-06  David Schleef  <ds@schleef.org>
+
 	* Makefile.am:
 	* NEWS:
 	* TODO:

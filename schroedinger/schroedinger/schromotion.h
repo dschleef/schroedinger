@@ -17,6 +17,7 @@ struct _SchroObmcRegion {
 
 struct _SchroObmc {
   SchroObmcRegion regions[9];
+  int16_t *region_data;
   int stride;
   int shift;
   int x_ramp;
@@ -25,6 +26,7 @@ struct _SchroObmc {
   int y_len;
   int x_sep;
   int y_sep;
+  uint8_t *tmpdata;
 };
 
 void schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,

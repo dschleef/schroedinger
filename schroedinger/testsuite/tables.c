@@ -20,9 +20,21 @@ get_quant (int i)
 }
 
 int
-get_offset (int i)
+get_offset_1_4 (int i)
+{
+  return (get_quant(i) * 2 + 4)/8;
+}
+
+int
+get_offset_3_8 (int i)
 {
   return (get_quant(i) * 3 + 4)/8;
+}
+
+int
+get_offset_1_2 (int i)
+{
+  return (get_quant(i) * 4 + 4)/8;
 }
 
 unsigned int
@@ -76,16 +88,42 @@ main (int argc, char *argv[])
   printf("#include <schroedinger/schrotables.h>\n");
   printf("\n");
 
-  /* schro_table_offset */
-  printf("uint32_t schro_table_offset[61] = {\n");
+  /* schro_table_offset_1_4 */
+  printf("uint32_t schro_table_offset_1_4[61] = {\n");
   for(i=0;i<60;i+=4) {
     printf("  %7d, %7d, %7d, %7d,\n",
-        get_offset(i),
-        get_offset(i+1),
-        get_offset(i+2),
-        get_offset(i+3));
+        get_offset_1_4(i),
+        get_offset_1_4(i+1),
+        get_offset_1_4(i+2),
+        get_offset_1_4(i+3));
   }
-  printf("  %7d\n", get_offset(i));
+  printf("  %7d\n", get_offset_1_4(i));
+  printf("};\n");
+  printf("\n");
+
+  /* schro_table_offset_3_8 */
+  printf("uint32_t schro_table_offset_3_8[61] = {\n");
+  for(i=0;i<60;i+=4) {
+    printf("  %7d, %7d, %7d, %7d,\n",
+        get_offset_3_8(i),
+        get_offset_3_8(i+1),
+        get_offset_3_8(i+2),
+        get_offset_3_8(i+3));
+  }
+  printf("  %7d\n", get_offset_3_8(i));
+  printf("};\n");
+  printf("\n");
+
+  /* schro_table_offset_1_2 */
+  printf("uint32_t schro_table_offset_1_2[61] = {\n");
+  for(i=0;i<60;i+=4) {
+    printf("  %7d, %7d, %7d, %7d,\n",
+        get_offset_1_2(i),
+        get_offset_1_2(i+1),
+        get_offset_1_2(i+2),
+        get_offset_1_2(i+3));
+  }
+  printf("  %7d\n", get_offset_1_2(i));
   printf("};\n");
   printf("\n");
 

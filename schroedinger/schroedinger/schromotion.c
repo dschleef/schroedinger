@@ -35,12 +35,16 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
   SCHRO_ASSERT(2*x_ramp <= x_len);
   SCHRO_ASSERT(2*y_ramp <= y_len);
 
+  obmc->stride = sizeof(int16_t) * x_len;
+  obmc->region_data = malloc(obmc->stride * y_len * 9);
+  obmc->tmpdata = malloc(x_len * y_len);
+
   for(i=0;i<9;i++){
-    obmc->regions[i].weights = malloc(sizeof(int16_t) * x_len * y_len);
+    obmc->regions[i].weights = OFFSET(obmc->region_data,
+        obmc->stride * y_len * i);
     obmc->regions[i].end_x = x_len;
     obmc->regions[i].end_y = y_len;
   }
-  obmc->stride = sizeof(int16_t) * x_len;
   obmc->shift = -1;
   for(weight = 4 * x_ramp * y_ramp; weight; weight>>=1) {
     obmc->shift++;
@@ -133,17 +137,19 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
     obmc->regions[k].end_x = x_len - x_ramp/2;
   }
 
+  /* fix up pointers */
+  for(k=0;k<9;k++){
+    obmc->regions[k].weights = OFFSET(obmc->regions[k].weights,
+        obmc->stride * obmc->regions[k].start_y +
+        sizeof(int16_t) * obmc->regions[k].start_x);
+  }
 }
 
 void
 schro_obmc_cleanup (SchroObmc *obmc)
 {
-  int i;
-  for(i=0;i<9;i++){
-    if (obmc->regions[i].weights) {
-      free(obmc->regions[i].weights);
-    }
-  }
+  free(obmc->region_data);
+  free(obmc->tmpdata);
 }
 
 #if 0
@@ -168,6 +174,43 @@ block_get (uint8_t **dest, int &stride, SchroFrameComponent *src, int x, int y,
       sx = CLAMP(i + x, 0, width);
       (*dest)[j*(*stride) + i] = src->data[sy*src->stride + sx];
     }
+  }
+}
+#endif
+
+#if 0
+void
+block_get (uint8_t **dest, int *stride, SchroFrameComponent *src,
+    int x, int y, int width, int height)
+{
+  int i,j;
+  int fx,fy;
+
+  fx = x&0x7;
+  fy = y&0x7;
+  x >>= 3;
+  y >>= 3;
+
+  if (sx == 0 && sy == 0) {
+    int sx,sy;
+
+    if (x >= 0 && y >=0 &&
+        x + width < src->width &&
+        y + height < src->height) {
+      *dest = src->data + y*src->stride + x;
+      *stride = src->stride;
+      return;
+    }
+
+    for(j=0;j<height;j++){
+      sy = CLAMP(y + j, 0, height - 1);
+      for(i=0;i<width;i++){
+        sx = CLAMP(x + i, 0, width - 1);
+        (*dest)[j*(*stride) + i] = src->data[sy*src->stride + sx];
+      }
+    }
+  } else {
+    SCHRO_ASSERT(0);
   }
 }
 #endif
@@ -217,9 +260,9 @@ copy_block_general (SchroFrameComponent *dest, int x, int y,
 {
   int i,j;
   int k;
-  int weight;
-  int value;
   SchroObmcRegion *region;
+  uint8_t *data;
+  int stride;
 
   SCHRO_ASSERT(x>=0);
   SCHRO_ASSERT(y>=0);
@@ -239,38 +282,47 @@ copy_block_general (SchroFrameComponent *dest, int x, int y,
 
   region = obmc->regions + k;
 
-  if (sx + region->start_x <0 || sy + region->start_y <0 || 
-      sx + region->end_x >= src->width ||
-      sy + region->end_y >= src->height) {
-    for(j=region->start_y;j<region->end_y;j++){
-      for(i=region->start_x;i<region->end_x;i++){
-        int src_x = CLAMP(sx + i, 0, src->width);
-        int src_y = CLAMP(sy + j, 0, src->height);
-        weight = SCHRO_GET(region->weights, obmc->stride*j + 2*i, int16_t);
-        value = SCHRO_GET(src->data, src->stride * src_y + src_x, uint8_t);
-        SCHRO_GET(dest->data, dest->stride*(y+j) + 2*(x+i), int16_t) +=
-          weight * value;
+  x += region->start_x;
+  y += region->start_y;
+  sx += region->start_x;
+  sy += region->start_y;
+
+  if (sx < 0 || sy < 0 || 
+      sx + (region->end_x - region->start_x) >= src->width ||
+      sy + (region->end_y - region->start_y) >= src->height) {
+    data = obmc->tmpdata;
+    stride = obmc->x_len;
+    for(j=0;j<region->end_y - region->start_y;j++){
+      for(i=0;i<region->end_x - region->start_x;i++){
+        int src_x = CLAMP(sx + i, 0, src->width - 1);
+        int src_y = CLAMP(sy + j, 0, src->height - 1);
+        data[j*stride + i] =
+          SCHRO_GET(src->data, src->stride * src_y + src_x, uint8_t);
       }
     }
   } else {
-    if (k==4 && obmc->x_len == 12) {
-      int16_t *d1 = OFFSET(dest->data, dest->stride*y + 2*x);
-      int16_t *s1 = region->weights;
-      uint8_t *s2 = OFFSET(src->data, src->stride * sy + sx);
+    data = OFFSET(src->data, src->stride * sy + sx);
+    stride = src->stride;
+  }
 
-      oil_multiply_and_acc_12xn_s16_u8 (d1, dest->stride, s1, obmc->stride,
-          s2, src->stride, 12);
-    } else {
-      for(j=region->start_y;j<region->end_y;j++){
-        oil_multiply_and_add_s16_u8 (
-            OFFSET(dest->data, dest->stride*(y+j) + 2*(x + region->start_x)),
-            OFFSET(dest->data, dest->stride*(y+j) + 2*(x + region->start_x)),
-            OFFSET(region->weights, obmc->stride*j + 2*region->start_x),
-            OFFSET(src->data, src->stride * (sy + j) + sx + region->start_x),
-            region->end_x - region->start_x);
-      }
+  if (region->end_x - region->start_x == 12) {
+    int16_t *d1 = OFFSET(dest->data, dest->stride*y + 2*x);
+    int16_t *s1 = region->weights;
+
+    oil_multiply_and_acc_12xn_s16_u8 (d1, dest->stride, s1, obmc->stride,
+        data, stride, region->end_y - region->start_y);
+  } else {
+    for(j=0;j<region->end_y - region->start_y;j++){
+      oil_multiply_and_add_s16_u8 (
+          OFFSET(dest->data, dest->stride*(y+j) + 2*x),
+          OFFSET(dest->data, dest->stride*(y+j) + 2*x),
+          OFFSET(region->weights, obmc->stride*j),
+          data + stride * j,
+          region->end_x - region->start_x);
     }
   }
+
+
 }
 
 static void
