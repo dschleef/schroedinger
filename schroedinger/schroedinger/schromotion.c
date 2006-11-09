@@ -221,8 +221,8 @@ splat_block_general (SchroFrameComponent *dest, int x, int y, int value,
 {
   int i,j;
   int k;
-  int weight;
   SchroObmcRegion *region;
+  uint8_t tmp[12];
 
   x -= obmc->x_ramp/2;
   y -= obmc->y_ramp/2;
@@ -234,24 +234,28 @@ splat_block_general (SchroFrameComponent *dest, int x, int y, int value,
   if (y + obmc->y_len >= dest->height) k+=3;
 
   region = obmc->regions + k;
+  x += region->start_x;
+  y += region->start_y;
 
-  if (k==4 && obmc->x_sep == 12) {
-    uint8_t tmp[12];
+  for(i=0;i<12;i++) tmp[i] = value;
+
+  if (region->end_x - region->start_x == 12) {
     int16_t *d1 = OFFSET(dest->data, dest->stride*y + 2*x);
     int16_t *s1 = region->weights;
 
-    for(i=0;i<12;i++) tmp[i] = value;
     oil_multiply_and_acc_12xn_s16_u8 (d1, dest->stride, s1, obmc->stride,
-        tmp, 0, 12);
+        tmp, 0, region->end_y - region->start_y);
   } else {
-    for(j=region->start_y;j<region->end_y;j++){
-      for(i=region->start_x;i<region->end_x;i++){
-        weight = SCHRO_GET(region->weights, obmc->stride*j + 2*i, int16_t);
-        SCHRO_GET(dest->data, dest->stride*(y+j) + 2*(x+i), int16_t) +=
-          weight * value;
-      }
+    for(j=0;j<region->end_y - region->start_y;j++){
+      oil_multiply_and_add_s16_u8 (
+          OFFSET(dest->data, dest->stride*(y+j) + 2*x),
+          OFFSET(dest->data, dest->stride*(y+j) + 2*x),
+          OFFSET(region->weights, obmc->stride*j),
+          tmp,
+          region->end_x - region->start_x);
     }
   }
+
 }
 
 void

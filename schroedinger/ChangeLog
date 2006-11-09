@@ -1,3 +1,9 @@
+2006-11-08  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schromotion.c:
+	  Fix splatting blocks in the same way as done for copying in
+	  previous checkin.
+
 2006-11-06  David Schleef  <ds@schleef.org>
 
 	* configure.ac: bump nano
