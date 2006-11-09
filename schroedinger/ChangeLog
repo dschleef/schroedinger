@@ -1,5 +1,10 @@
 2006-11-08  David Schleef  <ds@schleef.org>
 
+	* gst/gstschrodec.c:
+	  Calculate the size of an I420 buffer correctly.
+
+2006-11-08  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schromotion.c:
 	  Fix splatting blocks in the same way as done for copying in
 	  previous checkin.

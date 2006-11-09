@@ -720,6 +720,21 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
   return gst_schro_dec_push_all (schro_dec, FALSE);
 }
 
+#define ROUND_UP_SHIFT(x,y) (((x) + (1<<(y)) - 1)>>(y))
+#define ROUND_UP_POW2(x,y) (((x) + (1<<(y)) - 1)&((~0)<<(y)))
+
+static int
+get_i420_size (int width, int height)
+{
+  int size;
+
+  size = ROUND_UP_POW2(width,2) * ROUND_UP_POW2(height,1);
+  size += 2 * ROUND_UP_POW2(ROUND_UP_SHIFT(width,1),2) *
+    ROUND_UP_SHIFT(height,1);
+
+  return size;
+}
+
 static GstFlowReturn
 gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
 {
@@ -825,8 +840,7 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
             go = 0;
             break;
           case SCHRO_DECODER_NEED_FRAME:
-            size = schro_dec->width * schro_dec->height;
-            size += size/2;
+            size = get_i420_size (schro_dec->width, schro_dec->height);
 #if 0
             ret = gst_pad_alloc_buffer_and_set_caps (schro_dec->srcpad,
                 GST_BUFFER_OFFSET_NONE, size,
