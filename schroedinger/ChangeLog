@@ -1,3 +1,12 @@
+2006-11-12  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrowavelet.c:
+	* testsuite/Makefile.am:
+	* testsuite/wavelet_speed.c:
+	  Add some wavelet performance measurement code.  Add some toys
+	  to schrowavelet.c for prefetching/flushing which will fail on
+	  many CPUs (needs to be reverted).
+
 2006-11-08  David Schleef  <ds@schleef.org>
 
 	* gst/gstschrodec.c:
