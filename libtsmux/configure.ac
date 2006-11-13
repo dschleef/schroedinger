@@ -35,6 +35,7 @@ AC_SUBST(GLIB_CFLAGS)
 
 AC_OUTPUT(
 Makefile
+libtsmux.spec
 tsmux/Makefile
 tests/Makefile
 common/Makefile
