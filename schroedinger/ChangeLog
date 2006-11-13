@@ -1,6 +1,11 @@
 2006-11-12  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrowavelet.c:
+	  Revert last change.  It sucks.
+
+2006-11-12  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrowavelet.c:
 	* testsuite/Makefile.am:
 	* testsuite/wavelet_speed.c:
 	  Add some wavelet performance measurement code.  Add some toys

@@ -344,43 +344,6 @@ void schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
   }
 }
 
-void
-oil_prefetch (void *data, int n)
-{
-  int i;
-  uint8_t *ptr = data;
-
-  for (i=0;i<n;i+=64) {
-    __asm__ __volatile__ ("prefetchw (%0)" :: "r" (ptr));
-    ptr += 64;
-  }
-}
-
-void
-oil_flush (void *data, int n)
-{
-  int i;
-  uint8_t *ptr = data;
-
-#if 0
-  while(((unsigned long)ptr)&0x7) ptr++;
-
-  for (i=0;i<n;i+=8) {
-    __asm__ __volatile__ (
-        "  movq (%0), %%mm0\n"
-        "  movntq %%mm0, (%0)"
-        :: "r" (ptr));
-    ptr += 8;
-  }
-#endif
-#if 1
-  for (i=0;i<n;i+=64) {
-    __asm__ __volatile__ ("clflush (%0)" :: "r" (ptr));
-    ptr += 64;
-  }
-#endif
-}
-
 void schro_iwt_5_3 (int16_t *data, int stride, int width, int height,
     int16_t *tmp)
 {
@@ -401,10 +364,6 @@ void schro_iwt_5_3 (int16_t *data, int stride, int width, int height,
       schro_split_ext_53 (hi, lo, width/2);
       oil_memcpy (ROW(i), hi, width/2*sizeof(int16_t));
       oil_memcpy (ROW(i) + width/2, lo, width/2*sizeof(int16_t));
-    }
-
-    if (i < height - 2) {
-      oil_prefetch (ROW(i+2), width*sizeof(int16_t));
     }
 
     if ((i&1) == 0 && i >= 2) {
@@ -432,13 +391,7 @@ void schro_iwt_5_3 (int16_t *data, int stride, int width, int height,
           d,
           OFFSET(data, (i-1)*stride),
           stage2_weights, stage2_offset_shift, width);
-
-      if (i - 3 >= 0) {
-        oil_flush (ROW(i-3), width*sizeof(int16_t));
-      }
-      oil_flush (ROW(i-2), width*sizeof(int16_t));
     }
-
   }
 #undef ROW
 }
