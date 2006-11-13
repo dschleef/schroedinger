@@ -1,0 +1,263 @@
+2006-10-30  Wim Taymans  <wim@fluendo.com>
+
+	* src/testmux.c: (main):
+	Update, we don't need to manually flush PAT/PMT.
+
+	* src/tsmux.c: (tsmux_get_pat_frequency), (tsmux_free),
+	(tsmux_program_new), (tsmux_set_pmt_frequency),
+	(tsmux_get_pmt_frequency), (tsmux_program_add_stream),
+	(tsmux_program_set_pcr_stream), (tsmux_get_new_pid),
+	(tsmux_create_stream), (tsmux_find_stream), (tsmux_packet_out),
+	(tsmux_write_adaptation_field), (tsmux_write_ts_header),
+	(tsmux_write_stream_packet), (tsmux_program_free),
+	(tsmux_write_section), (tsmux_write_section_hdr),
+	(tsmux_write_pat), (tsmux_write_pmt):
+	* src/tsmux.h:
+	* src/tsmuxstream.c: (tsmux_stream_new), (tsmux_stream_get_pid),
+	(tsmux_stream_free), (tsmux_stream_set_buffer_release_func),
+	(tsmux_stream_consume), (tsmux_stream_at_pes_start),
+	(tsmux_stream_bytes_avail), (tsmux_stream_bytes_in_buffer),
+	(tsmux_stream_get_data), (tsmux_stream_pes_header_length),
+	(tsmux_stream_find_pts_dts_within),
+	(tsmux_stream_write_pes_header), (tsmux_stream_add_data),
+	(tsmux_stream_get_es_descrs):
+	* src/tsmuxstream.h:
+	Document.
+	Protect public functions from bad arguments.
+	Make PIDs always a guint16.
+	Make PAT/PMT invalid on changes.
+
+	* src/tsmuxcommon.h:
+	Add minimal ES Desc len.
+
+2006-10-30  Wim Taymans  <wim@fluendo.com>
+
+	* gst/flumpegtsmux.c: (flutsmux_collected):
+	Don't write PAT/PMT ourselves.
+
+	* src/tsmux.c: (tsmux_new), (tsmux_set_write_func), (tsmux_free),
+	(tsmux_program_new), (tsmux_write_ts_header),
+	(tsmux_write_stream_packet):
+	* src/tsmux.h:
+	Cleanup in headers.
+	Added methods to configure PAT/PMT frequency.
+
+	* src/tsmuxstream.c: (tsmux_stream_add_data):
+	Write out PAT/PMT at their respective frequencies.
+
+2006-10-19  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* gst/flumpegtsmux.c: (flutsmux_init), (flutsmux_create_stream),
+	(flutsmux_choose_best_stream), (flutsmux_collected):
+	* gst/flumpegtsmux.h:
+	* src/Makefile.am:
+	* src/tsmux.c: (tsmux_program_new), (tsmux_program_add_stream),
+	(tsmux_write_adaptation_field), (tsmux_write_ts_header),
+	(tsmux_write_stream_packet), (tsmux_write_section),
+	(tsmux_write_pmt):
+	* src/tsmux.h:
+	* src/tsmuxcommon.h:
+	* src/tsmuxstream.c: (tsmux_stream_new), (tsmux_stream_consume),
+	(tsmux_stream_get_data), (tsmux_stream_pes_header_length),
+	(tsmux_stream_find_pts_dts_within),
+	(tsmux_stream_write_pes_header), (tsmux_stream_set_program),
+	(tsmux_stream_get_program), (tsmux_stream_get_pts):
+	* src/tsmuxstream.h:
+
+	Write incoming timestamps as PTS. Write out PCR using a fixed offset
+	from the incoming stream.
+
+2006-10-20  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* Makefile.am:
+	* configure.ac:
+	* doc/Makefile.am:
+	* gst/flumpegtsmux.c: (flutsmux_choose_best_stream),
+	(flutsmux_collected):
+	* gst/flumpegtsmux.h:
+	* src/testmux.c: (buffer_release_cb), (init_bufs):
+	* src/tsmuxstream.c: (tsmux_stream_add_data):
+	* src/tsmuxstream.h:
+	
+	Checkpoint. Preparations for writing proper timestamps into the stream
+
+=== release 0.10.1 ===
+
+2006-10-07  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* configure.ac:
+
+	Releasing beta version 0.10.1
+
+2006-10-07  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* Makefile.am:
+	* configure.ac:
+	Dist the doc/ directory too.
+
+2006-10-07  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* configure.ac:
+	Bump version number to 0.10.0.2
+
+	* gst/flumpegtsmux.c: (flutsmux_create_stream),
+	(flutsmux_create_streams), (flutsmux_choose_best_stream),
+	(flutsmux_collected), (flutsmux_request_new_pad):
+	* gst/flumpegtsmux.h:
+	Use timestamps to do a rough muxing of the incoming streams.
+	Multiple input streams is now supported.
+
+2006-10-06  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* gst/flumpegtsmux.c: (flutsmux_create_stream),
+	(flutsmux_request_new_pad), (new_packet_cb):
+	* gst/flumpegtsmux.h:
+	* src/tsmux.c: (tsmux_write_adaptation_field),
+	(tsmux_write_ts_header), (tsmux_write_section), (tsmux_write_pat),
+	(tsmux_write_pmt):
+	* src/tsmuxcommon.h:
+	* src/tsmuxstream.c: (tsmux_stream_new),
+	(tsmux_stream_bytes_avail), (tsmux_stream_get_data),
+	(tsmux_stream_write_pes_header):
+	* src/tsmuxstream.h:
+	Implement support for audio/mpeg and video/mpeg streams.
+	Turn off hugely verbose debug output from the helper library.
+
+2006-10-05  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* gst/Makefile.am:
+	* gst/flumpegtsmux.c: (flutsmux_base_init), (flutsmux_class_init),
+	(flutsmux_init), (flutsmux_dispose), (release_buffer_cb),
+	(flutsmux_create_stream), (flutsmux_collected),
+	(flutsmux_request_new_pad), (flutsmux_release_pad),
+	(new_packet_cb), (flutsdemux_prepare_srcpad),
+	(flutsmux_change_state):
+	* gst/flumpegtsmux.h:
+	* src/Makefile.am:
+	* src/testmux.c: (main):
+	* src/tsmux.c: (tsmux_free), (tsmux_get_new_pid),
+	(tsmux_create_stream), (tsmux_find_stream),
+	(tsmux_write_stream_packet), (tsmux_write_pmt):
+	* src/tsmux.h:
+	* src/tsmuxcommon.h:
+	* src/tsmuxstream.h:
+	Implement a rudimentary GStreamer element that can basically do what
+	testmux can do - place a single Dirac video stream into a transport
+	stream file.
+
+2006-10-03  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* COPYING:
+	* COPYING.GPL:
+	* COPYING.LGPL:
+	* COPYING.MIT:
+	* COPYING.MPL:
+	* LEGAL:
+	  Add license info files.
+
+	* Makefile.am:
+	* configure.ac:
+	* gst/Makefile.am:
+	* gst/flumpegtsmux.c: (flutsmux_base_init), (flutsmux_class_init),
+	(flutsmux_init), (flutsmux_dispose), (flutsmux_collected),
+	(flutsmux_request_new_pad), (flutsmux_release_pad), (plugin_init):
+	* gst/flumpegtsmux.h:
+	Add stub of a GStreamer element.
+
+2006-09-28  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* src/testmux.c: (main):
+	* src/tsmux.c: (tsmux_program_new), (tsmux_program_add_stream),
+	(tsmux_program_set_pcr_stream), (tsmux_write_adaptation_field),
+	(tsmux_write_pmt):
+	* src/tsmux.h:
+	* src/tsmuxcommon.h:
+	* src/tsmuxstream.c: (tsmux_stream_get_es_descrs):
+	* src/tsmuxstream.h:
+
+	Write a base PCR of 0 at the start of the stream.
+	Rename some API. Store a pointer to the stream that carries the PCR
+	rather than a PID.
+
+2006-09-28  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* src/Makefile.am:
+	Don't install testmux
+
+	* src/tsmux.c: (tsmux_write_adaptation_field):
+	Write the flags field correctly.
+
+	* src/tsmuxstream.c: (tsmux_stream_bytes_avail):
+	Use the available bytes in buffers as a minimum PES size
+
+2006-09-25  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* doc/dirac-in-13818-1-mapping.odt:
+	Fix typo in the timecode PMT entry description
+
+2006-09-24  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* src/testmux.c: (main):
+	* src/tsmux.c: (tsmux_write_pmt):
+	* src/tsmux.h:
+	* src/tsmuxcommon.h:
+	* src/tsmuxstream.c: (tsmux_stream_new), (tsmux_stream_consume),
+	(tsmux_stream_bytes_avail), (tsmux_stream_bytes_in_buffer),
+	(tsmux_stream_get_data), (tsmux_stream_write_pes_header),
+	(tsmux_stream_add_data), (tsmux_stream_get_es_info):
+	* src/tsmuxstream.h:
+	Implement writing our un-official Dirac and Timecode streams and
+	associated ES_info descriptors.
+	Write new PES header periodically.
+	
+	* doc/dirac-in-13818-1-mapping.odt:
+	Add document describing how to write Dirac and Timecodes into a
+	Transport Stream
+
+2006-09-21  Jan Schmidt  <thaytan@mad.scientist.com>
+	* NEWS:
+	Commit extra file.
+
+2006-09-21  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* AUTHORS:
+	* COPYING:
+	* INSTALL:
+	* README:
+	* configure.ac:
+	* m4/Makefile.am:
+	* src/Makefile.am:
+	* src/crc.h:
+	* src/testmux.c: (write_cb), (read_fill_buf), (buffer_release_cb),
+	(init_bufs), (main):
+	* src/tsmux.c: (tsmux_new), (tsmux_set_write_func), (tsmux_free),
+	(tsmux_program_new), (tsmux_program_add_stream),
+	(tsmux_create_stream), (tsmux_packet_out), (tsmux_put16),
+	(tsmux_put32), (tsmux_write_adaptation_field),
+	(tsmux_write_ts_header), (tsmux_write_ts_data_packet),
+	(tsmux_program_free), (tsmux_write_section),
+	(tsmux_write_section_hdr), (tsmux_write_pat), (tsmux_write_pmt):
+	* src/tsmux.h:
+	* src/tsmuxcommon.h:
+	* src/tsmuxstream.c: (tsmux_stream_new), (tsmux_stream_free),
+	(tsmux_stream_set_buffer_release_func), (tsmux_stream_consume),
+	(tsmux_stream_at_pes_start), (tsmux_stream_bytes_avail),
+	(tsmux_stream_get_data), (tsmux_stream_pes_header_length),
+	(tsmux_stream_write_pes_header), (tsmux_stream_add_data):
+	* src/tsmuxstream.h:
+
+	Checkpoint. Initial implementation that can write a single ES MPEG 
+	video stream as a transport stream.
+
+2006-09-05  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* Makefile.am:
+	* autogen.sh:
+	* configure.ac:
+	* m4/Makefile.am:
+	* m4/as-compiler-flag.m4:
+	* m4/as-version.m4:
+	* src/Makefile.am:
+
+	 Check in empty build structure for working within
+
