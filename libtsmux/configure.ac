@@ -3,7 +3,7 @@ AC_INIT
 dnl the fourth (nano) number should be 0 for a release, 1 for trunk,
 dnl and 2... for a prerelease
 dnl releases only do Wall, cvs and prerelease does Werror too
-AS_VERSION(libtsmux, TSMUX_VERSION, 0, 0, 1, 1,
+AS_VERSION(libtsmux, TSMUX_VERSION, 0, 1, 0, 0,
     TSMUX_TRUNK="no", TSMUX_TRUNK="yes")
 
 dnl AM_MAINTAINER_MODE provides the option to enable maintainer mode
