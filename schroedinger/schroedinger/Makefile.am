@@ -43,7 +43,9 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schroutils.h \
 	schrowavelet.c \
 	schrowavelet.h \
-	schrobitstream.h
+	schrobitstream.h \
+	schromotion.h	\
+	schrointernal.h
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)

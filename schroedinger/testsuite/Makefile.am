@@ -1,6 +1,6 @@
 
 
-noinst_PROGRAMS = arith arith_encode arith_decode bits bits2 \
+noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 encode wavelet tables wavelet_2d arith_speed \
 	 obmc predict dump_packets phasecorrelation motion \
 	 arith_fixup_shift quant struct_offsets wavelet_speed
@@ -18,9 +18,9 @@ arith_encode_CFLAGS = $(SCHRO_CFLAGS)
 arith_encode_LDADD = $(SCHRO_LIBS)
 arith_encode_SOURCES = arith_encode.c
 
-arith_decode_CFLAGS = $(SCHRO_CFLAGS)
-arith_decode_LDADD = $(SCHRO_LIBS)
-arith_decode_SOURCES = arith_decode.c
+# arith_decode_CFLAGS = $(SCHRO_CFLAGS)
+# arith_decode_LDADD = $(SCHRO_LIBS)
+# arith_decode_SOURCES = arith_decode.c
 
 arith_speed_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) -falign-loops=16 -fPIC
 arith_speed_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
