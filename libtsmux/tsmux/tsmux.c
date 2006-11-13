@@ -24,16 +24,17 @@
 #define TSMUX_START_ES_PID 0x0040
 
 /* HACK: We use a fixed buffering offset for the PCR at the moment - 
- * this is the amount 'in advance' of the stream that the PCR sits */
-#define TSMUX_PCR_OFFSET (TSMUX_PTS_FREQ / 8)
+ * this is the amount 'in advance' of the stream that the PCR sits.
+ * 1/8 second atm */
+#define TSMUX_PCR_OFFSET (TSMUX_CLOCK_FREQ / 8)
 
 /* Times per second to write PCR */
 #define TSMUX_DEFAULT_PCR_FREQ (10)
 
-/* PAT frequency */
-#define TSMUX_DEFAULT_PAT_FREQ ((90000LL * 10) / 8)
-/* PMT frequency */
-#define TSMUX_DEFAULT_PMT_FREQ ((90000LL * 10) / 8)
+/* PAT frequency (1/10th sec) */
+#define TSMUX_DEFAULT_PAT_FREQ (TSMUX_CLOCK_FREQ / 10)
+/* PMT frequency (1/10th sec) */
+#define TSMUX_DEFAULT_PMT_FREQ (TSMUX_CLOCK_FREQ / 10)
 
 static gboolean tsmux_write_pat (TsMux * mux);
 static gboolean tsmux_write_pmt (TsMux * mux, TsMuxProgram *program);

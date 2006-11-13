@@ -1,3 +1,16 @@
+2006-11-13  Christian Schaller <christian@fluendo.com>
+
+	* tsmux/Makefile.am: add correct includes for Make distcheck
+
+2006-11-10  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* tsmux/tsmux.c: (tsmux_write_stream_packet):
+	* tsmux/tsmuxcommon.h:
+
+	Make the default PMT/PAT period be 100ms, as for DVB.
+	Rename TSMUX_PTS_FREQ to TSMUX_CLOCK_FREQ and use it.
+
+
 2006-10-30  Wim Taymans  <wim@fluendo.com>
 
 	* src/testmux.c: (main):
