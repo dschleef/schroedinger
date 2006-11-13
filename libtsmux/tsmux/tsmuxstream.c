@@ -9,7 +9,7 @@
 
 static guint8 tsmux_stream_pes_header_length (TsMuxStream * stream);
 static void tsmux_stream_write_pes_header (TsMuxStream * stream, guint8 * data);
-static void tsmux_stream_find_pts_dts_within (TsMuxStream * stream, gint bound,
+static void tsmux_stream_find_pts_dts_within (TsMuxStream * stream, guint bound,
     gint64 * pts, gint64 * dts);
 
 struct TsMuxStreamBuffer
@@ -84,12 +84,12 @@ tsmux_stream_new (guint16 pid, TsMuxStreamType stream_type)
  *
  * Get the PID of @stream.
  *
- * Returns: The PID of @stream.
+ * Returns: The PID of @stream. 0xffff on error.
  */
 guint16
 tsmux_stream_get_pid (TsMuxStream *stream)
 {
-  g_return_if_fail (stream != NULL);
+  g_return_val_if_fail (stream != NULL, G_MAXUINT16);
 
   return stream->pi.pid;
 }
@@ -283,7 +283,7 @@ tsmux_stream_get_data (TsMuxStream * stream, guint8 * buf, guint len)
     stream->state = TSMUX_STREAM_STATE_PACKET;
   }
 
-  if (len > tsmux_stream_bytes_avail (stream))
+  if (len > (guint) tsmux_stream_bytes_avail (stream))
     return FALSE;
 
   stream->pes_bytes_written += len;
@@ -354,7 +354,7 @@ tsmux_stream_pes_header_length (TsMuxStream * stream)
 /* Find a PTS/DTS to write into the pes header within the next bound bytes
  * of the data */
 static void
-tsmux_stream_find_pts_dts_within (TsMuxStream * stream, gint bound,
+tsmux_stream_find_pts_dts_within (TsMuxStream * stream, guint bound,
     gint64 * pts, gint64 * dts)
 {
   GList *cur;

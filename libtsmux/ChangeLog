@@ -1,3 +1,14 @@
+2006-11-13  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* tsmux/crc.h:
+	* tsmux/tsmux.c: (tsmux_get_pat_frequency), (tsmux_program_new),
+	(tsmux_write_ts_header), (tsmux_write_stream_packet),
+	(tsmux_write_section), (tsmux_write_pmt):
+	* tsmux/tsmuxstream.c: (tsmux_stream_get_pid),
+	(tsmux_stream_get_data), (tsmux_stream_find_pts_dts_within):
+
+	Fix compiler warnings.
+
 2006-11-13  Christian Schaller <christian@fluendo.com>
 
 	* tsmux/Makefile.am: add correct includes for Make distcheck

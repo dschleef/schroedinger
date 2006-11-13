@@ -115,7 +115,7 @@ tsmux_set_pat_frequency (TsMux * mux, guint freq)
 guint
 tsmux_get_pat_frequency (TsMux * mux)
 {
-  g_return_if_fail (mux != NULL);
+  g_return_val_if_fail (mux != NULL, 0);
 
   return mux->pat_frequency;
 }
@@ -167,7 +167,7 @@ tsmux_program_new (TsMux * mux)
 {
   TsMuxProgram *program;
 
-  g_return_if_fail (mux != NULL);
+  g_return_val_if_fail (mux != NULL, NULL);
 
   /* Ensure we have room for another program */
   if (mux->nb_programs == TSMUX_MAX_PROGRAMS)
@@ -523,7 +523,7 @@ tsmux_write_adaptation_field (guint8 * buf,
 }
 
 static gboolean
-tsmux_write_ts_header (TsMux * mux, guint8 * buf, TsMuxPacketInfo * pi,
+tsmux_write_ts_header (guint8 * buf, TsMuxPacketInfo * pi,
     guint * payload_len_out, guint * payload_offset_out)
 {
   guint8 *tmp;
@@ -627,7 +627,6 @@ tsmux_write_stream_packet (TsMux * mux, TsMuxStream * stream)
 {
   guint payload_len, payload_offs;
   TsMuxPacketInfo *pi = &stream->pi;
-  TsMuxProgram *program;
   gboolean res;
 
   g_return_val_if_fail (mux != NULL, FALSE);
@@ -645,9 +644,9 @@ tsmux_write_stream_packet (TsMux * mux, TsMuxStream * stream)
       cur_pcr = cur_pts - TSMUX_PCR_OFFSET;
 
     /* Need to decide whether to write a new PCR in this packet */
-    if (stream->last_pcr == G_MAXUINT64 ||
+    if (stream->last_pcr == -1 ||
         (cur_pcr - stream->last_pcr >
-            (TSMUX_PTS_FREQ / TSMUX_DEFAULT_PCR_FREQ))) {
+            (TSMUX_CLOCK_FREQ / TSMUX_DEFAULT_PCR_FREQ))) {
 
       stream->pi.flags |=
           TSMUX_PACKET_FLAG_ADAPTATION | TSMUX_PACKET_FLAG_WRITE_PCR;
@@ -694,7 +693,7 @@ tsmux_write_stream_packet (TsMux * mux, TsMuxStream * stream)
   pi->stream_avail = tsmux_stream_bytes_avail (stream);
   pi->packet_start_unit_indicator = tsmux_stream_at_pes_start (stream);
 
-  if (!tsmux_write_ts_header (mux, mux->packet_buf, pi,
+  if (!tsmux_write_ts_header (mux->packet_buf, pi,
           &payload_len, &payload_offs))
     return FALSE;
 
@@ -746,7 +745,7 @@ tsmux_write_section (TsMux * mux, TsMuxSection * section)
       /* Need to write an extra single byte start pointer */
       pi->stream_avail++;
 
-      if (!tsmux_write_ts_header (mux, mux->packet_buf, pi,
+      if (!tsmux_write_ts_header (mux->packet_buf, pi,
               &payload_len, &payload_offs)) {
         pi->stream_avail--;
         return FALSE;
@@ -760,7 +759,7 @@ tsmux_write_section (TsMux * mux, TsMuxSection * section)
       payload_len--;
       pi->packet_start_unit_indicator = FALSE;
     } else {
-      if (!tsmux_write_ts_header (mux, mux->packet_buf, pi,
+      if (!tsmux_write_ts_header (mux->packet_buf, pi,
               &payload_len, &payload_offs))
         return FALSE;
     }
@@ -901,7 +900,7 @@ tsmux_write_pmt (TsMux * mux, TsMuxProgram * program)
      */
     guint8 *pos;
     guint32 crc;
-    gint i;
+    guint i;
 
     /* Prepare the section data after the basic section header */
     pos = pmt->data + TSMUX_SECTION_HDR_SIZE;

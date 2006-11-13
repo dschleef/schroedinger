@@ -47,7 +47,7 @@ static guint32 crc_tab[256] = {
 static guint32
 calc_crc32 (guint8 *data, guint datalen)
 {
-  gint i;
+  guint i;
   guint32 crc = 0xffffffff;
 
   for (i=0; i<datalen; i++) {
