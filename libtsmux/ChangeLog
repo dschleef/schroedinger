@@ -9,6 +9,7 @@
 	Don't announce the include dir as @includedir@/tsmux, just
 	@includedir@, because all the headers include each other by
 	#include <tsmux/desired-file.h> already. (Closes: #12)
+	(Patch by: sebas642@yahoo.ca)
 
 2006-11-13 Christian Schaller <christian@fluendo.com>
 
