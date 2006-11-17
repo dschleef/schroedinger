@@ -1,9 +1,14 @@
 2006-11-17  Jan Schmidt  <thaytan@mad.scientist.com>
 
+	* README:
+	Mention the trac location for bug filing.
+
+2006-11-17  Jan Schmidt  <thaytan@mad.scientist.com>
+
 	* pkgconfig/tsmux.pc.in:
 	Don't announce the include dir as @includedir@/tsmux, just
 	@includedir@, because all the headers include each other by
-	#include <tsmux/desired-file.h> already.
+	#include <tsmux/desired-file.h> already. (Closes: #12)
 
 2006-11-13 Christian Schaller <christian@fluendo.com>
 
