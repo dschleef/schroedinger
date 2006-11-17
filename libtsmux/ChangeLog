@@ -1,3 +1,10 @@
+2006-11-17  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* pkgconfig/tsmux.pc.in:
+	Don't announce the include dir as @includedir@/tsmux, just
+	@includedir@, because all the headers include each other by
+	#include <tsmux/desired-file.h> already.
+
 2006-11-13 Christian Schaller <christian@fluendo.com>
 
 	* doc: Add Dirac in TS specification document
