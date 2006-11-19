@@ -9,7 +9,9 @@ typedef struct _SchroVideoFormat SchroVideoFormat;
 typedef struct _SchroParams SchroParams;
 typedef struct _SchroSubband SchroSubband;
 typedef struct _SchroMotionVector SchroMotionVector;
+typedef struct _SchroMotionField SchroMotionField;
 typedef struct _SchroPicture SchroPicture;
+typedef struct _SchroGlobalMotion SchroGlobalMotion;
 
 struct _SchroVideoFormat {
   int width;
@@ -60,6 +62,20 @@ struct _SchroProfile {
   int allow_inter;
 };
 
+struct _SchroGlobalMotion {
+  int shift;
+  int b0;
+  int b1;
+  int a_exp;
+  int a00;
+  int a01;
+  int a10;
+  int a11;
+  int c_exp;
+  int c0;
+  int c1;
+};
+
 struct _SchroParams {
   SchroVideoFormat *video_format;
 
@@ -74,20 +90,13 @@ struct _SchroParams {
 
   /* motion prediction parameters */
   int num_refs;
-  int global_motion;
+  int have_global_motion;
   int xblen_luma;
   int yblen_luma;
   int xbsep_luma;
   int ybsep_luma;
   int mv_precision;
-  int b_1[2];
-  int b_2[2];
-  int a_11[2];
-  int a_12[2];
-  int a_21[2];
-  int a_22[2];
-  int c_1[2];
-  int c_2[2];
+  SchroGlobalMotion global_motion[2];
   int picture_pred_mode;
   int picture_weight_1;
   int picture_weight_2;
@@ -124,13 +133,26 @@ struct _SchroSubband {
 };
 
 struct _SchroMotionVector {
+  union {
+    struct {
+      int16_t x;
+      int16_t y;
+    } xy;
+    uint8_t dc[3];
+  } u;
   unsigned int pred_mode : 2;
   unsigned int using_global : 1;
   unsigned int split : 2;
   unsigned int common : 1;
-  uint8_t dc[3];
-  int16_t x;
-  int16_t y;
+  unsigned int unused : 2;
+  unsigned int scan : 8;
+  unsigned int metric : 16;
+};
+
+struct _SchroMotionField {
+  int x_num_blocks;
+  int y_num_blocks;
+  SchroMotionVector *motion_vectors;
 };
 
 struct _SchroPicture {

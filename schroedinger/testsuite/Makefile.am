@@ -3,12 +3,13 @@
 noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 encode wavelet tables wavelet_2d arith_speed \
 	 obmc predict dump_packets phasecorrelation motion \
-	 arith_fixup_shift quant struct_offsets wavelet_speed
+	 arith_fixup_shift quant struct_offsets wavelet_speed \
+	 global_motion
 
 TESTS = arith bits bits2 encode wavelet tables wavelet_2d
 
-AM_CFLAGS = $(SCHRO_CFLAGS)
-AM_LIBS = $(SCHRO_LIBS)
+AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS)
+LDADD = $(SCHRO_LIBS)
 
 arith_CFLAGS = $(SCHRO_CFLAGS)
 arith_LDADD = $(SCHRO_LIBS)

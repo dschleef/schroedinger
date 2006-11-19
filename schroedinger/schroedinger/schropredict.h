@@ -37,5 +37,15 @@ void schro_prediction_list_insert (SchroPredictionList *pred,
 void schro_prediction_list_scan (SchroPredictionList *list, SchroFrame *frame,
     SchroFrame *ref, int refnum, int x, int y, int dx, int dy, int dist);
 
+void schro_encoder_global_prediction (SchroEncoderTask *task);
+
+SchroMotionField * schro_motion_field_new (int x_num_blocks, int y_num_blocks);
+void schro_motion_field_free (SchroMotionField *field);
+void schro_motion_field_scan (SchroMotionField *field, SchroFrame *frame, SchroFrame *ref, int dist);
+void schro_motion_field_inherit (SchroMotionField *field, SchroMotionField *parent);
+void schro_motion_field_copy (SchroMotionField *field, SchroMotionField *parent);
+void schro_motion_field_global_prediction (SchroMotionField *mf,
+    SchroGlobalMotion *gm);
+
 #endif
 

@@ -65,7 +65,7 @@ AC_SUBST(SCHRO_CFLAGS)
 
 SCHRO_LIBS="\$(top_builddir)/schroedinger/libschroedinger-$SCHRO_MAJORMINOR.la"
 # hack around ld bug
-SCHRO_LIBS="$SCHRO_LIBS $LIBOIL_LIBS"
+SCHRO_LIBS="$SCHRO_LIBS $LIBOIL_LIBS -lpthread"
 AC_SUBST(SCHRO_LIBS)
 
 ########################
@@ -113,10 +113,10 @@ dnl set location of plugin directory
 GST_SET_PLUGINDIR
 
 dnl define an ERROR_CFLAGS Makefile variable
-GST_SET_ERROR_CFLAGS($GST_CVS)
+GST_SET_ERROR_CFLAGS($SCHRO_CVS)
 
 dnl define correct level for debugging messages
-GST_SET_LEVEL_DEFAULT($GST_CVS)
+GST_SET_LEVEL_DEFAULT($SCHRO_CVS)
 
 dnl *** finalize CFLAGS, LDFLAGS, LIBS
 

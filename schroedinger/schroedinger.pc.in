@@ -8,7 +8,7 @@ toolsdir=${exec_prefix}/bin
 Name: schro-@SCHRO_MAJORMINOR@
 Description: Dirac codec library
 Version: @VERSION@
-Libs: -L${libdir} -loil-@SCHRO_MAJORMINOR@ -lm
+Libs: -L${libdir} -loil-@SCHRO_MAJORMINOR@ -lm -lpthread
 Cflags: -I${includedir}
 
 

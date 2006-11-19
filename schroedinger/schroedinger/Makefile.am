@@ -13,6 +13,8 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schro.c \
 	schroarith.c \
 	schroarith.h \
+	schroasync-pthread.c \
+	schroasync.h \
 	schrobits.c \
 	schrobits.h \
 	schrobitstream.h \
@@ -47,7 +49,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schromotion.h	\
 	schrointernal.h
 
-libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ERROR_CFLAGS)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-no-undefined \

@@ -567,6 +567,7 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
       gst_util_uint64_scale (GST_BUFFER_TIMESTAMP(buf), schro_enc->fps_n,
           GST_SECOND * schro_enc->fps_d);
 
+GST_ERROR("using granulepos offset %lld", schro_enc->granulepos_offset);
     schro_enc->granulepos_hi = 0;
     schro_enc->got_offset = TRUE;
   }
@@ -613,7 +614,8 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
       GST_BUFFER_DURATION (outbuf) = schro_enc->duration;
     }
 
-    GST_INFO("offset %lld granulepos %llu:%llu timestamp %lld duration %lld",
+    GST_INFO("size %d offset %lld granulepos %llu:%llu timestamp %lld duration %lld",
+        GST_BUFFER_SIZE (outbuf),
         GST_BUFFER_OFFSET (outbuf),
         GST_BUFFER_OFFSET_END (outbuf)>>30,
         GST_BUFFER_OFFSET_END (outbuf)&((1<<30) - 1),

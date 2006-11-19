@@ -128,6 +128,7 @@ void schro_frame_set_free_callback (SchroFrame *frame,
 
 static void schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src);
+static void schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src);
 
 void
 schro_frame_convert (SchroFrame *dest, SchroFrame *src)
@@ -147,13 +148,11 @@ schro_frame_convert (SchroFrame *dest, SchroFrame *src)
     schro_frame_convert_s16_u8 (dest, src);
     return;
   }
-#if 0
   if (dest->format == SCHRO_FRAME_FORMAT_U8 &&
       src->format == SCHRO_FRAME_FORMAT_U8) {
     schro_frame_convert_u8_u8 (dest, src);
     return;
   }
-#endif
 
   SCHRO_ERROR("unimplemented");
 }
@@ -235,7 +234,36 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
       src->components[0].height);
 }
 
+static void
+schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src)
+{
+  SchroFrameComponent *dcomp;
+  SchroFrameComponent *scomp;
+  uint8_t *ddata;
+  int16_t *sdata;
+  int i;
+  int y;
+  int width, height;
 
+  for(i=0;i<3;i++){
+    dcomp = &dest->components[i];
+    scomp = &src->components[i];
+    ddata = dcomp->data;
+    sdata = scomp->data;
+
+    width = MIN(dcomp->width, scomp->width);
+    height = MIN(dcomp->height, scomp->height);
+
+    for(y=0;y<height;y++){
+      memcpy (ddata, sdata, width);
+      ddata = OFFSET(ddata, dcomp->stride);
+      sdata = OFFSET(sdata, scomp->stride);
+    }
+  }
+
+  schro_frame_edge_extend (dest, src->components[0].width,
+      src->components[0].height);
+}
 
 static void
 schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)

@@ -216,6 +216,29 @@ block_get (uint8_t **dest, int *stride, SchroFrameComponent *src,
 #endif
 
 void
+global_block_get (uint8_t *dest, int stride, SchroFrameComponent *src,
+    int x, int y, int width, int height, SchroGlobalMotion *gm)
+{
+  int i,j;
+  int sx, sy;
+  int persp;
+  uint8_t *sdata = src->data;
+
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      persp = (1<<gm->c_exp) - gm->c0 * (x + i) - gm->c1 * (y + j);
+      sx = (persp * (gm->a00 * (x + i) + gm->a01 * (y + j) +
+          (1<<gm->a_exp) * gm->b0)) >> (gm->c_exp + gm->a_exp);
+      sy = (persp * (gm->a10 * (x + i) + gm->a11 * (y + j) +
+          (1<<gm->a_exp) * gm->b1)) >> (gm->c_exp + gm->a_exp);
+      sx = CLAMP(sx, 0, src->width - 1);
+      sy = CLAMP(sy, 0, src->height - 1);
+      dest[j*stride + i] = sdata[sy * src->stride + sx];
+    }
+  }
+}
+
+void
 splat_block_general (SchroFrameComponent *dest, int x, int y, int value,
     SchroObmc *obmc)
 {
@@ -397,7 +420,7 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
       x = i*obmc->x_sep;
 
       if (mv->pred_mode == 0) {
-        splat_block_general (component, x, y, mv->dc[k], obmc);
+        splat_block_general (component, x, y, mv->u.dc[k], obmc);
       } else {
         SchroFrame *ref;
 
@@ -407,8 +430,8 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
           ref = src2;
         }
 
-        dx = mv->x;
-        dy = mv->y;
+        dx = mv->u.xy.x;
+        dy = mv->u.xy.y;
 
 #if 0
         /* FIXME This is only roughly correct */
@@ -445,7 +468,7 @@ void
 schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
     SchroParams *params, int x, int y, int *pred)
 {
-  SchroMotionVector *mv = &motion_vectors[y*params->x_num_blocks + x];
+  SchroMotionVector *mv;
   int i;
 
   for(i=0;i<3;i++){
@@ -455,21 +478,21 @@ schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
     if (x>0) {
       mv = &motion_vectors[y*params->x_num_blocks + (x-1)];
       if (mv->pred_mode == 0) {
-        sum += mv->dc[i];
+        sum += mv->u.dc[i];
         n++;
       }
     }
     if (y>0) {
       mv = &motion_vectors[(y-1)*params->x_num_blocks + x];
       if (mv->pred_mode == 0) {
-        sum += mv->dc[i];
+        sum += mv->u.dc[i];
         n++;
       }
     }
     if (x>0 && y>0) {
       mv = &motion_vectors[(y-1)*params->x_num_blocks + (x-1)];
       if (mv->pred_mode == 0) {
-        sum += mv->dc[i];
+        sum += mv->u.dc[i];
         n++;
       }
     }
@@ -504,24 +527,24 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
   if (x>0) {
     mv = &motion_vectors[y*params->x_num_blocks + (x-1)];
     if (mv->pred_mode == mode) {
-      sum_x += mv->x;
-      sum_y += mv->y;
+      sum_x += mv->u.xy.x;
+      sum_y += mv->u.xy.y;
       n++;
     }
   }
   if (y>0) {
     mv = &motion_vectors[(y-1)*params->x_num_blocks + x];
     if (mv->pred_mode == mode) {
-      sum_x += mv->x;
-      sum_y += mv->y;
+      sum_x += mv->u.xy.x;
+      sum_y += mv->u.xy.y;
       n++;
     }
   }
   if (x>0 && y>0) {
     mv = &motion_vectors[(y-1)*params->x_num_blocks + (x-1)];
     if (mv->pred_mode == mode) {
-      sum_x += mv->x;
-      sum_y += mv->y;
+      sum_x += mv->u.xy.x;
+      sum_y += mv->u.xy.y;
       n++;
     }
   }

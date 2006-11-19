@@ -1,3 +1,29 @@
+2006-11-19  David Schleef  <ds@schleef.org>
+
+	* configure.ac:
+	* gst/gstschroenc.c:
+	* misc/pydvdrip:
+	* schroedinger.pc.in:
+	* schroedinger/Makefile.am:
+	* schroedinger/schroasync-none.c:
+	* schroedinger/schroasync-pthread.c:
+	* schroedinger/schroasync.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroframe.c:
+	* schroedinger/schrointernal.h:
+	* schroedinger/schromotion.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.c:
+	* schroedinger/schropredict.h:
+	* schroedinger/schroutils.h:
+	* testsuite/Makefile.am:
+	* testsuite/global_motion.c:
+	* testsuite/motion.c:
+	  A truly massive amount of hacking.  Add an async interface.
+	  Add some support for global motion in the encoder.
+
 === Release 0.3.0 ===
 
 2006-11-12  David Schleef  <ds@schleef.org>

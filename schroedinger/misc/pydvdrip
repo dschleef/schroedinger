@@ -16,7 +16,7 @@ playback = 0
 #fps = 30
 #audiochan = 0
 
-# "I cannot sit by..."
+# "I can no longer sit back and allow..."
 file = '/mnt/wallace/home/ds/dr_strangelove.1.vob'
 seek_time = 1045
 length = 28
@@ -48,6 +48,13 @@ audiochan = 3
 #file = '/mnt/wallace/home/ds/ghost_dog.1.vob'
 #seek_time = 285
 #length = 12
+#fps = 24
+#audiochan = 0
+
+# blade runner
+#file = '/home/ds/blade_runner.vob'
+#seek_time = 556
+#length = 30
 #fps = 24
 #audiochan = 0
 

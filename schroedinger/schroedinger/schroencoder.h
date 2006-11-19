@@ -127,8 +127,10 @@ struct _SchroEncoderTask {
 
   int16_t *quant_data;
 
-  SchroMotionVector *motion_vectors;
-  SchroPredictionList *predict_lists;
+  SchroMotionField *motion_field;
+
+  //SchroPredictionList *predict_lists;
+  SchroMotionField *motion_fields[32];
 
   SchroEncoderReference *dest_ref;
 
@@ -171,6 +173,23 @@ struct _SchroEncoderSettings {
   int yblen_luma;
 #endif
 
+};
+
+enum {
+  SCHRO_MOTION_FIELD_HIER_REF0,
+  SCHRO_MOTION_FIELD_HIER1_REF0,
+  SCHRO_MOTION_FIELD_HIER2_REF0,
+  SCHRO_MOTION_FIELD_HIER3_REF0,
+  SCHRO_MOTION_FIELD_HIER_REF1,
+  SCHRO_MOTION_FIELD_HIER1_REF1,
+  SCHRO_MOTION_FIELD_HIER2_REF1,
+  SCHRO_MOTION_FIELD_HIER3_REF1,
+  SCHRO_MOTION_FIELD_DC,
+  SCHRO_MOTION_FIELD_GLOBAL_REF0,
+  SCHRO_MOTION_FIELD_GLOBAL_REF1,
+  SCHRO_MOTION_FIELD_ZERO_REF0,
+  SCHRO_MOTION_FIELD_ZERO_REF1,
+  SCHRO_MOTION_FIELD_LAST
 };
 
 SchroEncoder * schro_encoder_new (void);
