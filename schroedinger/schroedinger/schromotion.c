@@ -527,8 +527,6 @@ void
 schro_motion_field_get_global_prediction (SchroMotionField *mf,
     int x, int y, int *pred)
 {
-//*pred = 0;
-//return;
   if (x == 0 && y == 0) {
     *pred = 0;
     return;

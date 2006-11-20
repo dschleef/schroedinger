@@ -15,6 +15,7 @@ static void schro_encoder_hierarchical_prediction (SchroEncoderTask *task);
 static void schro_encoder_dc_prediction (SchroEncoderTask *task);
 static void schro_motion_field_merge (SchroMotionField *dest,
     SchroMotionField **list, int n);
+static void schro_motion_field_combine (SchroMotionField *mf);
 void schro_motion_field_set (SchroMotionField *field, int split, int pred_mode);
 
 
@@ -71,6 +72,8 @@ schro_encoder_motion_predict (SchroEncoderTask *task)
 
   schro_motion_field_merge (task->motion_field, fields, n);
 
+  schro_motion_field_combine (task->motion_field);
+
   for(i=0;i<SCHRO_MOTION_FIELD_LAST;i++){
     if (task->motion_fields[i]) {
       schro_motion_field_free (task->motion_fields[i]);
@@ -105,6 +108,54 @@ schro_motion_field_merge (SchroMotionField *dest,
         }
       }
       SCHRO_ASSERT (!(mv->pred_mode == 0 && mv->using_global));
+    }
+  }
+}
+
+void
+schro_motion_field_combine (SchroMotionField *mf)
+{
+  int i,j,k,l;
+  SchroMotionVector *mv;
+
+  for(j=0;j<mf->y_num_blocks;j+=4){
+    for(i=0;i<mf->x_num_blocks;i+=4){
+      mv = &mf->motion_vectors[j*mf->x_num_blocks + i];
+      if (mv->pred_mode == 0) {
+        int dc[3] = { 0, 0, 0 };
+        for(k=0;k<4;k++){
+          for(l=0;l<4;l++){
+            if (mv[k*mf->x_num_blocks + l].pred_mode != 0) goto next_mb;
+            dc[0] += mv[k*mf->x_num_blocks + l].u.dc[0];
+            dc[1] += mv[k*mf->x_num_blocks + l].u.dc[1];
+            dc[2] += mv[k*mf->x_num_blocks + l].u.dc[2];
+          }
+        }
+        mv->split = 0;
+        mv->u.dc[0] = (dc[0] + 8)>>4;
+        mv->u.dc[1] = (dc[1] + 8)>>4;
+        mv->u.dc[2] = (dc[2] + 8)>>4;
+      } else if (mv->using_global) {
+        for(k=0;k<4;k++){
+          for(l=0;l<4;l++){
+            if (!mv[k*mf->x_num_blocks + l].using_global ||
+                mv[k*mf->x_num_blocks + l].pred_mode != mv->pred_mode) {
+              goto next_mb;
+            }
+          }
+        }
+        mv->split = 0;
+      } else {
+        goto next_mb;
+      }
+      mv[1] = mv[0];
+      mv[2] = mv[0];
+      mv[3] = mv[0];
+      memcpy(mv + mf->x_num_blocks, mv, 4*sizeof(*mv));
+      memcpy(mv + 2*mf->x_num_blocks, mv, 4*sizeof(*mv));
+      memcpy(mv + 3*mf->x_num_blocks, mv, 4*sizeof(*mv));
+next_mb:
+      do {} while (0);
     }
   }
 }

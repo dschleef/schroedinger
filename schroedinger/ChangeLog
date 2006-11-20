@@ -1,5 +1,13 @@
 2006-11-20  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schromotion.c:
+	* schroedinger/schropredict.c:
+	  Implement basic combining of blocks into a superblock.  This
+	  is a pretty poor way to do it -- it's here just to make sure
+	  split==0 works.
+
+2006-11-20  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroarith.c:
 	* schroedinger/schroarith.h:
 	  Adjust a few of the contexts to match spec.  Remove some cruft.
