@@ -137,7 +137,7 @@ gst_schro_enc_base_init (gpointer g_class)
 {
   static GstElementDetails schro_enc_details =
       GST_ELEMENT_DETAILS ("Dirac Encoder",
-      "Coder/Encoder/Video",
+      "Codec/Encoder/Video",
       "Encode raw YUV video into Dirac stream",
       "David Schleef <ds@schleef.org>");
   GstElementClass *element_class = GST_ELEMENT_CLASS (g_class);

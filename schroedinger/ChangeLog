@@ -1,6 +1,9 @@
 2006-11-20  Christian Schaller <christian@fluendo.com>
 
 	* Add header files to SPEC file
+	* gst/gstschroenc.c: Fix Class to be Codec and not Coder
+	  the codec becomes available in Pitivi
+
 
 2006-11-20  David Schleef  <ds@schleef.org>
 
