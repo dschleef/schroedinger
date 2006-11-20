@@ -1,5 +1,5 @@
 
-pkgincludedir = $(includedir)/schroedinger-@SCHRO_MAJORMINOR@/schro
+pkgincludedir = $(includedir)/schroedinger-@SCHRO_MAJORMINOR@/schroedinger
 
 lib_LTLIBRARIES = libschroedinger-@SCHRO_MAJORMINOR@.la
 
@@ -7,47 +7,51 @@ DISTCLEANFILES = schro-stdint.h
 
 EXTRA_DIST = schroarith-i386.c schrointernal.h
 
-libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
-	schro-stdint.h \
+pkginclude_HEADERS = \
 	schro.h \
-	schro.c \
-	schroarith.c \
+	schrobuffer.h \
+	schrodecoder.h \
+	schroencoder.h \
+	schroframe.h \
+	schro-stdint.h \
 	schroarith.h \
-	schroasync-pthread.c \
 	schroasync.h \
-	schrobits.c \
 	schrobits.h \
 	schrobitstream.h \
-	schrodecoder.c \
-	schrodecoder.h \
-	schrodebug.c \
 	schrodebug.h \
-	schroencoder.c \
-	schroencoder.h \
-	schroframe.c \
-	schroframe.h \
-	schrobuffer.c \
-	schrobuffer.h \
-	schrometric.c \
 	schrometric.h \
-	schromotion.c \
 	schromotion.h \
 	schrooil.h \
-	schrooil.c \
-	schroparams.c \
 	schroparams.h \
-	schropredict.c \
 	schropredict.h \
-	schrooffsets.h \
-	schrotables.c \
 	schrotables.h \
-	schroutils.c \
 	schroutils.h \
-	schrowavelet.c \
 	schrowavelet.h \
 	schrobitstream.h \
-	schromotion.h	\
+	schromotion.h
+
+noinst_HEADERS = \
+	schrooffsets.h \
 	schrointernal.h
+
+libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
+	schro.c \
+	schroarith.c \
+	schroasync-pthread.c \
+	schrobits.c \
+	schrodecoder.c \
+	schrodebug.c \
+	schroencoder.c \
+	schroframe.c \
+	schrobuffer.c \
+	schrometric.c \
+	schromotion.c \
+	schrooil.c \
+	schroparams.c \
+	schropredict.c \
+	schrotables.c \
+	schroutils.c \
+	schrowavelet.c
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ERROR_CFLAGS)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)

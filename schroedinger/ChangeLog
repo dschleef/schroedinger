@@ -1,5 +1,11 @@
 2006-11-19  David Schleef  <ds@schleef.org>
 
+	* schroedinger.pc.in:
+	* schroedinger/Makefile.am:
+	  Fix installation of headers and pc file.
+
+2006-11-19  David Schleef  <ds@schleef.org>
+
 	* configure.ac:
 	* gst/gstschroenc.c:
 	* misc/pydvdrip:

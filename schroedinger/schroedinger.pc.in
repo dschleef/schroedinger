@@ -5,10 +5,11 @@ includedir=@includedir@/schro-@SCHRO_MAJORMINOR@
 toolsdir=${exec_prefix}/bin
 
 
-Name: schro-@SCHRO_MAJORMINOR@
+Name: schroedinger-@SCHRO_MAJORMINOR@
 Description: Dirac codec library
+Requires: liboil-0.3
 Version: @VERSION@
-Libs: -L${libdir} -loil-@SCHRO_MAJORMINOR@ -lm -lpthread
+Libs: -L${libdir} -lschroedinger-@SCHRO_MAJORMINOR@ -lm -lpthread
 Cflags: -I${includedir}
 
 
