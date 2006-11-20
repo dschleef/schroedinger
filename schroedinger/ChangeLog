@@ -1,3 +1,7 @@
+2006-11-20  Christian Schaller <christian@fluendo.com>
+
+	* Add header files to SPEC file
+
 2006-11-20  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schromotion.c:
