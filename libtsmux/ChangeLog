@@ -1,3 +1,9 @@
+2006-11-20  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* tsmux/tsmux.c:
+	Program number 0 is reserved for the network information, so start
+	normal programs at 1.
+
 === 0.1.1 ===
 
 2006-11-17  Jan Schmidt  <thaytan@mad.scientist.com>
