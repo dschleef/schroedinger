@@ -66,8 +66,8 @@ schro_encoder_motion_predict (SchroEncoderTask *task)
     fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_HIER_REF1];
   }
   fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_DC];
-  //fields[3] = task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF0];
-  //fields[4] = task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF1];
+  fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF0];
+  //fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF1];
 
   schro_motion_field_merge (task->motion_field, fields, n);
 
@@ -96,7 +96,6 @@ schro_motion_field_merge (SchroMotionField *dest,
     for(i=0;i<dest->x_num_blocks;i++){
       mv = &dest->motion_vectors[j*dest->x_num_blocks + i];
 
-#if 1
       mvk = &list[0]->motion_vectors[j*dest->x_num_blocks + i];
       *mv = *mvk;
       for(k=1;k<n;k++){
@@ -105,10 +104,7 @@ schro_motion_field_merge (SchroMotionField *dest,
           *mv = *mvk;
         }
       }
-#else
-      mvk = &list[0]->motion_vectors[j*dest->x_num_blocks + i];
-      *mv = *mvk;
-#endif
+      SCHRO_ASSERT (!(mv->pred_mode == 0 && mv->using_global));
     }
   }
 }
@@ -131,6 +127,11 @@ schro_encoder_global_prediction (SchroEncoderTask *task)
         sizeof(SchroMotionVector)*mf->x_num_blocks*mf->y_num_blocks);
     schro_motion_field_global_prediction (mf, &task->params.global_motion[i]);
     if (i == 0) {
+      schro_motion_field_scan (mf, task->encode_frame, task->ref_frame0->frames[0], 0);
+    } else {
+      schro_motion_field_scan (mf, task->encode_frame, task->ref_frame1->frames[0], 0);
+    }
+    if (i == 0) {
       task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF0] = mf;
     } else {
       task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF1] = mf;
@@ -152,6 +153,11 @@ schro_motion_field_global_prediction (SchroMotionField *mf,
       mv = mf->motion_vectors + j*mf->x_num_blocks + i;
 
       mv->using_global = 1;
+
+      /* HACK */
+      if (j >= mf->y_num_blocks - 8 || i >= mf->x_num_blocks - 8) {
+        mv->using_global = 0;
+      }
     }
   }
 
@@ -239,6 +245,8 @@ schro_motion_field_global_prediction (SchroMotionField *mf,
     stddev2 = sum2/n;
     SCHRO_DEBUG("stddev %f", sqrt(sum2/n));
 
+    if (stddev2 < 1) stddev2 = 1;
+
     n = 0;
     for(j=0;j<mf->y_num_blocks;j++) {
       for(i=0;i<mf->x_num_blocks;i++) {
@@ -255,10 +263,19 @@ schro_motion_field_global_prediction (SchroMotionField *mf,
     gm->b0 = rint(pan_x);
     gm->b1 = rint(pan_y);
     gm->a_exp = 16;
-    gm->a00 = rint((1.0 + a00) * (1<<gm->a_exp));
-    gm->a01 = rint(a01 * (1<<gm->a_exp));
-    gm->a10 = rint(a10 * (1<<gm->a_exp));
-    gm->a11 = rint((1.0 + a11) * (1<<gm->a_exp));
+    gm->a00 = rint((1.0 + a00/8) * (1<<gm->a_exp));
+    gm->a01 = rint(a01/8 * (1<<gm->a_exp));
+    gm->a10 = rint(a10/8 * (1<<gm->a_exp));
+    gm->a11 = rint((1.0 + a11/8) * (1<<gm->a_exp));
+  }
+
+  for(j=0;j<mf->y_num_blocks;j++) {
+    for(i=0;i<mf->x_num_blocks;i++) {
+      mv = mf->motion_vectors + j*mf->x_num_blocks + i;
+      mv->using_global = 1;
+      mv->u.xy.x = gm->b0 + ((gm->a00 * (i*8) + gm->a01 * (j*8))>>gm->a_exp) - i*8;
+      mv->u.xy.y = gm->b1 + ((gm->a10 * (i*8) + gm->a11 * (j*8))>>gm->a_exp) - j*8;
+    }
   }
 }
 
@@ -464,6 +481,24 @@ schro_motion_field_copy (SchroMotionField *field, SchroMotionField *parent)
   }
 }
 
+#if 0
+void
+schro_motion_field_dump (SchroMotionField *field)
+{
+  SchroMotionVector *mv;
+  int i;
+  int j;
+
+  for(j=0;j<field->y_num_blocks;j++){
+    for(i=0;i<field->x_num_blocks;i++){
+      mv = field->motion_vectors + j*field->x_num_blocks + i;
+      printf("%d %d %d %d\n", i, j, mv->u.xy.x, mv->u.xy.y);
+    }
+  }
+  exit(0);
+}
+#endif
+
 void
 schro_encoder_hierarchical_prediction (SchroEncoderTask *task)
 {
@@ -519,6 +554,8 @@ schro_encoder_hierarchical_prediction (SchroEncoderTask *task)
             downsampled_ref0, 4);
       }
     }
+
+    //schro_motion_field_dump (motion_fields[0]);
   }
 
   schro_frame_free(downsampled[1]);
@@ -584,6 +621,7 @@ schro_encoder_dc_prediction (SchroEncoderTask *task)
       memset(mv, 0, sizeof(*mv));
       mv->pred_mode = 0;
       mv->split = 2;
+      mv->using_global = 0;
       schro_block_average (mv->u.dc + 0, frame->components + 0, i*8, j*8, 8, 8);
       schro_block_average (mv->u.dc + 1, frame->components + 1, i*4, j*4, 4, 4);
       schro_block_average (mv->u.dc + 2, frame->components + 2, i*4, j*4, 4, 4);

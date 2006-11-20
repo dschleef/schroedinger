@@ -1,5 +1,19 @@
 2006-11-19  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.c:
+	  Implement global motion encoding and decoding.  Fix a few
+	  bitstream compatibility issues.  Changes BITSTREAM.  The
+	  global motion implementation is done per block, not per pixel,
+	  so it's not quite right yet.
+
+2006-11-19  David Schleef  <ds@schleef.org>
+
 	* schroedinger.pc.in:
 	* schroedinger/Makefile.am:
 	  Fix installation of headers and pc file.

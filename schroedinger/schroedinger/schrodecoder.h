@@ -47,7 +47,7 @@ struct _SchroDecoder {
 
   SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
 
-  SchroMotionVector *motion_vectors;
+  SchroMotionField *motion_field;
 
   int n_retire;
   int retire_list[SCHRO_MAX_REFERENCE_FRAMES];

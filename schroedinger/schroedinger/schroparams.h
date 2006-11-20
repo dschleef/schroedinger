@@ -143,8 +143,7 @@ struct _SchroMotionVector {
   unsigned int pred_mode : 2;
   unsigned int using_global : 1;
   unsigned int split : 2;
-  unsigned int common : 1;
-  unsigned int unused : 2;
+  unsigned int unused : 3;
   unsigned int scan : 8;
   unsigned int metric : 16;
 };

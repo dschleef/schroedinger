@@ -57,7 +57,7 @@ schro_decoder_free (SchroDecoder *decoder)
   for(i=0;i<decoder->frame_queue_length;i++){
     schro_frame_free (decoder->frame_queue[i]);
   }
-  if (decoder->motion_vectors) free (decoder->motion_vectors);
+  if (decoder->motion_field) schro_motion_field_free (decoder->motion_field);
   if (decoder->mc_tmp_frame) schro_frame_free (decoder->mc_tmp_frame);
 
   if (decoder->tmpbuf) free (decoder->tmpbuf);
@@ -287,9 +287,9 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
           params->mc_chroma_width, params->mc_chroma_height);
     }
 
-    if (decoder->motion_vectors == NULL) {
-      decoder->motion_vectors = malloc(sizeof(SchroMotionVector) *
-          params->x_num_blocks * params->y_num_blocks);
+    if (decoder->motion_field == NULL) {
+      decoder->motion_field = schro_motion_field_new (params->x_num_blocks,
+          params->y_num_blocks);
     }
 
     decoder->ref0 = schro_decoder_reference_get (decoder, decoder->reference1);
@@ -309,7 +309,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
     schro_decoder_decode_prediction_data (decoder);
     schro_frame_copy_with_motion (decoder->mc_tmp_frame,
         decoder->ref0, decoder->ref1,
-        decoder->motion_vectors, &decoder->params);
+        decoder->motion_field->motion_vectors, &decoder->params);
   }
 
   schro_decoder_decode_transform_parameters (decoder);
@@ -711,7 +711,7 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
         gm->c1 = 0;
       }
 
-      SCHRO_ERROR("ref %d pan %d %d matrix %d %d %d %d perspective %d %d",
+      SCHRO_DEBUG("ref %d pan %d %d matrix %d %d %d %d perspective %d %d",
           i, gm->b0, gm->b1, gm->a00, gm->a01, gm->a10, gm->a11,
           gm->c0, gm->c1);
     }
@@ -795,41 +795,19 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith *arith,
     int i, int j)
 {
   SchroParams *params = &decoder->params;
-  SchroMotionVector *mv = &decoder->motion_vectors[j*params->x_num_blocks + i];
+  SchroMotionVector *mv = &decoder->motion_field->motion_vectors[j*params->x_num_blocks + i];
   int k,l;
   int split_prediction;
 
-  split_prediction = schro_motion_split_prediction (decoder->motion_vectors,
+  split_prediction = schro_motion_split_prediction (decoder->motion_field->motion_vectors,
       params, i, j);
   mv->split = (split_prediction + _schro_arith_decode_mode (arith,
         SCHRO_CTX_SPLIT_0, SCHRO_CTX_SPLIT_1))%3;
 
-  if (params->have_global_motion) {
-    mv->using_global = _schro_arith_context_decode_bit (arith,
-        SCHRO_CTX_GLOBAL_BLOCK);
-  } else {
-    mv->using_global = FALSE;
-  }
-#if 0
-  if (!mv->using_global) {
-    mv->split = schro_bits_decode_bits (decoder->bits, 2);
-    SCHRO_ASSERT(mv->split != 3);
-  } else {
-    mv->split = 2;
-  }
-#endif
-  if (mv->split != 0) {
-    mv->common = _schro_arith_context_decode_bit (arith, SCHRO_CTX_COMMON);
-  } else {
-    mv->common = FALSE;
-  }
-  //SCHRO_ERROR("using_global=%d split=%d common=%d",
-  //    mv->using_global, mv->split, mv->common);
-
   switch (mv->split) {
     case 0:
       schro_decoder_decode_prediction_unit (decoder, arith,
-          decoder->motion_vectors, i, j);
+          decoder->motion_field->motion_vectors, i, j);
       mv[1] = mv[0];
       mv[2] = mv[0];
       mv[3] = mv[0];
@@ -839,25 +817,25 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith *arith,
       break;
     case 1:
       schro_decoder_decode_prediction_unit (decoder, arith,
-          decoder->motion_vectors, i, j);
+          decoder->motion_field->motion_vectors, i, j);
       mv[1] = mv[0];
       schro_decoder_decode_prediction_unit (decoder, arith,
-          decoder->motion_vectors, i + 2, j);
+          decoder->motion_field->motion_vectors, i + 2, j);
       memcpy(mv + params->x_num_blocks, mv, 4*sizeof(*mv));
 
       mv += 2*params->x_num_blocks;
       schro_decoder_decode_prediction_unit (decoder, arith,
-          decoder->motion_vectors, i, j + 2);
+          decoder->motion_field->motion_vectors, i, j + 2);
       mv[1] = mv[0];
       schro_decoder_decode_prediction_unit (decoder, arith,
-          decoder->motion_vectors, i + 2, j + 2);
+          decoder->motion_field->motion_vectors, i + 2, j + 2);
       memcpy(mv + params->x_num_blocks, mv, 4*sizeof(*mv));
       break;
     case 2:
       for (l=0;l<4;l++) {
         for (k=0;k<4;k++) {
           schro_decoder_decode_prediction_unit (decoder, arith,
-              decoder->motion_vectors, i + k, j + l);
+              decoder->motion_field->motion_vectors, i + k, j + l);
         }
       }
       break;
@@ -873,9 +851,14 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
   SchroParams *params = &decoder->params;
   SchroMotionVector *mv = &motion_vectors[y*params->x_num_blocks + x];
 
-  mv->pred_mode = 
-    _schro_arith_context_decode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF1) |
-    (_schro_arith_context_decode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF2) << 1);
+  mv->pred_mode = schro_motion_get_mode_prediction (decoder->motion_field,
+      x, y);
+  mv->pred_mode ^= 
+    _schro_arith_context_decode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF1);
+  if (params->num_refs > 1) {
+    mv->pred_mode ^=
+      _schro_arith_context_decode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF2) << 1;
+  }
 
   if (mv->pred_mode == 0) {
     int pred[3];
@@ -891,18 +874,33 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
     mv->u.dc[2] = pred[2] + _schro_arith_context_decode_sint (arith,
         SCHRO_CTX_CHROMA2_DC_CONT_BIN1, SCHRO_CTX_CHROMA2_DC_VALUE,
         SCHRO_CTX_CHROMA2_DC_SIGN);
+    mv->using_global = 0;
   } else {
     int pred_x, pred_y;
 
-    schro_motion_vector_prediction (motion_vectors, &decoder->params, x, y,
-        &pred_x, &pred_y, mv->pred_mode);
+    if (params->have_global_motion) {
+      int pred;
+      schro_motion_field_get_global_prediction (decoder->motion_field,
+          x, y, &pred);
+      mv->using_global = pred ^ _schro_arith_context_decode_bit (arith,
+          SCHRO_CTX_GLOBAL_BLOCK);
+    } else {
+      mv->using_global = FALSE;
+    }
+    if (!mv->using_global) {
+      schro_motion_vector_prediction (motion_vectors, &decoder->params, x, y,
+          &pred_x, &pred_y, mv->pred_mode);
 
-    mv->u.xy.x = pred_x + _schro_arith_context_decode_sint (arith,
-         SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,
-         SCHRO_CTX_MV_REF1_H_SIGN);
-    mv->u.xy.y = pred_y + _schro_arith_context_decode_sint (arith,
-         SCHRO_CTX_MV_REF1_V_CONT_BIN1, SCHRO_CTX_MV_REF1_V_VALUE,
-         SCHRO_CTX_MV_REF1_V_SIGN);
+      mv->u.xy.x = pred_x + _schro_arith_context_decode_sint (arith,
+           SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,
+           SCHRO_CTX_MV_REF1_H_SIGN);
+      mv->u.xy.y = pred_y + _schro_arith_context_decode_sint (arith,
+           SCHRO_CTX_MV_REF1_V_CONT_BIN1, SCHRO_CTX_MV_REF1_V_VALUE,
+           SCHRO_CTX_MV_REF1_V_SIGN);
+    } else {
+      mv->u.xy.x = -16;
+      mv->u.xy.y = -16;
+    }
   }
 }
 
