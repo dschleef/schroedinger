@@ -1,3 +1,13 @@
+2006-11-20  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	  Adjust a few of the contexts to match spec.  Remove some cruft.
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  Change split_residual from _mode to _uint to match spec.  Changes
+	  BITSTREAM.
+
 2006-11-19  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:

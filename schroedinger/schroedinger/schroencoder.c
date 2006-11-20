@@ -1133,9 +1133,9 @@ schro_encoder_encode_frame_prediction (SchroEncoderTask *task)
 
       split_prediction = schro_motion_split_prediction (
           task->motion_field->motion_vectors, params, i, j);
-      split_residual = (mv->split - split_prediction)%3;
-      _schro_arith_encode_mode (arith, SCHRO_CTX_SPLIT_0, SCHRO_CTX_SPLIT_1,
-          split_residual);
+      split_residual = (mv->split - split_prediction + 3)%3;
+      _schro_arith_context_encode_uint (arith, SCHRO_CTX_SB_F1,
+          SCHRO_CTX_SB_DATA, split_residual);
 
       for(l=0;l<4;l+=(4>>mv->split)) {
         for(k=0;k<4;k+=(4>>mv->split)) {

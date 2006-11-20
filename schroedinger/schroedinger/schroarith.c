@@ -187,8 +187,8 @@ static const int next_list[] = {
   0,
   0,
 
-  0,
-  0,
+  SCHRO_CTX_SB_F2,
+  SCHRO_CTX_SB_F2,
   0,
   0,
   0,
@@ -431,39 +431,6 @@ _schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
   }
 }
 
-void
-_schro_arith_encode_mode (SchroArith *arith, int context0, int context1,
-    int value)
-{
-  switch (value) {
-    case 0:
-      _schro_arith_context_encode_bit (arith, context0, 1);
-      break;
-    case 1:
-      _schro_arith_context_encode_bit (arith, context0, 0);
-      _schro_arith_context_encode_bit (arith, context1, 1);
-      break;
-    case 2:
-      _schro_arith_context_encode_bit (arith, context0, 0);
-      _schro_arith_context_encode_bit (arith, context1, 0);
-      break;
-  }
-}
-
-
-int
-_schro_arith_context_decode_bits (SchroArith *arith, int context, int n)
-{
-  int value = 0;
-  int i;
-  
-  for(i=0;i<n;i++){
-    value = (value << 1) | __schro_arith_context_decode_bit (arith, context);
-  } 
-  
-  return value;
-}
-
 int
 _schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
     int value_context)
@@ -507,18 +474,6 @@ _schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
   return value;
 }
 
-int
-_schro_arith_decode_mode (SchroArith *arith, int context0, int context1)
-{
-  if (__schro_arith_context_decode_bit (arith, context0)) {
-    return 0;
-  }
-  if (__schro_arith_context_decode_bit (arith, context1)) {
-    return 1;
-  }
-  return 2;
-}
-
 /* wrappers */
 
 void
@@ -542,23 +497,10 @@ schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
       sign_context, value);
 }
 
-void
-schro_arith_encode_mode (SchroArith *arith, int context0, int context1,
-    int value)
-{
-  _schro_arith_encode_mode (arith, context0, context1, value);
-}
-
 int
 schro_arith_context_decode_bit (SchroArith *arith, int context)
 {
   return __schro_arith_context_decode_bit (arith, context);
-}
-
-int
-schro_arith_context_decode_bits (SchroArith *arith, int context, int n)
-{
-  return _schro_arith_context_decode_bits (arith, context, n);
 }
 
 int
@@ -574,11 +516,5 @@ schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
 {
   return _schro_arith_context_decode_sint (arith, cont_context,
       value_context, sign_context);
-}
-
-int
-schro_arith_decode_mode (SchroArith *arith, int context0, int context1)
-{
-  return _schro_arith_decode_mode (arith, context0, context1);
 }
 

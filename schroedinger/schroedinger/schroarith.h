@@ -32,9 +32,9 @@ enum {
   SCHRO_CTX_SIGN_ZERO,
   SCHRO_CTX_COEFF_DATA,
 
-  SCHRO_CTX_SPLIT_0,
-  SCHRO_CTX_SPLIT_1,
-  SCHRO_CTX_COMMON,
+  SCHRO_CTX_SB_F1,
+  SCHRO_CTX_SB_F2,
+  SCHRO_CTX_SB_DATA,
   SCHRO_CTX_BLOCK_MODE_REF1,
   SCHRO_CTX_BLOCK_MODE_REF2,
   SCHRO_CTX_GLOBAL_BLOCK,
@@ -126,16 +126,12 @@ void schro_arith_context_encode_uint (SchroArith *arith, int cont_context,
     int value_context, int value);
 void schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value);
-void schro_arith_encode_mode (SchroArith *arith, int context0, int context1,
-    int value);
 
 int schro_arith_context_decode_bit (SchroArith *arith, int context);
-int schro_arith_context_decode_bits (SchroArith *arith, int context, int max);
 int schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
     int value_context);
 int schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context);
-int schro_arith_decode_mode (SchroArith *arith, int context0, int context1);
 
 void _schro_arith_context_encode_bit (SchroArith *arith, int context, int
     value) SCHRO_INTERNAL;
@@ -143,19 +139,13 @@ void _schro_arith_context_encode_uint (SchroArith *arith, int cont_context,
     int value_context, int value) SCHRO_INTERNAL;
 void _schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value) SCHRO_INTERNAL;
-void _schro_arith_encode_mode (SchroArith *arith, int context0, int context1,
-    int value) SCHRO_INTERNAL;
 
 int _schro_arith_context_decode_bit (SchroArith *arith, int context)
   SCHRO_INTERNAL; 
-int _schro_arith_context_decode_bits (SchroArith *arith, int context, int max)
-  SCHRO_INTERNAL;
 int _schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
     int value_context) SCHRO_INTERNAL;
 int _schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context) SCHRO_INTERNAL;
-int _schro_arith_decode_mode (SchroArith *arith, int context0, int context1)
-    SCHRO_INTERNAL;
 
 #endif
 
