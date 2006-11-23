@@ -1,3 +1,9 @@
+2006-11-23  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* tsmux/tsmuxstream.c: (tsmux_stream_consume):
+	Add a hack to make sure we output new PES headers periodically for
+	unbounded streams, so that the timestamps/PCR can be output.
+
 2006-11-20  Jan Schmidt  <thaytan@mad.scientist.com>
 
 	* tsmux/tsmux.c:

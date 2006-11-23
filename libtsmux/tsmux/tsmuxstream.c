@@ -157,6 +157,11 @@ tsmux_stream_consume (TsMuxStream * stream, guint len)
 
     g_free (stream->cur_buffer);
     stream->cur_buffer = NULL;
+    /* FIXME: As a hack, for unbounded streams, start a new PES packet for each
+     * incoming packet we receive. This assumes that incoming data is 
+     * packetised sensibly - ie, every video frame */
+    if (stream->cur_pes_payload_size == 0)
+      stream->state = TSMUX_STREAM_STATE_HEADER; 
   }
 }
 
