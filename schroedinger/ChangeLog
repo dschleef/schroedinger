@@ -1,5 +1,12 @@
 2006-11-26  David Schleef  <ds@schleef.org>
 
+	* testsuite/arith_encode.c:
+	* testsuite/motion.c:
+	* testsuite/obmc.c:
+	  Fix some tests.
+
+2006-11-26  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrobitstream.h:
 	  Add low delay codes.
 	* gst/gstschrodec.c:

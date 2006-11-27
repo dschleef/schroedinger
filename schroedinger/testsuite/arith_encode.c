@@ -64,7 +64,7 @@ main (int argc, char *argv[])
 
   for(i=0;i<n_bytes;i++){
     for(j=0;j<8;j++){
-      schro_arith_context_encode_bit (a, 0, (input_buffer[i]>>(7-j))&1);
+      schro_arith_context_encode_bit (a, j, (input_buffer[i]>>(7-j))&1);
     }
   }
   schro_arith_flush (a);

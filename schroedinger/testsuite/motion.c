@@ -37,6 +37,7 @@ main (int argc, char *argv[])
   video_format.width = 720;
   video_format.height = 480;
   video_format.chroma_format = SCHRO_CHROMA_420;
+  schro_params_validate (&video_format);
 
   params.video_format = &video_format;
   params.xbsep_luma = 8;
