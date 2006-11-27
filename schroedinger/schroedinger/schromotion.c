@@ -12,6 +12,15 @@
 void schro_decoder_predict (SchroDecoder *decoder);
 
 
+static int
+ilog2 (unsigned int x)
+{
+  int i;
+  for(i=0;x > 1;i++){
+    x >>= 1;
+  }
+  return i;
+}
 
 void
 schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
@@ -28,12 +37,18 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
   x_ramp = x_len - x_sep;
   y_ramp = y_len - y_sep;
 
-  SCHRO_ASSERT(x_ramp != 0);
-  SCHRO_ASSERT(y_ramp != 0);
-  SCHRO_ASSERT((x_ramp&1) == 0);
-  SCHRO_ASSERT((y_ramp&1) == 0);
-  SCHRO_ASSERT(2*x_ramp <= x_len);
-  SCHRO_ASSERT(2*y_ramp <= y_len);
+  if (!(x_ramp == 0 || (x_ramp >= 2 && x_ramp == (1<<(ilog2(x_ramp)))))) {
+    SCHRO_ERROR ("x_ramp not valid %d", x_ramp);
+  }
+  if (!(y_ramp == 0 || (y_ramp >= 2 && y_ramp == (1<<(ilog2(y_ramp)))))) {
+    SCHRO_ERROR ("y_ramp not valid %d", y_ramp);
+  }
+  if (2*x_ramp > x_len) {
+    SCHRO_ERROR ("x_ramp too large %d", x_ramp);
+  }
+  if (2*y_ramp > x_len) {
+    SCHRO_ERROR ("y_ramp too large %d", y_ramp);
+  }
 
   obmc->stride = sizeof(int16_t) * x_len;
   obmc->region_data = malloc(obmc->stride * y_len * 9);
@@ -56,28 +71,40 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
   obmc->x_sep = x_sep;
   obmc->y_sep = y_sep;
 
-  for(i=0;i<x_len;i++){
-    int w;
-    if (i < x_ramp) {
-      w = 1 + 2*i;
-    } else if (i >= x_len - x_ramp) {
-      w = 1 + 2*(x_len - 1 - i);
-    } else {
-      w = x_ramp*2;
+  if (x_ramp > 0) {
+    for(i=0;i<x_len;i++){
+      int w;
+      if (i < x_ramp) {
+        w = 1 + 2*i;
+      } else if (i >= x_len - x_ramp) {
+        w = 1 + 2*(x_len - 1 - i);
+      } else {
+        w = x_ramp*2;
+      }
+      obmc->regions[0].weights[i] = w;
     }
-    obmc->regions[0].weights[i] = w;
+  } else {
+    for(i=0;i<x_len;i++){
+      obmc->regions[0].weights[i] = 1;
+    }
   }
 
-  for(j=0;j<y_len;j++){
-    int w;
-    if (j < y_ramp) {
-      w = 1 + 2*j;
-    } else if (j >= y_len - y_ramp) {
-      w = 1 + 2*(y_len - 1 - j);
-    } else {
-      w = y_ramp*2;
+  if (y_ramp > 0) {
+    for(j=0;j<y_len;j++){
+      int w;
+      if (j < y_ramp) {
+        w = 1 + 2*j;
+      } else if (j >= y_len - y_ramp) {
+        w = 1 + 2*(y_len - 1 - j);
+      } else {
+        w = y_ramp*2;
+      }
+      SCHRO_GET(obmc->regions[0].weights, obmc->stride * j, int16_t) = w;
     }
-    SCHRO_GET(obmc->regions[0].weights, obmc->stride * j, int16_t) = w;
+  } else {
+    for(j=0;j<y_len;j++){
+      SCHRO_GET(obmc->regions[0].weights, obmc->stride * j, int16_t) = 1;
+    }
   }
 
   for(j=1;j<y_len;j++){

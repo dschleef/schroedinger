@@ -59,6 +59,7 @@ struct _SchroDecoder {
   SchroBuffer *input_buffer;
 
   int have_access_unit;
+  int have_frame_number;
 
   double skip_value;
   double skip_ratio;
@@ -75,6 +76,7 @@ enum {
 
 SchroDecoder * schro_decoder_new (void);
 void schro_decoder_free (SchroDecoder *decoder);
+void schro_decoder_reset (SchroDecoder *decoder);
 SchroVideoFormat * schro_decoder_get_video_format (SchroDecoder *decoder);
 void schro_decoder_add_output_frame (SchroDecoder *decoder, SchroFrame *frame);
 void schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer);

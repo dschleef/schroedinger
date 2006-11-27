@@ -63,11 +63,11 @@ struct _SchroEncoder {
   SchroVideoFormat video_format;
   SchroEncoderParams encoder_params;
 
-  int frame_number;
+  //int frame_number;
   int end_of_stream;
   int prev_offset;
 
-  int last_au_frame;
+  int au_frame;
   int au_distance;
   int next_slot;
   int next_frame;

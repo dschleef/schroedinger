@@ -65,6 +65,25 @@ schro_decoder_free (SchroDecoder *decoder)
   free (decoder);
 }
 
+void
+schro_decoder_reset (SchroDecoder *decoder)
+{
+  int i;
+
+  for(i=0;i<decoder->n_reference_frames;i++) {
+    schro_frame_free (decoder->reference_frames[i]);
+  }
+  decoder->n_reference_frames = 0;
+  for(i=0;i<decoder->frame_queue_length;i++){
+    schro_frame_free (decoder->frame_queue[i]);
+  }
+  decoder->frame_queue_length = 0;
+
+  decoder->have_access_unit = FALSE;
+  decoder->next_frame_number = 0;
+  decoder->have_frame_number = FALSE;
+}
+
 SchroVideoFormat *
 schro_decoder_get_video_format (SchroDecoder *decoder)
 {
@@ -209,8 +228,10 @@ schro_decoder_iterate (SchroDecoder *decoder)
   decoder->bits = schro_bits_new ();
   schro_bits_decode_init (decoder->bits, decoder->input_buffer);
 
-  if (schro_decoder_is_access_unit (decoder->input_buffer)) {
-    schro_decoder_decode_parse_header(decoder);
+  schro_decoder_decode_parse_header(decoder);
+
+  if (decoder->code == SCHRO_PARSE_CODE_ACCESS_UNIT) {
+    SCHRO_INFO ("decoding access unit");
     schro_decoder_decode_access_unit(decoder);
 
     schro_buffer_unref (decoder->input_buffer);
@@ -225,10 +246,19 @@ schro_decoder_iterate (SchroDecoder *decoder)
   }
 
   if (schro_decoder_is_end_sequence (decoder->input_buffer)) {
+    SCHRO_INFO ("decoding end sequence");
     schro_buffer_unref (decoder->input_buffer);
     decoder->input_buffer = NULL;
     schro_bits_free (decoder->bits);
     return SCHRO_DECODER_EOS;
+  }
+
+  if (!decoder->have_access_unit) {
+    SCHRO_INFO ("no access unit -- dropping frame");
+    schro_buffer_unref (decoder->input_buffer);
+    decoder->input_buffer = NULL;
+    schro_bits_free (decoder->bits);
+    return SCHRO_DECODER_OK;
   }
 
   if (decoder->n_output_frames == 0) {
@@ -236,10 +266,18 @@ schro_decoder_iterate (SchroDecoder *decoder)
     return SCHRO_DECODER_NEED_FRAME;
   }
 
-  schro_decoder_decode_parse_header(decoder);
   schro_decoder_decode_frame_header(decoder);
 
   params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->code);
+
+  if (!decoder->have_frame_number) {
+    if (SCHRO_PARSE_CODE_NUM_REFS (decoder->code) > 0) {
+      SCHRO_ERROR("expected I frame after access unit header");
+    }
+    decoder->next_frame_number = decoder->picture_number;
+    decoder->have_frame_number = TRUE;
+    SCHRO_INFO("next frame number after seek %d", decoder->next_frame_number);
+  }
 
   if (!SCHRO_PARSE_CODE_IS_REF (decoder->code) &&
        decoder->skip_value > decoder->skip_ratio) {
@@ -272,6 +310,8 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
   decoder->n_output_frames--;
 
   if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) > 0) {
+    int skip = 0;
+
     SCHRO_DEBUG("inter");
 
     schro_decoder_decode_frame_prediction (decoder);
@@ -294,16 +334,28 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
     decoder->ref0 = schro_decoder_reference_get (decoder, decoder->reference1);
     if (decoder->ref0 == NULL) {
-      SCHRO_ERROR("Could not find reference picture %d\n", decoder->reference1);
+      SCHRO_DEBUG("Could not find reference picture %d", decoder->reference1);
+      skip = 1;
     }
-    SCHRO_ASSERT (decoder->ref0 != NULL);
 
     if (decoder->n_refs > 1) {
       decoder->ref1 = schro_decoder_reference_get (decoder, decoder->reference2);
       if (decoder->ref1 == NULL) {
-        SCHRO_ERROR("Could not find reference picture %d\n", decoder->reference2);
+        SCHRO_DEBUG("Could not find reference picture %d", decoder->reference2);
+        skip = 1;
       }
-      SCHRO_ASSERT (decoder->ref1 != NULL);
+    }
+
+    if (skip) {
+      for(i=0;i<decoder->n_retire;i++){
+        schro_decoder_reference_retire (decoder, decoder->retire_list[i]);
+      }
+
+      schro_buffer_unref (decoder->input_buffer);
+      decoder->input_buffer = NULL;
+      schro_bits_free (decoder->bits);
+
+      return SCHRO_DECODER_OK;
     }
 
     schro_decoder_decode_prediction_data (decoder);
@@ -726,16 +778,17 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
   /* non-default picture weights */
   bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
-    int precision;
-
-    /* FIXME */
-    precision = schro_bits_decode_uint (decoder->bits);
+    params->picture_weight_bits = schro_bits_decode_uint (decoder->bits);
     if (params->num_refs > 0) {
       params->picture_weight_1 = schro_bits_decode_sint (decoder->bits);
     }
     if (params->num_refs > 1) {
       params->picture_weight_2 = schro_bits_decode_sint (decoder->bits);
     }
+  } else {
+    params->picture_weight_bits = 1;
+    params->picture_weight_1 = 1;
+    params->picture_weight_2 = 1;
   }
 }
 

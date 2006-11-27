@@ -556,9 +556,11 @@ gst_schro_dec_sink_event (GstPad *pad, GstEvent *event)
 
   switch (GST_EVENT_TYPE (event)) {
     case GST_EVENT_FLUSH_START:
+      GST_ERROR("unhandled flush start");
       ret = gst_pad_push_event (dec->srcpad, event);
       break;
     case GST_EVENT_FLUSH_STOP:
+      GST_ERROR("unhandled flush stop");
       gst_schro_dec_reset (dec);
       ret = gst_pad_push_event (dec->srcpad, event);
       break;
@@ -697,7 +699,7 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
 
   if (G_UNLIKELY (GST_BUFFER_FLAG_IS_SET (buf, GST_BUFFER_FLAG_DISCONT))) {
     GST_DEBUG_OBJECT (schro_dec, "received DISCONT buffer");
-    //dec->need_keyframe = TRUE;
+    schro_decoder_reset (schro_dec->decoder);
     schro_dec->timestamp_offset = GST_CLOCK_TIME_NONE;
     schro_dec->granulepos_offset = -1;
     schro_dec->granulepos = -1;

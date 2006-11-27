@@ -53,7 +53,7 @@ schro_encoder_new (void)
   encoder->profile = 0;
   encoder->level = 0;
 
-  encoder->last_au_frame = -1;
+  encoder->au_frame = -1;
   encoder->au_distance = 24;
 
   encoder->last_ref = -1;
@@ -295,17 +295,16 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
   task = encoder->task;
   SCHRO_ASSERT(task != NULL);
 
-  if (encoder->last_au_frame == -1 ||
-      encoder->next_frame - encoder->last_au_frame >= encoder->au_distance) {
+  if (encoder->au_frame == -1 ||
+      encoder->next_frame - encoder->au_frame >= encoder->au_distance) {
     SchroBuffer *buffer;
 
+    encoder->au_frame = encoder->next_frame;
     buffer = schro_encoder_encode_access_unit (encoder);
 
     schro_encoder_output_push (encoder, buffer, encoder->next_slot,
         task->frame_number - 1);
     encoder->next_slot++;
-
-    encoder->last_au_frame = encoder->next_frame;
   }
 
   task->encode_frame = schro_encoder_frame_queue_get (encoder,
@@ -382,16 +381,15 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
   task = encoder->task;
   SCHRO_ASSERT(task != NULL);
 
-  if (encoder->last_au_frame == -1) {
+  if (encoder->au_frame == -1) {
     SchroBuffer *buffer;
 
+    encoder->au_frame = encoder->next_frame;
     buffer = schro_encoder_encode_access_unit (encoder);
 
     schro_encoder_output_push (encoder, buffer, encoder->next_slot,
         task->frame_number - 1);
     encoder->next_slot++;
-
-    encoder->last_au_frame = encoder->next_frame;
   }
 
   task->encode_frame = schro_encoder_frame_queue_get (encoder,
@@ -412,16 +410,15 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
   }
 
   task->is_ref = FALSE;
-  if (encoder->next_frame - encoder->last_au_frame >= encoder->au_distance) {
+  if (encoder->next_frame - encoder->au_frame >= encoder->au_distance) {
     SchroBuffer *buffer;
 
+    encoder->au_frame = encoder->next_frame;
     buffer = schro_encoder_encode_access_unit (encoder);
 
     schro_encoder_output_push (encoder, buffer, encoder->next_slot,
         task->frame_number - 1);
     encoder->next_slot++;
-
-    encoder->last_au_frame = encoder->next_frame;
     
     task->is_ref = TRUE;
   }
@@ -530,20 +527,20 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
   task = encoder->task;
   SCHRO_ASSERT(task != NULL);
 
-  if (encoder->last_au_frame == -1) {
+  if (encoder->au_frame == -1) {
     SchroBuffer *buffer;
+
+    encoder->au_frame = 0;
 
     buffer = schro_encoder_encode_access_unit (encoder);
 
     schro_encoder_output_push (encoder, buffer, encoder->next_slot, -1);
     encoder->next_slot++;
-
-    encoder->last_au_frame = 0;
   }
 
   params = &task->params;
 
-  SCHRO_DEBUG("iterate: %d %d %d", encoder->frame_number, encoder->last_ref,
+  SCHRO_DEBUG("iterate: %d %d %d", encoder->next_frame, encoder->last_ref,
     encoder->next_ref);
   if (encoder->last_ref == -1) {
     type = 0;
@@ -574,21 +571,17 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
     return FALSE;
   }
 
-#if 0
-  if (encoder->next_frame - encoder->last_au_frame >= encoder->au_distance) {
+  if (type == 1 &&
+      task->frame_number - encoder->au_frame >= encoder->au_distance) {
     SchroBuffer *buffer;
 
+    encoder->au_frame = task->frame_number;
     buffer = schro_encoder_encode_access_unit (encoder);
 
     schro_encoder_output_push (encoder, buffer, encoder->next_slot,
         task->frame_number - 1);
     encoder->next_slot++;
-
-    encoder->last_au_frame = encoder->next_frame;
-    
-    task->is_ref = TRUE;
   }
-#endif
 
   schro_encoder_frame_queue_remove (encoder, task->frame_number);
 
@@ -702,20 +695,20 @@ schro_encoder_engine_fourref (SchroEncoder *encoder)
   task = encoder->task;
   SCHRO_ASSERT(task != NULL);
 
-  if (encoder->last_au_frame == -1) {
+  if (encoder->au_frame == -1) {
     SchroBuffer *buffer;
+
+    encoder->au_frame = 0;
 
     buffer = schro_encoder_encode_access_unit (encoder);
 
     schro_encoder_output_push (encoder, buffer, encoder->next_slot, -1);
     encoder->next_slot++;
-
-    encoder->last_au_frame = 0;
   }
 
   params = &task->params;
 
-  SCHRO_DEBUG("iterate: %d %d %d %d", encoder->frame_number, encoder->last_ref,
+  SCHRO_DEBUG("iterate: %d %d %d %d", encoder->next_frame, encoder->last_ref,
     encoder->next_ref, encoder->mid1_ref);
   if (encoder->last_ref == -1) {
     type = 0;
@@ -756,16 +749,16 @@ schro_encoder_engine_fourref (SchroEncoder *encoder)
   }
 
 #if 0
-  if (encoder->next_frame - encoder->last_au_frame >= encoder->au_distance) {
+  if (encoder->next_frame - encoder->au_frame >= encoder->au_distance) {
     SchroBuffer *buffer;
+
+    encoder->au_frame = encoder->next_frame;
 
     buffer = schro_encoder_encode_access_unit (encoder);
 
     schro_encoder_output_push (encoder, buffer, encoder->next_slot,
         task->frame_number - 1);
     encoder->next_slot++;
-
-    encoder->last_au_frame = encoder->next_frame;
     
     task->is_ref = TRUE;
   }
@@ -1233,8 +1226,7 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
   schro_encoder_encode_parse_info (bits, SCHRO_PARSE_CODE_ACCESS_UNIT);
   
   /* parse parameters */
-  /* FIXME au picture number */
-  schro_bits_encode_bits (bits, 32, 0);
+  schro_bits_encode_bits (bits, 32, encoder->au_frame);
 
   schro_bits_encode_uint (bits, encoder->version_major);
   schro_bits_encode_uint (bits, encoder->version_minor);

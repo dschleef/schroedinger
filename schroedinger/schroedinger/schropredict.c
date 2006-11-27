@@ -68,7 +68,7 @@ schro_encoder_motion_predict (SchroEncoderTask *task)
   }
   fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_DC];
   fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF0];
-  //fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF1];
+  fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF1];
 
   schro_motion_field_merge (task->motion_field, fields, n);
 

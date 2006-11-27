@@ -1,3 +1,22 @@
+2006-11-26  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrobitstream.h:
+	  Add low delay codes.
+	* gst/gstschrodec.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	  Improve support for seeking.  Probably leaks.
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Fix pushing of access units as well as the frame number on
+	  access units.
+	* schroedinger/schromotion.c:
+	  Fix bug creating weight arrays for non-overlapped blocks.
+	* schroedinger/schroparams.h:
+	  Add picture weight bits.
+	* schroedinger/schropredict.c:
+	  Use the global motion for the second reference picture.
+
 2006-11-20  Christian Schaller <christian@fluendo.com>
 
 	* Add header files to SPEC file

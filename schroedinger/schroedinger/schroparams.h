@@ -98,6 +98,7 @@ struct _SchroParams {
   int mv_precision;
   SchroGlobalMotion global_motion[2];
   int picture_pred_mode;
+  int picture_weight_bits;
   int picture_weight_1;
   int picture_weight_2;
 
