@@ -186,6 +186,10 @@ AC_SUBST(GST_ALL_LDFLAGS)
 GST_PLUGIN_LDFLAGS="-module -avoid-version -export-symbols-regex '^[_]*gst_plugin_desc\$\$' $GST_ALL_LDFLAGS"
 AC_SUBST(GST_PLUGIN_LDFLAGS)
 
+AM_PATH_CHECK(0.9.2,HAVE_CHECK=yes,HAVE_CHECK=no)
+AM_CONDITIONAL(HAVE_CHECK, test "x$HAVE_CHECK" = "xyes")
+
+	
 pkgconfigdir="\$(libdir)/pkgconfig"
 AC_SUBST(pkgconfigdir)
 
@@ -195,6 +199,7 @@ doc/Makefile
 schroedinger/Makefile
 gst/Makefile
 testsuite/Makefile
+tools/Makefile
 schroedinger-uninstalled.pc
 schroedinger.pc
 libschroedinger.spec

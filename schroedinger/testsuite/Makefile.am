@@ -2,7 +2,7 @@
 
 noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 encode wavelet tables wavelet_2d arith_speed \
-	 obmc predict dump_packets phasecorrelation motion \
+	 obmc phasecorrelation motion \
 	 arith_fixup_shift quant struct_offsets wavelet_speed \
 	 global_motion
 
@@ -23,7 +23,7 @@ arith_encode_SOURCES = arith_encode.c
 # arith_decode_LDADD = $(SCHRO_LIBS)
 # arith_decode_SOURCES = arith_decode.c
 
-arith_speed_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) -falign-loops=16 -fPIC
+arith_speed_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 arith_speed_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 arith_speed_SOURCES = arith_speed.c
 
@@ -42,10 +42,6 @@ bits2_SOURCES = bits2.c
 #codes_CFLAGS = $(SCHRO_CFLAGS)
 #codes_LDADD = $(SCHRO_LIBS)
 #codes_SOURCES = codes.c
-
-dump_packets_CFLAGS = $(SCHRO_CFLAGS) $(GST_CFLAGS)
-dump_packets_LDADD = $(SCHRO_LIBS) $(GST_LIBS)
-dump_packets_SOURCES = dump_packets.c
 
 encode_CFLAGS = $(SCHRO_CFLAGS)
 encode_LDADD = $(SCHRO_LIBS)
@@ -74,10 +70,6 @@ tables_SOURCES = tables.c
 obmc_CFLAGS = $(SCHRO_CFLAGS)
 obmc_LDADD = $(SCHRO_LIBS)
 obmc_SOURCES = obmc.c
-
-predict_CFLAGS = $(SCHRO_CFLAGS)
-predict_LDADD = $(SCHRO_LIBS)
-predict_SOURCES = predict.c
 
 phasecorrelation_CFLAGS = $(SCHRO_CFLAGS)
 phasecorrelation_LDADD = $(SCHRO_LIBS) -lm

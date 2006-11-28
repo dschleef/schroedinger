@@ -1,7 +1,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = doc schroedinger gst testsuite
+SUBDIRS = doc schroedinger gst testsuite tools
 
 EXTRA_DIST = COPYING COPYING.GPL COPYING.LGPL COPYING.MIT COPYING.MPL \
 	     autogen.sh libschroedinger.spec TODO NEWS

@@ -1,3 +1,15 @@
+2006-11-27  David Schleef  <ds@schleef.org>
+
+	* configure.ac:
+	  Add check for check.
+	* Makefile.am:
+	* testsuite/Makefile.am:
+	* testsuite/dump_packets.c:
+	* tools:
+	* tools/Makefile.am:
+	* tools/dump_packets.c:
+	  Move dump_packets.
+
 2006-11-26  David Schleef  <ds@schleef.org>
 
 	* testsuite/arith_encode.c:

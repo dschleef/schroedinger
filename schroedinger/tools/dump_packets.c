@@ -16,24 +16,40 @@ static void fakesink_handoff (GstElement *fakesink, GstBuffer *buffer,
     GstPad *pad, gpointer p_pipeline);
 static void event_loop(GstElement *pipeline);
 
+gboolean raw = FALSE;
+char *fn = "output.ogg";
+
+static GOptionEntry entries[] = 
+{
+    { "raw", 'r', 0, G_OPTION_ARG_NONE, &raw, "File is raw Dirac stream", NULL },
+    { NULL }
+};
+
 int
 main (int argc, char *argv[])
 {
   GstElement *pipeline;
   GstElement *fakesink;
   GstElement *filesrc;
-  char *fn;
+  GError *error = NULL;
+  GOptionContext *context;
 
+  context = g_option_context_new ("dump_packets");
+  g_option_context_add_main_entries (context, entries, NULL);
+  g_option_context_add_group (context, gst_init_get_option_group ());
+  g_option_context_parse (context, &argc, &argv, &error);
+  g_option_context_free (context);
   if (argc > 1) {
     fn = argv[1];
-  } else {
-    fn = "output.ogg";
   }
 
   gst_init(NULL,NULL);
 
-  pipeline = gst_parse_launch("filesrc ! oggdemux ! video/x-dirac ! fakesink", NULL);
-  //pipeline = gst_parse_launch("filesrc ! schroparse ! video/x-dirac ! fakesink", NULL);
+  if (raw) {
+    pipeline = gst_parse_launch("filesrc ! schroparse ! video/x-dirac ! fakesink", NULL);
+  } else {
+    pipeline = gst_parse_launch("filesrc ! oggdemux ! video/x-dirac ! fakesink", NULL);
+  }
 
   fakesink = gst_bin_get_by_name (GST_BIN(pipeline), "fakesink0");
   g_assert(fakesink != NULL);

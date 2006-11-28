@@ -1,0 +1,8 @@
+
+
+noinst_PROGRAMS = dump_packets
+
+
+AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS) $(GST_CFLAGS)
+LDADD = $(SCHRO_LIBS) $(GST_LIBS)
+
