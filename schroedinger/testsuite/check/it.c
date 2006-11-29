@@ -28,7 +28,7 @@ main (int argc, char *argv[])
   s = suite_create ("schro");
 
   tc = tcase_create ("schro");
-  tcase_add_test (tc, one);
+  tcase_add_test (tc, test_decoder_init);
   suite_add_tcase (s, tc);
 
   sr = srunner_create (s);

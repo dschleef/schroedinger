@@ -84,6 +84,7 @@ main (int argc, char *argv[])
   SchroArith *arith_orig;
   SchroArith *arith_ref;
   SchroArith *arith_test;
+  int fail = 0;
 
   schro_init();
 
@@ -124,10 +125,11 @@ main (int argc, char *argv[])
           arith_ref->code);
       printf("test: %04x %04x %04x\n", arith_test->range[0], arith_test->range[1],
           arith_test->code);
+      fail = 1;
     }
   }
 
-  return 0;
+  return fail;
 }
 
 

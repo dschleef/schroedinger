@@ -7,7 +7,7 @@ noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 arith_fixup_shift quant struct_offsets \
 	 global_motion
 
-TESTS = arith bits bits2 encode wavelet tables wavelet_2d
+TESTS = arith arith_fixup_shift bits bits2 encode wavelet tables wavelet_2d
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS)
 LDADD = $(SCHRO_LIBS)

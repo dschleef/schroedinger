@@ -1,3 +1,14 @@
+2006-11-29  David Schleef  <ds@schleef.org>
+
+	* testsuite/Makefile.am:
+	* testsuite/README:
+	* testsuite/arith_fixup_shift.c:
+	* testsuite/check/it.c:
+	* testsuite/codes.c:
+	* testsuite/global_motion.c:
+	* testsuite/phasecorrelation.c:
+	  Fix up random stuff.  Write some notes.
+
 2006-11-28  David Schleef  <ds@schleef.org>
 
 	* configure.ac:

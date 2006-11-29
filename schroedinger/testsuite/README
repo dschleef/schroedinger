@@ -1,0 +1,66 @@
+
+arith:
+  tests arithmetic encoding and decoding using somewhat random data.
+  overly verbose.
+
+arith_encode:
+  tests arithmetic encoding by encoding test_file into test_file_arith.out
+  Not useful.
+
+arith_decode:
+  doesn't compile
+
+arith_fixup_shift:
+  Checks the correctness of schro_table_arith_shift[].
+
+arith_speed:
+  measures the speed of the arithmetic decoder.  First column is number
+  of decode bits tested.  Second is fraction of 1 bits (on a scale of
+  0 to 256).  Third is number of cycles to decode N bits averaged over
+  10 runs.  Fourth is standard deviation of the mean of the 3rd column.
+  Ignore the last.
+
+bits:
+  Prints out the bit representation of numbers encoded using
+  schro_bits_encode_uint() and schro_bits_encode_sint().
+
+bits2:
+  Encodes/decodes arrays of random numbers using schro_bits.
+
+encode:
+  encodes a ten frame segment (of solid grey data) for every size from
+  64x64 to 79x79.
+
+global_motion:
+  checks schro_motion_field_global_prediction(), i.e., calculating
+  global motion from an array of motion vectors.
+
+motion:
+  measures speed of schro_frame_copy_with_motion(), using all zero
+  vectors.
+
+obmc:
+  calculates and displays OBMC arrays for a hard-coded obmc size.
+
+phasecorrelation:
+  a toy to play with phase correlation for image detection.
+
+predict:
+  broken
+
+quant:
+  prints out a graph visualising the quantiser dead zone.
+
+struct_offsets:
+  a tool to print out struct offsets for the arith assembly code
+
+tables:
+  a tool to print out schrotables.c
+
+wavelet:
+  tests 1-d wavelet transforms.  I'm not sure if this code is correct.
+
+wavelet_2d:
+  tests 2-d wavelet transforms.  This code has been verified in multiple
+  ways that it is correct.  (Or very consistently incorrect.)
+

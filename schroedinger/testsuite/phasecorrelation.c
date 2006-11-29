@@ -88,7 +88,7 @@ void complex_normalize (double *i1, double *i2, int n)
   }
 }
 
-#define N 16
+#define N 256
 
 int main (int argc, char *argv[])
 {
