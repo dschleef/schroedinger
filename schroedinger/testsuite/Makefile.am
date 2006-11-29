@@ -1,9 +1,10 @@
 
+SUBDIRS = check perf
 
 noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 encode wavelet tables wavelet_2d arith_speed \
 	 obmc phasecorrelation motion \
-	 arith_fixup_shift quant struct_offsets wavelet_speed \
+	 arith_fixup_shift quant struct_offsets \
 	 global_motion
 
 TESTS = arith bits bits2 encode wavelet tables wavelet_2d
@@ -50,10 +51,6 @@ encode_SOURCES = encode.c
 wavelet_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 wavelet_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_SOURCES = wavelet.c
-
-wavelet_speed_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-wavelet_speed_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
-wavelet_speed_SOURCES = wavelet_speed.c
 
 #wavelet2_CFLAGS = $(SCHRO_CFLAGS)
 #wavelet2_LDADD = $(SCHRO_LIBS)

@@ -199,6 +199,8 @@ doc/Makefile
 schroedinger/Makefile
 gst/Makefile
 testsuite/Makefile
+testsuite/check/Makefile
+testsuite/perf/Makefile
 tools/Makefile
 schroedinger-uninstalled.pc
 schroedinger.pc
