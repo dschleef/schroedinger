@@ -1,0 +1,27 @@
+#!/bin/sh
+
+#
+#  Creates a raw Dirac sequence from raw YUV pictures.
+#
+
+input=output-%05d
+format=I420
+width=320
+height=240
+framerate=12
+output=output.drc
+
+
+gst-launch multifilesrc location=$input \
+  caps=video/x-raw-yuv,format=\(fourcc\)$format,width=$width,height=$height,framerate=$framerate/1 \
+  ! schroenc ! filesink location=$output
+
+#
+#  A set of YUV images in I420 format can be created using the command:
+#
+#    gst-launch videotestsrc num-buffers=100 ! multifilesink
+#
+#  Note also that you can decompress a raw Dirac sequence into YUV using:
+#
+#    gst-launch filesrc location=file.drc ! schrodec ! multifilesink
+#
