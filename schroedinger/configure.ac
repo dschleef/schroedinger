@@ -71,7 +71,7 @@ AC_SUBST(SCHRO_LIBS)
 # GStreamer stuff
 ########################
 
-GSTREAMER_MAJORMINOR=0.10
+GST_MAJORMINOR=0.10
 
 dnl *** check for arguments to configure ***
 
