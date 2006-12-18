@@ -4,6 +4,10 @@
 
 #include <schroedinger/schrobuffer.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _SchroObmc SchroObmc;
 typedef struct _SchroObmcRegion SchroObmcRegion;
 
@@ -44,6 +48,10 @@ int schro_motion_get_mode_prediction (SchroMotionField *mf, int x, int y);
 void schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep,
     int y_sep);
 void schro_obmc_cleanup (SchroObmc *obmc);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

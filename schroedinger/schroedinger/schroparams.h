@@ -5,6 +5,10 @@
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schro-stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _SchroVideoFormat SchroVideoFormat;
 typedef struct _SchroParams SchroParams;
 typedef struct _SchroSubband SchroSubband;
@@ -184,6 +188,10 @@ int schro_params_get_colour_spec (SchroVideoFormat *format);
 void schro_params_set_block_params (SchroParams *params, int index);
 
 void schro_params_set_default_codeblock (SchroParams *params);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

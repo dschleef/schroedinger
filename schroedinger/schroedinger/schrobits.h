@@ -5,6 +5,10 @@
 #include <schroedinger/schro-stdint.h>
 #include <schroedinger/schrobuffer.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #define SCHRO_ARITH_N_CONTEXTS 64
 
@@ -41,6 +45,10 @@ int schro_bits_decode_bit (SchroBits *bits);
 int schro_bits_decode_bits (SchroBits *bits, int n);
 int schro_bits_decode_uint (SchroBits *bits);
 int schro_bits_decode_sint (SchroBits *bits);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

@@ -2,6 +2,10 @@
 #ifndef _SCHRO_BITSTREAM_H_
 #define _SCHRO_BITSTREAM_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //#define DIRAC_OFFSET_EXPERIMENT
 
 #define SCHRO_MAX_TRANSFORM_DEPTH 8
@@ -87,6 +91,10 @@ enum _SchroWaveletIndex {
   SCHRO_WAVELET_FIDELITY,
   SCHRO_WAVELET_DAUB_9_7
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

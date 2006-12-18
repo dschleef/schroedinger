@@ -6,6 +6,10 @@
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schroframe.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 typedef struct _SchroEncoder SchroEncoder;
 typedef struct _SchroEncoderParams SchroEncoderParams;
@@ -214,6 +218,10 @@ int schro_encoder_preference_get_range (SchroEncoder *encoder,
 int schro_encoder_preference_get (SchroEncoder *encoder, SchroPrefEnum pref);
 int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
     int value);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

@@ -2,6 +2,10 @@
 #ifndef __SCHRO_BUFFER_H__
 #define __SCHRO_BUFFER_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _SchroBuffer SchroBuffer;
 
 struct _SchroBuffer
@@ -43,6 +47,10 @@ void schro_buffer_queue_push (SchroBufferQueue * queue,
     SchroBuffer * buffer);
 SchroBuffer *schro_buffer_queue_pull (SchroBufferQueue * queue, int len);
 SchroBuffer *schro_buffer_queue_peek (SchroBufferQueue * queue, int len);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

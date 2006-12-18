@@ -5,6 +5,10 @@
 #include <schroedinger/schro-stdint.h>
 #include <schroedinger/schrobuffer.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _SchroFrame SchroFrame;
 typedef struct _SchroFrameComponent SchroFrameComponent;
 
@@ -60,6 +64,10 @@ void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp);
 
 void schro_frame_downsample (SchroFrame *dest, SchroFrame *src, int shift);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

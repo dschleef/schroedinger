@@ -4,6 +4,10 @@
 
 #include <schroedinger/schro.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _SchroAsync SchroAsync;
 typedef struct _SchroThread SchroThread;
 typedef struct _SchroJob SchroJob;
@@ -21,6 +25,10 @@ void schro_async_free (SchroAsync *async);
 void schro_async_add_job (SchroAsync *async, SchroJob *job);
 void schro_async_wait_for_completion (SchroAsync *async);
 SchroJob *schro_async_get_job (SchroAsync *async);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

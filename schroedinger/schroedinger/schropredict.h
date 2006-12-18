@@ -8,6 +8,10 @@
 
 #define SCHRO_PREDICTION_METRIC_INVALID (-1)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //typedef struct _SchroPredictionList SchroPredictionList;
 //typedef struct _SchroPredictionVector SchroPredictionVector;
 
@@ -46,6 +50,10 @@ void schro_motion_field_inherit (SchroMotionField *field, SchroMotionField *pare
 void schro_motion_field_copy (SchroMotionField *field, SchroMotionField *parent);
 void schro_motion_field_global_prediction (SchroMotionField *mf,
     SchroGlobalMotion *gm);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

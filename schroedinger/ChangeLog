@@ -1,3 +1,24 @@
+2006-12-17  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schro.h:
+	* schroedinger/schroarith.h:
+	* schroedinger/schroasync.h:
+	* schroedinger/schrobits.h:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrobuffer.h:
+	* schroedinger/schrodebug.h:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroframe.h:
+	* schroedinger/schrometric.h:
+	* schroedinger/schromotion.h:
+	* schroedinger/schrooil.h:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.h:
+	* schroedinger/schrotables.h:
+	* schroedinger/schrowavelet.h:
+	  add extern "C" stuff for C++
+
 2006-12-07 Christian Schaller <christian@fluendo.com>
 
 	* Fix GSTREAMER_MAJORMINOR -> GST_MAJORMINOR

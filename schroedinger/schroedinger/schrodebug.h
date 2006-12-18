@@ -1,8 +1,12 @@
 
-#include <stdlib.h>
-
 #ifndef __SCHRO_DEBUG_H__
 #define __SCHRO_DEBUG_H__
+
+#include <stdlib.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum
 {
@@ -39,5 +43,9 @@ void schro_debug_log (int level, const char *file, const char *function,
     int line, const char *format, ...);
 void schro_debug_set_level (int level);
 int schro_debug_get_level (void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

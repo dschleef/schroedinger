@@ -8,6 +8,10 @@
 #include <schroedinger/schrobits.h>
 #include <schroedinger/schrobitstream.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 typedef struct _SchroDecoder SchroDecoder;
 
@@ -97,6 +101,10 @@ void schro_decoder_iwt_transform (SchroDecoder *decoder, int component);
 void schro_decoder_copy_from_frame_buffer (SchroDecoder *decoder, SchroBuffer *buffer);
 void schro_decoder_set_earliest_frame (SchroDecoder *decoder, int earliest_frame);
 void schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
