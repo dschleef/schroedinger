@@ -444,6 +444,9 @@ _schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
     bits |= __schro_arith_context_decode_bit (arith, value_context);
     cont_context = arith->contexts[cont_context].next;
     count++;
+
+    /* FIXME being careful */
+    if (count == 30) break;
   }
   return (1<<count) - 1 + bits;
 }
@@ -462,6 +465,9 @@ _schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
     bits |= __schro_arith_context_decode_bit (arith, value_context);
     cont_context = arith->contexts[cont_context].next;
     count++;
+
+    /* FIXME being careful */
+    if (count == 30) break;
   }
   value = (1<<count) - 1 + bits;
 

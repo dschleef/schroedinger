@@ -79,6 +79,8 @@ schro_bits_append (SchroBits *bits, uint8_t *data, int len)
     SCHRO_ERROR ("appending to unsyncronized bits");
   }
 
+  SCHRO_ASSERT(bits->offset/8 + len < bits->buffer->length);
+
   oil_memcpy (bits->buffer->data + (bits->offset>>3), data, len);
   bits->offset += len*8;
 }

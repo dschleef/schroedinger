@@ -1,5 +1,25 @@
 2006-12-19  David Schleef  <ds@schleef.org>
 
+	* configure.ac:
+	  Enable -Wall and -Werror.  I wonder who disabled them?
+	* schroedinger/schroarith.c:
+	  Add some limits while decoding.
+	* schroedinger/schrobits.c:
+	  Add assertion for buffer overrun.
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Don't hard-code the size of the subband buffer.
+	* schroedinger/schrodecoder.c:
+	  Disable DECODE_PREDICTION_ONLY *again*.  Refactor some code.
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	  Add upsampling.
+	* schroedinger/schroutils.h:
+	  Wrap MIN/MAX in #ifdefs so they don't conflict with glib.  This
+	  could be done better.
+
+2006-12-19  David Schleef  <ds@schleef.org>
+
 	* testsuite/Makefile.am:
 	* testsuite/encode_big.c:
 	  Add a test to check encoding HD1080 pictures.

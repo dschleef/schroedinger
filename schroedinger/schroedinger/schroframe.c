@@ -734,3 +734,125 @@ schro_frame_downsample (SchroFrame *dest, SchroFrame *src, int shift)
   }
 }
 
+void
+schro_frame_h_upsample (SchroFrame *dest, SchroFrame *src)
+{
+  int i, j, k, l;
+  SchroFrameComponent *dcomp;
+  SchroFrameComponent *scomp;
+
+  if (dest->format != SCHRO_FRAME_FORMAT_U8 ||
+      src->format != SCHRO_FRAME_FORMAT_U8) {
+    SCHRO_ERROR("unimplemented");
+    return;
+  }
+
+  for(k=0;k<3;k++){
+    static const int taps[10] = { 3, -11, 25, -56, 167, 167, -56, 25, -11, 3 };
+    uint8_t *sdata;
+    uint8_t *ddata;
+    int x;
+
+    dcomp = &dest->components[k];
+    scomp = &src->components[k];
+
+    SCHRO_ASSERT(ROUND_UP_SHIFT(scomp->width,1) == dcomp->width);
+    SCHRO_ASSERT(ROUND_UP_SHIFT(scomp->height,1) == dcomp->height);
+
+    sdata = scomp->data;
+    ddata = dcomp->data;
+
+    for(j=0;j<dcomp->height;j++){
+      for(i=0;i<4;i++){
+        x = 128;
+        for(l=0;l<10;l++){
+          x += taps[l] * ddata[dcomp->stride * j +
+            CLAMP(i - 4 + l,0,dcomp->width-1)];
+        }
+        x >>= 8;
+        ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
+      }
+      for(i=4;i<dcomp->width-5;i++){
+        x = 128;
+        for(l=0;l<10;l++){
+          x += taps[l] * ddata[dcomp->stride * j + i - 4 + l];
+        }
+        x >>= 8;
+        ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
+      }
+      for(;i<dcomp->width;i++){
+        x = 128;
+        for(l=0;l<10;l++){
+          x += taps[l] * ddata[dcomp->stride * j +
+            CLAMP(i - 4 + l,0,dcomp->width-1)];
+        }
+        x >>= 8;
+        ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
+      }
+    }
+  }
+}
+
+void
+schro_frame_v_upsample (SchroFrame *dest, SchroFrame *src)
+{
+  int i, j, k, l;
+  SchroFrameComponent *dcomp;
+  SchroFrameComponent *scomp;
+
+  if (dest->format != SCHRO_FRAME_FORMAT_U8 ||
+      src->format != SCHRO_FRAME_FORMAT_U8) {
+    SCHRO_ERROR("unimplemented");
+    return;
+  }
+
+  for(k=0;k<3;k++){
+    static const int taps[10] = { 3, -11, 25, -56, 167, 167, -56, 25, -11, 3 };
+    uint8_t *sdata;
+    uint8_t *ddata;
+    int x;
+
+    dcomp = &dest->components[k];
+    scomp = &src->components[k];
+
+    SCHRO_ASSERT(ROUND_UP_SHIFT(scomp->width,1) == dcomp->width);
+    SCHRO_ASSERT(ROUND_UP_SHIFT(scomp->height,1) == dcomp->height);
+
+    sdata = scomp->data;
+    ddata = dcomp->data;
+
+    for(j=0;j<4;j++){
+      for(i=0;i<dcomp->width;i++){
+        x = 128;
+        for(l=0;l<10;l++){
+          x += taps[l] * ddata[dcomp->stride * CLAMP(j - 4 + l,
+              0, dcomp->height-1) + i];
+        }
+        x >>= 8;
+        ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
+      }
+    }
+    for(j=4;j<dcomp->height-5;j++){
+      for(i=0;i<dcomp->width;i++){
+        x = 128;
+        for(l=0;l<10;l++){
+          x += taps[l] * ddata[dcomp->stride * (j - 4 + l) + i];
+        }
+        x >>= 8;
+        ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
+      }
+    }
+    for(j=dcomp->height-5;j<dcomp->height;j++){
+      for(i=0;i<dcomp->width;i++){
+        x = 128;
+        for(l=0;l<10;l++){
+          x += taps[l] * ddata[dcomp->stride * CLAMP(j - 4 + l,
+              0, dcomp->height-1) + i];
+        }
+        x >>= 8;
+        ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
+      }
+    }
+  }
+}
+

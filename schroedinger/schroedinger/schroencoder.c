@@ -117,7 +117,9 @@ schro_encoder_task_new (SchroEncoder *encoder)
   task->tmpbuf = malloc(SCHRO_LIMIT_WIDTH * 2);
   task->tmpbuf2 = malloc(SCHRO_LIMIT_WIDTH * 2);
 
-  task->subband_buffer = schro_buffer_new_and_alloc (100000);
+  task->subband_size = encoder->video_format.width *
+    encoder->video_format.height / 4;
+  task->subband_buffer = schro_buffer_new_and_alloc (task->subband_size);
 
   /* FIXME settings */
   params = &task->params;
@@ -332,7 +334,10 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
   task->slot = encoder->next_slot;
   encoder->next_slot++;
 
-  task->outbuffer = schro_buffer_new_and_alloc (0x100000);
+  /* FIXME 4:2:0 assumption */
+  task->outbuffer_size = encoder->video_format.width *
+    encoder->video_format.height * 3 / 2;
+  task->outbuffer = schro_buffer_new_and_alloc (task->outbuffer_size);
 
   task->bits = schro_bits_new ();
   schro_bits_encode_init (task->bits, task->outbuffer);
@@ -436,7 +441,10 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
   task->slot = encoder->next_slot;
   encoder->next_slot++;
 
-  task->outbuffer = schro_buffer_new_and_alloc (0x100000);
+  /* FIXME 4:2:0 assumption */
+  task->outbuffer_size = encoder->video_format.width *
+    encoder->video_format.height * 3 / 2;
+  task->outbuffer = schro_buffer_new_and_alloc (task->outbuffer_size);
 
   task->bits = schro_bits_new ();
   schro_bits_encode_init (task->bits, task->outbuffer);
@@ -616,7 +624,10 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
   task->slot = encoder->next_slot;
   encoder->next_slot++;
 
-  task->outbuffer = schro_buffer_new_and_alloc (0x100000);
+  /* FIXME 4:2:0 assumption */
+  task->outbuffer_size = encoder->video_format.width *
+    encoder->video_format.height * 3 / 2;
+  task->outbuffer = schro_buffer_new_and_alloc (task->outbuffer_size);
 
   task->bits = schro_bits_new ();
   schro_bits_encode_init (task->bits, task->outbuffer);
@@ -802,7 +813,10 @@ schro_encoder_engine_fourref (SchroEncoder *encoder)
   task->slot = encoder->next_slot;
   encoder->next_slot++;
 
-  task->outbuffer = schro_buffer_new_and_alloc (0x100000);
+  /* FIXME 4:2:0 assumption */
+  task->outbuffer_size = encoder->video_format.width *
+    encoder->video_format.height * 3 / 2;
+  task->outbuffer = schro_buffer_new_and_alloc (task->outbuffer_size);
 
   task->bits = schro_bits_new ();
   schro_bits_encode_init (task->bits, task->outbuffer);
@@ -1966,6 +1980,8 @@ out:
   }
 
   schro_arith_flush (arith);
+
+  SCHRO_ASSERT(arith->offset < task->subband_size);
 
 #ifdef DIRAC_COMPAT
   schro_bits_sync (task->bits);

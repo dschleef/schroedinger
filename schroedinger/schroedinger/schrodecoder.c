@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define DECODE_PREDICTION_ONLY
+//#define DECODE_PREDICTION_ONLY
 
 static void schro_decoder_decode_macroblock(SchroDecoder *decoder,
     SchroArith *arith, int i, int j);
@@ -854,11 +854,17 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith *arith,
   SchroMotionVector *mv = &decoder->motion_field->motion_vectors[j*params->x_num_blocks + i];
   int k,l;
   int split_prediction;
+  int a;
 
   split_prediction = schro_motion_split_prediction (decoder->motion_field->motion_vectors,
       params, i, j);
+#if 0
   mv->split = (split_prediction + _schro_arith_context_decode_uint (arith,
         SCHRO_CTX_SB_F1, SCHRO_CTX_SB_DATA))%3;
+#endif
+  a = _schro_arith_context_decode_uint (arith,
+        SCHRO_CTX_SB_F1, SCHRO_CTX_SB_DATA);
+  mv->split = (split_prediction + a)%3;
 
   switch (mv->split) {
     case 0:
@@ -896,6 +902,7 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith *arith,
       }
       break;
     default:
+      SCHRO_ERROR("mv->split == %d, split_prediction %d, a %d", mv->split, split_prediction, a);
       SCHRO_ASSERT(0);
   }
 }

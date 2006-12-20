@@ -113,6 +113,7 @@ struct _SchroEncoderTask {
   SchroEncoder *encoder;
   SchroParams params;
   
+  int outbuffer_size;
   SchroBuffer *outbuffer;
   SchroBits *bits;
   SchroFrame *encode_frame;
@@ -123,6 +124,7 @@ struct _SchroEncoderTask {
   int16_t *tmpbuf;
   int16_t *tmpbuf2;
 
+  int subband_size;
   SchroBuffer *subband_buffer;
   SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
 

@@ -53,11 +53,11 @@ GTK_DOC_CHECK([1.0])
 
 AX_CREATE_STDINT_H([schroedinger/schro-stdint.h])
 
-dnl AS_COMPILER_FLAG(-Wall, SCHRO_CFLAGS="$SCHRO_CFLAGS -Wall")
-dnl if test "x$SCHRO_CVS" = "xyes"
-dnl then
-dnl   AS_COMPILER_FLAG(-Werror, SCHRO_CFLAGS="$SCHRO_CFLAGS -Werror")
-dnl fi
+AS_COMPILER_FLAG(-Wall, SCHRO_CFLAGS="$SCHRO_CFLAGS -Wall")
+if test "x$SCHRO_CVS" = "xyes"
+then
+  AS_COMPILER_FLAG(-Werror, SCHRO_CFLAGS="$SCHRO_CFLAGS -Werror")
+fi
 
 SCHRO_CFLAGS="$SCHRO_CFLAGS -I\$(top_srcdir)"
 AC_SUBST(SCHRO_CFLAGS)
