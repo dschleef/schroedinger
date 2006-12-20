@@ -1,3 +1,11 @@
+2006-12-19  David Schleef  <ds@schleef.org>
+
+	* testsuite/Makefile.am:
+	* testsuite/encode_big.c:
+	  Add a test to check encoding HD1080 pictures.
+	* testsuite/upsample.c:
+	  And one to check upsampling.
+
 2006-12-17  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schro.h:

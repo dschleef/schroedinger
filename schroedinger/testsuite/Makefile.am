@@ -5,7 +5,7 @@ noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 encode wavelet tables wavelet_2d arith_speed \
 	 obmc phasecorrelation motion \
 	 arith_fixup_shift quant struct_offsets \
-	 global_motion
+	 global_motion upsample encode_big
 
 TESTS = arith arith_fixup_shift bits bits2 encode wavelet tables wavelet_2d
 
@@ -47,6 +47,10 @@ bits2_SOURCES = bits2.c
 encode_CFLAGS = $(SCHRO_CFLAGS)
 encode_LDADD = $(SCHRO_LIBS)
 encode_SOURCES = encode.c
+
+encode_big_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+encode_big_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+encode_big_SOURCES = encode_big.c
 
 wavelet_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 wavelet_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
