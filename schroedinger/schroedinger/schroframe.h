@@ -14,11 +14,10 @@ typedef struct _SchroFrameComponent SchroFrameComponent;
 
 typedef void (*SchroFrameFreeFunc)(SchroFrame *frame, void *priv);
 
-enum _SchroFrameFormat {
+typedef enum _SchroFrameFormat {
   SCHRO_FRAME_FORMAT_U8,
   SCHRO_FRAME_FORMAT_S16
-};
-typedef enum _SchroFrameFormat SchroFrameFormat;
+} SchroFrameFormat;
 
 struct _SchroFrameComponent {
   void *data;

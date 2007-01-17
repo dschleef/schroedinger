@@ -49,6 +49,9 @@ fi
 # Check for gtk-doc.
 ##################################################
 
+if test "x$cross_compiling" = "xyes" ; then
+  enable_gtk_doc=no
+fi
 GTK_DOC_CHECK([1.0])
 
 AX_CREATE_STDINT_H([schroedinger/schro-stdint.h])

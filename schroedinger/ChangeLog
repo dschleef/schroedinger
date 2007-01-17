@@ -1,5 +1,15 @@
 2007-01-17  David Schleef  <ds@schleef.org>
 
+	* autogen.sh:
+	* configure.ac:
+	* doc/Makefile.am:
+	* schroedinger/schro.c:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schroframe.h:
+	  Build documentation.
+
+2007-01-17  David Schleef  <ds@schleef.org>
+
 	* testsuite/wavelet.c:
 	* schroedinger/schrowavelet.c:
 	  The spec changed to be even/odd edge extension.  Not quite

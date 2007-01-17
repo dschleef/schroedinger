@@ -7,6 +7,12 @@
 #include <stdlib.h>
 
 
+/**
+ * schro_init:
+ *
+ * Intializes the Schroedinger library.  This function must be called
+ * before any other function in the library.
+ */
 void
 schro_init(void)
 {
