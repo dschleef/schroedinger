@@ -58,5 +58,5 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-no-undefined \
 	-version-info $(SCHRO_LIBVERSION) \
-	-export-symbols-regex '^schro_'
+	-export-symbols-regex '^(oil|schro)_'
 

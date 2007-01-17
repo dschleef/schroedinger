@@ -756,9 +756,6 @@ schro_frame_h_upsample (SchroFrame *dest, SchroFrame *src)
     dcomp = &dest->components[k];
     scomp = &src->components[k];
 
-    SCHRO_ASSERT(ROUND_UP_SHIFT(scomp->width,1) == dcomp->width);
-    SCHRO_ASSERT(ROUND_UP_SHIFT(scomp->height,1) == dcomp->height);
-
     sdata = scomp->data;
     ddata = dcomp->data;
 
@@ -766,8 +763,8 @@ schro_frame_h_upsample (SchroFrame *dest, SchroFrame *src)
       for(i=0;i<4;i++){
         x = 128;
         for(l=0;l<10;l++){
-          x += taps[l] * ddata[dcomp->stride * j +
-            CLAMP(i - 4 + l,0,dcomp->width-1)];
+          x += taps[l] * sdata[scomp->stride * j +
+            CLAMP(i - 4 + l,0,scomp->width-1)];
         }
         x >>= 8;
         ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
@@ -775,20 +772,22 @@ schro_frame_h_upsample (SchroFrame *dest, SchroFrame *src)
       for(i=4;i<dcomp->width-5;i++){
         x = 128;
         for(l=0;l<10;l++){
-          x += taps[l] * ddata[dcomp->stride * j + i - 4 + l];
+          x += taps[l] * sdata[scomp->stride * j + i - 4 + l];
         }
         x >>= 8;
         ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
       }
-      for(;i<dcomp->width;i++){
+      for(;i<dcomp->width-1;i++){
         x = 128;
         for(l=0;l<10;l++){
-          x += taps[l] * ddata[dcomp->stride * j +
-            CLAMP(i - 4 + l,0,dcomp->width-1)];
+          x += taps[l] * sdata[scomp->stride * j +
+            CLAMP(i - 4 + l,0,scomp->width-1)];
         }
         x >>= 8;
         ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
       }
+      i = dcomp->width - 1;
+      ddata[dcomp->stride * j + i] = sdata[scomp->stride * j + i];
     }
   }
 }
@@ -815,9 +814,6 @@ schro_frame_v_upsample (SchroFrame *dest, SchroFrame *src)
     dcomp = &dest->components[k];
     scomp = &src->components[k];
 
-    SCHRO_ASSERT(ROUND_UP_SHIFT(scomp->width,1) == dcomp->width);
-    SCHRO_ASSERT(ROUND_UP_SHIFT(scomp->height,1) == dcomp->height);
-
     sdata = scomp->data;
     ddata = dcomp->data;
 
@@ -825,8 +821,8 @@ schro_frame_v_upsample (SchroFrame *dest, SchroFrame *src)
       for(i=0;i<dcomp->width;i++){
         x = 128;
         for(l=0;l<10;l++){
-          x += taps[l] * ddata[dcomp->stride * CLAMP(j - 4 + l,
-              0, dcomp->height-1) + i];
+          x += taps[l] * sdata[scomp->stride * CLAMP(j - 4 + l,
+              0, scomp->height-1) + i];
         }
         x >>= 8;
         ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
@@ -836,22 +832,26 @@ schro_frame_v_upsample (SchroFrame *dest, SchroFrame *src)
       for(i=0;i<dcomp->width;i++){
         x = 128;
         for(l=0;l<10;l++){
-          x += taps[l] * ddata[dcomp->stride * (j - 4 + l) + i];
+          x += taps[l] * sdata[scomp->stride * (j - 4 + l) + i];
         }
         x >>= 8;
         ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
       }
     }
-    for(j=dcomp->height-5;j<dcomp->height;j++){
+    for(j=dcomp->height-5;j<dcomp->height - 1;j++){
       for(i=0;i<dcomp->width;i++){
         x = 128;
         for(l=0;l<10;l++){
-          x += taps[l] * ddata[dcomp->stride * CLAMP(j - 4 + l,
+          x += taps[l] * sdata[scomp->stride * CLAMP(j - 4 + l,
               0, dcomp->height-1) + i];
         }
         x >>= 8;
         ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
       }
+    }
+    j = dcomp->height - 1;
+    for(i=0;i<dcomp->width;i++){
+      ddata[dcomp->stride * j + i] = sdata[scomp->stride * j + i];
     }
   }
 }

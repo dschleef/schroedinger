@@ -104,3 +104,46 @@ oil_multsumshift8_str_s16 (int16_t *d, int16_t *s, int sstr, int16_t *s2_8,
   }
 }
 
+
+void
+oil_mas10_across_u8 (uint8_t *d, const uint8_t *s1, const int16_t *s2_10,
+    const int16_t *s3_2, int n)
+{
+  int i,j;
+  int x;
+
+  for(i=0;i<n;i++){
+    x = 0;
+    for(j=0;j<10;j++){
+      x += s1[i+j] * s2_10[j];
+    }
+    x += s3_2[0];
+    x >>= s3_2[1];
+    if (x < 0) x = 0;
+    if (x > 255) x = 255;
+    d[i] = x;
+  }
+}
+
+void
+oil_mas10_u8 (uint8_t *d, const uint8_t *s1, int sstr, const int16_t *s2_10,
+    const int16_t *s3_2, int n)
+{
+  int i,j;
+  int x;
+
+  for(i=0;i<n;i++){
+    x = 0;
+    for(j=0;j<10;j++){
+      x += s1[i+j*sstr] * s2_10[j];
+    }
+    x += s3_2[0];
+    x >>= s3_2[1];
+    if (x < 0) x = 0;
+    if (x > 255) x = 255;
+    d[i] = x;
+  }
+}
+
+
+

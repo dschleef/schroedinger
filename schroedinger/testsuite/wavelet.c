@@ -242,11 +242,22 @@ deinterleave (int16_t *a, int n)
 void
 extend(int16_t *a, int n)
 {
-  int i;
-  for(i=1;i<8;i++){
-    a[-i] = a[i];
-    a[(n-1)+i] = a[(n-1)-i];
-  }
+  a[-8] = a[0];
+  a[-7] = a[1];
+  a[-6] = a[0];
+  a[-5] = a[1];
+  a[-4] = a[0];
+  a[-3] = a[1];
+  a[-2] = a[0];
+  a[-1] = a[1];
+  a[n+0] = a[n-2];
+  a[n+1] = a[n-1];
+  a[n+2] = a[n-2];
+  a[n+3] = a[n-1];
+  a[n+4] = a[n-2];
+  a[n+5] = a[n-1];
+  a[n+6] = a[n-2];
+  a[n+7] = a[n-1];
 }
 
 void

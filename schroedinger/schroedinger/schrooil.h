@@ -18,6 +18,10 @@ void oil_synth_haar (int16_t *d, int16_t *s, int n);
 void oil_split_haar (int16_t *d, int16_t *s, int n);
 void oil_multsumshift8_str_s16 (int16_t *d, int16_t *s, int sstr, int16_t *s2_8,
     int16_t *s3_1, int16_t *s4_1, int n);
+void oil_mas10_across_u8 (uint8_t *d, const uint8_t *s1, const int16_t *s2_10,
+    const int16_t *s3_2, int n);
+void oil_mas10_u8 (uint8_t *d, const uint8_t *s1, int sstr,
+    const int16_t *s2_10, const int16_t *s3_2, int n);
 
 #ifdef __cplusplus
 }
