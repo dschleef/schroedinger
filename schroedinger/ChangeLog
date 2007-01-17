@@ -1,5 +1,11 @@
 2007-01-17  David Schleef  <ds@schleef.org>
 
+	* doc/schroedinger-0.1-docs.sgml:
+	* gtk-doc.make:
+	  More files for doc build.
+
+2007-01-17  David Schleef  <ds@schleef.org>
+
 	* autogen.sh:
 	* configure.ac:
 	* doc/Makefile.am:
