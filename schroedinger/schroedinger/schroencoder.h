@@ -5,6 +5,7 @@
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schroframe.h>
+#include <schroedinger/schroasync.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,7 +46,10 @@ struct _SchroEncoderReference {
 };
 
 struct _SchroEncoder {
-  SchroEncoderTask *task;
+  int n_tasks;
+  SchroEncoderTask **tasks;
+
+  SchroAsync *async;
 
   SchroFrame *frame_queue[SCHRO_FRAME_QUEUE_LENGTH];
   int frame_queue_length;
@@ -109,6 +113,7 @@ struct _SchroEncoder {
 
 struct _SchroEncoderTask {
   int state;
+  int completed;
 
   SchroEncoder *encoder;
   SchroParams params;

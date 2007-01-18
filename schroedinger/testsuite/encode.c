@@ -40,7 +40,9 @@ test (int w, int h)
   size += (ROUND_UP_8 (w)/2) * (ROUND_UP_2 (h)/2);
   size += (ROUND_UP_8 (w)/2) * (ROUND_UP_2 (h)/2);
 
-  for(i=0;i<10;i++){
+  for(i=0;i<10000;i++){
+    int x;
+
     picture = malloc(size);
     memset(picture, 128, size);
 
@@ -51,6 +53,11 @@ test (int w, int h)
     schro_encoder_push_frame (encoder, frame);
 
     buffer = schro_encoder_encode (encoder);
+    if (buffer) {
+      schro_buffer_unref (buffer);
+    }
+
+    buffer = schro_encoder_pull (encoder, &x);
     if (buffer) {
       schro_buffer_unref (buffer);
     }

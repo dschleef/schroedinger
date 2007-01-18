@@ -1,3 +1,12 @@
+2007-01-18  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroasync-pthread.c:
+	* schroedinger/schroasync.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* testsuite/encode.c:
+	  More threading goodness.  Kinda broken still.
+
 2007-01-17  David Schleef  <ds@schleef.org>
 
 	* doc/schroedinger-0.1-docs.sgml:

@@ -10,21 +10,15 @@ extern "C" {
 
 typedef struct _SchroAsync SchroAsync;
 typedef struct _SchroThread SchroThread;
-typedef struct _SchroJob SchroJob;
 
-struct _SchroJob {
-  SchroJob *next;
 
-  void (*func) (void *);
-  void *priv;
-};
 
 SchroAsync *schro_async_new(int n_threads);
 void schro_async_free (SchroAsync *async);
 
-void schro_async_add_job (SchroAsync *async, SchroJob *job);
-void schro_async_wait_for_completion (SchroAsync *async);
-SchroJob *schro_async_get_job (SchroAsync *async);
+void schro_async_run (SchroAsync *async, int slot, void (*func)(void *), void *ptr);
+int schro_async_get_idle_thread (SchroAsync *async);
+void schro_async_wait_all (SchroAsync *async);
 
 #ifdef __cplusplus
 }
