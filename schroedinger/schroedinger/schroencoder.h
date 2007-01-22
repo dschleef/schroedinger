@@ -86,6 +86,7 @@ struct _SchroEncoder {
     int presentation_frame;
     SchroBuffer *buffer;
   } output_queue[SCHRO_FRAME_QUEUE_LENGTH];
+  int n_output_queue;
 
   SchroPicture picture_list[SCHRO_FRAME_QUEUE_LENGTH];
   int n_pictures;

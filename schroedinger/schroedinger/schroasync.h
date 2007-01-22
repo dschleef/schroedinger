@@ -16,9 +16,11 @@ typedef struct _SchroThread SchroThread;
 SchroAsync *schro_async_new(int n_threads);
 void schro_async_free (SchroAsync *async);
 
-void schro_async_run (SchroAsync *async, int slot, void (*func)(void *), void *ptr);
+void schro_async_run (SchroAsync *async, int slot, void (*run)(void *),
+    void (*complete)(void *), void *ptr);
 int schro_async_get_idle_thread (SchroAsync *async);
 void schro_async_wait_all (SchroAsync *async);
+void schro_async_wait_one (SchroAsync *async);
 
 #ifdef __cplusplus
 }

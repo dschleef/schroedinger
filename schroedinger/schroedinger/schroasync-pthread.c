@@ -32,6 +32,7 @@ struct _SchroThread {
   SchroAsync *async;
   int state;
   void (*callback) (void *);
+  void (*complete) (void *);
   void *priv;
   int index;
 };
@@ -49,7 +50,7 @@ schro_async_new(int n_threads)
 
   async = malloc(sizeof(SchroAsync));
 
-  SCHRO_DEBUG("%d", n_threads);
+  SCHRO_ERROR("%d", n_threads);
   async->n_threads = n_threads;
   async->threads = malloc(sizeof(SchroThread) * n_threads);
 
@@ -113,15 +114,18 @@ schro_async_handle_done (SchroAsync *async)
 
   for(i=0;i<async->n_threads;i++){
     if (async->threads[i].state == STATE_DONE) {
-      SCHRO_DEBUG("thread %d: completing", i);
-      /* FIXME */
+      SCHRO_ERROR("thread %d: completing", i);
+      if (async->threads[i].complete) {
+        async->threads[i].complete (async->threads[i].priv);
+      }
       async->threads[i].state = STATE_IDLE;
     }
   }
 }
 
 void
-schro_async_run (SchroAsync *async, int i, void (*func)(void *), void *ptr)
+schro_async_run (SchroAsync *async, int i, void (*func)(void *),
+    void (*complete)(void *), void *ptr)
 {
   pthread_mutex_unlock (&async->mutex);
   if (async->threads[i].state != STATE_IDLE) {
@@ -134,8 +138,35 @@ schro_async_run (SchroAsync *async, int i, void (*func)(void *), void *ptr)
   async->threads[i].priv = ptr;
   async->threads[i].state = STATE_START;
 
-  SCHRO_DEBUG("starting thread %d", i);
+  SCHRO_ERROR("starting thread %d", i);
   pthread_cond_signal (&async->threads[i].cond);
+  pthread_mutex_unlock (&async->mutex);
+}
+
+void
+schro_async_wait_one (SchroAsync *async)
+{
+  int i;
+  int n;
+
+  SCHRO_ERROR("getting idle thread");
+  pthread_mutex_lock (&async->mutex);
+  n = 0;
+  for(i=0;i<async->n_threads;i++){
+    if (async->threads[i].state == STATE_IDLE) {
+      n++;
+    }
+  }
+
+  if (n == async->n_threads) {
+    /* all threads are idle, so there's nothing to wait on */
+    pthread_mutex_unlock (&async->mutex);
+    return;
+  }
+
+  SCHRO_ERROR("waiting");
+  pthread_cond_wait (&async->cond, &async->mutex);
+  schro_async_handle_done (async);
   pthread_mutex_unlock (&async->mutex);
 }
 
@@ -144,24 +175,24 @@ schro_async_get_idle_thread (SchroAsync *async)
 {
   int i;
 
-  SCHRO_DEBUG("getting idle thread");
+  SCHRO_ERROR("getting idle thread");
   pthread_mutex_lock (&async->mutex);
   for(i=0;i<async->n_threads;i++){
     if (async->threads[i].state == STATE_IDLE) {
       pthread_mutex_unlock (&async->mutex);
-      SCHRO_DEBUG("thread %d is idle", i);
+      SCHRO_ERROR("thread %d is idle", i);
       return i;
     }
   }
 
-  SCHRO_DEBUG("waiting");
+  SCHRO_ERROR("waiting");
   pthread_cond_wait (&async->cond, &async->mutex);
   schro_async_handle_done (async);
 
   for(i=0;i<async->n_threads;i++){
     if (async->threads[i].state == STATE_IDLE) {
       pthread_mutex_unlock (&async->mutex);
-      SCHRO_DEBUG("thread %d is idle", i);
+      SCHRO_ERROR("thread %d is idle", i);
       return i;
     }
   }
@@ -213,11 +244,11 @@ schro_thread_main (void *ptr)
   while (1) {
     pthread_cond_wait (&thread->cond, &thread->async->mutex);
 
-    SCHRO_DEBUG("thread %d: got signal", thread->index);
+    SCHRO_ERROR("thread %d: got signal", thread->index);
 
     if (thread->state == STATE_STOP) {
       pthread_mutex_unlock (&thread->async->mutex);
-      SCHRO_DEBUG("thread %d: stopping", thread->index);
+      SCHRO_ERROR("thread %d: stopping", thread->index);
       return NULL;
     }
 
@@ -225,9 +256,9 @@ schro_thread_main (void *ptr)
     thread->state = STATE_BUSY;
     pthread_mutex_unlock (&thread->async->mutex);
 
-    SCHRO_DEBUG("thread %d: running", thread->index);
+    SCHRO_ERROR("thread %d: running", thread->index);
     thread->callback (thread->priv);
-    SCHRO_DEBUG("thread %d: done", thread->index);
+    SCHRO_ERROR("thread %d: done", thread->index);
 
     pthread_mutex_lock (&thread->async->mutex);
     thread->state = STATE_DONE;

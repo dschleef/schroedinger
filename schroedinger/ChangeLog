@@ -1,5 +1,13 @@
 2007-01-22  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroasync-pthread.c:
+	* schroedinger/schroasync.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  More hacking on async stuff.  Still doesn't quite work.
+
+2007-01-22  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	  Dirac now calculates the neighborhood sum correctly, so drop
