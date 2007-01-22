@@ -1,5 +1,14 @@
 2007-01-22  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schrotables.c:
+	* testsuite/tables.c:
+	  Quantiser related fixes from David Flynn.
+
+2007-01-22  David Schleef  <ds@schleef.org>
+
 	* configure.ac:
 	* schroedinger.pc.in:
 	* schroedinger/schroasync-pthread.c:

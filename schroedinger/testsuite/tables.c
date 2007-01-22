@@ -28,13 +28,20 @@ get_offset_1_4 (int i)
 int
 get_offset_3_8 (int i)
 {
+  if (i == 0)
+      return 1;
   return (get_quant(i) * 3 + 4)/8;
 }
 
 int
 get_offset_1_2 (int i)
 {
-  return (get_quant(i) * 4 + 4)/8;
+  /* 0.10.4 spec compliance DF */
+  if (i == 0)
+      return 1;
+  if (i == 1)
+      return 2;
+  return (get_quant(i) + 1)/2;
 }
 
 unsigned int

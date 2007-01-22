@@ -1129,9 +1129,9 @@ dequantize (int q, int quant_factor, int quant_offset)
 {
   if (q == 0) return 0;
   if (q < 0) {
-    return -((-q * quant_factor + quant_offset)>>2);
+    return -((-q * quant_factor + quant_offset + 2)>>2);
   } else {
-    return (q * quant_factor + quant_offset)>>2;
+    return (q * quant_factor + quant_offset + 2)>>2;
   }
 }
 #endif
@@ -1169,10 +1169,7 @@ codeblock_line_decode_generic (int16_t *p, int stride, int j, int xmin, int xmax
       if (j > 0) previous_value = p[-stride];
     }
 
-#ifdef DIRAC_OFFSET_EXPERIMENT
 #define QUANT_EXP 2
-#else
-#define QUANT_EXP 0
 #endif
 #define STUFF \
   do { \
@@ -1472,15 +1469,11 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
           quant_index = CLAMP(quant_index, 0, 60);
         }
         quant_factor = schro_table_quant[quant_index];
-#ifdef DIRAC_OFFSET_EXPERIMENT
         if (params->num_refs > 0) {
-          quant_offset = schro_table_offset_1_4[quant_index];
+          quant_offset = schro_table_offset_3_8[quant_index];
         } else {
           quant_offset = schro_table_offset_1_2[quant_index];
         }
-#else
-        quant_offset = schro_table_offset_3_8[quant_index];
-#endif
         SCHRO_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
 
     for(j=ymin;j<ymax;j++){

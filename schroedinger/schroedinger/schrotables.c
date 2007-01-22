@@ -21,7 +21,7 @@ uint32_t schro_table_offset_1_4[61] = {
 };
 
 uint32_t schro_table_offset_3_8[61] = {
-        2,       2,       2,       3,
+        1,       2,       2,       3,
         3,       4,       4,       5,
         6,       7,       9,      10,
        12,      14,      17,      20,
@@ -40,7 +40,7 @@ uint32_t schro_table_offset_3_8[61] = {
 };
 
 uint32_t schro_table_offset_1_2[61] = {
-        2,       3,       3,       4,
+        1,       2,       3,       4,
         4,       5,       6,       7,
         8,      10,      12,      14,
        16,      19,      23,      27,
