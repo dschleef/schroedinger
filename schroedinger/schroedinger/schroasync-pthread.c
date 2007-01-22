@@ -8,6 +8,7 @@
 #include <schroedinger/schrodebug.h>
 #include <pthread.h>
 #include <string.h>
+#include <stdlib.h>
 
 enum {
   STATE_IDLE,

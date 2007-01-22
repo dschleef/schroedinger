@@ -227,6 +227,9 @@ int schro_encoder_preference_get (SchroEncoder *encoder, SchroPrefEnum pref);
 int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
     int value);
 
+void schro_encoder_init_subbands (SchroEncoderTask *task);
+void schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index);
+
 #ifdef __cplusplus
 }
 #endif

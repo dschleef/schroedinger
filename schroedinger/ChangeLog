@@ -1,5 +1,14 @@
 2007-01-22  David Schleef  <ds@schleef.org>
 
+	* configure.ac:
+	* schroedinger.pc.in:
+	* schroedinger/schroasync-pthread.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Generic fixes from David Flynn.
+
+2007-01-22  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroasync-pthread.c:
 	* schroedinger/schroasync.h:
 	* schroedinger/schroencoder.c:

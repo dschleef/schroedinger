@@ -78,8 +78,15 @@ GST_MAJORMINOR=0.10
 
 dnl *** check for arguments to configure ***
 
-PKG_CHECK_MODULES(GST, gstreamer-0.10 gstreamer-base-0.10,
-  HAVE_GST=yes, HAVE_GST=no)
+AC_ARG_ENABLE(gstreamer, AC_HELP_STRING([--disable-gstreamer],
+              [disable gstreamer support (default=enabled)]))
+if test "x$enable_gstreamer" != xno
+then
+  PKG_CHECK_MODULES(GST, gstreamer-0.10 gstreamer-base-0.10,
+      HAVE_GST=yes, HAVE_GST=no)
+else
+  HAVE_GST=no
+fi
 
 AM_CONDITIONAL(HAVE_GST, test "x$HAVE_GST" = "xyes")
 AC_SUBST(GST_CFLAGS)

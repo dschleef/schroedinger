@@ -32,8 +32,8 @@ static void schro_encoder_engine_init (SchroEncoder *encoder);
 static void schro_encoder_encode_frame_prediction (SchroEncoderTask *task);
 static void schro_encoder_encode_transform_parameters (SchroEncoderTask *task);
 static void schro_encoder_encode_transform_data (SchroEncoderTask *task, int component);
-static void schro_encoder_init_subbands (SchroEncoderTask *task);
-static void schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index);
+void schro_encoder_init_subbands (SchroEncoderTask *task);
+void schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index);
 static SchroBuffer * schro_encoder_encode_access_unit (SchroEncoder *encoder);
 
 static void schro_encoder_output_push (SchroEncoder *encoder,
@@ -1475,7 +1475,7 @@ schro_encoder_encode_transform_parameters (SchroEncoderTask *task)
 }
 
 
-static void
+void
 schro_encoder_init_subbands (SchroEncoderTask *task)
 {
   SchroParams *params = &task->params;
@@ -1777,7 +1777,7 @@ schro_encoder_quantize_subband (SchroEncoderTask *task, int component, int index
   return subband_zero_flag;
 }
 
-static void
+void
 schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index)
 {
   SchroParams *params = &task->params;
