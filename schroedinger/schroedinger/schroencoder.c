@@ -1934,11 +1934,9 @@ out:
       if (i>0) {
         nhood_or |= quant_data[j*width + i - 1];
       }
-#if !DIRAC_COMPAT
       if (i>0 && j>0) {
         nhood_or |= quant_data[(j-1)*width + i - 1];
       }
-#endif
 //nhood_or = 0;
       
       previous_value = 0;

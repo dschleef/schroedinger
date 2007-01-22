@@ -1160,9 +1160,7 @@ codeblock_line_decode_generic (int16_t *p, int stride, int j, int xmin, int xmax
     nhood_or = 0;
     if (j>0) nhood_or |= p[-stride];
     if (i>0) nhood_or |= p[-1];
-#if !DIRAC_COMPAT
     if (i>0 && j>0) nhood_or |= p[-stride-1];
-#endif
 
     previous_value = 0;
     if (horizontally_oriented) {
@@ -1245,9 +1243,7 @@ codeblock_line_decode_p_horiz (int16_t *p, int stride, int j, int xmin, int xmax
 
     nhood_or = prev[i];
     nhood_or |= p[-1];
-#if !DIRAC_COMPAT
     nhood_or |= prev[i-1];
-#endif
 
     previous_value = 0;
     previous_value = p[-1];
@@ -1289,9 +1285,7 @@ codeblock_line_decode_p_vert (int16_t *p, int stride, int j, int xmin, int xmax,
 
     nhood_or = prev[i];
     nhood_or |= p[-1];
-#if !DIRAC_COMPAT
     nhood_or |= prev[i-1];
-#endif
 
     previous_value = prev[i];
 
@@ -1331,9 +1325,7 @@ codeblock_line_decode_p_diag (int16_t *p, int stride, int j, int xmin, int xmax,
 
     nhood_or = prev[i];
     nhood_or |= p[-1];
-#if !DIRAC_COMPAT
     nhood_or |= prev[i-1];
-#endif
     previous_value = 0;
 
     STUFF;
