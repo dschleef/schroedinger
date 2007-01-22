@@ -1055,21 +1055,23 @@ schro_decoder_init_subbands (SchroDecoder *decoder)
   decoder->subbands[0].vertically_oriented = 0;
 
   for(i=0; i<params->transform_depth; i++) {
+    /* hl */
     decoder->subbands[1+3*i].x = 1;
-    decoder->subbands[1+3*i].y = 1;
+    decoder->subbands[1+3*i].y = 0;
     decoder->subbands[1+3*i].w = w;
     decoder->subbands[1+3*i].h = h;
-    decoder->subbands[1+3*i].offset = w + (stride/2/sizeof(int16_t));
+    decoder->subbands[1+3*i].offset = w;
     decoder->subbands[1+3*i].stride = stride;
     decoder->subbands[1+3*i].chroma_w = chroma_w;
     decoder->subbands[1+3*i].chroma_h = chroma_h;
-    decoder->subbands[1+3*i].chroma_offset = chroma_w + (chroma_stride/2/sizeof(int16_t));
+    decoder->subbands[1+3*i].chroma_offset = chroma_w;
     decoder->subbands[1+3*i].chroma_stride = chroma_stride;
     decoder->subbands[1+3*i].has_parent = (i>0);
     decoder->subbands[1+3*i].scale_factor_shift = i;
     decoder->subbands[1+3*i].horizontally_oriented = 0;
-    decoder->subbands[1+3*i].vertically_oriented = 0;
+    decoder->subbands[1+3*i].vertically_oriented = 1;
 
+    /* lh */
     decoder->subbands[2+3*i].x = 0;
     decoder->subbands[2+3*i].y = 1;
     decoder->subbands[2+3*i].w = w;
@@ -1085,20 +1087,21 @@ schro_decoder_init_subbands (SchroDecoder *decoder)
     decoder->subbands[2+3*i].horizontally_oriented = 1;
     decoder->subbands[2+3*i].vertically_oriented = 0;
 
+    /* hh */
     decoder->subbands[3+3*i].x = 1;
-    decoder->subbands[3+3*i].y = 0;
+    decoder->subbands[3+3*i].y = 1;
     decoder->subbands[3+3*i].w = w;
     decoder->subbands[3+3*i].h = h;
-    decoder->subbands[3+3*i].offset = w;
+    decoder->subbands[3+3*i].offset = w + (stride/2/sizeof(int16_t));
     decoder->subbands[3+3*i].stride = stride;
     decoder->subbands[3+3*i].chroma_w = chroma_w;
     decoder->subbands[3+3*i].chroma_h = chroma_h;
-    decoder->subbands[3+3*i].chroma_offset = chroma_w;
+    decoder->subbands[3+3*i].chroma_offset = chroma_w + (chroma_stride/2/sizeof(int16_t));
     decoder->subbands[3+3*i].chroma_stride = chroma_stride;
     decoder->subbands[3+3*i].has_parent = (i>0);
     decoder->subbands[3+3*i].scale_factor_shift = i;
     decoder->subbands[3+3*i].horizontally_oriented = 0;
-    decoder->subbands[3+3*i].vertically_oriented = 1;
+    decoder->subbands[3+3*i].vertically_oriented = 0;
 
     w <<= 1;
     h <<= 1;

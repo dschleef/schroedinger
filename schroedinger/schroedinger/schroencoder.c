@@ -1511,21 +1511,23 @@ schro_encoder_init_subbands (SchroEncoderTask *task)
   subbands[0].vertically_oriented = 0;
 
   for(i=0; i<params->transform_depth; i++) {
+    /* hl */
     subbands[1+3*i].x = 1;
-    subbands[1+3*i].y = 1;
+    subbands[1+3*i].y = 0;
     subbands[1+3*i].w = w;
     subbands[1+3*i].h = h;
-    subbands[1+3*i].offset = w + (stride/2/sizeof(int16_t));
+    subbands[1+3*i].offset = w;
     subbands[1+3*i].stride = stride;
     subbands[1+3*i].chroma_w = chroma_w;
     subbands[1+3*i].chroma_h = chroma_h;
-    subbands[1+3*i].chroma_offset = chroma_w + (chroma_stride/2/sizeof(int16_t));
+    subbands[1+3*i].chroma_offset = chroma_w;
     subbands[1+3*i].chroma_stride = chroma_stride;
     subbands[1+3*i].has_parent = (i>0);
     subbands[1+3*i].scale_factor_shift = i;
     subbands[1+3*i].horizontally_oriented = 0;
-    subbands[1+3*i].vertically_oriented = 0;
+    subbands[1+3*i].vertically_oriented = 1;
 
+    /* lh */
     subbands[2+3*i].x = 0;
     subbands[2+3*i].y = 1;
     subbands[2+3*i].w = w;
@@ -1541,20 +1543,21 @@ schro_encoder_init_subbands (SchroEncoderTask *task)
     subbands[2+3*i].horizontally_oriented = 1;
     subbands[2+3*i].vertically_oriented = 0;
 
+    /* hh */
     subbands[3+3*i].x = 1;
-    subbands[3+3*i].y = 0;
+    subbands[3+3*i].y = 1;
     subbands[3+3*i].w = w;
     subbands[3+3*i].h = h;
-    subbands[3+3*i].offset = w;
+    subbands[3+3*i].offset = w + (stride/2/sizeof(int16_t));
     subbands[3+3*i].stride = stride;
     subbands[3+3*i].chroma_w = chroma_w;
     subbands[3+3*i].chroma_h = chroma_h;
-    subbands[3+3*i].chroma_offset = chroma_w;
+    subbands[3+3*i].chroma_offset = chroma_w + (chroma_stride/2/sizeof(int16_t));
     subbands[3+3*i].chroma_stride = chroma_stride;
     subbands[3+3*i].has_parent = (i>0);
     subbands[3+3*i].scale_factor_shift = i;
     subbands[3+3*i].horizontally_oriented = 0;
-    subbands[3+3*i].vertically_oriented = 1;
+    subbands[3+3*i].vertically_oriented = 0;
 
     w <<= 1;
     h <<= 1;

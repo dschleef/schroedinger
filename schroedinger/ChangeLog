@@ -1,5 +1,11 @@
 2007-01-22  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  Fix subband order to match 0.10.4 spec.  From David Flynn.
+
+2007-01-22  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrobitstream.h:
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
