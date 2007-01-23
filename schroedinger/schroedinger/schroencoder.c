@@ -75,7 +75,7 @@ schro_encoder_new (void)
   schro_params_set_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_SD576);
 
-  encoder->n_tasks = 4;
+  encoder->n_tasks = 1;
 
   return encoder;
 }
@@ -1645,10 +1645,11 @@ schro_encoder_encode_transform_data (SchroEncoderTask *task, int component)
 static int
 dequantize (int q, int quant_factor, int quant_offset)
 {
+  if (q == 0) return 0;
   if (q < 0) {
     return -((-q * quant_factor + quant_offset + 2)>>2);
   } else {
-    return (q * quant_factor + quant_offset)>>2;
+    return (q * quant_factor + quant_offset + 2)>>2;
   }
 }
 

@@ -1172,8 +1172,6 @@ codeblock_line_decode_generic (int16_t *p, int stride, int j, int xmin, int xmax
       if (j > 0) previous_value = p[-stride];
     }
 
-#define QUANT_EXP 2
-#endif
 #define STUFF \
   do { \
     int cont_context, sign_context, value_context; \
@@ -1196,7 +1194,7 @@ codeblock_line_decode_generic (int16_t *p, int stride, int j, int xmin, int xmax
     v = _schro_arith_context_decode_uint (arith, cont_context, \
         value_context); \
     if (v) { \
-      v = (quant_offset + quant_factor * v + QUANT_EXP)>>2; \
+      v = (quant_offset + quant_factor * v + 2)>>2; \
       if (_schro_arith_context_decode_bit (arith, sign_context)) { \
         v = -v; \
       } \
