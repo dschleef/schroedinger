@@ -1,3 +1,12 @@
+2007-01-25  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroasync-pthread.c:
+	* schroedinger/schroasync.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* testsuite/encode.c:
+	  Rewrite the async code.  Seems to work now.
+
 2007-01-23  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:

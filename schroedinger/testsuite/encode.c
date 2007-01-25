@@ -58,8 +58,9 @@ test (int w, int h)
     }
 
     buffer = schro_encoder_pull (encoder, &x);
-    if (buffer) {
+    while (buffer) {
       schro_buffer_unref (buffer);
+      buffer = schro_encoder_pull (encoder, &x);
     }
   }
   schro_encoder_end_of_stream (encoder);

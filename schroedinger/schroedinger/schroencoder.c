@@ -75,8 +75,6 @@ schro_encoder_new (void)
   schro_params_set_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_SD576);
 
-  encoder->n_tasks = 1;
-
   return encoder;
 }
 
@@ -85,15 +83,6 @@ schro_encoder_free (SchroEncoder *encoder)
 {
   int i;
   int j;
-
-  if (encoder->tasks) {
-    for(i=0;i<encoder->n_tasks;i++){
-      if (encoder->tasks[i]) {
-        schro_encoder_task_free (encoder->tasks[i]);
-      }
-    }
-    free(encoder->tasks);
-  }
 
   if (encoder->async) {
     schro_async_free(encoder->async);
@@ -219,6 +208,7 @@ schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
   frame->frame_number = encoder->frame_queue_index;
   encoder->frame_queue_index++;
 
+  SCHRO_ERROR ("pushing frame");
   schro_encoder_frame_queue_push (encoder, frame);
 }
 
@@ -300,9 +290,11 @@ schro_decoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer)
 }
 
 int
-schro_encoder_engine_intra_only (SchroEncoder *encoder, SchroEncoderTask *task)
+schro_encoder_engine_intra_only (SchroEncoder *encoder)
 {
   SchroParams *params;
+  SchroEncoderTask *task;
+  SchroFrame *encode_frame;
 
   if (encoder->au_frame == -1 ||
       encoder->next_frame - encoder->au_frame >= encoder->au_distance) {
@@ -316,25 +308,27 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder, SchroEncoderTask *task)
     encoder->next_slot++;
   }
 
-  task->frame_number = encoder->next_frame;
-  task->presentation_frame = encoder->next_frame;
-
-  task->encode_frame = schro_encoder_frame_queue_get (encoder,
-      task->frame_number);
-  if (task->encode_frame == NULL) {
+  encode_frame = schro_encoder_frame_queue_get (encoder, encoder->next_frame);
+  if (encode_frame == NULL) {
     if (encoder->end_of_stream) {
       SchroBuffer *buffer;
 
       buffer = schro_encoder_encode_end_of_stream (encoder);
 
       schro_encoder_output_push (encoder, buffer, encoder->next_slot,
-          task->frame_number - 1);
+          encoder->next_frame - 1);
       encoder->next_slot++;
       return TRUE;
     } else {
       return FALSE;
     }
   }
+
+  task = schro_encoder_task_new (encoder);
+
+  task->encode_frame = encode_frame;
+  task->frame_number = encoder->next_frame;
+  task->presentation_frame = encoder->next_frame;
 
   schro_encoder_frame_queue_remove (encoder, encoder->next_frame);
   encoder->next_frame++;
@@ -370,6 +364,9 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder, SchroEncoderTask *task)
 
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
+
+  schro_async_run (encoder->async,
+      (void (*)(void *))schro_encoder_encode_picture, task);
 
   return TRUE;
 }
@@ -889,7 +886,7 @@ schro_encoder_encode_end_of_stream (SchroEncoder *encoder)
 }
 
 static void
-schro_encoder_complete_task (SchroEncoderTask *task)
+schro_encoder_task_complete (SchroEncoderTask *task)
 {
   int i;
 
@@ -911,49 +908,54 @@ schro_encoder_complete_task (SchroEncoderTask *task)
 int
 schro_encoder_iterate (SchroEncoder *encoder)
 {
-  SchroEncoderTask *task = NULL;
-  int i;
-  int ret;
+  int ret = FALSE;
+
+  SCHRO_ERROR("iterate");
 
   if (!encoder->engine_init) {
     schro_encoder_engine_init (encoder);
   }
 
-  i = schro_async_get_idle_thread (encoder->async);
-
-  while (encoder->n_output_queue > 10) {
+#if 0
+  while (encoder->n_output_queue > 20) {
     /* Some thread is being starved. */
     SCHRO_ERROR("thread is starving");
     schro_async_wait_one (encoder->async);
   }
+#endif
 
-  task = encoder->tasks[i];
+  schro_async_wait (encoder->async, 4);
 
-  switch (encoder->engine) {
-    case 0:
-      ret = schro_encoder_engine_intra_only (encoder, task);
-      break;
-    case 1:
-      ret = schro_encoder_engine_backref (encoder, task);
-      break;
-    case 2:
-      ret = schro_encoder_engine_tworef (encoder, task);
-      break;
-    case 3:
-      ret = schro_encoder_engine_fourref (encoder, task);
-      break;
-    default:
-      ret = FALSE;
-      break;
+  if (schro_async_get_num_waiting (encoder->async) < 4) {
+
+    switch (encoder->engine) {
+      case 0:
+        ret = schro_encoder_engine_intra_only (encoder);
+        break;
+#if 0
+      case 1:
+        ret = schro_encoder_engine_backref (encoder, task);
+        break;
+      case 2:
+        ret = schro_encoder_engine_tworef (encoder, task);
+        break;
+      case 3:
+        ret = schro_encoder_engine_fourref (encoder, task);
+        break;
+#endif
+      default:
+        ret = FALSE;
+        break;
+    }
   }
+  if (schro_async_get_num_completed (encoder->async) > 0) {
+    SchroEncoderTask *task;
 
-  if (ret) {
-    SCHRO_DEBUG("run slot %d", i);
+    task = schro_async_pull (encoder->async);
+    SCHRO_ASSERT(task != NULL);
 
-    schro_async_run (encoder->async, i,
-        (void (*)(void *))schro_encoder_encode_picture,
-        (void (*)(void *))schro_encoder_complete_task,
-        task);
+    schro_encoder_task_complete (task);
+    schro_encoder_task_free (task);
   }
 
   return ret;
@@ -995,14 +997,7 @@ schro_encoder_engine_init (SchroEncoder *encoder)
     }
   }
 
-  if (encoder->tasks == NULL) {
-    encoder->async = schro_async_new (encoder->n_tasks);
-
-    encoder->tasks = malloc(sizeof(void *)*encoder->n_tasks);
-    for(i=0;i<encoder->n_tasks;i++) {
-      encoder->tasks[i] = schro_encoder_task_new (encoder);
-    }
-  }
+  encoder->async = schro_async_new (0);
 }
 
 static void

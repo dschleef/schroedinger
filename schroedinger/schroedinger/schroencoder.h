@@ -46,9 +46,6 @@ struct _SchroEncoderReference {
 };
 
 struct _SchroEncoder {
-  int n_tasks;
-  SchroEncoderTask **tasks;
-
   SchroAsync *async;
 
   SchroFrame *frame_queue[SCHRO_FRAME_QUEUE_LENGTH];
