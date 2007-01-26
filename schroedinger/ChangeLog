@@ -1,6 +1,12 @@
 2007-01-25  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroasync-pthread.c:
+	* schroedinger/schroencoder.c:
+	  Cleanup.  Set number of threads to the number of cpus by default.
+
+2007-01-25  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroasync-pthread.c:
 	* schroedinger/schroasync.h:
 	  Remove unused function
 

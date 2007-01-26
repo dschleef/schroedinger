@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 enum {
   STATE_IDLE,
@@ -62,11 +63,27 @@ schro_async_new(int n_threads)
   int i;
 
   if (n_threads == 0) {
-    n_threads = 1;
+    char *s;
+
+    s = getenv ("SCHRO_THREADS");
+    if (s && s[0]) {
+      char *end;
+      int n;
+      n = strtoul (s, &end, 0);
+      if (end[0] == 0) {
+        n_threads = n;
+      }
+    }
+    if (n_threads == 0) {
+      n_threads = sysconf(_SC_NPROCESSORS_CONF);
+    }
+    if (n_threads == 0) {
+      n_threads = 1;
+    }
   }
   async = malloc(sizeof(SchroAsync));
 
-  SCHRO_ERROR("%d", n_threads);
+  SCHRO_DEBUG("%d", n_threads);
   async->n_threads = n_threads;
   async->threads = malloc(sizeof(SchroThread) * n_threads);
 
@@ -128,7 +145,7 @@ schro_async_run (SchroAsync *async, void (*func)(void *), void *ptr)
 
   atask = malloc(sizeof(SchroAsyncTask));
 
-  SCHRO_ERROR("queueing task %p", atask);
+  SCHRO_DEBUG("queueing task %p", atask);
   atask->func = func;
   atask->priv = ptr;
 
@@ -216,18 +233,18 @@ schro_thread_main (void *ptr)
   while (1) {
     pthread_cond_wait (&async->thread_cond, &async->mutex);
 
-    SCHRO_ERROR("thread %d: got signal", thread->index);
+    SCHRO_DEBUG("thread %d: got signal", thread->index);
 
     if (thread->state == STATE_STOP) {
       pthread_cond_signal (&async->async_cond);
       async->n_threads_running--;
       pthread_mutex_unlock (&async->mutex);
-      SCHRO_ERROR("thread %d: stopping", thread->index);
+      SCHRO_DEBUG("thread %d: stopping", thread->index);
       return NULL;
     }
 
     if (async->list_first == NULL) {
-      SCHRO_ERROR("wake with nothing to do");
+      SCHRO_DEBUG("wake with nothing to do");
     }
     thread->state = STATE_BUSY;
     while (async->list_first) {
@@ -245,9 +262,9 @@ schro_thread_main (void *ptr)
 
       pthread_mutex_unlock (&async->mutex);
 
-      SCHRO_ERROR("thread %d: running", thread->index);
+      SCHRO_DEBUG("thread %d: running", thread->index);
       atask->func (atask->priv);
-      SCHRO_ERROR("thread %d: done", thread->index);
+      SCHRO_DEBUG("thread %d: done", thread->index);
 
       pthread_mutex_lock (&async->mutex);
       

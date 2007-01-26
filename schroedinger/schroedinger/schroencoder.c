@@ -208,7 +208,6 @@ schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
   frame->frame_number = encoder->frame_queue_index;
   encoder->frame_queue_index++;
 
-  SCHRO_ERROR ("pushing frame");
   schro_encoder_frame_queue_push (encoder, frame);
 }
 
@@ -276,7 +275,7 @@ schro_decoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer)
   uint8_t *data = buffer->data;
 
   if (buffer->length < 11) {
-    SCHRO_ERROR("packet too short");
+    SCHRO_ERROR("packet too short (%d < 11)", buffer->length);
   }
 
   data[5] = (buffer->length >> 16) & 0xff;
@@ -875,7 +874,7 @@ schro_encoder_encode_end_of_stream (SchroEncoder *encoder)
   SchroBits *bits;
   SchroBuffer *buffer;
 
-  buffer = schro_buffer_new_and_alloc (0x5);
+  buffer = schro_buffer_new_and_alloc (11);
 
   bits = schro_bits_new ();
   schro_bits_encode_init (bits, buffer);
@@ -910,7 +909,7 @@ schro_encoder_iterate (SchroEncoder *encoder)
 {
   int ret = FALSE;
 
-  SCHRO_ERROR("iterate");
+  SCHRO_DEBUG("iterate");
 
   if (!encoder->engine_init) {
     schro_encoder_engine_init (encoder);
