@@ -2,6 +2,12 @@
 
 	* schroedinger/schroasync-pthread.c:
 	* schroedinger/schroasync.h:
+	  Remove unused function
+
+2007-01-25  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroasync-pthread.c:
+	* schroedinger/schroasync.h:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:
 	* testsuite/encode.c:

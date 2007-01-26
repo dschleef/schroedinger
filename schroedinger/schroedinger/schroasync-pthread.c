@@ -62,7 +62,7 @@ schro_async_new(int n_threads)
   int i;
 
   if (n_threads == 0) {
-    n_threads = 4;
+    n_threads = 1;
   }
   async = malloc(sizeof(SchroAsync));
 
@@ -145,21 +145,6 @@ schro_async_run (SchroAsync *async, void (*func)(void *), void *ptr)
 
   pthread_cond_signal (&async->thread_cond);
   pthread_mutex_unlock (&async->mutex);
-}
-
-int schro_async_get_num_idle_threads (SchroAsync *async)
-{
-  int n;
-  int i;
-
-  n = 0;
-  pthread_mutex_lock (&async->mutex);
-  for (i=0;i<async->n_threads;i++){
-    if (async->threads[i].state == STATE_IDLE) n++;
-  }
-  pthread_mutex_lock (&async->mutex);
-
-  return n;
 }
 
 int schro_async_get_num_waiting (SchroAsync *async)

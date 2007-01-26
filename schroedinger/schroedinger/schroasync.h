@@ -17,7 +17,6 @@ SchroAsync *schro_async_new(int n_threads);
 void schro_async_free (SchroAsync *async);
 
 void schro_async_run (SchroAsync *async, void (*func)(void *), void *ptr);
-int schro_async_get_num_idle_threads (SchroAsync *async);
 int schro_async_get_num_completed (SchroAsync *async);
 int schro_async_get_num_waiting (SchroAsync *async);
 void schro_async_wait (SchroAsync *async, int min_waiting);
