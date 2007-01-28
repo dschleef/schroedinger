@@ -308,7 +308,7 @@ void schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
     if ((i1&1) == 0 && i1>=0 && i1 < height) {
       static const int16_t stage1_offset_shift[] = { 7, 4 };
       if (i1 == 0) {
-        static const int16_t stage1_weights[] = { -9, -8, 1, 0 };
+        static const int16_t stage1_weights[] = { -8, -9, 1, 0 };
         oil_mas4_across_add_s16 (
             OFFSET(data,(i1+1)*stride), OFFSET(data, (i1+1)*stride),
             OFFSET(data, i1*stride), stride * 2,
@@ -320,7 +320,7 @@ void schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
             OFFSET(data, (i1-4)*stride), stride * 2,
             stage1_weights, stage1_offset_shift, width);
       } else if (i1 == height-2) {
-        static const int16_t stage1_weights[] = { 2, -18 };
+        static const int16_t stage1_weights[] = { 1, -17 };
         oil_mas2_across_add_s16 (
             OFFSET(data,(i1+1)*stride), OFFSET(data, (i1+1)*stride),
             OFFSET(data, (i1-2)*stride), OFFSET(data, i1*stride),
@@ -426,7 +426,7 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
     if ((i1&1) == 0 && i1>=0 && i1 < height) {
       static const int16_t stage1_offset_shift[] = { 7, 4 };
       if (i1 == 0) {
-        static const int16_t stage1_weights[] = { -9, -8, 1, 0 };
+        static const int16_t stage1_weights[] = { -8, -9, 1, 0 };
         oil_mas4_across_add_s16 (
             ROW(i1+1), ROW(i1+1), ROW(i1), stride * 2,
             stage1_weights, stage1_offset_shift, width);
@@ -436,7 +436,7 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
             ROW(i1+1), ROW(i1+1), ROW(i1-4), stride * 2,
             stage1_weights, stage1_offset_shift, width);
       } else if (i1 == height-2) {
-        static const int16_t stage1_weights[] = { 2, -18 };
+        static const int16_t stage1_weights[] = { 1, -17 };
         oil_mas2_across_add_s16 (
             ROW(i1+1), ROW(i1+1), ROW(i1-2), ROW(i1),
             stage1_weights, stage1_offset_shift, width);
@@ -450,7 +450,7 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
     if ((i2&1) == 0 && i2>=0 && i2 < height) {
       static const int16_t stage2_offset_shift[] = { 16, 5 };
       if (i2 == 0) {
-        static const int16_t stage2_weights[] = { 18, -2 };
+        static const int16_t stage2_weights[] = { 17, -1 };
         oil_mas2_across_add_s16 (
             ROW(i2), ROW(i2), ROW(i2+1), ROW(i2+3),
             stage2_weights, stage2_offset_shift, width);
@@ -460,7 +460,7 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
             ROW(i2), ROW(i2), ROW(i2-1), stride * 2,
             stage2_weights, stage2_offset_shift, width);
       } else if (i2 == height-2) {
-        static const int16_t stage2_weights[] = { 0, -1, 8, 9 };
+        static const int16_t stage2_weights[] = { 0, -1, 9, 8 };
         oil_mas4_across_add_s16 (
             ROW(i2), ROW(i2), ROW(i2-5), stride * 2,
             stage2_weights, stage2_offset_shift, width);
@@ -545,14 +545,14 @@ void schro_iwt_fidelity (int16_t *data, int stride, int width, int height,
     if ((i1&1) == 0 && i1>=0 && i1 < height) {
       static const int16_t stage1_offset_shift[] = { 128, 8 };
       static const int16_t stage1_weights[][8] = {
-        { 161 + 161, -46 - 46, 21 + 21, -8 - 8, 0, 0, 0, 0 },
-        { 161 - 46, 161 + 21, -46 - 8, 21, -8, 0, 0, 0 },
-        { -46 + 21, 161 - 8, 161, -46, 21, -8, 0, 0 },
+        { 161 + 161 - 46 + 21 - 8, -46, 21, -8, 0, 0, 0, 0 },
+        { 161 - 46 + 21 - 8, 161, -46, 21, -8, 0, 0, 0 },
+        { -46 + 21 - 8, 161, 161, -46, 21, -8, 0, 0 },
         { 21 - 8, -46, 161, 161, -46, 21, -8, 0 },
         { -8, 21, -46, 161, 161, -46, 21, -8 },
-        { 0, -8, 21, -46, 161, 161, -46 - 8, 21 },
-        { 0, 0, -8, 21, -46, 161 - 8, 161 + 21, -46 },
-        { 0, 0, 0, -8, 21 - 8, -46 + 21, 161 - 46, 161 },
+        { 0, -8, 21, -46, 161, 161, -46, 21 -8 },
+        { 0, 0, -8, 21, -46, 161, 161, -46 + 21 - 8 },
+        { 0, 0, 0, -8, 21, -46, 161, 161 - 46 + 21 - 8 },
       };
       const int16_t *weights;
       int offset;
@@ -573,14 +573,14 @@ void schro_iwt_fidelity (int16_t *data, int stride, int width, int height,
     if ((i2&1) == 0 && i2>=0 && i2 < height) {
       static const int16_t stage2_offset_shift[] = { 127, 8 };
       static const int16_t stage2_weights[][8] = {
-        { -81, -81 + 25, 25 - 10, -10 + 2, 2, 0, 0, 0 },
-        { 25, -81 - 10, -81 + 2, 25, -10, 2, 0, 0 },
-        { -10, 25 + 2, -81, -81, 25, -10, 2, 0 },
+        { 2 - 10 + 25 - 81, -81, 25, -10, 2, 0, 0, 0 },
+        { 2 - 10 + 25, -81, -81, 25, -10, 2, 0, 0 },
+        { 2 -10, 25, -81, -81, 25, -10, 2, 0 },
         { 2, -10, 25, -81, -81, 25, -10, 2 },
         { 0, 2, -10, 25, -81, -81, 25, -10 + 2 },
-        { 0, 0, 2, -10, 25, -81, -81 + 2, 25 - 10 },
-        { 0, 0, 0, 2, -10, 25 + 2, -81 - 10, -81 + 25 },
-        { 0, 0, 0, 0, 2 + 2, -10 - 10, 25 + 25, -81 - 81 }
+        { 0, 0, 2, -10, 25, -81, -81, 25 - 10 + 2 },
+        { 0, 0, 0, 2, -10, 25, -81, -81 + 25 - 10 + 2 },
+        { 0, 0, 0, 0, 2, -10, 25, -81 - 81 + 25 - 10 + 2 }
       };
       const int16_t *weights;
       int offset;
@@ -734,7 +734,7 @@ void schro_iiwt_desl_9_3 (int16_t *data, int stride, int width, int height,
     if ((i1&1) == 0 && i1>=0 && i1 < height) {
       static const int16_t stage1_offset_shift[] = { 8, 4 };
       if (i1 == 0) {
-        static const int16_t stage1_weights[] = { 9, 8, -1, 0 };
+        static const int16_t stage1_weights[] = { 8, 9, -1, 0 };
         oil_mas4_across_add_s16 (
             OFFSET(data,(i1+1)*stride), OFFSET(data, (i1+1)*stride),
             OFFSET(data, i1*stride), stride * 2,
@@ -746,7 +746,7 @@ void schro_iiwt_desl_9_3 (int16_t *data, int stride, int width, int height,
             OFFSET(data, (i1-4)*stride), stride * 2,
             stage1_weights, stage1_offset_shift, width);
       } else if (i1 == height-2) {
-        static const int16_t stage1_weights[] = { -2, 18 };
+        static const int16_t stage1_weights[] = { -1, 17 };
         oil_mas2_across_add_s16 (
             OFFSET(data,(i1+1)*stride), OFFSET(data, (i1+1)*stride),
             OFFSET(data, (i1-2)*stride), OFFSET(data, i1*stride),
@@ -840,7 +840,7 @@ void schro_iiwt_13_5 (int16_t *data, int stride, int width, int height,
     if ((i2&1) == 0 && i2>=0 && i2 < height) {
       static const int16_t stage2_offset_shift[] = { 15, 5 };
       if (i2 == 0) {
-        static const int16_t stage2_weights[] = { -18, 2 };
+        static const int16_t stage2_weights[] = { -17, 1 };
         oil_mas2_across_add_s16 (
             ROW(i2), ROW(i2), ROW(i2+1), ROW(i2+3),
             stage2_weights, stage2_offset_shift, width);
@@ -850,7 +850,7 @@ void schro_iiwt_13_5 (int16_t *data, int stride, int width, int height,
             ROW(i2), ROW(i2), ROW(i2-1), stride * 2,
             stage2_weights, stage2_offset_shift, width);
       } else if (i2 == height-2) {
-        static const int16_t stage2_weights[] = { 0, 1, -8, -9 };
+        static const int16_t stage2_weights[] = { 0, 1, -9, -8 };
         oil_mas4_across_add_s16 (
             ROW(i2), ROW(i2), ROW(i2-5), stride * 2,
             stage2_weights, stage2_offset_shift, width);
@@ -864,7 +864,7 @@ void schro_iiwt_13_5 (int16_t *data, int stride, int width, int height,
     if ((i1&1) == 0 && i1>=0 && i1 < height) {
       static const int16_t stage1_offset_shift[] = { 8, 4 };
       if (i1 == 0) {
-        static const int16_t stage1_weights[] = { 9, 8, -1, 0 };
+        static const int16_t stage1_weights[] = { 8, 9, -1, 0 };
         oil_mas4_across_add_s16 (
             ROW(i1+1), ROW(i1+1), ROW(i1), stride * 2,
             stage1_weights, stage1_offset_shift, width);
@@ -874,7 +874,7 @@ void schro_iiwt_13_5 (int16_t *data, int stride, int width, int height,
             ROW(i1+1), ROW(i1+1), ROW(i1-4), stride * 2,
             stage1_weights, stage1_offset_shift, width);
       } else if (i1 == height-2) {
-        static const int16_t stage1_weights[] = { -2, 18 };
+        static const int16_t stage1_weights[] = { -1, 17 };
         oil_mas2_across_add_s16 (
             ROW(i1+1), ROW(i1+1), ROW(i1-2), ROW(i1),
             stage1_weights, stage1_offset_shift, width);
@@ -966,14 +966,14 @@ void schro_iiwt_fidelity (int16_t *data, int stride, int width, int height,
     if ((i2&1) == 0 && i2>=0 && i2 < height) {
       static const int16_t stage2_offset_shift[] = { 128, 8 };
       static const int16_t stage2_weights[][8] = {
-        { 81, 81 - 25, -25 + 10, 10 - 2, -2, 0, 0, 0 },
-        { -25, 81 + 10, 81 - 2, -25, 10, -2, 0, 0 },
-        { 10, -25 - 2, 81, 81, -25, 10, -2, 0 },
+        { -2 + 10 - 25 + 81, 81, -25, 10, -2, 0, 0, 0 },
+        { -2 + 10 - 25, 81, 81, -25, 10, -2, 0, 0 },
+        { -2 + 10, -25, 81, 81, -25, 10, -2, 0 },
         { -2, 10, -25, 81, 81, -25, 10, -2 },
         { 0, -2, 10, -25, 81, 81, -25, 10 - 2 },
-        { 0, 0, -2, 10, -25, 81, 81 - 2, -25 + 10 },
-        { 0, 0, 0, -2, 10, -25 - 2, 81 + 10, 81 - 25 },
-        { 0, 0, 0, 0, -2 -2, 10 + 10, -25 - 25, 81 + 81 }
+        { 0, 0, -2, 10, -25, 81, 81, -25 + 10 - 2 },
+        { 0, 0, 0, -2, 10, -25, 81, 81 - 25 + 10 - 2 },
+        { 0, 0, 0, 0, -2, 10, -25, 81 + 81 - 25 + 10 - 2 }
       };
       const int16_t *weights;
       int offset;
@@ -994,14 +994,14 @@ void schro_iiwt_fidelity (int16_t *data, int stride, int width, int height,
     if ((i1&1) == 0 && i1>=0 && i1 < height) {
       static const int16_t stage1_offset_shift[] = { 127, 8 };
       static const int16_t stage1_weights[][8] = {
-        { -161 - 161, 46 + 46, -21 - 21, 8 + 8, 0, 0, 0, 0 },
-        { -161 + 46, -161 - 21, 46 + 8, -21, 8, 0, 0, 0 },
-        { 46 - 21, -161 + 8, -161, 46, -21, 8, 0, 0 },
-        { -21 + 8, 46, -161, -161, 46, -21, 8, 0 },
+        { 8 - 21 + 46 - 161 - 161, 46, -21, 8, 0, 0, 0, 0 },
+        { 8 - 21 + 46 - 161, -161, 46, -21, 8, 0, 0, 0 },
+        { 8 - 21 + 46, -161, -161, 46, -21, 8, 0, 0 },
+        { 8 -21, 46, -161, -161, 46, -21, 8, 0 },
         { 8, -21, 46, -161, -161, 46, -21, 8 },
-        { 0, 8, -21, 46, -161, -161, 46 + 8, -21 },
-        { 0, 0, 8, -21, 46, -161 + 8, -161 - 21, 46 },
-        { 0, 0, 0, 8, -21 + 8, 46 - 21, -161 + 46, -161 },
+        { 0, 8, -21, 46, -161, -161, 46, -21 + 8 },
+        { 0, 0, 8, -21, 46, -161, -161, 46 - 21 + 8 },
+        { 0, 0, 0, 8, -21, 46, -161, -161 + 46 - 21 + 8 },
       };
       const int16_t *weights;
       int offset;

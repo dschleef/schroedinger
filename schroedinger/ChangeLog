@@ -1,6 +1,11 @@
 2007-01-27  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrowavelet.c:
+	  Fix 2d wavelet for proper edge extension.
+
+2007-01-27  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrowavelet.c:
 	* testsuite/wavelet.c:
 	  Fix horizontal wavelet for proper edge extension.
 
