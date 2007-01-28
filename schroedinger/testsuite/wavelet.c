@@ -20,11 +20,12 @@ int filtershift[] = { 1, 1, 1, 0, 1, 2, 0, 1 };
 
 void synth(int16_t *a, int filter, int n);
 void split (int16_t *a, int filter, int n);
-void synth_schro (int16_t *a, int filter, int n);
-void split_schro (int16_t *a, int n, int filter);
+void synth_schro_ext (int16_t *a, int filter, int n);
+void split_schro_ext (int16_t *a, int n, int filter);
 void deinterleave (int16_t *a, int n);
 void interleave (int16_t *a, int n);
 void dump (int16_t *a, int n);
+void dump_cmp (int16_t *a, int16_t *b, int n);
 
 
 void
@@ -120,11 +121,11 @@ local_test(int filter)
     synth(a,n,filter);
     dump(a,n);
 
-    split_schro(a,n,filter);
+    split_schro_ext(a,n,filter);
     deinterleave(a,n);
     dump(a,n);
     interleave(a,n);
-    synth_schro(a,n,filter);
+    synth_schro_ext(a,n,filter);
     dump(a,n);
   }
   printf("\n");
@@ -137,24 +138,35 @@ random_test(int filter)
   int n = 20;
   int $;
   int16_t b[100];
+  int16_t c[100];
   int failed = 0;
 
   printf("  testing random arrays (split):\n");
   for($=0;$<100;$++){
+#if 0
+    {
+      int i;
+      for(i=0;i<n;i++){
+        a[i] = (i==$)*100;
+      }
+    }
+#endif
     gen_random(a,n);
     memcpy(b,a,n*sizeof(int16_t));
+    memcpy(c,a,n*sizeof(int16_t));
 
     split(a,n,filter);
     deinterleave(a,n);
-    split_schro(b,n,filter);
+    split_schro_ext(b,n,filter);
     deinterleave(b,n);
 
     if (memcmp(a,b,n*sizeof(int16_t)) != 0) {
+      dump(c,n);
       dump(a,n);
-      dump(b,n);
+      dump_cmp(b,a,n);
       printf("\n");
       failed++;
-      if (failed >=5) break;
+      //if (failed >=5) break;
     }
   }
   if (!failed) {
@@ -169,12 +181,12 @@ random_test(int filter)
 
     synth(a,n,filter);
     deinterleave(a,n);
-    synth_schro(b,n,filter);
+    synth_schro_ext(b,n,filter);
     deinterleave(b,n);
 
     if (memcmp(a,b,n*sizeof(int16_t)) != 0) {
       dump(a,n);
-      dump(b,n);
+      dump_cmp(b,a,n);
       printf("\n");
       failed++;
       if (failed >=5) break;
@@ -209,6 +221,20 @@ dump (int16_t *a, int n)
   int i;
   for(i=0;i<n;i++){
     printf("%3d ", a[i]);
+  }
+  printf("\n");
+}
+
+void
+dump_cmp (int16_t *a, int16_t *b, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    if (a[i] == b[i]) {
+      printf("%3d ", a[i]);
+    } else {
+      printf("\033[00;01;37;41m%3d\033[00m ", a[i]);
+    }
   }
   printf("\n");
 }
@@ -692,6 +718,7 @@ schro_split_daub97 (int16_t *hi, int16_t *lo, int n)
 }
 
 
+#if 0
 void
 split_schro (int16_t *a, int n, int filter)
 {
@@ -728,6 +755,7 @@ split_schro (int16_t *a, int n, int filter)
   oil_interleave2_s16 (a, hi, lo, n/2);
 
 }
+#endif
 
 void
 schro_synth_desl93 (int16_t *hi, int16_t *lo, int n)

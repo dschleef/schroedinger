@@ -25,17 +25,13 @@ schro_split_ext_desl93 (int16_t *hi, int16_t *lo, int n)
   static const int16_t stage1_offset_shift[] = { 7, 4 };
   static const int16_t stage2_offset_shift[] = { 2, 2 };
 
-  hi[-2] = hi[0];
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
   hi[n+1] = hi[n-1];
 
   oil_mas4_add_s16 (lo, lo, hi - 1, stage1_weights, stage1_offset_shift, n);
 
-  lo[-2] = lo[0];
   lo[-1] = lo[0];
-  lo[n] = lo[n-1];
-  lo[n+1] = lo[n-1];
 
   oil_mas2_add_s16 (hi, hi, lo - 1, stage2_weights, stage2_offset_shift, n);
 }

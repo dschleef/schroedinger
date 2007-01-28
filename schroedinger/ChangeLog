@@ -1,3 +1,9 @@
+2007-01-27  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrowavelet.c:
+	* testsuite/wavelet.c:
+	  Fix horizontal wavelet for proper edge extension.
+
 2007-01-25  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroasync-pthread.c:
