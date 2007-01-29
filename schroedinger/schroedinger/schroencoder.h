@@ -35,6 +35,13 @@ typedef enum {
   SCHRO_PREF_LAST
 } SchroPrefEnum;
 
+typedef enum {
+  SCHRO_STATE_NEED_FRAME,
+  SCHRO_STATE_HAVE_BUFFER,
+  SCHRO_STATE_AGAIN,
+  SCHRO_STATE_END_OF_STREAM
+} SchroStateEnum;
+
 struct _SchroEncoderParams {
   int ignore;
 };
@@ -70,6 +77,8 @@ struct _SchroEncoder {
 
   //int frame_number;
   int end_of_stream;
+  int end_of_stream_handled;
+  int end_of_stream_pulled;
   int prev_offset;
 
   int au_frame;

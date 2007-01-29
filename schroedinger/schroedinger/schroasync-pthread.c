@@ -82,10 +82,12 @@ schro_async_new(int n_threads)
     }
   }
   async = malloc(sizeof(SchroAsync));
+  memset (async, 0, sizeof(SchroAsync));
 
   SCHRO_DEBUG("%d", n_threads);
   async->n_threads = n_threads;
   async->threads = malloc(sizeof(SchroThread) * n_threads);
+  memset (async->threads, 0, sizeof(SchroThread) * n_threads);
 
   pthread_mutexattr_init (&mutexattr);
   pthread_mutex_init (&async->mutex, &mutexattr);

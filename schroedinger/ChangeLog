@@ -1,3 +1,11 @@
+2007-01-28  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroasync-pthread.c:
+	  Clear allocated memory.  duh.
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Handle end of stream properly.
+
 2007-01-27  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrowavelet.c:

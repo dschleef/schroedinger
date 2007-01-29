@@ -309,7 +309,7 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
 
   encode_frame = schro_encoder_frame_queue_get (encoder, encoder->next_frame);
   if (encode_frame == NULL) {
-    if (encoder->end_of_stream) {
+    if (encoder->end_of_stream && !encoder->end_of_stream_handled) {
       SchroBuffer *buffer;
 
       buffer = schro_encoder_encode_end_of_stream (encoder);
@@ -317,6 +317,7 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
       schro_encoder_output_push (encoder, buffer, encoder->next_slot,
           encoder->next_frame - 1);
       encoder->next_slot++;
+      encoder->end_of_stream_handled = TRUE;
       return TRUE;
     } else {
       return FALSE;
@@ -946,6 +947,7 @@ schro_encoder_iterate (SchroEncoder *encoder)
         ret = FALSE;
         break;
     }
+
   }
   if (schro_async_get_num_completed (encoder->async) > 0) {
     SchroEncoderTask *task;
@@ -955,9 +957,20 @@ schro_encoder_iterate (SchroEncoder *encoder)
 
     schro_encoder_task_complete (task);
     schro_encoder_task_free (task);
+
+    //return SCHRO_STATE_HAVE_BUFFER;
   }
 
-  return ret;
+  if (encoder->end_of_stream_pulled) {
+    return SCHRO_STATE_END_OF_STREAM;
+  }
+  if (!encoder->end_of_stream &&
+      schro_async_get_num_waiting (encoder->async) < 4) {
+    return SCHRO_STATE_NEED_FRAME;
+  }
+
+
+  return SCHRO_STATE_AGAIN;
 }
 
 SchroBuffer *
@@ -2132,6 +2145,10 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         *presentation_frame = encoder->output_queue[i].presentation_frame;
       }
       schro_decoder_fixup_offsets (encoder, buffer);
+
+      if (buffer->data[4] == SCHRO_PARSE_CODE_END_SEQUENCE) {
+        encoder->end_of_stream_pulled = TRUE;
+      }
 
       SCHRO_DEBUG("got buffer length=%d", buffer->length);
 
