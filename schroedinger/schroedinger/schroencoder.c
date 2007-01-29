@@ -35,6 +35,7 @@ static void schro_encoder_encode_transform_data (SchroEncoderTask *task, int com
 void schro_encoder_init_subbands (SchroEncoderTask *task);
 void schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index);
 static SchroBuffer * schro_encoder_encode_access_unit (SchroEncoder *encoder);
+static int schro_encoder_pull_is_ready (SchroEncoder *encoder);
 
 static void schro_encoder_output_push (SchroEncoder *encoder,
     SchroBuffer *buffer, int slot, int presentation_frame);
@@ -957,8 +958,9 @@ schro_encoder_iterate (SchroEncoder *encoder)
 
     schro_encoder_task_complete (task);
     schro_encoder_task_free (task);
-
-    //return SCHRO_STATE_HAVE_BUFFER;
+  }
+  if (schro_encoder_pull_is_ready (encoder)) {
+    return SCHRO_STATE_HAVE_BUFFER;
   }
 
   if (encoder->end_of_stream_pulled) {
@@ -2125,6 +2127,21 @@ schro_encoder_output_push (SchroEncoder *encoder, SchroBuffer *buffer,
   }
   SCHRO_ERROR("no slot available in output queue");
   SCHRO_ASSERT(0);
+}
+
+static int
+schro_encoder_pull_is_ready (SchroEncoder *encoder)
+{
+  int i;
+
+  for(i=0;i<ARRAY_SIZE(encoder->output_queue);i++){
+    if (encoder->output_queue[i].buffer != NULL &&
+        encoder->output_queue[i].slot == encoder->output_slot) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
 }
 
 SchroBuffer *

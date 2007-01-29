@@ -1,5 +1,11 @@
 2007-01-29  David Schleef  <ds@schleef.org>
 
+	* gst/gstschroenc.c:
+	* schroedinger/schroencoder.c:
+	  Use improved schro_encoder_iterate() API.
+
+2007-01-29  David Schleef  <ds@schleef.org>
+
 	* testsuite/encode.c:
 	  Use improved schro_encoder_iterate() API.
 
