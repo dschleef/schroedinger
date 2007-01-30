@@ -1,3 +1,13 @@
+2007-01-30  David Schleef  <ds@schleef.org>
+
+	* schroedinger/Makefile.am:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroengine.h:
+	* schroedinger/schrointernal.h:
+	  Separate engine related code from encoder.
+
 2007-01-29  David Schleef  <ds@schleef.org>
 
 	* gst/gstschroenc.c:

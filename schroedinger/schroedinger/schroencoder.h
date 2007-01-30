@@ -235,6 +235,24 @@ int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
 
 void schro_encoder_init_subbands (SchroEncoderTask *task);
 void schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index);
+void schro_encoder_encode_picture (SchroEncoderTask *task);
+
+SchroEncoderTask * schro_encoder_task_new (SchroEncoder *encoder);
+void schro_encoder_task_free (SchroEncoderTask *task);
+SchroFrame * schro_encoder_frame_queue_get (SchroEncoder *encoder,
+    int frame_number);
+void schro_encoder_frame_queue_remove (SchroEncoder *encoder,
+    int frame_number);
+SchroEncoderReference * schro_encoder_reference_add (SchroEncoder *encoder);
+SchroEncoderReference * schro_encoder_reference_get (SchroEncoder *encoder,
+    int frame_number);
+void schro_encoder_encode_picture_header (SchroEncoderTask *task);
+SchroBuffer * schro_encoder_encode_end_of_stream (SchroEncoder *encoder);
+void schro_encoder_init_subbands (SchroEncoderTask *task);
+void schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index);
+SchroBuffer * schro_encoder_encode_access_unit (SchroEncoder *encoder);
+void schro_encoder_output_push (SchroEncoder *encoder,
+    SchroBuffer *buffer, int slot, int presentation_frame);
 
 #ifdef __cplusplus
 }
