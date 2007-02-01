@@ -1,3 +1,13 @@
+2007-01-31  David Schleef  <ds@schleef.org>
+
+	* testsuite/Makefile.am:
+	* testsuite/arith_qm.c:
+	* testsuite/arith_qm.h:
+	* testsuite/coding_efficiency.c:
+	* testsuite/qm.c:
+	  Add a QM arithmetic coder and a proggy for testing the efficiency
+	  of coding.
+
 2007-01-30  David Schleef  <ds@schleef.org>
 
 	* schroedinger/Makefile.am:
