@@ -1,5 +1,10 @@
 2007-02-06  David Schleef  <ds@schleef.org>
 
+	* testsuite/coder/arith_exp.c:
+	  This works pretty well.
+
+2007-02-06  David Schleef  <ds@schleef.org>
+
 	* testsuite/coder/arith.h:
 	* testsuite/coder/arith_exp.c:
 	* testsuite/coder/speed.c:
