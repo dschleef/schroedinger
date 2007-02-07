@@ -8,7 +8,7 @@
 
 #include "arith.h"
 
-#define N 1000
+#define N 10000
 
 
 double speed_arith_dirac (int x, unsigned char *data, int n);

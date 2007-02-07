@@ -1,3 +1,11 @@
+2007-02-06  David Schleef  <ds@schleef.org>
+
+	* testsuite/coder/arith.h:
+	* testsuite/coder/arith_exp.c:
+	* testsuite/coder/speed.c:
+	  Experiment long enough and you come a cross a coder that
+	  doesn't suck.
+
 2007-02-02  David Schleef  <ds@schleef.org>
 
 	* configure.ac:

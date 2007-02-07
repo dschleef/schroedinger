@@ -13,6 +13,8 @@ struct _Context {
   int state;
   int count[2];
   int next;
+  int probability;
+  int n;
 };
 
 struct _Arith {
