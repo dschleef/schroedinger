@@ -1,0 +1,72 @@
+
+#include <stdio.h>
+#include <schroedinger/schro.h>
+#include <schroedinger/schroarith.h>
+#include <liboil/liboil.h>
+#include <liboil/liboilrandom.h>
+#include <math.h>
+
+#include "arith.h"
+
+#define N 100
+
+
+int encode_arith_dirac (unsigned char *out_data, unsigned char *in_data, int n);
+int encode_arith_dirac_byte (unsigned char *out_data, unsigned char *in_data, int n);
+
+void decode_arith_dirac_byte (unsigned char *out_data, unsigned char *in_data, int n);
+
+
+unsigned char out_data[N];
+unsigned char in_data[N];
+unsigned char c_data[N];
+
+static void
+dumpbits (unsigned char *bits, int n)
+{
+  int i;
+
+  for(i=0;i<n;i++){
+    if ((i&0xf) == 0) {
+      printf("%04x: ", i);
+    }
+    if ((i&0xf) < 0xf) {
+      printf("%02x ", bits[i]);
+    } else {
+      printf("%02x\n", bits[i]);
+    }
+  }
+  if ((n & 0xf) < 0xf) {
+    printf("\n");
+  }
+}
+
+int
+main (int argc, char *argv[])
+{
+  int x;
+  int i;
+  int n;
+
+  schro_init();
+
+  x = 100;
+  for(i=0;i<N;i++){
+    in_data[i] = oil_rand_u8() < x;
+  }
+
+  dumpbits(in_data, 100);
+
+  //n = encode_arith_dirac (out_data, in_data, N);
+  //dumpbits(out_data, n);
+
+  n = encode_arith_dirac_byte (out_data, in_data, N);
+  //dumpbits(out_data, n);
+
+  decode_arith_dirac_byte (c_data, out_data, N);
+  dumpbits(c_data, 100);
+
+  return 0;
+}
+
+

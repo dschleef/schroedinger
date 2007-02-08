@@ -77,7 +77,7 @@ static uint16_t division_factor[257] = {
 
 
 void
-arith_dirac_init (Arith *arith)
+arith_dirac_stats_init (Arith *arith)
 {
   memset (arith, 0, sizeof(*arith));
 
@@ -89,10 +89,12 @@ arith_dirac_init (Arith *arith)
   arith->contexts[0].count[0] = 1;
   arith->contexts[0].count[1] = 1;
   arith->contexts[0].next = 0;
+  arith->contexts[0].probability = 0x8000;
+  arith->contexts[0].n = 0;
 }
 
 void
-arith_dirac_flush (Arith *arith)
+arith_dirac_stats_flush (Arith *arith)
 {
 }
 
@@ -111,17 +113,17 @@ push_bit (Arith *arith, int value)
 }
 
 static void
-arith_dirac_encode (Arith *arith, int i, int value)
+arith_dirac_stats_encode (Arith *arith, int i, int value)
 {
   unsigned int range;
-  unsigned int scaler;
-  unsigned int weight;
+  //unsigned int scaler;
+  //unsigned int weight;
   unsigned int probability0;
   unsigned int range_x_prob;
 
-  weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
-  scaler = division_factor[weight];
-  probability0 = arith->contexts[i].count[0] * scaler;
+  //weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
+  //scaler = division_factor[weight];
+  probability0 = arith->contexts[i].probability;
   range = arith->range1 - arith->range0 + 1;
   range_x_prob = (range * probability0) >> 16;
 
@@ -131,11 +133,21 @@ arith_dirac_encode (Arith *arith, int i, int value)
     arith->range1 = arith->range0 + range_x_prob - 1;
   }
   arith->contexts[i].count[value]++;
-  if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 255) {
-    arith->contexts[i].count[0] >>= 1;
-    arith->contexts[i].count[0]++;
-    arith->contexts[i].count[1] >>= 1;
-    arith->contexts[i].count[1]++;
+  arith->contexts[i].n++;
+  if (arith->contexts[i].n == 16) {
+    unsigned int scaler;
+    unsigned int weight;
+
+    arith->contexts[i].n = 0;
+    if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 255) {
+      arith->contexts[i].count[0] >>= 1;
+      arith->contexts[i].count[0]++;
+      arith->contexts[i].count[1] >>= 1;
+      arith->contexts[i].count[1]++;
+    }
+    weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
+    scaler = division_factor[weight];
+    arith->contexts[i].probability = arith->contexts[i].count[0] * scaler;
   }
 
   do {
@@ -172,7 +184,6 @@ arith_dirac_encode (Arith *arith, int i, int value)
 }
 
 
-DEFINE_EFFICIENCY(dirac)
-DEFINE_SPEED(dirac)
-DEFINE_ENCODE(dirac)
+DEFINE_EFFICIENCY(dirac_stats)
+DEFINE_SPEED(dirac_stats)
 

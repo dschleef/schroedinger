@@ -1,3 +1,16 @@
+2007-02-08  David Schleef  <ds@schleef.org>
+
+	* testsuite/coder/Makefile.am:
+	* testsuite/coder/arith.h:
+	* testsuite/coder/arith_dirac.c:
+	* testsuite/coder/arith_dirac_byte.c:
+	* testsuite/coder/arith_dirac_stats.c:
+	* testsuite/coder/coding_efficiency.c:
+	* testsuite/coder/decode.c:
+	* testsuite/coder/speed.c:
+	* testsuite/coder/speed2.c:
+	  More coder experiments
+
 2007-02-06  David Schleef  <ds@schleef.org>
 
 	* testsuite/coder/arith_exp.c:

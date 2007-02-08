@@ -37,6 +37,8 @@ struct _Arith {
 
   unsigned char *data;
   int offset;
+  
+  int carry;
 
   Context contexts[10];
 };
@@ -71,7 +73,7 @@ double speed_arith_ ## name (int x, unsigned char *data, int n) \
   for(i=0;i<n;i++){ \
     indata[i] = (oil_rand_u8() < x); \
   } \
-  for(j=0;j<10;j++) { \
+  for(j=0;j<20;j++) { \
     arith_ ## name ## _init (&a); \
     a.data = data; \
     oil_profile_start(&prof); \
@@ -85,6 +87,35 @@ double speed_arith_ ## name (int x, unsigned char *data, int n) \
   return ave/n; \
 }
 
+#define DEFINE_ENCODE(name) \
+int encode_arith_ ## name (unsigned char *outdata, \
+    unsigned char *indata, int n) \
+{ \
+  Arith a; \
+  int i; \
+  arith_ ## name ## _init (&a); \
+  a.data = outdata; \
+  for(i=0;i<n;i++){ \
+    arith_ ## name ## _encode (&a, 0, indata[i]); \
+  } \
+  arith_ ## name ## _flush (&a); \
+  return a.offset; \
+}
+
+#define DEFINE_DECODE(name) \
+void decode_arith_ ## name (unsigned char *outdata, \
+    unsigned char *indata, int n) \
+{ \
+  Arith a; \
+  int i; \
+  arith_ ## name ## _init (&a); \
+  a.data = indata; \
+  a.code = (indata[0]<<8) | indata[1]; \
+  a.offset = 2; \
+  for(i=0;i<n;i++){ \
+    outdata[i] = arith_ ## name ## _decode (&a, 0); \
+  } \
+}
 
 #endif
 

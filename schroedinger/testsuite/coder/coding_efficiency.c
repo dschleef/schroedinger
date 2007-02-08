@@ -14,7 +14,7 @@
 int efficiency_arith_dirac (int x, unsigned char *data, int n);
 int efficiency_arith_exp (int x, unsigned char *data, int n);
 int efficiency_arith_dirac_byte (int x, unsigned char *data, int n);
-int efficiency_arith_bit (int x, unsigned char *data, int n);
+int efficiency_arith_dirac_stats (int x, unsigned char *data, int n);
 int efficiency_arith_qm (int x, unsigned char *data, int n);
 
 
@@ -41,7 +41,7 @@ main (int argc, char *argv[])
     a = efficiency_arith_dirac (x, data, N) / (double)N;
     b = efficiency_arith_qm (x, data, N) / (double)N;
     c = efficiency_arith_dirac_byte (x, data, N) / (double)N;
-    d = efficiency_arith_bit (x, data, N) / (double)N;
+    d = efficiency_arith_dirac_stats (x, data, N) / (double)N;
     e = efficiency_arith_exp (x, data, N) / (double)N;
 
     printf("%g %g %g %g %g %g\n", x/256.0, a, b, c, d, e);
