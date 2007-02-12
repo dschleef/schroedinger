@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include <schroedinger/schroarith.h>
-#include <schroedinger/schrotables.h>
+#include <schroedinger/schrodebug.h>
 
 #include "arith.h"
 
@@ -91,11 +91,6 @@ arith_dirac_init (Arith *arith)
   arith->contexts[0].next = 0;
 }
 
-void
-arith_dirac_flush (Arith *arith)
-{
-}
-
 static void
 push_bit (Arith *arith, int value)
 {
@@ -108,6 +103,17 @@ push_bit (Arith *arith, int value)
     arith->output_byte = 0;
     arith->output_bits = 0;
   }
+}
+
+void
+arith_dirac_flush (Arith *arith)
+{
+  int i;
+  /* FIXME being lazy. */
+  for(i=0;i<16;i++){
+    push_bit(arith, 0);
+  }
+  arith->offset++;
 }
 
 static void

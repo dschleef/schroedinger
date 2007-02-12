@@ -13,8 +13,10 @@
 
 int encode_arith_dirac (unsigned char *out_data, unsigned char *in_data, int n);
 int encode_arith_dirac_byte (unsigned char *out_data, unsigned char *in_data, int n);
+int encode_arith_dirac_both (unsigned char *out_data, unsigned char *in_data, int n);
 
 void decode_arith_dirac_byte (unsigned char *out_data, unsigned char *in_data, int n);
+void decode_arith_dirac_both (unsigned char *out_data, unsigned char *in_data, int n);
 
 
 unsigned char out_data[N];
@@ -60,10 +62,10 @@ main (int argc, char *argv[])
   //n = encode_arith_dirac (out_data, in_data, N);
   //dumpbits(out_data, n);
 
-  n = encode_arith_dirac_byte (out_data, in_data, N);
+  n = encode_arith_dirac_both (out_data, in_data, N);
   //dumpbits(out_data, n);
 
-  decode_arith_dirac_byte (c_data, out_data, N);
+  decode_arith_dirac_both (c_data, out_data, N);
   dumpbits(c_data, 100);
 
   return 0;

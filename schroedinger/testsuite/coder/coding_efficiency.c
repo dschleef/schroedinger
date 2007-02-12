@@ -15,6 +15,7 @@ int efficiency_arith_dirac (int x, unsigned char *data, int n);
 int efficiency_arith_exp (int x, unsigned char *data, int n);
 int efficiency_arith_dirac_byte (int x, unsigned char *data, int n);
 int efficiency_arith_dirac_stats (int x, unsigned char *data, int n);
+int efficiency_arith_dirac_both (int x, unsigned char *data, int n);
 int efficiency_arith_qm (int x, unsigned char *data, int n);
 
 
@@ -33,18 +34,21 @@ int
 main (int argc, char *argv[])
 {
   int x;
-  double a, b, c, d, e;
+  double a, b, c, d, e, f;
+  double y;
 
   schro_init();
 
   for(x = 0; x <= 256; x += 1) {
-    a = efficiency_arith_dirac (x, data, N) / (double)N;
-    b = efficiency_arith_qm (x, data, N) / (double)N;
-    c = efficiency_arith_dirac_byte (x, data, N) / (double)N;
-    d = efficiency_arith_dirac_stats (x, data, N) / (double)N;
-    e = efficiency_arith_exp (x, data, N) / (double)N;
+    y = efficiency_entropy (x/256.0);
+    a = efficiency_arith_dirac (x, data, N) / (double)N / y;
+    b = efficiency_arith_qm (x, data, N) / (double)N / y;
+    c = efficiency_arith_dirac_byte (x, data, N) / (double)N / y;
+    d = efficiency_arith_dirac_stats (x, data, N) / (double)N / y;
+    e = efficiency_arith_dirac_both (x, data, N) / (double)N / y;
+    f = efficiency_arith_exp (x, data, N) / (double)N / y;
 
-    printf("%g %g %g %g %g %g\n", x/256.0, a, b, c, d, e);
+    printf("%g %g %g %g %g %g %g\n", x/256.0, a, b, c, d, e, f);
   }
 
   return 0;

@@ -1,0 +1,157 @@
+#!/usr/bin/env python
+
+import cairo;
+import os;
+import locale;
+import Numeric;
+
+
+width=800;
+height=600;
+
+margin_top=20;
+margin_bottom=40;
+margin_left=40;
+margin_right=20;
+
+range_xmin=0.0;
+range_xmax=1.0;
+range_ymin=0.0;
+range_ymax=120.0;
+
+symbol_size = 2;
+
+
+def draw_border (ctx):
+	ctx.move_to (margin_left, margin_top);
+	ctx.line_to (width - margin_right, margin_top);
+	ctx.line_to (width - margin_right, height - margin_bottom);
+	ctx.line_to (margin_left, height - margin_bottom);
+	ctx.close_path ();
+
+	ctx.set_source_rgb (0, 0, 0);
+	ctx.stroke();
+
+def marker (ctx, x, y):
+	ctx.move_to (x, y);
+	ctx.save ();
+	ctx.identity_matrix ();
+	ctx.rel_move_to (-symbol_size, 0);
+	ctx.rel_line_to (symbol_size*2, 0);
+	ctx.rel_move_to (-symbol_size, -symbol_size);
+	ctx.rel_line_to (0, symbol_size*2);
+	ctx.restore ();
+
+def draw_plot (ctx, points):
+	ctx.save();
+
+	ctx.translate (margin_left, height - margin_bottom);
+	ctx.scale ((width - margin_right - margin_left)/
+			(range_xmax - range_xmin),
+		-(height - margin_top - margin_bottom)/
+			(range_ymax - range_ymin));
+
+	for point in points:
+		marker (ctx, point[0], point[1]);
+
+	ctx.restore();
+
+	ctx.stroke();
+
+def vtick (ctx, y):
+	ctx.move_to (range_xmin, y);
+	ctx.save ();
+	ctx.identity_matrix ();
+	ctx.rel_move_to (0, 0);
+	ctx.rel_line_to (-symbol_size, 0);
+	ctx.restore ();
+
+def htick (ctx, x):
+	ctx.move_to (x, range_ymin);
+	ctx.save ();
+	ctx.identity_matrix ();
+	ctx.rel_move_to (0, 0);
+	ctx.rel_line_to (0, symbol_size);
+	ctx.restore ();
+
+def draw_ticks (ctx):
+	ctx.save ();
+	ctx.translate (margin_left, height - margin_bottom);
+	ctx.scale (width - margin_right - margin_left,
+			-(height - margin_top - margin_bottom));
+
+	dx = 0.1;
+	x = range_ymin;
+	while (x < range_ymax):
+		vtick(ctx, x);
+		x+=dx;
+	x = range_xmin;
+	while (x < range_xmax):
+		htick(ctx, x);
+		x+=dx;
+
+	ctx.restore();
+	ctx.set_source_rgb (0, 0, 0);
+	ctx.stroke();
+
+def gendata():
+	points = [];
+	for i in range(0, 10):
+		x = i*0.1;
+		points.append([x,x*x])
+
+	return points;
+
+def readdata(filename):
+	file = open(filename);
+
+	points = [];
+	for line in file.readlines():
+		points.append(map(float,line.split()));
+
+	file.close();
+	return points;
+
+
+surface = cairo.ImageSurface (cairo.FORMAT_ARGB32, width, height);
+#svgfile = file('plot.svg', 'w');
+#surface = cairo.SVGSurface (svgfile, width, height);
+ctx = cairo.Context (surface);
+
+ctx.set_source_rgb (1, 1, 1);
+ctx.set_operator (cairo.OPERATOR_SOURCE);
+ctx.paint();
+
+draw_border (ctx);
+draw_ticks (ctx);
+
+
+ctx.set_line_width(1.0);
+
+pts = readdata("s");
+tpts = Numeric.transpose(pts);
+
+ctx.set_source_rgb (1, 0, 0);
+draw_plot (ctx, Numeric.transpose(tpts[0:2]));
+
+ctx.set_source_rgb (1, 0.7, 0);
+draw_plot (ctx, Numeric.transpose(tpts[0:3:2]));
+
+ctx.set_source_rgb (0, 0.7, 0);
+draw_plot (ctx, Numeric.transpose(tpts[0:4:3]));
+
+ctx.set_source_rgb (0, 0, 1);
+draw_plot (ctx, Numeric.transpose(tpts[0:5:4]));
+
+ctx.set_source_rgb (1, 0, 1);
+draw_plot (ctx, Numeric.transpose(tpts[0:6:5]));
+
+ctx.set_source_rgb (0.5, 0.5, 0.5);
+draw_plot (ctx, Numeric.transpose(tpts[0:7:6]));
+
+
+surface.write_to_png('speed.png');
+#ctx.show_page();
+#surface.finish();
+
+
