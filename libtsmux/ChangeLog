@@ -1,3 +1,8 @@
+2007-02-15  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* doc/dirac-in-13818-1-mapping.odt:
+	Update mapping document based on feedback from the BBC.
+
 2006-11-23  Jan Schmidt  <thaytan@mad.scientist.com>
 
 	* tsmux/tsmuxstream.c: (tsmux_stream_consume):
