@@ -1,3 +1,9 @@
+2007-02-16  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* doc/dirac-in-13818-1-mapping.odt:
+	Correct the extended stream_id assignment to be within the allowed
+	7-bit range.
+
 2007-02-15  Jan Schmidt  <thaytan@mad.scientist.com>
 
 	* doc/dirac-in-13818-1-mapping.odt:
