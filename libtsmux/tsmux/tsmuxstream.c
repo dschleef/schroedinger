@@ -51,7 +51,6 @@ tsmux_stream_new (guint16 pid, TsMuxStreamType stream_type)
     case TSMUX_ST_VIDEO_MPEG2:
     case TSMUX_ST_VIDEO_MPEG4:
     case TSMUX_ST_VIDEO_H264:
-    case TSMUX_ST_VIDEO_DIRAC:
       /* FIXME: Assign sequential IDs? */
       stream->id = 0xE0;
       stream->pi.flags |= TSMUX_PACKET_FLAG_PES_FULL_HEADER;
@@ -63,6 +62,16 @@ tsmux_stream_new (guint16 pid, TsMuxStreamType stream_type)
       /* FIXME: Assign sequential IDs? */
       stream->id = 0xC0;
       stream->pi.flags |= TSMUX_PACKET_FLAG_PES_FULL_HEADER;
+      break;
+    case TSMUX_ST_VIDEO_DIRAC:
+      stream->id = 0xFD;
+      /* FIXME: assign sequential extended IDs? */
+      stream->id_extended = 0x60;
+
+      stream->pi.flags |= 
+           TSMUX_PACKET_FLAG_PES_FULL_HEADER | 
+           TSMUX_PACKET_FLAG_PES_EXT_STREAMID;
+      stream->is_video_stream = TRUE;
       break;
     default:
       g_critical ("Stream type 0x%0x not yet implemented", stream_type);
@@ -351,6 +360,11 @@ tsmux_stream_pes_header_length (TsMuxStream * stream)
     } else if (stream->pi.flags & TSMUX_PACKET_FLAG_PES_WRITE_PTS) {
       packet_len += 5;
     }
+    if (stream->pi.flags & TSMUX_PACKET_FLAG_PES_EXT_STREAMID) {
+      /* Need basic extension flags (1 byte), plus 2 more bytes for the 
+       * length + extended stream id */
+      packet_len += 3;
+    }
   }
 
   return packet_len;
@@ -425,6 +439,8 @@ tsmux_stream_write_pes_header (TsMuxStream * stream, guint8 * data)
       flags |= 0xC0;
     else if (stream->pi.flags & TSMUX_PACKET_FLAG_PES_WRITE_PTS)
       flags |= 0x80;
+    if (stream->pi.flags & TSMUX_PACKET_FLAG_PES_EXT_STREAMID)
+      flags |= 0x01; /* Enable PES_extension_flag */
     *data++ = flags;
 
     /* Header length is the total pes length, 
@@ -437,6 +453,17 @@ tsmux_stream_write_pes_header (TsMuxStream * stream, guint8 * data)
       tsmux_put_ts (&data, 0x1, stream->dts);
     } else if (stream->pi.flags & TSMUX_PACKET_FLAG_PES_WRITE_PTS) {
       tsmux_put_ts (&data, 0x2, stream->pts);
+    }
+    if (stream->pi.flags & TSMUX_PACKET_FLAG_PES_EXT_STREAMID) {
+      guint8 ext_len;
+
+      flags = 0x0f; /* (reserved bits) | PES_extension_flag_2 */
+      *data++ = flags;
+      
+      ext_len = 1; /* Only writing 1 byte into the extended fields */
+      *data++ = 0x80 | ext_len;
+      /* Write the extended streamID */
+      *data++ = 0x80 | stream->id_extended;
     }
   }
 }
@@ -510,16 +537,13 @@ tsmux_stream_get_es_descrs (TsMuxStream * stream, guint8 * buf, guint16 * len)
 
   switch (stream->stream_type) {
     case TSMUX_ST_VIDEO_DIRAC:
-      /* tag, length */
-      *pos++ = 0xAC;
-      *pos++ = 0;
-      break;
-    case TSMUX_ST_PS_TIMECODE:
-      /* tag, length, PID */
-      *pos++ = 0xAC;
-      *pos++ = 2;
-      /* FIXME: Need to PID for the associated video stream */
-      tsmux_put16 (&pos, 0x1FFF);
+      /* tag (registration_descriptor), length, format_identifier */
+      *pos++ = 0x05;
+      *pos++ = 4;
+      *pos++ = 0x64; /* 'd' */
+      *pos++ = 0x72; /* 'r' */
+      *pos++ = 0x61; /* 'a' */
+      *pos++ = 0x63; /* 'c' */
       break;
     default:
       break;

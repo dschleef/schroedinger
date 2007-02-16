@@ -1,5 +1,15 @@
 2007-02-16  Jan Schmidt  <thaytan@mad.scientist.com>
 
+	* tsmux/tsmuxcommon.h:
+	* tsmux/tsmuxstream.c: (tsmux_stream_new),
+	(tsmux_stream_pes_header_length), (tsmux_stream_write_pes_header),
+	(tsmux_stream_get_es_descrs):
+	* tsmux/tsmuxstream.h:
+	Implement the new method of placing Dirac content by writing
+	a registration descriptor and an extended Stream ID.
+
+2007-02-16  Jan Schmidt  <thaytan@mad.scientist.com>
+
 	* doc/dirac-in-13818-1-mapping.odt:
 	Correct the extended stream_id assignment to be within the allowed
 	7-bit range.

@@ -62,8 +62,7 @@ enum TsMuxStreamType {
   TSMUX_ST_PS_DVD_SUBPICTURE          = 0xff,
 
   /* Non-standard definitions */
-  TSMUX_ST_VIDEO_DIRAC                = 0xD1,
-  TSMUX_ST_PS_TIMECODE                = 0xD2 /* Private stream */
+  TSMUX_ST_VIDEO_DIRAC                = 0xD1
 };
 
 enum TsMuxStreamState {
@@ -78,6 +77,7 @@ struct TsMuxStream {
   TsMuxPacketInfo pi;
   TsMuxStreamType stream_type;
   guint8 id; /* stream id */
+  guint8 id_extended; /* extended stream id (13818-1 Amdt 2) */
 
   gboolean is_video_stream;
 

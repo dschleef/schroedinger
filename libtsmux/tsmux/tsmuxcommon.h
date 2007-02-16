@@ -27,10 +27,11 @@ G_BEGIN_DECLS
 #define TSMUX_PACKET_FLAG_WRITE_ADAPT_EXT (1 << 7)
 
 /* PES stream specific flags */
-#define TSMUX_PACKET_FLAG_PES_FULL_HEADER (1 << 8)
-#define TSMUX_PACKET_FLAG_PES_WRITE_PTS   (1 << 9)
+#define TSMUX_PACKET_FLAG_PES_FULL_HEADER   (1 << 8)
+#define TSMUX_PACKET_FLAG_PES_WRITE_PTS     (1 << 9)
 #define TSMUX_PACKET_FLAG_PES_WRITE_PTS_DTS (1 << 10)
-#define TSMUX_PACKET_FLAG_PES_WRITE_ESCR  (1 << 11)
+#define TSMUX_PACKET_FLAG_PES_WRITE_ESCR    (1 << 11)
+#define TSMUX_PACKET_FLAG_PES_EXT_STREAMID  (1 << 12)
 
 typedef struct TsMuxPacketInfo TsMuxPacketInfo;
 typedef struct TsMuxProgram TsMuxProgram;
