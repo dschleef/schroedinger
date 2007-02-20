@@ -52,14 +52,11 @@ schro_encoder_motion_predict (SchroEncoderTask *task)
 
   schro_encoder_hierarchical_prediction (task);
 
-  schro_encoder_global_prediction (task);
+  if (params->have_global_motion) {
+    schro_encoder_global_prediction (task);
+  }
 
   schro_encoder_dc_prediction (task);
-
-  task->stats_metric = 0;
-  task->stats_dc_blocks = 0;
-  task->stats_none_blocks = 0;
-  task->stats_scan_blocks = 0;
 
   n = 0;
   fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_HIER_REF0];
@@ -67,12 +64,18 @@ schro_encoder_motion_predict (SchroEncoderTask *task)
     fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_HIER_REF1];
   }
   fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_DC];
-  fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF0];
-  fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF1];
+  if (params->have_global_motion) {
+    fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF0];
+    if (params->num_refs > 1) {
+      fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF1];
+    }
+  }
 
   schro_motion_field_merge (task->motion_field, fields, n);
 
   schro_motion_field_combine (task->motion_field);
+
+  schro_motion_field_calculate_stats (task->motion_field, task);
 
   for(i=0;i<SCHRO_MOTION_FIELD_LAST;i++){
     if (task->motion_fields[i]) {
@@ -156,6 +159,31 @@ schro_motion_field_combine (SchroMotionField *mf)
       memcpy(mv + 3*mf->x_num_blocks, mv, 4*sizeof(*mv));
 next_mb:
       do {} while (0);
+    }
+  }
+}
+
+void
+schro_motion_field_calculate_stats (SchroMotionField *mf, SchroEncoderTask *task)
+{
+  int i,j;
+  SchroMotionVector *mv;
+
+  task->stats_dc = 0;
+  task->stats_global = 0;
+  task->stats_motion = 0;
+  for(j=0;j<mf->y_num_blocks;j++){
+    for(i=0;i<mf->x_num_blocks;i++){
+      mv = &mf->motion_vectors[j*mf->x_num_blocks + i];
+      if (mv->pred_mode == 0) {
+        task->stats_dc++;
+      } else {
+        if (mv->using_global) {
+          task->stats_global++;
+        } else {
+          task->stats_motion++;
+        }
+      }
     }
   }
 }

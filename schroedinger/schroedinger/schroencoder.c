@@ -42,16 +42,16 @@ schro_encoder_new (void)
   encoder->mid1_ref = -1;
   encoder->mid2_ref = -1;
 
-  encoder->prefs[SCHRO_PREF_ENGINE] = 0;
-  encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 8;
+  encoder->prefs[SCHRO_PREF_ENGINE] = 1;
+  encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_5_3;
   encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_5_3;
-  encoder->prefs[SCHRO_PREF_QUANT_BASE] = 8;
+  encoder->prefs[SCHRO_PREF_QUANT_BASE] = 4;
   encoder->prefs[SCHRO_PREF_QUANT_OFFSET_NONREF] = 4;
   encoder->prefs[SCHRO_PREF_QUANT_OFFSET_SUBBAND] = -1;
-  encoder->prefs[SCHRO_PREF_QUANT_DC] = 4;
-  encoder->prefs[SCHRO_PREF_QUANT_DC_OFFSET_NONREF] = 4;
+  encoder->prefs[SCHRO_PREF_QUANT_DC] = 0;
+  encoder->prefs[SCHRO_PREF_QUANT_DC_OFFSET_NONREF] = 0;
 
   schro_params_set_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_SD576);
@@ -345,9 +345,9 @@ schro_encoder_iterate (SchroEncoder *encoder)
   }
 #endif
 
-  schro_async_wait (encoder->async, 4);
+  schro_async_wait (encoder->async, 1);
 
-  if (schro_async_get_num_waiting (encoder->async) < 4) {
+  if (schro_async_get_num_waiting (encoder->async) < 1) {
 
     switch (encoder->engine) {
       case 0:
@@ -377,18 +377,17 @@ schro_encoder_iterate (SchroEncoder *encoder)
     schro_encoder_task_complete (task);
     schro_encoder_task_free (task);
   }
-  if (schro_encoder_pull_is_ready (encoder)) {
-    return SCHRO_STATE_HAVE_BUFFER;
-  }
 
   if (encoder->end_of_stream_pulled) {
     return SCHRO_STATE_END_OF_STREAM;
   }
+  if (schro_encoder_pull_is_ready (encoder)) {
+    return SCHRO_STATE_HAVE_BUFFER;
+  }
   if (!encoder->end_of_stream &&
-      schro_async_get_num_waiting (encoder->async) < 4) {
+      schro_async_get_num_waiting (encoder->async) < 1) {
     return SCHRO_STATE_NEED_FRAME;
   }
-
 
   return SCHRO_STATE_AGAIN;
 }
@@ -437,6 +436,17 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
 {
   int residue_bits_start;
   SchroBuffer *subbuffer;
+
+#if 0
+  {
+    int i;
+    extern int hist[];
+
+    for(i=0;i<10;i++){
+      SCHRO_ERROR("%d %d", i, hist[i]);
+    }
+  }
+#endif
 
   /* encode header */
   schro_encoder_encode_parse_info (task->bits,
@@ -489,13 +499,14 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
   task->outbuffer = subbuffer;
 
   if (task->params.num_refs > 0) {
+#if 0
     task->metric_to_cost =
       (double)(task->bits->offset - residue_bits_start) /
       task->stats_metric;
-    SCHRO_INFO("pred bits %d, residue bits %d, stats_metric %d, m_to_c = %g, dc_blocks %d, scan blocks %d",
+#endif
+    SCHRO_INFO("pred bits %d, residue bits %d, dc %d, global = %d, motion %d",
         residue_bits_start, task->bits->offset - residue_bits_start,
-        task->stats_metric, task->metric_to_cost,
-        task->stats_dc_blocks, task->stats_scan_blocks);
+        task->stats_dc, task->stats_global, task->stats_motion);
   }
 
   if (task->is_ref) {
@@ -1494,8 +1505,6 @@ schro_encoder_reference_get (SchroEncoder *encoder, int frame_number)
 {
   int i;
   SchroEncoderReference *ref;
-
-  SCHRO_DEBUG("getting %d", frame_number);
 
   for(i=0;i<encoder->n_reference_frames;i++){
     ref = encoder->reference_frames + i;

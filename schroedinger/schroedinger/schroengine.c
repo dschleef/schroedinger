@@ -127,6 +127,13 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
     }
   }
 
+  if (encoder->last_ref >= 0 &&
+      encoder->next_frame - encoder->last_ref < encoder->ref_distance) {
+    if (!schro_encoder_reference_get (encoder, encoder->last_ref)) {
+      return FALSE;
+    }
+  }
+
   task = schro_encoder_task_new (encoder);
   task->encode_frame = encode_frame;
   task->is_ref = FALSE;

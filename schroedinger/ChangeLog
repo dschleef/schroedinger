@@ -1,3 +1,20 @@
+2007-02-19  David Schleef  <ds@schleef.org>
+
+	* configure.ac:
+	  Add define for new coder.
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	  Add new coder.
+	* schroedinger/schropredict.c:
+	* schroedinger/schropredict.h:
+	  Calculate statistics as a separate step.
+	* schroedinger/schrowavelet.c:
+	  Add config.h
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	  Random changes.
+
 2007-02-11  David Schleef  <ds@schleef.org>
 
 	* testsuite/coder/Makefile.am:

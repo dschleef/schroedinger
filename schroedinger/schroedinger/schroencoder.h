@@ -170,10 +170,10 @@ struct _SchroEncoderTask {
 
   /* tworef */
   double metric_to_cost;
-  int stats_metric;
-  int stats_dc_blocks;
-  int stats_none_blocks;
-  int stats_scan_blocks;
+
+  int stats_dc;
+  int stats_global;
+  int stats_motion;
 };
 
 struct _SchroEncoderSettings {
