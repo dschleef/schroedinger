@@ -1,5 +1,15 @@
 2007-02-20  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroengine.h:
+	  Implement backref2.
+	* schroedinger/schropredict.c:
+	  Disable merging of DC blocks, because it has some pathologically
+	  bad cases.
+
+2007-02-20  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroasync-pthread.c:
 	* schroedinger/schroasync.h:
 	  Add wait_one(), since that's what is used now.

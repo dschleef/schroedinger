@@ -45,7 +45,7 @@ schro_encoder_new (void)
   encoder->mid1_ref = -1;
   encoder->mid2_ref = -1;
 
-  encoder->prefs[SCHRO_PREF_ENGINE] = 1;
+  encoder->prefs[SCHRO_PREF_ENGINE] = 2;
   encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
@@ -454,6 +454,9 @@ schro_encoder_iterate (SchroEncoder *encoder)
       case 1:
         ret = schro_encoder_engine_backref (encoder);
         break;
+      case 2:
+        ret = schro_encoder_engine_backref2 (encoder);
+        break;
       default:
         ret = FALSE;
         break;
@@ -532,7 +535,6 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
     schro_encoder_encode_frame_prediction (task);
 
     schro_frame_convert (task->tmp_frame0, task->encode_frame);
-    schro_frame_free (task->encode_frame);
 
     if (task->params.num_refs == 2) {
       schro_frame_copy_with_motion (task->tmp_frame1,
@@ -551,9 +553,8 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
         task->params.video_format->height);
   } else {
     schro_frame_convert (task->tmp_frame0, task->encode_frame);
-
-    schro_frame_free (task->encode_frame);
   }
+  schro_frame_free (task->encode_frame);
 
   schro_encoder_encode_transform_parameters (task);
 

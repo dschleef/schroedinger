@@ -125,6 +125,7 @@ schro_motion_field_combine (SchroMotionField *mf)
     for(i=0;i<mf->x_num_blocks;i+=4){
       mv = &mf->motion_vectors[j*mf->x_num_blocks + i];
       if (mv->pred_mode == 0) {
+#if 0
         int dc[3] = { 0, 0, 0 };
         for(k=0;k<4;k++){
           for(l=0;l<4;l++){
@@ -138,6 +139,9 @@ schro_motion_field_combine (SchroMotionField *mf)
         mv->u.dc[0] = (dc[0] + 8)>>4;
         mv->u.dc[1] = (dc[1] + 8)>>4;
         mv->u.dc[2] = (dc[2] + 8)>>4;
+#else
+        continue;
+#endif
       } else if (mv->using_global) {
         for(k=0;k<4;k++){
           for(l=0;l<4;l++){
