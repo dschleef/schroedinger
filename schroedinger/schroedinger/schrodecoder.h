@@ -95,7 +95,7 @@ void schro_decoder_decode_frame_header (SchroDecoder *decoder);
 void schro_decoder_decode_frame_prediction (SchroDecoder *decoder);
 void schro_decoder_decode_prediction_data (SchroDecoder *decoder);
 void schro_decoder_decode_transform_parameters (SchroDecoder *decoder);
-void schro_decoder_decode_transform_data (SchroDecoder *decoder, int component);
+void schro_decoder_decode_transform_data (SchroDecoder *decoder);
 void schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index);
 void schro_decoder_iwt_transform (SchroDecoder *decoder, int component);
 void schro_decoder_copy_from_frame_buffer (SchroDecoder *decoder, SchroBuffer *buffer);

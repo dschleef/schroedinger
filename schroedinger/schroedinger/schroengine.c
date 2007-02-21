@@ -83,7 +83,7 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
 
     schro_params_calculate_mc_sizes (params);
     schro_params_calculate_iwt_sizes (params);
-    schro_encoder_init_subbands (task);
+    schro_params_init_subbands (params, task->subbands);
     schro_encoder_choose_quantisers (task);
 
     schro_async_run (encoder->async,
@@ -182,7 +182,7 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
 
     schro_params_calculate_mc_sizes (params);
     schro_params_calculate_iwt_sizes (params);
-    schro_encoder_init_subbands (task);
+    schro_params_init_subbands (params, task->subbands);
     schro_encoder_choose_quantisers (task);
 
     if (params->num_refs > 0) {
@@ -299,7 +299,7 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
 
     schro_params_calculate_mc_sizes (params);
     schro_params_calculate_iwt_sizes (params);
-    schro_encoder_init_subbands (task);
+    schro_params_init_subbands (params, task->subbands);
     schro_encoder_choose_quantisers (task);
 
     if (params->num_refs > 0) {

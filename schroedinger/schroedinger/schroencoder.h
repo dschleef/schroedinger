@@ -109,12 +109,6 @@ struct _SchroEncoder {
   int next_slot;
 
   int output_slot;
-  struct {
-    int slot;
-    int presentation_frame;
-    SchroBuffer *buffer;
-  } output_queue[SCHRO_FRAME_QUEUE_LENGTH];
-  int n_output_queue;
 
   SchroPicture picture_list[SCHRO_FRAME_QUEUE_LENGTH];
   int n_pictures;
@@ -245,7 +239,6 @@ void schro_encoder_end_of_stream (SchroEncoder *encoder);
 int schro_encoder_push_ready (SchroEncoder *encoder);
 void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
 int schro_encoder_iterate (SchroEncoder *encoder);
-SchroBuffer * schro_encoder_encode (SchroEncoder *encoder);
 
 SchroBuffer * schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
     void *data, int size);

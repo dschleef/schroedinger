@@ -23,8 +23,9 @@ frame_free (SchroFrame *frame, void *priv)
 void
 test (int w, int h)
 {
-  int i;
   int size;
+  int go;
+  int n_frames;
   uint8_t *picture;
   SchroEncoder *encoder;
   SchroBuffer *buffer;
@@ -41,24 +42,45 @@ test (int w, int h)
   size += (ROUND_UP_8 (w)/2) * (ROUND_UP_2 (h)/2);
   size += (ROUND_UP_8 (w)/2) * (ROUND_UP_2 (h)/2);
 
-  for(i=0;i<10;i++){
-    picture = malloc(size);
-    oil_random_u8(picture, size);
+  n_frames = 0;
+  go = 1;
+  while (go) {
+    int x;
 
-    frame = schro_frame_new_I420 (picture, w, h);
+    switch (schro_encoder_iterate (encoder)) {
+      case SCHRO_STATE_NEED_FRAME:
+        if (n_frames < 10) {
+          //SCHRO_ERROR("frame %d", n_frames);
 
-    schro_frame_set_free_callback (frame, frame_free, picture);
+          picture = malloc(size);
+          oil_random_u8(picture, size);
 
-    schro_encoder_push_frame (encoder, frame);
+          frame = schro_frame_new_I420 (picture, w, h);
 
-    buffer = schro_encoder_encode (encoder);
-    if (buffer) {
-      schro_buffer_unref (buffer);
+          schro_frame_set_free_callback (frame, frame_free, picture);
+
+          schro_encoder_push_frame (encoder, frame);
+
+          n_frames++;
+        } else {
+          schro_encoder_end_of_stream (encoder);
+        }
+        break;
+      case SCHRO_STATE_HAVE_BUFFER:
+      case SCHRO_STATE_AGAIN:
+        break;
+      case SCHRO_STATE_END_OF_STREAM:
+        go = 0;
+        break;
+      default:
+        break;
     }
-  }
-  schro_encoder_end_of_stream (encoder);
-  while ((buffer = schro_encoder_encode (encoder))) {
-    schro_buffer_unref (buffer);
+    buffer = schro_encoder_pull (encoder, &x);
+    while (buffer) {
+      //SCHRO_ERROR("outbuf %d", buffer->length);
+      schro_buffer_unref (buffer);
+      buffer = schro_encoder_pull (encoder, &x);
+    }
   }
 
   schro_encoder_free (encoder);

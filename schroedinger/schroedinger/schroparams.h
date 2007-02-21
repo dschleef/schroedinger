@@ -189,6 +189,8 @@ void schro_params_set_block_params (SchroParams *params, int index);
 
 void schro_params_set_default_codeblock (SchroParams *params);
 
+void schro_params_init_subbands (SchroParams *params, SchroSubband *subbands);
+
 #ifdef __cplusplus
 }
 #endif

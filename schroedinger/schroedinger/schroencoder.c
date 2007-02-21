@@ -21,6 +21,8 @@ static int schro_encoder_pull_is_ready (SchroEncoder *encoder);
 static void schro_encoder_encode_codec_comment (SchroEncoder *encoder);
 static void schro_encoder_clean_up_transform_subband (SchroEncoderTask *task,
     int component, int index);
+static void schro_encoder_fixup_offsets (SchroEncoder *encoder,
+    SchroBuffer *buffer);
 
 static void
 schro_encoder_frame_free (SchroEncoderFrame *encoder_frame);
@@ -216,6 +218,109 @@ schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
   schro_encoder_frame_queue_push (encoder, frame);
 
   encoder->queue_changed = TRUE;
+}
+
+static int
+schro_encoder_pull_is_ready (SchroEncoder *encoder)
+{
+  int i;
+
+  if (encoder->inserted_buffer) {
+    return TRUE;
+  }
+
+  for(i=0;i<encoder->frame_queue_length;i++){
+    SchroEncoderFrame *frame;
+    frame = encoder->frame_queue[i];
+    if (frame->slot == encoder->output_slot &&
+        frame->state == SCHRO_ENCODER_FRAME_STATE_DONE) {
+      return TRUE;
+    }
+  }
+
+  if (encoder->frame_queue_length == 0 && encoder->end_of_stream) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+static void
+schro_encoder_shift_frame_queue (SchroEncoder *encoder)
+{
+  SchroEncoderFrame *frame;
+
+  while (encoder->frame_queue_length > 0) {
+    frame = encoder->frame_queue[0];
+    if (frame->state != SCHRO_ENCODER_FRAME_STATE_FREE) {
+      break;
+    }
+
+    memmove (encoder->frame_queue, encoder->frame_queue + 1,
+        (encoder->frame_queue_length - 1) * sizeof(void *));
+    encoder->frame_queue_length--;
+    schro_encoder_frame_free (frame);
+  }
+}
+
+SchroBuffer *
+schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
+{
+  SchroBuffer *buffer;
+  int i;
+
+  SCHRO_DEBUG("pulling slot %d", encoder->output_slot);
+
+  if (encoder->inserted_buffer) {
+    buffer = encoder->inserted_buffer;
+    encoder->inserted_buffer = NULL;
+    if (presentation_frame) {
+      *presentation_frame = -1;
+    }
+
+    schro_encoder_fixup_offsets (encoder, buffer);
+
+    return buffer;
+  }
+  
+  for(i=0;i<encoder->frame_queue_length;i++){
+    SchroEncoderFrame *frame;
+    frame = encoder->frame_queue[i];
+    if (frame->slot == encoder->output_slot &&
+        frame->state == SCHRO_ENCODER_FRAME_STATE_DONE) {
+      if (frame->access_unit_buffer) {
+        buffer = frame->access_unit_buffer;
+        frame->access_unit_buffer = NULL;
+      } else {
+        buffer = frame->output_buffer;
+        frame->output_buffer = NULL;
+
+        frame->state = SCHRO_ENCODER_FRAME_STATE_FREE;
+        encoder->output_slot++;
+
+        schro_encoder_shift_frame_queue (encoder);
+      }
+      if (presentation_frame) {
+        *presentation_frame = frame->presentation_frame;
+      }
+
+      schro_encoder_fixup_offsets (encoder, buffer);
+
+      SCHRO_DEBUG("got buffer length=%d", buffer->length);
+      return buffer;
+    }
+  }
+
+  if (encoder->frame_queue_length == 0 && encoder->end_of_stream) {
+    buffer = schro_encoder_encode_end_of_stream (encoder);
+    schro_encoder_fixup_offsets (encoder, buffer);
+    encoder->end_of_stream_pulled = TRUE;
+
+    return buffer;
+  }
+
+  SCHRO_DEBUG("got nothing");
+  return NULL;
 }
 
 void
@@ -479,17 +584,6 @@ schro_encoder_iterate (SchroEncoder *encoder)
   }
 
   return SCHRO_STATE_AGAIN;
-}
-
-SchroBuffer *
-schro_encoder_encode (SchroEncoder *encoder)
-{
-  SchroBuffer *buffer;
-
-  schro_encoder_iterate (encoder);
-
-  buffer = schro_encoder_pull (encoder, NULL);
-  return buffer;
 }
 
 static void
@@ -991,99 +1085,6 @@ schro_encoder_encode_transform_parameters (SchroEncoderTask *task)
 }
 
 
-void
-schro_encoder_init_subbands (SchroEncoderTask *task)
-{
-  SchroParams *params = &task->params;
-  int i;
-  int w;
-  int h;
-  int stride;
-  int chroma_w;
-  int chroma_h;
-  int chroma_stride;
-  SchroSubband *subbands = task->subbands;
-
-  w = params->iwt_luma_width >> params->transform_depth;
-  h = params->iwt_luma_height >> params->transform_depth;
-  stride = sizeof(int16_t)*(params->iwt_luma_width << params->transform_depth);
-  chroma_w = params->iwt_chroma_width >> params->transform_depth;
-  chroma_h = params->iwt_chroma_height >> params->transform_depth;
-  chroma_stride = sizeof(int16_t)*(params->iwt_chroma_width << params->transform_depth);
-
-  subbands[0].x = 0;
-  subbands[0].y = 0;
-  subbands[0].w = w;
-  subbands[0].h = h;
-  subbands[0].offset = 0;
-  subbands[0].stride = stride;
-  subbands[0].chroma_w = chroma_w;
-  subbands[0].chroma_h = chroma_h;
-  subbands[0].chroma_offset = 0;
-  subbands[0].chroma_stride = chroma_stride;
-  subbands[0].has_parent = 0;
-  subbands[0].scale_factor_shift = 0;
-  subbands[0].horizontally_oriented = 0;
-  subbands[0].vertically_oriented = 0;
-
-  for(i=0; i<params->transform_depth; i++) {
-    /* hl */
-    subbands[1+3*i].x = 1;
-    subbands[1+3*i].y = 0;
-    subbands[1+3*i].w = w;
-    subbands[1+3*i].h = h;
-    subbands[1+3*i].offset = w;
-    subbands[1+3*i].stride = stride;
-    subbands[1+3*i].chroma_w = chroma_w;
-    subbands[1+3*i].chroma_h = chroma_h;
-    subbands[1+3*i].chroma_offset = chroma_w;
-    subbands[1+3*i].chroma_stride = chroma_stride;
-    subbands[1+3*i].has_parent = (i>0);
-    subbands[1+3*i].scale_factor_shift = i;
-    subbands[1+3*i].horizontally_oriented = 0;
-    subbands[1+3*i].vertically_oriented = 1;
-
-    /* lh */
-    subbands[2+3*i].x = 0;
-    subbands[2+3*i].y = 1;
-    subbands[2+3*i].w = w;
-    subbands[2+3*i].h = h;
-    subbands[2+3*i].offset = (stride/2/sizeof(int16_t));
-    subbands[2+3*i].stride = stride;
-    subbands[2+3*i].chroma_w = chroma_w;
-    subbands[2+3*i].chroma_h = chroma_h;
-    subbands[2+3*i].chroma_offset = (chroma_stride/2/sizeof(int16_t));
-    subbands[2+3*i].chroma_stride = chroma_stride;
-    subbands[2+3*i].has_parent = (i>0);
-    subbands[2+3*i].scale_factor_shift = i;
-    subbands[2+3*i].horizontally_oriented = 1;
-    subbands[2+3*i].vertically_oriented = 0;
-
-    /* hh */
-    subbands[3+3*i].x = 1;
-    subbands[3+3*i].y = 1;
-    subbands[3+3*i].w = w;
-    subbands[3+3*i].h = h;
-    subbands[3+3*i].offset = w + (stride/2/sizeof(int16_t));
-    subbands[3+3*i].stride = stride;
-    subbands[3+3*i].chroma_w = chroma_w;
-    subbands[3+3*i].chroma_h = chroma_h;
-    subbands[3+3*i].chroma_offset = chroma_w + (chroma_stride/2/sizeof(int16_t));
-    subbands[3+3*i].chroma_stride = chroma_stride;
-    subbands[3+3*i].has_parent = (i>0);
-    subbands[3+3*i].scale_factor_shift = i;
-    subbands[3+3*i].horizontally_oriented = 0;
-    subbands[3+3*i].vertically_oriented = 0;
-
-    w <<= 1;
-    h <<= 1;
-    stride >>= 1;
-    chroma_w <<= 1;
-    chroma_h <<= 1;
-    chroma_stride >>= 1;
-  }
-
-}
 
 void
 schro_encoder_clean_up_transform (SchroEncoderTask *task)
@@ -1728,133 +1729,8 @@ schro_encoder_reference_retire (SchroEncoder *encoder, int frame_number)
   SCHRO_ASSERT(0);
 }
 
-/* output queue */
-
-void
-schro_encoder_output_push (SchroEncoder *encoder, SchroBuffer *buffer,
-    int slot, int presentation_frame)
-{
-  int i;
-
-  SCHRO_DEBUG("pushing slot %d", slot);
-  for(i=0;i<ARRAY_SIZE(encoder->output_queue);i++){
-    if (encoder->output_queue[i].buffer == NULL) {
-      encoder->output_queue[i].slot = slot;
-      encoder->output_queue[i].buffer = buffer;
-      encoder->output_queue[i].presentation_frame = presentation_frame;
-      encoder->n_output_queue++;
-      return;
-    }
-  }
-  SCHRO_ERROR("no slot available in output queue");
-  SCHRO_ASSERT(0);
-}
-
-static int
-schro_encoder_pull_is_ready (SchroEncoder *encoder)
-{
-  int i;
-
-  if (encoder->inserted_buffer) {
-    return TRUE;
-  }
-
-  for(i=0;i<encoder->frame_queue_length;i++){
-    SchroEncoderFrame *frame;
-    frame = encoder->frame_queue[i];
-    if (frame->slot == encoder->output_slot &&
-        frame->state == SCHRO_ENCODER_FRAME_STATE_DONE) {
-      return TRUE;
-    }
-  }
-
-  if (encoder->frame_queue_length == 0 && encoder->end_of_stream) {
-    return TRUE;
-  }
-
-  return FALSE;
-}
-
-static void
-schro_encoder_shift_frame_queue (SchroEncoder *encoder)
-{
-  SchroEncoderFrame *frame;
-
-  while (encoder->frame_queue_length > 0) {
-    frame = encoder->frame_queue[0];
-    if (frame->state != SCHRO_ENCODER_FRAME_STATE_FREE) {
-      break;
-    }
-
-    memmove (encoder->frame_queue, encoder->frame_queue + 1,
-        (encoder->frame_queue_length - 1) * sizeof(void *));
-    encoder->frame_queue_length--;
-    schro_encoder_frame_free (frame);
-  }
-}
-
-SchroBuffer *
-schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
-{
-  SchroBuffer *buffer;
-  int i;
-
-  SCHRO_DEBUG("pulling slot %d", encoder->output_slot);
-
-  if (encoder->inserted_buffer) {
-    buffer = encoder->inserted_buffer;
-    encoder->inserted_buffer = NULL;
-    if (presentation_frame) {
-      *presentation_frame = -1;
-    }
-
-    schro_encoder_fixup_offsets (encoder, buffer);
-
-    return buffer;
-  }
-  
-  for(i=0;i<encoder->frame_queue_length;i++){
-    SchroEncoderFrame *frame;
-    frame = encoder->frame_queue[i];
-    if (frame->slot == encoder->output_slot &&
-        frame->state == SCHRO_ENCODER_FRAME_STATE_DONE) {
-      if (frame->access_unit_buffer) {
-        buffer = frame->access_unit_buffer;
-        frame->access_unit_buffer = NULL;
-      } else {
-        buffer = frame->output_buffer;
-        frame->output_buffer = NULL;
-
-        frame->state = SCHRO_ENCODER_FRAME_STATE_FREE;
-        encoder->output_slot++;
-
-        schro_encoder_shift_frame_queue (encoder);
-      }
-      if (presentation_frame) {
-        *presentation_frame = frame->presentation_frame;
-      }
-
-      schro_encoder_fixup_offsets (encoder, buffer);
-
-      SCHRO_DEBUG("got buffer length=%d", buffer->length);
-      return buffer;
-    }
-  }
-
-  if (encoder->frame_queue_length == 0 && encoder->end_of_stream) {
-    buffer = schro_encoder_encode_end_of_stream (encoder);
-    schro_encoder_fixup_offsets (encoder, buffer);
-    encoder->end_of_stream_pulled = TRUE;
-
-    return buffer;
-  }
-
-  SCHRO_DEBUG("got nothing");
-  return NULL;
-}
-
 static const int pref_range[][2] = {
-  { 0, 3 },
+  { 0, 2 },
   { 2, 20 },
   { 1, 8 },
   { 0, 7 },

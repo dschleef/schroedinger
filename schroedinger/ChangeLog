@@ -1,5 +1,17 @@
 2007-02-21  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* testsuite/encode_big.c:
+	  Code rearrangement.
+
+2007-02-21  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:
 	* schroedinger/schroengine.c:
