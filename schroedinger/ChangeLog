@@ -1,3 +1,10 @@
+2007-02-21  Jan Schmidt  <thaytan@mad.scientist.com>
+
+	* gst/gstschrodec.c: (gst_schrodec_send_tags),
+	(gst_schro_dec_push_all):
+	  Output a CODEC tag event before the first buffer so that
+	  totem and friends can display the video codec in use.
+
 2007-02-21  David Schleef  <ds@schleef.org>
 
 	* testsuite/coder/Makefile.am:

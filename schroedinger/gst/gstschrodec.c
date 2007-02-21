@@ -737,6 +737,22 @@ get_i420_size (int width, int height)
   return size;
 }
 
+static void
+gst_schrodec_send_tags (GstSchroDec *schro_dec)
+{
+  GstTagList *list;
+
+  list = gst_tag_list_new ();
+  /* FIXME: Is there API for getting the encoder version number from the 
+   * decoder? */
+  gst_tag_list_add (list, GST_TAG_MERGE_REPLACE,
+     GST_TAG_ENCODER_VERSION, schro_dec->decoder->major_version,
+     GST_TAG_VIDEO_CODEC, "Dirac", NULL);
+
+  gst_element_found_tags_for_pad (GST_ELEMENT_CAST (schro_dec), 
+     schro_dec->srcpad, list);
+}
+
 static GstFlowReturn
 gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
 {
@@ -836,6 +852,8 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
             gst_caps_unref (caps);
             free (format);
         
+            gst_schrodec_send_tags (schro_dec);
+
             schro_dec->have_access_unit = TRUE;
             break;
           case SCHRO_DECODER_NEED_BITS:
