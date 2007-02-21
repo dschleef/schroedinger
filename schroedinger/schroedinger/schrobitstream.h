@@ -14,6 +14,7 @@ extern "C" {
 typedef enum _SchroParseCode {
   SCHRO_PARSE_CODE_ACCESS_UNIT = 0x00,
   SCHRO_PARSE_CODE_END_SEQUENCE = 0x10,
+  SCHRO_PARSE_CODE_AUXILIARY_DATA = 0x20,
   SCHRO_PARSE_CODE_INTRA_REF = 0x0c,
   SCHRO_PARSE_CODE_INTRA_NON_REF = 0x08,
   SCHRO_PARSE_CODE_INTER_REF_1 = 0x0d,
@@ -34,6 +35,8 @@ typedef enum _SchroParseCode {
 #define SCHRO_PARSE_CODE_IS_PICTURE(x) ((x) & 0x8)
 #define SCHRO_PARSE_CODE_NUM_REFS(x) ((x) & 0x3)
 #define SCHRO_PARSE_CODE_IS_REF(x) ((x) & 0x4)
+
+#define SCHRO_PARSE_HEADER_SIZE (4+1+3+3)
 
 typedef enum _SchroVideoFormatEnum {
   SCHRO_VIDEO_FORMAT_CUSTOM = 0,

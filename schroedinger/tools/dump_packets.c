@@ -99,6 +99,8 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
   SchroBits *bits;
   SchroBuffer *buf;
   const char *parse_code;
+  int next;
+  int prev;
 
   data = GST_BUFFER_DATA(buffer);
 
@@ -115,6 +117,9 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
   switch (data[4]) {
     case SCHRO_PARSE_CODE_ACCESS_UNIT:
       parse_code = "access unit header";
+      break;
+    case SCHRO_PARSE_CODE_AUXILIARY_DATA:
+      parse_code = "auxiliary data";
       break;
     case SCHRO_PARSE_CODE_INTRA_REF:
       parse_code = "intra ref";
@@ -147,16 +152,11 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
   bits = schro_bits_new();
   schro_bits_decode_init (bits, buf);
 
-  {
-    int next;
-    int prev;
+  next = schro_bits_decode_bits (bits, 24);
+  prev = schro_bits_decode_bits (bits, 24);
 
-    next = schro_bits_decode_bits (bits, 24);
-    prev = schro_bits_decode_bits (bits, 24);
-
-    g_print("  offset to next: %d\n", next);
-    g_print("  offset to prev: %d\n", prev);
-  }
+  g_print("  offset to next: %d\n", next);
+  g_print("  offset to prev: %d\n", prev);
 
   if (data[4] == SCHRO_PARSE_CODE_ACCESS_UNIT) {
     int bit;
@@ -455,6 +455,13 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         }
       }
     }
+  } else if (data[4] == SCHRO_PARSE_CODE_AUXILIARY_DATA) {
+    int length = next - 19;
+    g_print("  major: %.4s\n", data + 11);
+    g_print("  minor: %.4s\n", data + 15);
+    g_print("  string: %.*s\n", length, data + 19);
+
+    bits->offset += (4 + 4 + length)*8;
   }
 
   schro_bits_sync (bits);

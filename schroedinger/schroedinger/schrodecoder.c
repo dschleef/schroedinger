@@ -245,6 +245,14 @@ schro_decoder_iterate (SchroDecoder *decoder)
     return SCHRO_DECODER_FIRST_ACCESS_UNIT;
   }
 
+  if (decoder->code == SCHRO_PARSE_CODE_AUXILIARY_DATA) {
+    schro_buffer_unref (decoder->input_buffer);
+    decoder->input_buffer = NULL;
+    schro_bits_free (decoder->bits);
+    
+    return SCHRO_DECODER_OK;
+  }
+
   if (schro_decoder_is_end_sequence (decoder->input_buffer)) {
     SCHRO_INFO ("decoding end sequence");
     schro_buffer_unref (decoder->input_buffer);
@@ -831,7 +839,7 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
   }
 
   if (arith->offset < buffer->length) {
-    SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
+    SCHRO_WARNING("arith decoding didn't consume buffer (%d < %d)",
         arith->offset, buffer->length);
   }
 #if 0
@@ -1531,10 +1539,12 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     }
       }
     }
+#if 0
     if (arith->offset < buffer->length) {
       SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
           arith->offset, buffer->length);
     }
+#endif
 #if 0
     if (arith->offset > buffer->length + 6) {
       SCHRO_ERROR("arith decoding overran buffer (%d > %d)",

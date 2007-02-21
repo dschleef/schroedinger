@@ -10,7 +10,7 @@
 
 static void schro_encoder_frame_queue_push (SchroEncoder *encoder,
     SchroFrame *frame);
-static void schro_encoder_reference_analyse (SchroEncoderReference *ref);
+static void schro_encoder_reference_analyse (SchroEncoderFrame *ref);
 static void schro_encoder_reference_retire (SchroEncoder *encoder,
     int frame_number);
 static void schro_encoder_engine_init (SchroEncoder *encoder);
@@ -18,7 +18,10 @@ static void schro_encoder_encode_frame_prediction (SchroEncoderTask *task);
 static void schro_encoder_encode_transform_parameters (SchroEncoderTask *task);
 static void schro_encoder_encode_transform_data (SchroEncoderTask *task, int component);
 static int schro_encoder_pull_is_ready (SchroEncoder *encoder);
+static void schro_encoder_encode_codec_comment (SchroEncoder *encoder);
 
+static void
+schro_encoder_frame_free (SchroEncoderFrame *encoder_frame);
 
 
 SchroEncoder *
@@ -45,16 +48,21 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_ENGINE] = 1;
   encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
-  encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_5_3;
+  encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
   encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_5_3;
   encoder->prefs[SCHRO_PREF_QUANT_BASE] = 4;
-  encoder->prefs[SCHRO_PREF_QUANT_OFFSET_NONREF] = 4;
+  encoder->prefs[SCHRO_PREF_QUANT_OFFSET_NONREF] = 8;
   encoder->prefs[SCHRO_PREF_QUANT_OFFSET_SUBBAND] = -1;
   encoder->prefs[SCHRO_PREF_QUANT_DC] = 0;
   encoder->prefs[SCHRO_PREF_QUANT_DC_OFFSET_NONREF] = 0;
 
   schro_params_set_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_SD576);
+
+  schro_encoder_encode_codec_comment (encoder);
+
+  /* FIXME */
+  encoder->queue_depth = 4;
 
   return encoder;
 }
@@ -70,7 +78,7 @@ schro_encoder_free (SchroEncoder *encoder)
   }
 
   for(i=0;i<encoder->n_reference_frames; i++) {
-    SchroEncoderReference *ref = encoder->reference_frames + i;
+    SchroEncoderFrame *ref = encoder->reference_frames + i;
     if (ref->valid) {
       for(j=0;j<5;j++){
         schro_frame_free (ref->frames[j]);
@@ -78,7 +86,11 @@ schro_encoder_free (SchroEncoder *encoder)
     }
   }
   for(i=0;i<encoder->frame_queue_length; i++) {
-    schro_frame_free(encoder->frame_queue[i]);
+    schro_encoder_frame_free(encoder->frame_queue[i]);
+  }
+
+  if (encoder->inserted_buffer) {
+    schro_buffer_unref (encoder->inserted_buffer);
   }
 
   free (encoder);
@@ -183,6 +195,16 @@ schro_encoder_set_video_format (SchroEncoder *encoder,
     schro_params_get_video_format (&encoder->video_format);
 }
 
+int
+schro_encoder_push_ready (SchroEncoder *encoder)
+{
+  if (!encoder->end_of_stream &&
+      encoder->frame_queue_length < encoder->queue_depth) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
 void
 schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
 {
@@ -190,12 +212,17 @@ schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
   encoder->frame_queue_index++;
 
   schro_encoder_frame_queue_push (encoder, frame);
+
+  encoder->queue_changed = TRUE;
 }
 
 void
 schro_encoder_end_of_stream (SchroEncoder *encoder)
 {
   encoder->end_of_stream = TRUE;
+  if (encoder->frame_queue_length > 0) {
+    encoder->frame_queue[encoder->frame_queue_length-1]->last_frame = TRUE;
+  }
 }
 
 static int
@@ -251,7 +278,7 @@ schro_encoder_choose_quantisers (SchroEncoderTask *task)
 }
 
 static void
-schro_decoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer)
+schro_encoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer)
 {
   uint8_t *data = buffer->data;
 
@@ -267,6 +294,45 @@ schro_decoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer)
   data[10] = (encoder->prev_offset >> 0) & 0xff;
 
   encoder->prev_offset = buffer->length;
+}
+
+static void
+schro_encoder_encode_codec_comment (SchroEncoder *encoder)
+{
+  char *s = "bbcdencoSchrodinger " VERSION;
+  SchroBuffer *buffer;
+
+  buffer = schro_encoder_encode_auxiliary_data (encoder, s, strlen(s));
+  
+  schro_encoder_insert_buffer (encoder, buffer);
+}
+
+void
+schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer)
+{
+  if (encoder->inserted_buffer) {
+    SCHRO_ERROR("dropping previously inserted buffer");
+    schro_buffer_unref (encoder->inserted_buffer);
+  }
+  encoder->inserted_buffer = buffer;
+}
+
+SchroBuffer *
+schro_encoder_encode_auxiliary_data (SchroEncoder *encoder, void *data,
+    int size)
+{
+  SchroBits *bits;
+  SchroBuffer *buffer;
+
+  buffer = schro_buffer_new_and_alloc (size + SCHRO_PARSE_HEADER_SIZE);
+
+  bits = schro_bits_new ();
+  schro_bits_encode_init (bits, buffer);
+
+  schro_encoder_encode_parse_info (bits, SCHRO_PARSE_CODE_AUXILIARY_DATA);
+  schro_bits_append (bits, data, size);
+
+  return buffer;
 }
 
 SchroBuffer *
@@ -310,16 +376,29 @@ static void
 schro_encoder_task_complete (SchroEncoderTask *task)
 {
   int i;
+  SchroEncoderFrame *frame;
 
-  //SCHRO_DEBUG("completing slot %d", task->index);
+  SCHRO_DEBUG("completing picture %d", task->frame_number);
 
-  schro_encoder_output_push (task->encoder, task->outbuffer, task->slot,
-      task->presentation_frame);
+  frame = task->encoder_frame;
+
+  frame->state = SCHRO_ENCODER_FRAME_STATE_DONE;
+
+  task->encoder->queue_changed = TRUE;
+
+  frame->output_buffer = task->outbuffer;
+  frame->presentation_frame = task->presentation_frame;
 
   SCHRO_INFO("PICTURE: %d %d %d %d",
       task->frame_number, task->is_ref, task->params.num_refs, task->bits->offset);
 
-  schro_bits_free (task->bits);
+  if (frame->start_access_unit) {
+    frame->access_unit_buffer = schro_encoder_encode_access_unit (task->encoder);
+  }
+  if (frame->last_frame) {
+    /* FIXME push an EOS */
+    task->encoder->completed_eos = TRUE;
+  }
 
   for(i=0;i<task->n_retire;i++){
     schro_encoder_reference_retire (task->encoder, task->retire[i]);
@@ -333,41 +412,14 @@ schro_encoder_iterate (SchroEncoder *encoder)
 
   SCHRO_DEBUG("iterate");
 
+  if (encoder->end_of_stream_pulled) {
+    return SCHRO_STATE_END_OF_STREAM;
+  }
+
   if (!encoder->engine_init) {
     schro_encoder_engine_init (encoder);
   }
 
-#if 0
-  while (encoder->n_output_queue > 20) {
-    /* Some thread is being starved. */
-    SCHRO_ERROR("thread is starving");
-    schro_async_wait_one (encoder->async);
-  }
-#endif
-
-  schro_async_wait (encoder->async, 1);
-
-  if (schro_async_get_num_waiting (encoder->async) < 1) {
-
-    switch (encoder->engine) {
-      case 0:
-        ret = schro_encoder_engine_intra_only (encoder);
-        break;
-      case 1:
-        ret = schro_encoder_engine_backref (encoder);
-        break;
-      case 2:
-        ret = schro_encoder_engine_tworef (encoder);
-        break;
-      case 3:
-        ret = schro_encoder_engine_fourref (encoder);
-        break;
-      default:
-        ret = FALSE;
-        break;
-    }
-
-  }
   if (schro_async_get_num_completed (encoder->async) > 0) {
     SchroEncoderTask *task;
 
@@ -378,14 +430,43 @@ schro_encoder_iterate (SchroEncoder *encoder)
     schro_encoder_task_free (task);
   }
 
-  if (encoder->end_of_stream_pulled) {
-    return SCHRO_STATE_END_OF_STREAM;
+  SCHRO_DEBUG("iterate %d %d %d",
+      encoder->queue_changed, schro_encoder_push_ready(encoder),
+      encoder->completed_eos);
+  while (!encoder->queue_changed && !schro_encoder_push_ready(encoder) &&
+      !encoder->completed_eos) {
+    SchroEncoderTask *task;
+
+    schro_async_wait_one (encoder->async);
+
+    task = schro_async_pull (encoder->async);
+    SCHRO_ASSERT(task != NULL);
+
+    schro_encoder_task_complete (task);
+    schro_encoder_task_free (task);
   }
+
+  if (encoder->queue_changed) {
+    switch (encoder->engine) {
+      case 0:
+        ret = schro_encoder_engine_intra_only (encoder);
+        break;
+      case 1:
+        ret = schro_encoder_engine_backref (encoder);
+        break;
+      default:
+        ret = FALSE;
+        break;
+    }
+    if (!ret) {
+      encoder->queue_changed = FALSE;
+    }
+  }
+
   if (schro_encoder_pull_is_ready (encoder)) {
     return SCHRO_STATE_HAVE_BUFFER;
   }
-  if (!encoder->end_of_stream &&
-      schro_async_get_num_waiting (encoder->async) < 1) {
+  if (schro_encoder_push_ready (encoder)) {
     return SCHRO_STATE_NEED_FRAME;
   }
 
@@ -416,7 +497,7 @@ schro_encoder_engine_init (SchroEncoder *encoder)
 
   encoder->n_reference_frames = 4;
   for(i=0;i<encoder->n_reference_frames;i++){
-    SchroEncoderReference *ref = encoder->reference_frames + i;
+    SchroEncoderFrame *ref = encoder->reference_frames + i;
 
     memset(ref, 0, sizeof(*ref));
     for(j=0;j<5;j++){
@@ -437,16 +518,8 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
   int residue_bits_start;
   SchroBuffer *subbuffer;
 
-#if 0
-  {
-    int i;
-    extern int hist[];
-
-    for(i=0;i<10;i++){
-      SCHRO_ERROR("%d %d", i, hist[i]);
-    }
-  }
-#endif
+  task->bits = schro_bits_new ();
+  schro_bits_encode_init (task->bits, task->outbuffer);
 
   /* encode header */
   schro_encoder_encode_parse_info (task->bits,
@@ -510,18 +583,16 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
   }
 
   if (task->is_ref) {
-#if 1
     schro_frame_inverse_iwt_transform (task->tmp_frame0, &task->params,
         task->tmpbuf);
 
     schro_frame_convert (task->dest_ref->frames[0], task->tmp_frame0);
-#else
-    schro_frame_convert (task->dest_ref->frames[0], task->encode_frame);
-#endif
     task->dest_ref->frame_number = task->frame_number;
 
     schro_encoder_reference_analyse (task->dest_ref);
   }
+
+  schro_bits_free (task->bits);
 
   task->completed = TRUE;
 }
@@ -1044,7 +1115,7 @@ schro_encoder_clean_up_transform (SchroEncoderTask *task, int component,
 
   data = (int16_t *)task->tmp_frame0->components[component].data + offset;
 
-  SCHRO_DEBUG("subband index=%d %d x %d at offset %d with stride %d; clean area %d %d", index,
+  SCHRO_LOG("subband index=%d %d x %d at offset %d with stride %d; clean area %d %d", index,
       width, height, offset, stride, w, h);
 
   h = MIN (h + wavelet_extent[params->wavelet_filter_index], height);
@@ -1242,7 +1313,7 @@ schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index)
     offset = subband->chroma_offset;
   }
 
-  SCHRO_DEBUG("subband index=%d %d x %d at offset %d with stride %d", index,
+  SCHRO_LOG("subband index=%d %d x %d at offset %d with stride %d", index,
       width, height, offset, stride);
 
   data = (int16_t *)task->tmp_frame0->components[component].data + offset;
@@ -1435,12 +1506,47 @@ out:
 
 /* frame queue */
 
+SchroEncoderFrame *
+schro_encoder_frame_new (void)
+{
+  SchroEncoderFrame *encoder_frame;
+
+  encoder_frame = malloc(sizeof(SchroEncoderFrame));
+  memset (encoder_frame, 0, sizeof(SchroEncoderFrame));
+  encoder_frame->state = SCHRO_ENCODER_FRAME_STATE_NEW;
+
+  return encoder_frame;
+}
+
+void
+schro_encoder_frame_free (SchroEncoderFrame *encoder_frame)
+{
+
+#if 0
+  if (encoder_frame->original_frame) {
+    schro_frame_free (encoder_frame->original_frame);
+  }
+#endif
+  free (encoder_frame);
+}
+
 static void
 schro_encoder_frame_queue_push (SchroEncoder *encoder, SchroFrame *frame)
 {
-  encoder->frame_queue[encoder->frame_queue_length] = frame;
+  SchroEncoderFrame *encoder_frame;
+
+  if (encoder->frame_queue_length > SCHRO_FRAME_QUEUE_LENGTH-1) {
+    SCHRO_ERROR("pushing too hard");
+    return;
+  }
+
+  encoder_frame = schro_encoder_frame_new();
+  encoder_frame->original_frame = frame;
+
+  encoder_frame->frame_number = encoder->next_frame_number++;
+
+  encoder->frame_queue[encoder->frame_queue_length] = encoder_frame;
   encoder->frame_queue_length++;
-  SCHRO_ASSERT(encoder->frame_queue_length < SCHRO_FRAME_QUEUE_LENGTH);
 }
 
 SchroFrame *
@@ -1449,7 +1555,7 @@ schro_encoder_frame_queue_get (SchroEncoder *encoder, int frame_index)
   int i;
   for(i=0;i<encoder->frame_queue_length;i++){
     if (encoder->frame_queue[i]->frame_number == frame_index) {
-      return encoder->frame_queue[i];
+      return encoder->frame_queue[i]->original_frame;
     }
   }
   return NULL;
@@ -1472,7 +1578,7 @@ schro_encoder_frame_queue_remove (SchroEncoder *encoder, int frame_index)
 /* reference pool */
 
 static void
-schro_encoder_reference_analyse (SchroEncoderReference *ref)
+schro_encoder_reference_analyse (SchroEncoderFrame *ref)
 {
   int i;
 
@@ -1481,11 +1587,11 @@ schro_encoder_reference_analyse (SchroEncoderReference *ref)
   }
 }
 
-SchroEncoderReference *
+SchroEncoderFrame *
 schro_encoder_reference_add (SchroEncoder *encoder)
 {
   int i;
-  SchroEncoderReference *ref;
+  SchroEncoderFrame *ref;
 
   SCHRO_DEBUG("adding");
 
@@ -1500,11 +1606,11 @@ schro_encoder_reference_add (SchroEncoder *encoder)
   return NULL;
 }
 
-SchroEncoderReference *
+SchroEncoderFrame *
 schro_encoder_reference_get (SchroEncoder *encoder, int frame_number)
 {
   int i;
-  SchroEncoderReference *ref;
+  SchroEncoderFrame *ref;
 
   for(i=0;i<encoder->n_reference_frames;i++){
     ref = encoder->reference_frames + i;
@@ -1519,7 +1625,7 @@ static void
 schro_encoder_reference_retire (SchroEncoder *encoder, int frame_number)
 {
   int i;
-  SchroEncoderReference *ref;
+  SchroEncoderFrame *ref;
   
   SCHRO_DEBUG("retiring %d", frame_number);
 
@@ -1561,43 +1667,98 @@ schro_encoder_pull_is_ready (SchroEncoder *encoder)
 {
   int i;
 
-  for(i=0;i<ARRAY_SIZE(encoder->output_queue);i++){
-    if (encoder->output_queue[i].buffer != NULL &&
-        encoder->output_queue[i].slot == encoder->output_slot) {
+  if (encoder->inserted_buffer) {
+    return TRUE;
+  }
+
+  for(i=0;i<encoder->frame_queue_length;i++){
+    SchroEncoderFrame *frame;
+    frame = encoder->frame_queue[i];
+    if (frame->slot == encoder->output_slot &&
+        frame->state == SCHRO_ENCODER_FRAME_STATE_DONE) {
       return TRUE;
     }
+  }
+
+  if (encoder->frame_queue_length == 0 && encoder->end_of_stream) {
+    return TRUE;
   }
 
   return FALSE;
 }
 
+static void
+schro_encoder_shift_frame_queue (SchroEncoder *encoder)
+{
+  SchroEncoderFrame *frame;
+
+  while (encoder->frame_queue_length > 0) {
+    frame = encoder->frame_queue[0];
+    if (frame->state != SCHRO_ENCODER_FRAME_STATE_FREE) {
+      break;
+    }
+
+    memmove (encoder->frame_queue, encoder->frame_queue + 1,
+        (encoder->frame_queue_length - 1) * sizeof(void *));
+    encoder->frame_queue_length--;
+    schro_encoder_frame_free (frame);
+  }
+}
+
 SchroBuffer *
 schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
 {
+  SchroBuffer *buffer;
   int i;
 
   SCHRO_DEBUG("pulling slot %d", encoder->output_slot);
-  for(i=0;i<ARRAY_SIZE(encoder->output_queue);i++){
-    if (encoder->output_queue[i].buffer != NULL &&
-        encoder->output_queue[i].slot == encoder->output_slot) {
-      SchroBuffer *buffer = encoder->output_queue[i].buffer;
 
-      encoder->output_queue[i].buffer = NULL;
-      encoder->n_output_queue--;
-      encoder->output_slot++;
+  if (encoder->inserted_buffer) {
+    buffer = encoder->inserted_buffer;
+    encoder->inserted_buffer = NULL;
+    if (presentation_frame) {
+      *presentation_frame = -1;
+    }
+
+    schro_encoder_fixup_offsets (encoder, buffer);
+
+    return buffer;
+  }
+  
+  for(i=0;i<encoder->frame_queue_length;i++){
+    SchroEncoderFrame *frame;
+    frame = encoder->frame_queue[i];
+    if (frame->slot == encoder->output_slot &&
+        frame->state == SCHRO_ENCODER_FRAME_STATE_DONE) {
+      if (frame->access_unit_buffer) {
+        buffer = frame->access_unit_buffer;
+        frame->access_unit_buffer = NULL;
+      } else {
+        buffer = frame->output_buffer;
+        frame->output_buffer = NULL;
+
+        frame->state = SCHRO_ENCODER_FRAME_STATE_FREE;
+        encoder->output_slot++;
+
+        schro_encoder_shift_frame_queue (encoder);
+      }
       if (presentation_frame) {
-        *presentation_frame = encoder->output_queue[i].presentation_frame;
+        *presentation_frame = frame->presentation_frame;
       }
-      schro_decoder_fixup_offsets (encoder, buffer);
 
-      if (buffer->data[4] == SCHRO_PARSE_CODE_END_SEQUENCE) {
-        encoder->end_of_stream_pulled = TRUE;
-      }
+      schro_encoder_fixup_offsets (encoder, buffer);
 
       SCHRO_DEBUG("got buffer length=%d", buffer->length);
-
       return buffer;
     }
+  }
+
+  if (encoder->frame_queue_length == 0 && encoder->end_of_stream) {
+    buffer = schro_encoder_encode_end_of_stream (encoder);
+    schro_encoder_fixup_offsets (encoder, buffer);
+    encoder->end_of_stream_pulled = TRUE;
+
+    return buffer;
   }
 
   SCHRO_DEBUG("got nothing");

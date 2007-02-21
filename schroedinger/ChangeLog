@@ -1,3 +1,22 @@
+2007-02-20  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroasync-pthread.c:
+	* schroedinger/schroasync.h:
+	  Add wait_one(), since that's what is used now.
+	* schroedinger/schrobits.c:
+	  Fix off-by-one error.
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	  Handle (ignore) auxiliary packets.
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroengine.h:
+	  Change to using frame_queue as the entire picture state as
+	  they move through the encoder.  Rewrite engines (again).
+	* tools/dump_packets.c:
+	  Add support for auxiliary packets.
+
 2007-02-19  David Schleef  <ds@schleef.org>
 
 	* configure.ac:

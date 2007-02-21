@@ -20,6 +20,7 @@ void schro_async_run (SchroAsync *async, void (*func)(void *), void *ptr);
 int schro_async_get_num_completed (SchroAsync *async);
 int schro_async_get_num_waiting (SchroAsync *async);
 void schro_async_wait (SchroAsync *async, int min_waiting);
+void schro_async_wait_one (SchroAsync *async);
 void *schro_async_pull (SchroAsync *async);
 
 #ifdef __cplusplus

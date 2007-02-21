@@ -15,7 +15,7 @@ extern "C" {
 typedef struct _SchroEncoder SchroEncoder;
 typedef struct _SchroEncoderParams SchroEncoderParams;
 typedef struct _SchroEncoderTask SchroEncoderTask;
-typedef struct _SchroEncoderReference SchroEncoderReference;
+typedef struct _SchroEncoderFrame SchroEncoderFrame;
 
 /* forward reference */
 typedef struct _SchroPredictionVector SchroPredictionVector;
@@ -42,25 +42,48 @@ typedef enum {
   SCHRO_STATE_END_OF_STREAM
 } SchroStateEnum;
 
+typedef enum {
+  SCHRO_ENCODER_FRAME_STATE_NEW,
+  SCHRO_ENCODER_FRAME_STATE_INITED,
+  SCHRO_ENCODER_FRAME_STATE_ENCODING,
+  SCHRO_ENCODER_FRAME_STATE_DONE,
+  SCHRO_ENCODER_FRAME_STATE_FREE
+} SchroEncoderFrameStateEnum;
+
 struct _SchroEncoderParams {
   int ignore;
 };
 
-struct _SchroEncoderReference {
+struct _SchroEncoderFrame {
   int valid;
+  SchroEncoderFrameStateEnum state;
+
+  int start_access_unit;
+
   int frame_number;
+  SchroFrame *original_frame;
   SchroFrame *frames[5];
+
+  SchroBuffer *access_unit_buffer;
+  SchroBuffer *output_buffer;
+  int presentation_frame;
+  int slot;
+  int last_frame;
+
+  SchroEncoderTask *task;
 };
 
 struct _SchroEncoder {
   SchroAsync *async;
 
-  SchroFrame *frame_queue[SCHRO_FRAME_QUEUE_LENGTH];
+  int next_frame_number;
+
+  SchroEncoderFrame *frame_queue[SCHRO_FRAME_QUEUE_LENGTH];
   int frame_queue_length;
 
   int frame_queue_index;
 
-  SchroEncoderReference reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
+  SchroEncoderFrame reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
   int n_reference_frames;
 
   int need_rap;
@@ -75,16 +98,15 @@ struct _SchroEncoder {
   SchroVideoFormat video_format;
   SchroEncoderParams encoder_params;
 
-  //int frame_number;
   int end_of_stream;
   int end_of_stream_handled;
   int end_of_stream_pulled;
+  int completed_eos;
   int prev_offset;
 
   int au_frame;
   int au_distance;
   int next_slot;
-  int next_frame;
 
   int output_slot;
   struct {
@@ -97,6 +119,10 @@ struct _SchroEncoder {
   SchroPicture picture_list[SCHRO_FRAME_QUEUE_LENGTH];
   int n_pictures;
   int picture_index;
+
+  SchroBuffer *inserted_buffer;
+  int queue_depth;
+  int queue_changed;
 
 #if 0
   double pan_x, pan_y;
@@ -124,6 +150,7 @@ struct _SchroEncoderTask {
 
   SchroEncoder *encoder;
   SchroParams params;
+  SchroEncoderFrame *encoder_frame;
   
   int outbuffer_size;
   SchroBuffer *outbuffer;
@@ -140,8 +167,8 @@ struct _SchroEncoderTask {
   SchroBuffer *subband_buffer;
   SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
 
-  SchroEncoderReference *ref_frame0;
-  SchroEncoderReference *ref_frame1;
+  SchroEncoderFrame *ref_frame0;
+  SchroEncoderFrame *ref_frame1;
 
   int16_t *quant_data;
 
@@ -150,7 +177,7 @@ struct _SchroEncoderTask {
   //SchroPredictionList *predict_lists;
   SchroMotionField *motion_fields[32];
 
-  SchroEncoderReference *dest_ref;
+  SchroEncoderFrame *dest_ref;
 
   int slot;
   int is_ref;
@@ -167,9 +194,6 @@ struct _SchroEncoderTask {
   /* intra_only */
 
   /* backref */
-
-  /* tworef */
-  double metric_to_cost;
 
   int stats_dc;
   int stats_global;
@@ -216,13 +240,17 @@ SchroVideoFormat * schro_encoder_get_video_format (SchroEncoder *encoder);
 void schro_encoder_set_video_format (SchroEncoder *encoder,
     SchroVideoFormat *video_format);
 void schro_encoder_end_of_stream (SchroEncoder *encoder);
+int schro_encoder_push_ready (SchroEncoder *encoder);
 void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
 int schro_encoder_iterate (SchroEncoder *encoder);
 SchroBuffer * schro_encoder_encode (SchroEncoder *encoder);
 
+SchroBuffer * schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
+    void *data, int size);
 void schro_encoder_copy_to_frame_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_encode_access_unit_header (SchroEncoder *encoder, SchroBits *bits);
 void schro_encoder_encode_parse_info (SchroBits *bits, int parse_code);
+void schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 
 SchroBuffer * schro_encoder_pull (SchroEncoder *encoder,
     int *n_decodable_frames);
@@ -243,8 +271,8 @@ SchroFrame * schro_encoder_frame_queue_get (SchroEncoder *encoder,
     int frame_number);
 void schro_encoder_frame_queue_remove (SchroEncoder *encoder,
     int frame_number);
-SchroEncoderReference * schro_encoder_reference_add (SchroEncoder *encoder);
-SchroEncoderReference * schro_encoder_reference_get (SchroEncoder *encoder,
+SchroEncoderFrame * schro_encoder_reference_add (SchroEncoder *encoder);
+SchroEncoderFrame * schro_encoder_reference_get (SchroEncoder *encoder,
     int frame_number);
 void schro_encoder_encode_picture_header (SchroEncoderTask *task);
 SchroBuffer * schro_encoder_encode_end_of_stream (SchroEncoder *encoder);

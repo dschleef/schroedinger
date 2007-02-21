@@ -205,6 +205,19 @@ void *schro_async_pull (SchroAsync *async)
 }
 
 void
+schro_async_wait_one (SchroAsync *async)
+{
+  pthread_mutex_lock (&async->mutex);
+  if (async->n_completed > 0) {
+    pthread_mutex_unlock (&async->mutex);
+    return;
+  }
+
+  pthread_cond_wait (&async->async_cond, &async->mutex);
+  pthread_mutex_unlock (&async->mutex);
+}
+
+void
 schro_async_wait (SchroAsync *async, int min_waiting)
 {
   if (min_waiting < 1) min_waiting = 1;
