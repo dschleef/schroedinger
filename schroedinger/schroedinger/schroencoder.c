@@ -16,9 +16,11 @@ static void schro_encoder_reference_retire (SchroEncoder *encoder,
 static void schro_encoder_engine_init (SchroEncoder *encoder);
 static void schro_encoder_encode_frame_prediction (SchroEncoderTask *task);
 static void schro_encoder_encode_transform_parameters (SchroEncoderTask *task);
-static void schro_encoder_encode_transform_data (SchroEncoderTask *task, int component);
+static void schro_encoder_encode_transform_data (SchroEncoderTask *task);
 static int schro_encoder_pull_is_ready (SchroEncoder *encoder);
 static void schro_encoder_encode_codec_comment (SchroEncoder *encoder);
+static void schro_encoder_clean_up_transform_subband (SchroEncoderTask *task,
+    int component, int index);
 
 static void
 schro_encoder_frame_free (SchroEncoderFrame *encoder_frame);
@@ -45,14 +47,14 @@ schro_encoder_new (void)
   encoder->mid1_ref = -1;
   encoder->mid2_ref = -1;
 
-  encoder->prefs[SCHRO_PREF_ENGINE] = 2;
+  encoder->prefs[SCHRO_PREF_ENGINE] = 0;
   encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
   encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_5_3;
-  encoder->prefs[SCHRO_PREF_QUANT_BASE] = 4;
+  encoder->prefs[SCHRO_PREF_QUANT_BASE] = 0;
   encoder->prefs[SCHRO_PREF_QUANT_OFFSET_NONREF] = 8;
-  encoder->prefs[SCHRO_PREF_QUANT_OFFSET_SUBBAND] = -1;
+  encoder->prefs[SCHRO_PREF_QUANT_OFFSET_SUBBAND] = 0;
   encoder->prefs[SCHRO_PREF_QUANT_DC] = 0;
   encoder->prefs[SCHRO_PREF_QUANT_DC_OFFSET_NONREF] = 0;
 
@@ -232,7 +234,7 @@ schro_gain_to_index (int value)
   return CLAMP(value, 0, 63);
 }
 
-static void
+void
 schro_encoder_choose_quantisers (SchroEncoderTask *task)
 {
   /* This is 64*log2 of the gain of the DC part of the wavelet transform */
@@ -269,11 +271,14 @@ schro_encoder_choose_quantisers (SchroEncoderTask *task)
   for(i=0; i<depth; i++) {
     band = depth - 1 - i;
     subbands[1+3*i].quant_index =
-      schro_gain_to_index (base + (percep + gain)*band + gain_diag);
+      schro_gain_to_index (base + (percep + gain)*band + gain_hv);
     subbands[2+3*i].quant_index =
       schro_gain_to_index (base + (percep + gain)*band + gain_hv);
     subbands[3+3*i].quant_index =
-      schro_gain_to_index (base + (percep + gain)*band + gain_hv);
+      schro_gain_to_index (base + (percep + gain)*band + gain_diag);
+  }
+  for(i=0; i<1+3*depth; i++) {
+    subbands[i].quant_index = 6;
   }
 }
 
@@ -560,10 +565,11 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
 
   schro_frame_iwt_transform (task->tmp_frame0, &task->params,
       task->tmpbuf);
+  schro_encoder_clean_up_transform (task);
+
   residue_bits_start = task->bits->offset;
-  schro_encoder_encode_transform_data (task, 0);
-  schro_encoder_encode_transform_data (task, 1);
-  schro_encoder_encode_transform_data (task, 2);
+
+  schro_encoder_encode_transform_data (task);
 
   schro_bits_sync (task->bits);
 
@@ -1080,7 +1086,21 @@ schro_encoder_init_subbands (SchroEncoderTask *task)
 }
 
 void
-schro_encoder_clean_up_transform (SchroEncoderTask *task, int component,
+schro_encoder_clean_up_transform (SchroEncoderTask *task)
+{
+  int i;
+  int component;
+  SchroParams *params = &task->params;
+
+  for(component=0;component<3;component++) {
+    for (i=0;i < 1 + 3*params->transform_depth; i++) {
+      schro_encoder_clean_up_transform_subband (task, component, i);
+    }
+  }
+}
+
+static void
+schro_encoder_clean_up_transform_subband (SchroEncoderTask *task, int component,
     int index)
 {
   static const int wavelet_extent[8] = { 2, 1, 2, 0, 0, 0, 4, 2 };
@@ -1136,19 +1156,81 @@ schro_encoder_clean_up_transform (SchroEncoderTask *task, int component,
   }
 }
 
-static void
-schro_encoder_encode_transform_data (SchroEncoderTask *task, int component)
+static int
+ilog2 (unsigned int x)
 {
   int i;
+  for(i=0;i<60;i++){
+    if (x*4 < schro_table_quant[i]) return i;
+  }
+#if 0
+  for(i=0;x>1;i++){
+    x >>= 1;
+  }
+#endif
+  return i;
+}
+
+static void
+schro_encoder_estimate_subband (SchroEncoderTask *task, int component,
+    int index)
+{
+  SchroSubband *subband = task->subbands + index;
+  int i;
+  int j;
+  int16_t *data;
+  int stride;
+  int width;
+  int height;
+  int offset;
+  int x;
+  int hist[64];
+  int entropy;
+
+  if (component == 0) {
+    stride = subband->stride >> 1;
+    width = subband->w;
+    height = subband->h;
+    offset = subband->offset;
+  } else {
+    stride = subband->chroma_stride >> 1;
+    width = subband->chroma_w;
+    height = subband->chroma_h;
+    offset = subband->chroma_offset;
+  }
+
+  for(i=0;i<64;i++) hist[i] = 0;
+
+  data = (int16_t *)task->tmp_frame0->components[component].data + offset;
+  for(j=0;j<height;j++){
+    for(i=0;i<width;i++){
+      x = ilog2(abs(data[i]));
+      hist[x]++;
+    }
+    data += stride;
+  }
+
+  entropy = 0;
+  for(i=subband->quant_index;i<64;i++){
+    x = 4 + i - subband->quant_index;
+    entropy += x * hist[i];
+  }
+
+  task->estimated_entropy = entropy/16;
+}
+
+static void
+schro_encoder_encode_transform_data (SchroEncoderTask *task)
+{
+  int i;
+  int component;
   SchroParams *params = &task->params;
 
-  schro_encoder_init_subbands (task);
-
-  schro_encoder_choose_quantisers (task);
-
-  for (i=0;i < 1 + 3*params->transform_depth; i++) {
-    schro_encoder_clean_up_transform (task, component, i);
-    schro_encoder_encode_subband (task, component, i);
+  for(component=0;component<3;component++) {
+    for (i=0;i < 1 + 3*params->transform_depth; i++) {
+      schro_encoder_estimate_subband (task, component, i);
+      schro_encoder_encode_subband (task, component, i);
+    }
   }
 }
 
@@ -1490,6 +1572,11 @@ out:
   schro_arith_flush (arith);
 
   SCHRO_ASSERT(arith->offset < task->subband_size);
+
+  if (component == 0 && index > 0) {
+    SCHRO_INFO("SUBBAND_EST: %d %d %d %d", component, index,
+        task->estimated_entropy, arith->offset);
+  }
 
 #ifdef DIRAC_COMPAT
   schro_bits_sync (task->bits);

@@ -198,6 +198,8 @@ struct _SchroEncoderTask {
   int stats_dc;
   int stats_global;
   int stats_motion;
+
+  int estimated_entropy;
 };
 
 struct _SchroEncoderSettings {
@@ -276,7 +278,9 @@ SchroEncoderFrame * schro_encoder_reference_get (SchroEncoder *encoder,
     int frame_number);
 void schro_encoder_encode_picture_header (SchroEncoderTask *task);
 SchroBuffer * schro_encoder_encode_end_of_stream (SchroEncoder *encoder);
+void schro_encoder_clean_up_transform (SchroEncoderTask *task);
 void schro_encoder_init_subbands (SchroEncoderTask *task);
+void schro_encoder_choose_quantisers (SchroEncoderTask *task);
 void schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index);
 SchroBuffer * schro_encoder_encode_access_unit (SchroEncoder *encoder);
 void schro_encoder_output_push (SchroEncoder *encoder,

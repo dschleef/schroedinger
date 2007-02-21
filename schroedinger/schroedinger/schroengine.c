@@ -83,6 +83,8 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
 
     schro_params_calculate_mc_sizes (params);
     schro_params_calculate_iwt_sizes (params);
+    schro_encoder_init_subbands (task);
+    schro_encoder_choose_quantisers (task);
 
     schro_async_run (encoder->async,
         (void (*)(void *))schro_encoder_encode_picture, task);
@@ -180,6 +182,8 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
 
     schro_params_calculate_mc_sizes (params);
     schro_params_calculate_iwt_sizes (params);
+    schro_encoder_init_subbands (task);
+    schro_encoder_choose_quantisers (task);
 
     if (params->num_refs > 0) {
       task->ref_frame0 = schro_encoder_reference_get (encoder,
@@ -295,6 +299,8 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
 
     schro_params_calculate_mc_sizes (params);
     schro_params_calculate_iwt_sizes (params);
+    schro_encoder_init_subbands (task);
+    schro_encoder_choose_quantisers (task);
 
     if (params->num_refs > 0) {
       task->ref_frame0 = schro_encoder_reference_get (encoder,
