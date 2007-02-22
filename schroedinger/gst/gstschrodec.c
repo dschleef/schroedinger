@@ -356,8 +356,12 @@ gst_schro_dec_sink_convert (GstPad *pad,
     case GST_FORMAT_DEFAULT:
       switch (*dest_format) {
         case GST_FORMAT_TIME:
-          *dest_value = gst_util_uint64_scale (granulepos_to_frame (src_value),
-              dec->fps_d * GST_SECOND, dec->fps_n);
+          if (dec->fps_d != 0) {
+            *dest_value = gst_util_uint64_scale (granulepos_to_frame (src_value),
+                dec->fps_d * GST_SECOND, dec->fps_n);
+          } else {
+            res = FALSE;
+          }
           break;
         default:
           res = FALSE;
@@ -367,8 +371,13 @@ gst_schro_dec_sink_convert (GstPad *pad,
       switch (*dest_format) {
         case GST_FORMAT_DEFAULT:
         {
-          *dest_value = gst_util_uint64_scale (src_value,
-              dec->fps_n, dec->fps_d * GST_SECOND);
+          GST_ERROR("fps %d %d", dec->fps_n, dec->fps_d);
+          if (dec->fps_d != 0) {
+            *dest_value = gst_util_uint64_scale (src_value,
+                dec->fps_n, dec->fps_d * GST_SECOND);
+          } else {
+            res = FALSE;
+          }
           break;
         }
         default:
