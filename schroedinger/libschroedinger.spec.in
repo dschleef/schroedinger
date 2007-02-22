@@ -78,6 +78,7 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/gstreamer-0.10/*.a
 %{_includedir}/schroedinger-0.1/schroedinger/schrotables.h
 %{_includedir}/schroedinger-0.1/schroedinger/schroutils.h
 %{_includedir}/schroedinger-0.1/schroedinger/schrowavelet.h
+%{_includedir}/schroedinger-0.1/schroedinger/schroengine.h
 
 %changelog
 * Thu Apr 27 2006 Christian F.K. Schaller <christian@fluendo.com>
