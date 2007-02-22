@@ -382,8 +382,54 @@ schro_encoder_choose_quantisers (SchroEncoderTask *task)
     subbands[3+3*i].quant_index =
       schro_gain_to_index (base + (percep + gain)*band + gain_diag);
   }
-  for(i=0; i<1+3*depth; i++) {
-    subbands[i].quant_index = 6;
+  {
+    int sec = task->frame_number/12;
+    for(i=4; i<=11; i++) {
+      subbands[i].quant_index = 12;
+    }
+    if ((sec & 1) == 0) {
+      //subbands[4].quant_index -= 4;
+      //subbands[5].quant_index -= 4;
+      //subbands[6].quant_index -= 4;
+      for(i=1; i<4; i++) {
+        //subbands[i].quant_index = 20;
+      }
+    } else {
+      for(i=4; i<7; i++) {
+        subbands[i].quant_index = 20;
+      }
+    }
+  }
+
+  /* hard coded.  muhuhuhahaha */
+  if (task->is_ref) {
+    subbands[0].quant_index = 12;
+    subbands[1].quant_index = 16;
+    subbands[2].quant_index = 16;
+    subbands[3].quant_index = 20;
+    subbands[4].quant_index = 16;
+    subbands[5].quant_index = 16;
+    subbands[6].quant_index = 20;
+    subbands[7].quant_index = 17;
+    subbands[8].quant_index = 17;
+    subbands[9].quant_index = 21;
+    subbands[10].quant_index = 45;
+    subbands[11].quant_index = 45;
+    subbands[12].quant_index = 49;
+  } else {
+    subbands[0].quant_index = 16;
+    subbands[1].quant_index = 20;
+    subbands[2].quant_index = 20;
+    subbands[3].quant_index = 24;
+    subbands[4].quant_index = 20;
+    subbands[5].quant_index = 20;
+    subbands[6].quant_index = 24;
+    subbands[7].quant_index = 21;
+    subbands[8].quant_index = 21;
+    subbands[9].quant_index = 25;
+    subbands[10].quant_index = 53;
+    subbands[11].quant_index = 53;
+    subbands[12].quant_index = 57;
   }
 }
 
@@ -1229,7 +1275,7 @@ schro_encoder_encode_transform_data (SchroEncoderTask *task)
 
   for(component=0;component<3;component++) {
     for (i=0;i < 1 + 3*params->transform_depth; i++) {
-      schro_encoder_estimate_subband (task, component, i);
+      if (0) schro_encoder_estimate_subband (task, component, i);
       schro_encoder_encode_subband (task, component, i);
     }
   }
