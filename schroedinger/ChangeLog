@@ -1,5 +1,14 @@
 2007-02-22  David Schleef  <ds@schleef.org>
 
+	* configure.ac:
+	  revert to spec coder.
+	* testsuite/coding_efficiency.c:
+	* testsuite/exp_speed.c:
+	* testsuite/qm.c:
+	  remove.
+
+2007-02-22  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	  Fix some memleaks.
 	* schroedinger/schrotables.h:
