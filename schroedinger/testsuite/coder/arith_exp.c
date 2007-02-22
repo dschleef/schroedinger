@@ -1,10 +1,11 @@
- 
+
+#include "config.h"
+
 #include <stdio.h>
 #include <string.h>
 
 #include <schroedinger/schroarith.h>
 #include <schroedinger/schrotables.h>
-#include <schroedinger/schrodebug.h>
 
 #include "arith.h"
 
@@ -86,7 +87,6 @@ arith_exp_init (Arith *arith)
   arith->range1 = 0x10000;
   arith->cntr = 0;
   arith->offset = 0;
-  arith->contexts[0].mps = 0;
   arith->contexts[0].count[0] = 1;
   arith->contexts[0].count[1] = 1;
   arith->contexts[0].next = 0;
@@ -97,47 +97,54 @@ arith_exp_init (Arith *arith)
 void
 arith_exp_flush (Arith *arith)
 {
-  /* FIXME being lazy. */
-  arith->offset+=3;
-}
+  while (arith->cntr < 8) {
+    arith->range0 <<= 1;
+    arith->cntr++;
+  }
 
-#define SHIFT \
-    arith->range0 <<= 1; \
-    arith->range1 <<= 1; \
-    arith->cntr++; \
-    if (arith->cntr == 8) { \
-      arith->data[arith->offset] = arith->range0 >> 16; \
-      arith->offset++; \
-      arith->range0 &= 0xffff; \
-      arith->cntr = 0; \
+  if (arith->range0 >= (1<<24)) {
+    arith->data[arith->offset-1]++;
+    while (arith->carry) {
+      arith->data[arith->offset] = 0x00;
+      arith->carry--;
+      arith->offset++;
     }
+  } else {
+    while (arith->carry) {
+      arith->data[arith->offset] = 0xff;
+      arith->carry--;
+      arith->offset++;
+    }
+  }
+  arith->data[arith->offset] = arith->range0 >> 16;
+  arith->offset++;
+
+  arith->data[arith->offset] = arith->range0 >> 8;
+  arith->offset++;
+
+  arith->data[arith->offset] = arith->range0 >> 0;
+  arith->offset++;
+}
 
 static void
 arith_exp_encode (Arith *arith, int i, int value)
 {
+  unsigned int range;
+  unsigned int probability0;
   unsigned int range_x_prob;
-  unsigned int probability;
-
-  /* note: must be unsigned multiplication */
-  probability = arith->contexts[i].probability;
-  range_x_prob = (arith->range1 * probability) >> 16;
-
-  value ^= arith->contexts[i].mps;
+  
+  probability0 = arith->contexts[i].probability;
+  range = arith->range1;
+  range_x_prob = (range * probability0) >> 16;
+  
   if (value) {
     arith->range0 = arith->range0 + range_x_prob;
     arith->range1 -= range_x_prob;
-    SHIFT;
-    while (arith->range1 < 0x8000) {
-      SHIFT;
-    }
   } else {
     arith->range1 = range_x_prob;
-    if (arith->range1 < 0x8000) {
-      SHIFT;
-    }
   }
+  arith->contexts[i].count[value]++;
   arith->contexts[i].n++;
-  arith->contexts[i].count[value ^ arith->contexts[i].mps]++;
   if (arith->contexts[i].n == 16) {
     unsigned int scaler;
     unsigned int weight;
@@ -148,18 +155,135 @@ arith_exp_encode (Arith *arith, int i, int value)
       arith->contexts[i].count[0]++;
       arith->contexts[i].count[1] >>= 1;
       arith->contexts[i].count[1]++;
-    }
+    } 
     weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
     scaler = division_factor[weight];
-    arith->contexts[i].mps =
-      (arith->contexts[i].count[1] > arith->contexts[i].count[0]);
-    arith->contexts[i].probability =
-      arith->contexts[i].count[arith->contexts[i].mps] * scaler;
+    arith->contexts[i].probability = arith->contexts[i].count[0] * scaler;
   }
+  
+#if 0
+  while (arith->range1 < 0x1000) {
+    arith->range0 <<= 2;
+    arith->range1 <<= 2;
+
+    arith->cntr+=2;
+    if (arith->cntr == 8) {
+      if (arith->range0 < (1<<24) &&
+          (arith->range0 + arith->range1) >= (1<<24)) {
+        arith->carry++;
+      } else {
+        if (arith->range0 >= (1<<24)) {
+          arith->data[arith->offset-1]++;
+          while (arith->carry) {
+            arith->data[arith->offset] = 0x00;
+            arith->carry--;
+            arith->offset++;
+          }
+        } else {
+          while (arith->carry) {
+            arith->data[arith->offset] = 0xff;
+            arith->carry--;
+            arith->offset++;
+          }
+        }
+        arith->data[arith->offset] = arith->range0 >> 16;
+        arith->offset++;
+      }
+      arith->range0 &= 0xffff;
+      arith->cntr = 0;
+    }
+  }
+#endif
+#if 1
+  while (arith->range1 <= 0x1000) {
+
+    if (((arith->range0 + arith->range1)^arith->range0)>=0x8000) {
+      arith->range0 ^= 0x4000;
+      arith->carry++;
+    } else {
+      arith->range0 <<= 1;
+      arith->range1 <<= 1;
+
+      arith->cntr++;
+      if (arith->cntr == 8) {
+        arith->data[arith->offset] = arith->range0 >> 16;
+        arith->offset++;
+        arith->range0 &= 0xffff;
+        arith->cntr = 0;
+      }
+    }
+  }
+#endif
 }
+
+static int
+arith_exp_decode (Arith *arith, int i)
+{
+  unsigned int count;
+  unsigned int range;
+  unsigned int probability0;
+  unsigned int range_x_prob;
+  int value;
+  
+//printf("[%04x %04x] %04x\n", arith->range0, arith->range1, arith->code);
+  probability0 = arith->contexts[i].probability;
+  count = arith->code - arith->range0 + 1;
+  range = arith->range1;
+  range_x_prob = (range * probability0) >> 16;
+  
+  value = count > range_x_prob;
+  if (value) {
+    arith->range0 = arith->range0 + range_x_prob;
+    arith->range1 -= range_x_prob;
+  } else {
+    arith->range1 = range_x_prob;
+  }
+  arith->contexts[i].count[value]++;
+  arith->contexts[i].n++;
+  if (arith->contexts[i].n == 16) {
+    unsigned int scaler;
+    unsigned int weight;
+
+    arith->contexts[i].n = 0;
+    if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 255) {
+      arith->contexts[i].count[0] >>= 1;
+      arith->contexts[i].count[0]++;
+      arith->contexts[i].count[1] >>= 1;
+      arith->contexts[i].count[1]++;
+    } 
+    weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
+    scaler = division_factor[weight];
+    arith->contexts[i].probability = arith->contexts[i].count[0] * scaler;
+  }
+  
+  while (arith->range1 < 0x1000) {
+    if (((arith->range0 + arith->range1)^arith->range0)>=0x8000) {
+      arith->range0 ^= 0x4000;
+      arith->code ^= 0x4000;
+    }
+
+    arith->range0 <<= 1;
+    arith->range1 <<= 1;
+
+    arith->code <<= 1;
+    arith->code |= (arith->data[arith->offset] >> (7-arith->cntr))&1;
+
+    arith->cntr++;
+    if (arith->cntr == 8) {
+      arith->offset++;
+      arith->cntr = 0;
+    }
+    arith->range0 &= 0xffff;
+    arith->code &= 0xffff;
+  }
+  return value;
+}
+
 
 
 DEFINE_EFFICIENCY(exp)
 DEFINE_SPEED(exp)
+DEFINE_ENCODE(exp)
+DEFINE_DECODE(exp)
 
 

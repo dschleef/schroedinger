@@ -1,4 +1,6 @@
 
+#include "config.h"
+
 #include <stdio.h>
 #include <schroedinger/schro.h>
 #include <schroedinger/schroarith.h>
@@ -37,7 +39,7 @@ main (int argc, char *argv[])
     speed_arith_dirac_stats (x, data, N));
   printf("  Dirac (both)                   %g\n",
     speed_arith_dirac_both (x, data, N));
-  printf("  Dirac (the works)              %g\n",
+  printf("  Dirac (experimental)           %g\n",
     speed_arith_exp (x, data, N));
   printf("  QM coder                       %g\n",
     speed_arith_qm (x, data, N));
@@ -52,7 +54,7 @@ main (int argc, char *argv[])
     speed_arith_dirac_stats (x, data, N));
   printf("  Dirac (both)                   %g\n",
     speed_arith_dirac_both (x, data, N));
-  printf("  Dirac (the works)              %g\n",
+  printf("  Dirac (experimental)           %g\n",
     speed_arith_exp (x, data, N));
   printf("  QM coder                       %g\n",
     speed_arith_qm (x, data, N));

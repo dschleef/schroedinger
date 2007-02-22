@@ -16,8 +16,8 @@ margin_right=20;
 
 range_xmin=0.0;
 range_xmax=1.0;
-range_ymin=0.9;
-range_ymax=1.1;
+range_ymin=0.90;
+range_ymax=1.10;
 
 symbol_size = 2;
 tick_size = 5;

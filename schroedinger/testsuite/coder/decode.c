@@ -1,4 +1,6 @@
 
+#include "config.h"
+
 #include <stdio.h>
 #include <schroedinger/schro.h>
 #include <schroedinger/schroarith.h>
@@ -8,15 +10,17 @@
 
 #include "arith.h"
 
-#define N 100
+#define N 10000
 
 
 int encode_arith_dirac (unsigned char *out_data, unsigned char *in_data, int n);
 int encode_arith_dirac_byte (unsigned char *out_data, unsigned char *in_data, int n);
 int encode_arith_dirac_both (unsigned char *out_data, unsigned char *in_data, int n);
+int encode_arith_exp (unsigned char *out_data, unsigned char *in_data, int n);
 
 void decode_arith_dirac_byte (unsigned char *out_data, unsigned char *in_data, int n);
 void decode_arith_dirac_both (unsigned char *out_data, unsigned char *in_data, int n);
+void decode_arith_exp (unsigned char *out_data, unsigned char *in_data, int n);
 
 
 unsigned char out_data[N];
@@ -57,16 +61,16 @@ main (int argc, char *argv[])
     in_data[i] = oil_rand_u8() < x;
   }
 
-  dumpbits(in_data, 100);
+  dumpbits(in_data + 9900, 100);
 
   //n = encode_arith_dirac (out_data, in_data, N);
   //dumpbits(out_data, n);
 
-  n = encode_arith_dirac_both (out_data, in_data, N);
+  n = encode_arith_exp (out_data, in_data, N);
   //dumpbits(out_data, n);
 
-  decode_arith_dirac_both (c_data, out_data, N);
-  dumpbits(c_data, 100);
+  decode_arith_exp (c_data, out_data, N);
+  dumpbits(c_data + 9900, 100);
 
   return 0;
 }

@@ -1,4 +1,8 @@
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <schroedinger/schro.h>
 #include <schroedinger/schroarith.h>
@@ -8,7 +12,7 @@
 
 #include "arith.h"
 
-#define N 10000
+#define N 100000
 
 
 int efficiency_arith_dirac (int x, unsigned char *data, int n);
