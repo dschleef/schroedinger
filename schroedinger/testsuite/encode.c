@@ -10,6 +10,8 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schrodebug.h>
 
+#include <liboil/liboilrandom.h>
+
 #define ROUND_UP_2(x) (((x) + 1) & ~1)
 #define ROUND_UP_4(x) (((x) + 3) & ~3)
 #define ROUND_UP_8(x) (((x) + 7) & ~7)
@@ -37,6 +39,7 @@ test (int w, int h)
   format->width = w;
   format->height = h;
   schro_encoder_set_video_format (encoder, format);
+  free (format);
 
   size = ROUND_UP_4 (w) * ROUND_UP_2 (h);
   size += (ROUND_UP_8 (w)/2) * (ROUND_UP_2 (h)/2);
@@ -53,7 +56,7 @@ test (int w, int h)
           //SCHRO_ERROR("frame %d", n_frames);
 
           picture = malloc(size);
-          memset(picture, 128, size);
+          oil_random_u8(picture, size);
 
           frame = schro_frame_new_I420 (picture, w, h);
 
@@ -67,6 +70,9 @@ test (int w, int h)
         }
         break;
       case SCHRO_STATE_HAVE_BUFFER:
+        buffer = schro_encoder_pull (encoder, &x);
+        schro_buffer_unref (buffer);
+        break;
       case SCHRO_STATE_AGAIN:
         break;
       case SCHRO_STATE_END_OF_STREAM:
@@ -74,12 +80,6 @@ test (int w, int h)
         break;
       default:
         break;
-    }
-    buffer = schro_encoder_pull (encoder, &x);
-    while (buffer) {
-      //SCHRO_ERROR("outbuf %d", buffer->length);
-      schro_buffer_unref (buffer);
-      buffer = schro_encoder_pull (encoder, &x);
     }
   }
 
@@ -89,15 +89,18 @@ test (int w, int h)
 int
 main (int argc, char *argv[])
 {
-  int h, w;
+  //int h, w;
 
   schro_init();
 
+      test(64,64);
+#if 0
   for(w=64;w<64+16;w++){
     for(h=64;h<64+16;h++){
       test(w,h);
     }
   }
+#endif
 
   return 0;
 }

@@ -37,6 +37,7 @@ test (int w, int h)
   format->width = w;
   format->height = h;
   schro_encoder_set_video_format (encoder, format);
+  free (format);
 
   size = ROUND_UP_4 (w) * ROUND_UP_2 (h);
   size += (ROUND_UP_8 (w)/2) * (ROUND_UP_2 (h)/2);
@@ -62,11 +63,16 @@ test (int w, int h)
           schro_encoder_push_frame (encoder, frame);
 
           n_frames++;
-        } else {
+        }
+        if (n_frames == 10) {
           schro_encoder_end_of_stream (encoder);
+          n_frames++;
         }
         break;
       case SCHRO_STATE_HAVE_BUFFER:
+        buffer = schro_encoder_pull (encoder, &x);
+        schro_buffer_unref (buffer);
+        break;
       case SCHRO_STATE_AGAIN:
         break;
       case SCHRO_STATE_END_OF_STREAM:
@@ -74,12 +80,6 @@ test (int w, int h)
         break;
       default:
         break;
-    }
-    buffer = schro_encoder_pull (encoder, &x);
-    while (buffer) {
-      //SCHRO_ERROR("outbuf %d", buffer->length);
-      schro_buffer_unref (buffer);
-      buffer = schro_encoder_pull (encoder, &x);
     }
   }
 
@@ -91,7 +91,8 @@ main (int argc, char *argv[])
 {
   schro_init();
 
-  test(1920,1080);
+  //test(1920,1080);
+  test(64,64);
 
   return 0;
 }

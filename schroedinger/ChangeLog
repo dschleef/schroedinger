@@ -1,6 +1,17 @@
 2007-02-22  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:
+	  Fix some memleaks.
+	* schroedinger/schrotables.h:
+	  Reexport the tables.  They're used in the testsuite.
+	* testsuite/Makefile.am:
+	* testsuite/encode.c:
+	* testsuite/encode_big.c:
+	  Make it all work.
+
+2007-02-22  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
 	  Hard code some decent quantizer numbers.
 
 2007-02-22  David Schleef  <ds@schleef.org>

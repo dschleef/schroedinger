@@ -83,10 +83,8 @@ schro_encoder_free (SchroEncoder *encoder)
 
   for(i=0;i<encoder->n_reference_frames; i++) {
     SchroEncoderFrame *ref = encoder->reference_frames + i;
-    if (ref->valid) {
-      for(j=0;j<5;j++){
-        schro_frame_free (ref->frames[j]);
-      }
+    for(j=0;j<5;j++){
+      schro_frame_free (ref->frames[j]);
     }
   }
   for(i=0;i<encoder->frame_queue_length; i++) {
@@ -166,6 +164,9 @@ schro_encoder_task_free (SchroEncoderTask *task)
   }
   if (task->quant_data) {
     free (task->quant_data);
+  }
+  if (task->bits) {
+    schro_bits_free (task->bits);
   }
 
   free (task->tmpbuf);
@@ -288,6 +289,9 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
     frame = encoder->frame_queue[i];
     if (frame->slot == encoder->output_slot &&
         frame->state == SCHRO_ENCODER_FRAME_STATE_DONE) {
+      if (presentation_frame) {
+        *presentation_frame = frame->presentation_frame;
+      }
       if (frame->access_unit_buffer) {
         buffer = frame->access_unit_buffer;
         frame->access_unit_buffer = NULL;
@@ -299,9 +303,6 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         encoder->output_slot++;
 
         schro_encoder_shift_frame_queue (encoder);
-      }
-      if (presentation_frame) {
-        *presentation_frame = frame->presentation_frame;
       }
 
       schro_encoder_fixup_offsets (encoder, buffer);
@@ -488,6 +489,8 @@ schro_encoder_encode_auxiliary_data (SchroEncoder *encoder, void *data,
   schro_encoder_encode_parse_info (bits, SCHRO_PARSE_CODE_AUXILIARY_DATA);
   schro_bits_append (bits, data, size);
 
+  schro_bits_free (bits);
+
   return buffer;
 }
 
@@ -524,6 +527,8 @@ schro_encoder_encode_end_of_stream (SchroEncoder *encoder)
   schro_bits_encode_init (bits, buffer);
 
   schro_encoder_encode_parse_info (bits, SCHRO_PARSE_CODE_END_SEQUENCE);
+
+  schro_bits_free (bits);
 
   return buffer;
 }
@@ -738,8 +743,6 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
 
     schro_encoder_reference_analyse (task->dest_ref);
   }
-
-  schro_bits_free (task->bits);
 
   task->completed = TRUE;
 }
