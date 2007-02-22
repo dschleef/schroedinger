@@ -34,6 +34,7 @@
 #include <gst/video/video.h>
 #include <string.h>
 #include <schroedinger/schro.h>
+#include <schroedinger/schrotables.h>
 #include <liboil/liboil.h>
 #include <math.h>
 
@@ -58,13 +59,29 @@ struct _GstSchrotoy
   int wavelet_type;
   int level;
 
-  SchroEncoder *encoder;
-  SchroDecoder *decoder;
+  SchroVideoFormat format;
+  SchroParams params;
+  SchroSubband subbands[20];
+
+  SchroFrame *tmp_frame;
+  int16_t *tmpbuf;
+
+  int frame_number;
+
+  int button_x;
+  int button_y;
+
 };
 
 struct _GstSchrotoyClass
 {
   GstBaseTransformClass parent_class;
+
+  int test_index;
+
+  int quants[20];
+  int side0;
+  int side1;
 };
 
 
@@ -92,6 +109,8 @@ static void gst_schrotoy_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec);
 static void gst_schrotoy_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec);
+static gboolean
+gst_schrotoy_handle_src_event (GstPad * pad, GstEvent * event);
 
 static GstFlowReturn gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
     GstBuffer *buf);
@@ -159,9 +178,11 @@ gst_schrotoy_class_init (gpointer g_class, gpointer class_data)
 {
   GObjectClass *gobject_class;
   GstBaseTransformClass *base_transform_class;
+  GstSchrotoyClass *toy_class;
 
   gobject_class = G_OBJECT_CLASS (g_class);
   base_transform_class = GST_BASE_TRANSFORM_CLASS (g_class);
+  toy_class = GST_SCHROTOY_CLASS (g_class);
 
   gobject_class->set_property = gst_schrotoy_set_property;
   gobject_class->get_property = gst_schrotoy_get_property;
@@ -174,17 +195,33 @@ gst_schrotoy_class_init (gpointer g_class, gpointer class_data)
         0, 100, 0, G_PARAM_READWRITE));
 
   base_transform_class->transform_ip = gst_schrotoy_transform_ip;
+
+#define N 6
+  toy_class->side0 = g_random_int_range(0,N);
+  do {
+    toy_class->side1 = g_random_int_range(0,N);
+  } while (toy_class->side0 == toy_class->side1);
+  toy_class->quants[0] = 30;
+  toy_class->quants[1] = 30;
+  toy_class->quants[2] = 30;
+  toy_class->quants[3] = 30;
+  toy_class->quants[4] = 30;
+  toy_class->quants[5] = 30;
 }
 
 static void
 gst_schrotoy_init (GTypeInstance * instance, gpointer g_class)
 {
   GstSchrotoy *compress = GST_SCHROTOY (instance);
+  GstBaseTransform *btrans = GST_BASE_TRANSFORM (instance);
 
   GST_DEBUG ("gst_schrotoy_init");
 
-  compress->encoder = schro_encoder_new ();
-  compress->decoder = schro_decoder_new ();
+  gst_pad_set_event_function (btrans->srcpad,
+            GST_DEBUG_FUNCPTR (gst_schrotoy_handle_src_event));
+
+  compress->button_x = -1;
+  compress->button_y = -1;
 }
 
 static void
@@ -231,92 +268,314 @@ gst_schrotoy_get_property (GObject * object, guint prop_id, GValue * value,
   }
 }
 
+static gboolean
+gst_schrotoy_handle_src_event (GstPad * pad, GstEvent * event)
+{
+  GstSchrotoy *toy;
+  const gchar *type;
+
+  toy = GST_SCHROTOY (GST_PAD_PARENT (pad));
+
+  switch (GST_EVENT_TYPE (event)) {
+    case GST_EVENT_NAVIGATION:
+    {
+      const GstStructure *s = gst_event_get_structure (event);
+
+      type = gst_structure_get_string (s, "event");
+      if (g_str_equal (type, "mouse-button-press")) {
+        double x, y;
+        gst_structure_get_double (s, "pointer_x", &x);
+        gst_structure_get_double (s, "pointer_y", &y);
+        toy->button_x = x;
+        toy->button_y = y;
+      }
+    }
+    default:
+      break;
+  }
+  return gst_pad_event_default (pad, event);
+}
+
+static void
+quantize_frame (SchroFrame *frame, int *quant_index_0, int *quant_index_1,
+    SchroSubband *subbands);
+
+static void
+mark_frame (SchroFrame *frame, int val)
+{
+  int i,j;
+  uint8_t *data;
+  int y,u,v;
+  int x;
+
+  for(x=0;x<8;x++){
+    if ((val>>(7-x))&1) {
+      y = 255; u = 0; v = 128;
+    } else {
+      y = 0; u = 255; v = 128;
+    }
+    for(j=0;j<10;j++){
+      data = frame->components[0].data + frame->components[0].stride * j + 10*x;
+      for(i=0;i<10;i++){
+        data[i] = y;
+      }
+    }
+    for(j=0;j<5;j++){
+      data = frame->components[1].data + frame->components[1].stride * j + 5*x;
+      for(i=0;i<5;i++){
+        data[i] = u;
+      }
+    }
+    for(j=0;j<5;j++){
+      data = frame->components[2].data + frame->components[2].stride * j + 5*x;
+      for(i=0;i<5;i++){
+        data[i] = v;
+      }
+    }
+  }
+
+  data = frame->components[0].data + frame->components[0].stride * 50;
+  for(i=0;i<frame->components[0].width;i++) {
+    data[i] = 0;
+  }
+  for(j=50;j<100;j++) {
+    data = frame->components[0].data + frame->components[0].stride * j;
+    data[frame->components[0].width/2] = 0;
+  }
+}
+
 static GstFlowReturn
 gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
     GstBuffer *buf)
 {
   GstSchrotoy *compress;
-  int width;
-  int height;
-  SchroBuffer *input_buffer;
-  SchroBuffer *encoded_buffer;
-  SchroBuffer *decoded_buffer;
-
-  gst_structure_get_int (gst_caps_get_structure(buf->caps,0),
-      "width", &width);
-  gst_structure_get_int (gst_caps_get_structure(buf->caps,0),
-      "height", &height);
-
+  GstSchrotoyClass *compress_class;
+  SchroFrame *frame;
+  SchroParams *params;
+  int mode;
+  
   g_return_val_if_fail (GST_IS_SCHROTOY (base_transform), GST_FLOW_ERROR);
   compress = GST_SCHROTOY (base_transform);
+  compress_class = G_TYPE_INSTANCE_GET_CLASS (compress, GST_TYPE_SCHROTOY, GstSchrotoyClass);
+  params = &compress->params;
 
-  schro_encoder_set_size (compress->encoder, width, height);
-  schro_encoder_set_wavelet_type (compress->encoder, compress->wavelet_type);
+  if (compress->format.width == 0) {
+    schro_params_set_video_format (&compress->format,
+        SCHRO_VIDEO_FORMAT_SD480);
 
-  if (1) {
-  input_buffer = schro_buffer_new_with_data (GST_BUFFER_DATA (buf),
-      GST_BUFFER_SIZE (buf));
-  schro_encoder_push_buffer (compress->encoder, input_buffer);
-  encoded_buffer = schro_encoder_encode (compress->encoder);
-  schro_buffer_unref (input_buffer);
+    gst_structure_get_int (gst_caps_get_structure(buf->caps,0),
+        "width", &compress->format.width);
+    gst_structure_get_int (gst_caps_get_structure(buf->caps,0),
+        "height", &compress->format.height);
 
-#if 0
+    params->video_format = &compress->format;
+    params->transform_depth = 4;
+    params->wavelet_filter_index = SCHRO_WAVELET_5_3;
+
+    schro_params_calculate_iwt_sizes (params);
+
+    compress->tmp_frame =
+      schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
+          compress->params.iwt_luma_width,
+          compress->params.iwt_luma_height,
+          compress->params.iwt_chroma_width,
+          compress->params.iwt_chroma_height);
+    compress->tmpbuf = malloc (2*2048);
+  }
+
+  frame = schro_frame_new_I420 (GST_BUFFER_DATA(buf),
+      params->video_format->width, params->video_format->height);
+
+  schro_frame_convert (compress->tmp_frame, frame);
+  schro_frame_iwt_transform (compress->tmp_frame, &compress->params,
+      compress->tmpbuf);
+  schro_params_init_subbands (&compress->params, compress->subbands);
+
+  if (compress->button_x >= 0) {
+    int value;
+    int valid;
+
+    valid = compress->button_y > 50;
+    value = compress->button_x > params->video_format->width/2;
+    GST_DEBUG("%d %d", valid, value);
+
+    if (valid) {
+      if (value) {
+        if(compress_class->quants[compress_class->side0]<60) {
+          compress_class->quants[compress_class->side1]--;
+          compress_class->quants[compress_class->side0]++;
+        }
+      } else {
+        if(compress_class->quants[compress_class->side1]<60) {
+          compress_class->quants[compress_class->side0]--;
+          compress_class->quants[compress_class->side1]++;
+        }
+      }
+    }
+
+    GST_ERROR("%d %d %d %d %d %d",
+        compress_class->quants[0], compress_class->quants[1],
+        compress_class->quants[2], compress_class->quants[3],
+        compress_class->quants[4], compress_class->quants[5]);
+
+
+    compress->button_x = -1;
+    compress->button_y = -1;
+
+    compress_class->side0 = g_random_int_range(0,N);
+    do {
+      compress_class->side1 = g_random_int_range(0,N);
+    } while (compress_class->side0 == compress_class->side1);
+    compress_class->test_index++;
+  }
+
   {
     int i;
-    int j;
-    int n;
-    int16_t *data;
-    int w;
-    int h;
-    int x = compress->level;
-    int shift;
+    int quant_index_0[13];
+    int quant_index_1[13];
 
-    data = (int16_t *)encoded_buffer->data;
-    n = encoded_buffer->length/2;
+    mode = (compress_class->test_index)%4;
 
-    w = (width + 63) & (~63);
-    h = (height + 63) & (~63);
+    for(i=0;i<13;i++) quant_index_0[i] = 0;
+    for(i=0;i<13;i++) quant_index_1[i] = 0;
+    quant_index_0[0] = 16;
+    quant_index_0[1] = 20;
+    quant_index_0[2] = 20;
+    quant_index_0[3] = 24;
+    quant_index_0[4] = 20;
+    quant_index_0[5] = 20;
+    quant_index_0[6] = 24;
+    quant_index_0[7] = 21;
+    quant_index_0[8] = 21;
+    quant_index_0[9] = 25;
+    quant_index_0[10] = 53;
+    quant_index_0[11] = 53;
+    quant_index_0[12] = 57;
 
-    shift=4;
-    for(i=0;i<h>>shift;i++){
-      for(j=0;j<w>>shift;j++){
-        data[(i+(h>>shift))*w + j] += g_random_int_range (-x,x+1);
-        data[i*w + j + (w>>shift)] += g_random_int_range (-x,x+1);
-        data[(i+(h>>shift))*w + j + (w>>shift)] += g_random_int_range (-x,x+1);
+#if 0
+    quant_index_0[1 + compress_class->side0] =
+      compress_class->quants[compress_class->side0];
+    quant_index_1[1 + compress_class->side1] =
+      compress_class->quants[compress_class->side1];
+#endif
+
+    quantize_frame (compress->tmp_frame, quant_index_0, quant_index_1,
+        compress->subbands);
+  }
+
+  schro_frame_inverse_iwt_transform (compress->tmp_frame, &compress->params,
+      compress->tmpbuf);
+  schro_frame_convert (frame, compress->tmp_frame);
+
+  mark_frame (frame, compress_class->test_index);
+
+  compress->frame_number++;
+  return GST_FLOW_OK;
+}
+
+static int
+dequantize (int q, int quant_factor, int quant_offset)
+{ 
+  if (q == 0) return 0;
+  if (q < 0) {
+    return -((-q * quant_factor + quant_offset + 2)>>2);
+  } else {
+    return (q * quant_factor + quant_offset + 2)>>2;
+  }
+}   
+  
+static int
+quantize (int value, int quant_factor, int quant_offset)
+{ 
+  unsigned int x;
+    
+  if (value == 0) return 0;
+  if (value < 0) {
+    x = (-value)<<2;
+    x /= quant_factor;
+    value = -x;
+  } else { 
+    x = value<<2;
+    x /= quant_factor;
+    value = x;
+  }
+  return value;
+}
+
+static void
+quantize_frame (SchroFrame *frame, int *quant_index_0, int *quant_index_1,
+    SchroSubband *subbands)
+{
+  int index;
+  int i,j;
+  int q;
+  int quant_factor;
+  int quant_offset;
+  int16_t *data;
+  int stride, width, height, offset;
+  int side;
+
+  for(index=0;index<13;index++){
+    for (side=0;side<2;side++) {
+      int xmin, xmax;
+
+      stride = subbands[index].stride >> 1;
+      width = subbands[index].w;
+      height = subbands[index].h;
+      offset = subbands[index].offset;
+
+      if (side) {
+        if (quant_index_1[index] == 0) continue;
+        xmin = width/2;
+        xmax = width;
+        quant_factor = schro_table_quant[quant_index_1[index]];
+        quant_offset = schro_table_offset_1_2[quant_index_1[index]];
+      } else {
+        if (quant_index_0[index] == 0) continue;
+        xmin = 0;
+        xmax = width/2;
+        quant_factor = schro_table_quant[quant_index_0[index]];
+        quant_offset = schro_table_offset_1_2[quant_index_0[index]];
+      }
+      GST_DEBUG("side=%d index=%d quant_factor=%d",
+          side, index, quant_factor);
+
+      data = (int16_t *)frame->components[0].data + offset;
+
+      if (index == 0) {
+        int pred_value;
+
+        for(j=0;j<height;j++){
+          for(i=xmin;i<xmax;i++){
+            if (j>0) {
+              if (i>0) {
+                pred_value = schro_divide(data[j*stride + i - 1] +
+                    data[(j-1)*stride + i] + data[(j-1)*stride + i - 1] + 1,3);
+              } else {
+                pred_value = data[(j-1)*stride + i];
+              }
+            } else {
+              if (i>0) {
+                pred_value = data[j*stride + i - 1];
+              } else {
+                pred_value = 0;
+              }
+            }
+            q = quantize (data[j*stride+i] - pred_value,
+                quant_factor, quant_offset);
+            data[j*stride + i] = dequantize (q, quant_factor, quant_offset)
+              + pred_value;
+          }
+        }
+      } else {
+        for(j=0;j<height;j++){
+          for(i=xmin;i<xmax;i++){
+            q = quantize (data[j*stride+i], quant_factor, quant_offset);
+            data[j*stride + i] = dequantize (q, quant_factor, quant_offset);
+          }
+        }
       }
     }
   }
-#endif
-
-
-  decoded_buffer = schro_buffer_new_with_data (GST_BUFFER_DATA (buf),
-      GST_BUFFER_SIZE (buf));
-  schro_decoder_set_output_buffer (compress->decoder, decoded_buffer);
-  schro_decoder_decode (compress->decoder, encoded_buffer);
-  } else {
-    int16_t *frame_data;
-    int16_t *tmp;
-
-    frame_data = g_malloc (width*height*2);
-    tmp = g_malloc (2048);
-    
-    oil_convert_s16_u8 (frame_data, GST_BUFFER_DATA(buf), width*height);
-    schro_wavelet_transform_2d (compress->wavelet_type,
-        frame_data, width*2, width, height, tmp);
-    schro_wavelet_transform_2d (compress->wavelet_type,
-        frame_data, width*2*2, width/2, height/2, tmp);
-
-
-    schro_wavelet_inverse_transform_2d (compress->wavelet_type,
-        frame_data, width*2*2, width/2, height/2, tmp);
-    schro_wavelet_inverse_transform_2d (compress->wavelet_type,
-        frame_data, width*2, width, height, tmp);
-    oil_convert_u8_s16 (GST_BUFFER_DATA(buf), frame_data, width*height);
-
-    g_free(frame_data);
-    g_free(tmp);
-  }
-
-  return GST_FLOW_OK;
 }
 
