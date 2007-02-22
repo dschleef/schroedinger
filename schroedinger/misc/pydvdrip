@@ -4,6 +4,12 @@
 
 playback = 0
 
+file = '/home/ds/public_html/dude_clip.mpg'
+seek_time = 0
+length = 28
+fps = 24
+audiochan = 1
+
 #file = '/mnt/wallace/home/ds/spirited_away.1.vob'
 #seek_time = 10
 #length = 10
@@ -17,11 +23,11 @@ playback = 0
 #audiochan = 0
 
 # "I can no longer sit back and allow..."
-file = '/mnt/wallace/home/ds/dr_strangelove.1.vob'
-seek_time = 1045
-length = 28
-fps = 24
-audiochan = 3
+#file = 'dr_strangelove.1.vob'
+#seek_time = 1045
+#length = 28
+#fps = 24
+#audiochan = 3
 
 # Credits on moving background
 #file = '/mnt/wallace/home/ds/dr_strangelove.1.vob'
@@ -124,6 +130,9 @@ class Moo:
             self.bin.set_state (gst.STATE_NULL);
             sys.exit(0);
 
+    def end(self):
+        self.bin.set_state (gst.STATE_NULL);
+
     def seek(self, location):
         gst.debug("seeking to %r" % location);
         event = gst.event_new_seek(1.0, gst.FORMAT_TIME,
@@ -177,7 +186,7 @@ class Moo:
                 filesink.set_state (gst.STATE_PLAYING);
                 oggmux.get_pad("src").link(filesink.get_pad("sink"));
             self.got_video = 1;
-            self.seek(seek_time*gst.SECOND);
+            #self.seek(seek_time*gst.SECOND);
         elif structure.get_name() == "audio/x-raw-float" or structure.get_name() == "audio/x-raw-int":
             if self.audio_channel == audiochan:
                 if playback:
@@ -214,6 +223,9 @@ def main(args):
         mainloop.run();
     except KeyboardInterrupt:
         pass
+
+    moo.end();
+    moo = 0;
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

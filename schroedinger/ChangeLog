@@ -1,5 +1,12 @@
 2007-02-22  David Schleef  <ds@schleef.org>
 
+	* misc/pydvdrip:
+	* misc/vtstest:
+	  Random checkin.  These are probably only useful for me
+	  anyway.
+
+2007-02-22  David Schleef  <ds@schleef.org>
+
 	* testsuite/arith.c:
 	* testsuite/arith_encode.c:
 	  Add config.h
