@@ -1,6 +1,6 @@
 AC_PREREQ([2.58])
 dnl PLEASE remove the nano when doing a release
-AC_INIT(schroedinger,0.4.0.0)
+AC_INIT(schroedinger,0.4.0.1)
 
 AS_NANO(SCHRO_CVS=no,SCHRO_CVS=yes)
 
