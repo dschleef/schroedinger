@@ -3,6 +3,8 @@ AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = doc schroedinger testsuite tools
 
+DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc
+
 if HAVE_GST
 SUBDIRS += gst
 endif

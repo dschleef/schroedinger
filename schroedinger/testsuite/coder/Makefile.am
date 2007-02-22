@@ -4,7 +4,9 @@ noinst_PROGRAMS = coding_efficiency speed speed2 decode
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS)
 LDADD = $(SCHRO_LIBS)
 
-CODERS =  arith_qm.c arith_exp.c arith_dirac.c arith_bit.c arith_dirac_byte.c arith_dirac_stats.c arith_dirac_both.c
+CODERS = arith_qm.c arith_exp.c arith_dirac.c arith_bit.c arith_dirac_byte.c arith_dirac_stats.c arith_dirac_both.c
+
+EXTRA_DIST = arith.h
 
 coding_efficiency_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 coding_efficiency_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
