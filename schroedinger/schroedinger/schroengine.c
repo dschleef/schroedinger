@@ -192,9 +192,7 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
       task->ref_frame0 = NULL;
     }
     if (task->is_ref) {
-      task->dest_ref = schro_encoder_reference_add (encoder);
-    } else {
-      task->dest_ref = NULL;
+      schro_encoder_reference_add (encoder, task->encoder_frame);
     }
 
     SCHRO_DEBUG("queueing %d", task->frame_number);
@@ -309,9 +307,7 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
       task->ref_frame0 = NULL;
     }
     if (task->is_ref) {
-      task->dest_ref = schro_encoder_reference_add (encoder);
-    } else {
-      task->dest_ref = NULL;
+      schro_encoder_reference_add (encoder, task->encoder_frame);
     }
 
     SCHRO_DEBUG("queueing %d", task->frame_number);

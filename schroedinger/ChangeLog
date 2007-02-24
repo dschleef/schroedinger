@@ -1,3 +1,16 @@
+2007-02-23  David Schleef  <ds@schleef.org>
+
+	* schroedinger/Makefile.am:
+	* schroedinger/schroanalysis.c:
+	* schroedinger/schroanalysis.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schrointernal.h:
+	* schroedinger/schropredict.c:
+	  Cleanup.
+
 === release 0.4.0 ===
 
 2007-02-22  David Schleef  <ds@schleef.org>

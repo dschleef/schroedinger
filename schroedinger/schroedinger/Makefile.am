@@ -16,6 +16,7 @@ pkginclude_HEADERS = \
 	schroframe.h \
 	schro-stdint.h \
 	schroarith.h \
+	schroanalysis.h \
 	schroasync.h \
 	schrobits.h \
 	schrobitstream.h \
@@ -37,6 +38,7 @@ noinst_HEADERS = \
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schro.c \
+	schroanalysis.c \
 	schroarith.c \
 	schroasync-pthread.c \
 	schrobits.c \

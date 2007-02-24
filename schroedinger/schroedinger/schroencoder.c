@@ -10,7 +10,6 @@
 
 static void schro_encoder_frame_queue_push (SchroEncoder *encoder,
     SchroFrame *frame);
-static void schro_encoder_reference_analyse (SchroEncoderFrame *ref);
 static void schro_encoder_reference_retire (SchroEncoder *encoder,
     int frame_number);
 static void schro_encoder_engine_init (SchroEncoder *encoder);
@@ -23,9 +22,6 @@ static void schro_encoder_clean_up_transform_subband (SchroEncoderTask *task,
     int component, int index);
 static void schro_encoder_fixup_offsets (SchroEncoder *encoder,
     SchroBuffer *buffer);
-
-static void
-schro_encoder_frame_free (SchroEncoderFrame *encoder_frame);
 
 
 SchroEncoder *
@@ -49,7 +45,7 @@ schro_encoder_new (void)
   encoder->mid1_ref = -1;
   encoder->mid2_ref = -1;
 
-  encoder->prefs[SCHRO_PREF_ENGINE] = 0;
+  encoder->prefs[SCHRO_PREF_ENGINE] = 1;
   encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
@@ -75,20 +71,16 @@ void
 schro_encoder_free (SchroEncoder *encoder)
 {
   int i;
-  int j;
 
   if (encoder->async) {
     schro_async_free(encoder->async);
   }
 
   for(i=0;i<encoder->n_reference_frames; i++) {
-    SchroEncoderFrame *ref = encoder->reference_frames + i;
-    for(j=0;j<5;j++){
-      schro_frame_free (ref->frames[j]);
-    }
+    schro_encoder_frame_unref (encoder->reference_frames[i]);
   }
   for(i=0;i<encoder->frame_queue_length; i++) {
-    schro_encoder_frame_free(encoder->frame_queue[i]);
+    schro_encoder_frame_unref (encoder->frame_queue[i]);
   }
 
   if (encoder->inserted_buffer) {
@@ -260,7 +252,7 @@ schro_encoder_shift_frame_queue (SchroEncoder *encoder)
     memmove (encoder->frame_queue, encoder->frame_queue + 1,
         (encoder->frame_queue_length - 1) * sizeof(void *));
     encoder->frame_queue_length--;
-    schro_encoder_frame_free (frame);
+    schro_encoder_frame_unref (frame);
   }
 }
 
@@ -640,27 +632,10 @@ schro_encoder_iterate (SchroEncoder *encoder)
 static void
 schro_encoder_engine_init (SchroEncoder *encoder)
 {
-  int i;
-  int j;
-
   encoder->engine_init = 1;
 
   encoder->engine = encoder->prefs[SCHRO_PREF_ENGINE];
   encoder->ref_distance = encoder->prefs[SCHRO_PREF_REF_DISTANCE];
-
-  encoder->n_reference_frames = 4;
-  for(i=0;i<encoder->n_reference_frames;i++){
-    SchroEncoderFrame *ref = encoder->reference_frames + i;
-
-    memset(ref, 0, sizeof(*ref));
-    for(j=0;j<5;j++){
-      ref->frames[j] = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
-          ROUND_UP_SHIFT(encoder->video_format.width, j),
-          ROUND_UP_SHIFT(encoder->video_format.height, j),
-          ROUND_UP_SHIFT(encoder->video_format.width, j + 1),
-          ROUND_UP_SHIFT(encoder->video_format.height, j + 1));
-    }
-  }
 
   encoder->async = schro_async_new (0);
 }
@@ -679,6 +654,8 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
       SCHRO_PARSE_CODE_PICTURE(task->is_ref, task->params.num_refs));
   schro_encoder_encode_picture_header (task);
 
+  schro_encoder_frame_analyse (task->encoder, task->encoder_frame);
+
   if (task->params.num_refs > 0) {
     schro_encoder_motion_predict (task);
 
@@ -688,11 +665,12 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
 
     if (task->params.num_refs == 2) {
       schro_frame_copy_with_motion (task->tmp_frame1,
-          task->ref_frame0->frames[0], task->ref_frame1->frames[0],
+          task->ref_frame0->reconstructed_frame,
+          task->ref_frame1->reconstructed_frame,
           task->motion_field->motion_vectors, &task->params);
     } else {
       schro_frame_copy_with_motion (task->tmp_frame1,
-          task->ref_frame0->frames[0], NULL,
+          task->ref_frame0->reconstructed_frame, NULL,
           task->motion_field->motion_vectors, &task->params);
     }
 
@@ -704,7 +682,6 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
   } else {
     schro_frame_convert (task->tmp_frame0, task->encode_frame);
   }
-  schro_frame_free (task->encode_frame);
 
   schro_encoder_encode_transform_parameters (task);
 
@@ -738,10 +715,14 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
     schro_frame_inverse_iwt_transform (task->tmp_frame0, &task->params,
         task->tmpbuf);
 
-    schro_frame_convert (task->dest_ref->frames[0], task->tmp_frame0);
-    task->dest_ref->frame_number = task->frame_number;
+    task->encoder_frame->reconstructed_frame = 
+      schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
+          task->encoder->video_format.width,
+          task->encoder->video_format.height,
+          task->encoder->video_format.chroma_width,
+          task->encoder->video_format.chroma_height);
 
-    schro_encoder_reference_analyse (task->dest_ref);
+    schro_frame_convert (task->encoder_frame->reconstructed_frame, task->tmp_frame0);
   }
 
   task->completed = TRUE;
@@ -1652,20 +1633,37 @@ schro_encoder_frame_new (void)
   encoder_frame = malloc(sizeof(SchroEncoderFrame));
   memset (encoder_frame, 0, sizeof(SchroEncoderFrame));
   encoder_frame->state = SCHRO_ENCODER_FRAME_STATE_NEW;
+  encoder_frame->refcount = 1;
 
   return encoder_frame;
 }
 
 void
-schro_encoder_frame_free (SchroEncoderFrame *encoder_frame)
+schro_encoder_frame_ref (SchroEncoderFrame *frame)
 {
+  frame->refcount++;
+}
 
-#if 0
-  if (encoder_frame->original_frame) {
-    schro_frame_free (encoder_frame->original_frame);
+void
+schro_encoder_frame_unref (SchroEncoderFrame *frame)
+{
+  int i;
+
+  frame->refcount--;
+  if (frame->refcount == 0) {
+    if (frame->original_frame) {
+      schro_frame_free (frame->original_frame);
+    }
+    if (frame->reconstructed_frame) {
+      schro_frame_free (frame->reconstructed_frame);
+    }
+    for(i=0;i<5;i++){
+      if (frame->downsampled_frames[i]) {
+        schro_frame_free (frame->downsampled_frames[i]);
+      }
+    }
+    free (frame);
   }
-#endif
-  free (encoder_frame);
 }
 
 static void
@@ -1715,33 +1713,14 @@ schro_encoder_frame_queue_remove (SchroEncoder *encoder, int frame_index)
 
 /* reference pool */
 
-static void
-schro_encoder_reference_analyse (SchroEncoderFrame *ref)
+void
+schro_encoder_reference_add (SchroEncoder *encoder, SchroEncoderFrame *frame)
 {
-  int i;
+  SCHRO_ASSERT (encoder->n_reference_frames < SCHRO_MAX_REFERENCE_FRAMES);
 
-  for(i=1;i<5;i++){
-    schro_frame_downsample (ref->frames[i], ref->frames[i-1], 1);
-  }
-}
-
-SchroEncoderFrame *
-schro_encoder_reference_add (SchroEncoder *encoder)
-{
-  int i;
-  SchroEncoderFrame *ref;
-
-  SCHRO_DEBUG("adding");
-
-  for(i=0;i<encoder->n_reference_frames;i++){
-    ref = encoder->reference_frames + i;
-    if (!ref->valid) {
-      ref->valid = 1;
-      return ref;
-    }
-  }
-
-  return NULL;
+  encoder->reference_frames[encoder->n_reference_frames] = frame;
+  schro_encoder_frame_ref (frame);
+  encoder->n_reference_frames++;
 }
 
 SchroEncoderFrame *
@@ -1751,15 +1730,15 @@ schro_encoder_reference_get (SchroEncoder *encoder, int frame_number)
   SchroEncoderFrame *ref;
 
   for(i=0;i<encoder->n_reference_frames;i++){
-    ref = encoder->reference_frames + i;
-    if (ref->valid && ref->frame_number == frame_number) {
+    ref = encoder->reference_frames[i];
+    if (ref->frame_number == frame_number) {
       return ref;
     }
   }
   return NULL;
 }
 
-static void
+void
 schro_encoder_reference_retire (SchroEncoder *encoder, int frame_number)
 {
   int i;
@@ -1768,9 +1747,13 @@ schro_encoder_reference_retire (SchroEncoder *encoder, int frame_number)
   SCHRO_DEBUG("retiring %d", frame_number);
 
   for(i=0;i<encoder->n_reference_frames;i++){
-    ref = encoder->reference_frames + i;
-    if (ref->valid && ref->frame_number == frame_number) {
-      ref->valid = 0;
+    ref = encoder->reference_frames[i];
+    if (ref->frame_number == frame_number) {
+      schro_encoder_frame_unref (ref);
+      memmove (encoder->reference_frames + i,
+          encoder->reference_frames + i + 1,
+          (encoder->n_reference_frames - i - 1) * sizeof(SchroEncoderFrame *));
+      encoder->n_reference_frames--;
       return;
     }
   }

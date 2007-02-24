@@ -55,6 +55,8 @@ struct _SchroEncoderParams {
 };
 
 struct _SchroEncoderFrame {
+  int refcount;
+
   int valid;
   SchroEncoderFrameStateEnum state;
 
@@ -62,7 +64,8 @@ struct _SchroEncoderFrame {
 
   int frame_number;
   SchroFrame *original_frame;
-  SchroFrame *frames[5];
+  SchroFrame *downsampled_frames[5];
+  SchroFrame *reconstructed_frame;
 
   SchroBuffer *access_unit_buffer;
   SchroBuffer *output_buffer;
@@ -83,7 +86,7 @@ struct _SchroEncoder {
 
   int frame_queue_index;
 
-  SchroEncoderFrame reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
+  SchroEncoderFrame *reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
   int n_reference_frames;
 
   int need_rap;
@@ -170,8 +173,6 @@ struct _SchroEncoderTask {
 
   //SchroPredictionList *predict_lists;
   SchroMotionField *motion_fields[32];
-
-  SchroEncoderFrame *dest_ref;
 
   int slot;
   int is_ref;
@@ -266,7 +267,7 @@ SchroFrame * schro_encoder_frame_queue_get (SchroEncoder *encoder,
     int frame_number);
 void schro_encoder_frame_queue_remove (SchroEncoder *encoder,
     int frame_number);
-SchroEncoderFrame * schro_encoder_reference_add (SchroEncoder *encoder);
+void schro_encoder_reference_add (SchroEncoder *encoder, SchroEncoderFrame *encoder_frame);
 SchroEncoderFrame * schro_encoder_reference_get (SchroEncoder *encoder,
     int frame_number);
 void schro_encoder_encode_picture_header (SchroEncoderTask *task);
@@ -278,6 +279,10 @@ void schro_encoder_encode_subband (SchroEncoderTask *task, int component, int in
 SchroBuffer * schro_encoder_encode_access_unit (SchroEncoder *encoder);
 void schro_encoder_output_push (SchroEncoder *encoder,
     SchroBuffer *buffer, int slot, int presentation_frame);
+
+SchroEncoderFrame * schro_encoder_frame_new (void);
+void schro_encoder_frame_ref (SchroEncoderFrame *frame);
+void schro_encoder_frame_unref (SchroEncoderFrame *frame);
 
 #ifdef __cplusplus
 }

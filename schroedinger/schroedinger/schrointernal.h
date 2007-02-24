@@ -6,6 +6,7 @@
 
 #include <schroedinger/schrooil.h>
 #include <schroedinger/schro-stdint.h>
+#include <schroedinger/schroanalysis.h>
 #include <schroedinger/schroarith.h>
 #include <schroedinger/schroasync.h>
 #include <schroedinger/schrobits.h>

@@ -63,7 +63,7 @@ schro_encoder_motion_predict (SchroEncoderTask *task)
   if (params->num_refs > 1) {
     fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_HIER_REF1];
   }
-  fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_DC];
+  //fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_DC];
   if (params->have_global_motion) {
     fields[n++] = task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF0];
     if (params->num_refs > 1) {
@@ -210,9 +210,11 @@ schro_encoder_global_prediction (SchroEncoderTask *task)
         sizeof(SchroMotionVector)*mf->x_num_blocks*mf->y_num_blocks);
     schro_motion_field_global_prediction (mf, &task->params.global_motion[i]);
     if (i == 0) {
-      schro_motion_field_scan (mf, task->encode_frame, task->ref_frame0->frames[0], 0);
+      schro_motion_field_scan (mf, task->encode_frame,
+          task->ref_frame0->original_frame, 0);
     } else {
-      schro_motion_field_scan (mf, task->encode_frame, task->ref_frame1->frames[0], 0);
+      schro_motion_field_scan (mf, task->encode_frame,
+          task->ref_frame1->original_frame, 0);
     }
     if (i == 0) {
       task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF0] = mf;
@@ -363,112 +365,6 @@ schro_motion_field_global_prediction (SchroMotionField *mf,
 }
 
 
-/* Prediction List */
-
-void schro_prediction_list_init (SchroPredictionList *pred)
-{
-  int i;
-
-  memset(pred,0,sizeof(*pred));
-  for(i=0;i<SCHRO_PREDICTION_LIST_LENGTH;i++){
-    pred->vectors[i].metric = SCHRO_METRIC_INVALID;
-  }
-}
-
-void schro_prediction_list_insert (SchroPredictionList *pred,
-    SchroPredictionVector *vec)
-{
-  int i;
-
-  i = SCHRO_PREDICTION_LIST_LENGTH - 1;
-  if ((vec->metric>>4) + vec->cost >=
-      (pred->vectors[i].metric>>4) + pred->vectors[i].cost) {
-    return;
-  }
-
-  for (i = SCHRO_PREDICTION_LIST_LENGTH - 2; i>=0; i--) {
-    if ((vec->metric>>4) + vec->cost <
-        (pred->vectors[i].metric>>4) + pred->vectors[i].cost) {
-      pred->vectors[i+1] = pred->vectors[i];
-    } else {
-      pred->vectors[i+1] = *vec;
-      return;
-    }
-  }
-  pred->vectors[0] = *vec;
-}
-
-void
-schro_motion_vector_scan (SchroMotionVector *mv, SchroFrame *frame,
-    SchroFrame *ref, int x, int y, int dist)
-{
-  int i,j;
-  int xmin;
-  int xmax;
-  int ymin;
-  int ymax;
-  int metric;
-  int dx, dy;
-
-  dx = mv->u.xy.x;
-  dy = mv->u.xy.y;
-  xmin = MAX(0, x + dx - dist);
-  ymin = MAX(0, y + dy - dist);
-  xmax = MIN(frame->components[0].width - 8, x + dx + dist);
-  ymax = MIN(frame->components[0].height - 8, y + dy + dist);
-
-  mv->metric = 256*8*8;
-  for(j=ymin;j<=ymax;j++){
-    for(i=xmin;i<=xmax;i++){
-      metric = schro_metric_haar (
-          frame->components[0].data + x + y*frame->components[0].stride,
-          frame->components[0].stride,
-          ref->components[0].data + i + j*ref->components[0].stride,
-          ref->components[0].stride, 8, 8);
-      metric += abs(i - x) + abs(j - y);
-      if (metric < mv->metric) {
-        mv->u.xy.x = i - x;
-        mv->u.xy.y = j - y;
-        mv->metric = metric;
-      }
-    }
-  }
-}
-
-void
-schro_prediction_list_scan (SchroPredictionList *list, SchroFrame *frame,
-    SchroFrame *ref, int mode, int x, int y, int dx, int dy, int dist)
-{
-  int i,j;
-  SchroPredictionVector vec;
-  int xmin;
-  int xmax;
-  int ymin;
-  int ymax;
-
-  SCHRO_ASSERT(mode == 1 || mode == 2);
-
-  xmin = MAX(0, x + dx - dist);
-  ymin = MAX(0, y + dy - dist);
-  xmax = MIN(frame->components[0].width - 8, x + dx + dist);
-  ymax = MIN(frame->components[0].height - 8, y + dy + dist);
-
-  for(j=ymin;j<=ymax;j++){
-    for(i=xmin;i<=xmax;i++){
-      vec.pred_mode = mode;
-      vec.dx = i - x;
-      vec.dy = j - y;
-      vec.metric = schro_metric_haar (
-          frame->components[0].data + x + y*frame->components[0].stride,
-          frame->components[0].stride,
-          ref->components[0].data + i + j*ref->components[0].stride,
-          ref->components[0].stride, 8, 8);
-      vec.cost = cost(vec.dx) + cost(vec.dy);
-      schro_prediction_list_insert (list, &vec);
-    }
-  }
-}
-
 SchroMotionField *
 schro_motion_field_new (int x_num_blocks, int y_num_blocks)
 {
@@ -582,6 +478,15 @@ schro_motion_field_dump (SchroMotionField *field)
 }
 #endif
 
+static SchroFrame *
+get_downsampled(SchroEncoderFrame *frame, int i)
+{
+  if (i==0) {
+    return frame->original_frame;
+  }
+  return frame->downsampled_frames[i-1];
+}
+
 void
 schro_encoder_hierarchical_prediction (SchroEncoderTask *task)
 {
@@ -590,20 +495,8 @@ schro_encoder_hierarchical_prediction (SchroEncoderTask *task)
   int x_blocks;
   int y_blocks;
   SchroFrame *downsampled_ref0;
-  SchroFrame *downsampled[4];
   SchroFrame *downsampled_frame;
-  SchroFrame *frame = task->encode_frame;
   int shift;
-
-  downsampled[0] = task->encode_frame;
-  for(i=1;i<4;i++){
-    downsampled[i] = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
-        ROUND_UP_SHIFT(frame->components[0].width, i),
-        ROUND_UP_SHIFT(frame->components[0].height, i),
-        ROUND_UP_SHIFT(frame->components[0].width, i+1),
-        ROUND_UP_SHIFT(frame->components[0].height, i+1));
-    schro_frame_downsample(downsampled[i], downsampled[i-1], 1);
-  }
 
   for(i=0;i<task->params.num_refs;i++){
     SchroMotionField **motion_fields;
@@ -616,11 +509,11 @@ schro_encoder_hierarchical_prediction (SchroEncoderTask *task)
 
     for(shift=3;shift>=0;shift--) {
       if (i == 0) {
-        downsampled_ref0 = task->ref_frame0->frames[shift];
+        downsampled_ref0 = get_downsampled(task->ref_frame0,shift);
       } else {
-        downsampled_ref0 = task->ref_frame1->frames[shift];
+        downsampled_ref0 = get_downsampled(task->ref_frame1,shift);
       }
-      downsampled_frame = downsampled[shift];
+      downsampled_frame = get_downsampled(task->encoder_frame,shift);
 
       x_blocks = ROUND_UP_SHIFT(params->x_num_blocks,shift);
       y_blocks = ROUND_UP_SHIFT(params->y_num_blocks,shift);
@@ -640,10 +533,6 @@ schro_encoder_hierarchical_prediction (SchroEncoderTask *task)
 
     //schro_motion_field_dump (motion_fields[0]);
   }
-
-  schro_frame_free(downsampled[1]);
-  schro_frame_free(downsampled[2]);
-  schro_frame_free(downsampled[3]);
 }
 
 static int
@@ -713,7 +602,7 @@ schro_encoder_dc_prediction (SchroEncoderTask *task)
 
       x = i*8;
       y = j*8;
-      mv->metric = schro_metric_haar (
+      mv->metric = schro_metric_absdiff_u8 (
           frame->components[0].data + x + y*frame->components[0].stride,
           frame->components[0].stride,
           const_data, 0, 8, 8);
