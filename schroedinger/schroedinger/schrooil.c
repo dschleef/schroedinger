@@ -8,36 +8,6 @@
 
 
 void
-oil_add_s16_u8(int16_t *d_n, int16_t *s1_n, uint8_t *s2_n, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    d_n[i] = s1_n[i] + s2_n[i];
-  }
-}
-
-void
-oil_subtract_s16(int16_t *d_n, int16_t *s1_n, int16_t *s2_n, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    d_n[i] = s1_n[i] - s2_n[i];
-  }
-}
-
-void
-oil_subtract_s16_u8(int16_t *d_n, int16_t *s1_n, uint8_t *s2_n, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    d_n[i] = s1_n[i] - (s2_n[i]<<4);
-  }
-}
-
-void
 oil_splat_s16_ns (int16_t *dest, int16_t *src, int n)
 {
   oil_splat_u16_ns ((uint16_t *)dest, (uint16_t *)src, n);
