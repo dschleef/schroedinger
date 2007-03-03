@@ -175,8 +175,8 @@ void schro_params_calculate_mc_sizes (SchroParams *params);
 
 int schro_params_validate (SchroVideoFormat *format);
 
-void schro_params_set_video_format (SchroVideoFormat *format, int index);
-int schro_params_get_video_format (SchroVideoFormat *format);
+void schro_params_set_video_format (SchroVideoFormat *format, SchroVideoFormatEnum index);
+SchroVideoFormatEnum schro_params_get_video_format (SchroVideoFormat *format);
 void schro_params_set_frame_rate (SchroVideoFormat *format, int index);
 int schro_params_get_frame_rate (SchroVideoFormat *format);
 void schro_params_set_aspect_ratio (SchroVideoFormat *format, int index);

@@ -8,6 +8,15 @@
 #include <string.h>
 
 
+/*
+ * schro_params_validate:
+ * @format: pointer to a SchroVideoFormat structure
+ *
+ * Checks the video format structure pointed to by @format for
+ * inconsistencies.
+ *
+ * Returns: TRUE if the contents of @format is valid
+ */
 int
 schro_params_validate (SchroVideoFormat *format)
 {
@@ -44,6 +53,18 @@ schro_params_validate (SchroVideoFormat *format)
   return 1;
 }
 
+/**
+ * schro_params_calculate_iwt_sizes:
+ * @params: pointer to @SchroParams structure
+ *
+ * Calculates the size of the array used for wavelet transformation
+ * using the current video format and transformation depth in the
+ * @params structure.  The @params structure is updated with the new
+ * values.
+ *
+ * The structure fields changed are: iwt_chroma_width, iwt_chroma_height,
+ * iwt_luma_width, iwt_luma_height.
+ */
 void
 schro_params_calculate_iwt_sizes (SchroParams *params)
 {
@@ -64,6 +85,18 @@ schro_params_calculate_iwt_sizes (SchroParams *params)
       params->iwt_luma_height);
 }
 
+/**
+ * schro_params_calculate_mc_sizes:
+ * @params: pointer to @SchroParams structure
+ *
+ * Calculates the size of the array used for motion compensation
+ * using the current video format and motion compensation paramters
+ * in the @params structure.  The @params structure is updated with
+ * the new values.
+ *
+ * The structure fields changed are: x_num_blocks, y_num_blocks,
+ * mc_luma_width, mc_luma_height, mc_chroma_width, mc_chroma_height.
+ */
 void
 schro_params_calculate_mc_sizes (SchroParams *params)
 {
@@ -182,7 +215,17 @@ schro_video_formats[] = {
     3, 2, 3 },
 };
 
-void schro_params_set_video_format (SchroVideoFormat *format, int index)
+/**
+ * schro_params_set_video_format:
+ * @format:
+ * @index:
+ *
+ * Initializes the video format structure pointed to by @format to
+ * the standard Dirac video formats specified by @index.
+ */
+void
+schro_params_set_video_format (SchroVideoFormat *format,
+    SchroVideoFormatEnum index)
 {
   if (index < 0 || index >= ARRAY_SIZE(schro_video_formats)) {
     SCHRO_ERROR("illegal video format index");
@@ -249,7 +292,23 @@ schro_params_get_video_format_metric (SchroVideoFormat *format, int i)
   return metric;
 }
 
-int schro_params_get_video_format (SchroVideoFormat *format)
+/**
+ * schro_params_get_video_format:
+ * @format: pointer to SchroVideoFormat structure
+ *
+ * In Dirac streams, video formats are encoded by specifying a standard
+ * format, and then modifying that to get the desired video format.  This
+ * function guesses a standard format to use as a starting point for
+ * encoding the video format pointed to by @format.
+ *
+ * FIXME: should rename this function to schro_params_get_std_video_format.
+ *
+ * FIXME: the function that guesses the best format is poor
+ *
+ * Returns: an index to the optimal standard format
+ */
+SchroVideoFormatEnum
+schro_params_get_video_format (SchroVideoFormat *format)
 {
   int metric;
   int min_index;
@@ -290,7 +349,14 @@ schro_frame_rates[] = {
   { 60, 1 }
 };
 
-
+/**
+ * schro_params_set_frame_rate:
+ * @format:
+ * @index:
+ *
+ * Sets the frame rate of the video format structure pointed to by
+ * @format to the Dirac standard frame specified by @index.
+ */
 void schro_params_set_frame_rate (SchroVideoFormat *format, int index)
 {
   if (index < 1 || index >= ARRAY_SIZE(schro_frame_rates)) {
@@ -302,6 +368,21 @@ void schro_params_set_frame_rate (SchroVideoFormat *format, int index)
   format->frame_rate_denominator = schro_frame_rates[index].denominator;
 }
 
+/**
+ * schro_params_get_frame_rate:
+ * @format:
+ *
+ * In Dirac bitstreams, frame rates can be one of several standard
+ * frame rates, encoded as an index, or the numerator and denominator
+ * of the framerate can be encoded directly.  This function looks up
+ * the frame rate contained in the video format structure @format in
+ * the list of standard frame rates.  If the frame rate is a standard
+ * frame rate, the corresponding index is returned, otherwise 0 is
+ * returned.
+ *
+ * Returns: index to a standard Dirac frame rate, or 0 if the frame rate
+ * is custom.
+ */
 int schro_params_get_frame_rate (SchroVideoFormat *format)
 {
   int i;
@@ -330,6 +411,14 @@ schro_aspect_ratios[] = {
   { 59, 54 }
 };
 
+/*
+ * schro_params_set_aspect_ratio:
+ * @format: pointer to a SchroVideoFormat structure
+ * @index: index to a standard aspect ratio
+ *
+ * Sets the pixel aspect ratio of the video format structure pointed to
+ * by @format to the standard pixel aspect ratio indicated by @index.
+ */
 void schro_params_set_aspect_ratio (SchroVideoFormat *format, int index)
 {
   if (index < 1 || index >= ARRAY_SIZE(schro_aspect_ratios)) {
@@ -342,6 +431,21 @@ void schro_params_set_aspect_ratio (SchroVideoFormat *format, int index)
 
 }
 
+/*
+ * schro_params_get_aspect_ratio:
+ * @format: pointer to a SchroVideoFormat structure
+ *
+ * In Dirac bitstreams, pixel aspect ratios can be one of several standard
+ * pixel aspect ratios, encoded as an index, or the numerator and denominator
+ * of the pixel aspect ratio can be encoded directly.  This function looks up
+ * the pixel aspect ratio contained in the video format structure @format in
+ * the list of standard pixel aspect ratios.  If the pixel aspect ratio is
+ * a standard pixel aspect ratio, the corresponding index is returned,
+ * otherwise 0 is returned.
+ *
+ * Returns: index to standard pixel aspect ratio, or 0 if there is no
+ * corresponding standard pixel aspect ratio.
+ */
 int schro_params_get_aspect_ratio (SchroVideoFormat *format)
 {
   int i;
@@ -373,6 +477,14 @@ static const SchroSignalRange schro_signal_ranges[] = {
   { 64, 876, 512, 896 }
 };
 
+/**
+ * schro_params_set_signal_range:
+ * @format:
+ * @index:
+ *
+ * Sets the signal range of the video format structure to one of the
+ * standard values indicated by @index.
+ */
 void schro_params_set_signal_range (SchroVideoFormat *format, int i)
 {
   if (i < 1 || i >= ARRAY_SIZE(schro_signal_ranges)) {
@@ -386,6 +498,21 @@ void schro_params_set_signal_range (SchroVideoFormat *format, int i)
   format->chroma_excursion = schro_signal_ranges[i].chroma_excursion;
 }
 
+/**
+ * schro_params_get_signal_range:
+ * @format: pointer to SchroVideoFormat structure
+ *
+ * In Dirac bitstreams, signal ranges can be one of several standard
+ * signal ranges, encoded as an index, or the extents of the signal
+ * range can be encoded directly.  This function looks up
+ * the signal range contained in the video format structure @format in
+ * the list of standard signal ranges.  If the signal range is
+ * a standard signal range, the corresponding index is returned,
+ * otherwise 0 is returned.
+ *
+ * Returns: index to standard signal range, or 0 if there is no
+ * corresponding standard signal range.
+ */
 int schro_params_get_signal_range (SchroVideoFormat *format)
 {
   int i;
@@ -417,6 +544,14 @@ static const SchroColourSpec schro_colour_specs[] = {
   { 3, 2, 3 }
 };
 
+/**
+ * schro_params_set_colour_spec:
+ * @format: pointer to SchroVideoFormat structure
+ * @index: index to standard colour specification
+ *
+ * Sets the colour specification of the video format structure to one of the
+ * standard values indicated by @index.
+ */
 void schro_params_set_colour_spec (SchroVideoFormat *format, int i)
 {
   if (i < 1 || i >= ARRAY_SIZE(schro_colour_specs)) {
@@ -429,6 +564,21 @@ void schro_params_set_colour_spec (SchroVideoFormat *format, int i)
   format->transfer_function = schro_colour_specs[i].transfer_function;
 }
 
+/**
+ * schro_params_get_colour_spec:
+ * @format: pointer to SchroVideoFormat structure
+ *
+ * In Dirac bitstreams, colour specifications can be one of several standard
+ * colour specifications, encoded as an index, or the individual parts of
+ * the colour specication can be encoded.  This function looks up
+ * the colour specification contained in the video format structure @format in
+ * the list of standard colour specifications.  If the colour specification is
+ * a standard colour specification, the corresponding index is returned,
+ * otherwise 0 is returned.
+ *
+ * Returns: index to standard colour specification, or 0 if there is no
+ * corresponding standard colour specification.
+ */
 int schro_params_get_colour_spec (SchroVideoFormat *format)
 {
   int i;
@@ -460,6 +610,15 @@ schro_block_params[] = {
   { 24, 24, 16, 16 }
 };
 
+/**
+ * schro_params_set_block_params:
+ * @params: pointer to SchroParams structure
+ * @index: index to standard block parameters
+ *
+ * Sets the block parameters for motion compensation in the parameters
+ * structure pointed to by @params to the
+ * standard block parameters given by @index.
+ */
 void
 schro_params_set_block_params (SchroParams *params, int index)
 {
@@ -474,6 +633,13 @@ schro_params_set_block_params (SchroParams *params, int index)
   params->ybsep_luma = schro_block_params[index-1].ybsep_luma;
 }
 
+/**
+ * schro_params_set_default_codeblock:
+ * @params: pointer to SchroParams structure
+ *
+ * Sets the codeblock parameters in the parameters structure pointed to
+ * by @params to the defaults.
+ */
 void
 schro_params_set_default_codeblock (SchroParams *params)
 {
@@ -507,6 +673,15 @@ schro_params_set_default_codeblock (SchroParams *params)
 
 }
 
+/**
+ * schro_params_init_subbands:
+ * @params: pointer to SchroParams structure
+ * @subbands: pointer to array of SchroSubband structures
+ *
+ * Initializes the array of subband structures based on the values in the
+ * @params structure.
+ *
+ */
 void
 schro_params_init_subbands (SchroParams *params, SchroSubband *subbands)
 {

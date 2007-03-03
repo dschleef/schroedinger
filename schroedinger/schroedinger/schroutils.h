@@ -40,4 +40,12 @@
 #define SCHRO_INTERNAL
 #endif
 
+#ifdef __cplusplus
+#define SCHRO_BEGIN_DECLS extern "C" {
+#define SCHRO_END_DECLS }
+#else
+#define SCHRO_BEGIN_DECLS
+#define SCHRO_END_DECLS
+#endif
+
 #endif

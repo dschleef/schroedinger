@@ -6,6 +6,7 @@
 #include <liboil/liboil.h>
 #include <stdlib.h>
 
+extern int _schro_decode_prediction_only;
 
 /**
  * schro_init:
@@ -29,6 +30,11 @@ schro_init(void)
     if (end[0] == 0) {
       schro_debug_set_level (level);
     }
+  }
+
+  s = getenv ("SCHRO_DECODE_PREDICTION_ONLY");
+  if (s && s[0]) {
+    _schro_decode_prediction_only = TRUE;
   }
 }
 

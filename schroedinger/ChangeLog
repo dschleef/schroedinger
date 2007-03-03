@@ -1,5 +1,16 @@
 2007-03-02  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schro.c:
+	* schroedinger/schrodecoder.c:
+	  Add env var for only decoding prediction.
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	  Add some documentation.
+	* schroedinger/schroutils.h:
+	  Add begin/end decls.
+
+2007-03-02  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrooil.c:
 	* schroedinger/schrooil.h:
 	  Move some code to liboil.  Requires liboil from CVS.

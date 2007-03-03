@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define DECODE_PREDICTION_ONLY
+int _schro_decode_prediction_only;
 
 static void schro_decoder_decode_macroblock(SchroDecoder *decoder,
     SchroArith *arith, int i, int j);
@@ -381,26 +381,20 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
         params->iwt_chroma_width, params->iwt_chroma_height);
   }
 
-#ifdef DECODE_PREDICTION_ONLY
-  if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) == 0) {
-#endif
   schro_params_init_subbands (params, decoder->subbands);
   schro_decoder_decode_transform_data (decoder);
 
   schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
       decoder->tmpbuf);
-#ifdef DECODE_PREDICTION_ONLY
-  }
-#endif
 
   if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) > 0) {
-#ifndef DECODE_PREDICTION_ONLY
-    schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
+    if (!_schro_decode_prediction_only) {
+      schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
 
-    schro_frame_convert (output_frame, decoder->frame);
-#else
-    schro_frame_convert (output_frame, decoder->mc_tmp_frame);
-#endif
+      schro_frame_convert (output_frame, decoder->frame);
+    } else {
+      schro_frame_convert (output_frame, decoder->mc_tmp_frame);
+    }
     output_frame->frame_number = decoder->picture_number;
   } else {
     schro_frame_convert (output_frame, decoder->frame);
