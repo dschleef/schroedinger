@@ -47,6 +47,7 @@ typedef enum {
   SCHRO_ENCODER_FRAME_STATE_INITED,
   SCHRO_ENCODER_FRAME_STATE_ENCODING,
   SCHRO_ENCODER_FRAME_STATE_DONE,
+  SCHRO_ENCODER_FRAME_STATE_ENGINE_1,
   SCHRO_ENCODER_FRAME_STATE_FREE
 } SchroEncoderFrameStateEnum;
 
@@ -74,6 +75,13 @@ struct _SchroEncoderFrame {
   int last_frame;
 
   SchroEncoderTask *task;
+
+  int is_ref;
+  int num_refs;
+  int picture_number_ref0;
+  int picture_number_ref1;
+  int n_retire;
+  int retire;
 };
 
 struct _SchroEncoder {

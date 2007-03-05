@@ -45,8 +45,8 @@ schro_encoder_new (void)
   encoder->mid1_ref = -1;
   encoder->mid2_ref = -1;
 
-  encoder->prefs[SCHRO_PREF_ENGINE] = 1;
-  encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
+  encoder->prefs[SCHRO_PREF_ENGINE] = 3;
+  encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 2;
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
   encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_5_3;
@@ -406,9 +406,9 @@ schro_encoder_choose_quantisers (SchroEncoderTask *task)
     subbands[7].quant_index = 17;
     subbands[8].quant_index = 17;
     subbands[9].quant_index = 21;
-    subbands[10].quant_index = 45;
-    subbands[11].quant_index = 45;
-    subbands[12].quant_index = 49;
+    subbands[10].quant_index = 34;
+    subbands[11].quant_index = 34;
+    subbands[12].quant_index = 38;
   } else {
     subbands[0].quant_index = 16;
     subbands[1].quant_index = 20;
@@ -420,9 +420,9 @@ schro_encoder_choose_quantisers (SchroEncoderTask *task)
     subbands[7].quant_index = 21;
     subbands[8].quant_index = 21;
     subbands[9].quant_index = 25;
-    subbands[10].quant_index = 53;
-    subbands[11].quant_index = 53;
-    subbands[12].quant_index = 57;
+    subbands[10].quant_index = 38;
+    subbands[11].quant_index = 38;
+    subbands[12].quant_index = 42;
   }
 }
 
@@ -610,6 +610,9 @@ schro_encoder_iterate (SchroEncoder *encoder)
       case 2:
         ret = schro_encoder_engine_backref2 (encoder);
         break;
+      case 3:
+        ret = schro_encoder_engine_tworef (encoder);
+        break;
       default:
         ret = FALSE;
         break;
@@ -714,6 +717,9 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
   if (task->is_ref) {
     schro_frame_inverse_iwt_transform (task->tmp_frame0, &task->params,
         task->tmpbuf);
+    if (task->params.num_refs > 0) {
+      schro_frame_add (task->tmp_frame0, task->tmp_frame1);
+    }
 
     task->encoder_frame->reconstructed_frame = 
       schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
@@ -722,7 +728,8 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
           task->encoder->video_format.chroma_width,
           task->encoder->video_format.chroma_height);
 
-    schro_frame_convert (task->encoder_frame->reconstructed_frame, task->tmp_frame0);
+    schro_frame_convert (task->encoder_frame->reconstructed_frame,
+        task->tmp_frame0);
   }
 
   task->completed = TRUE;
@@ -1345,19 +1352,23 @@ schro_encoder_quantize_subband (SchroEncoderTask *task, int component, int index
       for(i=0;i<width;i++){
         int q;
 
-        if (j>0) {
-          if (i>0) {
-            pred_value = schro_divide(data[j*stride + i - 1] +
-                data[(j-1)*stride + i] + data[(j-1)*stride + i - 1] + 1,3);
+        if (task->params.num_refs == 0) {
+          if (j>0) {
+            if (i>0) {
+              pred_value = schro_divide(data[j*stride + i - 1] +
+                  data[(j-1)*stride + i] + data[(j-1)*stride + i - 1] + 1,3);
+            } else {
+              pred_value = data[(j-1)*stride + i];
+            }
           } else {
-            pred_value = data[(j-1)*stride + i];
+            if (i>0) {
+              pred_value = data[j*stride + i - 1];
+            } else {
+              pred_value = 0;
+            }
           }
         } else {
-          if (i>0) {
-            pred_value = data[j*stride + i - 1];
-          } else {
-            pred_value = 0;
-          }
+          pred_value = 0;
         }
 
         q = quantize(data[j*stride + i] - pred_value, quant_factor,
@@ -1762,7 +1773,7 @@ schro_encoder_reference_retire (SchroEncoder *encoder, int frame_number)
 }
 
 static const int pref_range[][2] = {
-  { 0, 2 },
+  { 0, 3 },
   { 2, 20 },
   { 1, 8 },
   { 0, 7 },
