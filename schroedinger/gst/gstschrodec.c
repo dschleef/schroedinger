@@ -592,7 +592,7 @@ gst_schro_dec_sink_event (GstPad *pad, GstEvent *event)
       if (rate <= 0.0)
         goto newseg_wrong_rate;
 
-      GST_ERROR("newsegment %lld %lld", start, time);
+      GST_DEBUG("newsegment %lld %lld", start, time);
       gst_segment_set_newsegment (&dec->segment, update, rate, format,
           start, stop, time);
 

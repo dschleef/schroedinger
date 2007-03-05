@@ -1,5 +1,10 @@
 2007-03-05  David Schleef  <ds@schleef.org>
 
+	* gst/gstschrodec.c:
+	  change ERROR to DEBUG
+
+2007-03-05  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:
 	* schroedinger/schroengine.c:
