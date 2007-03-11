@@ -14,7 +14,6 @@ typedef struct _SchroParams SchroParams;
 typedef struct _SchroSubband SchroSubband;
 typedef struct _SchroMotionVector SchroMotionVector;
 typedef struct _SchroMotionField SchroMotionField;
-typedef struct _SchroPicture SchroPicture;
 typedef struct _SchroGlobalMotion SchroGlobalMotion;
 
 struct _SchroVideoFormat {
@@ -157,17 +156,6 @@ struct _SchroMotionField {
   int x_num_blocks;
   int y_num_blocks;
   SchroMotionVector *motion_vectors;
-};
-
-struct _SchroPicture {
-  int is_ref;
-  int n_refs;
-
-  int frame_number;
-  int reference_frame_number[2];
-
-  int n_retire;
-  int retire[SCHRO_MAX_REFERENCE_FRAMES];
 };
 
 void schro_params_calculate_iwt_sizes (SchroParams *params);

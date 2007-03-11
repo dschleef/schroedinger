@@ -1,5 +1,12 @@
 2007-03-10  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroparams.h:
+	  Remove unused/deprecated SchroPicture stuff.  Can recycle the
+	  name, soon.
+
+2007-03-10  David Schleef  <ds@schleef.org>
+
 	* Makefile.am:
 	* gst/gstschroenc.c:
 	* schroedinger/schrodecoder.c:

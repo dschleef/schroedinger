@@ -121,10 +121,6 @@ struct _SchroEncoder {
 
   int output_slot;
 
-  SchroPicture picture_list[SCHRO_FRAME_QUEUE_LENGTH];
-  int n_pictures;
-  int picture_index;
-
   SchroBuffer *inserted_buffer;
   int queue_depth;
   int queue_changed;
