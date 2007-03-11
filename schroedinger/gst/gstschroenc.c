@@ -628,10 +628,10 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
         GST_BUFFER_TIMESTAMP (outbuf) = gst_util_uint64_scale (
             (schro_enc->granulepos_hi + schro_enc->granulepos_low),
             schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
-        if (schro_decoder_is_access_unit (encoded_buffer)) {
-          GST_BUFFER_DURATION (outbuf) = 0;
-        } else {
+        if (schro_decoder_is_picture (encoded_buffer)) {
           GST_BUFFER_DURATION (outbuf) = schro_enc->duration;
+        } else {
+          GST_BUFFER_DURATION (outbuf) = 0;
         }
 
         GST_INFO("size %d offset %lld granulepos %llu:%llu timestamp %lld duration %lld",

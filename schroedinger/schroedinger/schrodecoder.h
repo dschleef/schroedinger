@@ -88,6 +88,7 @@ SchroFrame *schro_decoder_pull (SchroDecoder *decoder);
 int schro_decoder_is_parse_header (SchroBuffer *buffer);
 int schro_decoder_is_access_unit (SchroBuffer *buffer);
 int schro_decoder_is_intra (SchroBuffer *buffer);
+int schro_decoder_is_picture (SchroBuffer *buffer);
 int schro_decoder_iterate (SchroDecoder *decoder);
 void schro_decoder_decode_parse_header (SchroDecoder *decoder);
 void schro_decoder_decode_access_unit (SchroDecoder *decoder);

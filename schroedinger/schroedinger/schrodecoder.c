@@ -18,6 +18,7 @@ static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
 static void schro_decoder_reference_add (SchroDecoder *decoder, SchroFrame *frame);
 static SchroFrame * schro_decoder_reference_get (SchroDecoder *decoder, int frame_number);
 static void schro_decoder_reference_retire (SchroDecoder *decoder, int frame_number);
+static void schro_decoder_reference_retire_all (SchroDecoder *decoder);
 
 int16_t schro_zero[SCHRO_LIMIT_WIDTH];
 
@@ -166,6 +167,23 @@ schro_decoder_is_access_unit (SchroBuffer *buffer)
 }
 
 int
+schro_decoder_is_picture (SchroBuffer *buffer)
+{
+  uint8_t *data;
+
+  if (buffer->length < 5) return 0;
+
+  data = buffer->data;
+  if (data[0] != 'B' || data[1] != 'B' || data[2] != 'C' || data[3] != 'D') {
+    return 0;
+  }
+
+  if (SCHRO_PARSE_CODE_IS_PICTURE(data[4])) return 1;
+
+  return 0;
+}
+
+int
 schro_decoder_is_end_sequence (SchroBuffer *buffer)
 {
   uint8_t *data;
@@ -237,6 +255,8 @@ schro_decoder_iterate (SchroDecoder *decoder)
     schro_buffer_unref (decoder->input_buffer);
     decoder->input_buffer = NULL;
     schro_bits_free (decoder->bits);
+
+    schro_decoder_reference_retire_all (decoder);
     
     if (decoder->have_access_unit) {
       return SCHRO_DECODER_OK;
@@ -1501,9 +1521,10 @@ static void
 schro_decoder_reference_add (SchroDecoder *decoder, SchroFrame *frame)
 {
   SCHRO_DEBUG("adding %d", frame->frame_number);
+  if (decoder->n_reference_frames >= 10) {
+  }
   decoder->reference_frames[decoder->n_reference_frames] = frame;
   decoder->n_reference_frames++;
-  SCHRO_ASSERT(decoder->n_reference_frames < 10);
 }
 
 static SchroFrame *
@@ -1536,4 +1557,14 @@ schro_decoder_reference_retire (SchroDecoder *decoder, int frame_number)
   }
 }
 
+static void
+schro_decoder_reference_retire_all (SchroDecoder *decoder)
+{
+  int i;
+  SCHRO_DEBUG("retiring all");
+  for(i=0;i<decoder->n_reference_frames;i++){
+    schro_frame_free (decoder->reference_frames[i]);
+  }
+  decoder->n_reference_frames = 0;
+}
 

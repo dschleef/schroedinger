@@ -12,6 +12,8 @@ static void schro_encoder_frame_queue_push (SchroEncoder *encoder,
     SchroFrame *frame);
 static void schro_encoder_reference_retire (SchroEncoder *encoder,
     int frame_number);
+static void schro_encoder_reference_retire_all (SchroEncoder *encoder,
+    int frame_number);
 static void schro_encoder_engine_init (SchroEncoder *encoder);
 static void schro_encoder_encode_frame_prediction (SchroEncoderTask *task);
 static void schro_encoder_encode_transform_parameters (SchroEncoderTask *task);
@@ -46,7 +48,7 @@ schro_encoder_new (void)
   encoder->mid2_ref = -1;
 
   encoder->prefs[SCHRO_PREF_ENGINE] = 3;
-  encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 2;
+  encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
   encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_5_3;
@@ -62,7 +64,7 @@ schro_encoder_new (void)
   schro_encoder_encode_codec_comment (encoder);
 
   /* FIXME */
-  encoder->queue_depth = 4;
+  encoder->queue_depth = 10;
 
   return encoder;
 }
@@ -553,6 +555,9 @@ schro_encoder_task_complete (SchroEncoderTask *task)
     task->encoder->completed_eos = TRUE;
   }
 
+  if (frame->start_access_unit) {
+    schro_encoder_reference_retire_all (task->encoder, frame->frame_number);
+  }
   for(i=0;i<task->n_retire;i++){
     schro_encoder_reference_retire (task->encoder, task->retire[i]);
   }
@@ -1747,6 +1752,27 @@ schro_encoder_reference_get (SchroEncoder *encoder, int frame_number)
     }
   }
   return NULL;
+}
+
+void
+schro_encoder_reference_retire_all (SchroEncoder *encoder, int frame_number)
+{
+  int i;
+  SchroEncoderFrame *ref;
+  
+  SCHRO_DEBUG("retiring all");
+
+  for(i=encoder->n_reference_frames-1;i>=0;i--){
+    ref = encoder->reference_frames[i];
+    if (ref->frame_number < frame_number) {
+      schro_encoder_frame_unref (ref);
+      memmove (encoder->reference_frames + i,
+          encoder->reference_frames + i + 1,
+          (encoder->n_reference_frames - i - 1) * sizeof(SchroEncoderFrame *));
+      encoder->n_reference_frames--;
+      return;
+    }
+  }
 }
 
 void

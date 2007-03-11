@@ -1,3 +1,15 @@
+2007-03-10  David Schleef  <ds@schleef.org>
+
+	* Makefile.am:
+	* gst/gstschroenc.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	  Many fixes to the tworef engine, so that it now works almost
+	  as well as the other engines (still some EOS problems).
+	  Encodes significantly better, though.
+
 2007-03-05  David Schleef  <ds@schleef.org>
 
 	* gst/gstschrodec.c:

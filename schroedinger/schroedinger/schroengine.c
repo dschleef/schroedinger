@@ -309,20 +309,27 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
   int i;
   int gop_length;
 
+  SCHRO_DEBUG("engine iteration");
+
   for(i=0;i<encoder->frame_queue_length;i++) {
     frame = encoder->frame_queue[i];
+    SCHRO_DEBUG("%d: picture %d is in state %d", i, frame->frame_number,
+        frame->state);
     if (frame->state == SCHRO_ENCODER_FRAME_STATE_NEW) {
       break;
     }
   }
+  SCHRO_DEBUG("i is %d", i);
   for(;i<encoder->frame_queue_length;i++) {
     frame = encoder->frame_queue[i];
     schro_engine_check_new_access_unit (encoder, frame);
     if (frame->start_access_unit) {
       frame->is_ref = TRUE;
       frame->num_refs = 0;
+      SCHRO_DEBUG("preparing %d as AU", frame->frame_number);
       frame->state = SCHRO_ENCODER_FRAME_STATE_ENGINE_1;
       frame->slot = encoder->next_slot++;
+      frame->presentation_frame = frame->frame_number;
     } else {
       int ref_slot;
       int j;
@@ -337,19 +344,25 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
         f = encoder->frame_queue[i+j];
         f->is_ref = FALSE;
         f->num_refs = 2;
-        f->picture_number_ref0 = frame->frame_number;
+        f->picture_number_ref0 = frame->frame_number - 1;
         f->picture_number_ref1 = frame->frame_number + gop_length - 1;
         f->state = SCHRO_ENCODER_FRAME_STATE_ENGINE_1;
+        SCHRO_DEBUG("preparing %d as inter (%d,%d)", f->frame_number,
+            f->picture_number_ref0, f->picture_number_ref1);
         f->slot = encoder->next_slot++;
+        f->presentation_frame = f->frame_number;
       }
       f->n_retire = 1;
-      f->retire = frame->frame_number;
+      f->retire = frame->frame_number - 1;
 
       f = encoder->frame_queue[i+j];
       f->is_ref = TRUE;
       f->num_refs = 1;
-      f->picture_number_ref0 = frame->frame_number;
+      f->picture_number_ref0 = frame->frame_number - 1;
       f->state = SCHRO_ENCODER_FRAME_STATE_ENGINE_1;
+      SCHRO_DEBUG("preparing %d as inter ref (%d)", f->frame_number,
+          f->picture_number_ref0);
+      f->presentation_frame = f->frame_number - 1;
       f->slot = ref_slot;
 
       i += gop_length - 1;
@@ -359,17 +372,22 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
   for(i=0;i<encoder->frame_queue_length;i++){
     frame = encoder->frame_queue[i];
 
+    SCHRO_DEBUG("checking %d...", frame->frame_number);
+
     if (frame->state != SCHRO_ENCODER_FRAME_STATE_ENGINE_1) {
+      SCHRO_DEBUG("wrong state");
       continue;
     }
 
     if (frame->num_refs > 0 &&
         !schro_encoder_reference_get (encoder, frame->picture_number_ref0)) {
+      SCHRO_DEBUG("ref 0 not ready");
       continue;
     }
 
     if (frame->num_refs > 1 &&
         !schro_encoder_reference_get (encoder, frame->picture_number_ref1)) {
+      SCHRO_DEBUG("ref 1 not ready");
       continue;
     }
 
