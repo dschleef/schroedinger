@@ -671,15 +671,18 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
 
     schro_frame_convert (task->tmp_frame0, task->encode_frame);
 
-    if (task->params.num_refs == 2) {
-      schro_frame_copy_with_motion (task->tmp_frame1,
-          task->ref_frame0->reconstructed_frame,
-          task->ref_frame1->reconstructed_frame,
-          task->motion_field->motion_vectors, &task->params);
-    } else {
-      schro_frame_copy_with_motion (task->tmp_frame1,
-          task->ref_frame0->reconstructed_frame, NULL,
-          task->motion_field->motion_vectors, &task->params);
+    {
+      SchroMotion motion;
+
+      motion.src1 = task->ref_frame0->reconstructed_frame;
+      if (task->params.num_refs == 2) {
+        motion.src2 = task->ref_frame1->reconstructed_frame;
+      } else {
+        motion.src2 = NULL;
+      }
+      motion.motion_vectors = task->motion_field->motion_vectors;
+      motion.params = &task->params;
+      schro_frame_copy_with_motion (task->tmp_frame1, &motion);
     }
 
     schro_frame_subtract (task->tmp_frame0, task->tmp_frame1);

@@ -1,3 +1,13 @@
+2007-03-11  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	* testsuite/motion.c:
+	  Add SchroMotion structure to carry around information on how
+	  to predict a picture.
+
 2007-03-10  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.h:

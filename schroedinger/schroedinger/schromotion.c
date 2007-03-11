@@ -411,8 +411,7 @@ shift_rows (SchroFrameComponent *comp, int y, int n, int shift)
 }
 
 void
-schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
-    SchroFrame *src2, SchroMotionVector *motion_vectors, SchroParams *params)
+schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
 {
   int i, j;
   int k;
@@ -420,6 +419,10 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroFrame *src1,
   int x, y;
   SchroObmc obmc_luma;
   SchroObmc obmc_chroma;
+  SchroFrame *src1 = motion->src1;
+  SchroFrame *src2 = motion->src2;
+  SchroMotionVector *motion_vectors = motion->motion_vectors;
+  SchroParams *params = motion->params;
 
   schro_obmc_init (&obmc_luma, 12, 12, 8, 8);
   schro_obmc_init (&obmc_chroma, 6, 6, 4, 4);

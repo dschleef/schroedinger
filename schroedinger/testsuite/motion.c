@@ -74,8 +74,14 @@ main (int argc, char *argv[])
   for(i=0;i<10;i++){
     oil_profile_init (&prof);
     for(j=0;j<10;j++){
+      SchroMotion motion;
+
+      motion.src1 = ref;
+      motion.src2 = NULL;
+      motion.motion_vectors = motion_vectors;
+      motion.params = &params;
       oil_profile_start(&prof);
-      schro_frame_copy_with_motion (dest, ref, NULL, motion_vectors, &params);
+      schro_frame_copy_with_motion (dest, &motion);
       oil_profile_stop(&prof);
     }
     oil_profile_get_ave_std (&prof, &ave, &std);
