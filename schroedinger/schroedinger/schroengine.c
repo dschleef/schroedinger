@@ -307,7 +307,6 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
   SchroEncoderFrame *frame;
   SchroEncoderFrame *f;
   int i;
-  int gop_length;
 
   SCHRO_DEBUG("engine iteration");
 
@@ -333,11 +332,16 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
     } else {
       int ref_slot;
       int j;
+      int gop_length;
 
       gop_length = 4;
 
       if (i + gop_length >= encoder->frame_queue_length) {
-        break;
+        if (encoder->end_of_stream) {
+          gop_length = encoder->frame_queue_length - i;
+        } else {
+          break;
+        }
       }
       ref_slot = encoder->next_slot++;
       for (j = 0; j < gop_length - 1; j++) {
@@ -351,9 +355,11 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
             f->picture_number_ref0, f->picture_number_ref1);
         f->slot = encoder->next_slot++;
         f->presentation_frame = f->frame_number;
+        if (j == gop_length - 2) {
+          f->n_retire = 1;
+          f->retire = frame->frame_number - 1;
+        }
       }
-      f->n_retire = 1;
-      f->retire = frame->frame_number - 1;
 
       f = encoder->frame_queue[i+j];
       f->is_ref = TRUE;

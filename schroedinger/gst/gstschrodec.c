@@ -565,11 +565,11 @@ gst_schro_dec_sink_event (GstPad *pad, GstEvent *event)
 
   switch (GST_EVENT_TYPE (event)) {
     case GST_EVENT_FLUSH_START:
-      GST_ERROR("unhandled flush start");
+      //GST_ERROR("unhandled flush start");
       ret = gst_pad_push_event (dec->srcpad, event);
       break;
     case GST_EVENT_FLUSH_STOP:
-      GST_ERROR("unhandled flush stop");
+      //GST_ERROR("unhandled flush stop");
       gst_schro_dec_reset (dec);
       ret = gst_pad_push_event (dec->srcpad, event);
       break;

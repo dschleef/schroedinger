@@ -1,3 +1,10 @@
+2007-03-13  David Schleef  <ds@schleef.org>
+
+	* gst/gstschrodec.c:
+	  supress warnings.
+	* schroedinger/schroengine.c:
+	  Fix EOS handling in tworef engine.
+
 2007-03-11  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:
