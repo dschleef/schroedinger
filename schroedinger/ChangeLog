@@ -1,3 +1,20 @@
+2007-03-16  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
+	  Construct reference frames correctly even if
+	  SCHRO_DECODE_PREDICTION_ONLY is enabled.
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Some cleanup.  Move frame retire to schro_encoder_pull().
+	* schroedinger/schroengine.c:
+	  Fix frame retiring.
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	  Add calculate_average_luma().
+	* schroedinger/schropredict.c:
+	  Add schro_encoder_zero_prediction(), 'cuz it's fast.  Print out
+	  some statistics.
+
 === Release 0.5.0 ===
 
 2007-03-13  David Schleef  <ds@schleef.org>

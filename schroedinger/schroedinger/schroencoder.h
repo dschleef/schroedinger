@@ -159,7 +159,7 @@ struct _SchroEncoderTask {
   SchroFrame *encode_frame;
 
   SchroFrame *tmp_frame0;
-  SchroFrame *tmp_frame1;
+  SchroFrame *prediction_frame;
 
   int16_t *tmpbuf;
   int16_t *tmpbuf2;

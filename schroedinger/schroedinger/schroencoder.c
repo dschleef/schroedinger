@@ -8,12 +8,16 @@
 #include <string.h>
 #include <stdio.h>
 
+#if 0
 static void schro_encoder_frame_queue_push (SchroEncoder *encoder,
     SchroFrame *frame);
+#endif
 static void schro_encoder_reference_retire (SchroEncoder *encoder,
     int frame_number);
+#if 0
 static void schro_encoder_reference_retire_all (SchroEncoder *encoder,
     int frame_number);
+#endif
 static void schro_encoder_engine_init (SchroEncoder *encoder);
 static void schro_encoder_encode_frame_prediction (SchroEncoderTask *task);
 static void schro_encoder_encode_transform_parameters (SchroEncoderTask *task);
@@ -128,8 +132,8 @@ schro_encoder_task_new (SchroEncoder *encoder)
         params->iwt_luma_width, params->iwt_luma_height,
         params->iwt_chroma_width, params->iwt_chroma_height);
   }
-  if (task->tmp_frame1 == NULL) {
-    task->tmp_frame1 = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
+  if (task->prediction_frame == NULL) {
+    task->prediction_frame = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
         params->mc_luma_width, params->mc_luma_height,
         params->mc_chroma_width, params->mc_chroma_height);
   }
@@ -147,8 +151,8 @@ schro_encoder_task_free (SchroEncoderTask *task)
   if (task->tmp_frame0) {
     schro_frame_free (task->tmp_frame0);
   }
-  if (task->tmp_frame1) {
-    schro_frame_free (task->tmp_frame1);
+  if (task->prediction_frame) {
+    schro_frame_free (task->prediction_frame);
   }
   if (task->motion_field) {
     schro_motion_field_free (task->motion_field);
@@ -207,10 +211,18 @@ schro_encoder_push_ready (SchroEncoder *encoder)
 void
 schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
 {
+  SchroEncoderFrame *encoder_frame;
+
   frame->frame_number = encoder->frame_queue_index;
   encoder->frame_queue_index++;
 
-  schro_encoder_frame_queue_push (encoder, frame);
+  encoder_frame = schro_encoder_frame_new();
+  encoder_frame->original_frame = frame;
+
+  encoder_frame->frame_number = encoder->next_frame_number++;
+
+  encoder->frame_queue[encoder->frame_queue_length] = encoder_frame;
+  encoder->frame_queue_length++;
 
   encoder->queue_changed = TRUE;
 }
@@ -295,6 +307,20 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
 
         frame->state = SCHRO_ENCODER_FRAME_STATE_FREE;
         encoder->output_slot++;
+
+#if 0
+        if (frame->start_access_unit) {
+          schro_encoder_reference_retire_all (task->encoder, frame->frame_number);
+        }
+#endif
+#if 0
+        for(j=0;j<frame->n_retire;j++){
+          schro_encoder_reference_retire (encoder, frame->retire[j]);
+        }
+#endif
+        if (frame->n_retire > 0) {
+          schro_encoder_reference_retire (encoder, frame->retire);
+        }
 
         schro_encoder_shift_frame_queue (encoder);
       }
@@ -530,7 +556,6 @@ schro_encoder_encode_end_of_stream (SchroEncoder *encoder)
 static void
 schro_encoder_task_complete (SchroEncoderTask *task)
 {
-  int i;
   SchroEncoderFrame *frame;
 
   SCHRO_DEBUG("completing picture %d", task->frame_number);
@@ -543,6 +568,12 @@ schro_encoder_task_complete (SchroEncoderTask *task)
 
   frame->output_buffer = task->outbuffer;
   frame->presentation_frame = task->presentation_frame;
+  if (task->ref_frame0) {
+    schro_encoder_frame_unref (task->ref_frame0);
+  }
+  if (task->ref_frame1) {
+    schro_encoder_frame_unref (task->ref_frame1);
+  }
 
   SCHRO_INFO("PICTURE: %d %d %d %d",
       task->frame_number, task->is_ref, task->params.num_refs, task->bits->offset);
@@ -553,13 +584,6 @@ schro_encoder_task_complete (SchroEncoderTask *task)
   if (frame->last_frame) {
     /* FIXME push an EOS */
     task->encoder->completed_eos = TRUE;
-  }
-
-  if (frame->start_access_unit) {
-    schro_encoder_reference_retire_all (task->encoder, frame->frame_number);
-  }
-  for(i=0;i<task->n_retire;i++){
-    schro_encoder_reference_retire (task->encoder, task->retire[i]);
   }
 }
 
@@ -675,17 +699,26 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
       SchroMotion motion;
 
       motion.src1 = task->ref_frame0->reconstructed_frame;
+
+      SCHRO_ASSERT(motion.src1 != NULL);
       if (task->params.num_refs == 2) {
         motion.src2 = task->ref_frame1->reconstructed_frame;
+        SCHRO_ASSERT(motion.src2 != NULL);
       } else {
         motion.src2 = NULL;
       }
       motion.motion_vectors = task->motion_field->motion_vectors;
       motion.params = &task->params;
-      schro_frame_copy_with_motion (task->tmp_frame1, &motion);
+      schro_frame_copy_with_motion (task->prediction_frame, &motion);
     }
 
-    schro_frame_subtract (task->tmp_frame0, task->tmp_frame1);
+    SCHRO_DEBUG("luma %d %d ref %d",
+        schro_frame_calculate_average_luma (task->encoder_frame->original_frame),
+        schro_frame_calculate_average_luma (task->prediction_frame),
+        schro_frame_calculate_average_luma (task->ref_frame0->reconstructed_frame)
+        );
+
+    schro_frame_subtract (task->tmp_frame0, task->prediction_frame);
 
     schro_frame_zero_extend (task->tmp_frame0,
         task->params.video_format->width,
@@ -726,7 +759,7 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
     schro_frame_inverse_iwt_transform (task->tmp_frame0, &task->params,
         task->tmpbuf);
     if (task->params.num_refs > 0) {
-      schro_frame_add (task->tmp_frame0, task->tmp_frame1);
+      schro_frame_add (task->tmp_frame0, task->prediction_frame);
     }
 
     task->encoder_frame->reconstructed_frame = 
@@ -738,6 +771,10 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
 
     schro_frame_convert (task->encoder_frame->reconstructed_frame,
         task->tmp_frame0);
+
+    SCHRO_DEBUG("luma ref %d",
+        schro_frame_calculate_average_luma (task->encoder_frame->reconstructed_frame)
+        );
   }
 
   task->completed = TRUE;
@@ -1685,6 +1722,7 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
   }
 }
 
+#if 0
 static void
 schro_encoder_frame_queue_push (SchroEncoder *encoder, SchroFrame *frame)
 {
@@ -1703,7 +1741,9 @@ schro_encoder_frame_queue_push (SchroEncoder *encoder, SchroFrame *frame)
   encoder->frame_queue[encoder->frame_queue_length] = encoder_frame;
   encoder->frame_queue_length++;
 }
+#endif
 
+#if 0
 SchroFrame *
 schro_encoder_frame_queue_get (SchroEncoder *encoder, int frame_index)
 {
@@ -1715,7 +1755,9 @@ schro_encoder_frame_queue_get (SchroEncoder *encoder, int frame_index)
   }
   return NULL;
 }
+#endif
 
+#if 0
 void
 schro_encoder_frame_queue_remove (SchroEncoder *encoder, int frame_index)
 {
@@ -1729,6 +1771,7 @@ schro_encoder_frame_queue_remove (SchroEncoder *encoder, int frame_index)
     }
   }
 }
+#endif
 
 /* reference pool */
 
@@ -1757,13 +1800,14 @@ schro_encoder_reference_get (SchroEncoder *encoder, int frame_number)
   return NULL;
 }
 
+#if 0
 void
 schro_encoder_reference_retire_all (SchroEncoder *encoder, int frame_number)
 {
   int i;
   SchroEncoderFrame *ref;
   
-  SCHRO_DEBUG("retiring all");
+  SCHRO_ERROR("retiring all before %d", frame_number);
 
   for(i=encoder->n_reference_frames-1;i>=0;i--){
     ref = encoder->reference_frames[i];
@@ -1777,6 +1821,7 @@ schro_encoder_reference_retire_all (SchroEncoder *encoder, int frame_number)
     }
   }
 }
+#endif
 
 void
 schro_encoder_reference_retire (SchroEncoder *encoder, int frame_number)
@@ -1784,8 +1829,6 @@ schro_encoder_reference_retire (SchroEncoder *encoder, int frame_number)
   int i;
   SchroEncoderFrame *ref;
   
-  SCHRO_DEBUG("retiring %d", frame_number);
-
   for(i=0;i<encoder->n_reference_frames;i++){
     ref = encoder->reference_frames[i];
     if (ref->frame_number == frame_number) {
@@ -1798,6 +1841,7 @@ schro_encoder_reference_retire (SchroEncoder *encoder, int frame_number)
     }
   }
 
+  SCHRO_ERROR("attempted to retire non-existent reference frame %d", frame_number);
   SCHRO_ASSERT(0);
 }
 

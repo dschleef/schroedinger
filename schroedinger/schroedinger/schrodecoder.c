@@ -414,7 +414,8 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
       decoder->tmpbuf);
 
   if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) > 0) {
-    if (!_schro_decode_prediction_only) {
+    if (!_schro_decode_prediction_only ||
+        SCHRO_PARSE_CODE_IS_REF(decoder->code)) {
       schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
 
       schro_frame_convert (output_frame, decoder->frame);

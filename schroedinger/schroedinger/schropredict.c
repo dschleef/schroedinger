@@ -13,6 +13,7 @@
 
 void schro_encoder_hierarchical_prediction (SchroEncoderTask *task);
 void schro_encoder_hierarchical_prediction_2 (SchroEncoderTask *task);
+void schro_encoder_zero_prediction (SchroEncoderTask *task);
 static void schro_encoder_dc_prediction (SchroEncoderTask *task);
 static void schro_motion_field_merge (SchroMotionField *dest,
     SchroMotionField **list, int n);
@@ -53,6 +54,7 @@ schro_encoder_motion_predict (SchroEncoderTask *task)
 
   //schro_encoder_hierarchical_prediction (task);
   schro_encoder_hierarchical_prediction_2 (task);
+  //schro_encoder_zero_prediction (task);
 
   if (params->have_global_motion) {
     schro_encoder_global_prediction (task);
@@ -174,6 +176,9 @@ schro_motion_field_calculate_stats (SchroMotionField *mf, SchroEncoderTask *task
 {
   int i,j;
   SchroMotionVector *mv;
+  int ref1 = 0;
+  int ref2 = 0;
+  int bidir = 0;
 
   task->stats_dc = 0;
   task->stats_global = 0;
@@ -189,9 +194,19 @@ schro_motion_field_calculate_stats (SchroMotionField *mf, SchroEncoderTask *task
         } else {
           task->stats_motion++;
         }
+        if (mv->pred_mode == 1) {
+          ref1++;
+        } else if (mv->pred_mode == 2) {
+          ref2++;
+        } else {
+          bidir++;
+        }
       }
     }
   }
+  SCHRO_INFO("dc %d global %d motion %d ref1 %d ref2 %d bidir %d",
+      task->stats_dc, task->stats_global, task->stats_motion,
+      ref1, ref2, bidir);
 }
 
 void
@@ -809,6 +824,57 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderTask *task)
       task->motion_fields[SCHRO_MOTION_FIELD_HIER_REF0] = parent_mf;
     } else {
       task->motion_fields[SCHRO_MOTION_FIELD_HIER_REF1] = parent_mf;
+    }
+  }
+}
+
+void
+schro_encoder_zero_prediction (SchroEncoderTask *task)
+{
+  SchroParams *params = &task->params;
+  int ref;
+  int x_blocks;
+  int y_blocks;
+  SchroFrame *downsampled_ref;
+  SchroFrame *downsampled_frame;
+  SchroMotionField *mf;
+
+  for(ref=0;ref<task->params.num_refs;ref++){
+    int i,j;
+    SchroMotionVector *mv;
+
+    x_blocks = params->x_num_blocks;
+    y_blocks = params->y_num_blocks;
+
+    mf = schro_motion_field_new (x_blocks, y_blocks);
+
+    if (ref == 0) {
+      downsampled_ref = get_downsampled(task->ref_frame0,0);
+    } else {
+      downsampled_ref = get_downsampled(task->ref_frame1,0);
+    }
+    downsampled_frame = get_downsampled(task->encoder_frame,0);
+
+    for(j=0;j<mf->y_num_blocks;j++){
+      for(i=0;i<mf->x_num_blocks;i++){
+        int metric;
+        
+        metric = schro_frame_get_metric (downsampled_frame,
+            i * 8, j * 8, downsampled_ref, i*8, j*8);
+
+        mv = motion_field_get (mf, i, j);
+        mv->u.xy.x = 0;
+        mv->u.xy.y = 0;
+        mv->metric = metric;
+        mv->split = 2;
+        mv->pred_mode = (1<<ref);
+      }
+    }
+
+    if (ref == 0) {
+      task->motion_fields[SCHRO_MOTION_FIELD_HIER_REF0] = mf;
+    } else {
+      task->motion_fields[SCHRO_MOTION_FIELD_HIER_REF1] = mf;
     }
   }
 }

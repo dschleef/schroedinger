@@ -65,6 +65,7 @@ void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
 void schro_frame_downsample (SchroFrame *dest, SchroFrame *src, int shift);
 void schro_frame_h_upsample (SchroFrame *dest, SchroFrame *src);
 void schro_frame_v_upsample (SchroFrame *dest, SchroFrame *src);
+int schro_frame_calculate_average_luma (SchroFrame *frame);
 
 
 #ifdef __cplusplus

@@ -166,23 +166,27 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
     if (task->is_ref) {
       params->num_refs = 0;
       if (task->frame_number > 0) {
-        task->retire[0] = encoder->last_ref;
-        task->n_retire = 1;
+        frame->retire = encoder->last_ref;
+        frame->n_retire = 1;
       } else {
-        task->n_retire = 0;
+        frame->n_retire = 0;
       }
       encoder->last_ref = task->frame_number;
     } else {
       params->num_refs = 1;
       task->reference_frame_number[0] = encoder->last_ref;
-      task->n_retire = 0;
+      frame->n_retire = 0;
     }
+
+    task->n_retire = frame->n_retire;
+    task->retire[0] = frame->retire;
 
     init_params (task);
 
     if (params->num_refs > 0) {
       task->ref_frame0 = schro_encoder_reference_get (encoder,
           task->reference_frame_number[0]);
+      schro_encoder_frame_ref (task->ref_frame0);
     } else {
       task->ref_frame0 = NULL;
     }
@@ -255,10 +259,10 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
       task->is_ref = TRUE;
       params->num_refs = 0;
       if (task->frame_number > 0) {
-        task->retire[0] = encoder->last_ref;
-        task->n_retire = 1;
+        frame->retire = encoder->last_ref;
+        frame->n_retire = 1;
       } else {
-        task->n_retire = 0;
+        frame->n_retire = 0;
       }
       encoder->last_ref = task->frame_number;
       encoder->mid1_ref = task->frame_number;
@@ -266,21 +270,25 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
       task->is_ref = TRUE;
       params->num_refs = 1;
       task->reference_frame_number[0] = encoder->last_ref;
-      task->retire[0] = encoder->last_ref;
-      task->n_retire = 1;
+      frame->retire = encoder->last_ref;
+      frame->n_retire = 1;
       encoder->last_ref = task->frame_number;
     } else {
       task->is_ref = FALSE;
       params->num_refs = 1;
       task->reference_frame_number[0] = encoder->last_ref;
-      task->n_retire = 0;
+      frame->n_retire = 0;
     }
+
+    task->n_retire = frame->n_retire;
+    task->retire[0] = frame->retire;
 
     init_params (task);
 
     if (params->num_refs > 0) {
       task->ref_frame0 = schro_encoder_reference_get (encoder,
           task->reference_frame_number[0]);
+      schro_encoder_frame_ref (task->ref_frame0);
     } else {
       task->ref_frame0 = NULL;
     }
@@ -329,6 +337,12 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
       frame->state = SCHRO_ENCODER_FRAME_STATE_ENGINE_1;
       frame->slot = encoder->next_slot++;
       frame->presentation_frame = frame->frame_number;
+      if (encoder->last_ref >= 0) {
+        frame->n_retire = 1;
+        SCHRO_DEBUG("marking %d for retire", encoder->last_ref);
+        frame->retire = encoder->last_ref;
+      }
+      encoder->last_ref = frame->frame_number;
     } else {
       int ref_slot;
       int j;
@@ -370,6 +384,7 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
           f->picture_number_ref0);
       f->presentation_frame = f->frame_number - 1;
       f->slot = ref_slot;
+      encoder->last_ref = f->frame_number;
 
       i += gop_length - 1;
     }
@@ -434,12 +449,14 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
     if (params->num_refs > 0) {
       task->ref_frame0 = schro_encoder_reference_get (encoder,
           task->reference_frame_number[0]);
+      schro_encoder_frame_ref (task->ref_frame0);
     } else {
       task->ref_frame0 = NULL;
     }
     if (params->num_refs > 1) {
       task->ref_frame1 = schro_encoder_reference_get (encoder,
           task->reference_frame_number[1]);
+      schro_encoder_frame_ref (task->ref_frame1);
     } else {
       task->ref_frame1 = NULL;
     }

@@ -856,3 +856,37 @@ schro_frame_v_upsample (SchroFrame *dest, SchroFrame *src)
   }
 }
 
+int
+schro_frame_calculate_average_luma (SchroFrame *frame)
+{
+  SchroFrameComponent *comp;
+  int i,j;
+  int sum = 0;
+  int n;
+
+  comp = &frame->components[0];
+
+  if (frame->format == SCHRO_FRAME_FORMAT_U8) {
+    uint8_t *data;
+    data = comp->data;
+    for(j=0;j<comp->height;j++){
+      for(i=0;i<comp->width;i++){
+        sum += data[comp->stride * j + i];
+      }
+    }
+  } else if (frame->format == SCHRO_FRAME_FORMAT_S16) {
+    int16_t *data;
+    for(j=0;j<comp->height;j++){
+      data = OFFSET(comp->data, comp->stride * j);
+      for(i=0;i<comp->width;i++){
+        sum += data[i];
+      }
+    }
+  } else {
+    SCHRO_ERROR ("unimplemented");
+  }
+
+  n = comp->height * comp->width;
+  return (sum + n/2) / n;
+}
+
