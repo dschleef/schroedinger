@@ -1,5 +1,14 @@
 2007-03-20  Jan Schmidt  <thaytan@mad.scientist.com>
 
+	* tsmux/tsmux.c: (tsmux_write_adaptation_field),
+	(tsmux_write_stream_packet):
+	The PCR is running against a 27MHz clock - the PTS needs to be
+	scaled accordingly before writing it out. The API for input
+	timestamps should be changed so that timestamping is defined against
+	the full rate system clock.
+
+2007-03-20  Jan Schmidt  <thaytan@mad.scientist.com>
+
 	* tests/Makefile.am:
 	Add new write-empty test.
 

@@ -29,7 +29,7 @@
 #define TSMUX_PCR_OFFSET (TSMUX_CLOCK_FREQ / 8)
 
 /* Times per second to write PCR */
-#define TSMUX_DEFAULT_PCR_FREQ (10)
+#define TSMUX_DEFAULT_PCR_FREQ (25)
 
 /* PAT frequency (1/10th sec) */
 #define TSMUX_DEFAULT_PAT_FREQ (TSMUX_CLOCK_FREQ / 10)
@@ -460,7 +460,7 @@ tsmux_write_adaptation_field (guint8 * buf,
       pcr_ext = (pi->pcr % 300);
 
       flags |= 0x10;
-      TS_DEBUG ("Writing PCR");
+      TS_DEBUG ("Writing PCR %" G_GUINT64_FORMAT " + ext %u", pcr_base, pcr_ext);
       buf[pos++] = (pcr_base >> 25) & 0xff;
       buf[pos++] = (pcr_base >> 17) & 0xff;
       buf[pos++] = (pcr_base >> 9) & 0xff;
@@ -641,10 +641,15 @@ tsmux_write_stream_packet (TsMux * mux, TsMuxStream * stream)
     gboolean write_pat;
     GList *cur;
 
+    if (cur_pts != -1) {
+      TS_DEBUG ("TS for PCR stream is %" G_GINT64_FORMAT, cur_pts);
+    }
+
     /* FIXME: The current PCR needs more careful calculation than just
      * writing a fixed offset */
     if (cur_pts != -1 && (cur_pts >= TSMUX_PCR_OFFSET))
-      cur_pcr = cur_pts - TSMUX_PCR_OFFSET;
+      cur_pcr = (cur_pts - TSMUX_PCR_OFFSET) * 
+                     (TSMUX_SYS_CLOCK_FREQ / TSMUX_CLOCK_FREQ);
 
     /* Need to decide whether to write a new PCR in this packet */
     if (stream->last_pcr == -1 ||
