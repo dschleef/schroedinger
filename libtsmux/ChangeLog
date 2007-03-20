@@ -1,5 +1,28 @@
 2007-03-20  Jan Schmidt  <thaytan@mad.scientist.com>
 
+	* tests/Makefile.am:
+	Add new write-empty test.
+
+	* tests/testmux.c: (main):
+	No need to manually reset flags after writing a packet.
+
+	* tests/write-empty.c: (write_cb), (main):
+	New test program that dumps packets with no payload.
+
+	* tsmux/tsmux.c: (tsmux_write_ts_header),
+	(tsmux_write_stream_packet):
+	Only update the continuity counter for packets that have a payload
+	Fixes: #31 Patch By: Sebastien Cote <sebas642@yahoo.ca>
+
+	Make sure to output the adaptation field/continuity counter byte
+	in every packet, not just those with a payload.
+
+	Use the PCR to decide when to output the next PMT/PAT. Avoids writing
+	it before every single payload packet when no timestamps are being
+	provided.
+
+2007-03-20  Jan Schmidt  <thaytan@mad.scientist.com>
+
 	* doc/dirac-in-13818-1-mapping.odt:
 	Add several clarification sentences suggested by the BBC.
 

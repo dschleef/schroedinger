@@ -593,13 +593,18 @@ tsmux_write_ts_header (guint8 * buf, TsMuxPacketInfo * pi,
     /* Flag the presence of a payload */
     adaptation_flag |= 0x10;
 
-    /* Write the byte out */
-    buf[3] = adaptation_flag;
-
     /* We must have enough data to fill the payload, or some calculation
      * went wrong */
     g_assert (payload_len <= pi->stream_avail);
+
+    /* Packet with payload, increment the continuity counter */
+    pi->packet_count++;
   }
+
+  /* Write the byte of transport_scrambling_control, adaptation_field_control 
+   * + continuity counter out */
+  buf[3] = adaptation_flag;
+
 
   if (write_adapt) {
     TS_DEBUG ("Adaptation field of size >= %d + %d bytes payload",
@@ -607,8 +612,6 @@ tsmux_write_ts_header (guint8 * buf, TsMuxPacketInfo * pi,
   } else {
     TS_DEBUG ("Payload of %d bytes only", payload_len);
   }
-
-  pi->packet_count++;
 
   return TRUE;
 }
@@ -657,13 +660,13 @@ tsmux_write_stream_packet (TsMux * mux, TsMuxStream * stream)
     /* check if we need to rewrite pat */
     if (mux->last_pat_ts == -1 || mux->pat_changed)
       write_pat = TRUE;
-    else if (cur_pts != -1 && cur_pts >= mux->last_pat_ts + mux->pat_frequency)
+    else if (cur_pcr >= mux->last_pat_ts + mux->pat_frequency)
       write_pat = TRUE;
     else
       write_pat = FALSE;
 
     if (write_pat) {
-      mux->last_pat_ts = cur_pts;
+      mux->last_pat_ts = cur_pcr;
       if (!tsmux_write_pat (mux))
         return FALSE;
     }
@@ -676,14 +679,13 @@ tsmux_write_stream_packet (TsMux * mux, TsMuxStream * stream)
 
       if (program->last_pmt_ts == -1 || program->pmt_changed)
         write_pmt = TRUE;
-      else if (cur_pts != -1
-          && cur_pts >= program->last_pmt_ts + program->pmt_frequency)
+      else if (cur_pcr >= program->last_pmt_ts + program->pmt_frequency)
         write_pmt = TRUE;
       else
         write_pmt = FALSE;
 
       if (write_pmt) {
-        program->last_pmt_ts = cur_pts;
+        program->last_pmt_ts = cur_pcr;
         if (!tsmux_write_pmt (mux, program))
           return FALSE;
       }

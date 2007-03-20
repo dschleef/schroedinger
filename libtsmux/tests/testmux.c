@@ -147,8 +147,6 @@ int main (int argc, char **argv)
       pi->flags |= TSMUX_PACKET_FLAG_ADAPTATION | TSMUX_PACKET_FLAG_WRITE_PCR;
       pi->pcr = 0;
       first = FALSE;
-    } else {
-      pi->flags &= ~TSMUX_PACKET_FLAG_ADAPTATION;
     }
 
     g_print ("Writing packet with %d bytes avail, flags 0x%04x\n",
