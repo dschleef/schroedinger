@@ -698,14 +698,14 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
     {
       SchroMotion motion;
 
-      motion.src1 = task->ref_frame0->reconstructed_frame;
+      motion.src1[0] = task->ref_frame0->reconstructed_frame;
 
       SCHRO_ASSERT(motion.src1 != NULL);
       if (task->params.num_refs == 2) {
-        motion.src2 = task->ref_frame1->reconstructed_frame;
+        motion.src2[0] = task->ref_frame1->reconstructed_frame;
         SCHRO_ASSERT(motion.src2 != NULL);
       } else {
-        motion.src2 = NULL;
+        motion.src2[0] = NULL;
       }
       motion.motion_vectors = task->motion_field->motion_vectors;
       motion.params = &task->params;
@@ -909,16 +909,17 @@ schro_encoder_encode_frame_prediction (SchroEncoderTask *task)
               schro_motion_vector_prediction (task->motion_field->motion_vectors,
                   params, i+k, j+l, &pred_x, &pred_y, mv->pred_mode);
 
+              /* FIXME assumption that mv precision is 0 */
               _schro_arith_context_encode_sint(arith,
                   SCHRO_CTX_MV_REF1_H_CONT_BIN1,
                   SCHRO_CTX_MV_REF1_H_VALUE,
                   SCHRO_CTX_MV_REF1_H_SIGN,
-                  mv->u.xy.x - pred_x);
+                  (mv->u.xy.x - pred_x)>>3);
               _schro_arith_context_encode_sint(arith,
                   SCHRO_CTX_MV_REF1_V_CONT_BIN1,
                   SCHRO_CTX_MV_REF1_V_VALUE,
                   SCHRO_CTX_MV_REF1_V_SIGN,
-                  mv->u.xy.y - pred_y);
+                  (mv->u.xy.y - pred_y)>>3);
             }
           }
         }

@@ -22,6 +22,25 @@ ilog2 (unsigned int x)
   return i;
 }
 
+static int
+ramp_shift (int ramp)
+{
+  switch (ramp) {
+    case 0:
+      return 0;
+    case 1:
+      return 1;
+    case 2:
+      return 2;
+    case 4:
+      return 3;
+    case 8:
+      return 4;
+    default:
+      SCHRO_ASSERT(0);
+  }
+}
+
 void
 schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
 {
@@ -30,7 +49,6 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
   int k;
   int x_ramp;
   int y_ramp;
-  int weight;
 
   memset (obmc, 0, sizeof(*obmc));
 
@@ -60,10 +78,9 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
     obmc->regions[i].end_x = x_len;
     obmc->regions[i].end_y = y_len;
   }
-  obmc->shift = -1;
-  for(weight = 4 * x_ramp * y_ramp; weight; weight>>=1) {
-    obmc->shift++;
-  }
+
+  obmc->shift = ramp_shift(x_ramp) + ramp_shift(y_ramp);
+
   obmc->x_ramp = x_ramp;
   obmc->y_ramp = y_ramp;
   obmc->x_len = x_len;
@@ -266,8 +283,30 @@ global_block_get (uint8_t *dest, int stride, SchroFrameComponent *src,
 }
 
 void
-splat_block_general (SchroFrameComponent *dest, int x, int y, int value,
-    SchroObmc *obmc)
+get_dc_block (SchroMotion *motion, SchroMotionVector *mv)
+{
+  int offset;
+
+  offset = 0;
+  memset (motion->tmpdata + offset, mv->u.dc[0], motion->obmc_luma->x_len);
+  motion->blocks[0] = motion->tmpdata + offset;
+  motion->strides[0] = 0;
+  offset += motion->obmc_luma->x_len;
+
+  memset (motion->tmpdata + offset, mv->u.dc[1], motion->obmc_chroma->x_len);
+  motion->blocks[1] = motion->tmpdata + offset;
+  motion->strides[1] = 0;
+  offset += motion->obmc_chroma->x_len;
+
+  memset (motion->tmpdata + offset, mv->u.dc[2], motion->obmc_chroma->x_len);
+  motion->blocks[2] = motion->tmpdata + offset;
+  motion->strides[2] = 0;
+}
+
+#if 0
+void
+splat_block_general (SchroFrame *dest, SchroMotion *motion,
+    int x, int y, SchroMotionVector *mv)
 {
   int i,j;
   int k;
@@ -307,7 +346,164 @@ splat_block_general (SchroFrameComponent *dest, int x, int y, int value,
   }
 
 }
+#endif
 
+void
+get_global_block (SchroMotion *motion, SchroMotionVector *mv,
+    int x, int y, SchroGlobalMotion *gm)
+{
+  int offset;
+
+  offset = 0;
+  memset (motion->tmpdata + offset, 128, motion->obmc_luma->x_len);
+  motion->blocks[0] = motion->tmpdata + offset;
+  motion->strides[0] = 0;
+  offset += motion->obmc_luma->x_len;
+
+  memset (motion->tmpdata + offset, 128, motion->obmc_chroma->x_len);
+  motion->blocks[1] = motion->tmpdata + offset;
+  motion->strides[1] = 0;
+  offset += motion->obmc_chroma->x_len;
+
+  memset (motion->tmpdata + offset, 128, motion->obmc_chroma->x_len);
+  motion->blocks[2] = motion->tmpdata + offset;
+  motion->strides[2] = 0;
+}
+
+void
+get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y)
+{
+  uint8_t *data;
+  int stride;
+  int i,j;
+  SchroFrame *srcframe;
+  SchroFrameComponent *comp;
+  int sx, sy;
+  int w, h;
+  int upsample_index;
+
+  sx = x + (mv->u.xy.x>>3);
+  sy = y + (mv->u.xy.y>>3);
+  upsample_index = (mv->u.xy.x&4)>>2 | (mv->u.xy.y&4)>>1;
+  w = 12;
+  h = 12;
+
+  SCHRO_ASSERT(upsample_index == 0);
+  if (mv->pred_mode == 2) {
+    srcframe = motion->src2[upsample_index];
+  } else {
+    srcframe = motion->src1[upsample_index];
+  }
+#if 0
+  if (sx & 3 || sy & 3) {
+    /* FIXME */
+  } else {
+    if (sx < 0 || sy < 0 || sx > motion->sx_max || sy > motion->sy_max) {
+      data = motion->obmc_luma->tmpdata;
+      stride = motion->obmc_luma->x_len;
+      for(j=0;j<region->end_y - region->start_y;j++){
+        for(i=0;i<region->end_x - region->start_x;i++){
+          int src_x = CLAMP(sx + i, 0, srcframe->width - 1);
+          int src_y = CLAMP(sy + j, 0, srcframe->height - 1);
+          data[j*stride + i] =
+            SCHRO_GET(src->data, src->stride * src_y + src_x, uint8_t);
+        }
+      }
+    } else {
+      data = OFFSET(src->data, src->stride * sy + sx);
+      stride = src->stride;
+    }
+  }
+#endif
+
+  motion->blocks[0] = motion->tmpdata;
+  motion->strides[0] = 64;
+  data = motion->blocks[0];
+  comp = &srcframe->components[0];
+  stride = motion->strides[0];
+  for(j=0;j<h;j++){
+    for(i=0;i<w;i++){
+      int src_x = CLAMP(sx + i, 0, comp->width - 1);
+      int src_y = CLAMP(sy + j, 0, comp->height - 1);
+      data[j*stride + i] =
+        SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
+    }
+  }
+  motion->blocks[1] = motion->tmpdata + 64*64;
+  motion->strides[1] = 64;
+  data = motion->blocks[1];
+  comp = &srcframe->components[1];
+  stride = motion->strides[0];
+  for(j=0;j<h/2;j++){
+    for(i=0;i<w/2;i++){
+      int src_x = CLAMP(sx/2 + i, 0, comp->width - 1);
+      int src_y = CLAMP(sy/2 + j, 0, comp->height - 1);
+      data[j*stride + i] =
+        SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
+    }
+  }
+  motion->blocks[2] = motion->tmpdata + 64*64*2;
+  motion->strides[2] = 64;
+  data = motion->blocks[2];
+  comp = &srcframe->components[2];
+  stride = motion->strides[0];
+  for(j=0;j<h/2;j++){
+    for(i=0;i<w/2;i++){
+      int src_x = CLAMP(sx/2 + i, 0, comp->width - 1);
+      int src_y = CLAMP(sy/2 + j, 0, comp->height - 1);
+      data[j*stride + i] =
+        SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
+    }
+  }
+}
+
+void
+copy_block (SchroFrame *dest, SchroMotion *motion, int x, int y, int reg)
+{
+  SchroFrameComponent *comp;
+  SchroObmc *obmc;
+  SchroObmcRegion *region;
+  int k;
+
+  for (k = 0; k < 3; k++) {
+    int x0, y0;
+
+    comp = &dest->components[k];
+    if (k == 0) {
+      obmc = motion->obmc_luma;
+    } else {
+      obmc = motion->obmc_chroma;
+    }
+    region = obmc->regions + reg;
+    x0 = (x>>comp->h_shift) + region->start_x;
+    y0 = (y>>comp->v_shift) + region->start_y;
+    
+    if (region->end_x - region->start_x == 12) {
+      int16_t *d1 = OFFSET(comp->data, comp->stride*y0 + 2*x0);
+      int16_t *s1 = region->weights;
+
+      oil_multiply_and_acc_12xn_s16_u8 (d1, comp->stride, s1, obmc->stride,
+          motion->blocks[k] +
+            motion->strides[k]*region->start_y + region->start_x,
+          motion->strides[k],
+          region->end_y - region->start_y);
+    } else {
+      int j;
+      for(j=0;j<region->end_y - region->start_y;j++){
+        oil_multiply_and_add_s16_u8 (
+            OFFSET(comp->data, comp->stride*(y0+j) + 2*x0),
+            OFFSET(comp->data, comp->stride*(y0+j) + 2*x0),
+            OFFSET(region->weights, obmc->stride*j),
+            OFFSET(motion->blocks[k], motion->strides[k]*(j+region->start_y) +
+              region->start_x),
+            region->end_x - region->start_x);
+      }
+    }
+  }
+
+}
+    
+#if 0
 void
 copy_block_general (SchroFrameComponent *dest, int x, int y,
     SchroFrameComponent *src, int sx, int sy, SchroObmc *obmc)
@@ -378,35 +574,53 @@ copy_block_general (SchroFrameComponent *dest, int x, int y,
 
 
 }
+#endif
 
 static void
-clear_rows (SchroFrameComponent *comp, int y, int n)
+clear_rows (SchroFrame *frame, int y, int n)
 {
+  SchroFrameComponent *comp;
   uint8_t zero = 0;
-  int ymax;
+  int ymin, ymax;
+  int k;
+  int j;
 
-  ymax = MIN (y + n, comp->height);
-  for(;y<ymax;y++){
-    oil_splat_u8_ns (OFFSET(comp->data, y * comp->stride), &zero,
-          comp->width * sizeof(int16_t));
+  for(k=0;k<3;k++){
+    comp = &frame->components[k];
+    ymax = MIN ((y + n)>>comp->v_shift, comp->height);
+    ymin = MAX (y>>comp->v_shift, 0);
+    for(j=ymin;j<ymax;j++){
+      oil_splat_u8_ns (OFFSET(comp->data, j * comp->stride), &zero,
+            comp->width * sizeof(int16_t));
+    }
   }
 }
 
 static void
-shift_rows (SchroFrameComponent *comp, int y, int n, int shift)
+shift_rows (SchroFrame *frame, int y, int n, int shift_luma, int shift_chroma)
 {
-  int ymax;
+  SchroFrameComponent *comp;
+  int ymin, ymax;
   int16_t *data;
   int16_t s[2];
+  int k;
+  int j;
 
-  s[1] = shift;
-  s[0] = (1<<s[1])>>1;
+  for(k=0;k<3;k++){
+    comp = &frame->components[k];
+    if (k == 0) {
+      s[1] = shift_luma;
+    } else {
+      s[1] = shift_chroma;
+    }
+    s[0] = (1<<s[1])>>1;
 
-  ymax = MIN (y + n, comp->height);
-  if (y < 0) y = 0;
-  for(;y<ymax;y++){
-    data = OFFSET(comp->data, y * comp->stride);
-    oil_add_const_rshift_s16(data, data, s, comp->width);
+    ymax = MIN ((y + n)>>comp->v_shift, comp->height);
+    ymin = MAX (y>>comp->v_shift, 0);
+    for(j=ymin;j<ymax;j++){
+      data = OFFSET(comp->data, j * comp->stride);
+      oil_add_const_rshift_s16(data, data, s, comp->width);
+    }
   }
 }
 
@@ -414,92 +628,77 @@ void
 schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
 {
   int i, j;
-  int k;
-  int dx, dy;
   int x, y;
   SchroObmc obmc_luma;
   SchroObmc obmc_chroma;
-  SchroFrame *src1 = motion->src1;
-  SchroFrame *src2 = motion->src2;
   SchroMotionVector *motion_vectors = motion->motion_vectors;
   SchroParams *params = motion->params;
 
-  schro_obmc_init (&obmc_luma, 12, 12, 8, 8);
-  schro_obmc_init (&obmc_chroma, 6, 6, 4, 4);
+  schro_obmc_init (&obmc_luma,
+      params->xblen_luma, params->yblen_luma,
+      params->xbsep_luma, params->ybsep_luma);
+  /* FIXME 4:2:0 assumption */
+  schro_obmc_init (&obmc_chroma,
+      params->xblen_luma>>1, params->yblen_luma>>1,
+      params->xbsep_luma>>1, params->ybsep_luma>>1);
+  motion->obmc_luma = &obmc_luma;
+  motion->obmc_chroma = &obmc_chroma;
+  motion->tmpdata = malloc (64*64*3);
 
-  for(k=0;k<3;k++){
-    SchroFrameComponent *component = dest->components + k;
-    SchroObmc *obmc;
-
-    if (k == 0) {
-      obmc = &obmc_luma;
-    } else {
-      obmc = &obmc_chroma;
-    }
-
-    clear_rows (component, 0, obmc->y_ramp/2);
+  clear_rows (dest, 0, obmc_luma.y_ramp/2);
 
   for(j=0;j<params->y_num_blocks;j++){
-    y = j*obmc->y_sep;
+    int region_y;
 
-    clear_rows (component, y + obmc->y_ramp/2, obmc->y_sep);
-
-    for(i=0;i<params->x_num_blocks;i++){
-      SchroMotionVector *mv = &motion_vectors[j*params->x_num_blocks + i];
-
-      x = i*obmc->x_sep;
-
-      if (mv->pred_mode == 0) {
-        splat_block_general (component, x, y, mv->u.dc[k], obmc);
-      } else {
-        SchroFrame *ref;
-        SchroGlobalMotion *gm;
-
-        if (mv->pred_mode == 1) {
-          ref = src1;
-          gm = &params->global_motion[0];
-        } else {
-          ref = src2;
-          gm = &params->global_motion[1];
-        }
-
-        if (mv->using_global) {
-          dx = gm->b0 + ((gm->a00 * x + gm->a01 * y)>>gm->a_exp) - x;
-          dy = gm->b1 + ((gm->a10 * x + gm->a11 * y)>>gm->a_exp) - y;
-        } else {
-          dx = mv->u.xy.x;
-          dy = mv->u.xy.y;
-        }
-
-#if 0
-        /* FIXME This is only roughly correct */
-        SCHRO_ASSERT(x + dx >= 0);
-        //SCHRO_ASSERT(x + dx < params->mc_luma_width - params->xbsep_luma);
-        SCHRO_ASSERT(x + dx < params->mc_luma_width);
-        SCHRO_ASSERT(y + dy >= 0);
-        //SCHRO_ASSERT(y + dy < params->mc_luma_height - params->ybsep_luma);
-        SCHRO_ASSERT(y + dy < params->mc_luma_height);
-#endif
-
-        if (k == 0) {
-          copy_block_general (component, x, y, &ref->components[k],
-              x+dx, y+dy, obmc);
-        } else {
-          copy_block_general (component, x, y, &ref->components[k],
-              (x*2+dx)>>1, (y*2+dy)>>1, obmc);
-        }
-      }
+    y = j*obmc_luma.y_sep - obmc_luma.y_ramp/2;
+    if (j == 0) {
+      region_y = 0;
+    } else if (j == params->y_num_blocks - 1) {
+      region_y = 6;
+    } else {
+      region_y = 3;
     }
 
-    shift_rows (component, y - obmc->y_ramp/2, obmc->y_sep, obmc->shift);
+    clear_rows (dest, y + obmc_luma.y_ramp, obmc_luma.y_sep);
+
+    for(i=0;i<params->x_num_blocks;i++){
+      int region;
+      SchroMotionVector *mv = &motion_vectors[j*params->x_num_blocks + i];
+
+      x = i*obmc_luma.x_sep - obmc_luma.x_ramp/2;
+      if (i == 0) {
+        region = region_y + 0;
+      } else if (i == params->x_num_blocks - 1) {
+        region = region_y + 2;
+      } else {
+        region = region_y + 1;
+      }
+
+      if (mv->pred_mode == 0) {
+        get_dc_block (motion, mv);
+      } else {
+        if (mv->using_global) {
+          SchroGlobalMotion *gm = NULL;
+          get_global_block (motion, mv, x, y, gm);
+        } else {
+          get_block (motion, mv, x, y);
+        }
+      }
+
+      copy_block (dest, motion, x, y, region);
+    }
+
+    shift_rows (dest, y - obmc_luma.y_ramp/2, obmc_luma.y_sep,
+        obmc_luma.shift, obmc_chroma.shift);
   }
 
-  y = params->y_num_blocks*obmc->y_sep;
-  shift_rows (component, y - obmc->y_ramp/2, obmc->y_ramp/2, obmc->shift);
-}
+  y = params->y_num_blocks*obmc_luma.y_sep;
+  shift_rows (dest, y - obmc_luma.y_ramp/2, obmc_luma.y_ramp/2,
+      obmc_luma.shift, obmc_chroma.shift);
 
   schro_obmc_cleanup (&obmc_luma);
   schro_obmc_cleanup (&obmc_chroma);
+  free(motion->tmpdata);
 }
 
 void
@@ -632,8 +831,11 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
       *pred_y = vy[0];
       break;
     case 2:
-      *pred_x = (vx[0] + vx[1] + 1)/2;
-      *pred_y = (vy[0] + vy[1] + 1)/2;
+      {
+        int shift = 3 - params->mv_precision;
+        *pred_x = ((((vx[0] + vx[1])>>shift) + 1)/2) <<shift;
+        *pred_y = ((((vy[0] + vy[1])>>shift) + 1)/2) <<shift;
+      }
       break;
     case 3:
       *pred_x = median3(vx[0], vx[1], vx[2]);

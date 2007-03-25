@@ -76,8 +76,8 @@ main (int argc, char *argv[])
     for(j=0;j<10;j++){
       SchroMotion motion;
 
-      motion.src1 = ref;
-      motion.src2 = NULL;
+      motion.src1[0] = ref;
+      motion.src2[0] = NULL;
       motion.motion_vectors = motion_vectors;
       motion.params = &params;
       oil_profile_start(&prof);

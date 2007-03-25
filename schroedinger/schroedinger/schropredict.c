@@ -820,12 +820,26 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderTask *task)
       parent_mf = mf;
     }
 
+    {
+      int i,j;
+      SchroMotionVector *mv;
+
+      /* look at subpixel */
+      for(j=0;j<mf->y_num_blocks;j++){
+        for(i=0;i<mf->x_num_blocks;i++){
+          mv = motion_field_get (mf, i, j);
+          mv->u.xy.x <<= 3;
+          mv->u.xy.y <<= 3;
+        }
+      }
+    }
     if (ref == 0) {
       task->motion_fields[SCHRO_MOTION_FIELD_HIER_REF0] = parent_mf;
     } else {
       task->motion_fields[SCHRO_MOTION_FIELD_HIER_REF1] = parent_mf;
     }
   }
+
 }
 
 void

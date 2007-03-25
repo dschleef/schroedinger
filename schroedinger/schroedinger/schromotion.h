@@ -35,10 +35,18 @@ struct _SchroObmc {
 };
 
 struct _SchroMotion {
-  SchroFrame *src1;
-  SchroFrame *src2;
+  SchroFrame *src1[4];
+  SchroFrame *src2[4];
   SchroMotionVector *motion_vectors;
   SchroParams *params;
+
+  int sx_max;
+  int sy_max;
+  uint8_t *tmpdata;
+  SchroObmc *obmc_luma;
+  SchroObmc *obmc_chroma;
+  uint8_t *blocks[3];
+  int strides[3];
 };
 
 void schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion);

@@ -28,6 +28,7 @@ schro_frame_new_and_alloc2 (SchroFrameFormat format, int width, int height,
 {
   SchroFrame *frame = schro_frame_new();
   int bytes_pp;
+  int h_shift, v_shift;
   
   frame->format = format;
 
@@ -43,23 +44,40 @@ schro_frame_new_and_alloc2 (SchroFrameFormat format, int width, int height,
       break;
   }
 
+  if (width2 == width) {
+    h_shift = 0;
+  } else {
+    h_shift = 1;
+  }
+  if (height2 == height) {
+    v_shift = 0;
+  } else {
+    v_shift = 1;
+  }
+
   frame->components[0].width = width;
   frame->components[0].height = height;
   frame->components[0].stride = width * bytes_pp;
   frame->components[0].length = 
     frame->components[0].stride * frame->components[0].height;
+  frame->components[0].v_shift = 0;
+  frame->components[0].h_shift = 0;
 
   frame->components[1].width = width2;
   frame->components[1].height = height2;
   frame->components[1].stride = frame->components[1].width * bytes_pp;
   frame->components[1].length = 
     frame->components[1].stride * frame->components[0].height;
+  frame->components[1].v_shift = v_shift;
+  frame->components[1].h_shift = h_shift;
 
   frame->components[2].width = width2;
   frame->components[2].height = height2;
   frame->components[2].stride = frame->components[2].width * bytes_pp;
   frame->components[2].length = 
     frame->components[2].stride * frame->components[0].height;
+  frame->components[2].v_shift = v_shift;
+  frame->components[2].h_shift = h_shift;
 
   frame->regions[0] = malloc (frame->components[0].length +
       frame->components[1].length + frame->components[2].length);
@@ -86,6 +104,8 @@ schro_frame_new_I420 (void *data, int width, int height)
   frame->components[0].data = data;
   frame->components[0].length = frame->components[0].stride *
     ROUND_UP_POW2(frame->components[0].height,1);
+  frame->components[0].v_shift = 0;
+  frame->components[0].h_shift = 0;
 
   frame->components[1].width = ROUND_UP_SHIFT(width,1);
   frame->components[1].height = ROUND_UP_SHIFT(height,1);
@@ -94,6 +114,8 @@ schro_frame_new_I420 (void *data, int width, int height)
     frame->components[1].stride * frame->components[1].height;
   frame->components[1].data =
     frame->components[0].data + frame->components[0].length; 
+  frame->components[0].v_shift = 1;
+  frame->components[0].h_shift = 1;
 
   frame->components[2].width = ROUND_UP_SHIFT(width,1);
   frame->components[2].height = ROUND_UP_SHIFT(height,1);
@@ -102,6 +124,8 @@ schro_frame_new_I420 (void *data, int width, int height)
     frame->components[2].stride * frame->components[2].height;
   frame->components[2].data =
     frame->components[1].data + frame->components[1].length; 
+  frame->components[0].v_shift = 1;
+  frame->components[0].h_shift = 1;
 
   return frame;
 }

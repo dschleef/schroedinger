@@ -25,6 +25,8 @@ struct _SchroFrameComponent {
   int width;
   int height;
   int length;
+  int h_shift;
+  int v_shift;
 };
 
 struct _SchroFrame {

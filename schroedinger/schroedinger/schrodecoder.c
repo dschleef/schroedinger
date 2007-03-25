@@ -390,8 +390,8 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
     {
       SchroMotion motion;
 
-      motion.src1 = decoder->ref0;
-      motion.src2 = decoder->ref1;
+      motion.src1[0] = decoder->ref0;
+      motion.src2[0] = decoder->ref1;
       motion.motion_vectors = decoder->motion_field->motion_vectors;
       motion.params = &decoder->params;
       schro_frame_copy_with_motion (decoder->mc_tmp_frame, &motion);
@@ -981,15 +981,16 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
       schro_motion_vector_prediction (motion_vectors, &decoder->params, x, y,
           &pred_x, &pred_y, mv->pred_mode);
 
-      mv->u.xy.x = pred_x + _schro_arith_context_decode_sint (arith,
+      /* FIXME assumption that mv precision is 0 */
+      mv->u.xy.x = pred_x + (_schro_arith_context_decode_sint (arith,
            SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,
-           SCHRO_CTX_MV_REF1_H_SIGN);
-      mv->u.xy.y = pred_y + _schro_arith_context_decode_sint (arith,
+           SCHRO_CTX_MV_REF1_H_SIGN)<<3);
+      mv->u.xy.y = pred_y + (_schro_arith_context_decode_sint (arith,
            SCHRO_CTX_MV_REF1_V_CONT_BIN1, SCHRO_CTX_MV_REF1_V_VALUE,
-           SCHRO_CTX_MV_REF1_V_SIGN);
+           SCHRO_CTX_MV_REF1_V_SIGN)<<3);
     } else {
-      mv->u.xy.x = -16;
-      mv->u.xy.y = -16;
+      mv->u.xy.x = 0;
+      mv->u.xy.y = 0;
     }
   }
 }

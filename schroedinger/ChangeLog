@@ -1,3 +1,19 @@
+2007-03-25  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	* schroedinger/schropredict.c:
+	* testsuite/Makefile.am:
+	* testsuite/motion.c:
+	* testsuite/motion2.c:
+	* testsuite/obmc.c:
+	  Implement handling of half-pixel motion blocks.  Clean up a
+	  bunch of bugs with non-8/12 blocks.
+
 2007-03-24  David Schleef  <ds@schleef.org>
 
 	* testsuite/coder/arith_exp.c: Add Thomas's new coder idea.
