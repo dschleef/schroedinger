@@ -1,5 +1,9 @@
 2007-03-25  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schromotion.c: Fix some slowness
+
+2007-03-25  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroframe.c:

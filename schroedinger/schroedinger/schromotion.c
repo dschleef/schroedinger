@@ -416,45 +416,67 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y)
   }
 #endif
 
-  motion->blocks[0] = motion->tmpdata;
-  motion->strides[0] = 64;
-  data = motion->blocks[0];
+  /* FIXME move and fix */
+  motion->sx_max = srcframe->components[0].width - 12;
+  motion->sy_max = srcframe->components[0].height - 12;
+
+  if (sx < 0 || sy < 0 || sx > motion->sx_max || sy > motion->sy_max) {
+    motion->blocks[0] = motion->tmpdata;
+    motion->strides[0] = 64;
+    data = motion->blocks[0];
+    comp = &srcframe->components[0];
+    stride = motion->strides[0];
+    for(j=0;j<h;j++){
+      for(i=0;i<w;i++){
+        int src_x = CLAMP(sx + i, 0, comp->width - 1);
+        int src_y = CLAMP(sy + j, 0, comp->height - 1);
+        data[j*stride + i] =
+          SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
+      }
+    }
+    motion->blocks[1] = motion->tmpdata + 64*64;
+    motion->strides[1] = 64;
+    data = motion->blocks[1];
+    comp = &srcframe->components[1];
+    stride = motion->strides[0];
+    for(j=0;j<h/2;j++){
+      for(i=0;i<w/2;i++){
+        int src_x = CLAMP(sx/2 + i, 0, comp->width - 1);
+        int src_y = CLAMP(sy/2 + j, 0, comp->height - 1);
+        data[j*stride + i] =
+          SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
+      }
+    }
+    motion->blocks[2] = motion->tmpdata + 64*64*2;
+    motion->strides[2] = 64;
+    data = motion->blocks[2];
+    comp = &srcframe->components[2];
+    stride = motion->strides[0];
+    for(j=0;j<h/2;j++){
+      for(i=0;i<w/2;i++){
+        int src_x = CLAMP(sx/2 + i, 0, comp->width - 1);
+        int src_y = CLAMP(sy/2 + j, 0, comp->height - 1);
+        data[j*stride + i] =
+          SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
+      }
+    }
+  }
+
   comp = &srcframe->components[0];
-  stride = motion->strides[0];
-  for(j=0;j<h;j++){
-    for(i=0;i<w;i++){
-      int src_x = CLAMP(sx + i, 0, comp->width - 1);
-      int src_y = CLAMP(sy + j, 0, comp->height - 1);
-      data[j*stride + i] =
-        SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
-    }
-  }
-  motion->blocks[1] = motion->tmpdata + 64*64;
-  motion->strides[1] = 64;
-  data = motion->blocks[1];
+  motion->blocks[0] = OFFSET(comp->data, comp->stride * sy + sx);
+  motion->strides[0] = comp->stride;
+
+  /* FIXME Assume 4:2:0 */
+  sx >>= 1;
+  sy >>= 1;
   comp = &srcframe->components[1];
-  stride = motion->strides[0];
-  for(j=0;j<h/2;j++){
-    for(i=0;i<w/2;i++){
-      int src_x = CLAMP(sx/2 + i, 0, comp->width - 1);
-      int src_y = CLAMP(sy/2 + j, 0, comp->height - 1);
-      data[j*stride + i] =
-        SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
-    }
-  }
-  motion->blocks[2] = motion->tmpdata + 64*64*2;
-  motion->strides[2] = 64;
-  data = motion->blocks[2];
+  motion->blocks[1] = OFFSET(comp->data, comp->stride * sy + sx);
+  motion->strides[1] = comp->stride;
+
   comp = &srcframe->components[2];
-  stride = motion->strides[0];
-  for(j=0;j<h/2;j++){
-    for(i=0;i<w/2;i++){
-      int src_x = CLAMP(sx/2 + i, 0, comp->width - 1);
-      int src_y = CLAMP(sy/2 + j, 0, comp->height - 1);
-      data[j*stride + i] =
-        SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
-    }
-  }
+  motion->blocks[2] = OFFSET(comp->data, comp->stride * sy + sx);
+  motion->strides[2] = comp->stride;
+
 }
 
 void
