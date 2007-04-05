@@ -17,9 +17,15 @@ schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
   int j;
   int metric = 0;
 
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      metric += abs (a[j*a_stride + i] - b[j*b_stride + i]);
+  if (height == 8 && width == 8) {
+    uint32_t m;
+    oil_sad8x8_u8 (&m, a, a_stride, b, b_stride);
+    metric = m;
+  } else {
+    for(j=0;j<height;j++){
+      for(i=0;i<width;i++){
+        metric += abs (a[j*a_stride + i] - b[j*b_stride + i]);
+      }
     }
   }
 

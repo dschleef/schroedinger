@@ -1,3 +1,11 @@
+2007-04-05  David Schleef  <ds@schleef.org>
+
+	* configure.ac:
+	  Enable new arith coder.
+	* schroedinger/schrometric.c:
+	* schroedinger/schropredict.c:
+	  Use the sad8x8 code in liboil.  Very fast.
+
 2007-04-05  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* Makefile.am:

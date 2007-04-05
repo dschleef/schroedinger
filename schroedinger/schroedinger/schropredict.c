@@ -393,6 +393,7 @@ schro_motion_vector_scan (SchroMotionVector *mv, SchroFrame *frame,
   int ymax;
   int metric;
   int dx, dy;
+  uint32_t metric_array[32];
 
   dx = mv->u.xy.x;
   dy = mv->u.xy.y;
@@ -402,21 +403,41 @@ schro_motion_vector_scan (SchroMotionVector *mv, SchroFrame *frame,
   ymax = MIN(frame->components[0].height - 8, y + dy + dist);
 
   mv->metric = 256*8*8;
-  for(j=ymin;j<=ymax;j++){
-    for(i=xmin;i<=xmax;i++){
-      metric = schro_metric_absdiff_u8 (
+  if (ymax - ymin + 1 <= 32) {
+    for(i=xmin;i<xmax;i++){
+      oil_sad8x8n_u8 (metric_array,
           frame->components[0].data + x + y*frame->components[0].stride,
           frame->components[0].stride,
-          ref->components[0].data + i + j*ref->components[0].stride,
-          ref->components[0].stride, 8, 8);
-      metric += abs(i - x) + abs(j - y);
-      if (metric < mv->metric) {
-        mv->u.xy.x = i - x;
-        mv->u.xy.y = j - y;
-        mv->metric = metric;
+          ref->components[0].data + i + ymin*ref->components[0].stride,
+          ref->components[0].stride,
+          ymax - ymin + 1);
+      for(j=ymin;j<=ymax;j++){
+        metric = metric_array[j-ymin] + abs(i - x) + abs(j - y);
+        if (metric < mv->metric) {
+          mv->u.xy.x = i - x;
+          mv->u.xy.y = j - y;
+          mv->metric = metric;
+        }
       }
     }
-  }
+  } else {
+    for(j=ymin;j<=ymax;j++){
+      for(i=xmin;i<=xmax;i++){
+
+        metric = schro_metric_absdiff_u8 (
+            frame->components[0].data + x + y*frame->components[0].stride,
+            frame->components[0].stride,
+            ref->components[0].data + i + j*ref->components[0].stride,
+            ref->components[0].stride, 8, 8);
+        metric += abs(i - x) + abs(j - y);
+        if (metric < mv->metric) {
+          mv->u.xy.x = i - x;
+          mv->u.xy.y = j - y;
+          mv->metric = metric;
+        }
+      }
+    }  
+  }  
 }
 
 

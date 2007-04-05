@@ -13,7 +13,7 @@ AC_SUBST(SCHRO_MAJORMINOR)
 AM_CONFIG_HEADER(config.h)
 
 AC_DEFINE_UNQUOTED(DIRAC_COMPAT, 1, [Enable Dirac compatibility])
-#AC_DEFINE_UNQUOTED(USE_NEW_CODER, 1, [Use new arithmetic coder])
+AC_DEFINE_UNQUOTED(USE_NEW_CODER, 1, [Use new arithmetic coder])
 
 dnl CURRENT, REVISION, AGE
 dnl - library source changed -> increment REVISION
@@ -40,7 +40,7 @@ dnl the version check needs to stay here because autopoint greps for it
 #AM_GNU_GETTEXT([external])
 
 dnl liboil is required
-OIL_VER="0.3.10"
+OIL_VER="0.3.11"
 PKG_CHECK_MODULES(LIBOIL, liboil-0.3 >= $OIL_VER, HAVE_LIBOIL=yes, HAVE_LIBOIL=no)
 if test "x${HAVE_LIBOIL}" != xyes ; then
   AC_ERROR([liboil-0.3 >= $OIL_VER is required])
