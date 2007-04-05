@@ -11,9 +11,6 @@
 #include <schroedinger/schrotables.h>
 #include <schroedinger/schrodebug.h>
 
-#ifndef USE_NEW_CODER
-static void _schro_arith_output_bit (SchroArith *arith);
-#endif
 static int __schro_arith_context_decode_bit (SchroArith *arith, int i);
 
 SchroArith *
@@ -24,13 +21,7 @@ schro_arith_new (void)
   arith = malloc (sizeof(*arith));
   memset (arith, 0, sizeof(*arith));
 
-#ifndef USE_NEW_CODER
-  memcpy (arith->division_factor, schro_table_division_factor,
-      sizeof(arith->division_factor));
-  memcpy (arith->fixup_shift, schro_table_arith_shift,
-      sizeof(arith->fixup_shift));
-#endif
-
+  /* FIXME wtf? */
   (void)&__schro_arith_context_decode_bit;
 
   return arith;
@@ -42,27 +33,9 @@ schro_arith_free (SchroArith *arith)
   free(arith);
 }
 
-#ifndef USE_NEW_CODER
-static void
-schro_arith_reload_nextcode (SchroArith *arith)
-{
-  while(arith->nextbits <= 24) {
-    if (arith->dataptr < arith->maxdataptr) {
-      arith->nextcode |= arith->dataptr[0] << (24-arith->nextbits);
-    } else {
-      arith->nextcode |= 0xff << (24-arith->nextbits);
-    }
-    arith->nextbits+=8;
-    arith->dataptr++;
-    arith->offset++;
-  }
-}
-#endif
-
 void
 schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
 {
-#ifdef USE_NEW_CODER
   memset(arith, 0, sizeof(SchroArith));
   arith->range[0] = 0;
   arith->range[1] = 0x10000;
@@ -75,27 +48,11 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
   arith->code = arith->dataptr[0] << 8;
   arith->code |= arith->dataptr[1];
   arith->offset = 2;
-#else
-  arith->range[0] = 0;
-  arith->range[1] = 0xffff;
-  arith->code = 0;
-
-  arith->buffer = buffer;
-
-  arith->dataptr = arith->buffer->data;
-  arith->maxdataptr = arith->buffer->data + arith->buffer->length;
-  arith->code = arith->dataptr[0] << 8;
-  arith->code |= arith->dataptr[1];
-  arith->dataptr+=2;
-  arith->offset = 2;
-  schro_arith_reload_nextcode(arith);
-#endif
 }
 
 void
 schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer)
 {
-#ifdef USE_NEW_CODER
   memset(arith, 0, sizeof(SchroArith));
   arith->range[0] = 0;
   arith->range[1] = 0x10000;
@@ -104,58 +61,11 @@ schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer)
   arith->buffer = buffer;
   arith->offset = 0;
   arith->dataptr = arith->buffer->data;
-  //arith->nextbits = 0;
-  //arith->nextcode = 0;
-#else
-  arith->range[0] = 0;
-  arith->range[1] = 0xffff;
-  arith->code = 0;
-
-  arith->buffer = buffer;
-  arith->offset = 0;
-  arith->nextbits = 0;
-  arith->nextcode = 0;
-#endif
 }
-
-#ifndef USE_NEW_CODER
-static void
-_schro_arith_push_bit (SchroArith *arith, int value)
-{
-  arith->nextcode <<= 1;
-  arith->nextcode |= value;
-  arith->nextbits++;
-  if (arith->nextbits == 8) {
-    arith->buffer->data[arith->offset] = arith->nextcode;
-    arith->nextbits = 0;
-    arith->nextcode = 0;
-    arith->offset++;
-  }
-}
-
-static void
-_schro_arith_output_bit (SchroArith *arith)
-{
-  int value;
-
-  value = arith->range[0] >> 15;
-
-  _schro_arith_push_bit (arith, value);
-  
-  value = !value;
-  while(arith->cntr) {
-    _schro_arith_push_bit (arith, value);
-    arith->cntr--;
-  }
-}
-#endif
-
-int hist[11];
 
 void
 schro_arith_flush (SchroArith *arith)
 {
-#ifdef USE_NEW_CODER
   while (arith->cntr < 8) {
     arith->range[0] <<= 1;
     arith->cntr++;
@@ -182,73 +92,6 @@ schro_arith_flush (SchroArith *arith)
   arith->offset++;
   arith->dataptr[arith->offset] = arith->range[0] >> 0;
   arith->offset++;
-#else
-  int i;
-
-#define ENABLE_ARITH_REAPING
-#ifdef ENABLE_ARITH_REAPING
-  {
-    int n;
-    for(n=0;n<16;n++){
-      if ((arith->range[0] | ((1<<(n+1))-1)) > arith->range[1]) {
-        break;
-      }
-    }
-    arith->range[0] |= (1<<n)-1;
-  }
-#endif
-
-  for(i=0;i<16;i++){
-    _schro_arith_output_bit (arith);
-    arith->range[0] <<= 1;
-  }
-  while(arith->nextbits < 8) {
-    arith->nextcode <<= 1;
-    arith->nextcode |= 1;
-    arith->nextbits++;
-  }
-  arith->buffer->data[arith->offset] = arith->nextcode;
-  arith->offset++;
-
-#ifdef ENABLE_ARITH_REAPING
-#if 1
-  if (arith->offset > 1 && arith->buffer->data[arith->offset - 1] == 0xff) {
-    arith->offset--;
-  }
-  if (arith->offset > 1 && arith->buffer->data[arith->offset - 1] == 0xff) {
-    arith->offset--;
-  }
-  if (arith->offset > 1 && arith->buffer->data[arith->offset - 1] == 0xff) {
-    arith->offset--;
-  }
-#else
-  while (arith->offset > 1 && arith->buffer->data[arith->offset - 1] == 0xff) {
-    arith->offset--;
-  }
-#endif
-#endif
-
-#if 0
-  for(i=0;i<SCHRO_CTX_LAST;i++) {
-    int a,b;
-    int x;
-    a = arith->contexts[i].count[0];
-    b = arith->contexts[i].count[1];
-    if (a < b) {
-      x = (a * 10)/b;
-    } else {
-      x = (b * 10)/a;
-    }
-    if (x > 9) x = 9;
-#if 1
-    SCHRO_INFO("%d %d %d %d %d", i,
-        arith->contexts[i].used,
-        arith->contexts[i].count[0], arith->contexts[i].count[1], x);
-#endif
-    hist[x] += arith->contexts[i].used;
-  }
-#endif
-#endif
 }
 
 static const int next_list[] = {
@@ -364,7 +207,6 @@ _schro_arith_context_decode_bit (SchroArith *arith, int i)
   return __schro_arith_context_decode_bit (arith, i);
 }
 
-#ifdef USE_NEW_CODER
 static int
 __schro_arith_context_decode_bit (SchroArith *arith, int i)
 {
@@ -506,119 +348,6 @@ _schro_arith_context_encode_bit (SchroArith *arith, int i, int value)
     }
   }
 }
-#else
-#ifdef __i386_lKJSDLKfjsf__
-#include "schroarith-i386.c"
-#else
-static int
-__schro_arith_context_decode_bit (SchroArith *arith, int i)
-{
-  unsigned int count;
-  unsigned int value;
-  unsigned int range;
-  unsigned int scaler;
-  unsigned int weight;
-  unsigned int probability0;
-  unsigned int range_x_prob;
-
-  weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
-  scaler = arith->division_factor[weight];
-  probability0 = arith->contexts[i].count[0] * scaler;
-  count = arith->code - arith->range[0] + 1;
-  range = arith->range[1] - arith->range[0] + 1;
-  range_x_prob = (range * probability0) >> 16;
-  value = (count > range_x_prob);
-
-  arith->range[1 - value] = arith->range[0] + range_x_prob - 1 + value;
-  arith->contexts[i].count[value]++;
-
-  if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 255) {
-    arith->contexts[i].count[0] >>= 1;
-    arith->contexts[i].count[0]++;
-    arith->contexts[i].count[1] >>= 1;
-    arith->contexts[i].count[1]++;
-  }
-
-  do {
-    if ((arith->range[1] & (1<<15)) == (arith->range[0] & (1<<15))) {
-      /* do nothing */
-    } else if ((arith->range[0] & (1<<14)) && !(arith->range[1] & (1<<14))) {
-      arith->code ^= (1<<14);
-      arith->range[0] ^= (1<<14);
-      arith->range[1] ^= (1<<14);
-    } else {
-      break;
-    }
-
-    arith->range[0] <<= 1;
-    arith->range[1] <<= 1;
-    arith->range[1]++;
-
-    arith->code <<= 1;
-    arith->code |= (arith->nextcode >> 31);
-    arith->nextcode <<= 1;
-    arith->nextbits--;
-    if (arith->nextbits == 0) {
-      schro_arith_reload_nextcode(arith);
-    }
-  } while (1);
-
-  return value;
-}
-#endif
-
-
-void
-_schro_arith_context_encode_bit (SchroArith *arith, int i, int value)
-{
-  //unsigned int count;
-  unsigned int range;
-  unsigned int scaler;
-  unsigned int weight;
-  unsigned int probability0;
-  unsigned int range_x_prob;
-
-  weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
-  scaler = arith->division_factor[weight];
-  probability0 = arith->contexts[i].count[0] * scaler;
-  //count = arith->code - arith->range[0] + 1;
-  range = arith->range[1] - arith->range[0] + 1;
-  range_x_prob = (range * probability0) >> 16;
-//SCHRO_ERROR("scaler %d count0 %d prob0 %d range_x_prob %d", scaler, arith->contexts[i].count[0], probability0, range_x_prob);
-  //value = (count > range_x_prob);
-
-  arith->range[1 - value] = arith->range[0] + range_x_prob - 1 + value;
-  arith->contexts[i].count[value]++;
-  //arith->contexts[i].used++;
-  if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 255) {
-    arith->contexts[i].count[0] >>= 1;
-    arith->contexts[i].count[0]++;
-    arith->contexts[i].count[1] >>= 1;
-    arith->contexts[i].count[1]++;
-  }
-
-  do {
-    if ((arith->range[1] & (1<<15)) == (arith->range[0] & (1<<15))) {
-      _schro_arith_output_bit(arith);
-
-      arith->range[0] <<= 1;
-      arith->range[1] <<= 1;
-      arith->range[1]++;
-    } else if ((arith->range[0] & (1<<14)) && !(arith->range[1] & (1<<14))) {
-      arith->range[0] ^= (1<<14);
-      arith->range[1] ^= (1<<14);
-
-      arith->range[0] <<= 1;
-      arith->range[1] <<= 1;
-      arith->range[1]++;
-      arith->cntr++;
-    } else {
-      break;
-    }
-
-  } while (1);
-}
-#endif
 
 static int
 maxbit (unsigned int x)

@@ -13,7 +13,6 @@ AC_SUBST(SCHRO_MAJORMINOR)
 AM_CONFIG_HEADER(config.h)
 
 AC_DEFINE_UNQUOTED(DIRAC_COMPAT, 1, [Enable Dirac compatibility])
-AC_DEFINE_UNQUOTED(USE_NEW_CODER, 1, [Use new arithmetic coder])
 
 dnl CURRENT, REVISION, AGE
 dnl - library source changed -> increment REVISION

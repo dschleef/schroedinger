@@ -2,9 +2,9 @@
 SUBDIRS = check perf coder
 
 noinst_PROGRAMS = arith arith_encode bits bits2 \
-	 encode wavelet tables wavelet_2d arith_speed \
+	 encode wavelet tables wavelet_2d \
 	 obmc phasecorrelation motion \
-	 arith_fixup_shift quant struct_offsets \
+	 quant \
 	 global_motion upsample encode_big \
 	 motion2
 
@@ -25,13 +25,13 @@ arith_encode_SOURCES = arith_encode.c
 # arith_decode_LDADD = $(SCHRO_LIBS)
 # arith_decode_SOURCES = arith_decode.c
 
-arith_speed_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-arith_speed_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
-arith_speed_SOURCES = arith_speed.c
+# arith_speed_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+# arith_speed_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+# arith_speed_SOURCES = arith_speed.c
 
-arith_fixup_shift_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-arith_fixup_shift_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
-arith_fixup_shift_SOURCES = arith_fixup_shift.c
+# arith_fixup_shift_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+# arith_fixup_shift_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+# arith_fixup_shift_SOURCES = arith_fixup_shift.c
 
 bits_CFLAGS = $(SCHRO_CFLAGS)
 bits_LDADD = $(SCHRO_LIBS)
@@ -90,5 +90,5 @@ quant_LDADD = -lm
 quant_SOURCES = quant.c
 
 
-struct_offsets_SOURCES = struct_offsets.c
+#struct_offsets_SOURCES = struct_offsets.c
 

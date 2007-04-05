@@ -1,6 +1,17 @@
 2007-04-05  David Schleef  <ds@schleef.org>
 
 	* configure.ac:
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrotables.c:
+	* schroedinger/schrotables.h:
+	* testsuite/Makefile.am:
+	* testsuite/tables.c:
+	  Remove old arithmetic coder and supporting code.
+
+2007-04-05  David Schleef  <ds@schleef.org>
+
+	* configure.ac:
 	  Enable new arith coder.
 	* schroedinger/schrometric.c:
 	* schroedinger/schropredict.c:
