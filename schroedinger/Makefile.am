@@ -15,7 +15,7 @@ endif
 DIST_SUBDIRS = schroedinger doc tools gst testsuite
 
 EXTRA_DIST = COPYING COPYING.GPL COPYING.LGPL COPYING.MIT COPYING.MPL \
-	     autogen.sh libschroedinger.spec TODO NEWS
+	     autogen.sh schroedinger.spec TODO NEWS
 
 pkgconfig_DATA = schroedinger-$(SCHRO_MAJORMINOR).pc
 

@@ -126,7 +126,7 @@ testsuite/coder/Makefile
 tools/Makefile
 schroedinger-uninstalled.pc
 schroedinger.pc
-libschroedinger.spec
+schroedinger.spec
 ])
 AC_OUTPUT
 
