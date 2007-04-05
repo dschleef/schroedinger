@@ -5,9 +5,7 @@
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schro-stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+SCHRO_BEGIN_DECLS
 
 typedef struct _SchroVideoFormat SchroVideoFormat;
 typedef struct _SchroParams SchroParams;
@@ -179,10 +177,7 @@ void schro_params_set_default_codeblock (SchroParams *params);
 
 void schro_params_init_subbands (SchroParams *params, SchroSubband *subbands);
 
-#ifdef __cplusplus
-}
-#endif
-
+SCHRO_END_DECLS
 
 #endif
 

@@ -4,9 +4,7 @@
 
 #include <schroedinger/schro-stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+SCHRO_BEGIN_DECLS
 
 void schro_deinterleave (int16_t *d_n, int16_t *s_n, int n);
 void schro_deinterleave_str (int16_t *d_n, int dstr, int16_t *s_n, int n);
@@ -82,9 +80,7 @@ void schro_iiwt_fidelity (int16_t *data, int stride, int width, int height,
 void schro_iiwt_daub_9_7 (int16_t *data, int stride, int width, int height,
     int16_t *tmp);
 
-#ifdef __cplusplus
-}
-#endif
+SCHRO_END_DECLS
 
 #endif
 

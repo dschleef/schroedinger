@@ -4,9 +4,7 @@
 
 #include <schroedinger/schrobuffer.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+SCHRO_BEGIN_DECLS
 
 typedef struct _SchroObmc SchroObmc;
 typedef struct _SchroObmcRegion SchroObmcRegion;
@@ -64,10 +62,7 @@ void schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep,
     int y_sep);
 void schro_obmc_cleanup (SchroObmc *obmc);
 
-#ifdef __cplusplus
-}
-#endif
-
+SCHRO_END_DECLS
 
 #endif
 

@@ -2,11 +2,10 @@
 #ifndef __SCHRO_NOTOIL_H__
 #define __SCHRO_NOTOIL_H__
 
+#include <schroedinger/schroutils.h>
 #include <schroedinger/schro-stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+SCHRO_BEGIN_DECLS
 
 void oil_splat_s16_ns (int16_t *dest, int16_t *src, int n);
 void oil_lift_haar_split (int16_t *i1, int16_t *i2, int n);
@@ -20,9 +19,7 @@ void oil_mas10_across_u8 (uint8_t *d, const uint8_t *s1, const int16_t *s2_10,
 void oil_mas10_u8 (uint8_t *d, const uint8_t *s1, int sstr,
     const int16_t *s2_10, const int16_t *s3_2, int n);
 
-#ifdef __cplusplus
-}
-#endif
+SCHRO_END_DECLS
 
 #endif
 

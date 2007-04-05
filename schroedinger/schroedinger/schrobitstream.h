@@ -2,9 +2,7 @@
 #ifndef _SCHRO_BITSTREAM_H_
 #define _SCHRO_BITSTREAM_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+SCHRO_BEGIN_DECLS
 
 #define SCHRO_MAX_TRANSFORM_DEPTH 8
 #define SCHRO_MAX_REFERENCE_FRAMES 10
@@ -91,9 +89,7 @@ typedef enum _SchroWaveletIndex {
   SCHRO_WAVELET_DAUB_9_7
 } SchroWaveletIndex;
 
-#ifdef __cplusplus
-}
-#endif
+SCHRO_END_DECLS
 
 #endif
 

@@ -25,8 +25,6 @@ struct _Picture {
   int height;
 };
 
-#define OFFSET(ptr,x) (void *)(((uint8_t *)ptr) + (x))
-
 void dump(Picture *p);
 void dump_cmp(Picture *p, Picture *ref);
 void iwt_ref(Picture *p, int filter);

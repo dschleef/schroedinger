@@ -7,9 +7,7 @@
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schroutils.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+SCHRO_BEGIN_DECLS
 
 enum {
   SCHRO_CTX_ZERO_CODEBLOCK = 0,
@@ -143,9 +141,7 @@ int _schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
 int _schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context) SCHRO_INTERNAL;
 
-#ifdef __cplusplus
-}
-#endif
+SCHRO_END_DECLS
 
 #endif
 

@@ -4,13 +4,11 @@
 
 #include <schroedinger/schroencoder.h>
 
+SCHRO_BEGIN_DECLS
+
 #define SCHRO_PREDICTION_LIST_LENGTH 10
 
 #define SCHRO_PREDICTION_METRIC_INVALID (-1)
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 //typedef struct _SchroPredictionList SchroPredictionList;
 //typedef struct _SchroPredictionVector SchroPredictionVector;
@@ -52,9 +50,7 @@ void schro_motion_field_global_prediction (SchroMotionField *mf,
     SchroGlobalMotion *gm);
 void schro_motion_field_calculate_stats (SchroMotionField *mf, SchroEncoderTask *task);
 
-#ifdef __cplusplus
-}
-#endif
+SCHRO_END_DECLS
 
 #endif
 

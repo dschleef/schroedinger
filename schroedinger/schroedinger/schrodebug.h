@@ -4,9 +4,7 @@
 
 #include <stdlib.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+SCHRO_BEGIN_DECLS
 
 enum
 {
@@ -44,8 +42,6 @@ void schro_debug_log (int level, const char *file, const char *function,
 void schro_debug_set_level (int level);
 int schro_debug_get_level (void);
 
-#ifdef __cplusplus
-}
-#endif
+SCHRO_END_DECLS
 
 #endif

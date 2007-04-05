@@ -2,15 +2,14 @@
 #ifndef __SCHRO_ENCODER_H__
 #define __SCHRO_ENCODER_H__
 
+#include <schroedinger/schroutils.h>
+#include <schroedinger/schrobits.h>
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schroasync.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+SCHRO_BEGIN_DECLS
 
 typedef struct _SchroEncoder SchroEncoder;
 typedef struct _SchroEncoderParams SchroEncoderParams;
@@ -288,10 +287,7 @@ SchroEncoderFrame * schro_encoder_frame_new (void);
 void schro_encoder_frame_ref (SchroEncoderFrame *frame);
 void schro_encoder_frame_unref (SchroEncoderFrame *frame);
 
-#ifdef __cplusplus
-}
-#endif
-
+SCHRO_END_DECLS
 
 #endif
 

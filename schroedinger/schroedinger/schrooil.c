@@ -55,7 +55,6 @@ oil_split_haar (int16_t *d, int16_t *s, int n)
   }
 }
 
-#define OFFSET(a,b) ((void *)(((uint8_t *)(a))+(b)))
 void
 oil_multsumshift8_str_s16 (int16_t *d, int16_t *s, int sstr, int16_t *s2_8,
     int16_t *s3_1, int16_t *s4_1, int n)

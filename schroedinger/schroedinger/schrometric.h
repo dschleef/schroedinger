@@ -2,9 +2,7 @@
 #ifndef SCHRO_METRIC_H
 #define SCHRO_METRIC_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+SCHRO_BEGIN_DECLS
 
 int schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b,
     int b_stride, int width, int height);
@@ -15,9 +13,7 @@ int schro_metric_haar_const (uint8_t *data, int stride, int dc_value,
 int schro_metric_abssum_s16 (int16_t *data, int stride, int width, int height);
 int schro_metric_sum_u8 (uint8_t *data, int stride, int width, int height);
 
-#ifdef __cplusplus
-}
-#endif
+SCHRO_END_DECLS
 
 #endif
 

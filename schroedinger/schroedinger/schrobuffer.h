@@ -2,9 +2,9 @@
 #ifndef __SCHRO_BUFFER_H__
 #define __SCHRO_BUFFER_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <schroedinger/schroutils.h>
+
+SCHRO_BEGIN_DECLS
 
 typedef struct _SchroBuffer SchroBuffer;
 
@@ -49,8 +49,6 @@ SchroBuffer *schro_buffer_queue_pull (SchroBufferQueue * queue, int len);
 SchroBuffer *schro_buffer_queue_peek (SchroBufferQueue * queue, int len);
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+SCHRO_END_DECLS
 
 #endif

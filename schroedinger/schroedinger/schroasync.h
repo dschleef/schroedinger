@@ -4,9 +4,7 @@
 
 #include <schroedinger/schro.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+SCHRO_BEGIN_DECLS
 
 typedef struct _SchroAsync SchroAsync;
 typedef struct _SchroThread SchroThread;
@@ -23,9 +21,7 @@ void schro_async_wait (SchroAsync *async, int min_waiting);
 void schro_async_wait_one (SchroAsync *async);
 void *schro_async_pull (SchroAsync *async);
 
-#ifdef __cplusplus
-}
-#endif
+SCHRO_END_DECLS
 
 #endif
 

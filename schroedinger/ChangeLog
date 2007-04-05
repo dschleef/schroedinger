@@ -1,5 +1,30 @@
 2007-04-05  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schro.h:
+	* schroedinger/schroanalysis.h:
+	* schroedinger/schroarith.h:
+	* schroedinger/schroasync.h:
+	* schroedinger/schrobits.h:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrobuffer.h:
+	* schroedinger/schrodebug.h:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.h:
+	* schroedinger/schroframe.h:
+	* schroedinger/schrometric.h:
+	* schroedinger/schromotion.h:
+	* schroedinger/schrooil.c:
+	* schroedinger/schrooil.h:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.h:
+	* schroedinger/schrotables.h:
+	* schroedinger/schrowavelet.h:
+	* testsuite/wavelet_2d.c:
+	  Clean up header files.
+
+2007-04-05  David Schleef  <ds@schleef.org>
+
 	* configure.ac:
 	* schroedinger/schroarith.c:
 	* schroedinger/schroarith.h:
