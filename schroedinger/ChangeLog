@@ -1,3 +1,11 @@
+2007-04-05  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* Makefile.am:
+	* configure.ac:
+	  Fix configure.  Only build testsuite when we have check.
+	* libschroedinger.spec.in:
+	  Update spec file further.
+
 2007-03-25  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schromotion.c: Fix some slowness

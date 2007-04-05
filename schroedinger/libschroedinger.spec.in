@@ -1,13 +1,18 @@
-Name:		libschroedinger
-Version:	@VERSION@
-Release:	gst.1
-Summary:	Library for decoding and encoding video in the Dirac format.
+Name:           libschroedinger
+Version:        @VERSION@
+Release:        gst.1
+Summary:        Library for decoding and encoding video in the Dirac format
 
-Group:		Applications/Multimedia
-License:	LGPL/MIT/MPL
-URL:		http://schrodinger.sourceforge.net/
-Source:		http://schrodinger.sourceforge.net/schroedinger-%{version}.tar.gz
+Group:          Applications/Multimedia
+License:        LGPL/MIT/MPL
+URL:            http://schrodinger.sourceforge.net/
+Source:         http://schrodinger.sourceforge.net/schroedinger-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+BuildRequires:  gtk-doc
+BuildRequires:  liboil-devel >= 0.3.10
+BuildRequires:  gstreamer-devel
+BuildRequires:  gstreamer-plugins-base-devel
 
 %description
 Library for decoding and encoding video in the Dirac format. It is implemented
@@ -16,13 +21,13 @@ collaboration between the BBC Research and Development, David Schleef and
 Fluendo.
 
 %package devel
-Summary:	libschroedinger development files and static libraries.
+Summary:	Development files and static libraries for libschroedinger
 Group:		Development/Libraries
 Requires:	%{name} = %{version}-%{release}
 
 %description devel
-libschroedinger-devel contains the files needed to build packages that depend on
-libschroedinger.
+libschroedinger-devel contains the files needed to build packages that depend
+on libschroedinger.
 
 %prep
 %setup -q -n schroedinger-%{version}
@@ -30,7 +35,9 @@ libschroedinger.
 %build
 %configure
 
-make %{?_smp_mflags}
+# parallel build does not work
+# make %{?_smp_mflags}
+make
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -78,6 +85,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/schroedinger-0.1/schroedinger/schrowavelet.h
 %{_includedir}/schroedinger-0.1/schroedinger/schroengine.h
 %{_includedir}/schroedinger-0.1/schroedinger/schroanalysis.h
+%{_datadir}/gtk-doc/html/schroedinger-0.1
 
 %changelog
 * Thu Apr 05 2007 Thomas Vander Stichele <thomas at apestaart dot org>
