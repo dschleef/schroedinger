@@ -1,53 +1,51 @@
 Name:		libschroedinger
 Version:	@VERSION@
-Release:	gst.3
+Release:	gst.1
 Summary:	Library for decoding and encoding video in the Dirac format.
 
 Group:		Applications/Multimedia
-License:	LGPL-MIT-MPL
-URL:		http://schrodinger.sourceforge.net
-Vendor:         GStreamer Backpackers Team <package@gstreamer.net>
+License:	LGPL/MIT/MPL
+URL:		http://schrodinger.sourceforge.net/
 Source:		http://schrodinger.sourceforge.net/schroedinger-%{version}.tar.gz
-BuildRoot:	%{_tmppath}/%{name}-root
-Prereq:		/sbin/ldconfig
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %description
-Library for decoding and encoding video in the Dirac format. It is implemented in ANSI C and optimized through the us of liboil. libschro is written as a collaboartion between the BBC Research and Development, David Schleef and Fluendo.
+Library for decoding and encoding video in the Dirac format. It is implemented
+in ANSI C and optimized through the us of liboil. libschro is written as a
+collaboration between the BBC Research and Development, David Schleef and
+Fluendo.
 
 %package devel
-Summary:	libschro development files and static libraries.
+Summary:	libschroedinger development files and static libraries.
 Group:		Development/Libraries
 Requires:	%{name} = %{version}-%{release}
 
 %description devel
-libschro-devel contains the files needed to build packages that depend on libschro.
+libschroedinger-devel contains the files needed to build packages that depend on
+libschroedinger.
 
 %prep
 %setup -q -n schroedinger-%{version}
 
 %build
-CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=/usr --enable-shared
-make
+%configure
+
+make %{?_smp_mflags}
 
 %install
-[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+rm -rf $RPM_BUILD_ROOT
 
 %makeinstall
 # Clean out files that should not be part of the rpm.
-# This is the recommended way of dealing with it for RH8
-rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
-rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
-rm -f $RPM_BUILD_ROOT%{_libdir}/gstreamer-0.10/*.la
-rm -f $RPM_BUILD_ROOT%{_libdir}/gstreamer-0.10/*.a
+rm -f $RPM_BUILD_ROOT%{_libdir}/*.{a,la}
+rm -f $RPM_BUILD_ROOT%{_libdir}/gstreamer-0.10/*.{a,la}
+
 %clean
-[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+rm -rf $RPM_BUILD_ROOT
 
-%post
-/sbin/ldconfig
+%post -p /sbin/ldconfig
 
-%postun
-/sbin/ldconfig
-
+%postun -p /sbin/ldconfig
 
 %files
 %defattr(-,root,root)
@@ -82,5 +80,8 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/gstreamer-0.10/*.a
 %{_includedir}/schroedinger-0.1/schroedinger/schroanalysis.h
 
 %changelog
+* Thu Apr 05 2007 Thomas Vander Stichele <thomas at apestaart dot org>
+- Further updates.
+
 * Thu Apr 27 2006 Christian F.K. Schaller <christian@fluendo.com>
 - Updates for carid -> schroedinger change
