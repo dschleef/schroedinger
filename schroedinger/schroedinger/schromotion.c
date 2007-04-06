@@ -354,6 +354,8 @@ get_global_block (SchroMotion *motion, SchroMotionVector *mv,
 {
   int offset;
 
+  /* FIXME */
+
   offset = 0;
   memset (motion->tmpdata + offset, 128, motion->obmc_luma->x_len);
   motion->blocks[0] = motion->tmpdata + offset;
@@ -460,6 +462,7 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y)
           SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
       }
     }
+    return;
   }
 
   comp = &srcframe->components[0];

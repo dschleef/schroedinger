@@ -764,7 +764,8 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderTask *task)
 
       for(j=0;j<mf->y_num_blocks;j++){
         for(i=0;i<mf->x_num_blocks;i++){
-          int list_x[10], list_y[10];
+#define LIST_LENGTH 20
+          int list_x[LIST_LENGTH], list_y[LIST_LENGTH];
           int n = 0;
           int l, k;
           int x, y;
@@ -778,7 +779,7 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderTask *task)
           /* inherit from parent */
           for(k=0;k<4;k++){
             int l = (i-1+2*(k&1))>>1;
-            int m = (i-1+(k&2))>>1;
+            int m = (j-1+(k&2))>>1;
             if (l >= 0 && l < parent_mf->x_num_blocks &&
                 m >= 0 && m < parent_mf->y_num_blocks) {
               mv = motion_field_get(parent_mf, l, m);
@@ -808,6 +809,7 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderTask *task)
             n++;
           }
           
+          SCHRO_ASSERT(n<=LIST_LENGTH);
           metric = schro_frame_get_metric (downsampled_frame,
               i * 8, j * 8, downsampled_ref, i*8 + list_x[0],
               j*8 + list_y[0]);
