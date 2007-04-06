@@ -2,6 +2,8 @@
 #ifndef _SCHRO_ENGINE_H_
 #define _SCHRO_ENGINE_H_
 
+#include <schroedinger/schroencoder.h>
+
 SCHRO_BEGIN_DECLS
 
 int schro_encoder_engine_intra_only (SchroEncoder *encoder);

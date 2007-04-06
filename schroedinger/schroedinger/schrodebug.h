@@ -2,6 +2,7 @@
 #ifndef __SCHRO_DEBUG_H__
 #define __SCHRO_DEBUG_H__
 
+#include <schroedinger/schroutils.h>
 #include <stdlib.h>
 
 SCHRO_BEGIN_DECLS

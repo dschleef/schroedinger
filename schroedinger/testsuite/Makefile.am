@@ -1,5 +1,5 @@
 
-SUBDIRS = check perf coder
+SUBDIRS = check perf coder installation
 
 noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 encode wavelet tables wavelet_2d \
@@ -8,7 +8,7 @@ noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 global_motion upsample encode_big \
 	 motion2
 
-TESTS = arith arith_fixup_shift bits bits2 encode wavelet tables wavelet_2d
+TESTS = arith bits bits2 encode wavelet tables wavelet_2d
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS)
 LDADD = $(SCHRO_LIBS)

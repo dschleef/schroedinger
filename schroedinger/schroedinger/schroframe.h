@@ -3,7 +3,7 @@
 #define __SCHRO_FRAME_H__
 
 #include <schroedinger/schro-stdint.h>
-#include <schroedinger/schrobuffer.h>
+#include <schroedinger/schroparams.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -28,8 +28,6 @@ struct _SchroFrameComponent {
 };
 
 struct _SchroFrame {
-  //SchroBuffer *buffer;
-
   SchroFrameFreeFunc free;
   void *regions[3];
   void *priv;

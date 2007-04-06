@@ -3,13 +3,13 @@
 #include "config.h"
 #endif
 
-#include <stdlib.h>
-#include <stdio.h>
+//#include <stdlib.h>
+//#include <stdio.h>
 #include <string.h>
 #include <liboil/liboil.h>
 
 #include <schroedinger/schrobits.h>
-#include <schroedinger/schrointernal.h>
+#include <schroedinger/schro.h>
 
 
 SchroBits *

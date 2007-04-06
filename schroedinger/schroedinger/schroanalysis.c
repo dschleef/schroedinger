@@ -3,7 +3,7 @@
 #include "config.h"
 #endif
 
-#include <schroedinger/schrointernal.h>
+#include <schroedinger/schro.h>
 
 
 void

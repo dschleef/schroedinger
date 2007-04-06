@@ -122,6 +122,7 @@ testsuite/Makefile
 testsuite/check/Makefile
 testsuite/perf/Makefile
 testsuite/coder/Makefile
+testsuite/installation/Makefile
 tools/Makefile
 schroedinger-uninstalled.pc
 schroedinger.pc

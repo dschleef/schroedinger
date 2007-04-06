@@ -2,6 +2,8 @@
 #ifndef _SCHRO_BITSTREAM_H_
 #define _SCHRO_BITSTREAM_H_
 
+#include <schroedinger/schroutils.h>
+
 SCHRO_BEGIN_DECLS
 
 #define SCHRO_MAX_TRANSFORM_DEPTH 8

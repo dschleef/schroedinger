@@ -2,7 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <schroedinger/schrointernal.h>
+#include <schroedinger/schro.h>
 #include <liboil/liboil.h>
 #include <stdlib.h>
 

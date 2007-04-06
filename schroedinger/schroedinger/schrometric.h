@@ -2,6 +2,9 @@
 #ifndef SCHRO_METRIC_H
 #define SCHRO_METRIC_H
 
+#include <schroedinger/schroutils.h>
+#include <schroedinger/schro-stdint.h>
+
 SCHRO_BEGIN_DECLS
 
 int schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b,

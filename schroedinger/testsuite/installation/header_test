@@ -1,0 +1,38 @@
+#!/bin/sh
+
+verbose=true
+if $verbose
+then
+  REDIRECT=
+else
+  REDIRECT=">/dev/null 2>/dev/null"
+fi
+
+CC=gcc
+pkg=schroedinger-0.1
+includedir=$(pkg-config --variable=includedir ${pkg})
+
+CFLAGS="-Wall -Werror $(pkg-config --cflags ${pkg})"
+
+headers="$(cd ${includedir} && find . -type f -name '*.h')"
+
+fail=false
+for each in $headers
+do
+  echo -n "$each... "
+  echo "#include <$each>" >test.c
+  if ${CC} ${CFLAGS} test.c -c -o test.o ${REDIRECT}
+  then
+    echo OK
+  else
+    echo failed
+    fail=true
+  fi
+done
+
+if [ "$fail" = "true" ]
+then
+  exit 1
+fi
+exit 0
+

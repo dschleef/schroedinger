@@ -2,7 +2,8 @@
 #ifndef __SCHRO_MOTION_H__
 #define __SCHRO_MOTION_H__
 
-#include <schroedinger/schrobuffer.h>
+#include <schroedinger/schroframe.h>
+#include <schroedinger/schroparams.h>
 
 SCHRO_BEGIN_DECLS
 

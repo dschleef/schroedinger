@@ -3,6 +3,7 @@
 #define _SCHRO_WAVELET_H_
 
 #include <schroedinger/schro-stdint.h>
+#include <schroedinger/schroutils.h>
 
 SCHRO_BEGIN_DECLS
 

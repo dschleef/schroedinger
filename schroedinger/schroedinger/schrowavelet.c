@@ -3,9 +3,8 @@
 #include "config.h"
 #endif
 
-#include <schroedinger/schrointernal.h>
-#include <string.h>
-#include <stdio.h>
+#include <schroedinger/schro.h>
+#include <schroedinger/schrooil.h>
 #include <liboil/liboil.h>
 
 

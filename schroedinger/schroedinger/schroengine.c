@@ -2,12 +2,12 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <schroedinger/schrointernal.h>
+#include <schroedinger/schro.h>
 #include <schroedinger/schroencoder.h>
 #include <liboil/liboil.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
+//#include <stdio.h>
 
 
 void

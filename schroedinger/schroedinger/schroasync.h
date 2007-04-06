@@ -2,7 +2,7 @@
 #ifndef __SCHRO_ASYNC_H__
 #define __SCHRO_ASYNC_H__
 
-#include <schroedinger/schro.h>
+#include <schroedinger/schroutils.h>
 
 SCHRO_BEGIN_DECLS
 

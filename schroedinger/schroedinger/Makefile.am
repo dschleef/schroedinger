@@ -5,7 +5,7 @@ lib_LTLIBRARIES = libschroedinger-@SCHRO_MAJORMINOR@.la
 
 DISTCLEANFILES = schro-stdint.h
 
-EXTRA_DIST = schroarith-i386.c schrointernal.h
+EXTRA_DIST = schroarith-i386.c
 
 pkginclude_HEADERS = \
 	schro.h \
@@ -23,7 +23,6 @@ pkginclude_HEADERS = \
 	schrodebug.h \
 	schrometric.h \
 	schromotion.h \
-	schrooil.h \
 	schroparams.h \
 	schropredict.h \
 	schrotables.h \
@@ -34,7 +33,7 @@ pkginclude_HEADERS = \
 
 noinst_HEADERS = \
 	schrooffsets.h \
-	schrointernal.h
+	schrooil.h
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schro.c \

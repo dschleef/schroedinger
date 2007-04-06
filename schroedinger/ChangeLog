@@ -1,5 +1,38 @@
 2007-04-05  David Schleef  <ds@schleef.org>
 
+	* configure.ac:
+	* schroedinger/Makefile.am:
+	* schroedinger/schro.c:
+	* schroedinger/schroanalysis.c:
+	* schroedinger/schroarith.c:
+	* schroedinger/schroasync.h:
+	* schroedinger/schrobits.c:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodebug.c:
+	* schroedinger/schrodebug.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroengine.h:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schrointernal.h:
+	* schroedinger/schrometric.c:
+	* schroedinger/schrometric.h:
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schropredict.c:
+	* schroedinger/schrowavelet.c:
+	* schroedinger/schrowavelet.h:
+	* testsuite/Makefile.am:
+	* testsuite/installation:
+	* testsuite/installation/Makefile.am:
+	* testsuite/installation/header_test:
+	  Another header cleanup.
+
+2007-04-05  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schro.h:
 	* schroedinger/schroanalysis.h:
 	* schroedinger/schroarith.h:
