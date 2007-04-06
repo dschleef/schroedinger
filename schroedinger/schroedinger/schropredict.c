@@ -403,6 +403,9 @@ schro_motion_vector_scan (SchroMotionVector *mv, SchroFrame *frame,
   ymax = MIN(frame->components[0].height - 8, y + dy + dist);
 
   mv->metric = 256*8*8;
+
+  if (xmin > xmax || ymin > ymax) return;
+
   if (ymax - ymin + 1 <= 32) {
     for(i=xmin;i<xmax;i++){
       oil_sad8x8n_u8 (metric_array,
