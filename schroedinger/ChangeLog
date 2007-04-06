@@ -1,5 +1,11 @@
 2007-04-05  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroarith.c:
+	  Implement arithmetic coder that uses a lookup table to adjust
+	  probability.
+
+2007-04-05  David Schleef  <ds@schleef.org>
+
 	* configure.ac:
 	* schroedinger/Makefile.am:
 	* schroedinger/schro.c:
