@@ -408,7 +408,7 @@ schro_motion_vector_scan (SchroMotionVector *mv, SchroFrame *frame,
 
   if (ymax - ymin + 1 <= 32) {
     for(i=xmin;i<xmax;i++){
-      oil_sad8x8n_u8 (metric_array,
+      oil_sad8x8_8xn_u8 (metric_array,
           frame->components[0].data + x + y*frame->components[0].stride,
           frame->components[0].stride,
           ref->components[0].data + i + ymin*ref->components[0].stride,
