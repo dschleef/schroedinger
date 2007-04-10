@@ -1,3 +1,8 @@
+2007-04-10  David Schleef  <ds@schleef.org>
+
+	* tsmux/tsmuxcommon.h:
+	  Add definition of 27 Mhz system clock.
+
 2007-03-20  Jan Schmidt  <thaytan@mad.scientist.com>
 
 	* tsmux/tsmux.c: (tsmux_write_adaptation_field),
