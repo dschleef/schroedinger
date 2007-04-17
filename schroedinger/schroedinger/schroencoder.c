@@ -434,9 +434,9 @@ schro_encoder_choose_quantisers (SchroEncoderTask *task)
     subbands[7].quant_index = 17;
     subbands[8].quant_index = 17;
     subbands[9].quant_index = 21;
-    subbands[10].quant_index = 34;
-    subbands[11].quant_index = 34;
-    subbands[12].quant_index = 38;
+    subbands[10].quant_index = 22;
+    subbands[11].quant_index = 22;
+    subbands[12].quant_index = 26;
   } else {
     subbands[0].quant_index = 16;
     subbands[1].quant_index = 20;
@@ -448,9 +448,9 @@ schro_encoder_choose_quantisers (SchroEncoderTask *task)
     subbands[7].quant_index = 21;
     subbands[8].quant_index = 21;
     subbands[9].quant_index = 25;
-    subbands[10].quant_index = 38;
-    subbands[11].quant_index = 38;
-    subbands[12].quant_index = 42;
+    subbands[10].quant_index = 26;
+    subbands[11].quant_index = 26;
+    subbands[12].quant_index = 30;
   }
 }
 

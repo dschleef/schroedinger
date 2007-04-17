@@ -2,40 +2,41 @@
 #include <stdio.h>
 #include <math.h>
 
-int
+unsigned int
 get_quant (int i)
 {
   unsigned long long base;
-  base = 1<<(i/4);
+  base = 1ULL<<(i/4);
   switch(i&3) {
     case 0:
       return 4*base;
     case 1:
-      return (78892 * base + 8292) / 16585;
+      return (503829 * base + 52958) / 105917;
     case 2:
-      return (228486 * base + 20195) / 40391;
+      return (665857 * base + 58854) / 117708;
     case 3:
       return (440253 * base + 32722) / 65444;
   }
 }
 
-int
+unsigned int
 get_offset_3_8 (int i)
 {
+  unsigned long long quant = get_quant(i);
   if (i == 0)
       return 1;
-  return (get_quant(i) * 3 + 4)/8;
+  return (quant * 3 + 4)/8;
 }
 
 int
 get_offset_1_2 (int i)
 {
-  /* 0.10.4 spec compliance DF */
+  unsigned long long quant = get_quant(i);
   if (i == 0)
       return 1;
   if (i == 1)
       return 2;
-  return (get_quant(i) + 1)/2;
+  return (quant + 1)/2;
 }
 
 unsigned int
@@ -56,53 +57,54 @@ int
 main (int argc, char *argv[])
 {
   int i;
+  int n = 60;
 
   printf("\n");
   printf("#include <schroedinger/schrotables.h>\n");
   printf("\n");
 
   /* schro_table_offset_3_8 */
-  printf("uint32_t schro_table_offset_3_8[61] = {\n");
-  for(i=0;i<60;i+=4) {
-    printf("  %7d, %7d, %7d, %7d,\n",
+  printf("uint32_t schro_table_offset_3_8[%d] = {\n", n + 1);
+  for(i=0;i<n;i+=4) {
+    printf("  %10uu, %10uu, %10uu, %10uu,\n",
         get_offset_3_8(i),
         get_offset_3_8(i+1),
         get_offset_3_8(i+2),
         get_offset_3_8(i+3));
   }
-  printf("  %7d\n", get_offset_3_8(i));
+  printf("  %10uu\n", get_offset_3_8(i));
   printf("};\n");
   printf("\n");
 
   /* schro_table_offset_1_2 */
-  printf("uint32_t schro_table_offset_1_2[61] = {\n");
-  for(i=0;i<60;i+=4) {
-    printf("  %7d, %7d, %7d, %7d,\n",
+  printf("uint32_t schro_table_offset_1_2[%d] = {\n", n+1);
+  for(i=0;i<n;i+=4) {
+    printf("  %10uu, %10uu, %10uu, %10uu,\n",
         get_offset_1_2(i),
         get_offset_1_2(i+1),
         get_offset_1_2(i+2),
         get_offset_1_2(i+3));
   }
-  printf("  %7d\n", get_offset_1_2(i));
+  printf("  %10uu\n", get_offset_1_2(i));
   printf("};\n");
   printf("\n");
 
   /* schro_table_quant */
-  printf("uint32_t schro_table_quant[61] = {\n");
-  for(i=0;i<60;i+=4) {
-    printf("  %7d, %7d, %7d, %7d,\n",
+  printf("uint32_t schro_table_quant[%d] = {\n", n + 1);
+  for(i=0;i<n;i+=4) {
+    printf("  %10uu, %10uu, %10uu, %10uu,\n",
         get_quant(i),
         get_quant(i+1),
         get_quant(i+2),
         get_quant(i+3));
   }
-  printf("  %7d\n", get_quant(i));
+  printf("  %10uu\n", get_quant(i));
   printf("};\n");
   printf("\n");
 
-  /* schro_table_quant */
-  printf("uint32_t schro_table_inverse_quant[61] = {\n");
-  for(i=0;i<60;i+=4) {
+  /* schro_table_inverse_quant */
+  printf("uint32_t schro_table_inverse_quant[%d] = {\n", n + 1);
+  for(i=0;i<n;i+=4) {
     printf("  %10uu, %10uu, %10uu, %10uu,\n",
         get_inv_quant(i),
         get_inv_quant(i+1),
