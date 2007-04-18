@@ -1,5 +1,12 @@
 2007-04-17  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	  Change names of parse code macros to match spec.  Enforce
+	  major/minor of 0.11 and profile/level of 0.0.
+
+2007-04-17  David Schleef  <ds@schleef.org>
+
 	* gst/Makefile.am:
 	* gst/gstschrodec.c:
 	* gst/gstschroparse.c:

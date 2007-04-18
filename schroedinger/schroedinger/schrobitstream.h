@@ -31,10 +31,15 @@ typedef enum _SchroParseCode {
 
 #define SCHRO_PARSE_CODE_PICTURE(is_ref,n_refs) (8 | ((is_ref)<<2) | (n_refs))
 
-#define SCHRO_PARSE_CODE_IS_LOW_DELAY(x) ((x) & 0x80)
+#define SCHRO_PARSE_CODE_IS_ACCESS_UNIT(x) ((x) == SCHRO_PARSE_CODE_ACCESS_UNIT)
 #define SCHRO_PARSE_CODE_IS_PICTURE(x) ((x) & 0x8)
+#define SCHRO_PARSE_CODE_IS_END_SEQUENCE(x) ((x) == SCHRO_PARSE_CODE_END_SEQUENCE)
+#define SCHRO_PARSE_CODE_IS_REFERENCE(x) ((x) & 0x4)
+#define SCHRO_PARSE_CODE_IS_NON_REFERENCE(x) (((x) & 0x4) == 0)
 #define SCHRO_PARSE_CODE_NUM_REFS(x) ((x) & 0x3)
-#define SCHRO_PARSE_CODE_IS_REF(x) ((x) & 0x4)
+#define SCHRO_PARSE_CODE_IS_INTRA(x) (SCHRO_PARSE_CODE_NUM_REFS(x) == 0)
+#define SCHRO_PARSE_CODE_IS_INTER(x) (SCHRO_PARSE_CODE_NUM_REFS(x) > 0)
+#define SCHRO_PARSE_CODE_IS_LOW_DELAY(x) ((x) & 0x80)
 
 #define SCHRO_PARSE_HEADER_SIZE (4+1+4+4)
 

@@ -307,7 +307,7 @@ schro_decoder_iterate (SchroDecoder *decoder)
     SCHRO_INFO("next frame number after seek %d", decoder->next_frame_number);
   }
 
-  if (!SCHRO_PARSE_CODE_IS_REF (decoder->code) &&
+  if (SCHRO_PARSE_CODE_IS_NON_REFERENCE (decoder->code) &&
        decoder->skip_value > decoder->skip_ratio) {
 
     decoder->skip_value = 0.8 * decoder->skip_value;
@@ -413,9 +413,9 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
   schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
       decoder->tmpbuf);
 
-  if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) > 0) {
+  if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
     if (!_schro_decode_prediction_only ||
-        SCHRO_PARSE_CODE_IS_REF(decoder->code)) {
+        SCHRO_PARSE_CODE_IS_REFERENCE(decoder->code)) {
       schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
 
       schro_frame_convert (output_frame, decoder->frame);
@@ -429,7 +429,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
     output_frame->frame_number = decoder->picture_number;
   }
 
-  if (SCHRO_PARSE_CODE_IS_REF(decoder->code)) {
+  if (SCHRO_PARSE_CODE_IS_REFERENCE(decoder->code)) {
     SchroFrame *ref;
 
     ref = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
@@ -535,6 +535,17 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
   SCHRO_DEBUG("profile = %d", decoder->profile);
   decoder->level = schro_bits_decode_uint (decoder->bits);
   SCHRO_DEBUG("level = %d", decoder->level);
+
+  if (decoder->major_version != 0 || decoder->minor_version != 11) {
+    SCHRO_ERROR("Expecting version number 0.11, got %d.%d",
+        decoder->major_version, decoder->minor_version);
+    SCHRO_MILD_ASSERT(0);
+  }
+  if (decoder->profile != 0 || decoder->level != 0) {
+    SCHRO_ERROR("Expecting profile/level 0.0, got %d.%d",
+        decoder->profile, decoder->level);
+    SCHRO_MILD_ASSERT(0);
+  }
 
   /* sequence parameters */
   index = schro_bits_decode_uint (decoder->bits);
