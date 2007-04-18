@@ -1,0 +1,45 @@
+
+#ifndef __SCHRO_QUEUE_H__
+#define __SCHRO_QUEUE_H__
+
+#include <schroedinger/schroparams.h>
+#include <schroedinger/schroutils.h>
+#include <schroedinger/schro-stdint.h>
+
+SCHRO_BEGIN_DECLS
+
+typedef struct _SchroQueue SchroQueue;
+typedef struct _SchroQueueElement SchroQueueElement;
+
+typedef void (*SchroQueueFreeFunc)(void *data, SchroPictureNumber number);
+
+struct _SchroQueueElement {
+  void *data;
+  SchroPictureNumber picture_number;
+};
+
+struct _SchroQueue {
+  int size;
+  int n;
+
+  SchroQueueElement *elements;
+  SchroQueueFreeFunc free;
+};
+
+
+SchroQueue *schro_queue_new (int size, SchroQueueFreeFunc func);
+void schro_queue_free (SchroQueue *queue);
+
+void schro_queue_add (SchroQueue *queue, void *element,
+    SchroPictureNumber picture_number);
+void *schro_queue_find (SchroQueue *queue, SchroPictureNumber picture_number);
+void schro_queue_remove (SchroQueue *queue, SchroPictureNumber picture_number);
+void schro_queue_clear (SchroQueue *queue);
+void schro_queue_pop (SchroQueue *queue);
+int schro_queue_is_full (SchroQueue *queue);
+int schro_queue_is_empty (SchroQueue *queue);
+
+SCHRO_END_DECLS
+
+#endif
+

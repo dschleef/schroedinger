@@ -8,6 +8,7 @@
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schroasync.h>
+#include <schroedinger/schroqueue.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -88,10 +89,9 @@ struct _SchroEncoder {
 
   SchroPictureNumber next_frame_number;
 
-  SchroEncoderFrame *frame_queue[SCHRO_FRAME_QUEUE_LENGTH];
-  int frame_queue_length;
+  SchroQueue *frame_queue;
 
-  int frame_queue_index;
+  //int frame_queue_index;
 
   SchroEncoderFrame *reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
   int n_reference_frames;

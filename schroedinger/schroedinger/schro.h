@@ -16,6 +16,7 @@
 #include <schroedinger/schromotion.h>
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schropredict.h>
+#include <schroedinger/schroqueue.h>
 #include <schroedinger/schrotables.h>
 #include <schroedinger/schrowavelet.h>
 #include <schroedinger/schrometric.h>

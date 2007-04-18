@@ -705,8 +705,6 @@ schro_decoder_decode_picture_header (SchroDecoder *decoder)
 
   schro_bits_sync(decoder->bits);
 
-  schro_bits_dumpbits (decoder->bits);
-
   decoder->picture_number = schro_bits_decode_bits (decoder->bits, 32);
   SCHRO_DEBUG("picture number %d", decoder->picture_number);
 
@@ -725,7 +723,7 @@ schro_decoder_decode_picture_header (SchroDecoder *decoder)
   decoder->n_retire = schro_bits_decode_uint (decoder->bits);
   SCHRO_DEBUG("n_retire %d", decoder->n_retire);
 
-  SCHRO_MILD_ASSERT(decoder->n_retire < 10);
+  SCHRO_ASSERT(decoder->n_retire <= SCHRO_MAX_REFERENCE_FRAMES);
 
   for(i=0;i<decoder->n_retire;i++){
     int offset;

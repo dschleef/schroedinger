@@ -8,10 +8,6 @@
 #include <string.h>
 //#include <stdio.h>
 
-#if 0
-static void schro_encoder_frame_queue_push (SchroEncoder *encoder,
-    SchroFrame *frame);
-#endif
 static void schro_encoder_reference_retire (SchroEncoder *encoder,
     SchroPictureNumber frame_number);
 #if 0
@@ -70,6 +66,9 @@ schro_encoder_new (void)
   /* FIXME */
   encoder->queue_depth = 10;
 
+  encoder->frame_queue = schro_queue_new (encoder->queue_depth,
+      (SchroQueueFreeFunc)schro_encoder_frame_unref);
+
   return encoder;
 }
 
@@ -85,9 +84,8 @@ schro_encoder_free (SchroEncoder *encoder)
   for(i=0;i<encoder->n_reference_frames; i++) {
     schro_encoder_frame_unref (encoder->reference_frames[i]);
   }
-  for(i=0;i<encoder->frame_queue_length; i++) {
-    schro_encoder_frame_unref (encoder->frame_queue[i]);
-  }
+
+  schro_queue_free (encoder->frame_queue);
 
   if (encoder->inserted_buffer) {
     schro_buffer_unref (encoder->inserted_buffer);
@@ -201,8 +199,7 @@ schro_encoder_set_video_format (SchroEncoder *encoder,
 int
 schro_encoder_push_ready (SchroEncoder *encoder)
 {
-  if (!encoder->end_of_stream &&
-      encoder->frame_queue_length < encoder->queue_depth) {
+  if (!encoder->end_of_stream && !schro_queue_is_full (encoder->frame_queue)) {
     return TRUE;
   }
   return FALSE;
@@ -213,16 +210,16 @@ schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
 {
   SchroEncoderFrame *encoder_frame;
 
-  frame->frame_number = encoder->frame_queue_index;
-  encoder->frame_queue_index++;
+  //frame->frame_number = encoder->frame_queue_index;
+  //encoder->frame_queue_index++;
 
   encoder_frame = schro_encoder_frame_new();
   encoder_frame->original_frame = frame;
 
   encoder_frame->frame_number = encoder->next_frame_number++;
 
-  encoder->frame_queue[encoder->frame_queue_length] = encoder_frame;
-  encoder->frame_queue_length++;
+  schro_queue_add (encoder->frame_queue, encoder_frame,
+      encoder_frame->frame_number);
 
   encoder->queue_changed = TRUE;
 }
@@ -236,16 +233,16 @@ schro_encoder_pull_is_ready (SchroEncoder *encoder)
     return TRUE;
   }
 
-  for(i=0;i<encoder->frame_queue_length;i++){
+  for(i=0;i<encoder->frame_queue->n;i++){
     SchroEncoderFrame *frame;
-    frame = encoder->frame_queue[i];
+    frame = encoder->frame_queue->elements[i].data;
     if (frame->slot == encoder->output_slot &&
         frame->state == SCHRO_ENCODER_FRAME_STATE_DONE) {
       return TRUE;
     }
   }
 
-  if (encoder->frame_queue_length == 0 && encoder->end_of_stream) {
+  if (schro_queue_is_empty(encoder->frame_queue) && encoder->end_of_stream) {
     return TRUE;
   }
 
@@ -257,16 +254,13 @@ schro_encoder_shift_frame_queue (SchroEncoder *encoder)
 {
   SchroEncoderFrame *frame;
 
-  while (encoder->frame_queue_length > 0) {
-    frame = encoder->frame_queue[0];
+  while (!schro_queue_is_empty(encoder->frame_queue)) {
+    frame = encoder->frame_queue->elements[0].data;
     if (frame->state != SCHRO_ENCODER_FRAME_STATE_FREE) {
       break;
     }
 
-    memmove (encoder->frame_queue, encoder->frame_queue + 1,
-        (encoder->frame_queue_length - 1) * sizeof(void *));
-    encoder->frame_queue_length--;
-    schro_encoder_frame_unref (frame);
+    schro_queue_pop (encoder->frame_queue);
   }
 }
 
@@ -290,9 +284,9 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
     return buffer;
   }
   
-  for(i=0;i<encoder->frame_queue_length;i++){
+  for(i=0;i<encoder->frame_queue->n;i++){
     SchroEncoderFrame *frame;
-    frame = encoder->frame_queue[i];
+    frame = encoder->frame_queue->elements[i].data;
     if (frame->slot == encoder->output_slot &&
         frame->state == SCHRO_ENCODER_FRAME_STATE_DONE) {
       if (presentation_frame) {
@@ -308,16 +302,6 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         frame->state = SCHRO_ENCODER_FRAME_STATE_FREE;
         encoder->output_slot++;
 
-#if 0
-        if (frame->start_access_unit) {
-          schro_encoder_reference_retire_all (task->encoder, frame->frame_number);
-        }
-#endif
-#if 0
-        for(j=0;j<frame->n_retire;j++){
-          schro_encoder_reference_retire (encoder, frame->retire[j]);
-        }
-#endif
         if (frame->n_retire > 0) {
           schro_encoder_reference_retire (encoder, frame->retire);
         }
@@ -332,7 +316,7 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
     }
   }
 
-  if (encoder->frame_queue_length == 0 && encoder->end_of_stream) {
+  if (schro_queue_is_empty(encoder->frame_queue) && encoder->end_of_stream) {
     buffer = schro_encoder_encode_end_of_stream (encoder);
     schro_encoder_fixup_offsets (encoder, buffer);
     encoder->end_of_stream_pulled = TRUE;
@@ -348,8 +332,11 @@ void
 schro_encoder_end_of_stream (SchroEncoder *encoder)
 {
   encoder->end_of_stream = TRUE;
-  if (encoder->frame_queue_length > 0) {
-    encoder->frame_queue[encoder->frame_queue_length-1]->last_frame = TRUE;
+  if (encoder->frame_queue->n > 0) {
+    SchroEncoderFrame *encoder_frame;
+    
+    encoder_frame = encoder->frame_queue->elements[encoder->frame_queue->n-1].data;
+    encoder_frame->last_frame = TRUE;
   }
 }
 
@@ -1724,57 +1711,6 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
     free (frame);
   }
 }
-
-#if 0
-static void
-schro_encoder_frame_queue_push (SchroEncoder *encoder, SchroFrame *frame)
-{
-  SchroEncoderFrame *encoder_frame;
-
-  if (encoder->frame_queue_length > SCHRO_FRAME_QUEUE_LENGTH-1) {
-    SCHRO_ERROR("pushing too hard");
-    return;
-  }
-
-  encoder_frame = schro_encoder_frame_new();
-  encoder_frame->original_frame = frame;
-
-  encoder_frame->frame_number = encoder->next_frame_number++;
-
-  encoder->frame_queue[encoder->frame_queue_length] = encoder_frame;
-  encoder->frame_queue_length++;
-}
-#endif
-
-#if 0
-SchroFrame *
-schro_encoder_frame_queue_get (SchroEncoder *encoder, int frame_index)
-{
-  int i;
-  for(i=0;i<encoder->frame_queue_length;i++){
-    if (encoder->frame_queue[i]->frame_number == frame_index) {
-      return encoder->frame_queue[i]->original_frame;
-    }
-  }
-  return NULL;
-}
-#endif
-
-#if 0
-void
-schro_encoder_frame_queue_remove (SchroEncoder *encoder, int frame_index)
-{
-  int i;
-  for(i=0;i<encoder->frame_queue_length;i++){
-    if (encoder->frame_queue[i]->frame_number == frame_index) {
-      memmove (encoder->frame_queue + i, encoder->frame_queue + i + 1,
-          sizeof(SchroFrame *)*(encoder->frame_queue_length - i - 1));
-      encoder->frame_queue_length--;
-      return;
-    }
-  }
-}
-#endif
 
 /* reference pool */
 
