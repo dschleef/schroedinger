@@ -93,8 +93,9 @@ struct _SchroEncoder {
 
   //int frame_queue_index;
 
-  SchroEncoderFrame *reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
-  int n_reference_frames;
+  SchroQueue *reference_queue;
+  //SchroEncoderFrame *reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
+  //int n_reference_frames;
 
   int need_rap;
 
@@ -114,7 +115,7 @@ struct _SchroEncoder {
   int completed_eos;
   int prev_offset;
 
-  int au_frame;
+  SchroPictureNumber au_frame;
   int au_distance;
   int next_slot;
 

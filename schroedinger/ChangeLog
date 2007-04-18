@@ -1,5 +1,12 @@
 2007-04-18  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroqueue.c:
+	  Use SchroQueue for reference queue.
+
+2007-04-18  David Schleef  <ds@schleef.org>
+
 	* schroedinger/Makefile.am:
 	* schroedinger/schro.h:
 	* schroedinger/schrodecoder.c:

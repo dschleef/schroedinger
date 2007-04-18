@@ -68,6 +68,8 @@ schro_encoder_new (void)
 
   encoder->frame_queue = schro_queue_new (encoder->queue_depth,
       (SchroQueueFreeFunc)schro_encoder_frame_unref);
+  encoder->reference_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
+      (SchroQueueFreeFunc)schro_encoder_frame_unref);
 
   return encoder;
 }
@@ -75,16 +77,11 @@ schro_encoder_new (void)
 void
 schro_encoder_free (SchroEncoder *encoder)
 {
-  int i;
-
   if (encoder->async) {
     schro_async_free(encoder->async);
   }
 
-  for(i=0;i<encoder->n_reference_frames; i++) {
-    schro_encoder_frame_unref (encoder->reference_frames[i]);
-  }
-
+  schro_queue_free (encoder->reference_queue);
   schro_queue_free (encoder->frame_queue);
 
   if (encoder->inserted_buffer) {
@@ -1717,27 +1714,17 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
 void
 schro_encoder_reference_add (SchroEncoder *encoder, SchroEncoderFrame *frame)
 {
-  SCHRO_ASSERT (encoder->n_reference_frames < SCHRO_MAX_REFERENCE_FRAMES);
+  SCHRO_ASSERT (!schro_queue_is_full(encoder->reference_queue));
 
-  encoder->reference_frames[encoder->n_reference_frames] = frame;
   schro_encoder_frame_ref (frame);
-  encoder->n_reference_frames++;
+  schro_queue_add (encoder->reference_queue, frame, frame->frame_number);
 }
 
 SchroEncoderFrame *
 schro_encoder_reference_get (SchroEncoder *encoder,
     SchroPictureNumber frame_number)
 {
-  int i;
-  SchroEncoderFrame *ref;
-
-  for(i=0;i<encoder->n_reference_frames;i++){
-    ref = encoder->reference_frames[i];
-    if (ref->frame_number == frame_number) {
-      return ref;
-    }
-  }
-  return NULL;
+  return schro_queue_find (encoder->reference_queue, frame_number);
 }
 
 #if 0
@@ -1745,22 +1732,7 @@ void
 schro_encoder_reference_retire_all (SchroEncoder *encoder,
     SchroPictureNumber frame_number)
 {
-  int i;
-  SchroEncoderFrame *ref;
-  
-  SCHRO_ERROR("retiring all before %d", frame_number);
-
-  for(i=encoder->n_reference_frames-1;i>=0;i--){
-    ref = encoder->reference_frames[i];
-    if (ref->frame_number < frame_number) {
-      schro_encoder_frame_unref (ref);
-      memmove (encoder->reference_frames + i,
-          encoder->reference_frames + i + 1,
-          (encoder->n_reference_frames - i - 1) * sizeof(SchroEncoderFrame *));
-      encoder->n_reference_frames--;
-      return;
-    }
-  }
+  schro_queue_clear (encoder->reference_queue);
 }
 #endif
 
@@ -1768,23 +1740,7 @@ void
 schro_encoder_reference_retire (SchroEncoder *encoder,
     SchroPictureNumber frame_number)
 {
-  int i;
-  SchroEncoderFrame *ref;
-  
-  for(i=0;i<encoder->n_reference_frames;i++){
-    ref = encoder->reference_frames[i];
-    if (ref->frame_number == frame_number) {
-      schro_encoder_frame_unref (ref);
-      memmove (encoder->reference_frames + i,
-          encoder->reference_frames + i + 1,
-          (encoder->n_reference_frames - i - 1) * sizeof(SchroEncoderFrame *));
-      encoder->n_reference_frames--;
-      return;
-    }
-  }
-
-  SCHRO_ERROR("attempted to retire non-existent reference frame %d", frame_number);
-  SCHRO_ASSERT(0);
+  schro_queue_remove (encoder->reference_queue, frame_number);
 }
 
 static const int pref_range[][2] = {

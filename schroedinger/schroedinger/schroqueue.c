@@ -38,12 +38,12 @@ schro_queue_free (SchroQueue *queue)
   free(queue);
 }
 
-void schro_queue_add (SchroQueue *queue, void *element,
+void schro_queue_add (SchroQueue *queue, void *data,
     SchroPictureNumber picture_number)
 {
   SCHRO_ASSERT (queue->n < queue->size);
 
-  queue->elements[queue->n].data = element;
+  queue->elements[queue->n].data = data;
   queue->elements[queue->n].picture_number = picture_number;
   queue->n++;
 }
@@ -54,7 +54,7 @@ schro_queue_find (SchroQueue *queue, SchroPictureNumber picture_number)
   int i;
 
   for(i=0;i<queue->n;i++){
-    if (queue->elements[i].picture_number) {
+    if (queue->elements[i].picture_number == picture_number) {
       return queue->elements[i].data;
     }
   }
