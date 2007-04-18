@@ -23,12 +23,11 @@
 
 #include <gst/gst.h>
 #include <gst/base/gstbasetransform.h>
+#include <gst/base/gstadapter.h>
 #include <gst/video/video.h>
 #include <string.h>
 #include <schroedinger/schro.h>
 #include <math.h>
-
-#include "parsehelper.h"
 
 GST_DEBUG_CATEGORY_EXTERN (schro_debug);
 #define GST_CAT_DEFAULT schro_debug
@@ -52,6 +51,7 @@ struct _GstSchroDec
   GstElement element;
 
   GstPad *sinkpad, *srcpad;
+  GstAdapter *adapter;
 
   int wavelet_type;
   int level;
@@ -72,8 +72,6 @@ struct _GstSchroDec
 
   int width;
   int height;
-
-  ParseHelper parse_helper;
 
   gdouble proportion;
   GstClockTime earliest_time;
@@ -190,7 +188,7 @@ gst_schro_dec_init (GstSchroDec *schro_dec, GstSchroDecClass *klass)
   gst_pad_set_event_function (schro_dec->srcpad, gst_schro_dec_src_event);
   gst_element_add_pad (GST_ELEMENT(schro_dec), schro_dec->srcpad);
 
-  parse_helper_init (&schro_dec->parse_helper);
+  schro_dec->adapter = gst_adapter_new();
 }
 
 static void
@@ -204,7 +202,7 @@ gst_schro_dec_reset (GstSchroDec *dec)
   dec->granulepos_offset = -1;
 
   gst_segment_init (&dec->segment, GST_FORMAT_TIME);
-  parse_helper_flush (&dec->parse_helper);
+  gst_adapter_clear (dec->adapter);
 }
 
 static void
@@ -218,8 +216,9 @@ gst_schro_dec_finalize (GObject *object)
   if (schro_dec->decoder) {
     schro_decoder_free (schro_dec->decoder);
   }
-
-  parse_helper_free (&schro_dec->parse_helper);
+  if (schro_dec->adapter) {
+    g_object_unref (schro_dec->adapter);
+  }
 
   G_OBJECT_CLASS (parent_class)->finalize (object);
 }
@@ -726,7 +725,7 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
     GST_DEBUG("setting granulepos offset to %lld", GST_BUFFER_OFFSET_END(buf));
   }
 
-  parse_helper_push (&schro_dec->parse_helper, buf);
+  gst_adapter_push (schro_dec->adapter, buf);
 
   return gst_schro_dec_push_all (schro_dec, FALSE);
 }
@@ -771,34 +770,29 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
   SchroFrame *frame;
 
   while (TRUE) {
-    gint next;
+    gint size;
+    unsigned char header[SCHRO_PARSE_HEADER_SIZE];
 
-    if (!parse_helper_skip_to_next_parse_unit (&schro_dec->parse_helper,
-        NULL, &next)) {
+    if (gst_adapter_available (schro_dec->adapter) < SCHRO_PARSE_HEADER_SIZE) {
       /* Need more data */
       return GST_FLOW_OK;
     }
+    gst_adapter_copy (schro_dec->adapter, header, 0, SCHRO_PARSE_HEADER_SIZE);
 
-    if (next == 0) {
-      /* Need to wait for EOS or next parse marker */
-      if (at_eos)
-        next = parse_helper_avail (&schro_dec->parse_helper);
-      else {
-        /* Scan for next parse marker */
-        if (!parse_helper_have_next_parse_unit (&schro_dec->parse_helper,
-           &next))
-          return GST_FLOW_OK; /* break for more data */
-      }
+    if (memcmp (header, "BBCD", 4) != 0) {
+      /* bad header or lost sync */
+      /* FIXME: we should handle this */
+      return GST_FLOW_ERROR;
     }
 
-    if (parse_helper_avail (&schro_dec->parse_helper) < next)
-      return GST_FLOW_OK; /* break for more data */
+    size = GST_READ_UINT32_BE(header + 5);
+    if (gst_adapter_available (schro_dec->adapter) < size) {
+      return GST_FLOW_OK;
+    }
 
-    GST_LOG ("Have complete parse unit of %d bytes", next);
+    GST_LOG ("Have complete parse unit of %d bytes", size);
 
-    parse_buf = parse_helper_pull (&schro_dec->parse_helper, next);
-    if (parse_buf == NULL)
-      return GST_FLOW_ERROR;
+    parse_buf = gst_adapter_take_buffer (schro_dec->adapter, size);
     input_buffer = gst_schro_wrap_gst_buffer (parse_buf);
   
     {

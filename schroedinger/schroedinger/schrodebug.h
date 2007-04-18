@@ -38,6 +38,13 @@ enum
   } \
 } while(0)
 
+#define SCHRO_MILD_ASSERT(test) do { \
+  if (!(test)) { \
+    SCHRO_ERROR("mild assertion failed: " #test ); \
+    abort(); \
+  } \
+} while(0)
+
 void schro_debug_log (int level, const char *file, const char *function,
     int line, const char *format, ...);
 void schro_debug_set_level (int level);

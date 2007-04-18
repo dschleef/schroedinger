@@ -152,8 +152,8 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
   bits = schro_bits_new();
   schro_bits_decode_init (bits, buf);
 
-  next = schro_bits_decode_bits (bits, 24);
-  prev = schro_bits_decode_bits (bits, 24);
+  next = schro_bits_decode_bits (bits, 32);
+  prev = schro_bits_decode_bits (bits, 32);
 
   g_print("  offset to next: %d\n", next);
   g_print("  offset to prev: %d\n", prev);
@@ -456,10 +456,9 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       }
     }
   } else if (data[4] == SCHRO_PARSE_CODE_AUXILIARY_DATA) {
-    int length = next - 19;
-    g_print("  major: %.4s\n", data + 11);
-    g_print("  minor: %.4s\n", data + 15);
-    g_print("  string: %.*s\n", length, data + 19);
+    int length = next - 14;
+    g_print("  code: %d\n", data[13]);
+    g_print("  string: %.*s\n", length, data + 14);
 
     bits->offset += (4 + 4 + length)*8;
   }

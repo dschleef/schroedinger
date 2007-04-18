@@ -36,7 +36,7 @@ typedef enum _SchroParseCode {
 #define SCHRO_PARSE_CODE_NUM_REFS(x) ((x) & 0x3)
 #define SCHRO_PARSE_CODE_IS_REF(x) ((x) & 0x4)
 
-#define SCHRO_PARSE_HEADER_SIZE (4+1+3+3)
+#define SCHRO_PARSE_HEADER_SIZE (4+1+4+4)
 
 typedef enum _SchroVideoFormatEnum {
   SCHRO_VIDEO_FORMAT_CUSTOM = 0,

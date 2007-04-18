@@ -1,5 +1,20 @@
 2007-04-17  David Schleef  <ds@schleef.org>
 
+	* gst/Makefile.am:
+	* gst/gstschrodec.c:
+	* gst/gstschroparse.c:
+	* gst/parsehelper.c:
+	* gst/parsehelper.h:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodebug.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* tools/dump_packets.c:
+	  Updates for 0.11.0: change next/prev offset to 32 bits.  Convert
+	  gst plugins to using GstAdapter instead of ParseHelper.
+
+2007-04-17  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	  Change hard-coded quantisers.
 	* testsuite/tables.c:

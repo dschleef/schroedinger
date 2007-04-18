@@ -510,9 +510,9 @@ schro_decoder_decode_parse_header (SchroDecoder *decoder)
   decoder->n_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->code);
   SCHRO_DEBUG("n_refs %d", decoder->n_refs);
 
-  decoder->next_parse_offset = schro_bits_decode_bits (decoder->bits, 24);
+  decoder->next_parse_offset = schro_bits_decode_bits (decoder->bits, 32);
   SCHRO_DEBUG ("next_parse_offset %d", decoder->next_parse_offset);
-  decoder->prev_parse_offset = schro_bits_decode_bits (decoder->bits, 24);
+  decoder->prev_parse_offset = schro_bits_decode_bits (decoder->bits, 32);
   SCHRO_DEBUG ("prev_parse_offset %d", decoder->prev_parse_offset);
 }
 
@@ -684,6 +684,8 @@ schro_decoder_decode_frame_header (SchroDecoder *decoder)
 
   schro_bits_sync(decoder->bits);
 
+  schro_bits_dumpbits (decoder->bits);
+
   decoder->picture_number = schro_bits_decode_bits (decoder->bits, 32);
   SCHRO_DEBUG("picture number %d", decoder->picture_number);
 
@@ -701,6 +703,9 @@ schro_decoder_decode_frame_header (SchroDecoder *decoder)
 
   decoder->n_retire = schro_bits_decode_uint (decoder->bits);
   SCHRO_DEBUG("n_retire %d", decoder->n_retire);
+
+  SCHRO_MILD_ASSERT(decoder->n_retire < 10);
+
   for(i=0;i<decoder->n_retire;i++){
     int offset;
     offset = schro_bits_decode_sint (decoder->bits);
@@ -1404,6 +1409,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
           quant_index += _schro_arith_context_decode_sint (arith,
               SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
               SCHRO_CTX_QUANTISER_SIGN);
+          /* FIXME */
           quant_index = CLAMP(quant_index, 0, 60);
         }
         quant_factor = schro_table_quant[quant_index];
@@ -1412,7 +1418,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
         } else {
           quant_offset = schro_table_offset_1_2[quant_index];
         }
-        SCHRO_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
+        //SCHRO_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
 
     for(j=ymin;j<ymax;j++){
       int16_t *p = data + j*stride;

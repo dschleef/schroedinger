@@ -39,7 +39,7 @@ schro_encoder_new (void)
   memset (encoder, 0, sizeof(SchroEncoder));
 
   encoder->version_major = 0;
-  encoder->version_minor = 0;
+  encoder->version_minor = 11;
   encoder->profile = 0;
   encoder->level = 0;
 
@@ -459,16 +459,18 @@ schro_encoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer)
 {
   uint8_t *data = buffer->data;
 
-  if (buffer->length < 11) {
-    SCHRO_ERROR("packet too short (%d < 11)", buffer->length);
+  if (buffer->length < 13) {
+    SCHRO_ERROR("packet too short (%d < 13)", buffer->length);
   }
 
-  data[5] = (buffer->length >> 16) & 0xff;
-  data[6] = (buffer->length >> 8) & 0xff;
-  data[7] = (buffer->length >> 0) & 0xff;
-  data[8] = (encoder->prev_offset >> 16) & 0xff;
-  data[9] = (encoder->prev_offset >> 8) & 0xff;
-  data[10] = (encoder->prev_offset >> 0) & 0xff;
+  data[5] = (buffer->length >> 24) & 0xff;
+  data[6] = (buffer->length >> 16) & 0xff;
+  data[7] = (buffer->length >> 8) & 0xff;
+  data[8] = (buffer->length >> 0) & 0xff;
+  data[9] = (encoder->prev_offset >> 24) & 0xff;
+  data[10] = (encoder->prev_offset >> 16) & 0xff;
+  data[11] = (encoder->prev_offset >> 8) & 0xff;
+  data[12] = (encoder->prev_offset >> 0) & 0xff;
 
   encoder->prev_offset = buffer->length;
 }
@@ -476,7 +478,7 @@ schro_encoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer)
 static void
 schro_encoder_encode_codec_comment (SchroEncoder *encoder)
 {
-  char *s = "bbcdencoSchrodinger " VERSION;
+  char *s = "\001Schrodinger " VERSION;
   SchroBuffer *buffer;
 
   buffer = schro_encoder_encode_auxiliary_data (encoder, s, strlen(s));
@@ -541,7 +543,7 @@ schro_encoder_encode_end_of_stream (SchroEncoder *encoder)
   SchroBits *bits;
   SchroBuffer *buffer;
 
-  buffer = schro_buffer_new_and_alloc (11);
+  buffer = schro_buffer_new_and_alloc (SCHRO_PARSE_HEADER_SIZE);
 
   bits = schro_bits_new ();
   schro_bits_encode_init (bits, buffer);
@@ -1085,8 +1087,7 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
 }
 
 void
-schro_encoder_encode_parse_info (SchroBits *bits,
-    int parse_code)
+schro_encoder_encode_parse_info (SchroBits *bits, int parse_code)
 {
   /* parse parameters */
   schro_bits_encode_bits (bits, 8, 'B');
@@ -1096,8 +1097,8 @@ schro_encoder_encode_parse_info (SchroBits *bits,
   schro_bits_encode_bits (bits, 8, parse_code);
 
   /* offsets */
-  schro_bits_encode_bits (bits, 24, 0);
-  schro_bits_encode_bits (bits, 24, 0);
+  schro_bits_encode_bits (bits, 32, 0);
+  schro_bits_encode_bits (bits, 32, 0);
 }
 
 void
