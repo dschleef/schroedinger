@@ -53,8 +53,7 @@ struct _SchroDecoder {
   int n_retire;
   int retire_list[SCHRO_MAX_REFERENCE_FRAMES];
 
-  int frame_queue_length;
-  SchroFrame *frame_queue[SCHRO_MAX_REFERENCE_FRAMES];
+  SchroQueue *frame_queue;
 
   SchroPictureNumber earliest_frame;
   SchroBuffer *input_buffer;

@@ -1,5 +1,14 @@
 2007-04-18  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroqueue.c:
+	* schroedinger/schroqueue.h:
+	  Use SchroQueue for decoder queue.
+
+2007-04-18  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:
 	* schroedinger/schroqueue.c:

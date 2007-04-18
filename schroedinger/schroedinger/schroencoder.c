@@ -1740,7 +1740,7 @@ void
 schro_encoder_reference_retire (SchroEncoder *encoder,
     SchroPictureNumber frame_number)
 {
-  schro_queue_remove (encoder->reference_queue, frame_number);
+  schro_queue_delete (encoder->reference_queue, frame_number);
 }
 
 static const int pref_range[][2] = {

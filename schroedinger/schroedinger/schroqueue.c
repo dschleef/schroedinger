@@ -63,7 +63,7 @@ schro_queue_find (SchroQueue *queue, SchroPictureNumber picture_number)
 }
 
 void
-schro_queue_remove (SchroQueue *queue, SchroPictureNumber picture_number)
+schro_queue_delete (SchroQueue *queue, SchroPictureNumber picture_number)
 {
   int i;
 
@@ -76,6 +76,25 @@ schro_queue_remove (SchroQueue *queue, SchroPictureNumber picture_number)
       return;
     }
   }
+}
+
+void *
+schro_queue_remove (SchroQueue *queue, SchroPictureNumber picture_number)
+{
+  int i;
+  void *ret;
+
+  for(i=0;i<queue->n;i++){
+    if (queue->elements[i].picture_number) {
+      ret = queue->elements[i].data;
+      memmove (queue->elements + i, queue->elements + i + 1,
+          sizeof(SchroQueueElement)*(queue->n - i - 1));
+      queue->n--;
+      return ret;
+    }
+  }
+
+  return NULL;
 }
 
 void
