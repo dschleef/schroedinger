@@ -96,6 +96,9 @@ typedef enum _SchroWaveletIndex {
   SCHRO_WAVELET_DAUB_9_7
 } SchroWaveletIndex;
 
+#define SCHRO_PARAMS_MAX_SIGNAL_RANGE 3
+#define SCHRO_PARAMS_MAX_COLOUR_SPEC 3
+
 SCHRO_END_DECLS
 
 #endif

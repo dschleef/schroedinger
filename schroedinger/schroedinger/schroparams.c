@@ -249,7 +249,7 @@ schro_params_get_video_format_metric (SchroVideoFormat *format, int i)
   if (format->height != std_format->height) {
     metric++;
   }
-  if (format->interlaced_source != std_format->interlaced_source) {
+  if (format->interlaced != std_format->interlaced) {
     metric++;
   }
   if (format->top_field_first != std_format->top_field_first) {

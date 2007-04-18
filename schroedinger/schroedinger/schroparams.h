@@ -20,7 +20,7 @@ struct _SchroVideoFormat {
   int chroma_format;
   int video_depth;
     
-  int interlaced_source;
+  int interlaced;
   int top_field_first;
   int sequential_fields;
   

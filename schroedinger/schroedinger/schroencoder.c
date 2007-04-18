@@ -996,8 +996,8 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
   /* source parameters */
   /* rather than figure out all the logic to encode this optimally, punt. */
   schro_bits_encode_bit (bits, TRUE);
-  schro_bits_encode_bit (bits, format->interlaced_source);
-  if(format->interlaced_source) {
+  schro_bits_encode_bit (bits, format->interlaced);
+  if(format->interlaced) {
     schro_bits_encode_bit (bits, TRUE);
     schro_bits_encode_bit (bits, format->top_field_first);
     schro_bits_encode_bit (bits, TRUE);

@@ -1,5 +1,17 @@
 2007-04-17  David Schleef  <ds@schleef.org>
 
+	* gst/gstschrodec.c:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	  Change a bunch of structure and function names to match spec.
+	  Add simple error handling to the decoder.
+
+2007-04-17  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrobitstream.h:
 	* schroedinger/schrodecoder.c:
 	  Change names of parse code macros to match spec.  Enforce

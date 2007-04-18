@@ -877,7 +877,7 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
               return ret;
             }
             frame = gst_schro_wrap_frame (schro_dec, outbuf);
-            schro_decoder_add_output_frame (schro_dec->decoder, frame);
+            schro_decoder_add_output_picture (schro_dec->decoder, frame);
             break;
           case SCHRO_DECODER_OK:
             frame = schro_decoder_pull (schro_dec->decoder);

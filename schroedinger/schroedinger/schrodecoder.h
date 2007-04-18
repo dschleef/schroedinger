@@ -15,10 +15,10 @@ typedef struct _SchroDecoder SchroDecoder;
 struct _SchroDecoder {
   SchroFrame *frame;
   SchroFrame *mc_tmp_frame;
-  int n_reference_frames;
-  SchroFrame *reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
-  SchroFrame *output_frames[SCHRO_MAX_REFERENCE_FRAMES];
-  int n_output_frames;
+  int n_reference_pictures;
+  SchroFrame *reference_pictures[SCHRO_MAX_REFERENCE_FRAMES];
+  SchroFrame *output_pictures[SCHRO_MAX_REFERENCE_FRAMES];
+  int n_output_pictures;
 
   int next_frame_number;
 
@@ -33,7 +33,7 @@ struct _SchroDecoder {
   int16_t *tmpbuf2;
 
   int code;
-  int au_frame_number;
+  int au_picture_number;
   int next_parse_offset;
   int prev_parse_offset;
 
@@ -64,6 +64,9 @@ struct _SchroDecoder {
 
   double skip_value;
   double skip_ratio;
+
+  int error;
+  char *error_message;
 };
 
 enum {
@@ -79,7 +82,7 @@ SchroDecoder * schro_decoder_new (void);
 void schro_decoder_free (SchroDecoder *decoder);
 void schro_decoder_reset (SchroDecoder *decoder);
 SchroVideoFormat * schro_decoder_get_video_format (SchroDecoder *decoder);
-void schro_decoder_add_output_frame (SchroDecoder *decoder, SchroFrame *frame);
+void schro_decoder_add_output_picture (SchroDecoder *decoder, SchroFrame *frame);
 void schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer);
 SchroFrame *schro_decoder_pull (SchroDecoder *decoder);
 int schro_decoder_is_parse_header (SchroBuffer *buffer);
@@ -89,7 +92,7 @@ int schro_decoder_is_picture (SchroBuffer *buffer);
 int schro_decoder_iterate (SchroDecoder *decoder);
 void schro_decoder_decode_parse_header (SchroDecoder *decoder);
 void schro_decoder_decode_access_unit (SchroDecoder *decoder);
-void schro_decoder_decode_frame_header (SchroDecoder *decoder);
+void schro_decoder_decode_picture_header (SchroDecoder *decoder);
 void schro_decoder_decode_frame_prediction (SchroDecoder *decoder);
 void schro_decoder_decode_prediction_data (SchroDecoder *decoder);
 void schro_decoder_decode_transform_parameters (SchroDecoder *decoder);
