@@ -1,5 +1,16 @@
 2007-04-17  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroparams.h:
+	  Switch to using SchroPictureNumber for picture numbers.  This
+	  should make most of the picture number arithmetic work correctly
+	  with 64-bit ints.
+
+2007-04-17  David Schleef  <ds@schleef.org>
+
 	* gst/gstschrodec.c:
 	* schroedinger/schrobitstream.h:
 	* schroedinger/schrodecoder.c:

@@ -4,9 +4,7 @@
 #endif
 #include <schroedinger/schro.h>
 #include <liboil/liboil.h>
-//#include <stdlib.h>
 #include <string.h>
-//#include <stdio.h>
 
 int _schro_decode_prediction_only;
 
@@ -16,8 +14,10 @@ static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
     SchroArith *arith, SchroMotionVector *motion_vectors, int x, int y);
 
 static void schro_decoder_reference_add (SchroDecoder *decoder, SchroFrame *frame);
-static SchroFrame * schro_decoder_reference_get (SchroDecoder *decoder, int frame_number);
-static void schro_decoder_reference_retire (SchroDecoder *decoder, int frame_number);
+static SchroFrame * schro_decoder_reference_get (SchroDecoder *decoder,
+    SchroPictureNumber frame_number);
+static void schro_decoder_reference_retire (SchroDecoder *decoder,
+    SchroPictureNumber frame_number);
 static void schro_decoder_reference_retire_all (SchroDecoder *decoder);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
@@ -108,7 +108,8 @@ schro_decoder_add_output_picture (SchroDecoder *decoder, SchroFrame *frame)
 }
 
 void
-schro_decoder_set_earliest_frame (SchroDecoder *decoder, int earliest_frame)
+schro_decoder_set_earliest_frame (SchroDecoder *decoder,
+    SchroPictureNumber earliest_frame)
 {
   decoder->earliest_frame = earliest_frame;
 }
@@ -1562,7 +1563,8 @@ schro_decoder_reference_add (SchroDecoder *decoder, SchroFrame *frame)
 }
 
 static SchroFrame *
-schro_decoder_reference_get (SchroDecoder *decoder, int picture_number)
+schro_decoder_reference_get (SchroDecoder *decoder,
+    SchroPictureNumber picture_number)
 {
   int i;
   SCHRO_DEBUG("getting %d", picture_number);
@@ -1576,7 +1578,8 @@ schro_decoder_reference_get (SchroDecoder *decoder, int picture_number)
 }
 
 static void
-schro_decoder_reference_retire (SchroDecoder *decoder, int picture_number)
+schro_decoder_reference_retire (SchroDecoder *decoder,
+    SchroPictureNumber picture_number)
 {
   int i;
   SCHRO_DEBUG("retiring %d", picture_number);

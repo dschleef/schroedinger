@@ -13,10 +13,10 @@ static void schro_encoder_frame_queue_push (SchroEncoder *encoder,
     SchroFrame *frame);
 #endif
 static void schro_encoder_reference_retire (SchroEncoder *encoder,
-    int frame_number);
+    SchroPictureNumber frame_number);
 #if 0
 static void schro_encoder_reference_retire_all (SchroEncoder *encoder,
-    int frame_number);
+    SchroPictureNumber frame_number);
 #endif
 static void schro_encoder_engine_init (SchroEncoder *encoder);
 static void schro_encoder_encode_frame_prediction (SchroEncoderTask *task);
@@ -1111,13 +1111,14 @@ schro_encoder_encode_picture_header (SchroEncoderTask *task)
 
   for(i=0;i<task->params.num_refs;i++){
     schro_bits_encode_sint (task->bits,
-        task->reference_frame_number[i] - task->frame_number);
+        (int32_t)(task->reference_frame_number[i] - task->frame_number));
   }
 
   /* retire list */
   schro_bits_encode_uint (task->bits, task->n_retire);
   for(i=0;i<task->n_retire;i++){
-    schro_bits_encode_sint (task->bits, task->retire[i] - task->frame_number);
+    schro_bits_encode_sint (task->bits,
+        (int32_t)(task->retire[i] - task->frame_number));
   }
 }
 
@@ -1788,7 +1789,8 @@ schro_encoder_reference_add (SchroEncoder *encoder, SchroEncoderFrame *frame)
 }
 
 SchroEncoderFrame *
-schro_encoder_reference_get (SchroEncoder *encoder, int frame_number)
+schro_encoder_reference_get (SchroEncoder *encoder,
+    SchroPictureNumber frame_number)
 {
   int i;
   SchroEncoderFrame *ref;
@@ -1804,7 +1806,8 @@ schro_encoder_reference_get (SchroEncoder *encoder, int frame_number)
 
 #if 0
 void
-schro_encoder_reference_retire_all (SchroEncoder *encoder, int frame_number)
+schro_encoder_reference_retire_all (SchroEncoder *encoder,
+    SchroPictureNumber frame_number)
 {
   int i;
   SchroEncoderFrame *ref;
@@ -1826,7 +1829,8 @@ schro_encoder_reference_retire_all (SchroEncoder *encoder, int frame_number)
 #endif
 
 void
-schro_encoder_reference_retire (SchroEncoder *encoder, int frame_number)
+schro_encoder_reference_retire (SchroEncoder *encoder,
+    SchroPictureNumber frame_number)
 {
   int i;
   SchroEncoderFrame *ref;

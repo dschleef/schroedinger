@@ -24,8 +24,8 @@ struct _SchroDecoder {
 
   int picture_number;
   int n_refs;
-  int reference1;
-  int reference2;
+  SchroPictureNumber reference1;
+  SchroPictureNumber reference2;
   SchroFrame *ref0;
   SchroFrame *ref1;
 
@@ -33,7 +33,7 @@ struct _SchroDecoder {
   int16_t *tmpbuf2;
 
   int code;
-  int au_picture_number;
+  SchroPictureNumber au_picture_number;
   int next_parse_offset;
   int prev_parse_offset;
 
@@ -56,7 +56,7 @@ struct _SchroDecoder {
   int frame_queue_length;
   SchroFrame *frame_queue[SCHRO_MAX_REFERENCE_FRAMES];
 
-  int earliest_frame;
+  SchroPictureNumber earliest_frame;
   SchroBuffer *input_buffer;
 
   int have_access_unit;
@@ -100,7 +100,7 @@ void schro_decoder_decode_transform_data (SchroDecoder *decoder);
 void schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index);
 void schro_decoder_iwt_transform (SchroDecoder *decoder, int component);
 void schro_decoder_copy_from_frame_buffer (SchroDecoder *decoder, SchroBuffer *buffer);
-void schro_decoder_set_earliest_frame (SchroDecoder *decoder, int earliest_frame);
+void schro_decoder_set_earliest_frame (SchroDecoder *decoder, SchroPictureNumber earliest_frame);
 void schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio);
 
 SCHRO_END_DECLS

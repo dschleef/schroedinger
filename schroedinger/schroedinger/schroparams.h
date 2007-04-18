@@ -7,6 +7,8 @@
 
 SCHRO_BEGIN_DECLS
 
+typedef uint32_t SchroPictureNumber;
+
 typedef struct _SchroVideoFormat SchroVideoFormat;
 typedef struct _SchroParams SchroParams;
 typedef struct _SchroSubband SchroSubband;

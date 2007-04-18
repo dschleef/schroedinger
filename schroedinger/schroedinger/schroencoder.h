@@ -62,7 +62,7 @@ struct _SchroEncoderFrame {
 
   int start_access_unit;
 
-  int frame_number;
+  SchroPictureNumber frame_number;
   SchroFrame *original_frame;
   SchroFrame *downsampled_frames[5];
   SchroFrame *reconstructed_frame;
@@ -77,16 +77,16 @@ struct _SchroEncoderFrame {
 
   int is_ref;
   int num_refs;
-  int picture_number_ref0;
-  int picture_number_ref1;
+  SchroPictureNumber picture_number_ref0;
+  SchroPictureNumber picture_number_ref1;
   int n_retire;
-  int retire;
+  SchroPictureNumber retire;
 };
 
 struct _SchroEncoder {
   SchroAsync *async;
 
-  int next_frame_number;
+  SchroPictureNumber next_frame_number;
 
   SchroEncoderFrame *frame_queue[SCHRO_FRAME_QUEUE_LENGTH];
   int frame_queue_length;
@@ -179,11 +179,11 @@ struct _SchroEncoderTask {
 
   int slot;
   int is_ref;
-  int frame_number;
-  int reference_frame_number[2];
+  SchroPictureNumber frame_number;
+  SchroPictureNumber reference_frame_number[2];
 
   int n_retire;
-  int retire[SCHRO_MAX_REFERENCE_FRAMES];
+  SchroPictureNumber retire[SCHRO_MAX_REFERENCE_FRAMES];
 
   int presentation_frame;
 
@@ -267,12 +267,12 @@ void schro_encoder_encode_picture (SchroEncoderTask *task);
 SchroEncoderTask * schro_encoder_task_new (SchroEncoder *encoder);
 void schro_encoder_task_free (SchroEncoderTask *task);
 SchroFrame * schro_encoder_frame_queue_get (SchroEncoder *encoder,
-    int frame_number);
+    SchroPictureNumber frame_number);
 void schro_encoder_frame_queue_remove (SchroEncoder *encoder,
-    int frame_number);
+    SchroPictureNumber frame_number);
 void schro_encoder_reference_add (SchroEncoder *encoder, SchroEncoderFrame *encoder_frame);
 SchroEncoderFrame * schro_encoder_reference_get (SchroEncoder *encoder,
-    int frame_number);
+    SchroPictureNumber frame_number);
 void schro_encoder_encode_picture_header (SchroEncoderTask *task);
 SchroBuffer * schro_encoder_encode_end_of_stream (SchroEncoder *encoder);
 void schro_encoder_clean_up_transform (SchroEncoderTask *task);
