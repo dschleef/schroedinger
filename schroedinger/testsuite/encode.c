@@ -56,7 +56,8 @@ test (int w, int h)
           //SCHRO_ERROR("frame %d", n_frames);
 
           picture = malloc(size);
-          oil_random_u8(picture, size);
+          //oil_random_u8(picture, size);
+          memset (picture, 0, size);
 
           frame = schro_frame_new_I420 (picture, w, h);
 
@@ -93,7 +94,7 @@ main (int argc, char *argv[])
 
   schro_init();
 
-      test(64,64);
+  test(128,128);
 #if 0
   for(w=64;w<64+16;w++){
     for(h=64;h<64+16;h++){

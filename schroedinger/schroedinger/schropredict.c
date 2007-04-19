@@ -796,19 +796,19 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderTask *task)
           if (i > 0) {
             mv = motion_field_get (mf, i-1, j);
             list_x[n] = mv->u.xy.x;
-            list_x[n] = mv->u.xy.y;
+            list_y[n] = mv->u.xy.y;
             n++;
           }
           if (j > 0) {
             mv = motion_field_get (mf, i, j-1);
             list_x[n] = mv->u.xy.x;
-            list_x[n] = mv->u.xy.y;
+            list_y[n] = mv->u.xy.y;
             n++;
           }
           if (i > 0 && j > 0) {
             mv = motion_field_get (mf, i-1, j-1);
             list_x[n] = mv->u.xy.x;
-            list_x[n] = mv->u.xy.y;
+            list_y[n] = mv->u.xy.y;
             n++;
           }
           

@@ -11,6 +11,8 @@ schro_encoder_frame_analyse (SchroEncoder *encoder, SchroEncoderFrame *frame)
 {
   int i;
 
+  SCHRO_DEBUG("downsampling frame");
+
   for(i=0;i<5;i++){
     frame->downsampled_frames[i] =
       schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,

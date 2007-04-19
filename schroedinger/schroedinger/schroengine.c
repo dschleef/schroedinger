@@ -26,7 +26,7 @@ schro_engine_pick_output_buffer_size (SchroEncoder *encoder,
     SchroEncoderFrame *frame)
 {
   /* FIXME 4:2:0 assumption */
-  return encoder->video_format.width * encoder->video_format.height * 3 / 2;
+  return encoder->video_format.width * encoder->video_format.height * 3 / 2 * 2;
 }
 
 static void
@@ -190,9 +190,6 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
     } else {
       task->ref_frame0 = NULL;
     }
-    if (task->is_ref) {
-      schro_encoder_reference_add (encoder, task->encoder_frame);
-    }
 
     SCHRO_DEBUG("queueing %d", task->frame_number);
 
@@ -291,9 +288,6 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
       schro_encoder_frame_ref (task->ref_frame0);
     } else {
       task->ref_frame0 = NULL;
-    }
-    if (task->is_ref) {
-      schro_encoder_reference_add (encoder, task->encoder_frame);
     }
 
     SCHRO_DEBUG("queueing %d", task->frame_number);
@@ -402,13 +396,13 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
 
     if (frame->num_refs > 0 &&
         !schro_encoder_reference_get (encoder, frame->picture_number_ref0)) {
-      SCHRO_DEBUG("ref 0 not ready");
+      SCHRO_DEBUG("ref0 (%d) not ready", frame->picture_number_ref0);
       continue;
     }
 
     if (frame->num_refs > 1 &&
         !schro_encoder_reference_get (encoder, frame->picture_number_ref1)) {
-      SCHRO_DEBUG("ref 1 not ready");
+      SCHRO_DEBUG("ref1 (%d) not ready", frame->picture_number_ref1);
       continue;
     }
 
@@ -459,9 +453,6 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
       schro_encoder_frame_ref (task->ref_frame1);
     } else {
       task->ref_frame1 = NULL;
-    }
-    if (task->is_ref) {
-      schro_encoder_reference_add (encoder, task->encoder_frame);
     }
 
     SCHRO_DEBUG("queueing %d", task->frame_number);

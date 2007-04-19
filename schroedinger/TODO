@@ -6,6 +6,9 @@
 
   add profile support
 
+  encoding 64x64 cause valgrind problems
+
+
 
 schroarith.c:
 

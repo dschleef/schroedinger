@@ -1,5 +1,17 @@
 2007-04-18  David Schleef  <ds@schleef.org>
 
+	* TODO:
+	* schroedinger/schroanalysis.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	* schroedinger/schropredict.c:
+	* testsuite/encode.c:
+	  Fix a bunch of bugs.
+
+2007-04-18  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schrodecoder.h:
 	* schroedinger/schroencoder.c:

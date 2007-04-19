@@ -58,6 +58,7 @@ int schro_motion_split_prediction (SchroMotionVector *motion_vectors,
 void schro_motion_field_get_global_prediction (SchroMotionField *mf,
     int x, int y, int *pred);
 int schro_motion_get_mode_prediction (SchroMotionField *mf, int x, int y);
+int schro_motion_verify (SchroMotion *mf);
 
 void schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep,
     int y_sep);

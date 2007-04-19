@@ -390,11 +390,20 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y)
   w = 12;
   h = 12;
 
+  /* FIXME */
   SCHRO_ASSERT(upsample_index == 0);
+  /* FIXME */
+  SCHRO_ASSERT(mv->pred_mode != 3);
+
   if (mv->pred_mode == 2) {
     srcframe = motion->src2[upsample_index];
+  SCHRO_ASSERT(srcframe);
   } else {
     srcframe = motion->src1[upsample_index];
+    if (!srcframe) {
+      SCHRO_ERROR("%p", motion->src1f);
+    }
+  SCHRO_ASSERT(srcframe);
   }
 #if 0
   if (sx & 3 || sy & 3) {
@@ -654,28 +663,30 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
 {
   int i, j;
   int x, y;
-  SchroObmc obmc_luma;
-  SchroObmc obmc_chroma;
+  SchroObmc *obmc_luma;
+  SchroObmc *obmc_chroma;
   SchroMotionVector *motion_vectors = motion->motion_vectors;
   SchroParams *params = motion->params;
 
-  schro_obmc_init (&obmc_luma,
+  obmc_luma = malloc(sizeof(*obmc_luma));
+  schro_obmc_init (obmc_luma,
       params->xblen_luma, params->yblen_luma,
       params->xbsep_luma, params->ybsep_luma);
+  obmc_chroma = malloc(sizeof(*obmc_chroma));
   /* FIXME 4:2:0 assumption */
-  schro_obmc_init (&obmc_chroma,
+  schro_obmc_init (obmc_chroma,
       params->xblen_luma>>1, params->yblen_luma>>1,
       params->xbsep_luma>>1, params->ybsep_luma>>1);
-  motion->obmc_luma = &obmc_luma;
-  motion->obmc_chroma = &obmc_chroma;
+  motion->obmc_luma = obmc_luma;
+  motion->obmc_chroma = obmc_chroma;
   motion->tmpdata = malloc (64*64*3);
 
-  clear_rows (dest, 0, obmc_luma.y_ramp/2);
+  clear_rows (dest, 0, obmc_luma->y_ramp/2);
 
   for(j=0;j<params->y_num_blocks;j++){
     int region_y;
 
-    y = j*obmc_luma.y_sep - obmc_luma.y_ramp/2;
+    y = j*obmc_luma->y_sep - obmc_luma->y_ramp/2;
     if (j == 0) {
       region_y = 0;
     } else if (j == params->y_num_blocks - 1) {
@@ -684,13 +695,18 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
       region_y = 3;
     }
 
-    clear_rows (dest, y + obmc_luma.y_ramp, obmc_luma.y_sep);
+    clear_rows (dest, y + obmc_luma->y_ramp, obmc_luma->y_sep);
 
     for(i=0;i<params->x_num_blocks;i++){
       int region;
       SchroMotionVector *mv = &motion_vectors[j*params->x_num_blocks + i];
 
-      x = i*obmc_luma.x_sep - obmc_luma.x_ramp/2;
+      if(motion->src1[0] == NULL) {
+        SCHRO_ERROR("src1 disappeared at %d,%d", i, j);
+        SCHRO_ASSERT(0);
+      }
+
+      x = i*obmc_luma->x_sep - obmc_luma->x_ramp/2;
       if (i == 0) {
         region = region_y + 0;
       } else if (i == params->x_num_blocks - 1) {
@@ -706,6 +722,10 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
           SchroGlobalMotion *gm = NULL;
           get_global_block (motion, mv, x, y, gm);
         } else {
+      if(motion->src1[0] == NULL) {
+        SCHRO_ERROR("src1 disappeared at %d,%d", i, j);
+        SCHRO_ASSERT(0);
+      }
           get_block (motion, mv, x, y);
         }
       }
@@ -713,16 +733,18 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
       copy_block (dest, motion, x, y, region);
     }
 
-    shift_rows (dest, y - obmc_luma.y_ramp/2, obmc_luma.y_sep,
-        obmc_luma.shift, obmc_chroma.shift);
+    shift_rows (dest, y - obmc_luma->y_ramp/2, obmc_luma->y_sep,
+        obmc_luma->shift, obmc_chroma->shift);
   }
 
-  y = params->y_num_blocks*obmc_luma.y_sep;
-  shift_rows (dest, y - obmc_luma.y_ramp/2, obmc_luma.y_ramp/2,
-      obmc_luma.shift, obmc_chroma.shift);
+  y = params->y_num_blocks*obmc_luma->y_sep;
+  shift_rows (dest, y - obmc_luma->y_ramp/2, obmc_luma->y_ramp/2,
+      obmc_luma->shift, obmc_chroma->shift);
 
-  schro_obmc_cleanup (&obmc_luma);
-  schro_obmc_cleanup (&obmc_chroma);
+  schro_obmc_cleanup (obmc_luma);
+  free(obmc_luma);
+  schro_obmc_cleanup (obmc_chroma);
+  free(obmc_chroma);
   free(motion->tmpdata);
 }
 
@@ -919,5 +941,73 @@ schro_motion_get_mode_prediction (SchroMotionField *mf, int x, int y)
       return (ref1<<1) | (ref0);
     }
   }
+}
+
+int
+schro_motion_vector_is_equal (SchroMotionVector *a, SchroMotionVector *b)
+{
+  if (a == b) return 1;
+  return (memcmp (a,b,sizeof(SchroMotionVector))==0);
+}
+
+int
+schro_motion_verify (SchroMotion *motion)
+{
+  int x,y;
+  SchroMotionVector *mv, *sbmv, *bmv;
+  SchroParams *params = motion->params;
+
+  for(y=0;y<params->y_num_blocks;y++){
+    for(x=0;x<params->x_num_blocks;x++){
+      mv = &motion->motion_vectors[y*params->x_num_blocks + x];
+      sbmv = &motion->motion_vectors[(y&~3)*params->x_num_blocks + (x&~3)];
+
+      switch (sbmv->split) {
+        case 0:
+          if (!schro_motion_vector_is_equal (mv, sbmv)) {
+            SCHRO_ERROR("mv(%d,%d) not equal to superblock mv", x, y);
+            return 0;
+          }
+          break;
+        case 1:
+          bmv = &motion->motion_vectors[(y&~1)*params->x_num_blocks + (x&~1)];
+          if (!schro_motion_vector_is_equal (mv, sbmv)) {
+            SCHRO_ERROR("mv(%d,%d) not equal to 2-block mv", x, y);
+            return 0;
+          }
+          break;
+        case 2:
+          break;
+        default:
+          SCHRO_ERROR("mv(%d,%d) had bad split %d", sbmv->split);
+          break;
+      }
+
+      if (mv->pred_mode) {
+        /* hard to screw this one up */
+      } else {
+        if (mv->pred_mode & 2 && motion->src2[0] == NULL) {
+          SCHRO_ERROR("mv(%d,%d) uses non-existent src2", x, y);
+          return 0;
+        }
+#if 0
+        if (mv->u.xy.x & 0x7 || mv->u.xy.y & 0x7) {
+          SCHRO_ERROR("mv(%d,%d) has subpixel components (not implemented)",
+              x, y);
+          return 0;
+        }
+#endif
+      }
+
+      if (params->have_global_motion == FALSE) {
+        if (mv->using_global) {
+          SCHRO_ERROR("mv(%d,%d) uses global motion (disabled)", x, y);
+          return 0;
+        }
+      }
+    }
+  }
+
+  return 1;
 }
 

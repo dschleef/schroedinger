@@ -8,9 +8,9 @@
 #include <string.h>
 //#include <stdio.h>
 
+#if 0
 static void schro_encoder_reference_retire (SchroEncoder *encoder,
     SchroPictureNumber frame_number);
-#if 0
 static void schro_encoder_reference_retire_all (SchroEncoder *encoder,
     SchroPictureNumber frame_number);
 #endif
@@ -106,7 +106,7 @@ schro_encoder_task_new (SchroEncoder *encoder)
   task->tmpbuf2 = malloc(SCHRO_LIMIT_WIDTH * 2);
 
   task->subband_size = encoder->video_format.width *
-    encoder->video_format.height / 4;
+    encoder->video_format.height / 4 * 2;
   task->subband_buffer = schro_buffer_new_and_alloc (task->subband_size);
 
   /* FIXME settings */
@@ -299,9 +299,11 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         frame->state = SCHRO_ENCODER_FRAME_STATE_FREE;
         encoder->output_slot++;
 
+#if 0
         if (frame->n_retire > 0) {
           schro_encoder_reference_retire (encoder, frame->retire);
         }
+#endif
 
         schro_encoder_shift_frame_queue (encoder);
       }
@@ -544,7 +546,7 @@ schro_encoder_task_complete (SchroEncoderTask *task)
 {
   SchroEncoderFrame *frame;
 
-  SCHRO_DEBUG("completing picture %d", task->frame_number);
+  SCHRO_INFO("completing picture %d", task->frame_number);
 
   frame = task->encoder_frame;
 
@@ -559,6 +561,9 @@ schro_encoder_task_complete (SchroEncoderTask *task)
   }
   if (task->ref_frame1) {
     schro_encoder_frame_unref (task->ref_frame1);
+  }
+  if (task->is_ref) {
+    schro_encoder_reference_add (task->encoder, task->encoder_frame);
   }
 
   SCHRO_INFO("PICTURE: %d %d %d %d",
@@ -598,10 +603,22 @@ schro_encoder_iterate (SchroEncoder *encoder)
     schro_encoder_task_free (task);
   }
 
-  SCHRO_DEBUG("iterate %d %d %d",
+  SCHRO_INFO("iterate %d %d %d",
       encoder->queue_changed, schro_encoder_push_ready(encoder),
       encoder->completed_eos);
-  while (!encoder->queue_changed && !schro_encoder_push_ready(encoder) &&
+
+#if 0
+  {
+    int i;
+    for(i=0;i<encoder->frame_queue->n;i++){
+      SchroEncoderFrame *frame = encoder->frame_queue->elements[i].data;
+      SCHRO_ERROR("%p %d %d", frame, frame->frame_number, frame->state);
+    }
+  }
+#endif
+
+  while (!schro_encoder_pull_is_ready(encoder) &&
+      !encoder->queue_changed && !schro_encoder_push_ready(encoder) &&
       !encoder->completed_eos) {
     SchroEncoderTask *task;
 
@@ -682,20 +699,27 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
     schro_frame_convert (task->tmp_frame0, task->encode_frame);
 
     {
-      SchroMotion motion;
+      SchroMotion *motion;
 
-      motion.src1[0] = task->ref_frame0->reconstructed_frame;
+      motion = malloc(sizeof(*motion));
+      memset(motion, 0, sizeof(*motion));
 
-      SCHRO_ASSERT(motion.src1 != NULL);
+      motion->src1f = task->ref_frame0;
+      motion->src1[0] = task->ref_frame0->reconstructed_frame;
+
+      SCHRO_ASSERT(motion->src1[0] != NULL);
       if (task->params.num_refs == 2) {
-        motion.src2[0] = task->ref_frame1->reconstructed_frame;
-        SCHRO_ASSERT(motion.src2 != NULL);
+        motion->src2[0] = task->ref_frame1->reconstructed_frame;
+        SCHRO_ASSERT(motion->src2[0] != NULL);
       } else {
-        motion.src2[0] = NULL;
+        motion->src2[0] = NULL;
       }
-      motion.motion_vectors = task->motion_field->motion_vectors;
-      motion.params = &task->params;
-      schro_frame_copy_with_motion (task->prediction_frame, &motion);
+      motion->motion_vectors = task->motion_field->motion_vectors;
+      motion->params = &task->params;
+      schro_motion_verify (motion);
+      schro_frame_copy_with_motion (task->prediction_frame, motion);
+
+      free(motion);
     }
 
     SCHRO_DEBUG("luma %d %d ref %d",
@@ -1714,7 +1738,11 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
 void
 schro_encoder_reference_add (SchroEncoder *encoder, SchroEncoderFrame *frame)
 {
-  SCHRO_ASSERT (!schro_queue_is_full(encoder->reference_queue));
+  if (schro_queue_is_full(encoder->reference_queue)) {
+    schro_queue_pop (encoder->reference_queue);
+  }
+
+  SCHRO_DEBUG("adding reference %p %d", frame, frame->frame_number);
 
   schro_encoder_frame_ref (frame);
   schro_queue_add (encoder->reference_queue, frame, frame->frame_number);
@@ -1736,12 +1764,14 @@ schro_encoder_reference_retire_all (SchroEncoder *encoder,
 }
 #endif
 
+#if 0
 void
 schro_encoder_reference_retire (SchroEncoder *encoder,
     SchroPictureNumber frame_number)
 {
   schro_queue_delete (encoder->reference_queue, frame_number);
 }
+#endif
 
 static const int pref_range[][2] = {
   { 0, 3 },
