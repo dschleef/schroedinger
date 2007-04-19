@@ -1,5 +1,11 @@
 2007-04-18  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.c:
+	* schroedinger/schromotion.c:
+	  Um, yeah.  Let's check in stuff that compiles.
+
+2007-04-18  David Schleef  <ds@schleef.org>
+
 	* TODO:
 	* schroedinger/schroanalysis.c:
 	* schroedinger/schroencoder.c:

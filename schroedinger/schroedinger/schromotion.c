@@ -397,14 +397,10 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y)
 
   if (mv->pred_mode == 2) {
     srcframe = motion->src2[upsample_index];
-  SCHRO_ASSERT(srcframe);
   } else {
     srcframe = motion->src1[upsample_index];
-    if (!srcframe) {
-      SCHRO_ERROR("%p", motion->src1f);
-    }
-  SCHRO_ASSERT(srcframe);
   }
+  SCHRO_ASSERT(srcframe);
 #if 0
   if (sx & 3 || sy & 3) {
     /* FIXME */

@@ -704,7 +704,6 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
       motion = malloc(sizeof(*motion));
       memset(motion, 0, sizeof(*motion));
 
-      motion->src1f = task->ref_frame0;
       motion->src1[0] = task->ref_frame0->reconstructed_frame;
 
       SCHRO_ASSERT(motion->src1[0] != NULL);
