@@ -81,7 +81,7 @@ schro_decoder_reset (SchroDecoder *decoder)
     schro_frame_free (decoder->reference_pictures[i]);
   }
   decoder->n_reference_pictures = 0;
-  schro_queue_free (decoder->frame_queue);
+  schro_queue_clear (decoder->frame_queue);
 
   decoder->have_access_unit = FALSE;
   decoder->next_frame_number = 0;

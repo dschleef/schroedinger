@@ -85,7 +85,7 @@ schro_queue_remove (SchroQueue *queue, SchroPictureNumber picture_number)
   void *ret;
 
   for(i=0;i<queue->n;i++){
-    if (queue->elements[i].picture_number) {
+    if (queue->elements[i].picture_number == picture_number) {
       ret = queue->elements[i].data;
       memmove (queue->elements + i, queue->elements + i + 1,
           sizeof(SchroQueueElement)*(queue->n - i - 1));
