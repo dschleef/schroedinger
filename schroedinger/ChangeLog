@@ -1,6 +1,14 @@
 2007-04-22  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroqueue.c:
+	* schroedinger/schroqueue.h:
+	  Use SchroQueue for allocated frames provided by the app.
+
+2007-04-22  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
 	* schroedinger/schroqueue.c:
 	  Fix frames being presented in the wrong order.
 

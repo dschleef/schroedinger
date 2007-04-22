@@ -37,6 +37,7 @@ void schro_queue_delete (SchroQueue *queue, SchroPictureNumber picture_number);
 void *schro_queue_remove (SchroQueue *queue, SchroPictureNumber picture_number);
 void schro_queue_clear (SchroQueue *queue);
 void schro_queue_pop (SchroQueue *queue);
+void * schro_queue_pull (SchroQueue *queue);
 int schro_queue_is_full (SchroQueue *queue);
 int schro_queue_is_empty (SchroQueue *queue);
 

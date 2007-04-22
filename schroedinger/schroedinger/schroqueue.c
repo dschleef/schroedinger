@@ -119,6 +119,21 @@ schro_queue_pop (SchroQueue *queue)
   queue->n--;
 }
 
+void *
+schro_queue_pull (SchroQueue *queue)
+{
+  void *ret;
+
+  if (queue->n == 0) return NULL;
+
+  ret = queue->elements[0].data;
+  memmove (queue->elements, queue->elements + 1,
+      sizeof(SchroQueueElement)*(queue->n - 1));
+  queue->n--;
+
+  return ret;
+}
+
 int
 schro_queue_is_full (SchroQueue *queue)
 {
