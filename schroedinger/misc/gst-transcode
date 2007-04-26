@@ -1,0 +1,149 @@
+#!/usr/bin/env python
+# -*- Mode: Python -*-
+# vi:si:et:sw=4:sts=4:ts=4
+
+file = '/home/ds/public_html/mulholland_clip.mpg'
+mux_element = "oggmux";
+video_encoder_element = "schroenc";
+#video_encoder_element = "theoraenc";
+audio_encoder_element = "vorbisenc";
+fps = 24
+audiochan = 1
+
+
+import sys
+
+import gobject
+gobject.threads_init()
+
+import pygst
+pygst.require('0.10')
+import gst
+
+
+mainloop = gobject.MainLoop();
+
+class Moo:
+    def __init__(self):
+        self.audio_channel = 0;
+        self.got_video = 0;
+        self.bin = gst.parse_launch('filesrc name=source ! decodebin name=dbin');
+        self.filesrc = self.bin.get_by_name('source');
+        self.dbin = self.bin.get_by_name('dbin');
+
+        self.filesrc.set_property('location', file);
+        self.dbin.connect('new-decoded-pad', self.demux_pad_added);
+
+        bus = self.bin.get_bus();
+        bus.enable_sync_message_emission();
+        bus.add_signal_watch();
+        bus.connect('sync-message::element', self.on_sync_message);
+        bus.connect('message', self.on_message);
+
+        self.bin.set_state(gst.STATE_PLAYING);
+
+    def on_sync_message(self, bus, message):
+        t = message.type;
+        #if message.structure:
+        #    print "Sync Message: %d %s" % (t, message.structure.to_string());
+        #else:
+        #    print "Sync Message: %d" % t;
+
+    def on_message(self, bus, message):
+        t = message.type;
+        #if message.structure:
+        #    print "Message: %d %s" % (t, message.structure.to_string());
+        #else:
+        #    print "Message: %d" % t;
+        if t == gst.MESSAGE_ERROR:
+            err, debug = message.parse_error()
+            print "Error: %s" % err, debug
+            self.bin.set_state (gst.STATE_NULL);
+        elif t == gst.MESSAGE_EOS:
+            print "EOS"
+            self.bin.set_state (gst.STATE_NULL);
+            sys.exit(0);
+
+    def end(self):
+        self.bin.set_state (gst.STATE_NULL);
+
+    def seek(self, location):
+        gst.debug("seeking to %r" % location);
+        event = gst.event_new_seek(1.0, gst.FORMAT_TIME,
+                gst.SEEK_FLAG_FLUSH | gst.SEEK_FLAG_ACCURATE,
+                gst.SEEK_TYPE_SET, location,
+                gst.SEEK_TYPE_SET, location + length*gst.SECOND);
+
+        res = self.seeker.send_event(event);
+        if not res:
+            gst.error("seek to %r failed" % location)
+
+    def demux_pad_added(self, element, pad, bool):
+        caps = pad.get_caps();
+
+        structure = caps[0];
+        stream_type = structure.get_name();
+        if stream_type == "video/x-raw-yuv":
+            colorspace = gst.element_factory_make("ffmpegcolorspace");
+            self.bin.add (colorspace);
+            colorspace.set_state (gst.STATE_PLAYING);
+            pad.link (colorspace.get_pad("sink"));
+
+            videorate = gst.element_factory_make("videorate");
+            self.bin.add (videorate);
+            videorate.set_state (gst.STATE_PLAYING);
+            colorspace.get_pad("src").link(videorate.get_pad("sink"));
+
+            #venc = gst.element_factory_make(video_encoder_element);
+            venc = gst.element_factory_make("schroenc");
+            self.seeker = venc;
+            self.bin.add (venc);
+            venc.set_state (gst.STATE_PLAYING);
+            videorate.link (venc,
+                    gst.caps_from_string("video/x-raw-yuv,framerate=%d/1" % fps));
+
+            self.mux = gst.element_factory_make(mux_element);
+            self.bin.add (self.mux);
+            self.mux.set_state (gst.STATE_PLAYING);
+            venc.get_pad("src").link(self.mux.get_pad("sink_%d"));
+
+            filesink = gst.element_factory_make("filesink");
+            filesink.set_property ("location", "output.ogg");
+            self.bin.add (filesink);
+            filesink.set_state (gst.STATE_PLAYING);
+            self.mux.get_pad("src").link(filesink.get_pad("sink"));
+            self.got_video = 1;
+        elif stream_type == "audio/x-raw-float" or stream_type == "audio/x-raw-int":
+            if self.audio_channel == audiochan:
+                audioconvert = gst.element_factory_make ("audioconvert");
+                self.bin.add (audioconvert);
+                audioconvert.set_state (gst.STATE_PLAYING);
+                pad.link (audioconvert.get_pad("sink"));
+
+                aenc = gst.element_factory_make (audio_encoder_element);
+                self.bin.add (aenc);
+                aenc.set_state (gst.STATE_PLAYING);
+                audioconvert.get_pad("src").link(aenc.get_pad("sink"));
+                aenc.get_pad("src").link(self.mux.get_pad("sink_%d"));
+
+            self.audio_channel+=1
+        else:
+            print "unknown stream %s" % stream_type;
+
+
+def main(args):
+
+    moo = Moo();
+
+
+    try:
+        mainloop.run();
+    except KeyboardInterrupt:
+        pass
+
+    moo.end();
+    moo = 0;
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
+

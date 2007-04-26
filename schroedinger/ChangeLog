@@ -1,3 +1,8 @@
+2007-04-26  David Schleef  <ds@schleef.org>
+
+	* misc/gst-transcode:
+	  Convert pydvdrip into something more generic.
+
 2007-04-22  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:
