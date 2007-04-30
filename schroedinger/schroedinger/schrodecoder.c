@@ -13,7 +13,8 @@ static void schro_decoder_decode_macroblock(SchroDecoder *decoder,
 static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
     SchroArith *arith, SchroMotionVector *motion_vectors, int x, int y);
 
-static void schro_decoder_reference_add (SchroDecoder *decoder, SchroFrame *frame);
+static void schro_decoder_reference_add (SchroDecoder *decoder,
+    SchroFrame *frame, SchroPictureNumber picture_number);
 static SchroFrame * schro_decoder_reference_get (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
 static void schro_decoder_reference_retire (SchroDecoder *decoder,
@@ -40,6 +41,8 @@ schro_decoder_new (void)
   decoder->skip_value = 1.0;
   decoder->skip_ratio = 1.0;
 
+  decoder->reference_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
+      (SchroQueueFreeFunc)schro_frame_free);
   decoder->frame_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_frame_free);
   decoder->output_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
@@ -51,15 +54,11 @@ schro_decoder_new (void)
 void
 schro_decoder_free (SchroDecoder *decoder)
 {
-  int i;
-
   if (decoder->frame) {
     schro_frame_free (decoder->frame);
   }
   schro_queue_free (decoder->output_queue);
-  for(i=0;i<decoder->n_reference_pictures;i++) {
-    schro_frame_free (decoder->reference_pictures[i]);
-  }
+  schro_queue_free (decoder->reference_queue);
   schro_queue_free (decoder->frame_queue);
 
   if (decoder->motion_field) schro_motion_field_free (decoder->motion_field);
@@ -75,13 +74,8 @@ schro_decoder_free (SchroDecoder *decoder)
 void
 schro_decoder_reset (SchroDecoder *decoder)
 {
-  int i;
-
-  for(i=0;i<decoder->n_reference_pictures;i++) {
-    schro_frame_free (decoder->reference_pictures[i]);
-  }
-  decoder->n_reference_pictures = 0;
   schro_queue_clear (decoder->frame_queue);
+  schro_queue_clear (decoder->reference_queue);
   schro_queue_clear (decoder->output_queue);
 
   decoder->have_access_unit = FALSE;
@@ -319,6 +313,7 @@ schro_decoder_iterate (SchroDecoder *decoder)
     output_picture = schro_frame_new ();
     output_picture->frame_number = decoder->picture_number;
 
+    SCHRO_DEBUG("adding %d to queue (skipped)", output_picture->frame_number);
     schro_queue_add (decoder->frame_queue, output_picture,
         decoder->picture_number);
 
@@ -355,14 +350,14 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
     decoder->ref0 = schro_decoder_reference_get (decoder, decoder->reference1);
     if (decoder->ref0 == NULL) {
-      SCHRO_DEBUG("Could not find reference picture %d", decoder->reference1);
+      SCHRO_INFO("Could not find reference picture %d", decoder->reference1);
       skip = 1;
     }
 
     if (decoder->n_refs > 1) {
       decoder->ref1 = schro_decoder_reference_get (decoder, decoder->reference2);
       if (decoder->ref1 == NULL) {
-        SCHRO_DEBUG("Could not find reference picture %d", decoder->reference2);
+        SCHRO_INFO("Could not find reference picture %d", decoder->reference2);
         skip = 1;
       }
     }
@@ -431,7 +426,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
         ROUND_UP_SHIFT(decoder->video_format.height,1));
     schro_frame_convert (ref, decoder->frame);
     ref->frame_number = decoder->picture_number;
-    schro_decoder_reference_add (decoder, ref);
+    schro_decoder_reference_add (decoder, ref, decoder->picture_number);
   }
 
   for(i=0;i<decoder->n_retire;i++){
@@ -1539,56 +1534,38 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
 /* reference pool */
 
 static void
-schro_decoder_reference_add (SchroDecoder *decoder, SchroFrame *frame)
+schro_decoder_reference_add (SchroDecoder *decoder, SchroFrame *frame,
+    SchroPictureNumber picture_number)
 {
   SCHRO_DEBUG("adding %d", frame->frame_number);
-  if (decoder->n_reference_pictures >= 10) {
+
+  if (schro_queue_is_full(decoder->reference_queue)) {
+    schro_queue_pop (decoder->reference_queue);
   }
-  decoder->reference_pictures[decoder->n_reference_pictures] = frame;
-  decoder->n_reference_pictures++;
+  schro_queue_add (decoder->reference_queue, frame, picture_number);
 }
 
 static SchroFrame *
 schro_decoder_reference_get (SchroDecoder *decoder,
     SchroPictureNumber picture_number)
 {
-  int i;
   SCHRO_DEBUG("getting %d", picture_number);
-  for(i=0;i<decoder->n_reference_pictures;i++){
-    if (decoder->reference_pictures[i]->frame_number == picture_number) {
-      return decoder->reference_pictures[i];
-    }
-  }
-  return NULL;
-
+  return schro_queue_find (decoder->reference_queue, picture_number);
 }
 
 static void
 schro_decoder_reference_retire (SchroDecoder *decoder,
     SchroPictureNumber picture_number)
 {
-  int i;
   SCHRO_DEBUG("retiring %d", picture_number);
-  for(i=0;i<decoder->n_reference_pictures;i++){
-    if (decoder->reference_pictures[i]->frame_number == picture_number) {
-      schro_frame_free (decoder->reference_pictures[i]);
-      memmove (decoder->reference_pictures + i, decoder->reference_pictures + i + 1,
-          sizeof(SchroFrame *)*(decoder->n_reference_pictures - i - 1));
-      decoder->n_reference_pictures--;
-      return;
-    }
-  }
+  schro_queue_delete (decoder->reference_queue, picture_number);
 }
 
 static void
 schro_decoder_reference_retire_all (SchroDecoder *decoder)
 {
-  int i;
   SCHRO_DEBUG("retiring all");
-  for(i=0;i<decoder->n_reference_pictures;i++){
-    schro_frame_free (decoder->reference_pictures[i]);
-  }
-  decoder->n_reference_pictures = 0;
+  schro_queue_clear (decoder->reference_queue);
 }
 
 static void

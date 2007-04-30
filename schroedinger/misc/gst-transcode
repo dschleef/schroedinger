@@ -2,11 +2,13 @@
 # -*- Mode: Python -*-
 # vi:si:et:sw=4:sts=4:ts=4
 
-file = '/home/ds/public_html/mulholland_clip.mpg'
+file = '/home/ds/vob/mulholland_clip.mpg'
 mux_element = "oggmux";
-video_encoder_element = "schroenc";
+video_encoder_element = "ffenc_mpeg1video";
+#video_encoder_element = "schroenc";
 #video_encoder_element = "theoraenc";
-audio_encoder_element = "vorbisenc";
+audio_encoder_element = "ffenc_mp2";
+#audio_encoder_element = "vorbisenc";
 fps = 24
 audiochan = 1
 

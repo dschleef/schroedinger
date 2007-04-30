@@ -16,13 +16,12 @@ struct _SchroDecoder {
   SchroFrame *frame;
   SchroFrame *mc_tmp_frame;
   int n_reference_pictures;
-  SchroFrame *reference_pictures[SCHRO_MAX_REFERENCE_FRAMES];
+
+  /* the list of reference pictures */
+  SchroQueue *reference_queue;
 
   /* a list of frames provided by the app that we'll decode into */
   SchroQueue *output_queue;
-
-  //SchroFrame *output_pictures[SCHRO_MAX_REFERENCE_FRAMES];
-  //int n_output_pictures;
 
   SchroPictureNumber next_frame_number;
 
