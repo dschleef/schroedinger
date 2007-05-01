@@ -835,7 +835,6 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
   int i, j;
   SchroBuffer *buffer;
   int length;
-  int superblock_count = 0;
 
   schro_bits_sync (decoder->bits);
 
@@ -856,12 +855,6 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
       schro_decoder_decode_macroblock(decoder, arith, i, j);
-
-      superblock_count++;
-      if (superblock_count == 32) {
-        schro_arith_halve_all_counts (arith);
-        superblock_count = 0;
-      }
     }
   }
 

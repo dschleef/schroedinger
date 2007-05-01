@@ -15,7 +15,8 @@ static void schro_encoder_reference_retire_all (SchroEncoder *encoder,
     SchroPictureNumber frame_number);
 #endif
 static void schro_encoder_engine_init (SchroEncoder *encoder);
-static void schro_encoder_encode_frame_prediction (SchroEncoderTask *task);
+static void schro_encoder_encode_picture_prediction (SchroEncoderTask *task);
+static void schro_encoder_encode_motion_data (SchroEncoderTask *task);
 static void schro_encoder_encode_transform_parameters (SchroEncoderTask *task);
 static void schro_encoder_encode_transform_data (SchroEncoderTask *task);
 static int schro_encoder_pull_is_ready (SchroEncoder *encoder);
@@ -694,7 +695,8 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
   if (task->params.num_refs > 0) {
     schro_encoder_motion_predict (task);
 
-    schro_encoder_encode_frame_prediction (task);
+    schro_encoder_encode_picture_prediction (task);
+    schro_encoder_encode_motion_data (task);
 
     schro_frame_convert (task->tmp_frame0, task->encode_frame);
 
@@ -790,20 +792,35 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
 }
 
 static void
-schro_encoder_encode_frame_prediction (SchroEncoderTask *task)
+schro_encoder_encode_picture_prediction (SchroEncoderTask *task)
 {
   SchroParams *params = &task->params;
-  int i,j;
-  SchroArith *arith;
-  int superblock_count = 0;
 
   schro_bits_sync(task->bits);
 
   /* block params flag */
-  schro_bits_encode_bit (task->bits, FALSE);
+  /* FIXME */
+  if (TRUE) {
+    schro_bits_encode_bit (task->bits, FALSE);
+  } else {
+    int index = 0;
+    schro_bits_encode_uint (task->bits, 0);
+    if (index == 0) {
+      schro_bits_encode_uint (task->bits, params->xblen_luma);
+      schro_bits_encode_uint (task->bits, params->yblen_luma);
+      schro_bits_encode_uint (task->bits, params->xbsep_luma);
+      schro_bits_encode_uint (task->bits, params->xbsep_luma);
+    }
+  }
 
   /* mv precision flag */
-  schro_bits_encode_bit (task->bits, FALSE);
+  /* FIXME */
+  if (params->mv_precision == 0) {
+    schro_bits_encode_bit (task->bits, FALSE);
+  } else {
+    schro_bits_encode_bit (task->bits, TRUE);
+    schro_bits_encode_uint (task->bits, params->mv_precision);
+  }
 
   /* global motion flag */
   schro_bits_encode_bit (task->bits, params->have_global_motion);
@@ -844,10 +861,35 @@ schro_encoder_encode_frame_prediction (SchroEncoderTask *task)
   }
 
   /* picture prediction mode flag */
-  schro_bits_encode_bit (task->bits, FALSE);
+  if (params->picture_pred_mode == 0) {
+    schro_bits_encode_bit (task->bits, FALSE);
+  } else {
+    schro_bits_encode_bit (task->bits, TRUE);
+    schro_bits_encode_uint (task->bits, params->picture_pred_mode);
+  }
 
   /* non-default weights flag */
-  schro_bits_encode_bit (task->bits, FALSE);
+  /* FIXME */
+  if (TRUE) {
+    schro_bits_encode_bit (task->bits, FALSE);
+  } else {
+    schro_bits_encode_bit (task->bits, TRUE);
+    schro_bits_encode_uint (task->bits, params->picture_weight_bits);
+    schro_bits_encode_sint (task->bits, params->picture_weight_1);
+    if (params->num_refs > 1) {
+      schro_bits_encode_sint (task->bits, params->picture_weight_2);
+    }
+  }
+
+}
+
+
+static void
+schro_encoder_encode_motion_data (SchroEncoderTask *task)
+{
+  SchroParams *params = &task->params;
+  int i,j;
+  SchroArith *arith;
 
   arith = schro_arith_new ();
   schro_arith_encode_init (arith, task->subband_buffer);
@@ -932,12 +974,6 @@ schro_encoder_encode_frame_prediction (SchroEncoderTask *task)
             }
           }
         }
-      }
-
-      superblock_count++;
-      if (superblock_count == 32) {
-        schro_arith_halve_all_counts (arith);
-        superblock_count = 0;
       }
     }
   }

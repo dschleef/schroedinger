@@ -1,3 +1,9 @@
+2007-05-01  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  Rearrange code.  Remove halving offsets, changes BITSTREAM.
+
 2007-04-30  David Schleef  <ds@schleef.org>
 
 	* misc/gst-transcode:
