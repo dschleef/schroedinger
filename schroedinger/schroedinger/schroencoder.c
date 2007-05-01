@@ -1513,8 +1513,6 @@ schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index)
   int horiz_codeblocks;
   int vert_codeblocks;
   int have_zero_flags;
-  int coeff_reset;
-  int coeff_count = 0;
   int have_quant_offset;
 
   if (component == 0) {
@@ -1560,7 +1558,6 @@ schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index)
     return;
   }
 
-  coeff_reset = CLAMP(((width*height)>>5), 25, 800);
   if (params->spatial_partition_flag) {
     if (index == 0) {
       horiz_codeblocks = params->horiz_codeblocks[0];
@@ -1691,12 +1688,6 @@ out:
 
       _schro_arith_context_encode_sint (arith, cont_context, value_context,
           sign_context, quant_data[j*width + i]);
-
-      coeff_count++;
-      if (coeff_count == coeff_reset) {
-        coeff_count = 0;
-        schro_arith_halve_all_counts(arith);
-      }
     }
   }
     }

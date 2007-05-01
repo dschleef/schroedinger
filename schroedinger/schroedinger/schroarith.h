@@ -111,7 +111,6 @@ SchroArith * schro_arith_new (void);
 void schro_arith_free (SchroArith *arith);
 void schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer);
 void schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer);
-void schro_arith_halve_all_counts (SchroArith *arith);
 void schro_arith_flush (SchroArith *arith);
 void schro_arith_init_contexts (SchroArith *arith);
 

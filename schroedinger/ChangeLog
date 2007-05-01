@@ -1,5 +1,14 @@
 2007-05-01  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  Remove schro_arith_halve_all_counts() and all the code that
+	  uses it.  Changes BITSTREAM.  Also remove old arithmetic coder.
+
+2007-05-01  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	  Rearrange code.  Remove halving offsets, changes BITSTREAM.

@@ -9,8 +9,6 @@
 #include <schroedinger/schrotables.h>
 #include <schroedinger/schrodebug.h>
 
-#define USE_NEWEST_CODER
-
 static int __schro_arith_context_decode_bit (SchroArith *arith, int i);
 
 SchroArith *
@@ -179,34 +177,12 @@ schro_arith_init_contexts (SchroArith *arith)
   }
 }
 
-void
-schro_arith_halve_all_counts (SchroArith *arith)
-{
-  int i;
-  for(i=0;i<SCHRO_CTX_LAST;i++) {
-#if DIRAC_COMPAT
-    if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 16) {
-      arith->contexts[i].count[0] >>= 1;
-      arith->contexts[i].count[0]++;
-      arith->contexts[i].count[1] >>= 1;
-      arith->contexts[i].count[1]++;
-    }
-#else
-    arith->contexts[i].count[0] >>= 1;
-    arith->contexts[i].count[0]++;
-    arith->contexts[i].count[1] >>= 1;
-    arith->contexts[i].count[1]++;
-#endif
-  }
-}
-
 int
 _schro_arith_context_decode_bit (SchroArith *arith, int i)
 {
   return __schro_arith_context_decode_bit (arith, i);
 }
 
-#ifdef USE_NEWEST_CODER
 static const unsigned int lut[256] = {
   //LUT corresponds to window = 16 @ p0=0.5 & 256 @ p=1.0
      0,    2,    5,    8,   11,   15,   20,   24,
@@ -344,149 +320,6 @@ _schro_arith_context_encode_bit (SchroArith *arith, int i, int value)
     }
   }
 }
-#else
-static int
-__schro_arith_context_decode_bit (SchroArith *arith, int i)
-{
-  unsigned int range;
-  unsigned int probability0;
-  unsigned int range_x_prob;
-  unsigned int count;
-  int value;
-
-  probability0 = arith->contexts[i].probability;
-  count = arith->code - arith->range[0] + 1;
-  range = arith->range[1];
-  range_x_prob = (range * probability0) >> 16;
-
-  value = (count > range_x_prob);
-  if (value) {
-    arith->range[0] = arith->range[0] + range_x_prob;
-    arith->range[1] -= range_x_prob;
-  } else {
-    arith->range[1] = range_x_prob;
-  }
-  arith->contexts[i].count[value]++;
-  arith->contexts[i].n--;
-  if (arith->contexts[i].n == 0) {
-    unsigned int scaler;
-    unsigned int weight;
-
-    if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 255) {
-      arith->contexts[i].count[0] >>= 1;
-      arith->contexts[i].count[0]++;
-      arith->contexts[i].count[1] >>= 1;
-      arith->contexts[i].count[1]++;
-    }
-    weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
-    scaler = schro_table_division_factor[weight];
-    arith->contexts[i].probability = arith->contexts[i].count[0] * scaler;
-
-    if (weight > 16) {
-      arith->contexts[i].n = 16;
-    } else {
-      arith->contexts[i].n = 1;
-    }
-  }
-
-  while (arith->range[1] < 0x1000) {
-    arith->range[0] <<= 1;
-    arith->range[1] <<= 1;
-
-    arith->code <<= 1;
-    arith->code |= (arith->dataptr[arith->offset] >> (7-arith->cntr))&1;
-
-    arith->cntr++;
-
-    if (arith->cntr == 8) {
-      arith->offset++;
-      arith->range[0] &= 0xffff;
-      arith->code &= 0xffff;
-
-      if (arith->code < arith->range[0]) {
-        arith->code |= (1<<16);
-      }
-      arith->cntr = 0;
-    }
-  }
-
-  return value;
-}
-
-void
-_schro_arith_context_encode_bit (SchroArith *arith, int i, int value)
-{
-  unsigned int range;
-  unsigned int probability0;
-  unsigned int range_x_prob;
-
-  probability0 = arith->contexts[i].probability;
-  range = arith->range[1];
-  range_x_prob = (range * probability0) >> 16;
-
-  if (value) {
-    arith->range[0] = arith->range[0] + range_x_prob;
-    arith->range[1] -= range_x_prob;
-  } else {
-    arith->range[1] = range_x_prob;
-  }
-  arith->contexts[i].count[value]++;
-  arith->contexts[i].n--;
-  if (arith->contexts[i].n == 0) {
-    unsigned int scaler;
-    unsigned int weight;
-
-    if (arith->contexts[i].count[0] + arith->contexts[i].count[1] > 255) {
-      arith->contexts[i].count[0] >>= 1;
-      arith->contexts[i].count[0]++;
-      arith->contexts[i].count[1] >>= 1;
-      arith->contexts[i].count[1]++;
-    }
-    weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
-    scaler = schro_table_division_factor[weight];
-    arith->contexts[i].probability = arith->contexts[i].count[0] * scaler;
-
-    if (weight > 16) {
-      arith->contexts[i].n = 16;
-    } else {
-      arith->contexts[i].n = 1;
-    }
-  }
-
-  while (arith->range[1] < 0x1000) {
-    arith->range[0] <<= 1;
-    arith->range[1] <<= 1;
-    arith->cntr++;
-
-    if (arith->cntr == 8) {
-      if (arith->range[0] < (1<<24) &&
-          (arith->range[0] + arith->range[1]) >= (1<<24)) {
-        arith->carry++;
-      } else {
-        if (arith->range[0] >= (1<<24)) {
-          arith->dataptr[arith->offset-1]++;
-          while (arith->carry) {
-            arith->dataptr[arith->offset] = 0x00;
-            arith->carry--;
-            arith->offset++;
-          }
-        } else {
-          while (arith->carry) {
-            arith->dataptr[arith->offset] = 0xff;
-            arith->carry--;
-            arith->offset++;
-          }
-        }
-        arith->dataptr[arith->offset] = arith->range[0] >> 16;
-        arith->offset++;
-      }
-
-      arith->range[0] &= 0xffff;
-      arith->cntr = 0;
-    }
-  }
-}
-#endif
 
 static int
 maxbit (unsigned int x)

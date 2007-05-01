@@ -1328,8 +1328,6 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     int horiz_codeblocks;
     int have_zero_flags;
     int have_quant_offset;
-    int coeff_reset;
-    int coeff_count;
 
     quant_index = schro_bits_decode_uint (decoder->bits);
     SCHRO_DEBUG("quant index %d", quant_index);
@@ -1349,8 +1347,6 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     schro_arith_decode_init (arith, buffer);
     schro_arith_init_contexts (arith);
 
-    coeff_reset = CLAMP(((width*height)>>5), 25, 800);
-    coeff_count = coeff_reset;
     if (params->spatial_partition_flag) {
       if (index == 0) {
         vert_codeblocks = params->vert_codeblocks[0];
@@ -1430,19 +1426,9 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
       } else {
         prev_line = data + (j-1)*stride;
       }
-#if 0
-    (*coeff_count)++;
-    if (*coeff_count == coeff_reset) {
-      *coeff_count = 0;
-      schro_arith_halve_all_counts (arith);
-    }
-#endif
       x = xmin;
       while(x < xmax) {
         x2 = xmax;
-        if (x2 - x > coeff_count) {
-          x2 = x + coeff_count;
-        }
         if (subband->has_parent) {
           if (subband->horizontally_oriented) {
             codeblock_line_decode_p_horiz (p, stride, j, x, x2, parent_line,
@@ -1458,11 +1444,6 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
           codeblock_line_decode_generic (p, stride, j, x, x2, parent_line,
               subband->horizontally_oriented, subband->vertically_oriented,
               arith, quant_factor, quant_offset);
-        }
-        coeff_count -= x2 - x;
-        if (coeff_count == 0) {
-          schro_arith_halve_all_counts (arith);
-          coeff_count = coeff_reset;
         }
         x = x2;
       }
