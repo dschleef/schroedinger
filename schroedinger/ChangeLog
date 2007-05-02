@@ -1,5 +1,13 @@
 2007-05-01  David Schleef  <ds@schleef.org>
 
+	* gst/gstschroparse.c:
+	* schroedinger/schroarith.c:
+	* schroedinger/schrodecoder.c:
+	* tools/dump_packets.c:
+	  Fix some bugs.  Changes BITSTREAM.
+
+2007-05-01  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroarith.c:
 	* schroedinger/schroarith.h:
 	* schroedinger/schrodecoder.c:

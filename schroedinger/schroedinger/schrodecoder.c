@@ -527,7 +527,7 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
   if (decoder->major_version != 0 || decoder->minor_version != 11) {
     SCHRO_ERROR("Expecting version number 0.11, got %d.%d",
         decoder->major_version, decoder->minor_version);
-    SCHRO_MILD_ASSERT(0);
+    //SCHRO_MILD_ASSERT(0);
   }
   if (decoder->profile != 0 || decoder->level != 0) {
     SCHRO_ERROR("Expecting profile/level 0.0, got %d.%d",
@@ -1400,14 +1400,12 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
           quant_index += _schro_arith_context_decode_sint (arith,
               SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
               SCHRO_CTX_QUANTISER_SIGN);
-          /* FIXME */
-          quant_index = CLAMP(quant_index, 0, 60);
         }
-        quant_factor = schro_table_quant[quant_index];
+        quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
         if (params->num_refs > 0) {
-          quant_offset = schro_table_offset_3_8[quant_index];
+          quant_offset = schro_table_offset_3_8[CLAMP(quant_index,0,60)];
         } else {
-          quant_offset = schro_table_offset_1_2[quant_index];
+          quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
         }
         //SCHRO_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
 

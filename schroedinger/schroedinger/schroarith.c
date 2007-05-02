@@ -243,7 +243,7 @@ __schro_arith_context_decode_bit (SchroArith *arith, int i)
     arith->contexts[i].probability += lut[255-(arith->contexts[i].probability>>8)];
   }
 
-  while (arith->range[1] < 0x1000) {
+  while (arith->range[1] <= 0x4000) {
     arith->range[0] <<= 1;
     arith->range[1] <<= 1;
 
@@ -287,7 +287,7 @@ _schro_arith_context_encode_bit (SchroArith *arith, int i, int value)
     arith->contexts[i].probability += lut[255-(arith->contexts[i].probability>>8)];
   }
 
-  while (arith->range[1] < 0x1000) {
+  while (arith->range[1] <= 0x4000) {
     arith->range[0] <<= 1;
     arith->range[1] <<= 1;
     arith->cntr++;

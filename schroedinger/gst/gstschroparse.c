@@ -628,6 +628,15 @@ gst_schro_parse_push_all (GstSchroParse *schro_parse, gboolean at_eos)
 
     GST_LOG ("Have complete parse unit of %d bytes", size);
 
+    if (size == 0) {
+      GST_WARNING("BBCD packet with zero size");
+      return GST_FLOW_ERROR;
+    }
+
+    if (gst_adapter_available (schro_parse->adapter) < size) {
+      return GST_FLOW_OK;
+    }
+
     outbuf = gst_adapter_take_buffer (schro_parse->adapter, size);
 
     ret = gst_pad_push (schro_parse->srcpad, outbuf);

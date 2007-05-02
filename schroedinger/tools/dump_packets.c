@@ -34,6 +34,8 @@ main (int argc, char *argv[])
   GError *error = NULL;
   GOptionContext *context;
 
+  if (!g_thread_supported ()) g_thread_init(NULL);
+
   context = g_option_context_new ("dump_packets");
   g_option_context_add_main_entries (context, entries, NULL);
   g_option_context_add_group (context, gst_init_get_option_group ());
