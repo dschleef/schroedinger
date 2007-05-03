@@ -42,11 +42,11 @@ schro_decoder_new (void)
   decoder->skip_ratio = 1.0;
 
   decoder->reference_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
-      (SchroQueueFreeFunc)schro_frame_free);
+      (SchroQueueFreeFunc)schro_frame_unref);
   decoder->frame_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
-      (SchroQueueFreeFunc)schro_frame_free);
+      (SchroQueueFreeFunc)schro_frame_unref);
   decoder->output_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
-      (SchroQueueFreeFunc)schro_frame_free);
+      (SchroQueueFreeFunc)schro_frame_unref);
 
   return decoder;
 }
@@ -55,14 +55,14 @@ void
 schro_decoder_free (SchroDecoder *decoder)
 {
   if (decoder->frame) {
-    schro_frame_free (decoder->frame);
+    schro_frame_unref (decoder->frame);
   }
   schro_queue_free (decoder->output_queue);
   schro_queue_free (decoder->reference_queue);
   schro_queue_free (decoder->frame_queue);
 
   if (decoder->motion_field) schro_motion_field_free (decoder->motion_field);
-  if (decoder->mc_tmp_frame) schro_frame_free (decoder->mc_tmp_frame);
+  if (decoder->mc_tmp_frame) schro_frame_unref (decoder->mc_tmp_frame);
 
   if (decoder->tmpbuf) free (decoder->tmpbuf);
   if (decoder->tmpbuf2) free (decoder->tmpbuf2);

@@ -90,8 +90,8 @@ main (int argc, char *argv[])
 
 
 
-  schro_frame_free (ref);
-  schro_frame_free (dest);
+  schro_frame_unref (ref);
+  schro_frame_unref (dest);
   free (motion_vectors);
 
   return 0;

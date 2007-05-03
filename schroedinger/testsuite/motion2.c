@@ -185,8 +185,8 @@ main (int argc, char *argv[])
   schro_frame_dump (dest_u8);
   //schro_frame_compare (ref, dest_u8);
 
-  schro_frame_free (ref);
-  schro_frame_free (dest);
+  schro_frame_unref (ref);
+  schro_frame_unref (dest);
   free (motion_vectors);
 
   return 0;

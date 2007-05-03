@@ -28,6 +28,7 @@ struct _SchroFrameComponent {
 };
 
 struct _SchroFrame {
+  int refcount;
   SchroFrameFreeFunc free;
   void *regions[3];
   void *priv;
@@ -46,7 +47,8 @@ SchroFrame * schro_frame_new_and_alloc2 (SchroFrameFormat format, int width,
 SchroFrame * schro_frame_new_I420 (void *data, int width, int height);
 void schro_frame_set_free_callback (SchroFrame *frame,
     SchroFrameFreeFunc free_func, void *priv);
-void schro_frame_free (SchroFrame *frame);
+void schro_frame_unref (SchroFrame *frame);
+SchroFrame *schro_frame_ref (SchroFrame *frame);
 void schro_frame_convert (SchroFrame *dest, SchroFrame *src);
 void schro_frame_add (SchroFrame *dest, SchroFrame *src);
 void schro_frame_subtract (SchroFrame *dest, SchroFrame *src);

@@ -1,3 +1,14 @@
+2007-05-02  David Schleef  <ds@schleef.org>
+
+	* gst/gstschrodec.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* testsuite/motion.c:
+	* testsuite/motion2.c:
+	  Change SchroFrame to be ref/unref.
+
 2007-05-01  David Schleef  <ds@schleef.org>
 
 	* gst/gstschroparse.c:

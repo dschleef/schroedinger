@@ -19,6 +19,7 @@ schro_frame_new (void)
 
   frame = malloc (sizeof(*frame));
   memset (frame, 0, sizeof(*frame));
+  frame->refcount = 1;
 
   return frame;
 }
@@ -131,17 +132,27 @@ schro_frame_new_I420 (void *data, int width, int height)
   return frame;
 }
 
-void
-schro_frame_free (SchroFrame *frame)
+SchroFrame *
+schro_frame_ref (SchroFrame *frame)
 {
-  if (frame->free) {
-    frame->free (frame, frame->priv);
-  }
-  if (frame->regions[0]) {
-    free(frame->regions[0]);
-  }
+  frame->refcount++;
+  return frame;
+}
 
-  free(frame);
+void
+schro_frame_unref (SchroFrame *frame)
+{
+  frame->refcount--;
+  if (frame->refcount == 0) {
+    if (frame->free) {
+      frame->free (frame, frame->priv);
+    }
+    if (frame->regions[0]) {
+      free(frame->regions[0]);
+    }
+
+    free(frame);
+  }
 }
 
 void schro_frame_set_free_callback (SchroFrame *frame,

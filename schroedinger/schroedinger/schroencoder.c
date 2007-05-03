@@ -145,10 +145,10 @@ void
 schro_encoder_task_free (SchroEncoderTask *task)
 {
   if (task->tmp_frame0) {
-    schro_frame_free (task->tmp_frame0);
+    schro_frame_unref (task->tmp_frame0);
   }
   if (task->prediction_frame) {
-    schro_frame_free (task->prediction_frame);
+    schro_frame_unref (task->prediction_frame);
   }
   if (task->motion_field) {
     schro_motion_field_free (task->motion_field);
@@ -1745,14 +1745,14 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
   frame->refcount--;
   if (frame->refcount == 0) {
     if (frame->original_frame) {
-      schro_frame_free (frame->original_frame);
+      schro_frame_unref (frame->original_frame);
     }
     if (frame->reconstructed_frame) {
-      schro_frame_free (frame->reconstructed_frame);
+      schro_frame_unref (frame->reconstructed_frame);
     }
     for(i=0;i<5;i++){
       if (frame->downsampled_frames[i]) {
-        schro_frame_free (frame->downsampled_frames[i]);
+        schro_frame_unref (frame->downsampled_frames[i]);
       }
     }
     free (frame);

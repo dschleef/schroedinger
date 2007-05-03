@@ -910,7 +910,7 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
               }
         
               schro_dec->n_frames++;
-              schro_frame_free (frame);
+              schro_frame_unref (frame);
             }
 
             break;
