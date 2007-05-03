@@ -68,7 +68,7 @@ schro_queue_delete (SchroQueue *queue, SchroPictureNumber picture_number)
   int i;
 
   for(i=0;i<queue->n;i++){
-    if (queue->elements[i].picture_number) {
+    if (queue->elements[i].picture_number == picture_number) {
       queue->free(queue->elements[i].data, queue->elements[i].picture_number);
       memmove (queue->elements + i, queue->elements + i + 1,
           sizeof(SchroQueueElement)*(queue->n - i - 1));

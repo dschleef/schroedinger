@@ -19,7 +19,6 @@ static SchroFrame * schro_decoder_reference_get (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
 static void schro_decoder_reference_retire (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
-static void schro_decoder_reference_retire_all (SchroDecoder *decoder);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
@@ -244,8 +243,6 @@ schro_decoder_iterate (SchroDecoder *decoder)
     decoder->input_buffer = NULL;
     schro_bits_free (decoder->bits);
 
-    schro_decoder_reference_retire_all (decoder);
-    
     if (decoder->have_access_unit) {
       return SCHRO_DECODER_OK;
     }
@@ -1514,7 +1511,8 @@ schro_decoder_reference_add (SchroDecoder *decoder, SchroFrame *frame,
   if (schro_queue_is_full(decoder->reference_queue)) {
     schro_queue_pop (decoder->reference_queue);
   }
-  schro_queue_add (decoder->reference_queue, frame, picture_number);
+  schro_queue_add (decoder->reference_queue, schro_frame_ref(frame),
+      picture_number);
 }
 
 static SchroFrame *
@@ -1531,13 +1529,6 @@ schro_decoder_reference_retire (SchroDecoder *decoder,
 {
   SCHRO_DEBUG("retiring %d", picture_number);
   schro_queue_delete (decoder->reference_queue, picture_number);
-}
-
-static void
-schro_decoder_reference_retire_all (SchroDecoder *decoder)
-{
-  SCHRO_DEBUG("retiring all");
-  schro_queue_clear (decoder->reference_queue);
 }
 
 static void

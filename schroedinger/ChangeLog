@@ -1,5 +1,11 @@
 2007-05-02  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroqueue.c:
+	  Fix bug retiring frames out of the queue.
+
+2007-05-02  David Schleef  <ds@schleef.org>
+
 	* gst/gstschrodec.c:
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
