@@ -1,3 +1,14 @@
+2007-05-04  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	  Handle zero-residual frames.
+	* schroedinger/schromotion.c:
+	  Some refactoring to make copying blocks easier to understand.
+	* testsuite/Makefile.am:
+	* testsuite/decode.c:
+	  Add decoder test.  Plus a 'zzuf_test' target in the Makefile.
+
 2007-05-02  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:

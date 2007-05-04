@@ -350,7 +350,7 @@ splat_block_general (SchroFrame *dest, SchroMotion *motion,
 
 void
 get_global_block (SchroMotion *motion, SchroMotionVector *mv,
-    int x, int y, SchroGlobalMotion *gm)
+    int x, int y, SchroGlobalMotion *gm, int which)
 {
   int offset;
 
@@ -373,7 +373,41 @@ get_global_block (SchroMotion *motion, SchroMotionVector *mv,
 }
 
 void
-get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y)
+get_block_simple (SchroMotion *motion, int x, int y, int which)
+{
+  SchroFrame *srcframe;
+  SchroFrameComponent *comp;
+  int w, h;
+  int upsample_index;
+
+  upsample_index = (x&4)>>2 | (y&4)>>1;
+  w = 12;
+  h = 12;
+
+  if (which == 2) {
+    srcframe = motion->src2[upsample_index];
+  } else {
+    srcframe = motion->src1[upsample_index];
+  }
+
+  comp = &srcframe->components[0];
+  motion->blocks[0] = OFFSET(comp->data, comp->stride * y + x);
+  motion->strides[0] = comp->stride;
+
+  /* FIXME Assume 4:2:0 */
+  x >>= 1;
+  y >>= 1;
+  comp = &srcframe->components[1];
+  motion->blocks[1] = OFFSET(comp->data, comp->stride * y + x);
+  motion->strides[1] = comp->stride;
+
+  comp = &srcframe->components[2];
+  motion->blocks[2] = OFFSET(comp->data, comp->stride * y + x);
+  motion->strides[2] = comp->stride;
+
+}
+void
+get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
 {
   uint8_t *data;
   int stride;
@@ -392,10 +426,8 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y)
 
   /* FIXME */
   SCHRO_ASSERT(upsample_index == 0);
-  /* FIXME */
-  SCHRO_ASSERT(mv->pred_mode != 3);
 
-  if (mv->pred_mode == 2) {
+  if (which == 2) {
     srcframe = motion->src2[upsample_index];
   } else {
     srcframe = motion->src1[upsample_index];
@@ -697,11 +729,6 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
       int region;
       SchroMotionVector *mv = &motion_vectors[j*params->x_num_blocks + i];
 
-      if(motion->src1[0] == NULL) {
-        SCHRO_ERROR("src1 disappeared at %d,%d", i, j);
-        SCHRO_ASSERT(0);
-      }
-
       x = i*obmc_luma->x_sep - obmc_luma->x_ramp/2;
       if (i == 0) {
         region = region_y + 0;
@@ -714,15 +741,21 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
       if (mv->pred_mode == 0) {
         get_dc_block (motion, mv);
       } else {
-        if (mv->using_global) {
-          SchroGlobalMotion *gm = NULL;
-          get_global_block (motion, mv, x, y, gm);
-        } else {
-      if(motion->src1[0] == NULL) {
-        SCHRO_ERROR("src1 disappeared at %d,%d", i, j);
-        SCHRO_ASSERT(0);
-      }
-          get_block (motion, mv, x, y);
+        if (mv->pred_mode & 1) {
+          if (mv->using_global) {
+            SchroGlobalMotion *gm = NULL;
+            get_global_block (motion, mv, x, y, gm, 1);
+          } else {
+            get_block (motion, mv, x, y, 1);
+          }
+        }
+        if (mv->pred_mode & 2) {
+          if (mv->using_global) {
+            SchroGlobalMotion *gm = NULL;
+            get_global_block (motion, mv, x, y, gm, 2);
+          } else {
+            get_block (motion, mv, x, y, 2);
+          }
         }
       }
 

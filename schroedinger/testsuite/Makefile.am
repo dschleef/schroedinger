@@ -4,7 +4,7 @@ SUBDIRS = check perf coder installation
 noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 encode wavelet tables wavelet_2d \
 	 obmc phasecorrelation motion \
-	 quant \
+	 quant decode \
 	 global_motion upsample encode_big \
 	 motion2
 
@@ -91,4 +91,11 @@ quant_SOURCES = quant.c
 
 
 #struct_offsets_SOURCES = struct_offsets.c
+
+
+zzuf_test:
+	zzuf -A -s0:10000 -r0.001 -c -v ./decode test.drc
+
+zzuf_one:
+	zzuf -A -s9 -r0.001 -c -v cat test.drc >test-n.drc
 

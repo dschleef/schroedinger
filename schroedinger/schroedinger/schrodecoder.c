@@ -999,11 +999,13 @@ schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
   SchroParams *params = &decoder->params;
 
   if (params->num_refs > 0) {
-    bit = schro_bits_decode_bit (decoder->bits);
+    decoder->residual = schro_bits_decode_bit (decoder->bits);
 
-    SCHRO_DEBUG ("zero residual %d", bit);
-    /* FIXME */
-    SCHRO_ASSERT(bit == 0);
+    SCHRO_DEBUG ("zero residual %d", decoder->residual);
+
+    if (decoder->residual == 0) {
+      return;
+    }
   } else {
 #ifdef DIRAC_COMPAT
     schro_bits_sync (decoder->bits);
