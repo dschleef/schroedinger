@@ -1,3 +1,14 @@
+2007-05-17  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schromotion.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	  Various fixes for handling 444 video.
+
 2007-05-04  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:

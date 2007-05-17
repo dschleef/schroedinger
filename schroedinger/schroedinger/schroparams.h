@@ -47,8 +47,8 @@ struct _SchroVideoFormat {
 
   /* calculated values */
 
-  int chroma_h_scale;
-  int chroma_v_scale;
+  int chroma_h_shift;
+  int chroma_v_shift;
   int chroma_width;
   int chroma_height;
 };  

@@ -1257,9 +1257,11 @@ schro_encoder_clean_up_transform_subband (SchroEncoderTask *task, int component,
   } else {
     stride = subband->chroma_stride >> 1;
     width = subband->chroma_w;
-    w = ROUND_UP_SHIFT(params->video_format->width/2, shift);
+    w = ROUND_UP_SHIFT(params->video_format->width,
+        shift + params->video_format->chroma_h_shift);
     height = subband->chroma_h;
-    h = ROUND_UP_SHIFT(params->video_format->height/2, shift);
+    h = ROUND_UP_SHIFT(params->video_format->height,
+        shift + params->video_format->chroma_v_shift);
     offset = subband->chroma_offset;
   }
 

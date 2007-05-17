@@ -67,6 +67,9 @@ void schro_frame_h_upsample (SchroFrame *dest, SchroFrame *src);
 void schro_frame_v_upsample (SchroFrame *dest, SchroFrame *src);
 int schro_frame_calculate_average_luma (SchroFrame *frame);
 
+SchroFrame * schro_frame_convert_to_444 (SchroFrame *frame);
+
+
 SCHRO_END_DECLS
 
 #endif

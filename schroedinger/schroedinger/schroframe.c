@@ -116,8 +116,8 @@ schro_frame_new_I420 (void *data, int width, int height)
     frame->components[1].stride * frame->components[1].height;
   frame->components[1].data =
     frame->components[0].data + frame->components[0].length; 
-  frame->components[0].v_shift = 1;
-  frame->components[0].h_shift = 1;
+  frame->components[1].v_shift = 1;
+  frame->components[1].h_shift = 1;
 
   frame->components[2].width = ROUND_UP_SHIFT(width,1);
   frame->components[2].height = ROUND_UP_SHIFT(height,1);
@@ -126,8 +126,8 @@ schro_frame_new_I420 (void *data, int width, int height)
     frame->components[2].stride * frame->components[2].height;
   frame->components[2].data =
     frame->components[1].data + frame->components[1].length; 
-  frame->components[0].v_shift = 1;
-  frame->components[0].h_shift = 1;
+  frame->components[2].v_shift = 1;
+  frame->components[2].h_shift = 1;
 
   return frame;
 }
@@ -924,5 +924,90 @@ schro_frame_calculate_average_luma (SchroFrame *frame)
 
   n = comp->height * comp->width;
   return (sum + n/2) / n;
+}
+
+static void
+schro_frame_component_planar_copy_u8 (SchroFrameComponent *dest,
+    SchroFrameComponent *src)
+{
+  int j;
+
+  for(j=0;j<dest->height;j++) {
+    memcpy (dest->data + dest->stride * j, src->data + src->stride * j,
+        dest->width);
+  }
+}
+
+static void
+horiz_upsample (uint8_t *d, uint8_t *s, int n)
+{
+  int i;
+
+  d[0] = s[0];
+
+  for (i = 0; i < n-3; i+=2) {
+    d[i + 1] = (3*s[i/2] + s[i/2+1] + 2)>>2;
+    d[i + 2] = (s[i/2] + 3*s[i/2+1] + 2)>>2;
+  }
+
+  if (n&1) {
+    i = n-3;
+    d[n-2] = s[n/2];
+    d[n-1] = s[n/2];
+  } else {
+    d[n-1] = s[n/2-1];
+  }
+}
+
+static void
+schro_frame_component_convert_420_to_444 (SchroFrameComponent *dest,
+    SchroFrameComponent *src)
+{
+  int j;
+  uint8_t *tmp;
+  uint32_t weight = 128;
+
+  SCHRO_ASSERT(dest->height <= src->height * 2);
+  SCHRO_ASSERT(dest->width <= src->width * 2);
+
+  tmp = malloc (src->width);
+  for(j=0;j<dest->height;j++) {
+    if (j&1) {
+      oil_merge_linear_u8 (tmp,
+          src->data + src->stride * ((j-1)>>1),
+          src->data + src->stride * ((j+1)>>1),
+          &weight,
+          src->width);
+      horiz_upsample (dest->data + dest->stride * j,
+          tmp, dest->width);
+    } else {
+      horiz_upsample (dest->data + dest->stride * j,
+          src->data + src->stride * (j>>1), dest->width);
+    }
+  }
+  free(tmp);
+}
+
+SchroFrame *
+schro_frame_convert_to_444 (SchroFrame *frame)
+{
+  SchroFrame *dest;
+
+  SCHRO_ASSERT (frame->format == SCHRO_FRAME_FORMAT_U8);
+  SCHRO_ASSERT (frame->components[1].h_shift == 1);
+  SCHRO_ASSERT (frame->components[1].v_shift == 1);
+  
+  dest = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
+      frame->components[0].width, frame->components[0].height,
+      frame->components[0].width, frame->components[0].height);
+
+  schro_frame_component_planar_copy_u8 (&dest->components[0],
+      &frame->components[0]);
+  schro_frame_component_convert_420_to_444 (&dest->components[1],
+      &frame->components[1]);
+  schro_frame_component_convert_420_to_444 (&dest->components[2],
+      &frame->components[2]);
+
+  return dest;
 }
 

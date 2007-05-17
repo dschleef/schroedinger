@@ -394,9 +394,8 @@ get_block_simple (SchroMotion *motion, int x, int y, int which)
   motion->blocks[0] = OFFSET(comp->data, comp->stride * y + x);
   motion->strides[0] = comp->stride;
 
-  /* FIXME Assume 4:2:0 */
-  x >>= 1;
-  y >>= 1;
+  x >>= motion->params->video_format->chroma_h_shift;
+  y >>= motion->params->video_format->chroma_v_shift;
   comp = &srcframe->components[1];
   motion->blocks[1] = OFFSET(comp->data, comp->stride * y + x);
   motion->strides[1] = comp->stride;
@@ -506,9 +505,8 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
   motion->blocks[0] = OFFSET(comp->data, comp->stride * sy + sx);
   motion->strides[0] = comp->stride;
 
-  /* FIXME Assume 4:2:0 */
-  sx >>= 1;
-  sy >>= 1;
+  sx >>= motion->params->video_format->chroma_h_shift;
+  sy >>= motion->params->video_format->chroma_v_shift;
   comp = &srcframe->components[1];
   motion->blocks[1] = OFFSET(comp->data, comp->stride * sy + sx);
   motion->strides[1] = comp->stride;
@@ -701,10 +699,11 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
       params->xblen_luma, params->yblen_luma,
       params->xbsep_luma, params->ybsep_luma);
   obmc_chroma = malloc(sizeof(*obmc_chroma));
-  /* FIXME 4:2:0 assumption */
   schro_obmc_init (obmc_chroma,
-      params->xblen_luma>>1, params->yblen_luma>>1,
-      params->xbsep_luma>>1, params->ybsep_luma>>1);
+      params->xblen_luma>>motion->params->video_format->chroma_h_shift,
+      params->yblen_luma>>motion->params->video_format->chroma_v_shift,
+      params->xbsep_luma>>motion->params->video_format->chroma_h_shift,
+      params->ybsep_luma>>motion->params->video_format->chroma_v_shift);
   motion->obmc_luma = obmc_luma;
   motion->obmc_chroma = obmc_chroma;
   motion->tmpdata = malloc (64*64*3);

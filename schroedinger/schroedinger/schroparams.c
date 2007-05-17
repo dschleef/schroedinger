@@ -33,20 +33,20 @@ schro_params_validate (SchroVideoFormat *format)
     case SCHRO_CHROMA_444:
       format->chroma_width = format->width;
       format->chroma_height = format->height;
-      format->chroma_h_scale = 1;
-      format->chroma_v_scale = 1;
+      format->chroma_h_shift = 0;
+      format->chroma_v_shift = 0;
       break;
     case SCHRO_CHROMA_422:
       format->chroma_width = ROUND_UP_SHIFT(format->width,1);
       format->chroma_height = format->height;
-      format->chroma_h_scale = 2;
-      format->chroma_v_scale = 1;
+      format->chroma_h_shift = 1;
+      format->chroma_v_shift = 0;
       break;
     case SCHRO_CHROMA_420:
       format->chroma_width = ROUND_UP_SHIFT(format->width,1);
       format->chroma_height = ROUND_UP_SHIFT(format->height,1);
-      format->chroma_h_scale = 2;
-      format->chroma_v_scale = 2;
+      format->chroma_h_shift = 1;
+      format->chroma_v_shift = 1;
       break;
   }
 
@@ -112,8 +112,10 @@ schro_params_calculate_mc_sizes (SchroParams *params)
 
   params->mc_luma_width = params->x_num_blocks * params->xbsep_luma;
   params->mc_luma_height = params->y_num_blocks * params->ybsep_luma;
-  params->mc_chroma_width = params->mc_luma_width / video_format->chroma_h_scale;
-  params->mc_chroma_height = params->mc_luma_height / video_format->chroma_v_scale;
+  params->mc_chroma_width =
+    ROUND_UP_SHIFT(params->mc_luma_width, video_format->chroma_h_shift);
+  params->mc_chroma_height =
+    ROUND_UP_SHIFT(params->mc_luma_height, video_format->chroma_v_shift);
 
   SCHRO_DEBUG("mc_luma %dx%d, mc_chroma %dx%d",
       params->mc_luma_width, params->mc_luma_height,

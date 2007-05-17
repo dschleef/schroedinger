@@ -25,8 +25,25 @@ int
 schro_engine_pick_output_buffer_size (SchroEncoder *encoder,
     SchroEncoderFrame *frame)
 {
-  /* FIXME 4:2:0 assumption */
-  return encoder->video_format.width * encoder->video_format.height * 3 / 2 * 2;
+  int size;
+
+  size = encoder->video_format.width * encoder->video_format.height;
+  switch (encoder->video_format.chroma_format) {
+    case SCHRO_CHROMA_444:
+      size *= 3;
+      break;
+    case SCHRO_CHROMA_422:
+      size *= 2;
+      break;
+    case SCHRO_CHROMA_420:
+      size += size/2;
+      break;
+  }
+
+  /* random scale factor of 2 in order to be safe */
+  size *= 2;
+
+  return size;
 }
 
 static void
