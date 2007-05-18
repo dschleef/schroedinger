@@ -14,8 +14,10 @@ G_BEGIN_DECLS
 
 #define TSMUX_MIN_ES_DESC_LEN 8
 
+/* Frequency for PCR representation */
 #define TSMUX_SYS_CLOCK_FREQ (27000000L)
-#define TSMUX_CLOCK_FREQ (90000L)
+/* Frequency for PTS values */
+#define TSMUX_CLOCK_FREQ (TSMUX_SYS_CLOCK_FREQ / 300)
 
 #define TSMUX_PACKET_FLAG_NONE            (0)
 #define TSMUX_PACKET_FLAG_ADAPTATION      (1 << 0)
