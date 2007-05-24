@@ -455,8 +455,8 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
 #endif
 
   /* FIXME move and fix */
-  motion->sx_max = srcframe->components[0].width - 12;
-  motion->sy_max = srcframe->components[0].height - 12;
+  motion->sx_max = srcframe->width - 12;
+  motion->sy_max = srcframe->height - 12;
 
   if (sx < 0 || sy < 0 || sx > motion->sx_max || sy > motion->sy_max) {
     motion->blocks[0] = motion->tmpdata;

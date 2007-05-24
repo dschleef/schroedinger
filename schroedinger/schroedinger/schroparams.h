@@ -177,7 +177,12 @@ void schro_params_set_block_params (SchroParams *params, int index);
 
 void schro_params_set_default_codeblock (SchroParams *params);
 
-void schro_params_init_subbands (SchroParams *params, SchroSubband *subbands);
+void schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
+    int luma_frame_stride, int chroma_frame_stride);
+
+/* FIXME should be SchroFrameFormat */
+int schro_params_get_frame_format (int depth,
+    SchroChromaFormat chroma_format);
 
 SCHRO_END_DECLS
 

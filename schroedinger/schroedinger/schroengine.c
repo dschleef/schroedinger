@@ -61,6 +61,8 @@ init_params (SchroEncoderTask *task)
   params->transform_depth = encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH];
   schro_params_set_default_codeblock (params);
 
+  params->spatial_partition_flag = FALSE;
+
   params->have_global_motion = FALSE;
   params->xblen_luma = 12;
   params->yblen_luma = 12;
@@ -73,7 +75,9 @@ init_params (SchroEncoderTask *task)
 
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
-  schro_params_init_subbands (params, task->subbands);
+  schro_params_init_subbands (params, task->subbands,
+      task->iwt_frame->components[0].stride,
+      task->iwt_frame->components[1].stride);
   schro_encoder_choose_quantisers (task);
 }
 

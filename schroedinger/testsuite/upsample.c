@@ -38,9 +38,9 @@ main (int argc, char *argv[])
 
   schro_init();
 
-  frame = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8, width, height, width/2, height/2);
-  frame_ref = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8, width, height, width/2, height/2);
-  frame_test = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8, width, height, width/2, height/2);
+  frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420, width, height);
+  frame_ref = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420, width, height);
+  frame_test = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420, width, height);
 
   frame_create_test_pattern(frame,0);
 

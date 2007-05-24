@@ -12,6 +12,7 @@ static void schro_decoder_decode_macroblock(SchroDecoder *decoder,
     SchroArith *arith, int i, int j);
 static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
     SchroArith *arith, SchroMotionVector *motion_vectors, int x, int y);
+static void schro_decoder_init (SchroDecoder *decoder);
 
 static void schro_decoder_reference_add (SchroDecoder *decoder,
     SchroFrame *frame, SchroPictureNumber picture_number);
@@ -62,6 +63,7 @@ schro_decoder_free (SchroDecoder *decoder)
 
   if (decoder->motion_field) schro_motion_field_free (decoder->motion_field);
   if (decoder->mc_tmp_frame) schro_frame_unref (decoder->mc_tmp_frame);
+  if (decoder->planar_output_frame) schro_frame_unref (decoder->planar_output_frame);
 
   if (decoder->tmpbuf) free (decoder->tmpbuf);
   if (decoder->tmpbuf2) free (decoder->tmpbuf2);
@@ -80,6 +82,7 @@ schro_decoder_reset (SchroDecoder *decoder)
   decoder->have_access_unit = FALSE;
   decoder->next_frame_number = 0;
   decoder->have_frame_number = FALSE;
+
 }
 
 SchroVideoFormat *
@@ -218,7 +221,6 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
   decoder->input_buffer = buffer;
 }
 
-
 int
 schro_decoder_iterate (SchroDecoder *decoder)
 {
@@ -246,6 +248,7 @@ schro_decoder_iterate (SchroDecoder *decoder)
     if (decoder->have_access_unit) {
       return SCHRO_DECODER_OK;
     }
+    schro_decoder_init (decoder);
     decoder->have_access_unit = TRUE;
     return SCHRO_DECODER_FIRST_ACCESS_UNIT;
   }
@@ -334,12 +337,6 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
     SCHRO_ASSERT(params->xbsep_luma == 8);
     SCHRO_ASSERT(params->ybsep_luma == 8);
 
-    if (decoder->mc_tmp_frame == NULL) {
-      decoder->mc_tmp_frame = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
-          params->mc_luma_width, params->mc_luma_height,
-          params->mc_chroma_width, params->mc_chroma_height);
-    }
-
     if (decoder->motion_field == NULL) {
       decoder->motion_field = schro_motion_field_new (params->x_num_blocks,
           params->y_num_blocks);
@@ -386,41 +383,51 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
   schro_decoder_decode_transform_parameters (decoder);
   schro_params_calculate_iwt_sizes (params);
 
-  if (decoder->frame == NULL) {
-    decoder->frame = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
-        params->iwt_luma_width, params->iwt_luma_height,
-        params->iwt_chroma_width, params->iwt_chroma_height);
-  }
-
-  schro_params_init_subbands (params, decoder->subbands);
+  schro_params_init_subbands (params, decoder->subbands,
+      decoder->frame->components[0].stride,
+      decoder->frame->components[1].stride);
   schro_decoder_decode_transform_data (decoder);
 
   schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
       decoder->tmpbuf);
 
-  if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
+  /* FIXME Fix prediction-only */
+#if 0
     if (!_schro_decode_prediction_only ||
         SCHRO_PARSE_CODE_IS_REFERENCE(decoder->code)) {
-      schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
+#endif
 
-      schro_frame_convert (output_picture, decoder->frame);
-    } else {
-      schro_frame_convert (output_picture, decoder->mc_tmp_frame);
-    }
-    output_picture->frame_number = decoder->picture_number;
+  if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
+    schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
+  }
+
+  if (SCHRO_FRAME_IS_PACKED(output_picture->format)) {
+    schro_frame_convert (decoder->planar_output_frame, decoder->frame);
+    schro_frame_convert (output_picture, decoder->planar_output_frame);
   } else {
     schro_frame_convert (output_picture, decoder->frame);
-
-    output_picture->frame_number = decoder->picture_number;
   }
+  output_picture->frame_number = decoder->picture_number;
 
   if (SCHRO_PARSE_CODE_IS_REFERENCE(decoder->code)) {
     SchroFrame *ref;
+    SchroFrameFormat frame_format;
 
-    ref = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
-        decoder->video_format.width, decoder->video_format.height,
-        ROUND_UP_SHIFT(decoder->video_format.width,1),
-        ROUND_UP_SHIFT(decoder->video_format.height,1));
+    switch (params->video_format->chroma_format) {
+      case SCHRO_CHROMA_420:
+        frame_format = SCHRO_FRAME_FORMAT_U8_420;
+        break;
+      case SCHRO_CHROMA_422:
+        frame_format = SCHRO_FRAME_FORMAT_U8_422;
+        break;
+      case SCHRO_CHROMA_444:
+        frame_format = SCHRO_FRAME_FORMAT_U8_444;
+        break;
+      default:
+        SCHRO_ASSERT(0);
+    }
+    ref = schro_frame_new_and_alloc (frame_format,
+        decoder->video_format.width, decoder->video_format.height);
     schro_frame_convert (ref, decoder->frame);
     ref->frame_number = decoder->picture_number;
     schro_decoder_reference_add (decoder, ref, decoder->picture_number);
@@ -441,6 +448,35 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
   return SCHRO_DECODER_OK;
 }
 
+static void
+schro_decoder_init (SchroDecoder *decoder)
+{
+  SchroFrameFormat frame_format;
+  SchroVideoFormat *video_format = &decoder->video_format;
+  int frame_width, frame_height;
+
+  frame_format = schro_params_get_frame_format (16,
+      video_format->chroma_format);
+  frame_width = ROUND_UP_POW2(video_format->width,
+      SCHRO_MAX_TRANSFORM_DEPTH + video_format->chroma_h_shift);
+  frame_height = ROUND_UP_POW2(video_format->height,
+      SCHRO_MAX_TRANSFORM_DEPTH + video_format->chroma_v_shift);
+
+  decoder->mc_tmp_frame = schro_frame_new_and_alloc (frame_format,
+      frame_width, frame_height);
+  decoder->frame = schro_frame_new_and_alloc (frame_format,
+      frame_width, frame_height);
+
+  frame_format = schro_params_get_frame_format (8,
+      video_format->chroma_format);
+  decoder->planar_output_frame = schro_frame_new_and_alloc (frame_format,
+      video_format->width, video_format->height);
+  SCHRO_ERROR("planar output frame %dx%d",
+      video_format->width, video_format->height);
+
+}
+
+#if 0
 void
 schro_decoder_iwt_transform (SchroDecoder *decoder, int component)
 {
@@ -449,6 +485,7 @@ schro_decoder_iwt_transform (SchroDecoder *decoder, int component)
   int height;
   int width;
   int level;
+  int stride;
 
   if (component == 0) {
     width = params->iwt_luma_width;
@@ -459,20 +496,22 @@ schro_decoder_iwt_transform (SchroDecoder *decoder, int component)
   }
 
   frame_data = (int16_t *)decoder->frame->components[component].data;
+  stride = decoder->frame->components[component].stride;
   for(level=params->transform_depth-1;level>=0;level--) {
     int w;
     int h;
-    int stride;
+    int s;
 
     w = width >> level;
     h = height >> level;
-    stride = 2*(width << level);
+    s = stride << level;
 
     schro_wavelet_inverse_transform_2d (params->wavelet_filter_index,
-        frame_data, stride, w, h, decoder->tmpbuf);
+        frame_data, s, w, h, decoder->tmpbuf);
   }
 
 }
+#endif
 
 void
 schro_decoder_decode_parse_header (SchroDecoder *decoder)

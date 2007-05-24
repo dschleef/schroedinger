@@ -12,10 +12,6 @@
 
 #include <liboil/liboilrandom.h>
 
-#define ROUND_UP_2(x) (((x) + 1) & ~1)
-#define ROUND_UP_4(x) (((x) + 3) & ~3)
-#define ROUND_UP_8(x) (((x) + 7) & ~7)
-
 static void
 frame_free (SchroFrame *frame, void *priv)
 {
@@ -59,7 +55,7 @@ test (int w, int h)
           //oil_random_u8(picture, size);
           memset (picture, 0, size);
 
-          frame = schro_frame_new_I420 (picture, w, h);
+          frame = schro_frame_new_from_data_I420 (picture, w, h);
 
           schro_frame_set_free_callback (frame, frame_free, picture);
 

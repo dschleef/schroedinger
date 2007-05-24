@@ -31,6 +31,7 @@ struct _SchroDecoder {
   SchroPictureNumber reference2;
   SchroFrame *ref0;
   SchroFrame *ref1;
+  SchroFrame *planar_output_frame;
 
   int16_t *tmpbuf;
   int16_t *tmpbuf2;

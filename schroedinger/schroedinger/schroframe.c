@@ -8,6 +8,7 @@
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schrooil.h>
 #include <liboil/liboil.h>
+#include <liboil/liboilrandom.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -25,57 +26,61 @@ schro_frame_new (void)
 }
 
 SchroFrame *
-schro_frame_new_and_alloc2 (SchroFrameFormat format, int width, int height,
-    int width2, int height2)
+schro_frame_new_and_alloc (SchroFrameFormat format, int width, int height)
 {
   SchroFrame *frame = schro_frame_new();
   int bytes_pp;
   int h_shift, v_shift;
+  int chroma_width;
+  int chroma_height;
   
-  frame->format = format;
+  SCHRO_ASSERT(width > 0);
+  SCHRO_ASSERT(height > 0);
 
-  switch (format) {
-    case SCHRO_FRAME_FORMAT_U8:
+  frame->format = format;
+  frame->width = width;
+  frame->height = height;
+
+  switch (SCHRO_FRAME_FORMAT_DEPTH(format)) {
+    case SCHRO_FRAME_FORMAT_DEPTH_U8:
       bytes_pp = 1;
       break;
-    case SCHRO_FRAME_FORMAT_S16:
+    case SCHRO_FRAME_FORMAT_DEPTH_S16:
       bytes_pp = 2;
       break;
+    case SCHRO_FRAME_FORMAT_DEPTH_S32:
+      bytes_pp = 4;
+      break;
     default:
+      SCHRO_ASSERT(0);
       bytes_pp = 0;
       break;
   }
 
-  if (width2 == width) {
-    h_shift = 0;
-  } else {
-    h_shift = 1;
-  }
-  if (height2 == height) {
-    v_shift = 0;
-  } else {
-    v_shift = 1;
-  }
+  h_shift = SCHRO_FRAME_FORMAT_H_SHIFT(format);
+  v_shift = SCHRO_FRAME_FORMAT_V_SHIFT(format);
+  chroma_width = ROUND_UP_SHIFT(width, h_shift);
+  chroma_height = ROUND_UP_SHIFT(height, v_shift);
 
   frame->components[0].width = width;
   frame->components[0].height = height;
-  frame->components[0].stride = width * bytes_pp;
+  frame->components[0].stride = ROUND_UP_4(width * bytes_pp);
   frame->components[0].length = 
     frame->components[0].stride * frame->components[0].height;
   frame->components[0].v_shift = 0;
   frame->components[0].h_shift = 0;
 
-  frame->components[1].width = width2;
-  frame->components[1].height = height2;
-  frame->components[1].stride = frame->components[1].width * bytes_pp;
+  frame->components[1].width = chroma_width;
+  frame->components[1].height = chroma_height;
+  frame->components[1].stride = ROUND_UP_4(chroma_width * bytes_pp);
   frame->components[1].length = 
     frame->components[1].stride * frame->components[0].height;
   frame->components[1].v_shift = v_shift;
   frame->components[1].h_shift = h_shift;
 
-  frame->components[2].width = width2;
-  frame->components[2].height = height2;
-  frame->components[2].stride = frame->components[2].width * bytes_pp;
+  frame->components[2].width = chroma_width;
+  frame->components[2].height = chroma_height;
+  frame->components[2].stride = ROUND_UP_4(chroma_width * bytes_pp);
   frame->components[2].length = 
     frame->components[2].stride * frame->components[0].height;
   frame->components[2].v_shift = v_shift;
@@ -83,6 +88,12 @@ schro_frame_new_and_alloc2 (SchroFrameFormat format, int width, int height,
 
   frame->regions[0] = malloc (frame->components[0].length +
       frame->components[1].length + frame->components[2].length);
+
+#if 1
+  /* FIXME need ifdef for this */
+  oil_random_u8(frame->regions[0], frame->components[0].length +
+      frame->components[1].length + frame->components[2].length);
+#endif
 
   frame->components[0].data = frame->regions[0];
   frame->components[1].data = frame->components[0].data +
@@ -94,11 +105,56 @@ schro_frame_new_and_alloc2 (SchroFrameFormat format, int width, int height,
 }
 
 SchroFrame *
-schro_frame_new_I420 (void *data, int width, int height)
+schro_frame_new_from_data_YUY2 (void *data, int width, int height)
 {
   SchroFrame *frame = schro_frame_new();
 
-  frame->format = SCHRO_FRAME_FORMAT_U8;
+  frame->format = SCHRO_FRAME_FORMAT_YUYV;
+
+  frame->width = width;
+  frame->height = height;
+
+  frame->components[0].width = width;
+  frame->components[0].height = height;
+  frame->components[0].stride = ROUND_UP_POW2(width,1) * 2;
+  frame->components[0].data = data;
+  frame->components[0].length = frame->components[0].stride * height;
+  frame->components[0].v_shift = 0;
+  frame->components[0].h_shift = 0;
+
+  return frame;
+}
+
+SchroFrame *
+schro_frame_new_from_data_AYUV (void *data, int width, int height)
+{
+  SchroFrame *frame = schro_frame_new();
+
+  frame->format = SCHRO_FRAME_FORMAT_AYUV;
+
+  frame->width = width;
+  frame->height = height;
+
+  frame->components[0].width = width;
+  frame->components[0].height = height;
+  frame->components[0].stride = width * 4;
+  frame->components[0].data = data;
+  frame->components[0].length = frame->components[0].stride * height;
+  frame->components[0].v_shift = 0;
+  frame->components[0].h_shift = 0;
+
+  return frame;
+}
+
+SchroFrame *
+schro_frame_new_from_data_I420 (void *data, int width, int height)
+{
+  SchroFrame *frame = schro_frame_new();
+
+  frame->format = SCHRO_FRAME_FORMAT_U8_420;
+
+  frame->width = width;
+  frame->height = height;
 
   frame->components[0].width = width;
   frame->components[0].height = height;
@@ -165,78 +221,133 @@ void schro_frame_set_free_callback (SchroFrame *frame,
 static void schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src);
+static void schro_frame_convert_u8_422_yuyv (SchroFrame *dest, SchroFrame *src);
+static void schro_frame_convert_u8_422_uyvy (SchroFrame *dest, SchroFrame *src);
+static void schro_frame_convert_u8_444_ayuv (SchroFrame *dest, SchroFrame *src);
+static void schro_frame_convert_yuyv_u8_422 (SchroFrame *dest, SchroFrame *src);
+static void schro_frame_convert_uyvy_u8_422 (SchroFrame *dest, SchroFrame *src);
+static void schro_frame_convert_ayuv_u8_444 (SchroFrame *dest, SchroFrame *src);
+
+typedef void (*SchroFrameBinaryFunc) (SchroFrame *dest, SchroFrame *src);
+
+struct binary_struct {
+  SchroFrameFormat from;
+  SchroFrameFormat to;
+  SchroFrameBinaryFunc func;
+};
+static struct binary_struct schro_frame_convert_func_list[] = {
+  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444, schro_frame_convert_u8_s16 },
+  { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_U8_422, schro_frame_convert_u8_s16 },
+  { SCHRO_FRAME_FORMAT_S16_420, SCHRO_FRAME_FORMAT_U8_420, schro_frame_convert_u8_s16 },
+
+  { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_S16_444, schro_frame_convert_s16_u8 },
+  { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_S16_422, schro_frame_convert_s16_u8 },
+  { SCHRO_FRAME_FORMAT_U8_420, SCHRO_FRAME_FORMAT_S16_420, schro_frame_convert_s16_u8 },
+
+  { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_U8_444, schro_frame_convert_u8_u8 },
+  { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_U8_422, schro_frame_convert_u8_u8 },
+  { SCHRO_FRAME_FORMAT_U8_420, SCHRO_FRAME_FORMAT_U8_420, schro_frame_convert_u8_u8 },
+
+  { SCHRO_FRAME_FORMAT_YUYV, SCHRO_FRAME_FORMAT_U8_422, schro_frame_convert_u8_422_yuyv },
+  { SCHRO_FRAME_FORMAT_UYVY, SCHRO_FRAME_FORMAT_U8_422, schro_frame_convert_u8_422_uyvy },
+  { SCHRO_FRAME_FORMAT_AYUV, SCHRO_FRAME_FORMAT_U8_444, schro_frame_convert_u8_444_ayuv },
+
+  { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_YUYV, schro_frame_convert_yuyv_u8_422 },
+  { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_UYVY, schro_frame_convert_uyvy_u8_422 },
+  { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_AYUV, schro_frame_convert_ayuv_u8_444 },
+  { 0 }
+};
 
 void
 schro_frame_convert (SchroFrame *dest, SchroFrame *src)
 {
+  int i;
+
   SCHRO_ASSERT(dest != NULL);
   SCHRO_ASSERT(src != NULL);
 
   dest->frame_number = src->frame_number;
 
-  if (dest->format == SCHRO_FRAME_FORMAT_U8 &&
-      src->format == SCHRO_FRAME_FORMAT_S16) {
-    schro_frame_convert_u8_s16 (dest, src);
-    return;
-  }
-  if (dest->format == SCHRO_FRAME_FORMAT_S16 &&
-      src->format == SCHRO_FRAME_FORMAT_U8) {
-    schro_frame_convert_s16_u8 (dest, src);
-    return;
-  }
-  if (dest->format == SCHRO_FRAME_FORMAT_U8 &&
-      src->format == SCHRO_FRAME_FORMAT_U8) {
-    schro_frame_convert_u8_u8 (dest, src);
-    return;
+  for(i=0;schro_frame_convert_func_list[i].func;i++){
+    if (schro_frame_convert_func_list[i].from == src->format &&
+        schro_frame_convert_func_list[i].to == dest->format) {
+      schro_frame_convert_func_list[i].func (dest, src);
+      return;
+    }
   }
 
-  SCHRO_ERROR("unimplemented");
+  SCHRO_ERROR("conversion unimplemented");
+  SCHRO_ASSERT(0);
 }
 
 static void schro_frame_add_s16_s16 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_add_s16_u8 (SchroFrame *dest, SchroFrame *src);
 
+static struct binary_struct schro_frame_add_func_list[] = {
+  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444, schro_frame_add_s16_s16 },
+  { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_S16_422, schro_frame_add_s16_s16 },
+  { SCHRO_FRAME_FORMAT_S16_420, SCHRO_FRAME_FORMAT_S16_420, schro_frame_add_s16_s16 },
+
+  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444, schro_frame_add_s16_u8 },
+  { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_U8_422, schro_frame_add_s16_u8 },
+  { SCHRO_FRAME_FORMAT_S16_420, SCHRO_FRAME_FORMAT_U8_420, schro_frame_add_s16_u8 },
+
+  { 0 }
+};
+
 void
 schro_frame_add (SchroFrame *dest, SchroFrame *src)
 {
+  int i;
+
   SCHRO_ASSERT(dest != NULL);
   SCHRO_ASSERT(src != NULL);
 
-  if (dest->format == SCHRO_FRAME_FORMAT_S16 &&
-      src->format == SCHRO_FRAME_FORMAT_S16) {
-    schro_frame_add_s16_s16 (dest, src);
-    return;
-  }
-  if (dest->format == SCHRO_FRAME_FORMAT_S16 &&
-      src->format == SCHRO_FRAME_FORMAT_U8) {
-    schro_frame_add_s16_u8 (dest, src);
-    return;
+  for(i=0;schro_frame_add_func_list[i].func;i++){
+    if (schro_frame_add_func_list[i].from == src->format &&
+        schro_frame_add_func_list[i].to == dest->format) {
+      schro_frame_add_func_list[i].func (dest, src);
+      return;
+    }
   }
 
-  SCHRO_ERROR("unimplemented");
+  SCHRO_ERROR("add function unimplemented");
+  SCHRO_ASSERT(0);
 }
 
 static void schro_frame_subtract_s16_s16 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_subtract_s16_u8 (SchroFrame *dest, SchroFrame *src);
 
+static struct binary_struct schro_frame_subtract_func_list[] = {
+  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444, schro_frame_subtract_s16_s16 },
+  { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_S16_422, schro_frame_subtract_s16_s16 },
+  { SCHRO_FRAME_FORMAT_S16_420, SCHRO_FRAME_FORMAT_S16_420, schro_frame_subtract_s16_s16 },
+
+  { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_S16_444, schro_frame_subtract_s16_u8 },
+  { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_S16_422, schro_frame_subtract_s16_u8 },
+  { SCHRO_FRAME_FORMAT_U8_420, SCHRO_FRAME_FORMAT_S16_420, schro_frame_subtract_s16_u8 },
+
+  { 0 }
+};
+
 void
 schro_frame_subtract (SchroFrame *dest, SchroFrame *src)
 {
+  int i;
+
   SCHRO_ASSERT(dest != NULL);
   SCHRO_ASSERT(src != NULL);
 
-  if (dest->format == SCHRO_FRAME_FORMAT_S16 &&
-      src->format == SCHRO_FRAME_FORMAT_S16) {
-    schro_frame_subtract_s16_s16 (dest, src);
-    return;
-  }
-  if (dest->format == SCHRO_FRAME_FORMAT_S16 &&
-      src->format == SCHRO_FRAME_FORMAT_U8) {
-    schro_frame_subtract_s16_u8 (dest, src);
-    return;
+  for(i=0;schro_frame_subtract_func_list[i].func;i++){
+    if (schro_frame_subtract_func_list[i].from == src->format &&
+        schro_frame_subtract_func_list[i].to == dest->format) {
+      schro_frame_subtract_func_list[i].func (dest, src);
+      return;
+    }
   }
 
-  SCHRO_ERROR("unimplemented");
+  SCHRO_ERROR(0);
+  SCHRO_ASSERT("subtract function unimplemented");
 }
 
 static void
@@ -249,6 +360,9 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
   int i;
   int y;
   int width, height;
+
+  SCHRO_ASSERT(SCHRO_FRAME_FORMAT_DEPTH(dest->format) == SCHRO_FRAME_FORMAT_DEPTH_U8);
+  SCHRO_ASSERT(SCHRO_FRAME_FORMAT_DEPTH(src->format) == SCHRO_FRAME_FORMAT_DEPTH_S16);
 
   for(i=0;i<3;i++){
     dcomp = &dest->components[i];
@@ -266,8 +380,7 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
     }
   }
 
-  schro_frame_edge_extend (dest, src->components[0].width,
-      src->components[0].height);
+  schro_frame_edge_extend (dest, src->width, src->height);
 }
 
 static void
@@ -297,8 +410,7 @@ schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src)
     }
   }
 
-  schro_frame_edge_extend (dest, src->components[0].width,
-      src->components[0].height);
+  schro_frame_edge_extend (dest, src->width, src->height);
 }
 
 static void
@@ -328,8 +440,242 @@ schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
     }
   }
 
-  schro_frame_edge_extend (dest, src->components[0].width,
-      src->components[0].height);
+  schro_frame_edge_extend (dest, src->width, src->height);
+}
+
+static void
+unmix_yuyv (uint8_t *y, uint8_t *u, uint8_t *v, uint32_t *src, int n)
+{
+  int i;
+  uint8_t *s = (uint8_t *)src;
+
+  for(i=0;i<n;i++){
+    y[i*2+0] = s[i*4 + 0];
+    y[i*2+1] = s[i*4 + 2];
+    u[i] = s[i*4 + 1];
+    v[i] = s[i*4 + 3];
+  }
+}
+
+static void
+schro_frame_convert_u8_422_yuyv (SchroFrame *dest, SchroFrame *src)
+{
+  uint32_t *sdata;
+  uint8_t *ydata;
+  uint8_t *udata;
+  uint8_t *vdata;
+  int width, height;
+  int n;
+  int y;
+
+  width = MIN(src->width, dest->width);
+  height = MIN(src->height, dest->height);
+  n = ROUND_UP_SHIFT(width,1);
+  for(y=0;y<height;y++){
+    sdata = OFFSET(src->components[0].data, src->components[0].stride * y);
+    ydata = OFFSET(dest->components[0].data, dest->components[0].stride * y);
+    udata = OFFSET(dest->components[1].data, dest->components[1].stride * y);
+    vdata = OFFSET(dest->components[2].data, dest->components[2].stride * y);
+
+    unmix_yuyv (ydata, udata, vdata, sdata, n);
+  }
+
+  schro_frame_edge_extend (dest, src->width, src->height);
+}
+
+static void
+unmix_uyvy (uint8_t *y, uint8_t *u, uint8_t *v, uint32_t *src, int n)
+{
+  int i;
+  uint8_t *s = (uint8_t *)src;
+
+  for(i=0;i<n;i++){
+    y[i*2+0] = s[i*4 + 1];
+    y[i*2+1] = s[i*4 + 3];
+    u[i] = s[i*4 + 0];
+    v[i] = s[i*4 + 2];
+  }
+}
+
+static void
+schro_frame_convert_u8_422_uyvy (SchroFrame *dest, SchroFrame *src)
+{
+  uint32_t *sdata;
+  uint8_t *ydata;
+  uint8_t *udata;
+  uint8_t *vdata;
+  int y;
+  int width, height;
+  int n;
+
+  width = MIN(src->width, dest->width);
+  height = MIN(src->height, dest->height);
+  n = ROUND_UP_SHIFT(width,1);
+  for(y=0;y<height;y++){
+    sdata = OFFSET(src->components[0].data, src->components[0].stride * y);
+    ydata = OFFSET(dest->components[0].data, dest->components[0].stride * y);
+    udata = OFFSET(dest->components[1].data, dest->components[1].stride * y);
+    vdata = OFFSET(dest->components[2].data, dest->components[2].stride * y);
+
+    unmix_uyvy (ydata, udata, vdata, sdata, n);
+  }
+
+  schro_frame_edge_extend (dest, src->width, src->height);
+}
+
+static void
+unmix_ayuv (uint8_t *y, uint8_t *u, uint8_t *v, uint32_t *src, int n)
+{
+  int i;
+  uint8_t *s = (uint8_t *)src;
+
+  for(i=0;i<n;i++){
+    y[i] = s[i*4 + 1];
+    u[i] = s[i*4 + 2];
+    v[i] = s[i*4 + 3];
+  }
+}
+
+static void
+schro_frame_convert_u8_444_ayuv (SchroFrame *dest, SchroFrame *src)
+{
+  uint32_t *sdata;
+  uint8_t *ydata;
+  uint8_t *udata;
+  uint8_t *vdata;
+  int y;
+  int width, height;
+
+  width = MIN(src->width, dest->width);
+  height = MIN(src->height, dest->height);
+  for(y=0;y<height;y++){
+    sdata = OFFSET(src->components[0].data, src->components[0].stride * y);
+    ydata = OFFSET(dest->components[0].data, dest->components[0].stride * y);
+    udata = OFFSET(dest->components[1].data, dest->components[1].stride * y);
+    vdata = OFFSET(dest->components[2].data, dest->components[2].stride * y);
+
+    unmix_ayuv (ydata, udata, vdata, sdata, width);
+  }
+
+  schro_frame_edge_extend (dest, src->width, src->height);
+}
+
+static void
+mix_yuyv (uint32_t *dest, uint8_t *y, uint8_t *u, uint8_t *v, int n)
+{
+  int i;
+  uint8_t *d = (uint8_t *)dest;
+
+  for(i=0;i<n;i++){
+    d[i*4 + 0] = y[i*2+0];
+    d[i*4 + 2] = y[i*2+1];
+    d[i*4 + 1] = u[i];
+    d[i*4 + 3] = v[i];
+  }
+}
+
+static void
+schro_frame_convert_yuyv_u8_422 (SchroFrame *dest, SchroFrame *src)
+{
+  uint32_t *ddata;
+  uint8_t *ydata;
+  uint8_t *udata;
+  uint8_t *vdata;
+  int width, height;
+  int n;
+  int y;
+
+  width = MIN(src->width, dest->width);
+  height = MIN(src->height, dest->height);
+  n = ROUND_UP_SHIFT(width,1);
+  for(y=0;y<height;y++){
+    ddata = OFFSET(dest->components[0].data, dest->components[0].stride * y);
+    ydata = OFFSET(src->components[0].data, src->components[0].stride * y);
+    udata = OFFSET(src->components[1].data, src->components[1].stride * y);
+    vdata = OFFSET(src->components[2].data, src->components[2].stride * y);
+
+    mix_yuyv (ddata, ydata, udata, vdata, n);
+  }
+
+  //schro_frame_edge_extend (dest, src->width, src->height);
+}
+
+static void
+mix_uyvy (uint32_t *dest, uint8_t *y, uint8_t *u, uint8_t *v, int n)
+{
+  int i;
+  uint8_t *d = (uint8_t *)dest;
+
+  for(i=0;i<n;i++){
+    d[i*4 + 1] = y[i*2+0];
+    d[i*4 + 3] = y[i*2+1];
+    d[i*4 + 0] = u[i];
+    d[i*4 + 2] = v[i];
+  }
+}
+
+static void
+schro_frame_convert_uyvy_u8_422 (SchroFrame *dest, SchroFrame *src)
+{
+  uint32_t *ddata;
+  uint8_t *ydata;
+  uint8_t *udata;
+  uint8_t *vdata;
+  int width, height;
+  int n;
+  int y;
+
+  width = MIN(src->width, dest->width);
+  height = MIN(src->height, dest->height);
+  n = ROUND_UP_SHIFT(width,1);
+  for(y=0;y<height;y++){
+    ddata = OFFSET(dest->components[0].data, dest->components[0].stride * y);
+    ydata = OFFSET(src->components[0].data, src->components[0].stride * y);
+    udata = OFFSET(src->components[1].data, src->components[1].stride * y);
+    vdata = OFFSET(src->components[2].data, src->components[2].stride * y);
+
+    mix_uyvy (ddata, ydata, udata, vdata, n);
+  }
+
+  //schro_frame_edge_extend (dest, src->width, src->height);
+}
+
+static void
+mix_ayuv (uint32_t *dest, uint8_t *y, uint8_t *u, uint8_t *v, int n)
+{
+  int i;
+  uint8_t *d = (uint8_t *)dest;
+
+  for(i=0;i<n;i++){
+    d[i*4 + 0] = 0xff;
+    d[i*4 + 1] = y[i];
+    d[i*4 + 2] = u[i];
+    d[i*4 + 3] = v[i];
+  }
+}
+
+static void
+schro_frame_convert_ayuv_u8_444 (SchroFrame *dest, SchroFrame *src)
+{
+  uint32_t *ddata;
+  uint8_t *ydata;
+  uint8_t *udata;
+  uint8_t *vdata;
+  int width, height;
+  int y;
+
+  width = MIN(src->width, dest->width);
+  height = MIN(src->height, dest->height);
+  for(y=0;y<height;y++){
+    ddata = OFFSET(dest->components[0].data, dest->components[0].stride * y);
+    ydata = OFFSET(src->components[0].data, src->components[0].stride * y);
+    udata = OFFSET(src->components[1].data, src->components[1].stride * y);
+    vdata = OFFSET(src->components[2].data, src->components[2].stride * y);
+
+    mix_ayuv (ddata, ydata, udata, vdata, width);
+  }
+
+  //schro_frame_edge_extend (dest, src->width, src->height);
 }
 
 
@@ -455,7 +801,7 @@ schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
   int height;
   int level;
 
-  SCHRO_ASSERT(frame->format == SCHRO_FRAME_FORMAT_S16);
+  //SCHRO_ASSERT(frame->format == SCHRO_FRAME_FORMAT_S16_420);
 
   for(component=0;component<3;component++){
     SchroFrameComponent *comp = &frame->components[component];
@@ -494,7 +840,7 @@ schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
   int level;
   int component;
 
-  SCHRO_ASSERT(frame->format == SCHRO_FRAME_FORMAT_S16);
+  //SCHRO_ASSERT(frame->format == SCHRO_FRAME_FORMAT_S16_420);
 
   for(component=0;component<3;component++){
     SchroFrameComponent *comp = &frame->components[component];
@@ -569,12 +915,22 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
   SchroFrameComponent *comp;
   int i;
   int y;
+  int chroma_width;
+  int chroma_height;
 
   SCHRO_DEBUG("extending %d %d -> %d %d", width, height,
-      frame->components[0].width, frame->components[0].height);
+      frame->width, frame->height);
 
-  switch(frame->format) {
-    case SCHRO_FRAME_FORMAT_U8:
+  chroma_width = ROUND_UP_SHIFT(width,
+      SCHRO_FRAME_FORMAT_H_SHIFT(frame->format));
+  chroma_height = ROUND_UP_SHIFT(height,
+      SCHRO_FRAME_FORMAT_V_SHIFT(frame->format));
+
+  SCHRO_DEBUG("chroma %d %d -> %d %d", chroma_width, chroma_height,
+      frame->components[1].width, frame->components[1].height);
+  
+  switch(SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
+    case SCHRO_FRAME_FORMAT_DEPTH_U8:
       for(i=0;i<3;i++){
         uint8_t *data;
         int w,h;
@@ -582,13 +938,9 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
         comp = &frame->components[i];
         data = comp->data;
 
-        if (i>0) {
-          w = width/2;
-          h = height/2;
-        } else {
-          w = width;
-          h = height;
-        }
+        w = (i>0) ? chroma_width : width;
+        h = (i>0) ? chroma_height : height;
+
         if (w < comp->width) {
           for(y = 0; y<MIN(h,comp->height); y++) {
             data = OFFSET(comp->data, comp->stride * y);
@@ -601,7 +953,7 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
         }
       }
       break;
-    case SCHRO_FRAME_FORMAT_S16:
+    case SCHRO_FRAME_FORMAT_DEPTH_S16:
       for(i=0;i<3;i++){
         int16_t *data;
         int w,h;
@@ -609,13 +961,9 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
         comp = &frame->components[i];
         data = comp->data;
 
-        if (i>0) {
-          w = width/2;
-          h = height/2;
-        } else {
-          w = width;
-          h = height;
-        }
+        w = (i>0) ? chroma_width : width;
+        h = (i>0) ? chroma_height : height;
+
         if (w < comp->width) {
           for(y = 0; y<MIN(h,comp->height); y++) {
             data = OFFSET(comp->data, comp->stride * y);
@@ -630,6 +978,7 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
       break;
     default:
       SCHRO_ERROR("unimplemented case");
+      SCHRO_ASSERT(0);
       break;
   }
 }
@@ -640,12 +989,19 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
   SchroFrameComponent *comp;
   int i;
   int y;
+  int chroma_width;
+  int chroma_height;
 
   SCHRO_DEBUG("extending %d %d -> %d %d", width, height,
-      frame->components[0].width, frame->components[0].height);
+      frame->width, frame->height);
 
-  switch(frame->format) {
-    case SCHRO_FRAME_FORMAT_U8:
+  chroma_width = ROUND_UP_SHIFT(width,
+      SCHRO_FRAME_FORMAT_H_SHIFT(frame->format));
+  chroma_height = ROUND_UP_SHIFT(height,
+      SCHRO_FRAME_FORMAT_V_SHIFT(frame->format));
+
+  switch(SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
+    case SCHRO_FRAME_FORMAT_DEPTH_U8:
       for(i=0;i<3;i++){
         uint8_t zero = 0;
         uint8_t *data;
@@ -654,13 +1010,9 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
         comp = &frame->components[i];
         data = comp->data;
 
-        if (i>0) {
-          w = width/2;
-          h = height/2;
-        } else {
-          w = width;
-          h = height;
-        }
+        w = (i>0) ? chroma_width : width;
+        h = (i>0) ? chroma_height : height;
+        
         if (w < comp->width) {
           for(y = 0; y<h; y++) {
             data = OFFSET(comp->data, comp->stride * y);
@@ -673,7 +1025,7 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
         }
       }
       break;
-    case SCHRO_FRAME_FORMAT_S16:
+    case SCHRO_FRAME_FORMAT_DEPTH_S16:
       for(i=0;i<3;i++){
         int16_t *data;
         int w,h;
@@ -682,13 +1034,9 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
         comp = &frame->components[i];
         data = comp->data;
 
-        if (i>0) {
-          w = width/2;
-          h = height/2;
-        } else {
-          w = width;
-          h = height;
-        }
+        w = (i>0) ? chroma_width : width;
+        h = (i>0) ? chroma_height : height;
+        
         if (w < comp->width) {
           for(y = 0; y<h; y++) {
             data = OFFSET(comp->data, comp->stride * y);
@@ -726,11 +1074,16 @@ schro_frame_downsample (SchroFrame *dest, SchroFrame *src, int shift)
 
   SCHRO_ASSERT(shift == 1);
 
-  if (dest->format != SCHRO_FRAME_FORMAT_U8 ||
-      src->format != SCHRO_FRAME_FORMAT_U8) {
+  if (SCHRO_FRAME_FORMAT_DEPTH(dest->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
+      SCHRO_FRAME_FORMAT_DEPTH(src->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
+      src->format != dest->format) {
     SCHRO_ERROR("unimplemented");
+    SCHRO_ASSERT(0);
     return;
   }
+
+  SCHRO_ASSERT(ROUND_UP_SHIFT(src->width,1) == dest->width);
+  SCHRO_ASSERT(ROUND_UP_SHIFT(src->height,1) == dest->height);
 
   for(k=0;k<3;k++){
     uint8_t *sdata;
@@ -738,9 +1091,6 @@ schro_frame_downsample (SchroFrame *dest, SchroFrame *src, int shift)
 
     dcomp = &dest->components[k];
     scomp = &src->components[k];
-
-    SCHRO_ASSERT(ROUND_UP_SHIFT(scomp->width,1) == dcomp->width);
-    SCHRO_ASSERT(ROUND_UP_SHIFT(scomp->height,1) == dcomp->height);
 
     sdata = scomp->data;
     ddata = dcomp->data;
@@ -777,8 +1127,9 @@ schro_frame_h_upsample (SchroFrame *dest, SchroFrame *src)
   SchroFrameComponent *dcomp;
   SchroFrameComponent *scomp;
 
-  if (dest->format != SCHRO_FRAME_FORMAT_U8 ||
-      src->format != SCHRO_FRAME_FORMAT_U8) {
+  if (SCHRO_FRAME_FORMAT_DEPTH(dest->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
+      SCHRO_FRAME_FORMAT_DEPTH(src->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
+      src->format != dest->format) {
     SCHRO_ERROR("unimplemented");
     return;
   }
@@ -835,8 +1186,9 @@ schro_frame_v_upsample (SchroFrame *dest, SchroFrame *src)
   SchroFrameComponent *dcomp;
   SchroFrameComponent *scomp;
 
-  if (dest->format != SCHRO_FRAME_FORMAT_U8 ||
-      src->format != SCHRO_FRAME_FORMAT_U8) {
+  if (SCHRO_FRAME_FORMAT_DEPTH(dest->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
+      SCHRO_FRAME_FORMAT_DEPTH(src->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
+      src->format != dest->format) {
     SCHRO_ERROR("unimplemented");
     return;
   }
@@ -902,24 +1254,32 @@ schro_frame_calculate_average_luma (SchroFrame *frame)
 
   comp = &frame->components[0];
 
-  if (frame->format == SCHRO_FRAME_FORMAT_U8) {
-    uint8_t *data;
-    data = comp->data;
-    for(j=0;j<comp->height;j++){
-      for(i=0;i<comp->width;i++){
-        sum += data[comp->stride * j + i];
+  switch (SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
+    case SCHRO_FRAME_FORMAT_DEPTH_U8:
+      {
+        uint8_t *data;
+        data = comp->data;
+        for(j=0;j<comp->height;j++){
+          for(i=0;i<comp->width;i++){
+            sum += data[comp->stride * j + i];
+          }
+        }
       }
-    }
-  } else if (frame->format == SCHRO_FRAME_FORMAT_S16) {
-    int16_t *data;
-    for(j=0;j<comp->height;j++){
-      data = OFFSET(comp->data, comp->stride * j);
-      for(i=0;i<comp->width;i++){
-        sum += data[i];
+      break;
+    case SCHRO_FRAME_FORMAT_DEPTH_S16:
+      {
+        int16_t *data;
+        for(j=0;j<comp->height;j++){
+          data = OFFSET(comp->data, comp->stride * j);
+          for(i=0;i<comp->width;i++){
+            sum += data[i];
+          }
+        }
       }
-    }
-  } else {
-    SCHRO_ERROR ("unimplemented");
+      break;
+    default:
+      SCHRO_ERROR ("unimplemented");
+      break;
   }
 
   n = comp->height * comp->width;
@@ -993,13 +1353,10 @@ schro_frame_convert_to_444 (SchroFrame *frame)
 {
   SchroFrame *dest;
 
-  SCHRO_ASSERT (frame->format == SCHRO_FRAME_FORMAT_U8);
-  SCHRO_ASSERT (frame->components[1].h_shift == 1);
-  SCHRO_ASSERT (frame->components[1].v_shift == 1);
+  SCHRO_ASSERT (frame->format == SCHRO_FRAME_FORMAT_U8_420);
   
-  dest = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
-      frame->components[0].width, frame->components[0].height,
-      frame->components[0].width, frame->components[0].height);
+  dest = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_444,
+      frame->width, frame->height);
 
   schro_frame_component_planar_copy_u8 (&dest->components[0],
       &frame->components[0]);

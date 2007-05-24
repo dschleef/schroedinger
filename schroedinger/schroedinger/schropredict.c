@@ -399,8 +399,8 @@ schro_motion_vector_scan (SchroMotionVector *mv, SchroFrame *frame,
   dy = mv->u.xy.y;
   xmin = MAX(0, x + dx - dist);
   ymin = MAX(0, y + dy - dist);
-  xmax = MIN(frame->components[0].width - 8, x + dx + dist);
-  ymax = MIN(frame->components[0].height - 8, y + dy + dist);
+  xmax = MIN(frame->width - 8, x + dx + dist);
+  ymax = MIN(frame->height - 8, y + dy + dist);
 
   mv->metric = 256*8*8;
 
@@ -703,10 +703,10 @@ schro_frame_get_metric (SchroFrame *frame1, int x1, int y1,
 {
   int metric;
 
-  if (x1 < 0 || y1 < 0 || x1+8 > frame1->components[0].width ||
-      y1+8 > frame1->components[0].height) return 64*255;
-  if (x2 < 0 || y2 < 0 || x2+8 > frame2->components[0].width ||
-      y2+8 > frame2->components[0].height) return 64*255;
+  if (x1 < 0 || y1 < 0 || x1+8 > frame1->width ||
+      y1+8 > frame1->height) return 64*255;
+  if (x2 < 0 || y2 < 0 || x2+8 > frame2->width ||
+      y2+8 > frame2->height) return 64*255;
 
   metric = schro_metric_absdiff_u8 (
       frame1->components[0].data + x1 + y1*frame1->components[0].stride,

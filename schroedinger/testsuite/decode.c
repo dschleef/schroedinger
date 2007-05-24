@@ -124,9 +124,8 @@ decode (unsigned char *data, int length)
           go = 0;
           break;
         case SCHRO_DECODER_NEED_FRAME:
-          frame = schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
-              format->width, format->height,
-              format->width/2, format->height/2);
+          frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420,
+              format->width, format->height);
           schro_decoder_add_output_picture (decoder, frame);
           break;
         case SCHRO_DECODER_OK:

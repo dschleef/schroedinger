@@ -158,7 +158,7 @@ struct _SchroEncoderTask {
   SchroBits *bits;
   SchroFrame *encode_frame;
 
-  SchroFrame *tmp_frame0;
+  SchroFrame *iwt_frame;
   SchroFrame *prediction_frame;
 
   int16_t *tmpbuf;

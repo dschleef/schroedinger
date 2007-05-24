@@ -22,6 +22,9 @@
 #endif
 #define ROUND_UP_SHIFT(x,y) (((x) + (1<<(y)) - 1)>>(y))
 #define ROUND_UP_POW2(x,y) (((x) + (1<<(y)) - 1)&((~0)<<(y)))
+#define ROUND_UP_2(x) ROUND_UP_POW2(x,1)
+#define ROUND_UP_4(x) ROUND_UP_POW2(x,2)
+#define ROUND_UP_8(x) ROUND_UP_POW2(x,3)
 #define OFFSET(ptr,offset) ((void *)(((uint8_t *)(ptr)) + (offset)))
 #define SCHRO_GET(ptr, offset, type) (*(type *)((uint8_t *)(ptr) + (offset)) )
 

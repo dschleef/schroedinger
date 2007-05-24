@@ -15,11 +15,9 @@ schro_encoder_frame_analyse (SchroEncoder *encoder, SchroEncoderFrame *frame)
 
   for(i=0;i<5;i++){
     frame->downsampled_frames[i] =
-      schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_U8,
-          ROUND_UP_SHIFT(encoder->video_format.width, i+1),
-          ROUND_UP_SHIFT(encoder->video_format.height, i+1),
-          ROUND_UP_SHIFT(encoder->video_format.chroma_width, i+1),
-          ROUND_UP_SHIFT(encoder->video_format.chroma_height, i+1));
+      schro_frame_new_and_alloc (frame->original_frame->format,
+          ROUND_UP_SHIFT(frame->original_frame->width, i+1),
+          ROUND_UP_SHIFT(frame->original_frame->height, i+1));
   }
 
   schro_frame_downsample (frame->downsampled_frames[0],

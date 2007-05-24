@@ -63,6 +63,7 @@ struct _GstSchroDec
   gint64 granulepos;
   GstSegment segment;
   gboolean discont;
+  uint32_t fourcc;
 
   int bytes_per_picture;
   int fps_n;
@@ -130,7 +131,7 @@ static GstStaticPadTemplate gst_schro_dec_src_template =
     GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YUY2, AYUV }"))
     );
 
 GST_BOILERPLATE (GstSchroDec, gst_schro_dec, GstElement, GST_TYPE_ELEMENT);
@@ -686,10 +687,24 @@ gst_schro_wrap_frame (GstSchroDec *schro_dec, GstBuffer *buffer)
 {
   SchroFrame *frame;
 
-  frame = schro_frame_new_I420 (GST_BUFFER_DATA (buffer),
-      schro_dec->width, schro_dec->height);
-  frame->free = gst_schro_frame_free;
-  frame->priv = buffer;
+  switch (schro_dec->fourcc) {
+    case GST_MAKE_FOURCC('I','4','2','0'):
+      frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA (buffer),
+          schro_dec->width, schro_dec->height);
+      break;
+    case GST_MAKE_FOURCC('Y','U','Y','2'):
+      frame = schro_frame_new_from_data_YUY2 (GST_BUFFER_DATA (buffer),
+          schro_dec->width, schro_dec->height);
+      break;
+    case GST_MAKE_FOURCC('A','Y','U','V'):
+      frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA (buffer),
+          schro_dec->width, schro_dec->height);
+      break;
+    default:
+      g_assert_not_reached();
+      break;
+  }
+  schro_frame_set_free_callback (frame, gst_schro_frame_free, buffer);
 
   return frame;
 }
@@ -734,13 +749,28 @@ gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
 #define ROUND_UP_POW2(x,y) (((x) + (1<<(y)) - 1)&((~0)<<(y)))
 
 static int
-get_i420_size (int width, int height)
+get_buffer_size (GstSchroDec *schro_dec)
 {
   int size;
+  int width = schro_dec->width;
+  int height = schro_dec->height;
 
-  size = ROUND_UP_POW2(width,2) * ROUND_UP_POW2(height,1);
-  size += 2 * ROUND_UP_POW2(ROUND_UP_SHIFT(width,1),2) *
-    ROUND_UP_SHIFT(height,1);
+  switch (schro_dec->fourcc) {
+    case GST_MAKE_FOURCC('I','4','2','0'):
+      size = ROUND_UP_POW2(width,2) * ROUND_UP_POW2(height,1);
+      size += 2 * ROUND_UP_POW2(ROUND_UP_SHIFT(width,1),2) *
+        ROUND_UP_SHIFT(height,1);
+      break;
+    case GST_MAKE_FOURCC('Y','U','Y','2'):
+      size = ROUND_UP_POW2(width,2) * 2 * height;
+      break;
+    case GST_MAKE_FOURCC('A','Y','U','V'):
+      size = width * 4 * height;
+      break;
+    default:
+      g_assert_not_reached();
+      break;
+  }
 
   return size;
 }
@@ -827,9 +857,23 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
             format = schro_decoder_get_video_format (schro_dec->decoder);
             schro_dec->width = format->width;
             schro_dec->height = format->height;
+            switch(format->chroma_format) {
+              case 0:
+                schro_dec->fourcc = GST_MAKE_FOURCC('A','Y','U','V');
+                break;
+              case 1:
+                schro_dec->fourcc = GST_MAKE_FOURCC('Y','U','Y','2');
+                break;
+              case 2:
+                schro_dec->fourcc = GST_MAKE_FOURCC('I','4','2','0');
+                break;
+              default:
+                g_assert_not_reached();
+                break;
+            }
         
             caps = gst_caps_new_simple ("video/x-raw-yuv",
-                "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('I','4','2','0'),
+                "format", GST_TYPE_FOURCC, schro_dec->fourcc,
                 "width", G_TYPE_INT, format->width,
                 "height", G_TYPE_INT, format->height,
                 "framerate", GST_TYPE_FRACTION,
@@ -863,7 +907,7 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
             go = 0;
             break;
           case SCHRO_DECODER_NEED_FRAME:
-            size = get_i420_size (schro_dec->width, schro_dec->height);
+            size = get_buffer_size (schro_dec);
 #if 0
             ret = gst_pad_alloc_buffer_and_set_caps (schro_dec->srcpad,
                 GST_BUFFER_OFFSET_NONE, size,
@@ -893,7 +937,6 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
                   schro_dec->discont = FALSE;
                 }
           
-//schro_dec->timestamp_offset = 30*GST_SECOND;
                 GST_BUFFER_TIMESTAMP(outbuf) = gst_util_uint64_scale (
                     schro_dec->n_frames, schro_dec->fps_d * GST_SECOND,
                     schro_dec->fps_n) +

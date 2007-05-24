@@ -12,10 +12,41 @@ typedef struct _SchroFrameComponent SchroFrameComponent;
 
 typedef void (*SchroFrameFreeFunc)(SchroFrame *frame, void *priv);
 
+/* bit pattern:
+ *  0x100 - 0: normal, 1: indirect (packed)
+ *  0x001 - horizontal chroma subsampling: 0: 1, 1: 2
+ *  0x002 - vertical chroma subsampling: 0: 1, 1: 2
+ *  0x00c - depth: 0: u8, 1: s16, 2: s32
+ *  */
 typedef enum _SchroFrameFormat {
-  SCHRO_FRAME_FORMAT_U8,
-  SCHRO_FRAME_FORMAT_S16
+  SCHRO_FRAME_FORMAT_U8_444 = 0x00,
+  SCHRO_FRAME_FORMAT_U8_422 = 0x01,
+  SCHRO_FRAME_FORMAT_U8_420 = 0x03,
+
+  SCHRO_FRAME_FORMAT_S16_444 = 0x04,
+  SCHRO_FRAME_FORMAT_S16_422 = 0x05,
+  SCHRO_FRAME_FORMAT_S16_420 = 0x07,
+
+  SCHRO_FRAME_FORMAT_S32_444 = 0x08,
+  SCHRO_FRAME_FORMAT_S32_422 = 0x09,
+  SCHRO_FRAME_FORMAT_S32_420 = 0x0b,
+
+  /* indirectly supported */
+  SCHRO_FRAME_FORMAT_YUYV = 0x100, /* YUYV order */
+  SCHRO_FRAME_FORMAT_UYVY = 0x101, /* UYVY order */
+  SCHRO_FRAME_FORMAT_AYUV = 0x102,
+  SCHRO_FRAME_FORMAT_ARGB = 0x103
 } SchroFrameFormat;
+
+#define SCHRO_FRAME_FORMAT_DEPTH(format) ((format) & 0xc)
+#define SCHRO_FRAME_FORMAT_DEPTH_U8 0x00
+#define SCHRO_FRAME_FORMAT_DEPTH_S16 0x04
+#define SCHRO_FRAME_FORMAT_DEPTH_S32 0x08
+
+#define SCHRO_FRAME_FORMAT_H_SHIFT(format) ((format) & 0x1)
+#define SCHRO_FRAME_FORMAT_V_SHIFT(format) (((format)>>1) & 0x1)
+
+#define SCHRO_FRAME_IS_PACKED(format) (((format)>>8) & 0x1)
 
 struct _SchroFrameComponent {
   void *data;
@@ -34,6 +65,8 @@ struct _SchroFrame {
   void *priv;
 
   SchroFrameFormat format;
+  int width;
+  int height;
 
   SchroFrameComponent components[3];
 
@@ -42,9 +75,11 @@ struct _SchroFrame {
 
 
 SchroFrame * schro_frame_new (void);
-SchroFrame * schro_frame_new_and_alloc2 (SchroFrameFormat format, int width,
-    int height, int width2, int height2);
-SchroFrame * schro_frame_new_I420 (void *data, int width, int height);
+SchroFrame * schro_frame_new_and_alloc (SchroFrameFormat format, int width,
+    int height);
+SchroFrame * schro_frame_new_from_data_I420 (void *data, int width, int height);
+SchroFrame * schro_frame_new_from_data_YUY2 (void *data, int width, int height);
+SchroFrame * schro_frame_new_from_data_AYUV (void *data, int width, int height);
 void schro_frame_set_free_callback (SchroFrame *frame,
     SchroFrameFreeFunc free_func, void *priv);
 void schro_frame_unref (SchroFrame *frame);

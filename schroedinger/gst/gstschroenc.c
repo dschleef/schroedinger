@@ -61,6 +61,7 @@ struct _GstSchroEnc
   int fps_n, fps_d;
   int par_n, par_d;
   guint64 duration;
+  uint32_t fourcc;
 
   /* segment properties */
   gint64 segment_start;
@@ -121,7 +122,7 @@ static GstStaticPadTemplate gst_schro_enc_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YUY2, AYUV }"))
     );
 
 static GstStaticPadTemplate gst_schro_enc_src_template =
@@ -215,6 +216,7 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
 
   structure = gst_caps_get_structure (caps, 0);
 
+  gst_structure_get_fourcc (structure, "format", &schro_enc->fourcc);
   gst_structure_get_int (structure, "width", &schro_enc->width);
   gst_structure_get_int (structure, "height", &schro_enc->height);
   gst_structure_get_fraction (structure, "framerate", &schro_enc->fps_n,
@@ -227,6 +229,20 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
   /* SD480 has most of the defaults that GStreamer assumes */
   schro_params_set_video_format (schro_enc->video_format,
       SCHRO_VIDEO_FORMAT_SD480);
+
+  switch (schro_enc->fourcc) {
+    case GST_MAKE_FOURCC('I','4','2','0'):
+      schro_enc->video_format->chroma_format = SCHRO_CHROMA_420;
+      break;
+    case GST_MAKE_FOURCC('Y','U','Y','2'):
+      schro_enc->video_format->chroma_format = SCHRO_CHROMA_422;
+      break;
+    case GST_MAKE_FOURCC('A','Y','U','V'):
+      schro_enc->video_format->chroma_format = SCHRO_CHROMA_444;
+      break;
+    default:
+      g_assert_not_reached();
+  }
 
   schro_enc->video_format->frame_rate_numerator = schro_enc->fps_n;
   schro_enc->video_format->frame_rate_denominator = schro_enc->fps_d;
@@ -372,13 +388,24 @@ gst_schro_frame_free (SchroFrame *frame, void *priv)
 }
 
 static SchroFrame *
-gst_schro_buffer_wrap (GstBuffer *buf, int width, int height)
+gst_schro_buffer_wrap (GstSchroEnc *schro_enc, GstBuffer *buf,
+    int width, int height)
 {
   SchroFrame *frame;
 
-  gst_buffer_ref (buf);
-  frame = schro_frame_new_I420 (GST_BUFFER_DATA (buf), width, height);
-
+  switch (schro_enc->fourcc) {
+    case GST_MAKE_FOURCC('I','4','2','0'):
+      frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA (buf), width, height);
+      break;
+    case GST_MAKE_FOURCC('Y','U','Y','2'):
+      frame = schro_frame_new_from_data_YUY2 (GST_BUFFER_DATA (buf), width, height);
+      break;
+    case GST_MAKE_FOURCC('A','Y','U','V'):
+      frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA (buf), width, height);
+      break;
+    default:
+      g_assert_not_reached();
+  }
   schro_frame_set_free_callback (frame, gst_schro_frame_free, buf);
 
   return frame;
@@ -571,8 +598,7 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
     schro_enc->got_offset = TRUE;
   }
 
-  frame = gst_schro_buffer_wrap (buf, schro_enc->width, schro_enc->height);
-  gst_buffer_unref (buf);
+  frame = gst_schro_buffer_wrap (schro_enc, buf, schro_enc->width, schro_enc->height);
 
   GST_DEBUG ("pushing frame");
   schro_encoder_push_frame (schro_enc->encoder, frame);

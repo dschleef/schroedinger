@@ -119,14 +119,14 @@ static GstStaticPadTemplate gst_schrotoy_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("AYUV"))
     );
 
 static GstStaticPadTemplate gst_schrotoy_src_template =
     GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("AYUV"))
     );
 
 GType
@@ -375,21 +375,20 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
     schro_params_calculate_iwt_sizes (params);
 
     compress->tmp_frame =
-      schro_frame_new_and_alloc2 (SCHRO_FRAME_FORMAT_S16,
+      schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16_420,
           compress->params.iwt_luma_width,
-          compress->params.iwt_luma_height,
-          compress->params.iwt_chroma_width,
-          compress->params.iwt_chroma_height);
+          compress->params.iwt_luma_height);
     compress->tmpbuf = malloc (2*2048);
   }
 
-  frame = schro_frame_new_I420 (GST_BUFFER_DATA(buf),
+  frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA(buf),
       params->video_format->width, params->video_format->height);
 
   schro_frame_convert (compress->tmp_frame, frame);
   schro_frame_iwt_transform (compress->tmp_frame, &compress->params,
       compress->tmpbuf);
-  schro_params_init_subbands (&compress->params, compress->subbands);
+  schro_params_init_subbands (&compress->params, compress->subbands,
+      compress->tmp_frame->width, compress->tmp_frame->components[1].width);
 
   if (compress->button_x >= 0) {
     int value;
@@ -467,7 +466,7 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
       compress->tmpbuf);
   schro_frame_convert (frame, compress->tmp_frame);
 
-  mark_frame (frame, compress_class->test_index);
+  if(0)mark_frame (frame, compress_class->test_index);
 
   compress->frame_number++;
   return GST_FLOW_OK;

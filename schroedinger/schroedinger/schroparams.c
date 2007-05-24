@@ -685,7 +685,8 @@ schro_params_set_default_codeblock (SchroParams *params)
  *
  */
 void
-schro_params_init_subbands (SchroParams *params, SchroSubband *subbands)
+schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
+    int luma_frame_stride, int chroma_frame_stride)
 {
   int i;
   int w;
@@ -697,10 +698,10 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands)
 
   w = params->iwt_luma_width >> params->transform_depth;
   h = params->iwt_luma_height >> params->transform_depth;
-  stride = sizeof(int16_t)*(params->iwt_luma_width << params->transform_depth);
+  stride = luma_frame_stride << params->transform_depth;
   chroma_w = params->iwt_chroma_width >> params->transform_depth;
   chroma_h = params->iwt_chroma_height >> params->transform_depth;
-  chroma_stride = sizeof(int16_t)*(params->iwt_chroma_width << params->transform_depth);
+  chroma_stride = chroma_frame_stride << params->transform_depth;
 
   subbands[0].x = 0;
   subbands[0].y = 0;
@@ -775,3 +776,30 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands)
   }
 
 }
+
+int
+schro_params_get_frame_format (int depth, SchroChromaFormat chroma_format)
+{
+  if (depth == 8) {
+    switch (chroma_format) {
+      case SCHRO_CHROMA_444:
+        return SCHRO_FRAME_FORMAT_U8_444;
+      case SCHRO_CHROMA_422:
+        return SCHRO_FRAME_FORMAT_U8_422;
+      case SCHRO_CHROMA_420:
+        return SCHRO_FRAME_FORMAT_U8_420;
+    }
+  } else if (depth == 16) {
+    switch (chroma_format) {
+      case SCHRO_CHROMA_444:
+        return SCHRO_FRAME_FORMAT_S16_444;
+      case SCHRO_CHROMA_422:
+        return SCHRO_FRAME_FORMAT_S16_422;
+      case SCHRO_CHROMA_420:
+        return SCHRO_FRAME_FORMAT_S16_420;
+    }
+  }
+
+  SCHRO_ASSERT(0);
+}
+

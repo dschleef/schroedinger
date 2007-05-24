@@ -1,3 +1,30 @@
+2007-05-24  David Schleef  <ds@schleef.org>
+
+	* gst/gstschrodec.c:
+	* gst/gstschroenc.c:
+	* gst/gstschrotoy.c:
+	* schroedinger/schroanalysis.c:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schromotion.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.c:
+	* schroedinger/schroutils.h:
+	* testsuite/decode.c:
+	* testsuite/encode.c:
+	* testsuite/encode_big.c:
+	* testsuite/motion.c:
+	* testsuite/motion2.c:
+	* testsuite/upsample.c:
+	  Added code to handle 4:4:4 and 4:2:2 video.
+
 2007-05-17  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:
