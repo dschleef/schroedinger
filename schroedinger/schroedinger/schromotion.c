@@ -50,6 +50,8 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
   int x_ramp;
   int y_ramp;
 
+  SCHRO_DEBUG("obmc init len %d %d sep %d %d", x_len, y_len, x_sep, y_sep);
+
   memset (obmc, 0, sizeof(*obmc));
 
   x_ramp = x_len - x_sep;
@@ -64,7 +66,7 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
   if (2*x_ramp > x_len) {
     SCHRO_ERROR ("x_ramp too large %d", x_ramp);
   }
-  if (2*y_ramp > x_len) {
+  if (2*y_ramp > y_len) {
     SCHRO_ERROR ("y_ramp too large %d", y_ramp);
   }
 
@@ -472,15 +474,21 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
           SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
       }
     }
+
+    w >>= motion->params->video_format->chroma_h_shift;
+    h >>= motion->params->video_format->chroma_v_shift;
+    sx >>= motion->params->video_format->chroma_h_shift;
+    sy >>= motion->params->video_format->chroma_v_shift;
+
     motion->blocks[1] = motion->tmpdata + 64*64;
     motion->strides[1] = 64;
     data = motion->blocks[1];
     comp = &srcframe->components[1];
     stride = motion->strides[0];
-    for(j=0;j<h/2;j++){
-      for(i=0;i<w/2;i++){
-        int src_x = CLAMP(sx/2 + i, 0, comp->width - 1);
-        int src_y = CLAMP(sy/2 + j, 0, comp->height - 1);
+    for(j=0;j<h;j++){
+      for(i=0;i<w;i++){
+        int src_x = CLAMP(sx + i, 0, comp->width - 1);
+        int src_y = CLAMP(sy + j, 0, comp->height - 1);
         data[j*stride + i] =
           SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
       }
@@ -490,10 +498,10 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
     data = motion->blocks[2];
     comp = &srcframe->components[2];
     stride = motion->strides[0];
-    for(j=0;j<h/2;j++){
-      for(i=0;i<w/2;i++){
-        int src_x = CLAMP(sx/2 + i, 0, comp->width - 1);
-        int src_y = CLAMP(sy/2 + j, 0, comp->height - 1);
+    for(j=0;j<h;j++){
+      for(i=0;i<w;i++){
+        int src_x = CLAMP(sx + i, 0, comp->width - 1);
+        int src_y = CLAMP(sy + j, 0, comp->height - 1);
         data[j*stride + i] =
           SCHRO_GET(comp->data, comp->stride * src_y + src_x, uint8_t);
       }

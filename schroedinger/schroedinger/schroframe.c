@@ -1045,7 +1045,7 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
         }
         for(y=h; y < comp->height; y++) {
           oil_splat_s16_ns (OFFSET(comp->data, comp->stride * y), &zero,
-              comp->width * 2);
+              comp->width);
         }
       }
       break;

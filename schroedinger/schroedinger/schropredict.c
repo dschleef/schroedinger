@@ -658,11 +658,19 @@ schro_encoder_dc_prediction (SchroEncoderTask *task)
   uint8_t const_data[16];
   int i;
   int j;
+  int luma_w, luma_h;
+  int chroma_w, chroma_h;
   SchroMotionField *motion_field;
   SchroFrame *frame = task->encode_frame;
 
   motion_field = schro_motion_field_new (params->x_num_blocks,
       params->y_num_blocks);
+
+  /* FIXME 8x8 blocks */
+  luma_w = 8;
+  luma_h = 8;
+  chroma_w = luma_w>>params->video_format->chroma_h_shift;
+  chroma_h = luma_h>>params->video_format->chroma_v_shift;
 
   for(j=0;j<params->y_num_blocks;j++){
     for(i=0;i<params->x_num_blocks;i++){
@@ -675,9 +683,9 @@ schro_encoder_dc_prediction (SchroEncoderTask *task)
       mv->pred_mode = 0;
       mv->split = 2;
       mv->using_global = 0;
-      schro_block_average (mv->u.dc + 0, frame->components + 0, i*8, j*8, 8, 8);
-      schro_block_average (mv->u.dc + 1, frame->components + 1, i*4, j*4, 4, 4);
-      schro_block_average (mv->u.dc + 2, frame->components + 2, i*4, j*4, 4, 4);
+      schro_block_average (mv->u.dc + 0, frame->components + 0, i*luma_w, j*luma_h, luma_w, luma_h);
+      schro_block_average (mv->u.dc + 1, frame->components + 1, i*chroma_w, j*chroma_h, chroma_w, chroma_h);
+      schro_block_average (mv->u.dc + 2, frame->components + 2, i*chroma_w, j*chroma_h, chroma_w, chroma_h);
 
       memset (const_data, mv->u.dc[0], 16);
 

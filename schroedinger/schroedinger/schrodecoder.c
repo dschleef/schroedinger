@@ -391,21 +391,28 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
   schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
       decoder->tmpbuf);
 
-  /* FIXME Fix prediction-only */
-#if 0
-    if (!_schro_decode_prediction_only ||
-        SCHRO_PARSE_CODE_IS_REFERENCE(decoder->code)) {
-#endif
+  if (!_schro_decode_prediction_only) {
+    if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
+      schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
+    }
 
-  if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
-    schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
-  }
-
-  if (SCHRO_FRAME_IS_PACKED(output_picture->format)) {
-    schro_frame_convert (decoder->planar_output_frame, decoder->frame);
-    schro_frame_convert (output_picture, decoder->planar_output_frame);
+    if (SCHRO_FRAME_IS_PACKED(output_picture->format)) {
+      schro_frame_convert (decoder->planar_output_frame, decoder->frame);
+      schro_frame_convert (output_picture, decoder->planar_output_frame);
+    } else {
+      schro_frame_convert (output_picture, decoder->frame);
+    }
   } else {
-    schro_frame_convert (output_picture, decoder->frame);
+    if (SCHRO_FRAME_IS_PACKED(output_picture->format)) {
+      schro_frame_convert (decoder->planar_output_frame, decoder->mc_tmp_frame);
+      schro_frame_convert (output_picture, decoder->planar_output_frame);
+    } else {
+      schro_frame_convert (output_picture, decoder->mc_tmp_frame);
+    }
+
+    if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
+      schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
+    }
   }
   output_picture->frame_number = decoder->picture_number;
 
