@@ -54,9 +54,9 @@ init_params (SchroEncoderTask *task)
 
   params->video_format = &encoder->video_format;
   if (params->num_refs > 0) {
-    params->wavelet_filter_index = encoder->prefs[SCHRO_PREF_INTRA_WAVELET];
-  } else {
     params->wavelet_filter_index = encoder->prefs[SCHRO_PREF_INTER_WAVELET];
+  } else {
+    params->wavelet_filter_index = encoder->prefs[SCHRO_PREF_INTRA_WAVELET];
   }
   params->transform_depth = encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH];
   schro_params_set_default_codeblock (params);

@@ -17,6 +17,7 @@ void schro_encoder_zero_prediction (SchroEncoderTask *task);
 static void schro_encoder_dc_prediction (SchroEncoderTask *task);
 static void schro_motion_field_merge (SchroMotionField *dest,
     SchroMotionField **list, int n);
+static void schro_motion_field_cleanup (SchroMotionField *mf, int x, int y);
 static void schro_motion_field_combine (SchroMotionField *mf);
 void schro_motion_field_set (SchroMotionField *field, int split, int pred_mode);
 
@@ -76,6 +77,9 @@ schro_encoder_motion_predict (SchroEncoderTask *task)
   }
 
   schro_motion_field_merge (task->motion_field, fields, n);
+  schro_motion_field_cleanup (task->motion_field,
+      (params->video_format->width + params->xbsep_luma - 1)/params->xbsep_luma,
+      (params->video_format->height + params->ybsep_luma - 1)/params->ybsep_luma);
 
   schro_motion_field_combine (task->motion_field);
 
@@ -115,6 +119,32 @@ schro_motion_field_merge (SchroMotionField *dest,
         }
       }
       SCHRO_ASSERT (!(mv->pred_mode == 0 && mv->using_global));
+    }
+  }
+}
+
+static void
+schro_motion_field_cleanup (SchroMotionField *mf, int x_blocks, int y_blocks)
+{
+  int i,j;
+  SchroMotionVector *mv;
+
+  if (x_blocks < mf->x_num_blocks) {
+    for(j=0;j<mf->y_num_blocks;j++){
+      for(i=x_blocks;i<mf->x_num_blocks;i++){
+        mv = &mf->motion_vectors[j*mf->x_num_blocks + i];
+
+        *mv = mf->motion_vectors[j*mf->x_num_blocks + (i-1)];
+      }
+    }
+  }
+  if (y_blocks < mf->y_num_blocks) {
+    for(j=y_blocks;j<mf->y_num_blocks;j++){
+      for(i=0;i<mf->x_num_blocks;i++){
+        mv = &mf->motion_vectors[j*mf->x_num_blocks + i];
+
+        *mv = mf->motion_vectors[(j-1)*mf->x_num_blocks + i];
+      }
     }
   }
 }

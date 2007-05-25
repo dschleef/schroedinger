@@ -82,6 +82,9 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
   }
 
   obmc->shift = ramp_shift(x_ramp) + ramp_shift(y_ramp);
+  if (obmc->shift >= 8) {
+    SCHRO_ERROR("obmc shift too large (%d >= 8)", obmc->shift);
+  }
 
   obmc->x_ramp = x_ramp;
   obmc->y_ramp = y_ramp;
@@ -422,8 +425,8 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
   sx = x + (mv->u.xy.x>>3);
   sy = y + (mv->u.xy.y>>3);
   upsample_index = (mv->u.xy.x&4)>>2 | (mv->u.xy.y&4)>>1;
-  w = 12;
-  h = 12;
+  w = motion->obmc_luma->x_len;
+  h = motion->obmc_luma->y_len;
 
   /* FIXME */
   SCHRO_ASSERT(upsample_index == 0);

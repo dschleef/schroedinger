@@ -825,10 +825,11 @@ schro_encoder_encode_picture_prediction (SchroEncoderTask *task)
 
   /* block params flag */
   /* FIXME */
-  if (TRUE) {
+  if (FALSE) {
     schro_bits_encode_bit (task->bits, FALSE);
   } else {
     int index = 0;
+    schro_bits_encode_bit (task->bits, TRUE);
     schro_bits_encode_uint (task->bits, 0);
     if (index == 0) {
       schro_bits_encode_uint (task->bits, params->xblen_luma);

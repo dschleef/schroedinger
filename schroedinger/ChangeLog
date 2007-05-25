@@ -1,3 +1,11 @@
+2007-05-25  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schropredict.c:
+	  Fix some problems with non-8x8/12x12 overlap blocks.
+
 2007-05-24  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:
