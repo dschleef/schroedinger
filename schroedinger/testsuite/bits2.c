@@ -6,11 +6,11 @@
 #include <schroedinger/schro.h>
 
 void
-dump_bits (SchroBits *bits)
+dump_bits (SchroBits *bits, int n)
 {
   int i;
   
-  for(i=0;i<bits->offset;i++){
+  for(i=0;i<n*8;i++){
     printf(" %d", (bits->buffer->data[(i>>3)] >> (7 - (i&7))) & 1);
   }
   printf("\n");
@@ -28,6 +28,7 @@ main (int argc, char *argv[])
   SchroBits *bits;
   int value;
   int fail = 0;
+  int n;
 
   schro_init();
 
@@ -41,6 +42,11 @@ main (int argc, char *argv[])
     ref[i] = random() & 0x7;
     schro_bits_encode_uint(bits,ref[i]);
   }
+  schro_bits_flush (bits);
+  n = schro_bits_get_offset (bits);
+  schro_bits_free (bits);
+
+  bits = schro_bits_new();
   schro_bits_decode_init (bits, buffer);
   for(i=0;i<N;i++) {
     value = schro_bits_decode_uint (bits);
@@ -56,6 +62,11 @@ main (int argc, char *argv[])
     ref[i] = (random() & 0xf) - 8;
     schro_bits_encode_sint (bits,ref[i]);
   }
+  schro_bits_flush (bits);
+  n = schro_bits_get_offset (bits);
+  schro_bits_free (bits);
+
+  bits = schro_bits_new();
   schro_bits_decode_init (bits, buffer);
   for(i=0;i<N;i++) {
     value = schro_bits_decode_sint (bits);

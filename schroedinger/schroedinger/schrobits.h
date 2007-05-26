@@ -11,15 +11,19 @@ SCHRO_BEGIN_DECLS
 
 typedef struct _SchroBits SchroBits;
 
+#define SCHRO_BITS_DECODE 0
+#define SCHRO_BITS_ENCODE 1
+
 struct _SchroBits {
+  int type;
   SchroBuffer *buffer;
 
-  int offset;
-  int bit_offset;
+  int n;
+  int shift;
 
-  int cntr;
+  uint32_t value;
 
-  int n_contexts;
+  int error;
 };
 
 SchroBits * schro_bits_new (void);
@@ -29,9 +33,12 @@ void schro_bits_decode_init (SchroBits *bits, SchroBuffer *buffer);
 void schro_bits_encode_init (SchroBits *bits, SchroBuffer *buffer);
 
 void schro_bits_sync (SchroBits *bits);
+void schro_bits_flush (SchroBits *bits);
+int schro_bits_get_offset (SchroBits *bits);
 void schro_bits_dumpbits (SchroBits *bits);
 
 void schro_bits_append (SchroBits *bits, uint8_t *data, int len);
+void schro_bits_skip (SchroBits *bits, int n_bytes);
 
 void schro_bits_encode_bit (SchroBits *bits, int value);
 void schro_bits_encode_bits (SchroBits *bits, int n, unsigned int value);

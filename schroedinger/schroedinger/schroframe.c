@@ -8,7 +8,6 @@
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schrooil.h>
 #include <liboil/liboil.h>
-#include <liboil/liboilrandom.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -88,12 +87,6 @@ schro_frame_new_and_alloc (SchroFrameFormat format, int width, int height)
 
   frame->regions[0] = malloc (frame->components[0].length +
       frame->components[1].length + frame->components[2].length);
-
-#if 1
-  /* FIXME need ifdef for this */
-  oil_random_u8(frame->regions[0], frame->components[0].length +
-      frame->components[1].length + frame->components[2].length);
-#endif
 
   frame->components[0].data = frame->regions[0];
   frame->components[1].data = frame->components[0].data +

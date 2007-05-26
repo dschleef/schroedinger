@@ -61,8 +61,6 @@ init_params (SchroEncoderTask *task)
   params->transform_depth = encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH];
   schro_params_set_default_codeblock (params);
 
-  params->spatial_partition_flag = FALSE;
-
   params->have_global_motion = FALSE;
   params->xblen_luma = 12;
   params->yblen_luma = 12;

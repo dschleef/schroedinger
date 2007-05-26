@@ -54,7 +54,7 @@ struct _SchroDecoder {
 
   SchroMotionField *motion_field;
 
-  int residual;
+  int zero_residual;
   int n_retire;
   int retire_list[SCHRO_MAX_REFERENCE_FRAMES];
 

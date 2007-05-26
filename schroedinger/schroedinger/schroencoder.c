@@ -541,7 +541,10 @@ schro_encoder_encode_access_unit (SchroEncoder *encoder)
 
   schro_encoder_encode_access_unit_header (encoder, bits);
 
-  subbuffer = schro_buffer_new_subbuffer (buffer, 0, bits->offset/8);
+  schro_bits_flush (bits);
+
+  subbuffer = schro_buffer_new_subbuffer (buffer, 0,
+      schro_bits_get_offset (bits));
   schro_bits_free (bits);
   schro_buffer_unref (buffer);
 
@@ -592,7 +595,8 @@ schro_encoder_task_complete (SchroEncoderTask *task)
   }
 
   SCHRO_INFO("PICTURE: %d %d %d %d",
-      task->frame_number, task->is_ref, task->params.num_refs, task->bits->offset);
+      task->frame_number, task->is_ref, task->params.num_refs,
+      schro_bits_get_offset(task->bits));
 
   if (frame->start_access_unit) {
     frame->access_unit_buffer = schro_encoder_encode_access_unit (task->encoder);
@@ -719,7 +723,9 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
   if (task->params.num_refs > 0) {
     schro_encoder_motion_predict (task);
 
+    schro_bits_sync(task->bits);
     schro_encoder_encode_picture_prediction (task);
+    schro_bits_sync(task->bits);
     schro_encoder_encode_motion_data (task);
 
     schro_frame_convert (task->iwt_frame, task->encode_frame);
@@ -747,11 +753,13 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
       free(motion);
     }
 
+#if 0
     SCHRO_DEBUG("luma %d %d ref %d",
         schro_frame_calculate_average_luma (task->encoder_frame->original_frame),
         schro_frame_calculate_average_luma (task->prediction_frame),
         schro_frame_calculate_average_luma (task->ref_frame0->reconstructed_frame)
         );
+#endif
 
     schro_frame_subtract (task->iwt_frame, task->prediction_frame);
 
@@ -762,19 +770,21 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
     schro_frame_convert (task->iwt_frame, task->encode_frame);
   }
 
+  schro_bits_sync(task->bits);
   schro_encoder_encode_transform_parameters (task);
 
   schro_frame_iwt_transform (task->iwt_frame, &task->params, task->tmpbuf);
   schro_encoder_clean_up_transform (task);
 
-  residue_bits_start = task->bits->offset;
+  residue_bits_start = schro_bits_get_offset(task->bits) * 8;
 
+  schro_bits_sync(task->bits);
   schro_encoder_encode_transform_data (task);
 
-  schro_bits_sync (task->bits);
+  schro_bits_flush (task->bits);
 
   subbuffer = schro_buffer_new_subbuffer (task->outbuffer, 0,
-      task->bits->offset/8);
+      schro_bits_get_offset (task->bits));
   schro_buffer_unref (task->outbuffer);
   task->outbuffer = subbuffer;
 
@@ -785,7 +795,7 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
       task->stats_metric;
 #endif
     SCHRO_INFO("pred bits %d, residue bits %d, dc %d, global = %d, motion %d",
-        residue_bits_start, task->bits->offset - residue_bits_start,
+        residue_bits_start, schro_bits_get_offset(task->bits)*8 - residue_bits_start,
         task->stats_dc, task->stats_global, task->stats_motion);
   }
 
@@ -820,8 +830,6 @@ static void
 schro_encoder_encode_picture_prediction (SchroEncoderTask *task)
 {
   SchroParams *params = &task->params;
-
-  schro_bits_sync(task->bits);
 
   /* block params flag */
   /* FIXME */
@@ -1200,10 +1208,6 @@ schro_encoder_encode_transform_parameters (SchroEncoderTask *task)
   if (params->num_refs > 0) {
     /* zero residual */
     schro_bits_encode_bit (task->bits, FALSE);
-  } else {
-#ifdef DIRAC_COMPAT
-    schro_bits_sync (task->bits);
-#endif
   }
 
   /* transform */
@@ -1383,6 +1387,7 @@ schro_encoder_encode_transform_data (SchroEncoderTask *task)
 
   for(component=0;component<3;component++) {
     for (i=0;i < 1 + 3*params->transform_depth; i++) {
+      if (i != 0) schro_bits_sync (task->bits);
       if (0) schro_encoder_estimate_subband (task, component, i);
       schro_encoder_encode_subband (task, component, i);
     }
@@ -1575,11 +1580,10 @@ schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index)
   quant_data = task->quant_data;
   subband_zero_flag = schro_encoder_quantize_subband (task, component,
       index, quant_data);
+
   if (subband_zero_flag) {
     SCHRO_DEBUG ("subband is zero");
-    schro_bits_sync (task->bits);
     schro_bits_encode_uint (task->bits, 0);
-    schro_bits_sync (task->bits);
     schro_arith_free (arith);
     return;
   }
@@ -1728,9 +1732,6 @@ out:
         task->estimated_entropy, arith->offset);
   }
 
-#ifdef DIRAC_COMPAT
-  schro_bits_sync (task->bits);
-#endif
   schro_bits_encode_uint (task->bits, arith->offset);
   if (arith->offset > 0) {
     schro_bits_encode_uint (task->bits, subband->quant_index);

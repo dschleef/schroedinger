@@ -4,14 +4,14 @@
 #include <schroedinger/schro.h>
 
 void
-dump_bits (SchroBits *bits)
+dump_bits (SchroBits *bits, int n)
 {
   int i;
   
-  for(i=0;i<bits->offset;i++){
+  for(i=0;i<n*8;i++){
     printf(" %d", (bits->buffer->data[(i>>3)] >> (7 - (i&7))) & 1);
   }
-  printf(" (%d bits)\n", bits->offset);
+  printf(" (%d bytes)\n", n);
 }
 
 
@@ -23,38 +23,51 @@ main (int argc, char *argv[])
   SchroBits *bits;
   int value;
   int fail = 0;
+  int n;
 
   schro_init();
 
-  bits = schro_bits_new();
-
   printf("unsigned int\n");
-  for(i=0;i<11;i++) {
+  for(i=0;i<21;i++) {
+    bits = schro_bits_new();
     schro_bits_encode_init (bits, buffer);
     schro_bits_encode_uint(bits,i);
-    printf("%3d:", i);
-    dump_bits (bits);
+    schro_bits_flush (bits);
+    n = schro_bits_get_offset (bits);
+    schro_bits_free (bits);
+
+    bits = schro_bits_new();
     schro_bits_decode_init (bits, buffer);
+    printf("%3d:", i);
+    dump_bits (bits, n);
     value = schro_bits_decode_uint (bits);
     if (value != i) {
       printf("decode failed (%d != %d)\n", value, i);
       fail = 1;
     }
+    schro_bits_free (bits);
   }
   printf("\n");
 
   printf("signed int\n");
   for(i=-5;i<6;i++) {
+    bits = schro_bits_new();
     schro_bits_encode_init (bits, buffer);
     schro_bits_encode_sint(bits,i);
-    printf("%3d:", i);
-    dump_bits (bits);
+    schro_bits_flush (bits);
+    n = schro_bits_get_offset (bits);
+    schro_bits_free (bits);
+
+    bits = schro_bits_new();
     schro_bits_decode_init (bits, buffer);
+    printf("%3d:", i);
+    dump_bits (bits, n);
     value = schro_bits_decode_sint (bits);
     if (value != i) {
       printf("decode failed (%d != %d)\n", value, i);
       fail = 1;
     }
+    schro_bits_free (bits);
   }
   printf("\n");
 

@@ -3,8 +3,6 @@
 #include "config.h"
 #endif
 
-//#include <stdlib.h>
-//#include <stdio.h>
 #include <string.h>
 #include <liboil/liboil.h>
 
@@ -29,29 +27,80 @@ schro_bits_free (SchroBits *bits)
   free(bits);
 }
 
+static void
+schro_bits_shift_in (SchroBits *bits)
+{
+  if (bits->n < bits->buffer->length) {
+    bits->value = bits->buffer->data[bits->n];
+    bits->n++;
+    bits->shift = 7;
+    return;
+  }
+  bits->value = 0xff;
+  bits->shift = 7;
+  bits->error = TRUE;
+}
+
+static void
+schro_bits_shift_out (SchroBits *bits)
+{
+  if (bits->n < bits->buffer->length) {
+    bits->buffer->data[bits->n] = bits->value;
+    bits->n++;
+    bits->shift = 7;
+    bits->value = 0;
+    return;
+  }
+  if (bits->error == FALSE) {
+    SCHRO_ERROR("buffer overrun");
+  }
+  bits->error = TRUE;
+  bits->shift = 7;
+  bits->value = 0;
+}
+
 void
 schro_bits_decode_init (SchroBits *bits, SchroBuffer *buffer)
 {
   bits->buffer = buffer;
-  bits->offset = 0;
+  bits->n = 0;
+  bits->shift = -1;
+  bits->type = SCHRO_BITS_DECODE;
 }
 
 void
 schro_bits_encode_init (SchroBits *bits, SchroBuffer *buffer)
 {
-  uint8_t value = 0;
-
   bits->buffer = buffer;
-  bits->offset = 0;
+  bits->n = 0;
+  bits->type = SCHRO_BITS_ENCODE;
 
-  /* FIXME this should be done incrementally */
-  oil_splat_u8_ns (bits->buffer->data, &value, bits->buffer->length);
+  bits->value = 0;
+  bits->shift = 7;
+}
+
+int
+schro_bits_get_offset (SchroBits *bits)
+{
+  return bits->n;
+}
+
+void
+schro_bits_flush (SchroBits *bits)
+{
+  schro_bits_sync (bits);
 }
 
 void
 schro_bits_sync (SchroBits *bits)
 {
-  bits->offset = (bits->offset + 7) & (~0x7);
+  if (bits->type == SCHRO_BITS_DECODE) {
+    bits->shift = -1;
+  } else {
+    if (bits->shift != 7) {
+      schro_bits_shift_out (bits);
+    }
+  }
 }
 
 void
@@ -75,24 +124,35 @@ schro_bits_dumpbits (SchroBits *bits)
 void
 schro_bits_append (SchroBits *bits, uint8_t *data, int len)
 {
-  if (bits->offset & 7) {
+  if (bits->shift != 7) {
     SCHRO_ERROR ("appending to unsyncronized bits");
   }
 
-  SCHRO_ASSERT(bits->offset/8 + len <= bits->buffer->length);
+  SCHRO_ASSERT(bits->n + len <= bits->buffer->length);
 
-  oil_memcpy (bits->buffer->data + (bits->offset>>3), data, len);
-  bits->offset += len*8;
+  oil_memcpy (bits->buffer->data + bits->n, data, len);
+  bits->n += len;
 }
 
+void
+schro_bits_skip (SchroBits *bits, int n_bytes)
+{
+  if (bits->shift != -1) {
+    SCHRO_ERROR ("skipping on unsyncronized bits");
+  }
+
+  bits->n += n_bytes;
+}
 
 void
 schro_bits_encode_bit (SchroBits *bits, int value)
 {
   value &= 1;
-  value <<= 7 - (bits->offset & 7);
-  bits->buffer->data[(bits->offset>>3)] |= value;
-  bits->offset++;
+  bits->value |= (value << bits->shift);
+  bits->shift--;
+  if (bits->shift < 0) {
+    schro_bits_shift_out (bits);
+  }
 }
 
 void
@@ -150,10 +210,12 @@ int
 schro_bits_decode_bit (SchroBits *bits)
 {
   int value;
-  value = bits->buffer->data[(bits->offset>>3)];
-  value >>= 7 - (bits->offset & 7);
-  value &= 1;
-  bits->offset++;
+
+  if (bits->shift < 0) {
+    schro_bits_shift_in (bits);
+  }
+  value = (bits->value >> bits->shift) & 1;
+  bits->shift--;
   return value;
 }
 

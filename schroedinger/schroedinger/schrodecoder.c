@@ -330,6 +330,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
     SCHRO_DEBUG("inter");
 
+    schro_bits_sync (decoder->bits);
     schro_decoder_decode_frame_prediction (decoder);
     schro_params_calculate_mc_sizes (params);
 
@@ -368,6 +369,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
       return SCHRO_DECODER_OK;
     }
 
+    schro_bits_sync (decoder->bits);
     schro_decoder_decode_prediction_data (decoder);
     {
       SchroMotion motion;
@@ -380,16 +382,30 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
     }
   }
 
-  schro_decoder_decode_transform_parameters (decoder);
-  schro_params_calculate_iwt_sizes (params);
+  schro_bits_sync (decoder->bits);
+  decoder->zero_residual = FALSE;
+  if (params->num_refs > 0) {
+    decoder->zero_residual = schro_bits_decode_bit (decoder->bits);
 
-  schro_params_init_subbands (params, decoder->subbands,
-      decoder->frame->components[0].stride,
-      decoder->frame->components[1].stride);
-  schro_decoder_decode_transform_data (decoder);
+    SCHRO_DEBUG ("zero residual %d", decoder->zero_residual);
+  }
 
-  schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
-      decoder->tmpbuf);
+  if (!decoder->zero_residual) {
+    schro_decoder_decode_transform_parameters (decoder);
+    schro_params_calculate_iwt_sizes (params);
+
+    schro_bits_sync (decoder->bits);
+    schro_params_init_subbands (params, decoder->subbands,
+        decoder->frame->components[0].stride,
+        decoder->frame->components[1].stride);
+    schro_decoder_decode_transform_data (decoder);
+
+    schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
+        decoder->tmpbuf);
+  }
+
+  /* FIXME handle zero residual */
+  SCHRO_ASSERT(!decoder->zero_residual);
 
   if (!_schro_decode_prediction_only) {
     if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
@@ -771,8 +787,6 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
   int bit;
   int index;
 
-  schro_bits_sync (decoder->bits);
-
   /* block params flag */
   bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
@@ -891,7 +905,7 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
   schro_bits_sync (decoder->bits);
 
   buffer = schro_buffer_new_subbuffer (decoder->bits->buffer,
-      decoder->bits->offset>>3, length);
+      schro_bits_get_offset (decoder->bits), length);
 
   arith = schro_arith_new ();
   schro_arith_decode_init (arith, buffer);
@@ -919,7 +933,7 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
   schro_arith_free (arith);
   schro_buffer_unref (buffer);
 
-  decoder->bits->offset += length<<3;
+  schro_bits_skip (decoder->bits, length);
 }
 
 static void
@@ -1049,20 +1063,6 @@ schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
   int bit;
   SchroParams *params = &decoder->params;
 
-  if (params->num_refs > 0) {
-    decoder->residual = schro_bits_decode_bit (decoder->bits);
-
-    SCHRO_DEBUG ("zero residual %d", decoder->residual);
-
-    if (decoder->residual == 0) {
-      return;
-    }
-  } else {
-#ifdef DIRAC_COMPAT
-    schro_bits_sync (decoder->bits);
-#endif
-  }
-
   params->wavelet_filter_index = SCHRO_WAVELET_DESL_9_3;
   params->transform_depth = 4;
 
@@ -1108,6 +1108,7 @@ schro_decoder_decode_transform_data (SchroDecoder *decoder)
 
   for(component=0;component<3;component++){
     for(i=0;i<1+3*params->transform_depth;i++) {
+      if (i != 0) schro_bits_sync (decoder->bits);
       schro_decoder_decode_subband (decoder, component, i);
     }
   }
@@ -1363,12 +1364,8 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     }
   }
 
-#ifdef DIRAC_COMPAT
-  schro_bits_sync (decoder->bits);
-#endif
-
   subband_length = schro_bits_decode_uint (decoder->bits);
-  SCHRO_DEBUG("subband length %d", subband_length);
+  SCHRO_DEBUG("subband %d %d length %d", component, index, subband_length);
 
   if (subband_length > 0) {
     int i,j;
@@ -1391,7 +1388,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     schro_bits_sync (decoder->bits);
 
     buffer = schro_buffer_new_subbuffer (decoder->bits->buffer,
-        decoder->bits->offset>>3, subband_length);
+        schro_bits_get_offset(decoder->bits), subband_length);
 
     arith = schro_arith_new ();
     schro_arith_decode_init (arith, buffer);
@@ -1513,7 +1510,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
     schro_arith_free (arith);
     schro_buffer_unref (buffer);
 
-    decoder->bits->offset += subband_length * 8;
+    schro_bits_skip (decoder->bits, subband_length);
 
     if (index == 0 && decoder->n_refs == 0) {
       for(j=0;j<height;j++){

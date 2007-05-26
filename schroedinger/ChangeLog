@@ -1,5 +1,22 @@
 2007-05-25  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrobits.c:
+	* schroedinger/schrobits.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schroengine.c:
+	* testsuite/bits.c:
+	* testsuite/bits2.c:
+	* tools/dump_packets.c:
+	  Rewrite schro_bits code for better error handling.
+	  Rearrange schro_bits_sync() calls to conform to spec.
+	  (Changes BITSTREAM).  Misc fixes.
+
+2007-05-25  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroframe.c:
 	* schroedinger/schromotion.c:

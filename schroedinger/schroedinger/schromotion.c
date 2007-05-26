@@ -775,8 +775,8 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
         obmc_luma->shift, obmc_chroma->shift);
   }
 
-  y = params->y_num_blocks*obmc_luma->y_sep;
-  shift_rows (dest, y - obmc_luma->y_ramp/2, obmc_luma->y_ramp/2,
+  y = params->y_num_blocks*obmc_luma->y_sep - obmc_luma->y_ramp/2;
+  shift_rows (dest, y - obmc_luma->y_ramp/2, obmc_luma->y_ramp,
       obmc_luma->shift, obmc_chroma->shift);
 
   schro_obmc_cleanup (obmc_luma);

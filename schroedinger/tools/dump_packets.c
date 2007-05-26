@@ -382,13 +382,11 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       n = schro_bits_decode_uint(bits);
       g_print("  block data length: %d\n", n);
       schro_bits_sync (bits);
-      bits->offset += n*8;
+      schro_bits_skip (bits, n);
     }
 
+    schro_bits_sync (bits);
     if (num_refs == 0) {
-#ifdef DIRAC_COMPAT
-      schro_bits_sync(bits);
-#endif
       bit = 0;
     } else {
       bit = schro_bits_decode_bit (bits);
@@ -431,26 +429,25 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         g_print("    codeblock mode index: %d\n", schro_bits_decode_uint(bits));
       }
 
+      schro_bits_sync (bits);
       for(j=0;j<3;j++){
         g_print("  component %d:\n",j);
         g_print("    subband  length  quantiser_index\n");
         for(i=0;i<1+depth*3;i++){
           int length;
 
-          if(bits->offset > bits->buffer->length * 8) {
+          if(bits->error) {
             g_print("    PAST END\n");
             continue;
           }
 
-#ifdef DIRAC_COMPAT
-          schro_bits_sync(bits);
-#endif
+          if (i!=0) schro_bits_sync(bits);
           length = schro_bits_decode_uint(bits);
           if (length > 0) {
             g_print("    %4d:   %6d    %3d\n", i, length,
                 schro_bits_decode_uint(bits));
             schro_bits_sync(bits);
-            bits->offset += length * 8;
+            schro_bits_skip (bits, length);
           } else {
             g_print("    %4d:   %6d\n", i, length);
           }
@@ -462,14 +459,14 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     g_print("  code: %d\n", data[13]);
     g_print("  string: %.*s\n", length, data + 14);
 
-    bits->offset += (4 + 4 + length)*8;
+    schro_bits_skip (bits, 4 + 4 + length);
   }
 
   schro_bits_sync (bits);
 
-  g_print("offset %d\n", bits->offset);
-  dump_hex (bits->buffer->data + bits->offset/8,
-      MIN(bits->buffer->length - bits->offset/8, 100), "  ");
+  g_print("offset %d\n", schro_bits_get_offset (bits));
+  dump_hex (bits->buffer->data + schro_bits_get_offset (bits),
+      MIN(bits->buffer->length - schro_bits_get_offset (bits), 100), "  ");
 
   schro_bits_free (bits);
   schro_buffer_unref (buf);
