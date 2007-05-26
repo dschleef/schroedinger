@@ -327,8 +327,7 @@ splat_block_general (SchroFrame *dest, SchroMotion *motion,
   if (y>0) k+=3;
   if (y + obmc->y_len >= dest->height) k+=3;
 
-  region = obmc->regions + k;
-  x += region->start_x;
+  rections to Trailheadsx += region->start_x;
   y += region->start_y;
 
   for(i=0;i<12;i++) tmp[i] = value;
@@ -386,8 +385,8 @@ get_block_simple (SchroMotion *motion, int x, int y, int which)
   int upsample_index;
 
   upsample_index = (x&4)>>2 | (y&4)>>1;
-  w = 12;
-  h = 12;
+  w = motion->obmc_luma->x_len;
+  h = motion->obmc_luma->y_len;
 
   if (which == 2) {
     srcframe = motion->src2[upsample_index];
@@ -460,8 +459,8 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
 #endif
 
   /* FIXME move and fix */
-  motion->sx_max = srcframe->width - 12;
-  motion->sy_max = srcframe->height - 12;
+  motion->sx_max = srcframe->width - motion->obmc_luma->x_len;
+  motion->sy_max = srcframe->height - motion->obmc_luma->y_len;
 
   if (sx < 0 || sy < 0 || sx > motion->sx_max || sy > motion->sy_max) {
     motion->blocks[0] = motion->tmpdata;
@@ -487,7 +486,7 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
     motion->strides[1] = 64;
     data = motion->blocks[1];
     comp = &srcframe->components[1];
-    stride = motion->strides[0];
+    stride = motion->strides[1];
     for(j=0;j<h;j++){
       for(i=0;i<w;i++){
         int src_x = CLAMP(sx + i, 0, comp->width - 1);
@@ -500,7 +499,7 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
     motion->strides[2] = 64;
     data = motion->blocks[2];
     comp = &srcframe->components[2];
-    stride = motion->strides[0];
+    stride = motion->strides[2];
     for(j=0;j<h;j++){
       for(i=0;i<w;i++){
         int src_x = CLAMP(sx + i, 0, comp->width - 1);

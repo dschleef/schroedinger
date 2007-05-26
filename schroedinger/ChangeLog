@@ -1,5 +1,13 @@
 2007-05-25  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schropredict.c:
+	  Random fixes.
+
+2007-05-25  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroengine.c:
 	* schroedinger/schromotion.c:

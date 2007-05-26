@@ -403,11 +403,17 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
       schro_frame_convert (output_picture, decoder->frame);
     }
   } else {
+    SchroFrame *frame;
+    if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
+      frame = decoder->mc_tmp_frame;
+    } else {
+      frame = decoder->frame;
+    }
     if (SCHRO_FRAME_IS_PACKED(output_picture->format)) {
-      schro_frame_convert (decoder->planar_output_frame, decoder->mc_tmp_frame);
+      schro_frame_convert (decoder->planar_output_frame, frame);
       schro_frame_convert (output_picture, decoder->planar_output_frame);
     } else {
-      schro_frame_convert (output_picture, decoder->mc_tmp_frame);
+      schro_frame_convert (output_picture, frame);
     }
 
     if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
@@ -478,9 +484,8 @@ schro_decoder_init (SchroDecoder *decoder)
       video_format->chroma_format);
   decoder->planar_output_frame = schro_frame_new_and_alloc (frame_format,
       video_format->width, video_format->height);
-  SCHRO_ERROR("planar output frame %dx%d",
+  SCHRO_DEBUG("planar output frame %dx%d",
       video_format->width, video_format->height);
-
 }
 
 #if 0

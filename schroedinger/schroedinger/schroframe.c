@@ -597,7 +597,7 @@ schro_frame_convert_yuyv_u8_422 (SchroFrame *dest, SchroFrame *src)
     mix_yuyv (ddata, ydata, udata, vdata, n);
   }
 
-  //schro_frame_edge_extend (dest, src->width, src->height);
+  /* FIXME edge extend */
 }
 
 static void
@@ -637,6 +637,7 @@ schro_frame_convert_uyvy_u8_422 (SchroFrame *dest, SchroFrame *src)
     mix_uyvy (ddata, ydata, udata, vdata, n);
   }
 
+  /* FIXME edge extend */
   //schro_frame_edge_extend (dest, src->width, src->height);
 }
 
@@ -675,6 +676,7 @@ schro_frame_convert_ayuv_u8_444 (SchroFrame *dest, SchroFrame *src)
     mix_ayuv (ddata, ydata, udata, vdata, width);
   }
 
+  /* FIXME edge extend */
   //schro_frame_edge_extend (dest, src->width, src->height);
 }
 

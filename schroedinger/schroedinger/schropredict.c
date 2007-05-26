@@ -129,6 +129,9 @@ schro_motion_field_cleanup (SchroMotionField *mf, int x_blocks, int y_blocks)
   int i,j;
   SchroMotionVector *mv;
 
+  SCHRO_DEBUG("motion field cleanup %dx%d to %dx%d",
+      x_blocks, y_blocks,
+      mf->x_num_blocks, mf->y_num_blocks);
   if (x_blocks < mf->x_num_blocks) {
     for(j=0;j<mf->y_num_blocks;j++){
       for(i=x_blocks;i<mf->x_num_blocks;i++){
