@@ -1,3 +1,14 @@
+2007-05-26  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.c:
+	  Add x,y coords for second block to motion vector.  Fix
+	  encoding/decoding of vectors for second reference frame.
+	  Changes BITSTREAM.
+
 2007-05-25  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrobits.c:

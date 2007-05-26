@@ -291,19 +291,20 @@ void
 get_dc_block (SchroMotion *motion, SchroMotionVector *mv)
 {
   int offset;
+  SchroMotionVectorDC *mvdc = (SchroMotionVectorDC *)mv;
 
   offset = 0;
-  memset (motion->tmpdata + offset, mv->u.dc[0], motion->obmc_luma->x_len);
+  memset (motion->tmpdata + offset, mvdc->dc[0], motion->obmc_luma->x_len);
   motion->blocks[0] = motion->tmpdata + offset;
   motion->strides[0] = 0;
   offset += motion->obmc_luma->x_len;
 
-  memset (motion->tmpdata + offset, mv->u.dc[1], motion->obmc_chroma->x_len);
+  memset (motion->tmpdata + offset, mvdc->dc[1], motion->obmc_chroma->x_len);
   motion->blocks[1] = motion->tmpdata + offset;
   motion->strides[1] = 0;
   offset += motion->obmc_chroma->x_len;
 
-  memset (motion->tmpdata + offset, mv->u.dc[2], motion->obmc_chroma->x_len);
+  memset (motion->tmpdata + offset, mvdc->dc[2], motion->obmc_chroma->x_len);
   motion->blocks[2] = motion->tmpdata + offset;
   motion->strides[2] = 0;
 }
@@ -421,9 +422,15 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
   int w, h;
   int upsample_index;
 
-  sx = x + (mv->u.xy.x>>3);
-  sy = y + (mv->u.xy.y>>3);
-  upsample_index = (mv->u.xy.x&4)>>2 | (mv->u.xy.y&4)>>1;
+  if (which & 1) {
+    sx = x + (mv->x1>>3);
+    sy = y + (mv->y1>>3);
+    upsample_index = (mv->x1&4)>>2 | (mv->y1&4)>>1;
+  } else {
+    sx = x + (mv->x2>>3);
+    sy = y + (mv->y2>>3);
+    upsample_index = (mv->x2&4)>>2 | (mv->y2&4)>>1;
+  }
   w = motion->obmc_luma->x_len;
   h = motion->obmc_luma->y_len;
 
@@ -790,7 +797,7 @@ void
 schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
     SchroParams *params, int x, int y, int *pred)
 {
-  SchroMotionVector *mv;
+  SchroMotionVectorDC *mvdc;
   int i;
 
   for(i=0;i<3;i++){
@@ -798,23 +805,23 @@ schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
     int n = 0;
 
     if (x>0) {
-      mv = &motion_vectors[y*params->x_num_blocks + (x-1)];
-      if (mv->pred_mode == 0) {
-        sum += mv->u.dc[i];
+      mvdc = (SchroMotionVectorDC *)&motion_vectors[y*params->x_num_blocks + (x-1)];
+      if (mvdc->pred_mode == 0) {
+        sum += mvdc->dc[i];
         n++;
       }
     }
     if (y>0) {
-      mv = &motion_vectors[(y-1)*params->x_num_blocks + x];
-      if (mv->pred_mode == 0) {
-        sum += mv->u.dc[i];
+      mvdc = (SchroMotionVectorDC *)&motion_vectors[(y-1)*params->x_num_blocks + x];
+      if (mvdc->pred_mode == 0) {
+        sum += mvdc->dc[i];
         n++;
       }
     }
     if (x>0 && y>0) {
-      mv = &motion_vectors[(y-1)*params->x_num_blocks + (x-1)];
-      if (mv->pred_mode == 0) {
-        sum += mv->u.dc[i];
+      mvdc = (SchroMotionVectorDC *)&motion_vectors[(y-1)*params->x_num_blocks + (x-1)];
+      if (mvdc->pred_mode == 0) {
+        sum += mvdc->dc[i];
         n++;
       }
     }
@@ -884,25 +891,40 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
 
   if (x>0) {
     mv = &motion_vectors[y*params->x_num_blocks + (x-1)];
-    if (mv->using_global == FALSE && mv->pred_mode == mode) {
-      vx[n] = mv->u.xy.x;
-      vy[n] = mv->u.xy.y;
+    if (mv->using_global == FALSE && (mv->pred_mode & mode)) {
+      if (mode == 1) {
+        vx[n] = mv->x1;
+        vy[n] = mv->y1;
+      } else {
+        vx[n] = mv->x2;
+        vy[n] = mv->y2;
+      }
       n++;
     }
   }
   if (y>0) {
     mv = &motion_vectors[(y-1)*params->x_num_blocks + x];
-    if (mv->using_global == FALSE && mv->pred_mode == mode) {
-      vx[n] = mv->u.xy.x;
-      vy[n] = mv->u.xy.y;
+    if (mv->using_global == FALSE && (mv->pred_mode & mode)) {
+      if (mode == 1) {
+        vx[n] = mv->x1;
+        vy[n] = mv->y1;
+      } else {
+        vx[n] = mv->x2;
+        vy[n] = mv->y2;
+      }
       n++;
     }
   }
   if (x>0 && y>0) {
     mv = &motion_vectors[(y-1)*params->x_num_blocks + (x-1)];
-    if (mv->using_global == FALSE && mv->pred_mode == mode) {
-      vx[n] = mv->u.xy.x;
-      vy[n] = mv->u.xy.y;
+    if (mv->using_global == FALSE && (mv->pred_mode & mode)) {
+      if (mode == 1) {
+        vx[n] = mv->x1;
+        vy[n] = mv->y1;
+      } else {
+        vx[n] = mv->x2;
+        vy[n] = mv->y2;
+      }
       n++;
     }
   }

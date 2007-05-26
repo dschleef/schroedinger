@@ -13,6 +13,7 @@ typedef struct _SchroVideoFormat SchroVideoFormat;
 typedef struct _SchroParams SchroParams;
 typedef struct _SchroSubband SchroSubband;
 typedef struct _SchroMotionVector SchroMotionVector;
+typedef struct _SchroMotionVectorDC SchroMotionVectorDC;
 typedef struct _SchroMotionField SchroMotionField;
 typedef struct _SchroGlobalMotion SchroGlobalMotion;
 
@@ -137,19 +138,28 @@ struct _SchroSubband {
 };
 
 struct _SchroMotionVector {
-  union {
-    struct {
-      int16_t x;
-      int16_t y;
-    } xy;
-    uint8_t dc[3];
-  } u;
   unsigned int pred_mode : 2;
   unsigned int using_global : 1;
   unsigned int split : 2;
   unsigned int unused : 3;
   unsigned int scan : 8;
   unsigned int metric : 16;
+  int16_t x1;
+  int16_t y1;
+  int16_t x2;
+  int16_t y2;
+};
+
+struct _SchroMotionVectorDC {
+  unsigned int pred_mode : 2;
+  unsigned int using_global : 1;
+  unsigned int split : 2;
+  unsigned int unused : 3;
+  unsigned int scan : 8;
+  unsigned int metric : 16;
+  uint8_t dc[3];
+  uint8_t _padding1;
+  uint32_t _padding2;
 };
 
 struct _SchroMotionField {

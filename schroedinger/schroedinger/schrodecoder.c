@@ -1015,16 +1015,17 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
 
   if (mv->pred_mode == 0) {
     int pred[3];
+    SchroMotionVectorDC *mvdc = (SchroMotionVectorDC *)mv;
 
     schro_motion_dc_prediction (motion_vectors, &decoder->params, x, y, pred);
 
-    mv->u.dc[0] = pred[0] + _schro_arith_context_decode_sint (arith,
+    mvdc->dc[0] = pred[0] + _schro_arith_context_decode_sint (arith,
         SCHRO_CTX_LUMA_DC_CONT_BIN1, SCHRO_CTX_LUMA_DC_VALUE,
         SCHRO_CTX_LUMA_DC_SIGN);
-    mv->u.dc[1] = pred[1] + _schro_arith_context_decode_sint (arith,
+    mvdc->dc[1] = pred[1] + _schro_arith_context_decode_sint (arith,
         SCHRO_CTX_CHROMA1_DC_CONT_BIN1, SCHRO_CTX_CHROMA1_DC_VALUE,
         SCHRO_CTX_CHROMA1_DC_SIGN);
-    mv->u.dc[2] = pred[2] + _schro_arith_context_decode_sint (arith,
+    mvdc->dc[2] = pred[2] + _schro_arith_context_decode_sint (arith,
         SCHRO_CTX_CHROMA2_DC_CONT_BIN1, SCHRO_CTX_CHROMA2_DC_VALUE,
         SCHRO_CTX_CHROMA2_DC_SIGN);
   } else {
@@ -1040,19 +1041,35 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
       mv->using_global = FALSE;
     }
     if (!mv->using_global) {
-      schro_motion_vector_prediction (motion_vectors, &decoder->params, x, y,
-          &pred_x, &pred_y, mv->pred_mode);
+      if (mv->pred_mode & 1) {
+        schro_motion_vector_prediction (motion_vectors, &decoder->params, x, y,
+            &pred_x, &pred_y, 1);
 
-      /* FIXME assumption that mv precision is 0 */
-      mv->u.xy.x = pred_x + (_schro_arith_context_decode_sint (arith,
-           SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,
-           SCHRO_CTX_MV_REF1_H_SIGN)<<3);
-      mv->u.xy.y = pred_y + (_schro_arith_context_decode_sint (arith,
-           SCHRO_CTX_MV_REF1_V_CONT_BIN1, SCHRO_CTX_MV_REF1_V_VALUE,
-           SCHRO_CTX_MV_REF1_V_SIGN)<<3);
+        /* FIXME assumption that mv precision is 0 */
+        mv->x1 = pred_x + (_schro_arith_context_decode_sint (arith,
+             SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,
+             SCHRO_CTX_MV_REF1_H_SIGN)<<3);
+        mv->y1 = pred_y + (_schro_arith_context_decode_sint (arith,
+             SCHRO_CTX_MV_REF1_V_CONT_BIN1, SCHRO_CTX_MV_REF1_V_VALUE,
+             SCHRO_CTX_MV_REF1_V_SIGN)<<3);
+      }
+      if (mv->pred_mode & 2) {
+        schro_motion_vector_prediction (motion_vectors, &decoder->params, x, y,
+            &pred_x, &pred_y, 2);
+
+        /* FIXME assumption that mv precision is 0 */
+        mv->x2 = pred_x + (_schro_arith_context_decode_sint (arith,
+             SCHRO_CTX_MV_REF2_H_CONT_BIN1, SCHRO_CTX_MV_REF2_H_VALUE,
+             SCHRO_CTX_MV_REF2_H_SIGN)<<3);
+        mv->y2 = pred_y + (_schro_arith_context_decode_sint (arith,
+             SCHRO_CTX_MV_REF2_V_CONT_BIN1, SCHRO_CTX_MV_REF2_V_VALUE,
+             SCHRO_CTX_MV_REF2_V_SIGN)<<3);
+      }
     } else {
-      mv->u.xy.x = 0;
-      mv->u.xy.y = 0;
+      mv->x1 = 0;
+      mv->y1 = 0;
+      mv->x2 = 0;
+      mv->y2 = 0;
     }
   }
 }
