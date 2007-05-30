@@ -1,10 +1,14 @@
 2007-05-30  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroparams.c: Fix codeblock initialization.
+
+2007-05-30  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schromotion.c:
 	* tools/dump_packets.c:
-	  Fix motion prediction to comply with spec.
+	  Fix motion prediction to comply with spec.  BITSTREAM.
 	* testsuite/global_motion.c:
 	* testsuite/motion.c:
 	* testsuite/motion2.c:
