@@ -73,7 +73,7 @@ schro_frame_new_and_alloc (SchroFrameFormat format, int width, int height)
   frame->components[1].height = chroma_height;
   frame->components[1].stride = ROUND_UP_4(chroma_width * bytes_pp);
   frame->components[1].length = 
-    frame->components[1].stride * frame->components[0].height;
+    frame->components[1].stride * frame->components[1].height;
   frame->components[1].v_shift = v_shift;
   frame->components[1].h_shift = h_shift;
 
@@ -81,7 +81,7 @@ schro_frame_new_and_alloc (SchroFrameFormat format, int width, int height)
   frame->components[2].height = chroma_height;
   frame->components[2].stride = ROUND_UP_4(chroma_width * bytes_pp);
   frame->components[2].length = 
-    frame->components[2].stride * frame->components[0].height;
+    frame->components[2].stride * frame->components[2].height;
   frame->components[2].v_shift = v_shift;
   frame->components[2].h_shift = h_shift;
 
@@ -1159,7 +1159,7 @@ schro_frame_h_upsample (SchroFrame *dest, SchroFrame *src)
         x >>= 8;
         ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
       }
-      for(;i<dcomp->width-1;i++){
+      for(;i<dcomp->width;i++){
         x = 128;
         for(l=0;l<10;l++){
           x += taps[l] * sdata[scomp->stride * j +
@@ -1168,8 +1168,6 @@ schro_frame_h_upsample (SchroFrame *dest, SchroFrame *src)
         x >>= 8;
         ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
       }
-      i = dcomp->width - 1;
-      ddata[dcomp->stride * j + i] = sdata[scomp->stride * j + i];
     }
   }
 }
@@ -1221,7 +1219,7 @@ schro_frame_v_upsample (SchroFrame *dest, SchroFrame *src)
         ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
       }
     }
-    for(j=dcomp->height-5;j<dcomp->height - 1;j++){
+    for(j=dcomp->height-5;j<dcomp->height;j++){
       for(i=0;i<dcomp->width;i++){
         x = 128;
         for(l=0;l<10;l++){
@@ -1231,10 +1229,6 @@ schro_frame_v_upsample (SchroFrame *dest, SchroFrame *src)
         x >>= 8;
         ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
       }
-    }
-    j = dcomp->height - 1;
-    for(i=0;i<dcomp->width;i++){
-      ddata[dcomp->stride * j + i] = sdata[scomp->stride * j + i];
     }
   }
 }

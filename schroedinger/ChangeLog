@@ -1,3 +1,7 @@
+2007-05-30  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroframe.c: Fixes from David Flynn.
+
 2007-05-26  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:
