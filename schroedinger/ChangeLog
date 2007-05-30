@@ -1,5 +1,18 @@
 2007-05-30  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schromotion.c:
+	* tools/dump_packets.c:
+	  Fix motion prediction to comply with spec.
+	* testsuite/global_motion.c:
+	* testsuite/motion.c:
+	* testsuite/motion2.c:
+	* testsuite/obmc.c:
+	  Compile fixes.
+
+2007-05-30  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroframe.c: Fixes from David Flynn.
 
 2007-05-26  David Schleef  <ds@schleef.org>

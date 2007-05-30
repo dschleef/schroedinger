@@ -146,8 +146,8 @@ main (int argc, char *argv[])
         motion_vectors[jj+i].pred_mode = 0;
       }
 #endif
-      motion_vectors[jj+i].u.xy.x = 0;
-      motion_vectors[jj+i].u.xy.y = -8*i;
+      motion_vectors[jj+i].x1 = 0;
+      motion_vectors[jj+i].y1 = -8*i;
       motion_vectors[jj+i].pred_mode = 1;
       motion_vectors[jj+i].split = 2;
     }

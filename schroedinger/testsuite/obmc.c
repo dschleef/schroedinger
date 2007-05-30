@@ -17,7 +17,8 @@ main (int argc, char *argv[])
   schro_init();
 
   //schro_obmc_init(&obmc, 12, 12, 8, 8);
-  schro_obmc_init(&obmc, 8, 8, 8, 8);
+  //schro_obmc_init(&obmc, 8, 8, 8, 8);
+  schro_obmc_init(&obmc, 16, 16, 8, 8);
 
   printf("shift %d\n\n", obmc.shift);
   for(k=0;k<9;k++){

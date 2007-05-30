@@ -889,6 +889,7 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
   int vy[3];
   int n = 0;
 
+  SCHRO_ASSERT(mode == 1 || mode == 2);
   if (x>0) {
     mv = &motion_vectors[y*params->x_num_blocks + (x-1)];
     if (mv->using_global == FALSE && (mv->pred_mode & mode)) {

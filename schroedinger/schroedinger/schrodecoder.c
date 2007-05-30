@@ -9,9 +9,9 @@
 int _schro_decode_prediction_only;
 
 static void schro_decoder_decode_macroblock(SchroDecoder *decoder,
-    SchroArith *arith, int i, int j);
+    SchroArith **arith, int i, int j);
 static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
-    SchroArith *arith, SchroMotionVector *motion_vectors, int x, int y);
+    SchroArith **arith, SchroMotionVector *motion_vectors, int x, int y);
 static void schro_decoder_init (SchroDecoder *decoder);
 
 static void schro_decoder_reference_add (SchroDecoder *decoder,
@@ -889,30 +889,50 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
   }
 }
 
+enum {
+  SCHRO_DECODER_ARITH_SUPERBLOCK,
+  SCHRO_DECODER_ARITH_PRED_MODE,
+  SCHRO_DECODER_ARITH_VECTOR_REF1_X,
+  SCHRO_DECODER_ARITH_VECTOR_REF1_Y,
+  SCHRO_DECODER_ARITH_VECTOR_REF2_X,
+  SCHRO_DECODER_ARITH_VECTOR_REF2_Y,
+  SCHRO_DECODER_ARITH_DC_0,
+  SCHRO_DECODER_ARITH_DC_1,
+  SCHRO_DECODER_ARITH_DC_2
+};
+
 void
 schro_decoder_decode_prediction_data (SchroDecoder *decoder)
 {
   SchroParams *params = &decoder->params;
-  SchroArith *arith;
+  SchroArith *arith[9];
   int i, j;
-  SchroBuffer *buffer;
-  int length;
 
   schro_bits_sync (decoder->bits);
-
-  length = schro_bits_decode_uint (decoder->bits);
-
-  schro_bits_sync (decoder->bits);
-
-  buffer = schro_buffer_new_subbuffer (decoder->bits->buffer,
-      schro_bits_get_offset (decoder->bits), length);
-
-  arith = schro_arith_new ();
-  schro_arith_decode_init (arith, buffer);
-  schro_arith_init_contexts (arith);
 
   memset(decoder->motion_field->motion_vectors, 0,
       sizeof(SchroMotionVector)*params->y_num_blocks*params->x_num_blocks);
+
+  for(i=0;i<9;i++){
+    SchroBuffer *buffer;
+    int length;
+
+    if (params->num_refs < 2 && (i == SCHRO_DECODER_ARITH_VECTOR_REF2_X ||
+          i == SCHRO_DECODER_ARITH_VECTOR_REF2_Y)) {
+      arith[i] = NULL;
+      continue;
+    }
+    length = schro_bits_decode_uint (decoder->bits);
+    schro_bits_sync (decoder->bits);
+    buffer = schro_buffer_new_subbuffer (decoder->bits->buffer,
+        schro_bits_get_offset (decoder->bits), length);
+
+    arith[i] = schro_arith_new ();
+    schro_arith_decode_init (arith[i], buffer);
+    schro_arith_init_contexts (arith[i]);
+
+    schro_bits_skip (decoder->bits, length);
+  }
 
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
@@ -920,24 +940,24 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
     }
   }
 
-  if (arith->offset < buffer->length) {
-    SCHRO_WARNING("arith decoding didn't consume buffer (%d < %d)",
-        arith->offset, buffer->length);
-  }
-#if 0
-  if (arith->offset > buffer->length + 6) {
-    SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
-        arith->offset, buffer->length);
-  }
-#endif
-  schro_arith_free (arith);
-  schro_buffer_unref (buffer);
+  for(i=0;i<9;i++) {
+    if (arith[i] == NULL) continue;
 
-  schro_bits_skip (decoder->bits, length);
+    if (arith[i]->offset < arith[i]->buffer->length) {
+      SCHRO_WARNING("arith decoding didn't consume buffer (%d < %d)",
+          arith[i]->offset, arith[i]->buffer->length);
+    }
+    if (arith[i]->offset > arith[i]->buffer->length + 6) {
+      SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
+          arith[i]->offset, arith[i]->buffer->length);
+    }
+    schro_buffer_unref (arith[i]->buffer);
+    schro_arith_free (arith[i]);
+  }
 }
 
 static void
-schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith *arith,
+schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith **arith,
     int i, int j)
 {
   SchroParams *params = &decoder->params;
@@ -952,7 +972,7 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith *arith,
   mv->split = (split_prediction + _schro_arith_context_decode_uint (arith,
         SCHRO_CTX_SB_F1, SCHRO_CTX_SB_DATA))%3;
 #endif
-  a = _schro_arith_context_decode_uint (arith,
+  a = _schro_arith_context_decode_uint (arith[SCHRO_DECODER_ARITH_SUPERBLOCK],
         SCHRO_CTX_SB_F1, SCHRO_CTX_SB_DATA);
   mv->split = (split_prediction + a)%3;
 
@@ -998,7 +1018,7 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith *arith,
 }
 
 static void
-schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
+schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith **arith,
     SchroMotionVector *motion_vectors, int x, int y)
 {
   SchroParams *params = &decoder->params;
@@ -1007,10 +1027,12 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
   mv->pred_mode = schro_motion_get_mode_prediction (decoder->motion_field,
       x, y);
   mv->pred_mode ^= 
-    _schro_arith_context_decode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF1);
+    _schro_arith_context_decode_bit (arith[SCHRO_DECODER_ARITH_PRED_MODE],
+        SCHRO_CTX_BLOCK_MODE_REF1);
   if (params->num_refs > 1) {
     mv->pred_mode ^=
-      _schro_arith_context_decode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF2) << 1;
+      _schro_arith_context_decode_bit (arith[SCHRO_DECODER_ARITH_PRED_MODE],
+          SCHRO_CTX_BLOCK_MODE_REF2) << 1;
   }
 
   if (mv->pred_mode == 0) {
@@ -1019,13 +1041,16 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
 
     schro_motion_dc_prediction (motion_vectors, &decoder->params, x, y, pred);
 
-    mvdc->dc[0] = pred[0] + _schro_arith_context_decode_sint (arith,
+    mvdc->dc[0] = pred[0] + _schro_arith_context_decode_sint (
+        arith[SCHRO_DECODER_ARITH_DC_0],
         SCHRO_CTX_LUMA_DC_CONT_BIN1, SCHRO_CTX_LUMA_DC_VALUE,
         SCHRO_CTX_LUMA_DC_SIGN);
-    mvdc->dc[1] = pred[1] + _schro_arith_context_decode_sint (arith,
+    mvdc->dc[1] = pred[1] + _schro_arith_context_decode_sint (
+        arith[SCHRO_DECODER_ARITH_DC_1],
         SCHRO_CTX_CHROMA1_DC_CONT_BIN1, SCHRO_CTX_CHROMA1_DC_VALUE,
         SCHRO_CTX_CHROMA1_DC_SIGN);
-    mvdc->dc[2] = pred[2] + _schro_arith_context_decode_sint (arith,
+    mvdc->dc[2] = pred[2] + _schro_arith_context_decode_sint (
+        arith[SCHRO_DECODER_ARITH_DC_2],
         SCHRO_CTX_CHROMA2_DC_CONT_BIN1, SCHRO_CTX_CHROMA2_DC_VALUE,
         SCHRO_CTX_CHROMA2_DC_SIGN);
   } else {
@@ -1035,8 +1060,8 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
       int pred;
       schro_motion_field_get_global_prediction (decoder->motion_field,
           x, y, &pred);
-      mv->using_global = pred ^ _schro_arith_context_decode_bit (arith,
-          SCHRO_CTX_GLOBAL_BLOCK);
+      mv->using_global = pred ^ _schro_arith_context_decode_bit (
+          arith[SCHRO_DECODER_ARITH_PRED_MODE], SCHRO_CTX_GLOBAL_BLOCK);
     } else {
       mv->using_global = FALSE;
     }
@@ -1046,24 +1071,28 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith *arith,
             &pred_x, &pred_y, 1);
 
         /* FIXME assumption that mv precision is 0 */
-        mv->x1 = pred_x + (_schro_arith_context_decode_sint (arith,
-             SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,
-             SCHRO_CTX_MV_REF1_H_SIGN)<<3);
-        mv->y1 = pred_y + (_schro_arith_context_decode_sint (arith,
-             SCHRO_CTX_MV_REF1_V_CONT_BIN1, SCHRO_CTX_MV_REF1_V_VALUE,
-             SCHRO_CTX_MV_REF1_V_SIGN)<<3);
+        mv->x1 = pred_x + (_schro_arith_context_decode_sint (
+              arith[SCHRO_DECODER_ARITH_VECTOR_REF1_X],
+              SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,
+              SCHRO_CTX_MV_REF1_H_SIGN)<<3);
+        mv->y1 = pred_y + (_schro_arith_context_decode_sint (
+              arith[SCHRO_DECODER_ARITH_VECTOR_REF1_Y],
+              SCHRO_CTX_MV_REF1_V_CONT_BIN1, SCHRO_CTX_MV_REF1_V_VALUE,
+              SCHRO_CTX_MV_REF1_V_SIGN)<<3);
       }
       if (mv->pred_mode & 2) {
         schro_motion_vector_prediction (motion_vectors, &decoder->params, x, y,
             &pred_x, &pred_y, 2);
 
         /* FIXME assumption that mv precision is 0 */
-        mv->x2 = pred_x + (_schro_arith_context_decode_sint (arith,
-             SCHRO_CTX_MV_REF2_H_CONT_BIN1, SCHRO_CTX_MV_REF2_H_VALUE,
-             SCHRO_CTX_MV_REF2_H_SIGN)<<3);
-        mv->y2 = pred_y + (_schro_arith_context_decode_sint (arith,
-             SCHRO_CTX_MV_REF2_V_CONT_BIN1, SCHRO_CTX_MV_REF2_V_VALUE,
-             SCHRO_CTX_MV_REF2_V_SIGN)<<3);
+        mv->x2 = pred_x + (_schro_arith_context_decode_sint (
+              arith[SCHRO_DECODER_ARITH_VECTOR_REF2_X],
+              SCHRO_CTX_MV_REF2_H_CONT_BIN1, SCHRO_CTX_MV_REF2_H_VALUE,
+              SCHRO_CTX_MV_REF2_H_SIGN)<<3);
+        mv->y2 = pred_y + (_schro_arith_context_decode_sint (
+              arith[SCHRO_DECODER_ARITH_VECTOR_REF2_Y],
+              SCHRO_CTX_MV_REF2_V_CONT_BIN1, SCHRO_CTX_MV_REF2_V_VALUE,
+              SCHRO_CTX_MV_REF2_V_SIGN)<<3);
       }
     } else {
       mv->x1 = 0;

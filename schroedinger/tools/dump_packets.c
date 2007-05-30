@@ -380,9 +380,52 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
 
       schro_bits_sync(bits);
       n = schro_bits_decode_uint(bits);
-      g_print("  block data length: %d\n", n);
+      g_print("  superblock split data length: %d\n", n);
       schro_bits_sync (bits);
       schro_bits_skip (bits, n);
+
+      n = schro_bits_decode_uint(bits);
+      g_print("  prediction modes data length: %d\n", n);
+      schro_bits_sync (bits);
+      schro_bits_skip (bits, n);
+
+      n = schro_bits_decode_uint(bits);
+      g_print("  vector data (ref1,x) length: %d\n", n);
+      schro_bits_sync (bits);
+      schro_bits_skip (bits, n);
+
+      n = schro_bits_decode_uint(bits);
+      g_print("  vector data (ref1,y) length: %d\n", n);
+      schro_bits_sync (bits);
+      schro_bits_skip (bits, n);
+
+      if (num_refs>1) {
+        n = schro_bits_decode_uint(bits);
+        g_print("  vector data (ref2,x) length: %d\n", n);
+        schro_bits_sync (bits);
+        schro_bits_skip (bits, n);
+
+        n = schro_bits_decode_uint(bits);
+        g_print("  vector data (ref2,y) length: %d\n", n);
+        schro_bits_sync (bits);
+        schro_bits_skip (bits, n);
+      }
+
+      n = schro_bits_decode_uint(bits);
+      g_print("  DC data (y) length: %d\n", n);
+      schro_bits_sync (bits);
+      schro_bits_skip (bits, n);
+
+      n = schro_bits_decode_uint(bits);
+      g_print("  DC data (u) length: %d\n", n);
+      schro_bits_sync (bits);
+      schro_bits_skip (bits, n);
+
+      n = schro_bits_decode_uint(bits);
+      g_print("  DC data (v) length: %d\n", n);
+      schro_bits_sync (bits);
+      schro_bits_skip (bits, n);
+
     }
 
     schro_bits_sync (bits);
