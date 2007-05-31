@@ -434,9 +434,6 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
   w = motion->obmc_luma->x_len;
   h = motion->obmc_luma->y_len;
 
-  /* FIXME */
-  SCHRO_ASSERT(upsample_index == 0);
-
   if (which == 2) {
     srcframe = motion->src2[upsample_index];
   } else {
@@ -1015,8 +1012,11 @@ int
 schro_motion_verify (SchroMotion *motion)
 {
   int x,y;
+  unsigned int precision_mask;
   SchroMotionVector *mv, *sbmv, *bmv;
   SchroParams *params = motion->params;
+
+  precision_mask = 0x7 >> params->mv_precision;
 
   for(y=0;y<params->y_num_blocks;y++){
     for(x=0;x<params->x_num_blocks;x++){
@@ -1044,20 +1044,23 @@ schro_motion_verify (SchroMotion *motion)
           break;
       }
 
-      if (mv->pred_mode) {
+      if (mv->pred_mode == 0) {
         /* hard to screw this one up */
       } else {
-        if (mv->pred_mode & 2 && motion->src2[0] == NULL) {
+        if ((mv->pred_mode & 2) && motion->src2[0] == NULL) {
           SCHRO_ERROR("mv(%d,%d) uses non-existent src2", x, y);
           return 0;
         }
-#if 0
-        if (mv->u.xy.x & 0x7 || mv->u.xy.y & 0x7) {
-          SCHRO_ERROR("mv(%d,%d) has subpixel components (not implemented)",
-              x, y);
+        if (mv->x1 & precision_mask || mv->y1 & precision_mask) {
+          SCHRO_ERROR("mv1 (%d,%d) has subpixel components not allowed by precision",
+              x,y);
           return 0;
         }
-#endif
+        if (mv->x2 & precision_mask || mv->y2 & precision_mask) {
+          SCHRO_ERROR("mv2 (%d,%d) has subpixel components not allowed by precision",
+              x,y);
+          return 0;
+        }
       }
 
       if (params->have_global_motion == FALSE) {

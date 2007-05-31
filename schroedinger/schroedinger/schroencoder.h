@@ -67,6 +67,9 @@ struct _SchroEncoderFrame {
   SchroFrame *original_frame;
   SchroFrame *downsampled_frames[5];
   SchroFrame *reconstructed_frame;
+  SchroFrame *upsampled_h;
+  SchroFrame *upsampled_v;
+  SchroFrame *upsampled_hv;
 
   SchroBuffer *access_unit_buffer;
   SchroBuffer *output_buffer;

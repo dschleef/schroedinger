@@ -1,3 +1,16 @@
+2007-05-31  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroanalysis.c:
+	* schroedinger/schroanalysis.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schromotion.c:
+	* testsuite/motion2.c:
+	  Handle motion vector precision greater than 0.
+
 2007-05-30  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroparams.c: Fix codeblock initialization.

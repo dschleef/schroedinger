@@ -595,6 +595,7 @@ schro_encoder_task_complete (SchroEncoderTask *task)
     schro_encoder_frame_unref (task->ref_frame1);
   }
   if (task->is_ref) {
+    schro_encoder_reference_analyse (task->encoder_frame);
     schro_encoder_reference_add (task->encoder, task->encoder_frame);
   }
 
@@ -751,13 +752,17 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
       memset(motion, 0, sizeof(*motion));
 
       motion->src1[0] = task->ref_frame0->reconstructed_frame;
-
+      motion->src1[1] = task->ref_frame0->upsampled_h;
+      motion->src1[2] = task->ref_frame0->upsampled_v;
+      motion->src1[3] = task->ref_frame0->upsampled_hv;
       SCHRO_ASSERT(motion->src1[0] != NULL);
+      
       if (task->params.num_refs == 2) {
         motion->src2[0] = task->ref_frame1->reconstructed_frame;
+        motion->src2[1] = task->ref_frame1->upsampled_h;
+        motion->src2[2] = task->ref_frame1->upsampled_v;
+        motion->src2[3] = task->ref_frame1->upsampled_hv;
         SCHRO_ASSERT(motion->src2[0] != NULL);
-      } else {
-        motion->src2[0] = NULL;
       }
       motion->motion_vectors = task->motion_field->motion_vectors;
       motion->params = &task->params;
@@ -1068,15 +1073,14 @@ schro_encoder_encode_vector_data (SchroEncoderTask *task, int ref, int xy)
             schro_motion_vector_prediction (task->motion_field->motion_vectors,
                 params, i+k, j+l, &pred_x, &pred_y, 1<<ref);
 
-            /* FIXME assumption that mv precision is 0 */
             if (xy == 0) {
               _schro_arith_context_encode_sint(arith,
                   cont, value, sign,
-                  (mv->x1 - pred_x)>>3);
+                  (mv->x1 - pred_x)>>(3-params->mv_precision));
             } else {
               _schro_arith_context_encode_sint(arith,
                   cont, value, sign,
-                  (mv->y1 - pred_y)>>3);
+                  (mv->y1 - pred_y)>>(3-params->mv_precision));
             }
           }
         }
@@ -2042,6 +2046,15 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
     }
     if (frame->reconstructed_frame) {
       schro_frame_unref (frame->reconstructed_frame);
+    }
+    if (frame->upsampled_h) {
+      schro_frame_unref (frame->upsampled_h);
+    }
+    if (frame->upsampled_v) {
+      schro_frame_unref (frame->upsampled_v);
+    }
+    if (frame->upsampled_hv) {
+      schro_frame_unref (frame->upsampled_hv);
     }
     for(i=0;i<5;i++){
       if (frame->downsampled_frames[i]) {

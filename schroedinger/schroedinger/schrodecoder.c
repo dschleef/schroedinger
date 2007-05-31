@@ -376,9 +376,45 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
       motion.src1[0] = decoder->ref0;
       motion.src2[0] = decoder->ref1;
+
+      /* FIXME move elsewhere */
+      if (params->mv_precision > 0) {
+        motion.src1[1] = schro_frame_new_and_alloc (decoder->ref0->format,
+            decoder->ref0->width, decoder->ref0->height);
+        motion.src1[2] = schro_frame_new_and_alloc (decoder->ref0->format,
+            decoder->ref0->width, decoder->ref0->height);
+        motion.src1[3] = schro_frame_new_and_alloc (decoder->ref0->format,
+            decoder->ref0->width, decoder->ref0->height);
+        schro_frame_upsample_horiz (motion.src1[1], decoder->ref0);
+        schro_frame_upsample_vert (motion.src1[2], decoder->ref0);
+        schro_frame_upsample_horiz (motion.src1[3], motion.src1[1]);
+        if (decoder->ref1) {
+          motion.src2[1] = schro_frame_new_and_alloc (decoder->ref1->format,
+              decoder->ref0->width, decoder->ref0->height);
+          motion.src2[2] = schro_frame_new_and_alloc (decoder->ref1->format,
+              decoder->ref0->width, decoder->ref0->height);
+          motion.src2[3] = schro_frame_new_and_alloc (decoder->ref1->format,
+              decoder->ref0->width, decoder->ref0->height);
+          schro_frame_upsample_horiz (motion.src2[1], decoder->ref0);
+          schro_frame_upsample_vert (motion.src2[2], decoder->ref0);
+          schro_frame_upsample_horiz (motion.src2[3], motion.src2[1]);
+        }
+      }
+
       motion.motion_vectors = decoder->motion_field->motion_vectors;
       motion.params = &decoder->params;
       schro_frame_copy_with_motion (decoder->mc_tmp_frame, &motion);
+
+      if (params->mv_precision > 0) {
+        schro_frame_unref (motion.src1[1]);
+        schro_frame_unref (motion.src1[2]);
+        schro_frame_unref (motion.src1[3]);
+        if (decoder->ref1) {
+          schro_frame_unref (motion.src2[1]);
+          schro_frame_unref (motion.src2[2]);
+          schro_frame_unref (motion.src2[3]);
+        }
+      }
     }
   }
 
@@ -1074,11 +1110,11 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith **arith,
         mv->x1 = pred_x + (_schro_arith_context_decode_sint (
               arith[SCHRO_DECODER_ARITH_VECTOR_REF1_X],
               SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,
-              SCHRO_CTX_MV_REF1_H_SIGN)<<3);
+              SCHRO_CTX_MV_REF1_H_SIGN)<<(3-params->mv_precision));
         mv->y1 = pred_y + (_schro_arith_context_decode_sint (
               arith[SCHRO_DECODER_ARITH_VECTOR_REF1_Y],
               SCHRO_CTX_MV_REF1_V_CONT_BIN1, SCHRO_CTX_MV_REF1_V_VALUE,
-              SCHRO_CTX_MV_REF1_V_SIGN)<<3);
+              SCHRO_CTX_MV_REF1_V_SIGN)<<(3-params->mv_precision));
       }
       if (mv->pred_mode & 2) {
         schro_motion_vector_prediction (motion_vectors, &decoder->params, x, y,
@@ -1088,11 +1124,11 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith **arith,
         mv->x2 = pred_x + (_schro_arith_context_decode_sint (
               arith[SCHRO_DECODER_ARITH_VECTOR_REF2_X],
               SCHRO_CTX_MV_REF2_H_CONT_BIN1, SCHRO_CTX_MV_REF2_H_VALUE,
-              SCHRO_CTX_MV_REF2_H_SIGN)<<3);
+              SCHRO_CTX_MV_REF2_H_SIGN)<<(3-params->mv_precision));
         mv->y2 = pred_y + (_schro_arith_context_decode_sint (
               arith[SCHRO_DECODER_ARITH_VECTOR_REF2_Y],
               SCHRO_CTX_MV_REF2_V_CONT_BIN1, SCHRO_CTX_MV_REF2_V_VALUE,
-              SCHRO_CTX_MV_REF2_V_SIGN)<<3);
+              SCHRO_CTX_MV_REF2_V_SIGN)<<(3-params->mv_precision));
       }
     } else {
       mv->x1 = 0;
