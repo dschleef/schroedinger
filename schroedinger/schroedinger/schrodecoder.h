@@ -11,6 +11,7 @@
 SCHRO_BEGIN_DECLS
 
 typedef struct _SchroDecoder SchroDecoder;
+typedef struct _SchroDecoderFrame SchroDecoderFrame;
 
 struct _SchroDecoder {
   SchroFrame *frame;
@@ -29,8 +30,8 @@ struct _SchroDecoder {
   int n_refs;
   SchroPictureNumber reference1;
   SchroPictureNumber reference2;
-  SchroFrame *ref0;
-  SchroFrame *ref1;
+  SchroDecoderFrame *ref0;
+  SchroDecoderFrame *ref1;
   SchroFrame *planar_output_frame;
 
   int16_t *tmpbuf;
@@ -71,6 +72,10 @@ struct _SchroDecoder {
 
   int error;
   char *error_message;
+};
+
+struct _SchroDecoderFrame {
+  SchroFrame *frames[4];
 };
 
 enum {

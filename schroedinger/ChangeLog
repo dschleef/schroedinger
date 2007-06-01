@@ -1,5 +1,12 @@
 2007-05-31  David Schleef  <ds@schleef.org>
 
+	* TODO: Remove a bunch of stuff, 'cuz it's done.
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	  Implement upsampling reference frames a little more sanely.
+
+2007-05-31  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroanalysis.c:
 	* schroedinger/schroanalysis.h:
 	* schroedinger/schrodecoder.c:

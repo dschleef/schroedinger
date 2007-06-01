@@ -18,10 +18,6 @@ schroarith.c:
 
 schrobits.c:
 
-  fix FIXME
-
-  move dumpbits
-
   figure out how to push disjoint buffers if possible
 
 schrobitstream.h:
@@ -34,25 +30,11 @@ schrodecoder.c:
 
   add seeking
 
-  allocate buffers once as per profile
-
-  separate video_format and params
-
   determine a code ordering strategy
-
-  move reference pool handling elsewhere
 
 schroencoder.c:
 
   don't use metric in SchroMotionVector
-
-  handle EOS gracefully
-
-  allocate temps once, as per profile
-
-schroframe.c:
-
-  handle subsampling properly
 
 schrometric.c:
 
