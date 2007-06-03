@@ -1,3 +1,9 @@
+2007-06-02  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schromotion.c:
+	* schroedinger/schropredict.c:
+	  Change some names to make things more readable.
+
 2007-05-31  David Schleef  <ds@schleef.org>
 
 	* TODO: Remove a bunch of stuff, 'cuz it's done.

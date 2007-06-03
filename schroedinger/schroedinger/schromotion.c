@@ -288,7 +288,7 @@ global_block_get (uint8_t *dest, int stride, SchroFrameComponent *src,
 }
 
 void
-get_dc_block (SchroMotion *motion, SchroMotionVector *mv)
+schro_motion_get_dc_block (SchroMotion *motion, SchroMotionVector *mv)
 {
   int offset;
   SchroMotionVectorDC *mvdc = (SchroMotionVectorDC *)mv;
@@ -354,8 +354,8 @@ splat_block_general (SchroFrame *dest, SchroMotion *motion,
 #endif
 
 void
-get_global_block (SchroMotion *motion, SchroMotionVector *mv,
-    int x, int y, SchroGlobalMotion *gm, int which)
+schro_motion_get_global_block (SchroMotion *motion, SchroMotionVector *mv,
+    int x, int y, SchroGlobalMotion *gm, int refmask)
 {
   int offset;
 
@@ -377,8 +377,9 @@ get_global_block (SchroMotion *motion, SchroMotionVector *mv,
   motion->strides[2] = 0;
 }
 
+#if 0
 void
-get_block_simple (SchroMotion *motion, int x, int y, int which)
+get_block_simple (SchroMotion *motion, int x, int y, int refmask)
 {
   SchroFrame *srcframe;
   SchroFrameComponent *comp;
@@ -389,7 +390,7 @@ get_block_simple (SchroMotion *motion, int x, int y, int which)
   w = motion->obmc_luma->x_len;
   h = motion->obmc_luma->y_len;
 
-  if (which == 2) {
+  if (refmask == 2) {
     srcframe = motion->src2[upsample_index];
   } else {
     srcframe = motion->src1[upsample_index];
@@ -408,10 +409,12 @@ get_block_simple (SchroMotion *motion, int x, int y, int which)
   comp = &srcframe->components[2];
   motion->blocks[2] = OFFSET(comp->data, comp->stride * y + x);
   motion->strides[2] = comp->stride;
-
 }
+#endif
+
 void
-get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
+schro_motion_get_block (SchroMotion *motion, SchroMotionVector *mv,
+    int x, int y, int refmask)
 {
   uint8_t *data;
   int stride;
@@ -422,23 +425,20 @@ get_block (SchroMotion *motion, SchroMotionVector *mv, int x, int y, int which)
   int w, h;
   int upsample_index;
 
-  if (which & 1) {
+  if (refmask & 1) {
     sx = x + (mv->x1>>3);
     sy = y + (mv->y1>>3);
     upsample_index = (mv->x1&4)>>2 | (mv->y1&4)>>1;
+    srcframe = motion->src1[upsample_index];
   } else {
     sx = x + (mv->x2>>3);
     sy = y + (mv->y2>>3);
     upsample_index = (mv->x2&4)>>2 | (mv->y2&4)>>1;
+    srcframe = motion->src2[upsample_index];
   }
   w = motion->obmc_luma->x_len;
   h = motion->obmc_luma->y_len;
 
-  if (which == 2) {
-    srcframe = motion->src2[upsample_index];
-  } else {
-    srcframe = motion->src1[upsample_index];
-  }
   SCHRO_ASSERT(srcframe);
 #if 0
   if (sx & 3 || sy & 3) {
@@ -752,22 +752,22 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
       }
 
       if (mv->pred_mode == 0) {
-        get_dc_block (motion, mv);
+        schro_motion_get_dc_block (motion, mv);
       } else {
         if (mv->pred_mode & 1) {
           if (mv->using_global) {
             SchroGlobalMotion *gm = NULL;
-            get_global_block (motion, mv, x, y, gm, 1);
+            schro_motion_get_global_block (motion, mv, x, y, gm, 1);
           } else {
-            get_block (motion, mv, x, y, 1);
+            schro_motion_get_block (motion, mv, x, y, 1);
           }
         }
         if (mv->pred_mode & 2) {
           if (mv->using_global) {
             SchroGlobalMotion *gm = NULL;
-            get_global_block (motion, mv, x, y, gm, 2);
+            schro_motion_get_global_block (motion, mv, x, y, gm, 2);
           } else {
-            get_block (motion, mv, x, y, 2);
+            schro_motion_get_block (motion, mv, x, y, 2);
           }
         }
       }

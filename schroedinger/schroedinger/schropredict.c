@@ -4,9 +4,7 @@
 #endif
 #include <schroedinger/schro.h>
 #include <liboil/liboil.h>
-//#include <stdlib.h>
 #include <string.h>
-//#include <stdio.h>
 #include <math.h>
 
 #define SCHRO_METRIC_INVALID (1<<24)
@@ -19,6 +17,7 @@ static void schro_motion_field_merge (SchroMotionField *dest,
     SchroMotionField **list, int n);
 static void schro_motion_field_cleanup (SchroMotionField *mf, int x, int y);
 static void schro_motion_field_combine (SchroMotionField *mf);
+static void schro_motion_field_subpixel (SchroMotionField *mf);
 void schro_motion_field_set (SchroMotionField *field, int split, int pred_mode);
 
 
@@ -82,6 +81,8 @@ schro_encoder_motion_predict (SchroEncoderTask *task)
       (params->video_format->height + params->ybsep_luma - 1)/params->ybsep_luma);
 
   schro_motion_field_combine (task->motion_field);
+
+  schro_motion_field_subpixel (task->motion_field);
 
   schro_motion_field_calculate_stats (task->motion_field, task);
 
@@ -204,6 +205,34 @@ schro_motion_field_combine (SchroMotionField *mf)
       memcpy(mv + 3*mf->x_num_blocks, mv, 4*sizeof(*mv));
 next_mb:
       do {} while (0);
+    }
+  }
+}
+
+static void
+schro_motion_vector_subpixel (SchroMotionField *mf, SchroMotionVector *mv,
+    int ref)
+{
+  /* FIXME do something here */
+}
+
+static void
+schro_motion_field_subpixel (SchroMotionField *mf)
+{
+  int i,j;
+  SchroMotionVector *mv;
+
+  for(j=0;j<mf->y_num_blocks;j++){
+    for(i=0;i<mf->x_num_blocks;i++){
+      mv = &mf->motion_vectors[j*mf->x_num_blocks + i];
+
+      if (mv->using_global || mv->pred_mode == 0) continue;
+      if (mv->pred_mode & 1) {
+        schro_motion_vector_subpixel (mf, mv, 1);
+      }
+      if (mv->pred_mode & 2) {
+        schro_motion_vector_subpixel (mf, mv, 2);
+      }
     }
   }
 }
