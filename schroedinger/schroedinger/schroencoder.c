@@ -595,7 +595,6 @@ schro_encoder_task_complete (SchroEncoderTask *task)
     schro_encoder_frame_unref (task->ref_frame1);
   }
   if (task->is_ref) {
-    schro_encoder_reference_analyse (task->encoder_frame);
     schro_encoder_reference_add (task->encoder, task->encoder_frame);
   }
 
@@ -751,18 +750,10 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
       motion = malloc(sizeof(*motion));
       memset(motion, 0, sizeof(*motion));
 
-      motion->src1[0] = task->ref_frame0->reconstructed_frame;
-      motion->src1[1] = task->ref_frame0->upsampled_h;
-      motion->src1[2] = task->ref_frame0->upsampled_v;
-      motion->src1[3] = task->ref_frame0->upsampled_hv;
-      SCHRO_ASSERT(motion->src1[0] != NULL);
+      motion->src1 = task->ref_frame0->reconstructed_frame;
       
       if (task->params.num_refs == 2) {
-        motion->src2[0] = task->ref_frame1->reconstructed_frame;
-        motion->src2[1] = task->ref_frame1->upsampled_h;
-        motion->src2[2] = task->ref_frame1->upsampled_v;
-        motion->src2[3] = task->ref_frame1->upsampled_hv;
-        SCHRO_ASSERT(motion->src2[0] != NULL);
+        motion->src2 = task->ref_frame1->reconstructed_frame;
       }
       motion->motion_vectors = task->motion_field->motion_vectors;
       motion->params = &task->params;
@@ -820,6 +811,7 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
 
   if (task->is_ref) {
     SchroFrameFormat frame_format;
+    SchroFrame *frame;
 
     schro_frame_inverse_iwt_transform (task->iwt_frame, &task->params,
         task->tmpbuf);
@@ -829,16 +821,18 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
 
     frame_format = schro_params_get_frame_format (8,
         task->encoder->video_format.chroma_format);
-    task->encoder_frame->reconstructed_frame = 
-      schro_frame_new_and_alloc (frame_format,
-          task->encoder->video_format.width,
-          task->encoder->video_format.height);
+    frame = schro_frame_new_and_alloc (frame_format,
+        task->encoder->video_format.width,
+        task->encoder->video_format.height);
+    task->encoder_frame->reconstructed_frame =
+      schro_upsampled_frame_new (frame);
+    schro_upsampled_frame_upsample (task->encoder_frame->reconstructed_frame);
 
-    schro_frame_convert (task->encoder_frame->reconstructed_frame,
+    schro_frame_convert (task->encoder_frame->reconstructed_frame->frames[0],
         task->iwt_frame);
 
     SCHRO_DEBUG("luma ref %d",
-        schro_frame_calculate_average_luma (task->encoder_frame->reconstructed_frame)
+        schro_frame_calculate_average_luma (task->encoder_frame->reconstructed_frame->frames[0])
         );
   }
 
@@ -2045,16 +2039,7 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
       schro_frame_unref (frame->original_frame);
     }
     if (frame->reconstructed_frame) {
-      schro_frame_unref (frame->reconstructed_frame);
-    }
-    if (frame->upsampled_h) {
-      schro_frame_unref (frame->upsampled_h);
-    }
-    if (frame->upsampled_v) {
-      schro_frame_unref (frame->upsampled_v);
-    }
-    if (frame->upsampled_hv) {
-      schro_frame_unref (frame->upsampled_hv);
+      schro_upsampled_frame_free (frame->reconstructed_frame);
     }
     for(i=0;i<5;i++){
       if (frame->downsampled_frames[i]) {

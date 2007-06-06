@@ -9,6 +9,7 @@
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schroasync.h>
 #include <schroedinger/schroqueue.h>
+#include <schroedinger/schromotion.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -66,10 +67,7 @@ struct _SchroEncoderFrame {
   SchroPictureNumber frame_number;
   SchroFrame *original_frame;
   SchroFrame *downsampled_frames[5];
-  SchroFrame *reconstructed_frame;
-  SchroFrame *upsampled_h;
-  SchroFrame *upsampled_v;
-  SchroFrame *upsampled_hv;
+  SchroUpsampledFrame *reconstructed_frame;
 
   SchroBuffer *access_unit_buffer;
   SchroBuffer *output_buffer;

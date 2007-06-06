@@ -5,13 +5,13 @@
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schroframe.h>
+#include <schroedinger/schromotion.h>
 #include <schroedinger/schrobits.h>
 #include <schroedinger/schrobitstream.h>
 
 SCHRO_BEGIN_DECLS
 
 typedef struct _SchroDecoder SchroDecoder;
-typedef struct _SchroDecoderFrame SchroDecoderFrame;
 
 struct _SchroDecoder {
   SchroFrame *frame;
@@ -30,8 +30,8 @@ struct _SchroDecoder {
   int n_refs;
   SchroPictureNumber reference1;
   SchroPictureNumber reference2;
-  SchroDecoderFrame *ref0;
-  SchroDecoderFrame *ref1;
+  SchroUpsampledFrame *ref0;
+  SchroUpsampledFrame *ref1;
   SchroFrame *planar_output_frame;
 
   int16_t *tmpbuf;
@@ -72,10 +72,6 @@ struct _SchroDecoder {
 
   int error;
   char *error_message;
-};
-
-struct _SchroDecoderFrame {
-  SchroFrame *frames[4];
 };
 
 enum {

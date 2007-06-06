@@ -1,3 +1,17 @@
+2007-06-06  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroanalysis.c:
+	* schroedinger/schroanalysis.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	* testsuite/motion.c:
+	* testsuite/motion2.c:
+	  Use SchroUpsampledFrame everywhere.
+
 2007-06-02  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schromotion.c:

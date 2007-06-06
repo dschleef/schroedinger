@@ -33,27 +33,3 @@ schro_encoder_frame_analyse (SchroEncoder *encoder, SchroEncoderFrame *frame)
 
 }
 
-void
-schro_encoder_reference_analyse (SchroEncoderFrame *frame)
-{
-  SCHRO_DEBUG("upsampling frame");
-
-  frame->upsampled_h =
-    schro_frame_new_and_alloc (frame->reconstructed_frame->format,
-        frame->reconstructed_frame->width,
-        frame->reconstructed_frame->height);
-  frame->upsampled_v =
-    schro_frame_new_and_alloc (frame->reconstructed_frame->format,
-        frame->reconstructed_frame->width,
-        frame->reconstructed_frame->height);
-  frame->upsampled_hv =
-    schro_frame_new_and_alloc (frame->reconstructed_frame->format,
-        frame->reconstructed_frame->width,
-        frame->reconstructed_frame->height);
-
-  schro_frame_upsample_horiz (frame->upsampled_h, frame->reconstructed_frame);
-  schro_frame_upsample_vert (frame->upsampled_h, frame->reconstructed_frame);
-  schro_frame_upsample_vert (frame->upsampled_hv, frame->upsampled_h);
-
-}
-

@@ -14,13 +14,9 @@ static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
     SchroArith **arith, SchroMotionVector *motion_vectors, int x, int y);
 static void schro_decoder_init (SchroDecoder *decoder);
 
-static SchroDecoderFrame *schro_decoder_frame_new (SchroFrame *frame);
-static void schro_decoder_frame_free (SchroDecoderFrame *frame);
-
-static void schro_decoder_frame_upsample (SchroDecoderFrame *df);
 static void schro_decoder_reference_add (SchroDecoder *decoder,
-    SchroDecoderFrame *frame, SchroPictureNumber picture_number);
-static SchroDecoderFrame * schro_decoder_reference_get (SchroDecoder *decoder,
+    SchroUpsampledFrame *frame, SchroPictureNumber picture_number);
+static SchroUpsampledFrame * schro_decoder_reference_get (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
 static void schro_decoder_reference_retire (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
@@ -46,7 +42,7 @@ schro_decoder_new (void)
   decoder->skip_ratio = 1.0;
 
   decoder->reference_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
-      (SchroQueueFreeFunc)schro_decoder_frame_free);
+      (SchroQueueFreeFunc)schro_upsampled_frame_free);
   decoder->frame_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_frame_unref);
   decoder->output_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
@@ -379,19 +375,15 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
       SchroMotion motion;
 
       if (params->mv_precision > 0) {
-        schro_decoder_frame_upsample (decoder->ref0);
+        schro_upsampled_frame_upsample (decoder->ref0);
         if (decoder->ref1) {
-          schro_decoder_frame_upsample (decoder->ref0);
+          schro_upsampled_frame_upsample (decoder->ref0);
         }
       }
 
-      for(i=0;i<4;i++){
-        motion.src1[i] = decoder->ref0->frames[i];
-      }
+      motion.src1 = decoder->ref0;
       if (decoder->ref1) {
-        for(i=0;i<4;i++){
-          motion.src2[i] = decoder->ref1->frames[i];
-        }
+        motion.src2 = decoder->ref1;
       }
 
       motion.motion_vectors = decoder->motion_field->motion_vectors;
@@ -477,7 +469,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
         decoder->video_format.width, decoder->video_format.height);
     schro_frame_convert (ref, decoder->frame);
     ref->frame_number = decoder->picture_number;
-    schro_decoder_reference_add (decoder, schro_decoder_frame_new(ref),
+    schro_decoder_reference_add (decoder, schro_upsampled_frame_new(ref),
         decoder->picture_number);
   }
 
@@ -1618,48 +1610,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
 /* reference pool */
 
 static void
-schro_decoder_frame_upsample (SchroDecoderFrame *df)
-{
-  if (df->frames[1]) return;
-
-  df->frames[1] = schro_frame_new_and_alloc (df->frames[0]->format,
-      df->frames[0]->width, df->frames[0]->height);
-  df->frames[2] = schro_frame_new_and_alloc (df->frames[0]->format,
-      df->frames[0]->width, df->frames[0]->height);
-  df->frames[3] = schro_frame_new_and_alloc (df->frames[0]->format,
-      df->frames[0]->width, df->frames[0]->height);
-  schro_frame_upsample_horiz (df->frames[1], df->frames[0]);
-  schro_frame_upsample_vert (df->frames[2], df->frames[0]);
-  schro_frame_upsample_horiz (df->frames[3], df->frames[1]);
-}
-
-static SchroDecoderFrame *
-schro_decoder_frame_new (SchroFrame *frame)
-{
-  SchroDecoderFrame *df;
-
-  df = malloc(sizeof(SchroDecoderFrame));
-  memset (df, 0, sizeof(*df));
-
-  df->frames[0] = schro_frame_ref (frame);
-
-  return df;
-}
-
-static void
-schro_decoder_frame_free (SchroDecoderFrame *df)
-{
-  int i;
-  for(i=0;i<4;i++){
-    if (df->frames[i]) {
-      schro_frame_unref (df->frames[i]);
-    }
-  }
-  free(df);
-}
-
-static void
-schro_decoder_reference_add (SchroDecoder *decoder, SchroDecoderFrame *frame,
+schro_decoder_reference_add (SchroDecoder *decoder, SchroUpsampledFrame *frame,
     SchroPictureNumber picture_number)
 {
   SCHRO_DEBUG("adding %d", picture_number);
@@ -1670,7 +1621,7 @@ schro_decoder_reference_add (SchroDecoder *decoder, SchroDecoderFrame *frame,
   schro_queue_add (decoder->reference_queue, frame, picture_number);
 }
 
-static SchroDecoderFrame *
+static SchroUpsampledFrame *
 schro_decoder_reference_get (SchroDecoder *decoder,
     SchroPictureNumber picture_number)
 {

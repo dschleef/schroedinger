@@ -24,6 +24,7 @@ main (int argc, char *argv[])
 {
   SchroFrame *dest;
   SchroFrame *ref;
+  SchroUpsampledFrame *uref;
   SchroParams params;
   SchroVideoFormat video_format;
   SchroMotionVector *motion_vectors;
@@ -49,11 +50,14 @@ main (int argc, char *argv[])
 
   dest = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16_420,
       params.mc_luma_width, params.mc_luma_height);
+  schro_frame_clear(dest);
+
   ref = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420,
       video_format.width, video_format.height);
-
-  schro_frame_clear(dest);
   schro_frame_clear(ref);
+
+  uref = schro_upsampled_frame_new (ref);
+
 
   motion_vectors = malloc(sizeof(SchroMotionVector) *
       params.x_num_blocks * params.y_num_blocks);
@@ -74,8 +78,8 @@ main (int argc, char *argv[])
     for(j=0;j<10;j++){
       SchroMotion motion;
 
-      motion.src1[0] = ref;
-      motion.src2[0] = NULL;
+      motion.src1 = uref;
+      motion.src2 = NULL;
       motion.motion_vectors = motion_vectors;
       motion.params = &params;
       oil_profile_start(&prof);

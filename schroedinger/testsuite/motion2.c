@@ -156,20 +156,8 @@ main (int argc, char *argv[])
   {
     SchroMotion motion;
 
-    motion.src1[0] = ref;
-    motion.src1[1] = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420,
-        video_format.width, video_format.height);
-    schro_frame_upsample_horiz (motion.src1[1], ref);
-    motion.src1[2] = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420,
-        video_format.width, video_format.height);
-    schro_frame_upsample_vert (motion.src1[2], ref);
-    motion.src1[3] = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420,
-        video_format.width, video_format.height);
-    schro_frame_upsample_vert (motion.src1[3], motion.src1[1]);
-    motion.src2[0] = NULL;
-    motion.src2[1] = NULL;
-    motion.src2[2] = NULL;
-    motion.src2[3] = NULL;
+    motion.src1 = schro_upsampled_frame_new (ref);
+    motion.src2 = NULL;
     motion.motion_vectors = motion_vectors;
     motion.params = &params;
     schro_frame_copy_with_motion (dest, &motion);

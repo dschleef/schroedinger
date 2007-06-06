@@ -429,12 +429,12 @@ schro_motion_get_block (SchroMotion *motion, SchroMotionVector *mv,
     sx = x + (mv->x1>>3);
     sy = y + (mv->y1>>3);
     upsample_index = (mv->x1&4)>>2 | (mv->y1&4)>>1;
-    srcframe = motion->src1[upsample_index];
+    srcframe = motion->src1->frames[upsample_index];
   } else {
     sx = x + (mv->x2>>3);
     sy = y + (mv->y2>>3);
     upsample_index = (mv->x2&4)>>2 | (mv->y2&4)>>1;
-    srcframe = motion->src2[upsample_index];
+    srcframe = motion->src2->frames[upsample_index];
   }
   w = motion->obmc_luma->x_len;
   h = motion->obmc_luma->y_len;
@@ -1047,7 +1047,7 @@ schro_motion_verify (SchroMotion *motion)
       if (mv->pred_mode == 0) {
         /* hard to screw this one up */
       } else {
-        if ((mv->pred_mode & 2) && motion->src2[0] == NULL) {
+        if ((mv->pred_mode & 2) && motion->src2->frames[0] == NULL) {
           SCHRO_ERROR("mv(%d,%d) uses non-existent src2", x, y);
           return 0;
         }
@@ -1073,5 +1073,46 @@ schro_motion_verify (SchroMotion *motion)
   }
 
   return 1;
+}
+
+void
+schro_upsampled_frame_upsample (SchroUpsampledFrame *df)
+{
+  if (df->frames[1]) return;
+
+  df->frames[1] = schro_frame_new_and_alloc (df->frames[0]->format,
+      df->frames[0]->width, df->frames[0]->height);
+  df->frames[2] = schro_frame_new_and_alloc (df->frames[0]->format,
+      df->frames[0]->width, df->frames[0]->height);
+  df->frames[3] = schro_frame_new_and_alloc (df->frames[0]->format,
+      df->frames[0]->width, df->frames[0]->height);
+  schro_frame_upsample_horiz (df->frames[1], df->frames[0]);
+  schro_frame_upsample_vert (df->frames[2], df->frames[0]);
+  schro_frame_upsample_horiz (df->frames[3], df->frames[1]);
+}
+
+SchroUpsampledFrame *
+schro_upsampled_frame_new (SchroFrame *frame)
+{
+  SchroUpsampledFrame *df;
+
+  df = malloc(sizeof(SchroUpsampledFrame));
+  memset (df, 0, sizeof(*df));
+
+  df->frames[0] = schro_frame_ref (frame);
+
+  return df;
+}
+
+void
+schro_upsampled_frame_free (SchroUpsampledFrame *df)
+{
+  int i;
+  for(i=0;i<4;i++){
+    if (df->frames[i]) {
+      schro_frame_unref (df->frames[i]);
+    }
+  }
+  free(df);
 }
 

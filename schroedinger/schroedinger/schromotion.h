@@ -10,6 +10,7 @@ SCHRO_BEGIN_DECLS
 typedef struct _SchroObmc SchroObmc;
 typedef struct _SchroObmcRegion SchroObmcRegion;
 typedef struct _SchroMotion SchroMotion;
+typedef struct _SchroUpsampledFrame SchroUpsampledFrame;
 
 struct _SchroObmcRegion {
   int16_t *weights;
@@ -33,9 +34,13 @@ struct _SchroObmc {
   uint8_t *tmpdata;
 };
 
+struct _SchroUpsampledFrame {
+  SchroFrame *frames[4];
+};
+
 struct _SchroMotion {
-  SchroFrame *src1[4];
-  SchroFrame *src2[4];
+  SchroUpsampledFrame *src1;
+  SchroUpsampledFrame *src2;
   SchroMotionVector *motion_vectors;
   SchroParams *params;
 
@@ -63,6 +68,10 @@ int schro_motion_verify (SchroMotion *mf);
 void schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep,
     int y_sep);
 void schro_obmc_cleanup (SchroObmc *obmc);
+
+void schro_upsampled_frame_upsample (SchroUpsampledFrame *df);
+SchroUpsampledFrame * schro_upsampled_frame_new (SchroFrame *frame);
+void schro_upsampled_frame_free (SchroUpsampledFrame *df);
 
 SCHRO_END_DECLS
 
