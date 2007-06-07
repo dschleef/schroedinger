@@ -77,7 +77,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/schroedinger-0.1/schroedinger/schroframe.h
 %{_includedir}/schroedinger-0.1/schroedinger/schrometric.h
 %{_includedir}/schroedinger-0.1/schroedinger/schromotion.h
-%{_includedir}/schroedinger-0.1/schroedinger/schrooil.h
 %{_includedir}/schroedinger-0.1/schroedinger/schroparams.h
 %{_includedir}/schroedinger-0.1/schroedinger/schropredict.h
 %{_includedir}/schroedinger-0.1/schroedinger/schrotables.h
@@ -85,7 +84,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/schroedinger-0.1/schroedinger/schrowavelet.h
 %{_includedir}/schroedinger-0.1/schroedinger/schroengine.h
 %{_includedir}/schroedinger-0.1/schroedinger/schroanalysis.h
-%{_datadir}/gtk-doc/html/schroedinger-0.1
+%{_includedir}/schroedinger-0.1/schroedinger/schroqueue.h
+# %{_datadir}/gtk-doc/html/schroedinger-0.1
 
 %changelog
 * Thu Apr 05 2007 Thomas Vander Stichele <thomas at apestaart dot org>
