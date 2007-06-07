@@ -66,7 +66,7 @@ init_params (SchroEncoderTask *task)
   params->yblen_luma = 12;
   params->xbsep_luma = 8;
   params->ybsep_luma = 8;
-  params->mv_precision = 0;
+  params->mv_precision = 3;
   params->picture_pred_mode = 0;
   params->picture_weight_1 = 1;
   params->picture_weight_2 = 1;

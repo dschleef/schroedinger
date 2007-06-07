@@ -19,6 +19,8 @@ static void schro_motion_field_cleanup (SchroMotionField *mf, int x, int y);
 static void schro_motion_field_combine (SchroMotionField *mf);
 static void schro_motion_field_subpixel (SchroMotionField *mf);
 void schro_motion_field_set (SchroMotionField *field, int split, int pred_mode);
+void schro_motion_global_metric (SchroMotionField *mf, SchroFrame *frame,
+    SchroFrame *ref);
 
 
 int cost (int value)
@@ -214,6 +216,9 @@ schro_motion_vector_subpixel (SchroMotionField *mf, SchroMotionVector *mv,
     int ref)
 {
   /* FIXME do something here */
+
+  //mv->x1 += (rand()&0x7) - 3;
+  //mv->y1 += (rand()&0x7) - 3;
 }
 
 static void
@@ -293,16 +298,40 @@ schro_encoder_global_prediction (SchroEncoderTask *task)
         sizeof(SchroMotionVector)*mf->x_num_blocks*mf->y_num_blocks);
     schro_motion_field_global_prediction (mf, &task->params.global_motion[i]);
     if (i == 0) {
-      schro_motion_field_scan (mf, task->encode_frame,
-          task->ref_frame0->original_frame, 0);
+      schro_motion_global_metric (mf, task->encode_frame,
+          task->ref_frame0->original_frame);
     } else {
-      schro_motion_field_scan (mf, task->encode_frame,
-          task->ref_frame1->original_frame, 0);
+      schro_motion_global_metric (mf, task->encode_frame,
+          task->ref_frame1->original_frame);
     }
     if (i == 0) {
       task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF0] = mf;
     } else {
       task->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF1] = mf;
+    }
+  }
+}
+
+void
+schro_motion_global_metric (SchroMotionField *field, SchroFrame *frame,
+    SchroFrame *ref)
+{
+  SchroMotionVector *mv;
+  int i;
+  int j;
+  int x,y;
+
+  for(j=0;j<field->y_num_blocks;j++){
+    for(i=0;i<field->x_num_blocks;i++){
+      mv = field->motion_vectors + j*field->x_num_blocks + i;
+
+      x = i*8 + mv->x1;
+      y = j*8 + mv->y1;
+      mv->metric = schro_metric_absdiff_u8 (
+            frame->components[0].data + x + y*frame->components[0].stride,
+            frame->components[0].stride,
+            ref->components[0].data + i*8 + j*8*ref->components[0].stride,
+            ref->components[0].stride, 8, 8);
     }
   }
 }

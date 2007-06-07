@@ -999,6 +999,17 @@ schro_encoder_encode_prediction_modes (SchroEncoderTask *task)
             _schro_arith_context_encode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF2,
                 pred_mode >> 1);
           }
+          if (mv->pred_mode != 0) {
+            if (params->have_global_motion) {
+              int pred;
+              schro_motion_field_get_global_prediction (task->motion_field,
+                  i+k, j+l, &pred);
+              _schro_arith_context_encode_bit (arith, SCHRO_CTX_GLOBAL_BLOCK,
+                  mv->using_global ^ pred);
+            } else {
+              SCHRO_ASSERT(mv->using_global == FALSE);
+            }
+          }
         }
       }
     }

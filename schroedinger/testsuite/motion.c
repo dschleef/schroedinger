@@ -58,6 +58,7 @@ main (int argc, char *argv[])
 
   uref = schro_upsampled_frame_new (ref);
 
+  schro_upsampled_frame_upsample (uref);
 
   motion_vectors = malloc(sizeof(SchroMotionVector) *
       params.x_num_blocks * params.y_num_blocks);
