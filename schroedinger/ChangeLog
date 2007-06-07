@@ -1,3 +1,5 @@
+=== Release 0.6.1 ===
+
 2007-06-07  David Schleef  <ds@schleef.org>
 
 	* testsuite/arith.c: Fix segfault.
