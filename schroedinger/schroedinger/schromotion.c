@@ -1099,7 +1099,7 @@ schro_upsampled_frame_new (SchroFrame *frame)
   df = malloc(sizeof(SchroUpsampledFrame));
   memset (df, 0, sizeof(*df));
 
-  df->frames[0] = schro_frame_ref (frame);
+  df->frames[0] = frame;
 
   return df;
 }

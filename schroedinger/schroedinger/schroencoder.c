@@ -824,12 +824,10 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
     frame = schro_frame_new_and_alloc (frame_format,
         task->encoder->video_format.width,
         task->encoder->video_format.height);
+    schro_frame_convert (frame, task->iwt_frame);
     task->encoder_frame->reconstructed_frame =
       schro_upsampled_frame_new (frame);
     schro_upsampled_frame_upsample (task->encoder_frame->reconstructed_frame);
-
-    schro_frame_convert (task->encoder_frame->reconstructed_frame->frames[0],
-        task->iwt_frame);
 
     SCHRO_DEBUG("luma ref %d",
         schro_frame_calculate_average_luma (task->encoder_frame->reconstructed_frame->frames[0])

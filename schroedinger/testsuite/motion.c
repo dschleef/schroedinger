@@ -92,7 +92,7 @@ main (int argc, char *argv[])
 
 
 
-  schro_frame_unref (ref);
+  schro_upsampled_frame_free (uref);
   schro_frame_unref (dest);
   free (motion_vectors);
 
