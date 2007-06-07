@@ -104,9 +104,9 @@ main (int argc, char *argv[])
 
   schro_init();
 
-  buffer1 = schro_buffer_new_and_alloc (100);
-  buffer2 = schro_buffer_new_and_alloc (100);
-  buffer3 = schro_buffer_new_and_alloc (100);
+  buffer1 = schro_buffer_new_and_alloc (1000);
+  buffer2 = schro_buffer_new_and_alloc (1000);
+  buffer3 = schro_buffer_new_and_alloc (1000);
 
   for (j = 0; j < 40; j++){
     int value;

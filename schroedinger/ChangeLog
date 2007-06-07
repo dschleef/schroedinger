@@ -1,5 +1,9 @@
 2007-06-07  David Schleef  <ds@schleef.org>
 
+	* testsuite/arith.c: Fix segfault.
+
+2007-06-07  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schromotion.c:
 	* testsuite/motion.c:
