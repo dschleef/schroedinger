@@ -1,3 +1,6 @@
+2007-06-07 Christian Schaller <christian@fluendo.com>
+	* update configure.ac to check for liboil 0.3.12
+
 === Release 0.6.0 ===
 
 2007-06-06  David Schleef  <ds@schleef.org>

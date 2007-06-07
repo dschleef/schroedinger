@@ -1,6 +1,6 @@
 AC_PREREQ([2.58])
 dnl PLEASE remove the nano when doing a release
-AC_INIT(schroedinger,0.6.0)
+AC_INIT(schroedinger,0.6.0.1)
 
 AS_NANO(SCHRO_CVS=no,SCHRO_CVS=yes)
 
@@ -39,7 +39,7 @@ dnl the version check needs to stay here because autopoint greps for it
 #AM_GNU_GETTEXT([external])
 
 dnl liboil is required
-OIL_VER="0.3.11"
+OIL_VER="0.3.12"
 PKG_CHECK_MODULES(LIBOIL, liboil-0.3 >= $OIL_VER, HAVE_LIBOIL=yes, HAVE_LIBOIL=no)
 if test "x${HAVE_LIBOIL}" != xyes ; then
   AC_ERROR([liboil-0.3 >= $OIL_VER is required])
