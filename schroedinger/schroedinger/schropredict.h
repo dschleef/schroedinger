@@ -47,7 +47,7 @@ void schro_motion_field_scan (SchroMotionField *field, SchroFrame *frame, SchroF
 void schro_motion_field_inherit (SchroMotionField *field, SchroMotionField *parent);
 void schro_motion_field_copy (SchroMotionField *field, SchroMotionField *parent);
 void schro_motion_field_global_prediction (SchroMotionField *mf,
-    SchroGlobalMotion *gm);
+    SchroGlobalMotion *gm, int mv_precision);
 void schro_motion_field_calculate_stats (SchroMotionField *mf, SchroEncoderTask *task);
 
 SCHRO_END_DECLS

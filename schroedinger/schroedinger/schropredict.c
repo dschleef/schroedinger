@@ -296,7 +296,8 @@ schro_encoder_global_prediction (SchroEncoderTask *task)
 
     memcpy (mf->motion_vectors, mf_orig->motion_vectors,
         sizeof(SchroMotionVector)*mf->x_num_blocks*mf->y_num_blocks);
-    schro_motion_field_global_prediction (mf, &task->params.global_motion[i]);
+    schro_motion_field_global_prediction (mf, &task->params.global_motion[i],
+        task->params.mv_precision);
     if (i == 0) {
       schro_motion_global_metric (mf, task->encode_frame,
           task->ref_frame0->original_frame);
@@ -327,18 +328,21 @@ schro_motion_global_metric (SchroMotionField *field, SchroFrame *frame,
 
       x = i*8 + mv->x1;
       y = j*8 + mv->y1;
+#if 0
       mv->metric = schro_metric_absdiff_u8 (
             frame->components[0].data + x + y*frame->components[0].stride,
             frame->components[0].stride,
             ref->components[0].data + i*8 + j*8*ref->components[0].stride,
             ref->components[0].stride, 8, 8);
+#endif
+mv->metric = 0;
     }
   }
 }
 
 void
 schro_motion_field_global_prediction (SchroMotionField *mf,
-    SchroGlobalMotion *gm)
+    SchroGlobalMotion *gm, int mv_precision)
 {
   int i;
   int j;
@@ -381,8 +385,8 @@ schro_motion_field_global_prediction (SchroMotionField *mf,
         if (mv->using_global) {
           m_f += mv->x1;
           m_g += mv->y1;
-          m_x += i;
-          m_y += j;
+          m_x += i*8;
+          m_y += j*8;
           n++;
         }
       }
@@ -405,12 +409,12 @@ schro_motion_field_global_prediction (SchroMotionField *mf,
       for(i=0;i<mf->x_num_blocks;i++) {
         mv = mf->motion_vectors + j*mf->x_num_blocks + i;
         if (mv->using_global) {
-          m_fx += (mv->x1 - pan_x) * (i - ave_x);
-          m_fy += (mv->x1 - pan_x) * (j - ave_y);
-          m_gx += (mv->y1 - pan_y) * (i - ave_x);
-          m_gy += (mv->y1 - pan_y) * (j - ave_y);
-          m_xx += (i - ave_x) * (i - ave_x);
-          m_yy += (j - ave_y) * (j - ave_y);
+          m_fx += (mv->x1 - pan_x) * (i*8 - ave_x);
+          m_fy += (mv->x1 - pan_x) * (j*8 - ave_y);
+          m_gx += (mv->y1 - pan_y) * (i*8 - ave_x);
+          m_gy += (mv->y1 - pan_y) * (j*8 - ave_y);
+          m_xx += (i*8 - ave_x) * (i*8 - ave_x);
+          m_yy += (j*8 - ave_y) * (j*8 - ave_y);
           n++;
         }
       }
@@ -457,21 +461,30 @@ schro_motion_field_global_prediction (SchroMotionField *mf,
     }
     SCHRO_DEBUG("using n = %d", n);
 
-    gm->b0 = rint(pan_x);
-    gm->b1 = rint(pan_y);
+    gm->b0 = rint(pan_x*(0.125*(1<<mv_precision)));
+    gm->b1 = rint(pan_y*(0.125*(1<<mv_precision)));
     gm->a_exp = 16;
-    gm->a00 = rint((1.0 + a00/8) * (1<<gm->a_exp));
-    gm->a01 = rint(a01/8 * (1<<gm->a_exp));
-    gm->a10 = rint(a10/8 * (1<<gm->a_exp));
-    gm->a11 = rint((1.0 + a11/8) * (1<<gm->a_exp));
+    gm->a00 = rint((1.0 + a00/8) * (1<<(gm->a_exp + mv_precision)));
+    gm->a01 = rint(a01/8 * (1<<(gm->a_exp + mv_precision)));
+    gm->a10 = rint(a10/8 * (1<<(gm->a_exp + mv_precision)));
+    gm->a11 = rint((1.0 + a11/8) * (1<<(gm->a_exp + mv_precision)));
+#if 0
+    gm->a_exp = 16;
+    gm->a00 = 65536;
+    gm->a01 = 0;
+    gm->a10 = 0;
+    gm->a11 = 65536;
+#endif
   }
 
   for(j=0;j<mf->y_num_blocks;j++) {
     for(i=0;i<mf->x_num_blocks;i++) {
       mv = mf->motion_vectors + j*mf->x_num_blocks + i;
       mv->using_global = 1;
-      mv->x1 = gm->b0 + ((gm->a00 * (i*8) + gm->a01 * (j*8))>>gm->a_exp) - i*8;
-      mv->y1 = gm->b1 + ((gm->a10 * (i*8) + gm->a11 * (j*8))>>gm->a_exp) - j*8;
+      //mv->x1 = gm->b0 + ((gm->a00 * (i*8) + gm->a01 * (j*8))>>gm->a_exp) - i*8;
+      //mv->y1 = gm->b1 + ((gm->a10 * (i*8) + gm->a11 * (j*8))>>gm->a_exp) - j*8;
+      mv->x1 = 0;
+      mv->y1 = 0;
     }
   }
 }

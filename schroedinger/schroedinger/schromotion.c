@@ -201,68 +201,8 @@ schro_obmc_cleanup (SchroObmc *obmc)
   free(obmc->tmpdata);
 }
 
-#if 0
-void
-block_get (uint8_t **dest, int &stride, SchroFrameComponent *src, int x, int y,
-    int width, int height)
-{
-  int i,j;
-  int sx, sy;
 
-  if (x >= 0 && y >=0 &&
-      x + width < src->width &&
-      y + height < src->height) {
-    *dest = src->data + y*src->stride + x;
-    *stride = src->stride;
-    return;
-  }
-
-  for(j=0;j<height;j++){
-    sy = CLAMP(j + y, 0, height);
-    for(i=0;i<width;i++){
-      sx = CLAMP(i + x, 0, width);
-      (*dest)[j*(*stride) + i] = src->data[sy*src->stride + sx];
-    }
-  }
-}
-#endif
-
-#if 0
-void
-block_get (uint8_t **dest, int *stride, SchroFrameComponent *src,
-    int x, int y, int width, int height)
-{
-  int i,j;
-  int fx,fy;
-
-  fx = x&0x7;
-  fy = y&0x7;
-  x >>= 3;
-  y >>= 3;
-
-  if (sx == 0 && sy == 0) {
-    int sx,sy;
-
-    if (x >= 0 && y >=0 &&
-        x + width < src->width &&
-        y + height < src->height) {
-      *dest = src->data + y*src->stride + x;
-      *stride = src->stride;
-      return;
-    }
-
-    for(j=0;j<height;j++){
-      sy = CLAMP(y + j, 0, height - 1);
-      for(i=0;i<width;i++){
-        sx = CLAMP(x + i, 0, width - 1);
-        (*dest)[j*(*stride) + i] = src->data[sy*src->stride + sx];
-      }
-    }
-  } else {
-    SCHRO_ASSERT(0);
-  }
-}
-#endif
+/* original */
 
 void
 schro_motion_get_global_block (SchroMotion *motion, SchroMotionVector *mv,
@@ -294,11 +234,14 @@ schro_motion_get_global_block (SchroMotion *motion, SchroMotionVector *mv,
   comp = &srcframe->components[0];
   for(j=0;j<h;j++){
     for(i=0;i<w;i++){
-      persp = (1<<gm->c_exp) - gm->c0 * (x + i) - gm->c1 * (y + j);
-      sx = (persp * (gm->a00 * (x + i) + gm->a01 * (y + j) +
-          (1<<gm->a_exp) * gm->b0)) >> (gm->c_exp + gm->a_exp);
-      sy = (persp * (gm->a10 * (x + i) + gm->a11 * (y + j) +
-          (1<<gm->a_exp) * gm->b1)) >> (gm->c_exp + gm->a_exp);
+      int nx, ny;
+      nx = (x + i);
+      ny = (y + j);
+      persp = (1<<gm->c_exp) - gm->c0 * nx - gm->c1 * ny;
+      sx = (persp * (gm->a00 * nx + gm->a01 * ny +
+          (1<<gm->a_exp) * gm->b0)) >> (gm->c_exp + gm->a_exp + 3);
+      sy = (persp * (gm->a10 * nx + gm->a11 * ny +
+          (1<<gm->a_exp) * gm->b1)) >> (gm->c_exp + gm->a_exp + 3);
       sx = CLAMP(sx, 0, srcframe->width - 1);
       sy = CLAMP(sy, 0, srcframe->height - 1);
       dest[j*stride + i] = SCHRO_GET(comp->data, sy * comp->stride + sx, uint8_t);
@@ -319,13 +262,16 @@ schro_motion_get_global_block (SchroMotion *motion, SchroMotionVector *mv,
   for(j=0;j<h;j++){
     for(i=0;i<w;i++){
       int si, sj;
+      int nx, ny;
       si = i << motion->params->video_format->chroma_h_shift;
       sj = j << motion->params->video_format->chroma_h_shift;
-      persp = (1<<gm->c_exp) - gm->c0 * (x + si) - gm->c1 * (y + sj);
-      sx = (persp * (gm->a00 * (x + si) + gm->a01 * (y + sj) +
-          (1<<gm->a_exp) * gm->b0)) >> (gm->c_exp + gm->a_exp);
-      sy = (persp * (gm->a10 * (x + si) + gm->a11 * (y + sj) +
-          (1<<gm->a_exp) * gm->b1)) >> (gm->c_exp + gm->a_exp);
+      nx = (x + i);
+      ny = (y + j);
+      persp = (1<<gm->c_exp) - gm->c0 * nx - gm->c1 * ny;
+      sx = (persp * (gm->a00 * nx + gm->a01 * ny +
+          (1<<gm->a_exp) * gm->b0)) >> (gm->c_exp + gm->a_exp + 3);
+      sy = (persp * (gm->a10 * nx + gm->a11 * ny +
+          (1<<gm->a_exp) * gm->b1)) >> (gm->c_exp + gm->a_exp + 3);
       sx = CLAMP(sx, 0, srcframe->width - 1);
       sy = CLAMP(sy, 0, srcframe->height - 1);
       sx >>= motion->params->video_format->chroma_h_shift;
@@ -343,41 +289,21 @@ schro_motion_get_global_block (SchroMotion *motion, SchroMotionVector *mv,
   for(j=0;j<h;j++){
     for(i=0;i<w;i++){
       int si, sj;
+      int nx, ny;
       si = i << motion->params->video_format->chroma_h_shift;
       sj = j << motion->params->video_format->chroma_h_shift;
-      persp = (1<<gm->c_exp) - gm->c0 * (x + si) - gm->c1 * (y + sj);
-      sx = (persp * (gm->a00 * (x + si) + gm->a01 * (y + sj) +
-          (1<<gm->a_exp) * gm->b0)) >> (gm->c_exp + gm->a_exp);
-      sy = (persp * (gm->a10 * (x + si) + gm->a11 * (y + sj) +
-          (1<<gm->a_exp) * gm->b1)) >> (gm->c_exp + gm->a_exp);
+      nx = (x + i);
+      ny = (y + j);
+      persp = (1<<gm->c_exp) - gm->c0 * nx - gm->c1 * ny;
+      sx = (persp * (gm->a00 * nx + gm->a01 * ny +
+          (1<<gm->a_exp) * gm->b0)) >> (gm->c_exp + gm->a_exp + 3);
+      sy = (persp * (gm->a10 * nx + gm->a11 * ny +
+          (1<<gm->a_exp) * gm->b1)) >> (gm->c_exp + gm->a_exp + 3);
       sx = CLAMP(sx, 0, srcframe->width - 1);
       sy = CLAMP(sy, 0, srcframe->height - 1);
       sx >>= motion->params->video_format->chroma_h_shift;
       sy >>= motion->params->video_format->chroma_v_shift;
       dest[j*stride + i] = SCHRO_GET(comp->data, sy * comp->stride + sx, uint8_t);
-    }
-  }
-}
-
-void
-global_block_get (uint8_t *dest, int stride, SchroFrameComponent *src,
-    int x, int y, int width, int height, SchroGlobalMotion *gm)
-{
-  int i,j;
-  int sx, sy;
-  int persp;
-  uint8_t *sdata = src->data;
-
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      persp = (1<<gm->c_exp) - gm->c0 * (x + i) - gm->c1 * (y + j);
-      sx = (persp * (gm->a00 * (x + i) + gm->a01 * (y + j) +
-          (1<<gm->a_exp) * gm->b0)) >> (gm->c_exp + gm->a_exp);
-      sy = (persp * (gm->a10 * (x + i) + gm->a11 * (y + j) +
-          (1<<gm->a_exp) * gm->b1)) >> (gm->c_exp + gm->a_exp);
-      sx = CLAMP(sx, 0, src->width - 1);
-      sy = CLAMP(sy, 0, src->height - 1);
-      dest[j*stride + i] = sdata[sy * src->stride + sx];
     }
   }
 }
@@ -402,214 +328,6 @@ schro_motion_get_dc_block (SchroMotion *motion, SchroMotionVector *mv)
   memset (motion->tmpdata + offset, mvdc->dc[2], motion->obmc_chroma->x_len);
   motion->blocks[2] = motion->tmpdata + offset;
   motion->strides[2] = 0;
-}
-
-#if 0
-void
-splat_block_general (SchroFrame *dest, SchroMotion *motion,
-    int x, int y, SchroMotionVector *mv)
-{
-  int i,j;
-  int k;
-  SchroObmcRegion *region;
-  uint8_t tmp[12];
-
-  x -= obmc->x_ramp/2;
-  y -= obmc->y_ramp/2;
-
-  k = 0;
-  if (x>0) k++;
-  if (x + obmc->x_len >= dest->width) k++;
-  if (y>0) k+=3;
-  if (y + obmc->y_len >= dest->height) k+=3;
-
-  rections to Trailheadsx += region->start_x;
-  y += region->start_y;
-
-  for(i=0;i<12;i++) tmp[i] = value;
-
-  if (region->end_x - region->start_x == 12) {
-    int16_t *d1 = OFFSET(dest->data, dest->stride*y + 2*x);
-    int16_t *s1 = region->weights;
-
-    oil_multiply_and_acc_12xn_s16_u8 (d1, dest->stride, s1, obmc->stride,
-        tmp, 0, region->end_y - region->start_y);
-  } else {
-    for(j=0;j<region->end_y - region->start_y;j++){
-      oil_multiply_and_add_s16_u8 (
-          OFFSET(dest->data, dest->stride*(y+j) + 2*x),
-          OFFSET(dest->data, dest->stride*(y+j) + 2*x),
-          OFFSET(region->weights, obmc->stride*j),
-          tmp,
-          region->end_x - region->start_x);
-    }
-  }
-
-}
-#endif
-
-typedef struct _SchroBlock SchroBlock;
-struct _SchroBlock {
-  uint8_t *blocks[3];
-  int strides[3];
-  uint8_t *tmpdata;
-};
-
-void
-get_block_simple (SchroBlock *dest, SchroUpsampledFrame *upframe, int x, int y)
-{
-  SchroFrame *srcframe;
-  SchroFrameComponent *comp;
-  int upsample_index;
-  int sx, sy;
-
-  upsample_index = (x&4)>>2 | (y&4)>>1;
-
-  sx = x >> 3;
-  sy = y >> 3;
-
-  srcframe = upframe->frames[upsample_index];
-
-  comp = &srcframe->components[0];
-  dest->blocks[0] = OFFSET(comp->data, comp->stride * sy + sx);
-  dest->strides[0] = comp->stride;
-
-  sx >>= SCHRO_FRAME_FORMAT_H_SHIFT(srcframe->format);
-  sy >>= SCHRO_FRAME_FORMAT_V_SHIFT(srcframe->format);
-
-  comp = &srcframe->components[1];
-  dest->blocks[1] = OFFSET(comp->data, comp->stride * sy + sx);
-  dest->strides[1] = comp->stride;
-
-  comp = &srcframe->components[2];
-  dest->blocks[2] = OFFSET(comp->data, comp->stride * sy + sx);
-  dest->strides[2] = comp->stride;
-}
-
-static int weights[64] = {
-  16, 12,  8,  4,
-  12,  9,  6,  3,
-   8,  6,  4,  2,
-   4,  3,  2,  1,
-
-   0,  4,  8, 12,
-   0,  3,  6,  9,
-   0,  2,  4,  6,
-   0,  1,  2,  3,
-
-   0,  0,  0,  0,
-   4,  3,  2,  1,
-   8,  6,  4,  2,
-  12,  9,  6,  3,
-
-   0,  0,  0,  0,
-   0,  1,  2,  3,
-   0,  2,  4,  6,
-   0,  3,  6,  9,
-};
-
-int
-get_pixel_generic (SchroUpsampledFrame *upframe, int x, int y, int comp_index)
-{
-  int v = 0;
-  SchroFrameComponent *comp;
-  int upsample_index;
-  SchroFrame *srcframe;
-  int sx, sy;
-
-  upsample_index = (x&4)>>2 | (y&4)>>1;
-  srcframe = upframe->frames[upsample_index];
-  comp = &srcframe->components[comp_index];
-  sx = CLAMP(x>>3, 0, comp->width - 1);
-  sy = CLAMP(y>>3, 0, comp->height - 1);
-  v += weights[0*16 + (x&3) + (y&3)*4] *
-    SCHRO_GET(comp->data, comp->stride * sy + sx, uint8_t);
-
-  upsample_index = ((x+4)&4)>>2 | (y&4)>>1;
-  srcframe = upframe->frames[upsample_index];
-  comp = &srcframe->components[comp_index];
-  sx = CLAMP((x+4)>>3, 0, comp->width - 1);
-  sy = CLAMP(y>>3, 0, comp->height - 1);
-  v += weights[1*16 + (x&3) + (y&3)*4] *
-    SCHRO_GET(comp->data, comp->stride * sy + sx, uint8_t);
-
-  upsample_index = (x&4)>>2 | ((y+4)&4)>>1;
-  srcframe = upframe->frames[upsample_index];
-  comp = &srcframe->components[comp_index];
-  sx = CLAMP(x>>3, 0, comp->width - 1);
-  sy = CLAMP((y+4)>>3, 0, comp->height - 1);
-  v += weights[2*16 + (x&3) + (y&3)*4] *
-    SCHRO_GET(comp->data, comp->stride * sy + sx, uint8_t);
-
-  upsample_index = ((x+4)&4)>>2 | ((y+4)&4)>>1;
-  srcframe = upframe->frames[upsample_index];
-  comp = &srcframe->components[comp_index];
-  sx = CLAMP((x+4)>>3, 0, comp->width - 1);
-  sy = CLAMP((y+4)>>3, 0, comp->height - 1);
-  v += weights[3*16 + (x&3) + (y&3)*4] *
-    SCHRO_GET(comp->data, comp->stride * sy + sx, uint8_t);
-
-  return (v+8)>>4;
-}
-
-void
-schro_motion_get_block_generic (SchroMotion *motion, SchroMotionVector *mv,
-    int x, int y, int refmask)
-{
-  uint8_t *data;
-  int stride;
-  int i,j;
-  SchroUpsampledFrame *srcframe;
-  int sx, sy;
-  int w, h;
-
-  if (refmask & 1) {
-    sx = (x<<3) + mv->x1;
-    sy = (y<<3) + mv->y1;
-    srcframe = motion->src1;
-  } else {
-    sx = (x<<3) + mv->x2;
-    sy = (y<<3) + mv->y2;
-    srcframe = motion->src2;
-  }
-  w = motion->obmc_luma->x_len;
-  h = motion->obmc_luma->y_len;
-
-  SCHRO_ASSERT(srcframe);
-
-  motion->blocks[0] = motion->tmpdata;
-  motion->strides[0] = 64;
-  data = motion->blocks[0];
-  stride = motion->strides[0];
-  for(j=0;j<h;j++){
-    for(i=0;i<w;i++){
-      data[j*stride + i] = get_pixel_generic (srcframe, sx + i*8, sy + j*8, 0);
-    }
-  }
-
-  sx >>= motion->params->video_format->chroma_h_shift;
-  sy >>= motion->params->video_format->chroma_v_shift;
-  w >>= motion->params->video_format->chroma_h_shift;
-  h >>= motion->params->video_format->chroma_v_shift;
-
-  motion->blocks[1] = motion->tmpdata + 64*64;
-  motion->strides[1] = 64;
-  data = motion->blocks[1];
-  stride = motion->strides[1];
-  for(j=0;j<h;j++){
-    for(i=0;i<w;i++){
-      data[j*stride + i] = get_pixel_generic (srcframe, sx + i*8, sy + j*8, 1);
-    }
-  }
-  motion->blocks[2] = motion->tmpdata + 64*64*2;
-  motion->strides[2] = 64;
-  data = motion->blocks[2];
-  stride = motion->strides[2];
-  for(j=0;j<h;j++){
-    for(i=0;i<w;i++){
-      data[j*stride + i] = get_pixel_generic (srcframe, sx + i*8, sy + j*8, 2);
-    }
-  }
 }
 
 void
@@ -738,7 +456,222 @@ schro_motion_get_block (SchroMotion *motion, SchroMotionVector *mv,
 
 }
 
+
+/* generic */
+
+static int weights[64] = {
+  16, 12,  8,  4,
+  12,  9,  6,  3,
+   8,  6,  4,  2,
+   4,  3,  2,  1,
+
+   0,  4,  8, 12,
+   0,  3,  6,  9,
+   0,  2,  4,  6,
+   0,  1,  2,  3,
+
+   0,  0,  0,  0,
+   4,  3,  2,  1,
+   8,  6,  4,  2,
+  12,  9,  6,  3,
+
+   0,  0,  0,  0,
+   0,  1,  2,  3,
+   0,  2,  4,  6,
+   0,  3,  6,  9,
+};
+
+int
+get_pixel_generic (SchroUpsampledFrame *upframe, int x, int y, int comp_index)
+{
+  int v = 0;
+  SchroFrameComponent *comp;
+  int upsample_index;
+  SchroFrame *srcframe;
+  int sx, sy;
+
+  upsample_index = (x&4)>>2 | (y&4)>>1;
+  srcframe = upframe->frames[upsample_index];
+  comp = &srcframe->components[comp_index];
+  sx = CLAMP(x>>3, 0, comp->width - 1);
+  sy = CLAMP(y>>3, 0, comp->height - 1);
+  v += weights[0*16 + (x&3) + (y&3)*4] *
+    SCHRO_GET(comp->data, comp->stride * sy + sx, uint8_t);
+
+  upsample_index = ((x+4)&4)>>2 | (y&4)>>1;
+  srcframe = upframe->frames[upsample_index];
+  comp = &srcframe->components[comp_index];
+  sx = CLAMP((x+4)>>3, 0, comp->width - 1);
+  sy = CLAMP(y>>3, 0, comp->height - 1);
+  v += weights[1*16 + (x&3) + (y&3)*4] *
+    SCHRO_GET(comp->data, comp->stride * sy + sx, uint8_t);
+
+  upsample_index = (x&4)>>2 | ((y+4)&4)>>1;
+  srcframe = upframe->frames[upsample_index];
+  comp = &srcframe->components[comp_index];
+  sx = CLAMP(x>>3, 0, comp->width - 1);
+  sy = CLAMP((y+4)>>3, 0, comp->height - 1);
+  v += weights[2*16 + (x&3) + (y&3)*4] *
+    SCHRO_GET(comp->data, comp->stride * sy + sx, uint8_t);
+
+  upsample_index = ((x+4)&4)>>2 | ((y+4)&4)>>1;
+  srcframe = upframe->frames[upsample_index];
+  comp = &srcframe->components[comp_index];
+  sx = CLAMP((x+4)>>3, 0, comp->width - 1);
+  sy = CLAMP((y+4)>>3, 0, comp->height - 1);
+  v += weights[3*16 + (x&3) + (y&3)*4] *
+    SCHRO_GET(comp->data, comp->stride * sy + sx, uint8_t);
+
+  return (v+8)>>4;
+}
+
 void
+schro_motion_get_global_block_generic (SchroMotion *motion, SchroMotionVector *mv,
+    int x, int y, SchroGlobalMotion *gm, int refmask)
+{
+  SchroUpsampledFrame *srcframe;
+  int offset;
+  int i,j;
+  int sx, sy;
+  int persp;
+  int w, h;
+  uint8_t *dest;
+  int stride;
+
+  w = motion->obmc_luma->x_len;
+  h = motion->obmc_luma->y_len;
+  if (refmask == 1) {
+    srcframe = motion->src1;
+  } else {
+    srcframe = motion->src2;
+  }
+
+  offset = 0;
+  motion->blocks[0] = motion->tmpdata + offset;
+  dest = motion->blocks[0];
+  stride = w;
+  motion->strides[0] = w;
+  for(j=0;j<h;j++){
+    for(i=0;i<w;i++){
+      persp = (1<<gm->c_exp) - gm->c0 * (x + i) - gm->c1 * (y + j);
+      sx = (persp * (gm->a00 * (x + i) + gm->a01 * (y + j) +
+          (1<<gm->a_exp) * gm->b0)) >> (gm->c_exp + gm->a_exp);
+      sy = (persp * (gm->a10 * (x + i) + gm->a11 * (y + j) +
+          (1<<gm->a_exp) * gm->b1)) >> (gm->c_exp + gm->a_exp);
+      dest[j*stride + i] = get_pixel_generic (srcframe, sx, sy, 0);
+    }
+  }
+
+  w >>= motion->params->video_format->chroma_h_shift;
+  h >>= motion->params->video_format->chroma_v_shift;
+
+  /* FIXME broken */
+
+  offset += 64*64;
+  motion->blocks[1] = motion->tmpdata + offset;
+  dest = motion->blocks[1];
+  stride = w;
+  motion->strides[1] = w;
+  for(j=0;j<h;j++){
+    for(i=0;i<w;i++){
+      int si, sj;
+      si = i << motion->params->video_format->chroma_h_shift;
+      sj = j << motion->params->video_format->chroma_h_shift;
+      persp = (1<<gm->c_exp) - gm->c0 * (x + si) - gm->c1 * (y + sj);
+      sx = (persp * (gm->a00 * (x + si) + gm->a01 * (y + sj) +
+          (1<<gm->a_exp) * gm->b0)) >> (gm->c_exp + gm->a_exp);
+      sy = (persp * (gm->a10 * (x + si) + gm->a11 * (y + sj) +
+          (1<<gm->a_exp) * gm->b1)) >> (gm->c_exp + gm->a_exp);
+      sx >>= motion->params->video_format->chroma_h_shift;
+      sy >>= motion->params->video_format->chroma_v_shift;
+      dest[j*stride + i] = get_pixel_generic (srcframe, sx, sy, 1);
+    }
+  }
+
+  offset += 64*64;
+  motion->blocks[2] = motion->tmpdata + offset;
+  dest = motion->blocks[2];
+  stride = w;
+  motion->strides[2] = w;
+  for(j=0;j<h;j++){
+    for(i=0;i<w;i++){
+      int si, sj;
+      si = i << motion->params->video_format->chroma_h_shift;
+      sj = j << motion->params->video_format->chroma_h_shift;
+      persp = (1<<gm->c_exp) - gm->c0 * (x + si) - gm->c1 * (y + sj);
+      sx = (persp * (gm->a00 * (x + si) + gm->a01 * (y + sj) +
+          (1<<gm->a_exp) * gm->b0)) >> (gm->c_exp + gm->a_exp);
+      sy = (persp * (gm->a10 * (x + si) + gm->a11 * (y + sj) +
+          (1<<gm->a_exp) * gm->b1)) >> (gm->c_exp + gm->a_exp);
+      sx >>= motion->params->video_format->chroma_h_shift;
+      sy >>= motion->params->video_format->chroma_v_shift;
+      dest[j*stride + i] = get_pixel_generic (srcframe, sx, sy, 2);
+    }
+  }
+}
+
+void
+schro_motion_get_block_generic (SchroMotion *motion, SchroMotionVector *mv,
+    int x, int y, int refmask)
+{
+  uint8_t *data;
+  int stride;
+  int i,j;
+  SchroUpsampledFrame *srcframe;
+  int sx, sy;
+  int w, h;
+
+  if (refmask & 1) {
+    sx = (x<<3) + mv->x1;
+    sy = (y<<3) + mv->y1;
+    srcframe = motion->src1;
+  } else {
+    sx = (x<<3) + mv->x2;
+    sy = (y<<3) + mv->y2;
+    srcframe = motion->src2;
+  }
+  w = motion->obmc_luma->x_len;
+  h = motion->obmc_luma->y_len;
+
+  SCHRO_ASSERT(srcframe);
+
+  motion->blocks[0] = motion->tmpdata;
+  motion->strides[0] = 64;
+  data = motion->blocks[0];
+  stride = motion->strides[0];
+  for(j=0;j<h;j++){
+    for(i=0;i<w;i++){
+      data[j*stride + i] = get_pixel_generic (srcframe, sx + i*8, sy + j*8, 0);
+    }
+  }
+
+  sx >>= motion->params->video_format->chroma_h_shift;
+  sy >>= motion->params->video_format->chroma_v_shift;
+  w >>= motion->params->video_format->chroma_h_shift;
+  h >>= motion->params->video_format->chroma_v_shift;
+
+  motion->blocks[1] = motion->tmpdata + 64*64;
+  motion->strides[1] = 64;
+  data = motion->blocks[1];
+  stride = motion->strides[1];
+  for(j=0;j<h;j++){
+    for(i=0;i<w;i++){
+      data[j*stride + i] = get_pixel_generic (srcframe, sx + i*8, sy + j*8, 1);
+    }
+  }
+  motion->blocks[2] = motion->tmpdata + 64*64*2;
+  motion->strides[2] = 64;
+  data = motion->blocks[2];
+  stride = motion->strides[2];
+  for(j=0;j<h;j++){
+    for(i=0;i<w;i++){
+      data[j*stride + i] = get_pixel_generic (srcframe, sx + i*8, sy + j*8, 2);
+    }
+  }
+}
+
+
+static void
 copy_block (SchroFrame *dest, SchroMotion *motion, int x, int y, int reg)
 {
   SchroFrameComponent *comp;
@@ -781,82 +714,8 @@ copy_block (SchroFrame *dest, SchroMotion *motion, int x, int y, int reg)
       }
     }
   }
-
 }
     
-#if 0
-void
-copy_block_general (SchroFrameComponent *dest, int x, int y,
-    SchroFrameComponent *src, int sx, int sy, SchroObmc *obmc)
-{
-  int i,j;
-  int k;
-  SchroObmcRegion *region;
-  uint8_t *data;
-  int stride;
-
-  SCHRO_ASSERT(x>=0);
-  SCHRO_ASSERT(y>=0);
-  SCHRO_ASSERT(x + obmc->x_sep<=dest->width);
-  SCHRO_ASSERT(y + obmc->y_sep<=dest->height);
-
-  x -= obmc->x_ramp/2;
-  y -= obmc->y_ramp/2;
-  sx -= obmc->x_ramp/2;
-  sy -= obmc->y_ramp/2;
-
-  k = 0;
-  if (x>0) k++;
-  if (x + obmc->x_len >= dest->width) k++;
-  if (y>0) k+=3;
-  if (y + obmc->y_len >= dest->height) k+=3;
-
-  region = obmc->regions + k;
-
-  x += region->start_x;
-  y += region->start_y;
-  sx += region->start_x;
-  sy += region->start_y;
-
-  if (sx < 0 || sy < 0 || 
-      sx + (region->end_x - region->start_x) >= src->width ||
-      sy + (region->end_y - region->start_y) >= src->height) {
-    data = obmc->tmpdata;
-    stride = obmc->x_len;
-    for(j=0;j<region->end_y - region->start_y;j++){
-      for(i=0;i<region->end_x - region->start_x;i++){
-        int src_x = CLAMP(sx + i, 0, src->width - 1);
-        int src_y = CLAMP(sy + j, 0, src->height - 1);
-        data[j*stride + i] =
-          SCHRO_GET(src->data, src->stride * src_y + src_x, uint8_t);
-      }
-    }
-  } else {
-    data = OFFSET(src->data, src->stride * sy + sx);
-    stride = src->stride;
-  }
-
-  if (region->end_x - region->start_x == 12) {
-    int16_t *d1 = OFFSET(dest->data, dest->stride*y + 2*x);
-    int16_t *s1 = region->weights;
-
-    oil_multiply_and_acc_12xn_s16_u8 (d1, dest->stride, s1, obmc->stride,
-        data, stride, region->end_y - region->start_y);
-  } else {
-    for(j=0;j<region->end_y - region->start_y;j++){
-      oil_multiply_and_add_s16_u8 (
-          OFFSET(dest->data, dest->stride*(y+j) + 2*x),
-          OFFSET(dest->data, dest->stride*(y+j) + 2*x),
-          OFFSET(region->weights, obmc->stride*j),
-          data + stride * j,
-          region->end_x - region->start_x);
-    }
-  }
-
-
-}
-#endif
-
 static void
 clear_rows (SchroFrame *frame, int y, int n)
 {
@@ -964,7 +823,7 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
         if (mv->pred_mode & 1) {
           if (mv->using_global) {
             SchroGlobalMotion *gm = &motion->params->global_motion[0];
-            schro_motion_get_global_block (motion, mv, x, y, gm, 1);
+            schro_motion_get_global_block_generic (motion, mv, x, y, gm, 1);
           } else {
             schro_motion_get_block (motion, mv, x, y, 1);
           }
@@ -972,7 +831,7 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
         if (mv->pred_mode & 2) {
           if (mv->using_global) {
             SchroGlobalMotion *gm = &motion->params->global_motion[1];
-            schro_motion_get_global_block (motion, mv, x, y, gm, 2);
+            schro_motion_get_global_block_generic (motion, mv, x, y, gm, 2);
           } else {
             schro_motion_get_block (motion, mv, x, y, 2);
           }
@@ -1258,12 +1117,12 @@ schro_motion_verify (SchroMotion *motion)
           SCHRO_ERROR("mv(%d,%d) uses non-existent src2", x, y);
           return 0;
         }
-        if (mv->x1 & precision_mask || mv->y1 & precision_mask) {
+        if (!mv->using_global && (mv->x1 & precision_mask || mv->y1 & precision_mask)) {
           SCHRO_ERROR("mv1 (%d,%d) has subpixel components not allowed by precision",
               x,y);
           return 0;
         }
-        if (mv->x2 & precision_mask || mv->y2 & precision_mask) {
+        if (!mv->using_global && (mv->x2 & precision_mask || mv->y2 & precision_mask)) {
           SCHRO_ERROR("mv2 (%d,%d) has subpixel components not allowed by precision",
               x,y);
           return 0;
@@ -1322,4 +1181,44 @@ schro_upsampled_frame_free (SchroUpsampledFrame *df)
   }
   free(df);
 }
+
+#if 0
+typedef struct _SchroBlock SchroBlock;
+struct _SchroBlock {
+  uint8_t *blocks[3];
+  int strides[3];
+  uint8_t *tmpdata;
+};
+
+void
+get_block_simple (SchroBlock *dest, SchroUpsampledFrame *upframe, int x, int y)
+{
+  SchroFrame *srcframe;
+  SchroFrameComponent *comp;
+  int upsample_index;
+  int sx, sy;
+
+  upsample_index = (x&4)>>2 | (y&4)>>1;
+
+  sx = x >> 3;
+  sy = y >> 3;
+
+  srcframe = upframe->frames[upsample_index];
+
+  comp = &srcframe->components[0];
+  dest->blocks[0] = OFFSET(comp->data, comp->stride * sy + sx);
+  dest->strides[0] = comp->stride;
+
+  sx >>= SCHRO_FRAME_FORMAT_H_SHIFT(srcframe->format);
+  sy >>= SCHRO_FRAME_FORMAT_V_SHIFT(srcframe->format);
+
+  comp = &srcframe->components[1];
+  dest->blocks[1] = OFFSET(comp->data, comp->stride * sy + sx);
+  dest->strides[1] = comp->stride;
+
+  comp = &srcframe->components[2];
+  dest->blocks[2] = OFFSET(comp->data, comp->stride * sy + sx);
+  dest->strides[2] = comp->stride;
+}
+#endif
 

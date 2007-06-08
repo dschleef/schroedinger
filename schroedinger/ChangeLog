@@ -1,3 +1,11 @@
+2007-06-08  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schromotion.c:
+	* schroedinger/schropredict.c:
+	* schroedinger/schropredict.h:
+	  Improvments to global motion.  It kinda sorta works, except
+	  how it doesn't.
+
 2007-06-07  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroarith.c:
