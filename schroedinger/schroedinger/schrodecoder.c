@@ -336,10 +336,6 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
     schro_decoder_decode_frame_prediction (decoder);
     schro_params_calculate_mc_sizes (params);
 
-    /* FIXME */
-    SCHRO_ASSERT(params->xbsep_luma == 8);
-    SCHRO_ASSERT(params->ybsep_luma == 8);
-
     if (decoder->motion_field == NULL) {
       decoder->motion_field = schro_motion_field_new (params->x_num_blocks,
           params->y_num_blocks);
@@ -416,10 +412,14 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
         decoder->tmpbuf);
   }
 
-  /* FIXME handle zero residual */
-  SCHRO_ASSERT(!decoder->zero_residual);
-
-  if (!_schro_decode_prediction_only) {
+  if (decoder->zero_residual) {
+    if (SCHRO_FRAME_IS_PACKED(output_picture->format)) {
+      schro_frame_convert (decoder->planar_output_frame, decoder->mc_tmp_frame);
+      schro_frame_convert (output_picture, decoder->planar_output_frame);
+    } else {
+      schro_frame_convert (output_picture, decoder->mc_tmp_frame);
+    }
+  } else if (!_schro_decode_prediction_only) {
     if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
       schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
     }
@@ -1076,7 +1076,6 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith **arith,
         schro_motion_vector_prediction (motion_vectors, &decoder->params, x, y,
             &pred_x, &pred_y, 1);
 
-        /* FIXME assumption that mv precision is 0 */
         mv->x1 = pred_x + (_schro_arith_context_decode_sint (
               arith[SCHRO_DECODER_ARITH_VECTOR_REF1_X],
               SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,
@@ -1090,7 +1089,6 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith **arith,
         schro_motion_vector_prediction (motion_vectors, &decoder->params, x, y,
             &pred_x, &pred_y, 2);
 
-        /* FIXME assumption that mv precision is 0 */
         mv->x2 = pred_x + (_schro_arith_context_decode_sint (
               arith[SCHRO_DECODER_ARITH_VECTOR_REF2_X],
               SCHRO_CTX_MV_REF2_H_CONT_BIN1, SCHRO_CTX_MV_REF2_H_VALUE,

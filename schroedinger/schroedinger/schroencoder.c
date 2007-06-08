@@ -68,7 +68,7 @@ schro_encoder_new (void)
 
   schro_encoder_encode_codec_comment (encoder);
 
-  /* FIXME */
+  /* FIXME this should be a parameter */
   encoder->queue_depth = 10;
 
   encoder->frame_queue = schro_queue_new (encoder->queue_depth,
@@ -100,7 +100,6 @@ SchroEncoderTask *
 schro_encoder_task_new (SchroEncoder *encoder)
 {
   SchroEncoderTask *task;
-  SchroParams *params;
   SchroFrameFormat frame_format;
   int frame_width;
   int frame_height;
@@ -117,19 +116,8 @@ schro_encoder_task_new (SchroEncoder *encoder)
     encoder->video_format.height / 4 * 2;
   task->subband_buffer = schro_buffer_new_and_alloc (task->subband_size);
 
-  /* FIXME settings */
-  params = &task->params;
-  params->video_format = &encoder->video_format;
-  params->transform_depth = encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH];
-  params->xbsep_luma = 8;
-  params->ybsep_luma = 8;
-
-  /* calculate sizes */
-  schro_params_calculate_mc_sizes (params);
-  schro_params_calculate_iwt_sizes (params);
-
   frame_format = schro_params_get_frame_format (16,
-      params->video_format->chroma_format);
+      encoder->video_format.chroma_format);
   
   frame_width = ROUND_UP_POW2(encoder->video_format.width,
       SCHRO_MAX_TRANSFORM_DEPTH + encoder->video_format.chroma_h_shift);
@@ -138,12 +126,17 @@ schro_encoder_task_new (SchroEncoder *encoder)
 
   task->iwt_frame = schro_frame_new_and_alloc (frame_format,
       frame_width, frame_height);
+  task->quant_data = malloc (sizeof(int16_t) * frame_width * frame_height / 4);
   
+  frame_width = MAX(
+      4 * 12 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*12),
+      4 * 16 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*16));
+  frame_height = MAX(
+      4 * 12 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*12),
+      4 * 16 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*16));
+
   task->prediction_frame = schro_frame_new_and_alloc (frame_format,
-        params->mc_luma_width, params->mc_luma_height);
-  
-  task->quant_data = malloc (sizeof(int16_t) *
-      (params->iwt_luma_width/2) * (params->iwt_luma_height/2));
+      frame_width, frame_height);
 
   return task;
 }
@@ -595,7 +588,6 @@ schro_encoder_task_complete (SchroEncoderTask *task)
     frame->access_unit_buffer = schro_encoder_encode_access_unit (task->encoder);
   }
   if (frame->last_frame) {
-    /* FIXME push an EOS */
     task->encoder->completed_eos = TRUE;
   }
 }
@@ -1247,7 +1239,6 @@ schro_encoder_encode_motion_data (SchroEncoderTask *task)
                 schro_motion_vector_prediction (task->motion_field->motion_vectors,
                     params, i+k, j+l, &pred_x, &pred_y, 1);
 
-                /* FIXME assumption that mv precision is 0 */
                 _schro_arith_context_encode_sint(arith,
                     SCHRO_CTX_MV_REF1_H_CONT_BIN1,
                     SCHRO_CTX_MV_REF1_H_VALUE,
@@ -1263,7 +1254,6 @@ schro_encoder_encode_motion_data (SchroEncoderTask *task)
                 schro_motion_vector_prediction (task->motion_field->motion_vectors,
                     params, i+k, j+l, &pred_x, &pred_y, 2);
 
-                /* FIXME assumption that mv precision is 0 */
                 _schro_arith_context_encode_sint(arith,
                     SCHRO_CTX_MV_REF2_H_CONT_BIN1,
                     SCHRO_CTX_MV_REF2_H_VALUE,

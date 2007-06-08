@@ -1,5 +1,12 @@
 2007-06-07  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroarith.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  Fix some FIXMEs
+
+2007-06-07  David Schleef  <ds@schleef.org>
+
 	* TODO: update
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:

@@ -19,9 +19,6 @@ schro_arith_new (void)
   arith = malloc (sizeof(*arith));
   memset (arith, 0, sizeof(*arith));
 
-  /* FIXME wtf? */
-  (void)&__schro_arith_context_decode_bit;
-
   return arith;
 }
 
