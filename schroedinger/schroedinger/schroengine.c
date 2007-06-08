@@ -53,23 +53,17 @@ init_params (SchroEncoderTask *task)
   SchroEncoder *encoder = task->encoder;
 
   params->video_format = &encoder->video_format;
+
+  schro_params_init (params, params->video_format->index);
+
   if (params->num_refs > 0) {
     params->wavelet_filter_index = encoder->prefs[SCHRO_PREF_INTER_WAVELET];
   } else {
     params->wavelet_filter_index = encoder->prefs[SCHRO_PREF_INTRA_WAVELET];
   }
   params->transform_depth = encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH];
-  schro_params_set_default_codeblock (params);
 
-  params->have_global_motion = FALSE;
-  params->xblen_luma = 12;
-  params->yblen_luma = 12;
-  params->xbsep_luma = 8;
-  params->ybsep_luma = 8;
-  params->mv_precision = 3;
-  params->picture_pred_mode = 0;
-  params->picture_weight_1 = 1;
-  params->picture_weight_2 = 1;
+  params->mv_precision = 0;
 
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);

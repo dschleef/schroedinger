@@ -8,6 +8,120 @@
 #include <string.h>
 
 
+void
+schro_params_init (SchroParams *params, int video_format)
+{
+  int i;
+
+  params->transform_depth = 4;
+
+  if (params->num_refs == 0) {
+    if (video_format < 11) {
+      params->wavelet_filter_index = SCHRO_WAVELET_DESL_9_3;
+    } else {
+      params->wavelet_filter_index = SCHRO_WAVELET_FIDELITY;
+    }
+  } else {
+    if (video_format < 11) {
+      params->wavelet_filter_index = SCHRO_WAVELET_5_3;
+    } else {
+      params->wavelet_filter_index = SCHRO_WAVELET_DESL_9_3;
+    }
+  }
+
+  switch(video_format) {
+    case 0: case 3: case 4: case 5: case 6: case 7: case 8:
+      params->xbsep_luma = 8;
+      params->xblen_luma = 12;
+      params->ybsep_luma = 8;
+      params->yblen_luma = 12;
+      break;
+    case 1: case 2:
+      params->xbsep_luma = 4;
+      params->xblen_luma = 8;
+      params->ybsep_luma = 4;
+      params->yblen_luma = 8;
+      break;
+    case 9:
+      params->xbsep_luma = 12;
+      params->xblen_luma = 16;
+      params->ybsep_luma = 12;
+      params->yblen_luma = 16;
+      break;
+    case 10: case 11: case 12:
+      params->xbsep_luma = 16;
+      params->xblen_luma = 24;
+      params->ybsep_luma = 16;
+      params->yblen_luma = 24;
+      break;
+    default:
+      SCHRO_ERROR("schro_params_init called with video_format_index %d",
+          video_format);
+      SCHRO_ASSERT(0);
+  }
+
+  params->mv_precision = 2;
+  params->picture_weight_1 = 1;
+  params->picture_weight_2 = 1;
+  params->picture_weight_bits = 1;
+
+  if (params->num_refs == 0) {
+    for(i=0;i<3;i++) {
+      params->horiz_codeblocks[i] = 1;
+      params->vert_codeblocks[i] = 1;
+    }
+    for(i=3;i<SCHRO_MAX_TRANSFORM_DEPTH+1;i++){
+      params->horiz_codeblocks[i] = 4;
+      params->vert_codeblocks[i] = 3;
+    }
+  } else {
+    for(i=0;i<2;i++) {
+      params->horiz_codeblocks[i] = 1;
+      params->vert_codeblocks[i] = 1;
+    }
+    params->horiz_codeblocks[2] = 8;
+    params->vert_codeblocks[2] = 6;
+    for(i=3;i<SCHRO_MAX_TRANSFORM_DEPTH+1;i++){
+      params->horiz_codeblocks[i] = 12;
+      params->vert_codeblocks[i] = 8;
+    }
+  }
+
+  switch(video_format) {
+    case 0: case 3: case 4: case 5: case 6: case 7: case 8:
+      params->slice_width = 32;
+      params->slice_height = 32;
+      params->slice_bits = 512;
+      break;
+    case 1: case 2:
+      params->slice_width = 16;
+      params->slice_height = 16;
+      params->slice_bits = 256;
+      break;
+    case 9:
+      params->slice_width = 48;
+      params->slice_height = 48;
+      params->slice_bits = 768;
+      break;
+    case 10: case 11: case 12:
+      params->slice_width = 64;
+      params->slice_height = 64;
+      params->slice_bits = 1024;
+      break;
+    default:
+      SCHRO_ASSERT(0);
+  }
+
+  /* other initializations */
+
+  params->spatial_partition_flag = TRUE;
+  params->nondefault_partition_flag = FALSE;
+  params->codeblock_mode_index = 1;
+  params->have_global_motion = FALSE;
+  params->picture_pred_mode = 0;
+
+}
+
 /*
  * schro_params_validate:
  * @format: pointer to a SchroVideoFormat structure
@@ -124,91 +238,91 @@ schro_params_calculate_mc_sizes (SchroParams *params)
 
 static SchroVideoFormat
 schro_video_formats[] = {
-  { /* custom */
+  { 0, /* custom */
     640, 480, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     30, 1, 1, 1,
     640, 480, 0, 0,
     0, 255, 128, 254,
     0, 0, 0 },
-  { /* QSIF */
+  { 1, /* QSIF */
     176, 120, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     15000, 1001, 10, 11,
     176, 120, 0, 0,
     0, 255, 128, 254,
     1, 1, 0 },
-  { /* QCIF */
+  { 2, /* QCIF */
     176, 144, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     25, 2, 12, 11,
     176, 144, 0, 0,
     0, 255, 128, 254,
     2, 1, 0 },
-  { /* SIF */
+  { 3, /* SIF */
     352, 240, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     15000, 1001, 10, 11,
     352, 240, 0, 0,
     0, 255, 128, 254,
     1, 1, 0 },
-  { /* CIF */
+  { 4, /* CIF */
     352, 288, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     25, 2, 12, 11,
     352, 288, 0, 0,
     0, 255, 128, 254,
     2, 1, 0 },
-  { /* 4SIF */
+  { 5, /* 4SIF */
     704, 480, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     15000, 1001, 10, 11,
     704, 480, 0, 0,
     0, 255, 128, 254,
     1, 1, 0 },
-  { /* 4CIF */
+  { 6, /* 4CIF */
     704, 576, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     25, 2, 12, 11,
     704, 576, 0, 0,
     0, 255, 128, 254,
     2, 1, 0 },
-  { /* SD480 */
+  { 7, /* SD480 */
     720, 480, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     24000, 1001, 10, 11,
     720, 480, 0, 0,
     16, 235, 128, 244,
     1, 1, 0 },
-  { /* SD576 */
+  { 8, /* SD576 */
     720, 576, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     25, 1, 12, 11,
     720, 576, 0, 0,
     16, 235, 128, 244,
     2, 1, 0 },
-  { /* HD720 */
+  { 9, /* HD720 */
     1280, 720, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     24, 1, 1, 1,
     1280, 720, 0, 0,
     16, 235, 128, 244,
     0, 0, 0 },
-  { /* HD1080 */
+  { 10, /* HD1080 */
     1920, 1080, SCHRO_CHROMA_420, 8,
     FALSE, TRUE, FALSE,
     24, 1, 1, 1,
     1920, 1080, 0, 0,
     16, 235, 128, 244,
     0, 0, 0 },
-  { /* 2KCinema */
+  { 11, /* 2KCinema */
     2048, 1556, SCHRO_CHROMA_444, 16,
     FALSE, TRUE, FALSE,
     24, 1, 1, 1,
     2048, 1536, 
     0, 65535, 32768, 65534,
     3, 2, 3 },
-  { /* 4KCinema */
+  { 12, /* 4KCinema */
     4096, 3072, SCHRO_CHROMA_444, 16,
     FALSE, TRUE, FALSE,
     24, 1, 1, 1,
@@ -606,6 +720,7 @@ struct _SchroBlockParams {
 
 static SchroBlockParams
 schro_block_params[] = {
+  { 0, 0, 0, 0 },
   { 8, 8, 4, 4 },
   { 12, 12, 8, 8 },
   { 18, 16, 10, 12 },
@@ -624,15 +739,30 @@ schro_block_params[] = {
 void
 schro_params_set_block_params (SchroParams *params, int index)
 {
-  if (index < 1 || index >= ARRAY_SIZE(schro_block_params) + 1) {
+  if (index < 1 || index >= ARRAY_SIZE(schro_block_params)) {
     SCHRO_ERROR("illegal block params index");
     return;
   }
 
-  params->xblen_luma = schro_block_params[index-1].xblen_luma;
-  params->yblen_luma = schro_block_params[index-1].yblen_luma;
-  params->xbsep_luma = schro_block_params[index-1].xbsep_luma;
-  params->ybsep_luma = schro_block_params[index-1].ybsep_luma;
+  params->xblen_luma = schro_block_params[index].xblen_luma;
+  params->yblen_luma = schro_block_params[index].yblen_luma;
+  params->xbsep_luma = schro_block_params[index].xbsep_luma;
+  params->ybsep_luma = schro_block_params[index].ybsep_luma;
+}
+
+int
+schro_params_get_block_params (SchroParams *params)
+{
+  int i;
+  for(i=1;i<ARRAY_SIZE(schro_block_params);i++){
+    if (schro_block_params[i].xblen_luma == params->xblen_luma && 
+        schro_block_params[i].xbsep_luma == params->xbsep_luma &&
+        schro_block_params[i].yblen_luma == params->yblen_luma &&
+        schro_block_params[i].ybsep_luma == params->ybsep_luma) {
+      return i;
+    }
+  }
+  return 0;
 }
 
 /**

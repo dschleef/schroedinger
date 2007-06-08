@@ -1,13 +1,19 @@
 
-
   add copyright blocks
 
   stabilize API
 
   add profile support
 
-  encoding 64x64 cause valgrind problems
+  add bit peeling
 
+  downsampling filter from Dirac
+
+  default block sizes are wrong for some video formats
+
+  Dirac Pro
+
+  pre-filtering for encoder
 
 
 schroarith.c:

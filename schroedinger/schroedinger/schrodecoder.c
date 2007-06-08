@@ -286,6 +286,8 @@ schro_decoder_iterate (SchroDecoder *decoder)
 
   params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->code);
 
+  schro_params_init (params, decoder->video_format.index);
+
   if (!decoder->have_frame_number) {
     if (SCHRO_PARSE_CODE_NUM_REFS (decoder->code) > 0) {
       SCHRO_ERROR("expected I frame after access unit header");
@@ -810,9 +812,6 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
     } else {
       schro_params_set_block_params (params, index);
     }
-  } else {
-    /* FIXME */
-    schro_params_set_block_params (params, 2);
   }
   SCHRO_DEBUG("blen_luma %d %d bsep_luma %d %d",
       params->xblen_luma, params->yblen_luma,
@@ -893,10 +892,6 @@ schro_decoder_decode_frame_prediction (SchroDecoder *decoder)
     if (params->num_refs > 1) {
       params->picture_weight_2 = schro_bits_decode_sint (decoder->bits);
     }
-  } else {
-    params->picture_weight_bits = 1;
-    params->picture_weight_1 = 1;
-    params->picture_weight_2 = 1;
   }
 }
 
@@ -1138,9 +1133,6 @@ schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
   SCHRO_DEBUG ("transform depth %d", params->transform_depth);
 
   /* spatial partitioning */
-  /* FIXME */
-  schro_params_set_default_codeblock(params);
-
   params->spatial_partition_flag = schro_bits_decode_bit (decoder->bits);
   SCHRO_DEBUG ("spatial_partitioning %d", params->spatial_partition_flag);
   if (params->spatial_partition_flag) {

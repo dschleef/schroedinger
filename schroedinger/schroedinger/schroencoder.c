@@ -101,6 +101,9 @@ schro_encoder_task_new (SchroEncoder *encoder)
 {
   SchroEncoderTask *task;
   SchroParams *params;
+  SchroFrameFormat frame_format;
+  int frame_width;
+  int frame_height;
 
   task = malloc(sizeof(SchroEncoderTask));
   memset (task, 0, sizeof(*task));
@@ -125,36 +128,22 @@ schro_encoder_task_new (SchroEncoder *encoder)
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
 
-  /* FIXME these should allocate based on the max allowable for the
-   * given video format and profile */
-  if (task->iwt_frame == NULL) {
-    SchroFrameFormat frame_format;
-    int frame_width;
-    int frame_height;
+  frame_format = schro_params_get_frame_format (16,
+      params->video_format->chroma_format);
+  
+  frame_width = ROUND_UP_POW2(encoder->video_format.width,
+      SCHRO_MAX_TRANSFORM_DEPTH + encoder->video_format.chroma_h_shift);
+  frame_height = ROUND_UP_POW2(encoder->video_format.height,
+      SCHRO_MAX_TRANSFORM_DEPTH + encoder->video_format.chroma_v_shift);
 
-    frame_format = schro_params_get_frame_format (16,
-        params->video_format->chroma_format);
-    
-    frame_width = ROUND_UP_POW2(encoder->video_format.width,
-        SCHRO_MAX_TRANSFORM_DEPTH + encoder->video_format.chroma_h_shift);
-    frame_height = ROUND_UP_POW2(encoder->video_format.height,
-        SCHRO_MAX_TRANSFORM_DEPTH + encoder->video_format.chroma_v_shift);
-
-    task->iwt_frame = schro_frame_new_and_alloc (frame_format,
-        frame_width, frame_height);
-  }
-  if (task->prediction_frame == NULL) {
-    SchroFrameFormat frame_format;
-
-    frame_format = schro_params_get_frame_format (16,
-        params->video_format->chroma_format);
-    task->prediction_frame = schro_frame_new_and_alloc (frame_format,
+  task->iwt_frame = schro_frame_new_and_alloc (frame_format,
+      frame_width, frame_height);
+  
+  task->prediction_frame = schro_frame_new_and_alloc (frame_format,
         params->mc_luma_width, params->mc_luma_height);
-  }
-  if (task->quant_data == NULL) {
-    task->quant_data = malloc (sizeof(int16_t) *
-        (params->iwt_luma_width/2) * (params->iwt_luma_height/2));
-  }
+  
+  task->quant_data = malloc (sizeof(int16_t) *
+      (params->iwt_luma_width/2) * (params->iwt_luma_height/2));
 
   return task;
 }
@@ -841,14 +830,22 @@ static void
 schro_encoder_encode_picture_prediction (SchroEncoderTask *task)
 {
   SchroParams *params = &task->params;
+  SchroParams def;
+
+  memset(&def, 0, sizeof(def));
+  def.num_refs = params->num_refs;
+  schro_params_init (&def, task->encoder->video_format.index);
 
   /* block params flag */
-  /* FIXME */
-  if (FALSE) {
+  if (def.xblen_luma == params->xblen_luma &&
+      def.xbsep_luma == params->xbsep_luma &&
+      def.yblen_luma == params->yblen_luma &&
+      def.ybsep_luma == params->ybsep_luma) {
     schro_bits_encode_bit (task->bits, FALSE);
   } else {
-    int index = 0;
+    int index;
     schro_bits_encode_bit (task->bits, TRUE);
+    index = schro_params_get_block_params (params);
     schro_bits_encode_uint (task->bits, 0);
     if (index == 0) {
       schro_bits_encode_uint (task->bits, params->xblen_luma);
@@ -859,8 +856,7 @@ schro_encoder_encode_picture_prediction (SchroEncoderTask *task)
   }
 
   /* mv precision flag */
-  /* FIXME */
-  if (params->mv_precision == 0) {
+  if (params->mv_precision == def.mv_precision) {
     schro_bits_encode_bit (task->bits, FALSE);
   } else {
     schro_bits_encode_bit (task->bits, TRUE);
@@ -914,8 +910,10 @@ schro_encoder_encode_picture_prediction (SchroEncoderTask *task)
   }
 
   /* non-default weights flag */
-  /* FIXME */
-  if (TRUE) {
+  if (params->picture_weight_bits == def.picture_weight_bits &&
+      params->picture_weight_1 == def.picture_weight_1 &&
+      (params->picture_weight_2 == def.picture_weight_2 ||
+       params->num_refs < 2)) {
     schro_bits_encode_bit (task->bits, FALSE);
   } else {
     schro_bits_encode_bit (task->bits, TRUE);

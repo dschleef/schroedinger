@@ -1,5 +1,16 @@
 2007-06-07  David Schleef  <ds@schleef.org>
 
+	* TODO: update
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	  The default values in SchroParams depends on the video format
+	  index.  Fixes related complance bugs.
+
+2007-06-07  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	  Fix encoding of global prediction bits.
 	* schroedinger/schroengine.c:

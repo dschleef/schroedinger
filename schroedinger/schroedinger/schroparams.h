@@ -18,6 +18,7 @@ typedef struct _SchroMotionField SchroMotionField;
 typedef struct _SchroGlobalMotion SchroGlobalMotion;
 
 struct _SchroVideoFormat {
+  int index;
   int width;
   int height;
   int chroma_format;
@@ -106,6 +107,11 @@ struct _SchroParams {
   int picture_weight_1;
   int picture_weight_2;
 
+  /* DiracPro parameters */
+  int slice_width;
+  int slice_height;
+  int slice_bits;
+
   /* calculated sizes */
   int iwt_chroma_width;
   int iwt_chroma_height;
@@ -168,6 +174,8 @@ struct _SchroMotionField {
   SchroMotionVector *motion_vectors;
 };
 
+void schro_params_init (SchroParams *params, int video_format);
+
 void schro_params_calculate_iwt_sizes (SchroParams *params);
 void schro_params_calculate_mc_sizes (SchroParams *params);
 
@@ -184,6 +192,7 @@ int schro_params_get_signal_range (SchroVideoFormat *format);
 void schro_params_set_colour_spec (SchroVideoFormat *format, int index);
 int schro_params_get_colour_spec (SchroVideoFormat *format);
 void schro_params_set_block_params (SchroParams *params, int index);
+int schro_params_get_block_params (SchroParams *params);
 
 void schro_params_set_default_codeblock (SchroParams *params);
 
