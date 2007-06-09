@@ -119,14 +119,14 @@ static GstStaticPadTemplate gst_schrotoy_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("AYUV"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420"))
     );
 
 static GstStaticPadTemplate gst_schrotoy_src_template =
     GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("AYUV"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420"))
     );
 
 GType
@@ -207,6 +207,12 @@ gst_schrotoy_class_init (gpointer g_class, gpointer class_data)
   toy_class->quants[3] = 30;
   toy_class->quants[4] = 30;
   toy_class->quants[5] = 30;
+  toy_class->quants[6] = 30;
+  toy_class->quants[7] = 30;
+  toy_class->quants[8] = 30;
+  toy_class->quants[9] = 30;
+  toy_class->quants[10] = 30;
+  toy_class->quants[11] = 30;
 }
 
 static void
@@ -381,14 +387,15 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
     compress->tmpbuf = malloc (2*2048);
   }
 
-  frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA(buf),
+  frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA(buf),
       params->video_format->width, params->video_format->height);
 
   schro_frame_convert (compress->tmp_frame, frame);
+  schro_params_init_subbands (&compress->params, compress->subbands,
+      compress->tmp_frame->components[0].stride,
+      compress->tmp_frame->components[1].stride);
   schro_frame_iwt_transform (compress->tmp_frame, &compress->params,
       compress->tmpbuf);
-  schro_params_init_subbands (&compress->params, compress->subbands,
-      compress->tmp_frame->width, compress->tmp_frame->components[1].width);
 
   if (compress->button_x >= 0) {
     int value;
@@ -437,6 +444,7 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
 
     for(i=0;i<13;i++) quant_index_0[i] = 0;
     for(i=0;i<13;i++) quant_index_1[i] = 0;
+#if 0
     quant_index_0[0] = 16;
     quant_index_0[1] = 20;
     quant_index_0[2] = 20;
@@ -450,8 +458,9 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
     quant_index_0[10] = 53;
     quant_index_0[11] = 53;
     quant_index_0[12] = 57;
+#endif
 
-#if 0
+#if 1
     quant_index_0[1 + compress_class->side0] =
       compress_class->quants[compress_class->side0];
     quant_index_1[1 + compress_class->side1] =
@@ -466,7 +475,7 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
       compress->tmpbuf);
   schro_frame_convert (frame, compress->tmp_frame);
 
-  if(0)mark_frame (frame, compress_class->test_index);
+  mark_frame (frame, compress_class->test_index);
 
   compress->frame_number++;
   return GST_FLOW_OK;
@@ -536,8 +545,8 @@ quantize_frame (SchroFrame *frame, int *quant_index_0, int *quant_index_1,
         quant_factor = schro_table_quant[quant_index_0[index]];
         quant_offset = schro_table_offset_1_2[quant_index_0[index]];
       }
-      GST_DEBUG("side=%d index=%d quant_factor=%d",
-          side, index, quant_factor);
+      GST_DEBUG("side=%d index=%d quant_factor=%d %dx%d",
+          side, index, quant_factor, width, height);
 
       data = (int16_t *)frame->components[0].data + offset;
 
@@ -571,6 +580,7 @@ quantize_frame (SchroFrame *frame, int *quant_index_0, int *quant_index_1,
           for(i=xmin;i<xmax;i++){
             q = quantize (data[j*stride+i], quant_factor, quant_offset);
             data[j*stride + i] = dequantize (q, quant_factor, quant_offset);
+            data[j*stride + i] = 0;
           }
         }
       }

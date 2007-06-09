@@ -1,5 +1,9 @@
 2007-06-08  David Schleef  <ds@schleef.org>
 
+	* gst/gstschrotoy.c: This stopped working somtime in the past.  Fix.
+
+2007-06-08  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schromotion.c:
 	* schroedinger/schropredict.c:
 	* schroedinger/schropredict.h:
