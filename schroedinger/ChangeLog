@@ -1,5 +1,14 @@
 2007-06-09  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrofilter.c:
+	* schroedinger/schrofilter.h:
+	* testsuite/Makefile.am:
+	* testsuite/filter.c:
+	* testsuite/sort.c:
+	  Add more filtering code.
+
+2007-06-09  David Schleef  <ds@schleef.org>
+
 	* schroedinger/Makefile.am:
 	* schroedinger/schro.h:
 	* schroedinger/schroencoder.c:
