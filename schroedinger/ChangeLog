@@ -1,5 +1,12 @@
 2007-06-09  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroengine.h:
+	  Add lossless engine.
+
+2007-06-09  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrofilter.c:
 	* schroedinger/schrofilter.h:
 	* testsuite/Makefile.am:

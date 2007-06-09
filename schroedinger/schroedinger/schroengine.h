@@ -11,6 +11,7 @@ int schro_encoder_engine_backref (SchroEncoder *encoder);
 int schro_encoder_engine_backref2 (SchroEncoder *encoder);
 int schro_encoder_engine_tworef (SchroEncoder *encoder);
 int schro_encoder_engine_test_intra (SchroEncoder *encoder);
+int schro_encoder_engine_lossless (SchroEncoder *encoder);
 
 SCHRO_END_DECLS
 

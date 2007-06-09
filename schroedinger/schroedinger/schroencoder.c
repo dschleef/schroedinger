@@ -662,6 +662,9 @@ schro_encoder_iterate (SchroEncoder *encoder)
       case 4:
         ret = schro_encoder_engine_test_intra (encoder);
         break;
+      case 5:
+        ret = schro_encoder_engine_lossless (encoder);
+        break;
       default:
         ret = FALSE;
         break;
@@ -706,7 +709,10 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
       SCHRO_PARSE_CODE_PICTURE(task->is_ref, task->params.num_refs));
   schro_encoder_encode_picture_header (task);
 
-  schro_frame_filter_cwm (task->encoder_frame->original_frame);
+#if 0
+  //schro_frame_filter_cwm7 (task->encoder_frame->original_frame);
+  schro_frame_filter_cwmN (task->encoder_frame->original_frame, 5);
+#endif
 
   schro_encoder_frame_analyse (task->encoder, task->encoder_frame);
 
@@ -2093,7 +2099,7 @@ schro_encoder_reference_retire (SchroEncoder *encoder,
 #endif
 
 static const int pref_range[][2] = {
-  { 0, 4 },
+  { 0, 5 },
   { 2, 20 },
   { 1, 8 },
   { 0, 7 },

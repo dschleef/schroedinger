@@ -570,3 +570,110 @@ schro_encoder_engine_test_intra (SchroEncoder *encoder)
   return FALSE;
 }
 
+int
+schro_encoder_engine_lossless (SchroEncoder *encoder)
+{
+  SchroParams *params;
+  SchroEncoderTask *task;
+  SchroEncoderFrame *frame;
+  int i;
+  int j;
+
+  for(i=0;i<encoder->frame_queue->n;i++) {
+    int is_ref;
+
+    frame = encoder->frame_queue->elements[i].data;
+    //SCHRO_ERROR("backref i=%d picture=%d", i, frame->frame_number);
+
+    if (frame->state != SCHRO_ENCODER_FRAME_STATE_NEW) {
+      continue;
+    }
+
+    schro_engine_check_new_access_unit (encoder, frame);
+
+    is_ref = FALSE;
+    if (encoder->last_ref == -1 || 
+        frame->frame_number >= encoder->last_ref + encoder->ref_distance) {
+      is_ref = TRUE;
+    }
+    if (frame->start_access_unit) {
+      is_ref = TRUE;
+    }
+
+    if (!is_ref) {
+      if (!schro_encoder_reference_get (encoder, encoder->last_ref)) {
+        return FALSE;
+      }
+    }
+
+    task = schro_encoder_task_new (encoder);
+
+    frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
+    task->encoder_frame = frame;
+
+    task->encode_frame = frame->original_frame;
+    task->frame_number = frame->frame_number;
+    task->presentation_frame = frame->frame_number;
+
+    frame->slot = encoder->next_slot;
+    task->slot = encoder->next_slot;
+    encoder->next_slot++;
+
+    task->outbuffer_size =
+      schro_engine_pick_output_buffer_size (encoder, frame);
+    task->outbuffer = schro_buffer_new_and_alloc (task->outbuffer_size);
+
+    /* set up params */
+    params = &task->params;
+    task->is_ref = is_ref;
+    if (task->is_ref) {
+      params->num_refs = 0;
+      if (task->frame_number > 0) {
+        frame->retire = encoder->last_ref;
+        frame->n_retire = 1;
+      } else {
+        frame->n_retire = 0;
+      }
+      encoder->last_ref = task->frame_number;
+    } else {
+      params->num_refs = 1;
+      task->reference_frame_number[0] = encoder->last_ref;
+      frame->n_retire = 0;
+    }
+
+    task->n_retire = frame->n_retire;
+    task->retire[0] = frame->retire;
+
+    encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_HAAR_0;
+    encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_HAAR_0;
+    encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 3;
+    init_params (task);
+
+    params->xbsep_luma = 8;
+    params->xblen_luma = 8;
+    params->ybsep_luma = 8;
+    params->yblen_luma = 8;
+
+    for(j=0;j<19;j++){
+      task->subbands[j].quant_index = 0;
+    }
+
+    if (params->num_refs > 0) {
+      task->ref_frame0 = schro_encoder_reference_get (encoder,
+          task->reference_frame_number[0]);
+      schro_encoder_frame_ref (task->ref_frame0);
+    } else {
+      task->ref_frame0 = NULL;
+    }
+
+    SCHRO_DEBUG("queueing %d", task->frame_number);
+
+    schro_async_run (encoder->async,
+        (void (*)(void *))schro_encoder_encode_picture, task);
+
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
