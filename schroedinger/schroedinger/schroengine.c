@@ -64,6 +64,7 @@ init_params (SchroEncoderTask *task)
   params->transform_depth = encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH];
 
   params->mv_precision = 0;
+  //params->have_global_motion = TRUE;
 
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
@@ -480,4 +481,92 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
 }
 
 
+static struct {
+  int type;
+  int depth;
+} test_wavelet_types[] = {
+  { SCHRO_WAVELET_DESL_9_3, 1 },
+  { SCHRO_WAVELET_DESL_9_3, 2 },
+  { SCHRO_WAVELET_DESL_9_3, 3 },
+  { SCHRO_WAVELET_DESL_9_3, 4 },
+  { SCHRO_WAVELET_5_3, 1 },
+  { SCHRO_WAVELET_5_3, 2 },
+  { SCHRO_WAVELET_5_3, 3 },
+  { SCHRO_WAVELET_5_3, 4 },
+  { SCHRO_WAVELET_13_5, 1 },
+  { SCHRO_WAVELET_13_5, 2 },
+  { SCHRO_WAVELET_13_5, 3 },
+  { SCHRO_WAVELET_13_5, 4 },
+  { SCHRO_WAVELET_HAAR_0, 1 },
+  { SCHRO_WAVELET_HAAR_0, 2 },
+  { SCHRO_WAVELET_HAAR_0, 3 },
+  { SCHRO_WAVELET_HAAR_0, 4 },
+  { SCHRO_WAVELET_HAAR_1, 1 },
+  { SCHRO_WAVELET_HAAR_1, 2 },
+  { SCHRO_WAVELET_HAAR_1, 3 },
+  { SCHRO_WAVELET_HAAR_1, 4 },
+  { SCHRO_WAVELET_HAAR_2, 1 },
+  { SCHRO_WAVELET_HAAR_2, 2 },
+  //{ SCHRO_WAVELET_HAAR_2, 3 },
+  //{ SCHRO_WAVELET_HAAR_2, 4 },
+  { SCHRO_WAVELET_FIDELITY, 1 },
+  { SCHRO_WAVELET_FIDELITY, 2 },
+  { SCHRO_WAVELET_FIDELITY, 3 },
+  //{ SCHRO_WAVELET_FIDELITY, 4 },
+  { SCHRO_WAVELET_DAUB_9_7, 1 },
+  { SCHRO_WAVELET_DAUB_9_7, 2 },
+  { SCHRO_WAVELET_DAUB_9_7, 3 },
+  //{ SCHRO_WAVELET_DAUB_9_7, 4 }
+};
+
+int
+schro_encoder_engine_test_intra (SchroEncoder *encoder)
+{
+  SchroParams *params;
+  SchroEncoderTask *task;
+  SchroEncoderFrame *frame;
+  int i;
+  int j;
+
+  for(i=0;i<encoder->frame_queue->n;i++) {
+    frame = encoder->frame_queue->elements[i].data;
+
+    if (frame->state != SCHRO_ENCODER_FRAME_STATE_NEW) {
+      continue;
+    }
+
+    schro_engine_check_new_access_unit (encoder, frame);
+
+    task = schro_encoder_task_new (encoder);
+
+    frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
+    task->encoder_frame = frame;
+
+    task->encode_frame = frame->original_frame;
+    task->frame_number = frame->frame_number;
+    task->presentation_frame = frame->frame_number;
+
+    frame->slot = encoder->next_slot;
+    task->slot = encoder->next_slot;
+    encoder->next_slot++;
+
+    task->outbuffer_size =
+      schro_engine_pick_output_buffer_size (encoder, frame);
+    task->outbuffer = schro_buffer_new_and_alloc (task->outbuffer_size);
+
+    /* set up params */
+    params = &task->params;
+    j = frame->frame_number % ARRAY_SIZE(test_wavelet_types);
+    encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = test_wavelet_types[j].type;
+    encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = test_wavelet_types[j].depth;
+    init_params (task);
+
+    schro_async_run (encoder->async,
+        (void (*)(void *))schro_encoder_encode_picture, task);
+
+    return TRUE;
+  }
+
+  return FALSE;
+}
 

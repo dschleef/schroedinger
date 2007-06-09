@@ -659,6 +659,9 @@ schro_encoder_iterate (SchroEncoder *encoder)
       case 3:
         ret = schro_encoder_engine_tworef (encoder);
         break;
+      case 4:
+        ret = schro_encoder_engine_test_intra (encoder);
+        break;
       default:
         ret = FALSE;
         break;
@@ -2088,7 +2091,7 @@ schro_encoder_reference_retire (SchroEncoder *encoder,
 #endif
 
 static const int pref_range[][2] = {
-  { 0, 3 },
+  { 0, 4 },
   { 2, 20 },
   { 1, 8 },
   { 0, 7 },
