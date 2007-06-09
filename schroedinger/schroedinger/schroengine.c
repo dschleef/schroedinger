@@ -65,7 +65,7 @@ init_params (SchroEncoderTask *task)
 
   params->mv_precision = 0;
   //params->have_global_motion = TRUE;
-
+  
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
   schro_params_init_subbands (params, task->subbands,

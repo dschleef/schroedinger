@@ -706,6 +706,8 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
       SCHRO_PARSE_CODE_PICTURE(task->is_ref, task->params.num_refs));
   schro_encoder_encode_picture_header (task);
 
+  schro_frame_filter_cwm (task->encoder_frame->original_frame);
+
   schro_encoder_frame_analyse (task->encoder, task->encoder_frame);
 
   if (task->params.num_refs > 0) {

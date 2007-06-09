@@ -1,3 +1,17 @@
+2007-06-09  David Schleef  <ds@schleef.org>
+
+	* schroedinger/Makefile.am:
+	* schroedinger/schro.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	* schroedinger/schrofilter.c:
+	* schroedinger/schrofilter.h:
+	  New center-weighted median filter.  Pulls 2% off one DVD test
+	  clip.
+
+	* testsuite/global_motion.c:
+	  compile fix.
+
 2007-06-08  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:

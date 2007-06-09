@@ -13,6 +13,7 @@ pkginclude_HEADERS = \
 	schrodecoder.h \
 	schroencoder.h \
 	schroengine.h \
+	schrofilter.h \
 	schroframe.h \
 	schro-stdint.h \
 	schroarith.h \
@@ -46,6 +47,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrodebug.c \
 	schroencoder.c \
 	schroengine.c \
+	schrofilter.c \
 	schroframe.c \
 	schrobuffer.c \
 	schrometric.c \
