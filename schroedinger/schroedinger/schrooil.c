@@ -114,5 +114,12 @@ oil_mas10_u8 (uint8_t *d, const uint8_t *s1, int sstr, const int16_t *s2_10,
   }
 }
 
-
+void oil_add_const_rshift_u16 (uint16_t *d1, const uint16_t *s1,
+    const int16_t *s2_2, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    d1[i] = (s1[i] + s2_2[0])>>s2_2[1];
+  }
+}
 

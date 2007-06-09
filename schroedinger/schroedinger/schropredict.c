@@ -594,7 +594,7 @@ schro_motion_field_set (SchroMotionField *field, int split, int pred_mode)
 }
 
 void
-schro_motion_field_scan (SchroMotionField *field,
+schro_motion_field_scan (SchroMotionField *field, SchroParams *params,
     SchroFrame *frame, SchroFrame *ref, int dist)
 {
   SchroMotionVector *mv;
@@ -605,7 +605,8 @@ schro_motion_field_scan (SchroMotionField *field,
     for(i=0;i<field->x_num_blocks;i++){
       mv = field->motion_vectors + j*field->x_num_blocks + i;
 
-      schro_motion_vector_scan (mv, frame, ref, i*8, j*8, dist);
+      schro_motion_vector_scan (mv, frame, ref, i*params->xbsep_luma,
+          j*params->ybsep_luma, dist);
     }
   }
 }
@@ -710,12 +711,12 @@ schro_encoder_hierarchical_prediction (SchroEncoderTask *task)
       motion_fields[shift] = schro_motion_field_new (x_blocks, y_blocks);
       if (shift == 3) {
         schro_motion_field_set (motion_fields[shift], 2, 1<<i);
-        schro_motion_field_scan (motion_fields[shift], downsampled_frame,
+        schro_motion_field_scan (motion_fields[shift], params, downsampled_frame,
             downsampled_ref0, 12);
       } else {
         schro_motion_field_inherit (motion_fields[shift],
             motion_fields[shift+1]);
-        schro_motion_field_scan (motion_fields[shift], downsampled_frame,
+        schro_motion_field_scan (motion_fields[shift], params, downsampled_frame,
             downsampled_ref0, 4);
       }
     }
@@ -774,9 +775,8 @@ schro_encoder_dc_prediction (SchroEncoderTask *task)
   motion_field = schro_motion_field_new (params->x_num_blocks,
       params->y_num_blocks);
 
-  /* FIXME 8x8 blocks */
-  luma_w = 8;
-  luma_h = 8;
+  luma_w = params->xbsep_luma;
+  luma_h = params->xbsep_luma;
   chroma_w = luma_w>>params->video_format->chroma_h_shift;
   chroma_h = luma_h>>params->video_format->chroma_v_shift;
 
@@ -797,8 +797,8 @@ schro_encoder_dc_prediction (SchroEncoderTask *task)
 
       memset (const_data, mvdc->dc[0], 16);
 
-      x = i*8;
-      y = j*8;
+      x = i*params->xbsep_luma;
+      y = j*params->ybsep_luma;
       mvdc->metric = schro_metric_absdiff_u8 (
           frame->components[0].data + x + y*frame->components[0].stride,
           frame->components[0].stride,
@@ -862,7 +862,7 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderTask *task)
     parent_mf = schro_motion_field_new (x_blocks, y_blocks);
 
     schro_motion_field_set (parent_mf, 2, 1<<ref);
-    schro_motion_field_scan (parent_mf, downsampled_frame, downsampled_ref,
+    schro_motion_field_scan (parent_mf, params, downsampled_frame, downsampled_ref,
         12);
 
     for(shift=2;shift>=0;shift--) {
@@ -956,7 +956,7 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderTask *task)
         }
       }
 
-      schro_motion_field_scan (mf, downsampled_frame, downsampled_ref, 4);
+      schro_motion_field_scan (mf, params, downsampled_frame, downsampled_ref, 4);
 
       schro_motion_field_free (parent_mf);
       parent_mf = mf;
@@ -1016,7 +1016,8 @@ schro_encoder_zero_prediction (SchroEncoderTask *task)
         int metric;
         
         metric = schro_frame_get_metric (downsampled_frame,
-            i * 8, j * 8, downsampled_ref, i*8, j*8);
+            i * params->xbsep_luma, j * params->ybsep_luma,
+            downsampled_ref, i*params->xbsep_luma, j*params->ybsep_luma);
 
         mv = motion_field_get (mf, i, j);
         mv->x1 = 0;

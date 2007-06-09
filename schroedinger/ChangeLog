@@ -1,6 +1,18 @@
 2007-06-08  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schrooil.c:
+	* schroedinger/schrooil.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schropredict.c:
+	* schroedinger/schropredict.h:
+	  Make prediction code work (poorly) with non 8x8 blocks.  Fix
+	  problems noticed in decoding non-8x8 block pictures.
+
+2007-06-08  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
 	* schroedinger/schroengine.c:
 	* schroedinger/schroengine.h:
 	  Add engine that cycles through wavelet parameters.

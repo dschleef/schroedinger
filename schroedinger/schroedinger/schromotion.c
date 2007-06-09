@@ -7,6 +7,7 @@
 //#include <stdlib.h>
 #include <string.h>
 //#include <stdio.h>
+#include <schroedinger/schrooil.h>
 
 
 void schro_decoder_predict (SchroDecoder *decoder);
@@ -82,8 +83,8 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
   }
 
   obmc->shift = ramp_shift(x_ramp) + ramp_shift(y_ramp);
-  if (obmc->shift >= 8) {
-    SCHRO_ERROR("obmc shift too large (%d >= 8)", obmc->shift);
+  if (obmc->shift > 8) {
+    SCHRO_ERROR("obmc shift too large (%d > 8)", obmc->shift);
   }
 
   obmc->x_ramp = x_ramp;
@@ -741,7 +742,7 @@ shift_rows (SchroFrame *frame, int y, int n, int shift_luma, int shift_chroma)
 {
   SchroFrameComponent *comp;
   int ymin, ymax;
-  int16_t *data;
+  uint16_t *data;
   int16_t s[2];
   int k;
   int j;
@@ -759,7 +760,7 @@ shift_rows (SchroFrame *frame, int y, int n, int shift_luma, int shift_chroma)
     ymin = MAX (y>>comp->v_shift, 0);
     for(j=ymin;j<ymax;j++){
       data = OFFSET(comp->data, j * comp->stride);
-      oil_add_const_rshift_s16(data, data, s, comp->width);
+      oil_add_const_rshift_u16(data, data, s, comp->width);
     }
   }
 }

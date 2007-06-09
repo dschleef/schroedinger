@@ -841,7 +841,7 @@ schro_encoder_encode_picture_prediction (SchroEncoderTask *task)
     int index;
     schro_bits_encode_bit (task->bits, TRUE);
     index = schro_params_get_block_params (params);
-    schro_bits_encode_uint (task->bits, 0);
+    schro_bits_encode_uint (task->bits, index);
     if (index == 0) {
       schro_bits_encode_uint (task->bits, params->xblen_luma);
       schro_bits_encode_uint (task->bits, params->yblen_luma);
