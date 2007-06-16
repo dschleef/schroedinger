@@ -105,8 +105,6 @@ struct _SchroEncoder {
   int profile;
   int level;
 
-  int video_format_index;
-
   SchroVideoFormat video_format;
   SchroEncoderParams encoder_params;
 

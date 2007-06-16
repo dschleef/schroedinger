@@ -188,10 +188,6 @@ schro_encoder_set_video_format (SchroEncoder *encoder,
   memcpy (&encoder->video_format, format, sizeof(SchroVideoFormat));
 
   schro_params_validate (&encoder->video_format);
-
-  SCHRO_DEBUG("wxh %d %d", format->width, format->height);
-  encoder->video_format_index =
-    schro_params_get_video_format (&encoder->video_format);
 }
 
 int
@@ -1316,8 +1312,8 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
   schro_bits_encode_uint (bits, encoder->level);
 
   /* sequence parameters */
-  schro_bits_encode_uint (bits, encoder->video_format_index);
-  schro_params_set_video_format (std_format, encoder->video_format_index);
+  schro_bits_encode_uint (bits, encoder->video_format.index);
+  schro_params_set_video_format (std_format, encoder->video_format.index);
 
   if (std_format->width == format->width &&
       std_format->height == format->height) {
