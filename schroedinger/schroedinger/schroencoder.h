@@ -29,10 +29,6 @@ typedef enum {
   SCHRO_PREF_INTRA_WAVELET,
   SCHRO_PREF_INTER_WAVELET,
   SCHRO_PREF_QUANT_BASE,
-  SCHRO_PREF_QUANT_OFFSET_NONREF,
-  SCHRO_PREF_QUANT_OFFSET_SUBBAND,
-  SCHRO_PREF_QUANT_DC,
-  SCHRO_PREF_QUANT_DC_OFFSET_NONREF,
   SCHRO_PREF_LAST
 } SchroPrefEnum;
 
@@ -92,11 +88,7 @@ struct _SchroEncoder {
 
   SchroQueue *frame_queue;
 
-  //int frame_queue_index;
-
   SchroQueue *reference_queue;
-  //SchroEncoderFrame *reference_frames[SCHRO_MAX_REFERENCE_FRAMES];
-  //int n_reference_frames;
 
   int need_rap;
 
@@ -124,14 +116,9 @@ struct _SchroEncoder {
   int queue_depth;
   int queue_changed;
 
-#if 0
-  double pan_x, pan_y;
-  double mag_x, mag_y;
-  double skew_x, skew_y;
-#endif
-
   int engine_init;
   int engine;
+  int quantiser_engine;
 
   int prefs[SCHRO_PREF_LAST];
 

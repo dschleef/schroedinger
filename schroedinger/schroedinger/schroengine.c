@@ -153,7 +153,7 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
 
     if (!is_ref) {
       if (!schro_encoder_reference_get (encoder, encoder->last_ref)) {
-        return FALSE;
+        continue;
       }
     }
 
@@ -326,6 +326,8 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
 
   SCHRO_DEBUG("engine iteration");
 
+  encoder->quantiser_engine = 1;
+
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
     SCHRO_DEBUG("%d: picture %d is in state %d", i, frame->frame_number,
@@ -438,6 +440,10 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
     /* set up params */
     params = &task->params;
     params->num_refs = frame->num_refs;
+    params->xbsep_luma = 8;
+    params->xblen_luma = 12;
+    params->ybsep_luma = 8;
+    params->yblen_luma = 12;
 
     task->is_ref = frame->is_ref;
     if (frame->num_refs > 0) {

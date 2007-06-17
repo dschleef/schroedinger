@@ -57,11 +57,7 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
   encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_5_3;
-  encoder->prefs[SCHRO_PREF_QUANT_BASE] = 0;
-  encoder->prefs[SCHRO_PREF_QUANT_OFFSET_NONREF] = 8;
-  encoder->prefs[SCHRO_PREF_QUANT_OFFSET_SUBBAND] = 0;
-  encoder->prefs[SCHRO_PREF_QUANT_DC] = 0;
-  encoder->prefs[SCHRO_PREF_QUANT_DC_OFFSET_NONREF] = 0;
+  encoder->prefs[SCHRO_PREF_QUANT_BASE] = 20;
 
   schro_params_set_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_SD576);
@@ -343,107 +339,6 @@ schro_encoder_end_of_stream (SchroEncoder *encoder)
     
     encoder_frame = encoder->frame_queue->elements[encoder->frame_queue->n-1].data;
     encoder_frame->last_frame = TRUE;
-  }
-}
-
-static int
-schro_gain_to_index (int value)
-{
-  value = (value + 8)>>4;
-  return CLAMP(value, 0, 63);
-}
-
-void
-schro_encoder_choose_quantisers (SchroEncoderTask *task)
-{
-  /* This is 64*log2 of the gain of the DC part of the wavelet transform */
-  static const int wavelet_gain[] = { 64, 64, 64, 0, 64, 128, 128, 103 };
-  /* horizontal/vertical part */
-  static const int wavelet_gain_hv[] = { 64, 64, 64, 0, 64, 128, 0, 65 };
-  /* diagonal part */
-  static const int wavelet_gain_diag[] = { 128, 128, 128, 64, 128, 256, -64, 90 };
-  SchroSubband *subbands = task->subbands;
-  int base;
-  int gain;
-  int gain_hv;
-  int gain_diag;
-  int percep;
-  int depth;
-  int band;
-  int dc;
-  int i;
-
-  depth = task->params.transform_depth;
-  gain = wavelet_gain[task->params.wavelet_filter_index];
-  gain_hv = wavelet_gain_hv[task->params.wavelet_filter_index];
-  gain_diag = wavelet_gain_diag[task->params.wavelet_filter_index];
-
-  base = task->encoder->prefs[SCHRO_PREF_QUANT_BASE]<<4;
-  dc = task->encoder->prefs[SCHRO_PREF_QUANT_DC]<<4;
-  percep = task->encoder->prefs[SCHRO_PREF_QUANT_OFFSET_SUBBAND]<<4;
-  if (!task->is_ref) {
-    base += task->encoder->prefs[SCHRO_PREF_QUANT_OFFSET_NONREF]<<4;
-    dc += task->encoder->prefs[SCHRO_PREF_QUANT_DC_OFFSET_NONREF]<<4;
-  }
-
-  subbands[0].quant_index = schro_gain_to_index (dc);
-  for(i=0; i<depth; i++) {
-    band = depth - 1 - i;
-    subbands[1+3*i].quant_index =
-      schro_gain_to_index (base + (percep + gain)*band + gain_hv);
-    subbands[2+3*i].quant_index =
-      schro_gain_to_index (base + (percep + gain)*band + gain_hv);
-    subbands[3+3*i].quant_index =
-      schro_gain_to_index (base + (percep + gain)*band + gain_diag);
-  }
-  {
-    int sec = task->frame_number/12;
-    for(i=4; i<=11; i++) {
-      subbands[i].quant_index = 12;
-    }
-    if ((sec & 1) == 0) {
-      //subbands[4].quant_index -= 4;
-      //subbands[5].quant_index -= 4;
-      //subbands[6].quant_index -= 4;
-      for(i=1; i<4; i++) {
-        //subbands[i].quant_index = 20;
-      }
-    } else {
-      for(i=4; i<7; i++) {
-        subbands[i].quant_index = 20;
-      }
-    }
-  }
-
-  /* hard coded.  muhuhuhahaha */
-  if (task->is_ref) {
-    subbands[0].quant_index = 12;
-    subbands[1].quant_index = 16;
-    subbands[2].quant_index = 16;
-    subbands[3].quant_index = 20;
-    subbands[4].quant_index = 16;
-    subbands[5].quant_index = 16;
-    subbands[6].quant_index = 20;
-    subbands[7].quant_index = 17;
-    subbands[8].quant_index = 17;
-    subbands[9].quant_index = 21;
-    subbands[10].quant_index = 22;
-    subbands[11].quant_index = 22;
-    subbands[12].quant_index = 26;
-  } else {
-    subbands[0].quant_index = 16;
-    subbands[1].quant_index = 20;
-    subbands[2].quant_index = 20;
-    subbands[3].quant_index = 24;
-    subbands[4].quant_index = 20;
-    subbands[5].quant_index = 20;
-    subbands[6].quant_index = 24;
-    subbands[7].quant_index = 21;
-    subbands[8].quant_index = 21;
-    subbands[9].quant_index = 25;
-    subbands[10].quant_index = 26;
-    subbands[11].quant_index = 26;
-    subbands[12].quant_index = 30;
   }
 }
 
@@ -2101,10 +1996,6 @@ static const int pref_range[][2] = {
   { 0, 7 },
   { 0, 7 },
   { 0, 60 },
-  { 0, 8 },
-  { -4, 4 },
-  { 0, 60 },
-  { 0, 8 },
   /* last */
   { 0, 0 }
 };

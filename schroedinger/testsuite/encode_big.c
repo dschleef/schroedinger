@@ -87,8 +87,8 @@ main (int argc, char *argv[])
 {
   schro_init();
 
-  //test(1920,1080);
-  test(64,64);
+  test(1920,1080);
+  //test(64,64);
 
   return 0;
 }

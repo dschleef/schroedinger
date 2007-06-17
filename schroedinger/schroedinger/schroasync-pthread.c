@@ -162,6 +162,8 @@ schro_async_run (SchroAsync *async, void (*func)(void *), void *ptr)
   async->list_last = atask;
   async->n_waiting++;
 
+  SCHRO_DEBUG("waiting %d", async->n_waiting);
+
   pthread_cond_signal (&async->thread_cond);
   pthread_mutex_unlock (&async->mutex);
 }

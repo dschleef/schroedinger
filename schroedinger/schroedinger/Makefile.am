@@ -55,6 +55,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrooil.c \
 	schroparams.c \
 	schropredict.c \
+	schroquantiser.c \
 	schroqueue.c \
 	schrotables.c \
 	schroutils.c \

@@ -96,11 +96,7 @@ enum
   ARG_TRANSFORM_DEPTH,
   ARG_INTRA_WAVELET,
   ARG_INTER_WAVELET,
-  ARG_QUANT_BASE,
-  ARG_QUANT_OFFSET_NONREF,
-  ARG_QUANT_OFFSET_SUBBAND,
-  ARG_QUANT_DC,
-  ARG_QUANT_DC_OFFSET_NONREF
+  ARG_QUANT_BASE
 };
 
 static void gst_schro_enc_finalize (GObject *object);
@@ -298,10 +294,6 @@ gst_schro_enc_set_property (GObject * object, guint prop_id,
     case ARG_INTRA_WAVELET:
     case ARG_INTER_WAVELET:
     case ARG_QUANT_BASE:
-    case ARG_QUANT_OFFSET_NONREF:
-    case ARG_QUANT_OFFSET_SUBBAND:
-    case ARG_QUANT_DC:
-    case ARG_QUANT_DC_OFFSET_NONREF:
       schro_encoder_preference_set (src->encoder, prop_id - ARG_ENGINE,
           g_value_get_int(value));
       break;
@@ -326,10 +318,6 @@ gst_schro_enc_get_property (GObject * object, guint prop_id, GValue * value,
     case ARG_INTRA_WAVELET:
     case ARG_INTER_WAVELET:
     case ARG_QUANT_BASE:
-    case ARG_QUANT_OFFSET_NONREF:
-    case ARG_QUANT_OFFSET_SUBBAND:
-    case ARG_QUANT_DC:
-    case ARG_QUANT_DC_OFFSET_NONREF:
       g_value_set_int (value,
           schro_encoder_preference_get (src->encoder, prop_id - ARG_ENGINE));
       break;

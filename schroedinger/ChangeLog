@@ -1,5 +1,19 @@
 2007-06-16  David Schleef  <ds@schleef.org>
 
+	* gst/gstschroenc.c:
+	* schroedinger/Makefile.am:
+	* schroedinger/schroasync-pthread.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroquantiser.c:
+	  Remove old quantiser prefs.  Split quantiser code into separate
+	  file.
+	* testsuite/encode_big.c:
+	  Actually encode a big frame.
+
+2007-06-16  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:
 	  Fix encoding of video format parameters for non-SD formats.
