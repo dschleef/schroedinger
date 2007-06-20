@@ -1,3 +1,10 @@
+2007-06-20  David Schleef  <ds@schleef.org>
+
+	* testsuite/Makefile.am:
+	* testsuite/gaussian.c:
+	  Some experimental code implementing Young, van Vliet algorithm
+	  for gaussian filtering.
+
 2007-06-16  David Schleef  <ds@schleef.org>
 
 	* gst/gstschroenc.c:
