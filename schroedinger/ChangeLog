@@ -1,5 +1,9 @@
 2007-06-20  David Schleef  <ds@schleef.org>
 
+	* testsuite/gaussian.c: Refactor and clean up.
+
+2007-06-20  David Schleef  <ds@schleef.org>
+
 	* testsuite/Makefile.am:
 	* testsuite/gaussian.c:
 	  Some experimental code implementing Young, van Vliet algorithm
