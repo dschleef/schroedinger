@@ -82,6 +82,8 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
   SchroEncoderFrame *frame;
   int i;
 
+  encoder->quantiser_engine = 1;
+
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
 

@@ -1,5 +1,11 @@
 2007-06-25  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	  Handle filtering and ssim calculation
+
+2007-06-25  David Schleef  <ds@schleef.org>
+
 	* gst/Makefile.am:
 	* gst/gstschro.c:
 	* gst/gstschrofilter.c:
