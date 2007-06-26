@@ -213,6 +213,7 @@ void schro_frame_set_free_callback (SchroFrame *frame,
 
 static void schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src);
+static void schro_frame_convert_s16_s16 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_u8_422_yuyv (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_u8_422_uyvy (SchroFrame *dest, SchroFrame *src);
@@ -240,6 +241,10 @@ static struct binary_struct schro_frame_convert_func_list[] = {
   { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_U8_444, schro_frame_convert_u8_u8 },
   { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_U8_422, schro_frame_convert_u8_u8 },
   { SCHRO_FRAME_FORMAT_U8_420, SCHRO_FRAME_FORMAT_U8_420, schro_frame_convert_u8_u8 },
+
+  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444, schro_frame_convert_s16_s16 },
+  { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_S16_422, schro_frame_convert_s16_s16 },
+  { SCHRO_FRAME_FORMAT_S16_420, SCHRO_FRAME_FORMAT_S16_420, schro_frame_convert_s16_s16 },
 
   { SCHRO_FRAME_FORMAT_YUYV, SCHRO_FRAME_FORMAT_U8_422, schro_frame_convert_u8_422_yuyv },
   { SCHRO_FRAME_FORMAT_UYVY, SCHRO_FRAME_FORMAT_U8_422, schro_frame_convert_u8_422_uyvy },
@@ -382,7 +387,7 @@ schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src)
   SchroFrameComponent *dcomp;
   SchroFrameComponent *scomp;
   uint8_t *ddata;
-  int16_t *sdata;
+  uint8_t *sdata;
   int i;
   int y;
   int width, height;
@@ -398,6 +403,36 @@ schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src)
 
     for(y=0;y<height;y++){
       memcpy (ddata, sdata, width);
+      ddata = OFFSET(ddata, dcomp->stride);
+      sdata = OFFSET(sdata, scomp->stride);
+    }
+  }
+
+  schro_frame_edge_extend (dest, src->width, src->height);
+}
+
+static void
+schro_frame_convert_s16_s16 (SchroFrame *dest, SchroFrame *src)
+{
+  SchroFrameComponent *dcomp;
+  SchroFrameComponent *scomp;
+  int16_t *ddata;
+  int16_t *sdata;
+  int i;
+  int y;
+  int width, height;
+
+  for(i=0;i<3;i++){
+    dcomp = &dest->components[i];
+    scomp = &src->components[i];
+    ddata = dcomp->data;
+    sdata = scomp->data;
+
+    width = MIN(dcomp->width, scomp->width);
+    height = MIN(dcomp->height, scomp->height);
+
+    for(y=0;y<height;y++){
+      memcpy (ddata, sdata, width * sizeof(int16_t));
       ddata = OFFSET(ddata, dcomp->stride);
       sdata = OFFSET(sdata, scomp->stride);
     }

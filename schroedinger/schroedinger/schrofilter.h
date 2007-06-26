@@ -6,6 +6,9 @@
 
 SCHRO_BEGIN_DECLS
 
+void schro_frame_filter_lowpass (SchroFrame *frame);
+void schro_frame_filter_lowpass2 (SchroFrame *frame, double sigma);
+void schro_frame_filter_lowpass_16 (SchroFrame *frame);
 void schro_frame_filter_cwm7 (SchroFrame *frame);
 void schro_frame_filter_cwmN (SchroFrame *frame, int weight);
 void schro_frame_filter_cwmN_ref (SchroFrame *frame, int weight);

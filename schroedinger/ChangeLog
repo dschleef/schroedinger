@@ -1,3 +1,20 @@
+2007-06-25  David Schleef  <ds@schleef.org>
+
+	* gst/Makefile.am:
+	* gst/gstschro.c:
+	* gst/gstschrofilter.c:
+	  Add schrofilter to test out schro's frame filters.
+	* schroedinger/schrofilter.c:
+	* schroedinger/schrofilter.h:
+	  Add gaussian filtering.
+	* schroedinger/schroframe.c:
+	  Add s16->s16 conversion.
+	* schroedinger/Makefile.am:
+	* schroedinger/schro.h:
+	* schroedinger/schrossim.h:
+	* schroedinger/schrossim.c:
+	  Add code to calculate structural similarity.
+
 2007-06-20  David Schleef  <ds@schleef.org>
 
 	* testsuite/gaussian.c: Refactor and clean up.
