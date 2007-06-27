@@ -249,7 +249,13 @@ int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
 
 void schro_encoder_init_subbands (SchroEncoderTask *task);
 void schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index);
+
+void schro_encoder_analyse_picture (SchroEncoderTask *task);
+void schro_encoder_predict_picture (SchroEncoderTask *task);
 void schro_encoder_encode_picture (SchroEncoderTask *task);
+void schro_encoder_reconstruct_picture (SchroEncoderTask *task);
+void schro_encoder_postanalyse_picture (SchroEncoderTask *task);
+void schro_encoder_encode_picture_all (SchroEncoderTask *task);
 
 SchroEncoderTask * schro_encoder_task_new (SchroEncoder *encoder);
 void schro_encoder_task_free (SchroEncoderTask *task);
