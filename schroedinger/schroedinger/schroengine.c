@@ -104,9 +104,8 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
     frame->slot = encoder->next_slot;
     encoder->next_slot++;
 
-    task->outbuffer_size =
+    frame->output_buffer_size =
       schro_engine_pick_output_buffer_size (encoder, frame);
-    task->outbuffer = schro_buffer_new_and_alloc (task->outbuffer_size);
 
     /* set up params */
     params = &task->params;
@@ -168,9 +167,8 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
     frame->slot = encoder->next_slot;
     encoder->next_slot++;
 
-    task->outbuffer_size =
+    frame->output_buffer_size =
       schro_engine_pick_output_buffer_size (encoder, frame);
-    task->outbuffer = schro_buffer_new_and_alloc (task->outbuffer_size);
 
     /* set up params */
     params = &task->params;
@@ -253,9 +251,8 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
     frame->slot = encoder->next_slot;
     encoder->next_slot++;
 
-    task->outbuffer_size =
+    frame->output_buffer_size =
       schro_engine_pick_output_buffer_size (encoder, frame);
-    task->outbuffer = schro_buffer_new_and_alloc (task->outbuffer_size);
 
     /* set up params */
     params = &task->params;
@@ -420,9 +417,8 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
     task->encode_frame = frame->original_frame;
     frame->presentation_frame = frame->frame_number;
 
-    task->outbuffer_size =
+    frame->output_buffer_size =
       schro_engine_pick_output_buffer_size (encoder, frame);
-    task->outbuffer = schro_buffer_new_and_alloc (task->outbuffer_size);
 
     /* set up params */
     params = &task->params;
@@ -535,9 +531,8 @@ schro_encoder_engine_test_intra (SchroEncoder *encoder)
     frame->slot = encoder->next_slot;
     encoder->next_slot++;
 
-    task->outbuffer_size =
+    frame->output_buffer_size =
       schro_engine_pick_output_buffer_size (encoder, frame);
-    task->outbuffer = schro_buffer_new_and_alloc (task->outbuffer_size);
 
     /* set up params */
     params = &task->params;
@@ -602,9 +597,8 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
     frame->slot = encoder->next_slot;
     encoder->next_slot++;
 
-    task->outbuffer_size =
+    frame->output_buffer_size =
       schro_engine_pick_output_buffer_size (encoder, frame);
-    task->outbuffer = schro_buffer_new_and_alloc (task->outbuffer_size);
 
     /* set up params */
     params = &task->params;

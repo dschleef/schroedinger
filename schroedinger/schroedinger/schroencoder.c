@@ -459,7 +459,6 @@ schro_encoder_task_complete (SchroEncoderTask *task)
 
   task->encoder->queue_changed = TRUE;
 
-  frame->output_buffer = task->outbuffer;
   if (task->ref_frame0) {
     schro_encoder_frame_unref (task->ref_frame0);
   }
@@ -657,8 +656,10 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
   SchroBuffer *subbuffer;
   SchroEncoderFrame *frame = task->encoder_frame;
 
+  frame->output_buffer = schro_buffer_new_and_alloc (frame->output_buffer_size);
+
   task->bits = schro_bits_new ();
-  schro_bits_encode_init (task->bits, task->outbuffer);
+  schro_bits_encode_init (task->bits, frame->output_buffer);
 
   /* encode header */
   schro_encoder_encode_parse_info (task->bits,
@@ -692,10 +693,10 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
 
   schro_bits_flush (task->bits);
 
-  subbuffer = schro_buffer_new_subbuffer (task->outbuffer, 0,
+  subbuffer = schro_buffer_new_subbuffer (frame->output_buffer, 0,
       schro_bits_get_offset (task->bits));
-  schro_buffer_unref (task->outbuffer);
-  task->outbuffer = subbuffer;
+  schro_buffer_unref (frame->output_buffer);
+  frame->output_buffer = subbuffer;
 
   if (task->params.num_refs > 0) {
 #if 0

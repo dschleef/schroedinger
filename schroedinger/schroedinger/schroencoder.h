@@ -66,6 +66,7 @@ struct _SchroEncoderFrame {
   SchroUpsampledFrame *reconstructed_frame;
 
   SchroBuffer *access_unit_buffer;
+  int output_buffer_size;
   SchroBuffer *output_buffer;
   int presentation_frame;
   int slot;
@@ -142,8 +143,6 @@ struct _SchroEncoderTask {
   SchroParams params;
   SchroEncoderFrame *encoder_frame;
   
-  int outbuffer_size;
-  SchroBuffer *outbuffer;
   SchroBits *bits;
   SchroFrame *encode_frame;
 
@@ -163,19 +162,9 @@ struct _SchroEncoderTask {
   int16_t *quant_data;
 
   SchroMotionField *motion_field;
-
-  //SchroPredictionList *predict_lists;
   SchroMotionField *motion_fields[32];
 
-  //int slot;
-  //int is_ref;
-  //SchroPictureNumber frame_number;
   SchroPictureNumber reference_frame_number[2];
-
-  //int n_retire;
-  //SchroPictureNumber retire[SCHRO_MAX_REFERENCE_FRAMES];
-
-  //int presentation_frame;
 
   /* engine specific stuff */
 
