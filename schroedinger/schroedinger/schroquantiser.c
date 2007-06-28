@@ -60,7 +60,7 @@ schro_encoder_choose_quantisers_simple (SchroEncoderTask *task)
   }
   subbands[0].quant_index = base - 10;
 
-  if (!task->is_ref) {
+  if (!task->encoder_frame->is_ref) {
     for(i=0;i<depth*3+1;i++){
       subbands[i].quant_index += 4;
     }
@@ -96,7 +96,7 @@ schro_encoder_choose_quantisers_hardcoded (SchroEncoderTask *task)
   }
   subbands[0].quant_index = 12;
 
-  if (!task->is_ref) {
+  if (!task->encoder_frame->is_ref) {
     for(i=0;i<depth*3+1;i++){
       subbands[i].quant_index += 4;
     }

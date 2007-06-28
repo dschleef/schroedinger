@@ -451,28 +451,27 @@ schro_encoder_task_complete (SchroEncoderTask *task)
 {
   SchroEncoderFrame *frame;
 
-  SCHRO_INFO("completing picture %d", task->frame_number);
-
   frame = task->encoder_frame;
+
+  SCHRO_INFO("completing picture %d", frame->frame_number);
 
   frame->state = SCHRO_ENCODER_FRAME_STATE_DONE;
 
   task->encoder->queue_changed = TRUE;
 
   frame->output_buffer = task->outbuffer;
-  frame->presentation_frame = task->presentation_frame;
   if (task->ref_frame0) {
     schro_encoder_frame_unref (task->ref_frame0);
   }
   if (task->ref_frame1) {
     schro_encoder_frame_unref (task->ref_frame1);
   }
-  if (task->is_ref) {
+  if (frame->is_ref) {
     schro_encoder_reference_add (task->encoder, task->encoder_frame);
   }
 
   SCHRO_INFO("PICTURE: %d %d %d %d",
-      task->frame_number, task->is_ref, task->params.num_refs,
+      frame->frame_number, frame->is_ref, task->params.num_refs,
       schro_bits_get_offset(task->bits));
 
   if (frame->start_access_unit) {
@@ -656,13 +655,14 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
 {
   int residue_bits_start;
   SchroBuffer *subbuffer;
+  SchroEncoderFrame *frame = task->encoder_frame;
 
   task->bits = schro_bits_new ();
   schro_bits_encode_init (task->bits, task->outbuffer);
 
   /* encode header */
   schro_encoder_encode_parse_info (task->bits,
-      SCHRO_PARSE_CODE_PICTURE(task->is_ref, task->params.num_refs));
+      SCHRO_PARSE_CODE_PICTURE(frame->is_ref, task->params.num_refs));
   schro_encoder_encode_picture_header (task);
 
   if (task->params.num_refs > 0) {
@@ -714,8 +714,9 @@ schro_encoder_reconstruct_picture (SchroEncoderTask *task)
 {
   SchroFrameFormat frame_format;
   SchroFrame *frame;
+  SchroEncoderFrame *encoder_frame = task->encoder_frame;
 
-  if (!task->is_ref) return;
+  if (!encoder_frame->is_ref) return;
 
   schro_frame_inverse_iwt_transform (task->iwt_frame, &task->params,
       task->tmpbuf);
@@ -1383,18 +1384,18 @@ schro_encoder_encode_picture_header (SchroEncoderTask *task)
   int i;
 
   schro_bits_sync(task->bits);
-  schro_bits_encode_bits (task->bits, 32, task->frame_number);
+  schro_bits_encode_bits (task->bits, 32, task->encoder_frame->frame_number);
 
   for(i=0;i<task->params.num_refs;i++){
     schro_bits_encode_sint (task->bits,
-        (int32_t)(task->reference_frame_number[i] - task->frame_number));
+        (int32_t)(task->reference_frame_number[i] - task->encoder_frame->frame_number));
   }
 
   /* retire list */
-  schro_bits_encode_uint (task->bits, task->n_retire);
-  for(i=0;i<task->n_retire;i++){
+  schro_bits_encode_uint (task->bits, task->encoder_frame->n_retire);
+  for(i=0;i<task->encoder_frame->n_retire;i++){
     schro_bits_encode_sint (task->bits,
-        (int32_t)(task->retire[i] - task->frame_number));
+        (int32_t)(task->encoder_frame->retire[i] - task->encoder_frame->frame_number));
   }
 }
 

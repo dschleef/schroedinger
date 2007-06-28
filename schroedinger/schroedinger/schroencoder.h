@@ -78,7 +78,10 @@ struct _SchroEncoderFrame {
   SchroPictureNumber picture_number_ref0;
   SchroPictureNumber picture_number_ref1;
   int n_retire;
-  SchroPictureNumber retire;
+  SchroPictureNumber retire[SCHRO_MAX_REFERENCE_FRAMES];
+
+  /* from Task */
+
 };
 
 struct _SchroEncoder {
@@ -164,15 +167,15 @@ struct _SchroEncoderTask {
   //SchroPredictionList *predict_lists;
   SchroMotionField *motion_fields[32];
 
-  int slot;
-  int is_ref;
-  SchroPictureNumber frame_number;
+  //int slot;
+  //int is_ref;
+  //SchroPictureNumber frame_number;
   SchroPictureNumber reference_frame_number[2];
 
-  int n_retire;
-  SchroPictureNumber retire[SCHRO_MAX_REFERENCE_FRAMES];
+  //int n_retire;
+  //SchroPictureNumber retire[SCHRO_MAX_REFERENCE_FRAMES];
 
-  int presentation_frame;
+  //int presentation_frame;
 
   /* engine specific stuff */
 
