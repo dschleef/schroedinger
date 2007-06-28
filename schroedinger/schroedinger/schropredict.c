@@ -86,7 +86,7 @@ schro_encoder_motion_predict (SchroEncoderTask *task)
 
   schro_motion_field_subpixel (task->motion_field);
 
-  schro_motion_field_calculate_stats (task->motion_field, task);
+  schro_motion_field_calculate_stats (task->motion_field, task->encoder_frame);
 
   for(i=0;i<SCHRO_MOTION_FIELD_LAST;i++){
     if (task->motion_fields[i]) {
@@ -243,7 +243,7 @@ schro_motion_field_subpixel (SchroMotionField *mf)
 }
 
 void
-schro_motion_field_calculate_stats (SchroMotionField *mf, SchroEncoderTask *task)
+schro_motion_field_calculate_stats (SchroMotionField *mf, SchroEncoderFrame *frame)
 {
   int i,j;
   SchroMotionVector *mv;
@@ -251,19 +251,19 @@ schro_motion_field_calculate_stats (SchroMotionField *mf, SchroEncoderTask *task
   int ref2 = 0;
   int bidir = 0;
 
-  task->stats_dc = 0;
-  task->stats_global = 0;
-  task->stats_motion = 0;
+  frame->stats_dc = 0;
+  frame->stats_global = 0;
+  frame->stats_motion = 0;
   for(j=0;j<mf->y_num_blocks;j++){
     for(i=0;i<mf->x_num_blocks;i++){
       mv = &mf->motion_vectors[j*mf->x_num_blocks + i];
       if (mv->pred_mode == 0) {
-        task->stats_dc++;
+        frame->stats_dc++;
       } else {
         if (mv->using_global) {
-          task->stats_global++;
+          frame->stats_global++;
         } else {
-          task->stats_motion++;
+          frame->stats_motion++;
         }
         if (mv->pred_mode == 1) {
           ref1++;
@@ -276,7 +276,7 @@ schro_motion_field_calculate_stats (SchroMotionField *mf, SchroEncoderTask *task
     }
   }
   SCHRO_INFO("dc %d global %d motion %d ref1 %d ref2 %d bidir %d",
-      task->stats_dc, task->stats_global, task->stats_motion,
+      frame->stats_dc, frame->stats_global, frame->stats_motion,
       ref1, ref2, bidir);
 }
 
@@ -299,10 +299,10 @@ schro_encoder_global_prediction (SchroEncoderTask *task)
     schro_motion_field_global_prediction (mf, &task->params.global_motion[i],
         task->params.mv_precision);
     if (i == 0) {
-      schro_motion_global_metric (mf, task->encode_frame,
+      schro_motion_global_metric (mf, task->encoder_frame->original_frame,
           task->ref_frame0->original_frame);
     } else {
-      schro_motion_global_metric (mf, task->encode_frame,
+      schro_motion_global_metric (mf, task->encoder_frame->original_frame,
           task->ref_frame1->original_frame);
     }
     if (i == 0) {
@@ -770,7 +770,7 @@ schro_encoder_dc_prediction (SchroEncoderTask *task)
   int luma_w, luma_h;
   int chroma_w, chroma_h;
   SchroMotionField *motion_field;
-  SchroFrame *frame = task->encode_frame;
+  SchroFrame *frame = task->encoder_frame->original_frame;
 
   motion_field = schro_motion_field_new (params->x_num_blocks,
       params->y_num_blocks);

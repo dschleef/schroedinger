@@ -98,7 +98,6 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
 
-    task->encode_frame = frame->original_frame;
     frame->presentation_frame = frame->frame_number;
 
     frame->slot = encoder->next_slot;
@@ -161,7 +160,6 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
 
-    task->encode_frame = frame->original_frame;
     frame->presentation_frame = frame->frame_number;
 
     frame->slot = encoder->next_slot;
@@ -245,7 +243,6 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
 
-    task->encode_frame = frame->original_frame;
     frame->presentation_frame = frame->frame_number;
 
     frame->slot = encoder->next_slot;
@@ -414,7 +411,6 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
 
-    task->encode_frame = frame->original_frame;
     frame->presentation_frame = frame->frame_number;
 
     frame->output_buffer_size =
@@ -525,7 +521,6 @@ schro_encoder_engine_test_intra (SchroEncoder *encoder)
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
 
-    task->encode_frame = frame->original_frame;
     frame->presentation_frame = frame->frame_number;
 
     frame->slot = encoder->next_slot;
@@ -591,7 +586,6 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
 
-    task->encode_frame = frame->original_frame;
     frame->presentation_frame = frame->frame_number;
 
     frame->slot = encoder->next_slot;

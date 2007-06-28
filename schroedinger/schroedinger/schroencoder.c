@@ -603,7 +603,7 @@ schro_encoder_predict_picture (SchroEncoderTask *task)
   if (task->params.num_refs > 0) {
     schro_encoder_motion_predict (task);
 
-    schro_frame_convert (task->iwt_frame, task->encode_frame);
+    schro_frame_convert (task->iwt_frame, task->encoder_frame->original_frame);
 
     {
       SchroMotion *motion;
@@ -630,7 +630,7 @@ schro_encoder_predict_picture (SchroEncoderTask *task)
         task->params.video_format->width,
         task->params.video_format->height);
   } else {
-    schro_frame_convert (task->iwt_frame, task->encode_frame);
+    schro_frame_convert (task->iwt_frame, task->encoder_frame->original_frame);
   }
 
   schro_frame_iwt_transform (task->iwt_frame, &task->params, task->tmpbuf);
@@ -706,7 +706,7 @@ schro_encoder_encode_picture (SchroEncoderTask *task)
 #endif
     SCHRO_INFO("pred bits %d, residue bits %d, dc %d, global = %d, motion %d",
         residue_bits_start, schro_bits_get_offset(task->bits)*8 - residue_bits_start,
-        task->stats_dc, task->stats_global, task->stats_motion);
+        frame->stats_dc, frame->stats_global, frame->stats_motion);
   }
 }
 
@@ -1576,7 +1576,7 @@ schro_encoder_estimate_subband (SchroEncoderTask *task, int component,
     entropy += x * hist[i];
   }
 
-  task->estimated_entropy = entropy/16;
+  task->encoder_frame->estimated_entropy = entropy/16;
 }
 
 static void
@@ -1930,7 +1930,7 @@ out:
 
   if (component == 0 && index > 0) {
     SCHRO_INFO("SUBBAND_EST: %d %d %d %d", component, index,
-        task->estimated_entropy, arith->offset);
+        task->encoder_frame->estimated_entropy, arith->offset);
   }
 
   schro_bits_encode_uint (task->bits, arith->offset);

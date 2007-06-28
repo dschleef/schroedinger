@@ -83,6 +83,11 @@ struct _SchroEncoderFrame {
 
   /* from Task */
 
+  int stats_dc;
+  int stats_global;
+  int stats_motion;
+
+  int estimated_entropy;
 };
 
 struct _SchroEncoder {
@@ -140,11 +145,11 @@ struct _SchroEncoderTask {
   int completed;
 
   SchroEncoder *encoder;
+
   SchroParams params;
   SchroEncoderFrame *encoder_frame;
   
   SchroBits *bits;
-  SchroFrame *encode_frame;
 
   SchroFrame *iwt_frame;
   SchroFrame *prediction_frame;
@@ -166,17 +171,6 @@ struct _SchroEncoderTask {
 
   SchroPictureNumber reference_frame_number[2];
 
-  /* engine specific stuff */
-
-  /* intra_only */
-
-  /* backref */
-
-  int stats_dc;
-  int stats_global;
-  int stats_motion;
-
-  int estimated_entropy;
 };
 
 struct _SchroEncoderSettings {
