@@ -236,15 +236,15 @@ int schro_encoder_preference_get (SchroEncoder *encoder, SchroPrefEnum pref);
 int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
     int value);
 
-void schro_encoder_init_subbands (SchroEncoderTask *task);
-void schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index);
+void schro_encoder_init_subbands (SchroEncoderFrame *frame);
+void schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index);
 
-void schro_encoder_analyse_picture (SchroEncoderTask *task);
-void schro_encoder_predict_picture (SchroEncoderTask *task);
-void schro_encoder_encode_picture (SchroEncoderTask *task);
-void schro_encoder_reconstruct_picture (SchroEncoderTask *task);
-void schro_encoder_postanalyse_picture (SchroEncoderTask *task);
-void schro_encoder_encode_picture_all (SchroEncoderTask *task);
+void schro_encoder_analyse_picture (SchroEncoderFrame *frame);
+void schro_encoder_predict_picture (SchroEncoderFrame *frame);
+void schro_encoder_encode_picture (SchroEncoderFrame *frame);
+void schro_encoder_reconstruct_picture (SchroEncoderFrame *frame);
+void schro_encoder_postanalyse_picture (SchroEncoderFrame *frame);
+void schro_encoder_encode_picture_all (SchroEncoderFrame *frame);
 
 SchroEncoderTask * schro_encoder_task_new (SchroEncoder *encoder);
 void schro_encoder_task_free (SchroEncoderTask *task);
@@ -255,12 +255,12 @@ void schro_encoder_frame_queue_remove (SchroEncoder *encoder,
 void schro_encoder_reference_add (SchroEncoder *encoder, SchroEncoderFrame *encoder_frame);
 SchroEncoderFrame * schro_encoder_reference_get (SchroEncoder *encoder,
     SchroPictureNumber frame_number);
-void schro_encoder_encode_picture_header (SchroEncoderTask *task);
+void schro_encoder_encode_picture_header (SchroEncoderFrame *frame);
 SchroBuffer * schro_encoder_encode_end_of_stream (SchroEncoder *encoder);
-void schro_encoder_clean_up_transform (SchroEncoderTask *task);
-void schro_encoder_init_subbands (SchroEncoderTask *task);
-void schro_encoder_choose_quantisers (SchroEncoderTask *task);
-void schro_encoder_encode_subband (SchroEncoderTask *task, int component, int index);
+void schro_encoder_clean_up_transform (SchroEncoderFrame *frame);
+void schro_encoder_init_subbands (SchroEncoderFrame *frame);
+void schro_encoder_choose_quantisers (SchroEncoderFrame *frame);
+void schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index);
 SchroBuffer * schro_encoder_encode_access_unit (SchroEncoder *encoder);
 void schro_encoder_output_push (SchroEncoder *encoder,
     SchroBuffer *buffer, int slot, int presentation_frame);

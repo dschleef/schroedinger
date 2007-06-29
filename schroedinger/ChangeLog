@@ -1,3 +1,11 @@
+2007-06-29  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroquantiser.c:
+	  More refactoring.
+
 2007-06-28  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:

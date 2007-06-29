@@ -71,7 +71,7 @@ init_params (SchroEncoderTask *task)
   schro_params_init_subbands (params, task->encoder_frame->subbands,
       task->iwt_frame->components[0].stride,
       task->iwt_frame->components[1].stride);
-  schro_encoder_choose_quantisers (task);
+  schro_encoder_choose_quantisers (task->encoder_frame);
 }
 
 int
@@ -111,7 +111,7 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
     init_params (task);
 
     schro_async_run (encoder->async,
-        (void (*)(void *))schro_encoder_encode_picture_all, task);
+        (void (*)(void *))schro_encoder_encode_picture_all, task->encoder_frame);
 
     return TRUE;
   }
@@ -199,7 +199,7 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
     SCHRO_DEBUG("queueing %d", frame->frame_number);
 
     schro_async_run (encoder->async,
-        (void (*)(void *))schro_encoder_encode_picture_all, task);
+        (void (*)(void *))schro_encoder_encode_picture_all, task->encoder_frame);
 
     return TRUE;
   }
@@ -291,7 +291,7 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
     SCHRO_DEBUG("queueing %d", frame->frame_number);
 
     schro_async_run (encoder->async,
-        (void (*)(void *))schro_encoder_encode_picture_all, task);
+        (void (*)(void *))schro_encoder_encode_picture_all, task->encoder_frame);
 
     return TRUE;
   }
@@ -410,6 +410,7 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
+    frame->task = task;
 
     frame->presentation_frame = frame->frame_number;
 
@@ -451,7 +452,7 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
     SCHRO_DEBUG("queueing %d", frame->frame_number);
 
     schro_async_run (encoder->async,
-        (void (*)(void *))schro_encoder_encode_picture_all, task);
+        (void (*)(void *))schro_encoder_encode_picture_all, task->encoder_frame);
 
     return TRUE;
   }
@@ -537,7 +538,7 @@ schro_encoder_engine_test_intra (SchroEncoder *encoder)
     init_params (task);
 
     schro_async_run (encoder->async,
-        (void (*)(void *))schro_encoder_encode_picture_all, task);
+        (void (*)(void *))schro_encoder_encode_picture_all, task->encoder_frame);
 
     return TRUE;
   }
@@ -637,7 +638,7 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
     SCHRO_DEBUG("queueing %d", frame->frame_number);
 
     schro_async_run (encoder->async,
-        (void (*)(void *))schro_encoder_encode_picture_all, task);
+        (void (*)(void *))schro_encoder_encode_picture_all, task->encoder_frame);
 
     return TRUE;
   }
