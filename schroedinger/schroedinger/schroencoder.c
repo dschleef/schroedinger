@@ -92,50 +92,6 @@ schro_encoder_free (SchroEncoder *encoder)
   free (encoder);
 }
 
-SchroEncoderTask *
-schro_encoder_task_new (SchroEncoder *encoder)
-{
-  SchroEncoderTask *task;
-  //SchroFrameFormat frame_format;
-  //int frame_width;
-  //int frame_height;
-
-  task = malloc(sizeof(SchroEncoderTask));
-  memset (task, 0, sizeof(*task));
-
-#if 0
-  frame_format = schro_params_get_frame_format (16,
-      encoder->video_format.chroma_format);
-  
-  frame_width = ROUND_UP_POW2(encoder->video_format.width,
-      SCHRO_MAX_TRANSFORM_DEPTH + encoder->video_format.chroma_h_shift);
-  frame_height = ROUND_UP_POW2(encoder->video_format.height,
-      SCHRO_MAX_TRANSFORM_DEPTH + encoder->video_format.chroma_v_shift);
-
-  iwt_frame = schro_frame_new_and_alloc (frame_format,
-      frame_width, frame_height);
-  
-  frame_width = MAX(
-      4 * 12 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*12),
-      4 * 16 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*16));
-  frame_height = MAX(
-      4 * 12 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*12),
-      4 * 16 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*16));
-
-  task->prediction_frame = schro_frame_new_and_alloc (frame_format,
-      frame_width, frame_height);
-#endif
-
-  return task;
-}
-
-void
-schro_encoder_task_free (SchroEncoderTask *task)
-{
-
-  free (task);
-}
-
 SchroVideoFormat *
 schro_encoder_get_video_format (SchroEncoder *encoder)
 {
@@ -177,6 +133,7 @@ schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
   //encoder->frame_queue_index++;
 
   encoder_frame = schro_encoder_frame_new(encoder);
+  encoder_frame->encoder = encoder;
 
   format = schro_params_get_frame_format (8, encoder->video_format.chroma_format);
   if (0 /* !filtering */ && format == frame->format) {
@@ -471,7 +428,6 @@ schro_encoder_iterate (SchroEncoder *encoder)
     SCHRO_ASSERT(frame != NULL);
 
     schro_encoder_frame_complete (frame);
-    schro_encoder_task_free (frame->task);
   }
 
   SCHRO_INFO("iterate %d %d %d",
@@ -499,7 +455,6 @@ schro_encoder_iterate (SchroEncoder *encoder)
     SCHRO_ASSERT(frame != NULL);
 
     schro_encoder_frame_complete (frame);
-    schro_encoder_task_free (frame->task);
   }
 
   if (encoder->queue_changed) {

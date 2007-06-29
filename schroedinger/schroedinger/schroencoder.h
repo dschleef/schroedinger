@@ -15,7 +15,6 @@ SCHRO_BEGIN_DECLS
 
 typedef struct _SchroEncoder SchroEncoder;
 typedef struct _SchroEncoderParams SchroEncoderParams;
-typedef struct _SchroEncoderTask SchroEncoderTask;
 typedef struct _SchroEncoderFrame SchroEncoderFrame;
 
 /* forward reference */
@@ -72,8 +71,6 @@ struct _SchroEncoderFrame {
   int slot;
   int last_frame;
 
-  SchroEncoderTask *task;
-
   int is_ref;
   int num_refs;
   SchroPictureNumber picture_number_ref0;
@@ -81,7 +78,7 @@ struct _SchroEncoderFrame {
   int n_retire;
   SchroPictureNumber retire[SCHRO_MAX_REFERENCE_FRAMES];
 
-  /* from Task */
+  /* from the old SchroEncoderTask */
 
   int stats_dc;
   int stats_global;
@@ -164,10 +161,6 @@ struct _SchroEncoder {
   int mid2_ref;
 };
 
-struct _SchroEncoderTask {
-  int unused;
-};
-
 struct _SchroEncoderSettings {
   int transform_depth;
   int wavelet_filter_index;
@@ -238,8 +231,6 @@ void schro_encoder_reconstruct_picture (SchroEncoderFrame *frame);
 void schro_encoder_postanalyse_picture (SchroEncoderFrame *frame);
 void schro_encoder_encode_picture_all (SchroEncoderFrame *frame);
 
-SchroEncoderTask * schro_encoder_task_new (SchroEncoder *encoder);
-void schro_encoder_task_free (SchroEncoderTask *task);
 SchroFrame * schro_encoder_frame_queue_get (SchroEncoder *encoder,
     SchroPictureNumber frame_number);
 void schro_encoder_frame_queue_remove (SchroEncoder *encoder,

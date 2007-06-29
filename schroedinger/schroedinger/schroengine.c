@@ -92,9 +92,6 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
 
     schro_engine_check_new_access_unit (encoder, frame);
 
-    frame->task = schro_encoder_task_new (encoder);
-    frame->encoder = encoder;
-
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
 
     frame->presentation_frame = frame->frame_number;
@@ -152,9 +149,6 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
         continue;
       }
     }
-
-    frame->task = schro_encoder_task_new (encoder);
-    frame->encoder = encoder;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
 
@@ -234,9 +228,6 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
         return FALSE;
       }
     }
-
-    frame->task = schro_encoder_task_new (encoder);
-    frame->encoder = encoder;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
 
@@ -402,9 +393,6 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
       continue;
     }
 
-    frame->task = schro_encoder_task_new (encoder);
-    frame->encoder = encoder;
-
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
 
     frame->presentation_frame = frame->frame_number;
@@ -511,9 +499,6 @@ schro_encoder_engine_test_intra (SchroEncoder *encoder)
 
     schro_engine_check_new_access_unit (encoder, frame);
 
-    frame->task = schro_encoder_task_new (encoder);
-    frame->encoder = encoder;
-
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
 
     frame->presentation_frame = frame->frame_number;
@@ -574,9 +559,6 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
         return FALSE;
       }
     }
-
-    frame->task = schro_encoder_task_new (encoder);
-    frame->encoder = encoder;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
 
