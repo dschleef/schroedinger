@@ -31,7 +31,7 @@ struct _SchroPredictionList {
 
 
 
-void schro_encoder_motion_predict (SchroEncoderTask *task);
+void schro_encoder_motion_predict (SchroEncoderFrame *frame);
 
 void schro_prediction_list_init (SchroPredictionList *pred);
 void schro_prediction_list_insert (SchroPredictionList *pred,
@@ -39,7 +39,7 @@ void schro_prediction_list_insert (SchroPredictionList *pred,
 void schro_prediction_list_scan (SchroPredictionList *list, SchroFrame *frame,
     SchroFrame *ref, int refnum, int x, int y, int dx, int dy, int dist);
 
-void schro_encoder_global_prediction (SchroEncoderTask *task);
+void schro_encoder_global_prediction (SchroEncoderFrame *frame);
 
 SchroMotionField * schro_motion_field_new (int x_num_blocks, int y_num_blocks);
 void schro_motion_field_free (SchroMotionField *field);

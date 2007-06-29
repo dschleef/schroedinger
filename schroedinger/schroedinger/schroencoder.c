@@ -583,7 +583,7 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
   frame->tmpbuf2 = malloc(SCHRO_LIMIT_WIDTH * 2);
 
   if (frame->params.num_refs > 0) {
-    schro_encoder_motion_predict (frame->task);
+    schro_encoder_motion_predict (frame);
 
     schro_frame_convert (frame->task->iwt_frame, frame->original_frame);
 
