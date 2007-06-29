@@ -93,7 +93,6 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
     schro_engine_check_new_access_unit (encoder, frame);
 
     frame->task = schro_encoder_task_new (encoder);
-    frame->task->encoder_frame = frame;
     frame->encoder = encoder;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
@@ -156,7 +155,6 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
 
     frame->task = schro_encoder_task_new (encoder);
     frame->encoder = encoder;
-    frame->task->encoder_frame = frame;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
 
@@ -239,7 +237,6 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
 
     frame->task = schro_encoder_task_new (encoder);
     frame->encoder = encoder;
-    frame->task->encoder_frame = frame;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
 
@@ -407,7 +404,6 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
 
     frame->task = schro_encoder_task_new (encoder);
     frame->encoder = encoder;
-    frame->task->encoder_frame = frame;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
 
@@ -516,7 +512,6 @@ schro_encoder_engine_test_intra (SchroEncoder *encoder)
     schro_engine_check_new_access_unit (encoder, frame);
 
     frame->task = schro_encoder_task_new (encoder);
-    frame->task->encoder_frame = frame;
     frame->encoder = encoder;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
@@ -581,7 +576,6 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
     }
 
     frame->task = schro_encoder_task_new (encoder);
-    frame->task->encoder_frame = frame;
     frame->encoder = encoder;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
@@ -623,7 +617,7 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
     params->yblen_luma = 8;
 
     for(j=0;j<19;j++){
-      frame->task->encoder_frame->subbands[j].quant_index = 0;
+      frame->subbands[j].quant_index = 0;
     }
 
     if (params->num_refs > 0) {

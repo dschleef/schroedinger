@@ -158,8 +158,6 @@ struct _SchroEncoderTask {
   int state;
   int completed;
 
-  SchroEncoderFrame *encoder_frame;
-  
   SchroFrame *iwt_frame;
   SchroFrame *prediction_frame;
 

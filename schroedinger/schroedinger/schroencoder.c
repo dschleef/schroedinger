@@ -426,23 +426,19 @@ schro_encoder_encode_end_of_stream (SchroEncoder *encoder)
 }
 
 static void
-schro_encoder_task_complete (SchroEncoderTask *task)
+schro_encoder_frame_complete (SchroEncoderFrame *frame)
 {
-  SchroEncoderFrame *frame;
-
-  frame = task->encoder_frame;
-
   SCHRO_INFO("completing picture %d", frame->frame_number);
 
   frame->state = SCHRO_ENCODER_FRAME_STATE_DONE;
 
   frame->encoder->queue_changed = TRUE;
 
-  if (task->ref_frame0) {
-    schro_encoder_frame_unref (task->ref_frame0);
+  if (frame->task->ref_frame0) {
+    schro_encoder_frame_unref (frame->task->ref_frame0);
   }
-  if (task->ref_frame1) {
-    schro_encoder_frame_unref (task->ref_frame1);
+  if (frame->task->ref_frame1) {
+    schro_encoder_frame_unref (frame->task->ref_frame1);
   }
   if (frame->is_ref) {
     schro_encoder_reference_add (frame->encoder, frame);
@@ -481,7 +477,7 @@ schro_encoder_iterate (SchroEncoder *encoder)
     frame = schro_async_pull (encoder->async);
     SCHRO_ASSERT(frame != NULL);
 
-    schro_encoder_task_complete (frame->task);
+    schro_encoder_frame_complete (frame);
     schro_encoder_task_free (frame->task);
   }
 
@@ -509,7 +505,7 @@ schro_encoder_iterate (SchroEncoder *encoder)
     frame = schro_async_pull (encoder->async);
     SCHRO_ASSERT(frame != NULL);
 
-    schro_encoder_task_complete (frame->task);
+    schro_encoder_frame_complete (frame);
     schro_encoder_task_free (frame->task);
   }
 

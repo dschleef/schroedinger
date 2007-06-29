@@ -86,7 +86,7 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
 
   schro_motion_field_subpixel (frame->task->motion_field);
 
-  schro_motion_field_calculate_stats (frame->task->motion_field, frame->task->encoder_frame);
+  schro_motion_field_calculate_stats (frame->task->motion_field, frame);
 
   for(i=0;i<SCHRO_MOTION_FIELD_LAST;i++){
     if (frame->task->motion_fields[i]) {
@@ -855,7 +855,7 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderFrame *frame)
     } else {
       downsampled_ref = get_downsampled(frame->task->ref_frame1,shift);
     }
-    downsampled_frame = get_downsampled(frame->task->encoder_frame,shift);
+    downsampled_frame = get_downsampled(frame,shift);
 
     x_blocks = params->x_num_blocks>>shift;
     y_blocks = params->y_num_blocks>>shift;
@@ -879,7 +879,7 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderFrame *frame)
       } else {
         downsampled_ref = get_downsampled(frame->task->ref_frame1,shift);
       }
-      downsampled_frame = get_downsampled(frame->task->encoder_frame,shift);
+      downsampled_frame = get_downsampled(frame,shift);
 
       for(j=0;j<mf->y_num_blocks;j++){
         for(i=0;i<mf->x_num_blocks;i++){
@@ -1009,7 +1009,7 @@ schro_encoder_zero_prediction (SchroEncoderFrame *frame)
     } else {
       downsampled_ref = get_downsampled(frame->task->ref_frame1,0);
     }
-    downsampled_frame = get_downsampled(frame->task->encoder_frame,0);
+    downsampled_frame = get_downsampled(frame,0);
 
     for(j=0;j<mf->y_num_blocks;j++){
       for(i=0;i<mf->x_num_blocks;i++){
