@@ -1,5 +1,9 @@
 2007-06-29  David Schleef  <ds@schleef.org>
 
+	* testsuite/ssim.c: Oops, need this.
+
+2007-06-29  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:
 	* schroedinger/schroengine.c:
