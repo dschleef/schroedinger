@@ -68,7 +68,7 @@ init_params (SchroEncoderTask *task)
   
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
-  schro_params_init_subbands (params, task->subbands,
+  schro_params_init_subbands (params, task->encoder_frame->subbands,
       task->iwt_frame->components[0].stride,
       task->iwt_frame->components[1].stride);
   schro_encoder_choose_quantisers (task);
@@ -623,7 +623,7 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
     params->yblen_luma = 8;
 
     for(j=0;j<19;j++){
-      task->subbands[j].quant_index = 0;
+      task->encoder_frame->subbands[j].quant_index = 0;
     }
 
     if (params->num_refs > 0) {

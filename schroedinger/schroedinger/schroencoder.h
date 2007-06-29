@@ -88,6 +88,17 @@ struct _SchroEncoderFrame {
   int stats_motion;
 
   int estimated_entropy;
+
+
+  int subband_size;
+  SchroBuffer *subband_buffer;
+
+  int16_t *quant_data;
+
+  int16_t *tmpbuf;
+  int16_t *tmpbuf2;
+
+  SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
 };
 
 struct _SchroEncoder {
@@ -154,17 +165,9 @@ struct _SchroEncoderTask {
   SchroFrame *iwt_frame;
   SchroFrame *prediction_frame;
 
-  int16_t *tmpbuf;
-  int16_t *tmpbuf2;
-
-  int subband_size;
-  SchroBuffer *subband_buffer;
-  SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
 
   SchroEncoderFrame *ref_frame0;
   SchroEncoderFrame *ref_frame1;
-
-  int16_t *quant_data;
 
   SchroMotionField *motion_field;
   SchroMotionField *motion_fields[32];

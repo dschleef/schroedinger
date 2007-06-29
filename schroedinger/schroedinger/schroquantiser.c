@@ -36,7 +36,7 @@ schro_encoder_choose_quantisers (SchroEncoderTask *task)
 void
 schro_encoder_choose_quantisers_simple (SchroEncoderTask *task)
 {
-  SchroSubband *subbands = task->subbands;
+  SchroSubband *subbands = task->encoder_frame->subbands;
   int depth = task->params.transform_depth;
   int base;
   int i;
@@ -71,7 +71,7 @@ schro_encoder_choose_quantisers_simple (SchroEncoderTask *task)
 void
 schro_encoder_choose_quantisers_hardcoded (SchroEncoderTask *task)
 {
-  SchroSubband *subbands = task->subbands;
+  SchroSubband *subbands = task->encoder_frame->subbands;
   int depth = task->params.transform_depth;
   int i;
 
