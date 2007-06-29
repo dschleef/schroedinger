@@ -99,6 +99,9 @@ struct _SchroEncoderFrame {
   int16_t *tmpbuf2;
 
   SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
+  SchroBits *bits;
+  SchroParams params;
+  SchroEncoder *encoder;
 };
 
 struct _SchroEncoder {
@@ -155,16 +158,10 @@ struct _SchroEncoderTask {
   int state;
   int completed;
 
-  SchroEncoder *encoder;
-
-  SchroParams params;
   SchroEncoderFrame *encoder_frame;
   
-  SchroBits *bits;
-
   SchroFrame *iwt_frame;
   SchroFrame *prediction_frame;
-
 
   SchroEncoderFrame *ref_frame0;
   SchroEncoderFrame *ref_frame1;
@@ -173,7 +170,6 @@ struct _SchroEncoderTask {
   SchroMotionField *motion_fields[32];
 
   SchroPictureNumber reference_frame_number[2];
-
 };
 
 struct _SchroEncoderSettings {

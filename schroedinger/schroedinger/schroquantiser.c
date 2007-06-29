@@ -23,7 +23,7 @@ void
 schro_encoder_choose_quantisers (SchroEncoderFrame *frame)
 {
 
-  switch (frame->task->encoder->quantiser_engine) {
+  switch (frame->encoder->quantiser_engine) {
     case 0:
       schro_encoder_choose_quantisers_hardcoded (frame);
       break;
@@ -37,11 +37,11 @@ void
 schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame)
 {
   SchroSubband *subbands = frame->subbands;
-  int depth = frame->task->params.transform_depth;
+  int depth = frame->params.transform_depth;
   int base;
   int i;
 
-  base = frame->task->encoder->prefs[SCHRO_PREF_QUANT_BASE];
+  base = frame->encoder->prefs[SCHRO_PREF_QUANT_BASE];
 
   if (depth >= 1) {
     subbands[(depth-1)*3 + 1].quant_index = base;
@@ -72,7 +72,7 @@ void
 schro_encoder_choose_quantisers_hardcoded (SchroEncoderFrame *frame)
 {
   SchroSubband *subbands = frame->subbands;
-  int depth = frame->task->params.transform_depth;
+  int depth = frame->params.transform_depth;
   int i;
 
   /* hard coded.  muhuhuhahaha */
@@ -96,7 +96,7 @@ schro_encoder_choose_quantisers_hardcoded (SchroEncoderFrame *frame)
   }
   subbands[0].quant_index = 12;
 
-  if (!frame->task->encoder_frame->is_ref) {
+  if (!frame->is_ref) {
     for(i=0;i<depth*3+1;i++){
       subbands[i].quant_index += 4;
     }

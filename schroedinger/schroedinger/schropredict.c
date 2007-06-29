@@ -40,7 +40,7 @@ int cost (int value)
 void
 schro_encoder_motion_predict (SchroEncoderTask *task)
 {
-  SchroParams *params = &task->params;
+  SchroParams *params = &task->encoder_frame->params;
   SchroMotionField *fields[10];
   int i;
   int n;
@@ -283,10 +283,11 @@ schro_motion_field_calculate_stats (SchroMotionField *mf, SchroEncoderFrame *fra
 void
 schro_encoder_global_prediction (SchroEncoderTask *task)
 {
+  SchroEncoderFrame *frame = task->encoder_frame;
   SchroMotionField *mf, *mf_orig;
   int i;
 
-  for(i=0;i<task->params.num_refs;i++) {
+  for(i=0;i<frame->params.num_refs;i++) {
     if (i == 0) {
       mf_orig = task->motion_fields[SCHRO_MOTION_FIELD_HIER_REF0];
     } else {
@@ -296,13 +297,13 @@ schro_encoder_global_prediction (SchroEncoderTask *task)
 
     memcpy (mf->motion_vectors, mf_orig->motion_vectors,
         sizeof(SchroMotionVector)*mf->x_num_blocks*mf->y_num_blocks);
-    schro_motion_field_global_prediction (mf, &task->params.global_motion[i],
-        task->params.mv_precision);
+    schro_motion_field_global_prediction (mf, &frame->params.global_motion[i],
+        frame->params.mv_precision);
     if (i == 0) {
-      schro_motion_global_metric (mf, task->encoder_frame->original_frame,
+      schro_motion_global_metric (mf, frame->original_frame,
           task->ref_frame0->original_frame);
     } else {
-      schro_motion_global_metric (mf, task->encoder_frame->original_frame,
+      schro_motion_global_metric (mf, frame->original_frame,
           task->ref_frame1->original_frame);
     }
     if (i == 0) {
@@ -680,7 +681,8 @@ get_downsampled(SchroEncoderFrame *frame, int i)
 void
 schro_encoder_hierarchical_prediction (SchroEncoderTask *task)
 {
-  SchroParams *params = &task->params;
+  SchroEncoderFrame *frame = task->encoder_frame;
+  SchroParams *params = &frame->params;
   int i;
   int x_blocks;
   int y_blocks;
@@ -688,7 +690,7 @@ schro_encoder_hierarchical_prediction (SchroEncoderTask *task)
   SchroFrame *downsampled_frame;
   int shift;
 
-  for(i=0;i<task->params.num_refs;i++){
+  for(i=0;i<frame->params.num_refs;i++){
     SchroMotionField **motion_fields;
 
     if (i == 0) {
@@ -703,7 +705,7 @@ schro_encoder_hierarchical_prediction (SchroEncoderTask *task)
       } else {
         downsampled_ref0 = get_downsampled(task->ref_frame1,shift);
       }
-      downsampled_frame = get_downsampled(task->encoder_frame,shift);
+      downsampled_frame = get_downsampled(frame,shift);
 
       x_blocks = ROUND_UP_SHIFT(params->x_num_blocks,shift);
       y_blocks = ROUND_UP_SHIFT(params->y_num_blocks,shift);
@@ -763,14 +765,15 @@ schro_block_average (uint8_t *dest, SchroFrameComponent *comp,
 void
 schro_encoder_dc_prediction (SchroEncoderTask *task)
 {
-  SchroParams *params = &task->params;
+  SchroEncoderFrame *encoder_frame = task->encoder_frame;
+  SchroParams *params = &encoder_frame->params;
   uint8_t const_data[16];
   int i;
   int j;
   int luma_w, luma_h;
   int chroma_w, chroma_h;
   SchroMotionField *motion_field;
-  SchroFrame *frame = task->encoder_frame->original_frame;
+  SchroFrame *frame = encoder_frame->original_frame;
 
   motion_field = schro_motion_field_new (params->x_num_blocks,
       params->y_num_blocks);
@@ -837,7 +840,8 @@ schro_frame_get_metric (SchroFrame *frame1, int x1, int y1,
 void
 schro_encoder_hierarchical_prediction_2 (SchroEncoderTask *task)
 {
-  SchroParams *params = &task->params;
+  SchroEncoderFrame *frame = task->encoder_frame;
+  SchroParams *params = &frame->params;
   int ref;
   int x_blocks;
   int y_blocks;
@@ -847,7 +851,7 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderTask *task)
   SchroMotionField *mf;
   SchroMotionField *parent_mf = NULL;
 
-  for(ref=0;ref<task->params.num_refs;ref++){
+  for(ref=0;ref<params->num_refs;ref++){
 
     shift = 3;
     if (ref == 0) {
@@ -987,7 +991,8 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderTask *task)
 void
 schro_encoder_zero_prediction (SchroEncoderTask *task)
 {
-  SchroParams *params = &task->params;
+  SchroEncoderFrame *frame = task->encoder_frame;
+  SchroParams *params = &frame->params;
   int ref;
   int x_blocks;
   int y_blocks;
@@ -995,7 +1000,7 @@ schro_encoder_zero_prediction (SchroEncoderTask *task)
   SchroFrame *downsampled_frame;
   SchroMotionField *mf;
 
-  for(ref=0;ref<task->params.num_refs;ref++){
+  for(ref=0;ref<params->num_refs;ref++){
     int i,j;
     SchroMotionVector *mv;
 

@@ -49,8 +49,8 @@ schro_engine_pick_output_buffer_size (SchroEncoder *encoder,
 static void
 init_params (SchroEncoderTask *task)
 {
-  SchroParams *params = &task->params;
-  SchroEncoder *encoder = task->encoder;
+  SchroParams *params = &task->encoder_frame->params;
+  SchroEncoder *encoder = task->encoder_frame->encoder;
 
   params->video_format = &encoder->video_format;
 
@@ -94,6 +94,7 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
     schro_engine_check_new_access_unit (encoder, frame);
 
     task = schro_encoder_task_new (encoder);
+    frame->encoder = encoder;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
@@ -107,7 +108,7 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
       schro_engine_pick_output_buffer_size (encoder, frame);
 
     /* set up params */
-    params = &task->params;
+    params = &frame->params;
     init_params (task);
 
     schro_async_run (encoder->async,
@@ -156,6 +157,7 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
     }
 
     task = schro_encoder_task_new (encoder);
+    frame->encoder = encoder;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
@@ -169,7 +171,7 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
       schro_engine_pick_output_buffer_size (encoder, frame);
 
     /* set up params */
-    params = &task->params;
+    params = &frame->params;
     frame->is_ref = is_ref;
     if (frame->is_ref) {
       params->num_refs = 0;
@@ -239,6 +241,7 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
     }
 
     task = schro_encoder_task_new (encoder);
+    frame->encoder = encoder;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
@@ -252,7 +255,7 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
       schro_engine_pick_output_buffer_size (encoder, frame);
 
     /* set up params */
-    params = &task->params;
+    params = &frame->params;
     if (is_intra) {
       frame->is_ref = TRUE;
       params->num_refs = 0;
@@ -407,6 +410,7 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
     }
 
     task = schro_encoder_task_new (encoder);
+    frame->encoder = encoder;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
@@ -418,7 +422,7 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
       schro_engine_pick_output_buffer_size (encoder, frame);
 
     /* set up params */
-    params = &task->params;
+    params = &frame->params;
     params->num_refs = frame->num_refs;
     params->xbsep_luma = 8;
     params->xblen_luma = 12;
@@ -518,6 +522,7 @@ schro_encoder_engine_test_intra (SchroEncoder *encoder)
     schro_engine_check_new_access_unit (encoder, frame);
 
     task = schro_encoder_task_new (encoder);
+    frame->encoder = encoder;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
@@ -531,7 +536,7 @@ schro_encoder_engine_test_intra (SchroEncoder *encoder)
       schro_engine_pick_output_buffer_size (encoder, frame);
 
     /* set up params */
-    params = &task->params;
+    params = &frame->params;
     j = frame->frame_number % ARRAY_SIZE(test_wavelet_types);
     encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = test_wavelet_types[j].type;
     encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = test_wavelet_types[j].depth;
@@ -583,6 +588,7 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
     }
 
     task = schro_encoder_task_new (encoder);
+    frame->encoder = encoder;
 
     frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
     task->encoder_frame = frame;
@@ -596,7 +602,7 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
       schro_engine_pick_output_buffer_size (encoder, frame);
 
     /* set up params */
-    params = &task->params;
+    params = &frame->params;
     frame->is_ref = is_ref;
     if (frame->is_ref) {
       params->num_refs = 0;
