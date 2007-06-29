@@ -180,18 +180,18 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
       encoder->last_ref = frame->frame_number;
     } else {
       params->num_refs = 1;
-      frame->task->reference_frame_number[0] = encoder->last_ref;
+      frame->reference_frame_number[0] = encoder->last_ref;
       frame->n_retire = 0;
     }
 
     init_params (frame);
 
     if (params->num_refs > 0) {
-      frame->task->ref_frame0 = schro_encoder_reference_get (encoder,
-          frame->task->reference_frame_number[0]);
-      schro_encoder_frame_ref (frame->task->ref_frame0);
+      frame->ref_frame0 = schro_encoder_reference_get (encoder,
+          frame->reference_frame_number[0]);
+      schro_encoder_frame_ref (frame->ref_frame0);
     } else {
-      frame->task->ref_frame0 = NULL;
+      frame->ref_frame0 = NULL;
     }
 
     SCHRO_DEBUG("queueing %d", frame->frame_number);
@@ -264,25 +264,25 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
     } else if (frame->frame_number >= encoder->last_ref + 4) {
       frame->is_ref = TRUE;
       params->num_refs = 1;
-      frame->task->reference_frame_number[0] = encoder->last_ref;
+      frame->reference_frame_number[0] = encoder->last_ref;
       frame->retire[0] = encoder->last_ref;
       frame->n_retire = 1;
       encoder->last_ref = frame->frame_number;
     } else {
       frame->is_ref = FALSE;
       params->num_refs = 1;
-      frame->task->reference_frame_number[0] = encoder->last_ref;
+      frame->reference_frame_number[0] = encoder->last_ref;
       frame->n_retire = 0;
     }
 
     init_params (frame);
 
     if (params->num_refs > 0) {
-      frame->task->ref_frame0 = schro_encoder_reference_get (encoder,
-          frame->task->reference_frame_number[0]);
-      schro_encoder_frame_ref (frame->task->ref_frame0);
+      frame->ref_frame0 = schro_encoder_reference_get (encoder,
+          frame->reference_frame_number[0]);
+      schro_encoder_frame_ref (frame->ref_frame0);
     } else {
-      frame->task->ref_frame0 = NULL;
+      frame->ref_frame0 = NULL;
     }
 
     SCHRO_DEBUG("queueing %d", frame->frame_number);
@@ -421,27 +421,27 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
     params->yblen_luma = 12;
 
     if (frame->num_refs > 0) {
-      frame->task->reference_frame_number[0] = frame->picture_number_ref0;
+      frame->reference_frame_number[0] = frame->picture_number_ref0;
     }
     if (frame->num_refs > 1) {
-      frame->task->reference_frame_number[1] = frame->picture_number_ref1;
+      frame->reference_frame_number[1] = frame->picture_number_ref1;
     }
 
     init_params (frame);
 
     if (params->num_refs > 0) {
-      frame->task->ref_frame0 = schro_encoder_reference_get (encoder,
-          frame->task->reference_frame_number[0]);
-      schro_encoder_frame_ref (frame->task->ref_frame0);
+      frame->ref_frame0 = schro_encoder_reference_get (encoder,
+          frame->reference_frame_number[0]);
+      schro_encoder_frame_ref (frame->ref_frame0);
     } else {
-      frame->task->ref_frame0 = NULL;
+      frame->ref_frame0 = NULL;
     }
     if (params->num_refs > 1) {
-      frame->task->ref_frame1 = schro_encoder_reference_get (encoder,
-          frame->task->reference_frame_number[1]);
-      schro_encoder_frame_ref (frame->task->ref_frame1);
+      frame->ref_frame1 = schro_encoder_reference_get (encoder,
+          frame->reference_frame_number[1]);
+      schro_encoder_frame_ref (frame->ref_frame1);
     } else {
-      frame->task->ref_frame1 = NULL;
+      frame->ref_frame1 = NULL;
     }
 
     SCHRO_DEBUG("queueing %d", frame->frame_number);
@@ -602,7 +602,7 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
       encoder->last_ref = frame->frame_number;
     } else {
       params->num_refs = 1;
-      frame->task->reference_frame_number[0] = encoder->last_ref;
+      frame->reference_frame_number[0] = encoder->last_ref;
       frame->n_retire = 0;
     }
 
@@ -621,11 +621,11 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
     }
 
     if (params->num_refs > 0) {
-      frame->task->ref_frame0 = schro_encoder_reference_get (encoder,
-          frame->task->reference_frame_number[0]);
-      schro_encoder_frame_ref (frame->task->ref_frame0);
+      frame->ref_frame0 = schro_encoder_reference_get (encoder,
+          frame->reference_frame_number[0]);
+      schro_encoder_frame_ref (frame->ref_frame0);
     } else {
-      frame->task->ref_frame0 = NULL;
+      frame->ref_frame0 = NULL;
     }
 
     SCHRO_DEBUG("queueing %d", frame->frame_number);

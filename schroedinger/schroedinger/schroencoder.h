@@ -105,6 +105,13 @@ struct _SchroEncoderFrame {
   SchroFrame *iwt_frame;
   SchroFrame *prediction_frame;
 
+  SchroEncoderFrame *ref_frame0;
+  SchroEncoderFrame *ref_frame1;
+
+  SchroMotionField *motion_field;
+  SchroMotionField *motion_fields[32];
+
+  SchroPictureNumber reference_frame_number[2];
 };
 
 struct _SchroEncoder {
@@ -158,16 +165,7 @@ struct _SchroEncoder {
 };
 
 struct _SchroEncoderTask {
-  int state;
-  int completed;
-
-  SchroEncoderFrame *ref_frame0;
-  SchroEncoderFrame *ref_frame1;
-
-  SchroMotionField *motion_field;
-  SchroMotionField *motion_fields[32];
-
-  SchroPictureNumber reference_frame_number[2];
+  int unused;
 };
 
 struct _SchroEncoderSettings {
