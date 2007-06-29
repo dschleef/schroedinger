@@ -96,13 +96,14 @@ SchroEncoderTask *
 schro_encoder_task_new (SchroEncoder *encoder)
 {
   SchroEncoderTask *task;
-  SchroFrameFormat frame_format;
-  int frame_width;
-  int frame_height;
+  //SchroFrameFormat frame_format;
+  //int frame_width;
+  //int frame_height;
 
   task = malloc(sizeof(SchroEncoderTask));
   memset (task, 0, sizeof(*task));
 
+#if 0
   frame_format = schro_params_get_frame_format (16,
       encoder->video_format.chroma_format);
   
@@ -111,7 +112,7 @@ schro_encoder_task_new (SchroEncoder *encoder)
   frame_height = ROUND_UP_POW2(encoder->video_format.height,
       SCHRO_MAX_TRANSFORM_DEPTH + encoder->video_format.chroma_v_shift);
 
-  task->iwt_frame = schro_frame_new_and_alloc (frame_format,
+  iwt_frame = schro_frame_new_and_alloc (frame_format,
       frame_width, frame_height);
   
   frame_width = MAX(
@@ -123,6 +124,7 @@ schro_encoder_task_new (SchroEncoder *encoder)
 
   task->prediction_frame = schro_frame_new_and_alloc (frame_format,
       frame_width, frame_height);
+#endif
 
   return task;
 }
@@ -130,12 +132,6 @@ schro_encoder_task_new (SchroEncoder *encoder)
 void
 schro_encoder_task_free (SchroEncoderTask *task)
 {
-  if (task->iwt_frame) {
-    schro_frame_unref (task->iwt_frame);
-  }
-  if (task->prediction_frame) {
-    schro_frame_unref (task->prediction_frame);
-  }
   if (task->motion_field) {
     schro_motion_field_free (task->motion_field);
   }
@@ -183,7 +179,7 @@ schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
   //frame->frame_number = encoder->frame_queue_index;
   //encoder->frame_queue_index++;
 
-  encoder_frame = schro_encoder_frame_new();
+  encoder_frame = schro_encoder_frame_new(encoder);
 
   format = schro_params_get_frame_format (8, encoder->video_format.chroma_format);
   if (0 /* !filtering */ && format == frame->format) {
@@ -581,7 +577,7 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
   if (frame->params.num_refs > 0) {
     schro_encoder_motion_predict (frame);
 
-    schro_frame_convert (frame->task->iwt_frame, frame->original_frame);
+    schro_frame_convert (frame->iwt_frame, frame->original_frame);
 
     {
       SchroMotion *motion;
@@ -597,21 +593,21 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
       motion->motion_vectors = frame->task->motion_field->motion_vectors;
       motion->params = &frame->params;
       schro_motion_verify (motion);
-      schro_frame_copy_with_motion (frame->task->prediction_frame, motion);
+      schro_frame_copy_with_motion (frame->prediction_frame, motion);
 
       free(motion);
     }
 
-    schro_frame_subtract (frame->task->iwt_frame, frame->task->prediction_frame);
+    schro_frame_subtract (frame->iwt_frame, frame->prediction_frame);
 
-    schro_frame_zero_extend (frame->task->iwt_frame,
+    schro_frame_zero_extend (frame->iwt_frame,
         frame->params.video_format->width,
         frame->params.video_format->height);
   } else {
-    schro_frame_convert (frame->task->iwt_frame, frame->original_frame);
+    schro_frame_convert (frame->iwt_frame, frame->original_frame);
   }
 
-  schro_frame_iwt_transform (frame->task->iwt_frame, &frame->params,
+  schro_frame_iwt_transform (frame->iwt_frame, &frame->params,
       frame->tmpbuf);
   schro_encoder_clean_up_transform (frame);
 }
@@ -717,10 +713,10 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
 
   if (!encoder_frame->is_ref) return;
 
-  schro_frame_inverse_iwt_transform (encoder_frame->task->iwt_frame, &encoder_frame->params,
+  schro_frame_inverse_iwt_transform (encoder_frame->iwt_frame, &encoder_frame->params,
       encoder_frame->tmpbuf);
   if (encoder_frame->params.num_refs > 0) {
-    schro_frame_add (encoder_frame->task->iwt_frame, encoder_frame->task->prediction_frame);
+    schro_frame_add (encoder_frame->iwt_frame, encoder_frame->prediction_frame);
   }
 
   frame_format = schro_params_get_frame_format (8,
@@ -728,7 +724,7 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
   frame = schro_frame_new_and_alloc (frame_format,
       encoder_frame->encoder->video_format.width,
       encoder_frame->encoder->video_format.height);
-  schro_frame_convert (frame, encoder_frame->task->iwt_frame);
+  schro_frame_convert (frame, encoder_frame->iwt_frame);
   encoder_frame->reconstructed_frame =
     schro_upsampled_frame_new (frame);
   schro_upsampled_frame_upsample (encoder_frame->reconstructed_frame);
@@ -1493,7 +1489,7 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int componen
     offset = subband->chroma_offset;
   }
 
-  data = (int16_t *)frame->task->iwt_frame->components[component].data + offset;
+  data = (int16_t *)frame->iwt_frame->components[component].data + offset;
 
   SCHRO_LOG("subband index=%d %d x %d at offset %d with stride %d; clean area %d %d", index,
       width, height, offset, stride, w, h);
@@ -1560,7 +1556,7 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
 
   for(i=0;i<64;i++) hist[i] = 0;
 
-  data = (int16_t *)frame->task->iwt_frame->components[component].data + offset;
+  data = (int16_t *)frame->iwt_frame->components[component].data + offset;
   for(j=0;j<height;j++){
     for(i=0;i<width;i++){
       x = ilog2(abs(data[i]));
@@ -1667,7 +1663,7 @@ schro_encoder_quantize_subband (SchroEncoderFrame *frame, int component, int ind
     offset = subband->chroma_offset;
   }
 
-  data = (int16_t *)frame->task->iwt_frame->components[component].data + offset;
+  data = (int16_t *)frame->iwt_frame->components[component].data + offset;
 
   if (index == 0) {
     for(j=0;j<height;j++){
@@ -1761,14 +1757,14 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
   SCHRO_LOG("subband index=%d %d x %d at offset %d with stride %d", index,
       width, height, offset, stride);
 
-  data = (int16_t *)frame->task->iwt_frame->components[component].data + offset;
+  data = (int16_t *)frame->iwt_frame->components[component].data + offset;
   if (subband->has_parent) {
     parent_subband = subband - 3;
     if (component == 0) {
-      parent_data = (int16_t *)frame->task->iwt_frame->components[component].data +
+      parent_data = (int16_t *)frame->iwt_frame->components[component].data +
         parent_subband->offset;
     } else {
-      parent_data = (int16_t *)frame->task->iwt_frame->components[component].data +
+      parent_data = (int16_t *)frame->iwt_frame->components[component].data +
         parent_subband->chroma_offset;
     }
   }
@@ -1946,14 +1942,38 @@ out:
 /* frame queue */
 
 SchroEncoderFrame *
-schro_encoder_frame_new (void)
+schro_encoder_frame_new (SchroEncoder *encoder)
 {
   SchroEncoderFrame *encoder_frame;
+  SchroFrameFormat frame_format;
+  int frame_width;
+  int frame_height;
 
   encoder_frame = malloc(sizeof(SchroEncoderFrame));
   memset (encoder_frame, 0, sizeof(SchroEncoderFrame));
   encoder_frame->state = SCHRO_ENCODER_FRAME_STATE_NEW;
   encoder_frame->refcount = 1;
+
+  frame_format = schro_params_get_frame_format (16,
+      encoder->video_format.chroma_format);
+  
+  frame_width = ROUND_UP_POW2(encoder->video_format.width,
+      SCHRO_MAX_TRANSFORM_DEPTH + encoder->video_format.chroma_h_shift);
+  frame_height = ROUND_UP_POW2(encoder->video_format.height,
+      SCHRO_MAX_TRANSFORM_DEPTH + encoder->video_format.chroma_v_shift);
+
+  encoder_frame->iwt_frame = schro_frame_new_and_alloc (frame_format,
+      frame_width, frame_height);
+  
+  frame_width = MAX(
+      4 * 12 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*12),
+      4 * 16 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*16));
+  frame_height = MAX(
+      4 * 12 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*12),
+      4 * 16 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*16));
+
+  encoder_frame->prediction_frame = schro_frame_new_and_alloc (frame_format,
+      frame_width, frame_height);
 
   return encoder_frame;
 }
@@ -1981,6 +2001,12 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
       if (frame->downsampled_frames[i]) {
         schro_frame_unref (frame->downsampled_frames[i]);
       }
+    }
+    if (frame->iwt_frame) {
+      schro_frame_unref (frame->iwt_frame);
+    }
+    if (frame->prediction_frame) {
+      schro_frame_unref (frame->prediction_frame);
     }
 
     if (frame->tmpbuf) free (frame->tmpbuf);

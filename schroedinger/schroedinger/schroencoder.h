@@ -102,6 +102,9 @@ struct _SchroEncoderFrame {
   SchroBits *bits;
   SchroParams params;
   SchroEncoder *encoder;
+  SchroFrame *iwt_frame;
+  SchroFrame *prediction_frame;
+
 };
 
 struct _SchroEncoder {
@@ -157,9 +160,6 @@ struct _SchroEncoder {
 struct _SchroEncoderTask {
   int state;
   int completed;
-
-  SchroFrame *iwt_frame;
-  SchroFrame *prediction_frame;
 
   SchroEncoderFrame *ref_frame0;
   SchroEncoderFrame *ref_frame1;
@@ -259,7 +259,7 @@ SchroBuffer * schro_encoder_encode_access_unit (SchroEncoder *encoder);
 void schro_encoder_output_push (SchroEncoder *encoder,
     SchroBuffer *buffer, int slot, int presentation_frame);
 
-SchroEncoderFrame * schro_encoder_frame_new (void);
+SchroEncoderFrame * schro_encoder_frame_new (SchroEncoder *encoder);
 void schro_encoder_frame_ref (SchroEncoderFrame *frame);
 void schro_encoder_frame_unref (SchroEncoderFrame *frame);
 

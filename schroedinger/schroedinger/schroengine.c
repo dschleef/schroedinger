@@ -69,8 +69,8 @@ init_params (SchroEncoderFrame *frame)
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
   schro_params_init_subbands (params, frame->subbands,
-      frame->task->iwt_frame->components[0].stride,
-      frame->task->iwt_frame->components[1].stride);
+      frame->iwt_frame->components[0].stride,
+      frame->iwt_frame->components[1].stride);
   schro_encoder_choose_quantisers (frame);
 }
 
