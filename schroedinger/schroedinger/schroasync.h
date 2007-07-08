@@ -11,15 +11,21 @@ typedef struct _SchroThread SchroThread;
 typedef struct _SchroAsyncTask SchroAsyncTask;
 
 
-SchroAsync *schro_async_new(int n_threads);
+SchroAsync * schro_async_new(int n_threads, int (*schedule)(void *),
+    void *closure);
 void schro_async_free (SchroAsync *async);
 
-void schro_async_run (SchroAsync *async, void (*func)(void *), void *ptr);
+void schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr);
 int schro_async_get_num_completed (SchroAsync *async);
-int schro_async_get_num_waiting (SchroAsync *async);
-void schro_async_wait (SchroAsync *async, int min_waiting);
+//int schro_async_get_num_waiting (SchroAsync *async);
+//void schro_async_wait (SchroAsync *async, int min_waiting);
 void schro_async_wait_one (SchroAsync *async);
+void schro_async_wait_locked (SchroAsync *async);
 void *schro_async_pull (SchroAsync *async);
+void * schro_async_pull_locked (SchroAsync *async);
+void schro_async_signal_scheduler (SchroAsync *async);
+void schro_async_lock (SchroAsync *async);
+void schro_async_unlock (SchroAsync *async);
 
 SCHRO_END_DECLS
 

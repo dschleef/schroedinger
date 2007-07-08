@@ -72,6 +72,7 @@ struct _GstSchroEnc
   uint64_t granulepos_offset;
   uint64_t granulepos_low;
   uint64_t granulepos_hi;
+  gboolean started;
 
   SchroEncoder *encoder;
   SchroVideoFormat *video_format;
@@ -585,6 +586,10 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
     schro_enc->granulepos_hi = 0;
     schro_enc->got_offset = TRUE;
   }
+  if (!schro_enc->started) {
+    schro_encoder_start (schro_enc->encoder);
+    schro_enc->started = TRUE;
+  }
 
   frame = gst_schro_buffer_wrap (schro_enc, buf, schro_enc->width, schro_enc->height);
 
@@ -607,7 +612,7 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
   int presentation_frame;
 
   while (1) {
-    switch (schro_encoder_iterate (schro_enc->encoder)) {
+    switch (schro_encoder_wait (schro_enc->encoder)) {
       case SCHRO_STATE_NEED_FRAME:
       case SCHRO_STATE_END_OF_STREAM:
         return GST_FLOW_OK;

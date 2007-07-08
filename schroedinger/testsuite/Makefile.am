@@ -5,7 +5,7 @@ noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 encode wavelet tables wavelet_2d \
 	 obmc phasecorrelation motion \
 	 quant decode \
-	 global_motion upsample encode_big \
+	 global_motion upsample \
 	 motion2 sort filter ssim gaussian
 
 TESTS = arith bits bits2 encode wavelet tables wavelet_2d

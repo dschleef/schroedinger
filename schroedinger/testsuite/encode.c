@@ -36,6 +36,7 @@ test (int w, int h)
   format->height = h;
   schro_encoder_set_video_format (encoder, format);
   free (format);
+  schro_encoder_start (encoder);
 
   size = ROUND_UP_4 (w) * ROUND_UP_2 (h);
   size += (ROUND_UP_8 (w)/2) * (ROUND_UP_2 (h)/2);
@@ -46,7 +47,7 @@ test (int w, int h)
   while (go) {
     int x;
 
-    switch (schro_encoder_iterate (encoder)) {
+    switch (schro_encoder_wait (encoder)) {
       case SCHRO_STATE_NEED_FRAME:
         if (n_frames < 100) {
           //SCHRO_ERROR("frame %d", n_frames);
@@ -86,12 +87,12 @@ test (int w, int h)
 int
 main (int argc, char *argv[])
 {
-  //int h, w;
+  int h, w;
 
   schro_init();
 
   test(128,128);
-#if 0
+#if 1
   for(w=64;w<64+16;w++){
     for(h=64;h<64+16;h++){
       test(w,h);

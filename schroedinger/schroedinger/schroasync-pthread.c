@@ -20,12 +20,13 @@ enum {
 struct _SchroAsync {
   int n_threads;
   int n_threads_running;
+  int n_idle;
 
   volatile int n_completed;
   volatile int n_waiting;
 
   pthread_mutex_t mutex;
-  pthread_cond_t async_cond;
+  pthread_cond_t app_cond;
   pthread_cond_t thread_cond;
 
   SchroThread *threads;
@@ -35,6 +36,9 @@ struct _SchroAsync {
 
   SchroAsyncTask *done_first;
   SchroAsyncTask *done_last;
+
+  int (*schedule) (void *);
+  void *schedule_closure;
 };
 
 struct _SchroThread {
@@ -54,7 +58,7 @@ struct _SchroAsyncTask {
 static void * schro_thread_main (void *ptr);
 
 SchroAsync *
-schro_async_new(int n_threads)
+schro_async_new(int n_threads, int (*schedule)(void *), void *closure)
 {
   SchroAsync *async;
   pthread_attr_t attr;
@@ -89,15 +93,19 @@ schro_async_new(int n_threads)
   async->threads = malloc(sizeof(SchroThread) * n_threads);
   memset (async->threads, 0, sizeof(SchroThread) * n_threads);
 
+  async->schedule = schedule;
+  async->schedule_closure = closure;
+
   pthread_mutexattr_init (&mutexattr);
   pthread_mutex_init (&async->mutex, &mutexattr);
   pthread_condattr_init (&condattr);
-  pthread_cond_init (&async->async_cond, &condattr);
+  pthread_cond_init (&async->app_cond, &condattr);
   pthread_cond_init (&async->thread_cond, &condattr);
 
   pthread_attr_init (&attr);
   
   pthread_mutex_lock (&async->mutex);
+
   for(i=0;i<n_threads;i++){
     SchroThread *thread = async->threads + i;
 
@@ -127,7 +135,7 @@ schro_async_free (SchroAsync *async)
   }
   while(async->n_threads_running > 0) {
     pthread_cond_signal (&async->thread_cond);
-    pthread_cond_wait (&async->async_cond, &async->mutex);
+    pthread_cond_wait (&async->app_cond, &async->mutex);
   }
   pthread_mutex_unlock (&async->mutex);
 
@@ -141,7 +149,7 @@ schro_async_free (SchroAsync *async)
 }
 
 void
-schro_async_run (SchroAsync *async, void (*func)(void *), void *ptr)
+schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 {
   SchroAsyncTask *atask;
 
@@ -151,7 +159,6 @@ schro_async_run (SchroAsync *async, void (*func)(void *), void *ptr)
   atask->func = func;
   atask->priv = ptr;
 
-  pthread_mutex_lock (&async->mutex);
   atask->next = NULL;
   atask->prev = async->list_last;
   if (async->list_last) {
@@ -165,7 +172,6 @@ schro_async_run (SchroAsync *async, void (*func)(void *), void *ptr)
   SCHRO_DEBUG("waiting %d", async->n_waiting);
 
   pthread_cond_signal (&async->thread_cond);
-  pthread_mutex_unlock (&async->mutex);
 }
 
 int schro_async_get_num_waiting (SchroAsync *async)
@@ -206,6 +212,38 @@ void *schro_async_pull (SchroAsync *async)
   return ptr;
 }
 
+void *
+schro_async_pull_locked (SchroAsync *async)
+{
+  SchroAsyncTask *atask;
+  void *ptr;
+
+  if (!async->done_first) {
+    return NULL;
+  }
+  SCHRO_ASSERT(async->done_first != NULL);
+
+  atask = async->done_first;
+  async->done_first = atask->next;
+  if (async->done_first) {
+    async->done_first->prev = NULL;
+  } else {
+    async->done_last = NULL;
+  }
+  async->n_completed--;
+
+  ptr = atask->priv;
+  free (atask);
+
+  return ptr;
+}
+
+void
+schro_async_wait_locked (SchroAsync *async)
+{
+  pthread_cond_wait (&async->app_cond, &async->mutex);
+}
+
 void
 schro_async_wait_one (SchroAsync *async)
 {
@@ -215,7 +253,7 @@ schro_async_wait_one (SchroAsync *async)
     return;
   }
 
-  pthread_cond_wait (&async->async_cond, &async->mutex);
+  pthread_cond_wait (&async->app_cond, &async->mutex);
   pthread_mutex_unlock (&async->mutex);
 }
 
@@ -234,7 +272,7 @@ schro_async_wait (SchroAsync *async, int min_waiting)
     return;
   }
 
-  pthread_cond_wait (&async->async_cond, &async->mutex);
+  pthread_cond_wait (&async->app_cond, &async->mutex);
   pthread_mutex_unlock (&async->mutex);
 }
 
@@ -243,62 +281,90 @@ schro_thread_main (void *ptr)
 {
   SchroThread *thread = ptr;
   SchroAsync *async = thread->async;
+  int ret;
+  SchroAsyncTask *atask;
 
   /* thread starts with async->mutex locked */
 
   async->n_threads_running++;
+  thread->state = STATE_IDLE;
   while (1) {
-    pthread_cond_wait (&async->thread_cond, &async->mutex);
+    switch (thread->state) {
+      case STATE_IDLE:
+        async->n_idle++;
+        SCHRO_DEBUG("thread %d: idle", thread->index);
+        pthread_cond_wait (&async->thread_cond, &async->mutex);
+        SCHRO_DEBUG("thread %d: got signal", thread->index);
+        async->n_idle--;
+        if (thread->state == STATE_IDLE) {
+          thread->state = STATE_BUSY;
+        }
+        break;
+      case STATE_STOP:
+        pthread_cond_signal (&async->app_cond);
+        async->n_threads_running--;
+        pthread_mutex_unlock (&async->mutex);
+        SCHRO_DEBUG("thread %d: stopping", thread->index);
+        return NULL;
+      case STATE_BUSY:
+        ret = async->schedule (async->schedule_closure);
+        /* FIXME ignoring ret */
+        if (!async->list_first) {
+          thread->state = STATE_IDLE;
+          break;
+        }
 
-    SCHRO_DEBUG("thread %d: got signal", thread->index);
+        thread->state = STATE_BUSY;
+        atask = async->list_first;
 
-    if (thread->state == STATE_STOP) {
-      pthread_cond_signal (&async->async_cond);
-      async->n_threads_running--;
-      pthread_mutex_unlock (&async->mutex);
-      SCHRO_DEBUG("thread %d: stopping", thread->index);
-      return NULL;
-    }
+        async->list_first = atask->next;
+        if (atask->next) {
+          atask->next->prev = NULL;
+        } else {
+          async->list_last = NULL;
+        }
+        async->n_waiting--;
 
-    if (async->list_first == NULL) {
-      SCHRO_DEBUG("wake with nothing to do");
-    }
-    thread->state = STATE_BUSY;
-    while (async->list_first) {
-      SchroAsyncTask *atask;
+        if (async->n_idle > 0) {
+          pthread_cond_signal (&async->thread_cond);
+        }
+        pthread_mutex_unlock (&async->mutex);
 
-      atask = async->list_first;
+        SCHRO_DEBUG("thread %d: running", thread->index);
+        atask->func (atask->priv);
+        SCHRO_DEBUG("thread %d: done", thread->index);
 
-      async->list_first = atask->next;
-      if (atask->next) {
-        atask->next->prev = NULL;
-      } else {
-        async->list_last = NULL;
-      }
-      async->n_waiting--;
-
-      pthread_mutex_unlock (&async->mutex);
-
-      SCHRO_DEBUG("thread %d: running", thread->index);
-      atask->func (atask->priv);
-      SCHRO_DEBUG("thread %d: done", thread->index);
-
-      pthread_mutex_lock (&async->mutex);
+        pthread_mutex_lock (&async->mutex);
       
-      atask->prev = async->done_last;
-      atask->next = NULL;
-      if (async->done_last) {
-        async->done_last->next = atask;
-      } else {
-        async->done_first = atask;
-      }
-      async->done_last = atask;
-      async->n_completed++;
+        atask->prev = async->done_last;
+        atask->next = NULL;
+        if (async->done_last) {
+          async->done_last->next = atask;
+        } else {
+          async->done_first = atask;
+        }
+        async->done_last = atask;
+        async->n_completed++;
 
-      pthread_cond_signal (&async->async_cond);
+        pthread_cond_signal (&async->app_cond);
+
+        break;
     }
-    thread->state = STATE_IDLE;
   }
 }
 
+void schro_async_lock (SchroAsync *async)
+{
+  pthread_mutex_lock (&async->mutex);
+}
+
+void schro_async_unlock (SchroAsync *async)
+{
+  pthread_mutex_unlock (&async->mutex);
+}
+
+void schro_async_signal_scheduler (SchroAsync *async)
+{
+  pthread_cond_signal (&async->thread_cond);
+}
 

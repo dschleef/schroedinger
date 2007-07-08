@@ -106,7 +106,7 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
     params = &frame->params;
     init_params (frame);
 
-    schro_async_run (encoder->async,
+    schro_async_run_locked (encoder->async,
         (void (*)(void *))schro_encoder_encode_picture_all, frame);
 
     return TRUE;
@@ -190,7 +190,7 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
 
     SCHRO_DEBUG("queueing %d", frame->frame_number);
 
-    schro_async_run (encoder->async,
+    schro_async_run_locked (encoder->async,
         (void (*)(void *))schro_encoder_encode_picture_all, frame);
 
     return TRUE;
@@ -278,7 +278,7 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
 
     SCHRO_DEBUG("queueing %d", frame->frame_number);
 
-    schro_async_run (encoder->async,
+    schro_async_run_locked (encoder->async,
         (void (*)(void *))schro_encoder_encode_picture_all, frame);
 
     return TRUE;
@@ -434,7 +434,7 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
 
     SCHRO_DEBUG("queueing %d", frame->frame_number);
 
-    schro_async_run (encoder->async,
+    schro_async_run_locked (encoder->async,
         (void (*)(void *))schro_encoder_encode_picture_all, frame);
 
     return TRUE;
@@ -516,7 +516,7 @@ schro_encoder_engine_test_intra (SchroEncoder *encoder)
     encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = test_wavelet_types[j].depth;
     init_params (frame);
 
-    schro_async_run (encoder->async,
+    schro_async_run_locked (encoder->async,
         (void (*)(void *))schro_encoder_encode_picture_all, frame);
 
     return TRUE;
@@ -612,7 +612,7 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
 
     SCHRO_DEBUG("queueing %d", frame->frame_number);
 
-    schro_async_run (encoder->async,
+    schro_async_run_locked (encoder->async,
         (void (*)(void *))schro_encoder_encode_picture_all, frame);
 
     return TRUE;
