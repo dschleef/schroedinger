@@ -54,7 +54,7 @@ schro_encoder_new (void)
   encoder->mid1_ref = -1;
   encoder->mid2_ref = -1;
 
-  encoder->prefs[SCHRO_PREF_ENGINE] = 0;
+  encoder->prefs[SCHRO_PREF_ENGINE] = 3;
   encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;

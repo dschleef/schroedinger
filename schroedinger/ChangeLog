@@ -1,3 +1,9 @@
+2007-07-08  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroasync-pthread.c:
+	* schroedinger/schroencoder.c:
+	  Refactor some async code.
+
 2007-07-07  David Schleef  <ds@schleef.org>
 
 	* gst/gstschroenc.c:
