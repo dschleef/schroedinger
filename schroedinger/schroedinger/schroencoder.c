@@ -54,7 +54,7 @@ schro_encoder_new (void)
   encoder->mid1_ref = -1;
   encoder->mid2_ref = -1;
 
-  encoder->prefs[SCHRO_PREF_ENGINE] = 3;
+  encoder->prefs[SCHRO_PREF_ENGINE] = 0;
   encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
@@ -67,7 +67,7 @@ schro_encoder_new (void)
   schro_encoder_encode_codec_comment (encoder);
 
   /* FIXME this should be a parameter */
-  encoder->queue_depth = 10;
+  encoder->queue_depth = 20;
 
   encoder->frame_queue = schro_queue_new (encoder->queue_depth,
       (SchroQueueFreeFunc)schro_encoder_frame_unref);
@@ -436,29 +436,35 @@ schro_encoder_wait (SchroEncoder *encoder)
 static void
 schro_encoder_frame_complete (SchroEncoderFrame *frame)
 {
-  SCHRO_INFO("completing picture %d", frame->frame_number);
+  SCHRO_INFO("completing task, picture %d in state %d",
+      frame->frame_number, frame->state);
 
-  frame->state = SCHRO_ENCODER_FRAME_STATE_DONE;
+  SCHRO_ASSERT(frame->busy == TRUE);
 
-  if (frame->ref_frame0) {
-    schro_encoder_frame_unref (frame->ref_frame0);
-  }
-  if (frame->ref_frame1) {
-    schro_encoder_frame_unref (frame->ref_frame1);
-  }
-  if (frame->is_ref) {
-    schro_encoder_reference_add (frame->encoder, frame);
-  }
+  frame->busy = FALSE;
 
-  SCHRO_INFO("PICTURE: %d %d %d %d",
-      frame->frame_number, frame->is_ref, frame->params.num_refs,
-      frame->output_buffer->length);
+  if (frame->state == SCHRO_ENCODER_FRAME_STATE_POSTANALYSE) {
+    frame->state = SCHRO_ENCODER_FRAME_STATE_DONE;
 
-  if (frame->start_access_unit) {
-    frame->access_unit_buffer = schro_encoder_encode_access_unit (frame->encoder);
-  }
-  if (frame->last_frame) {
-    frame->encoder->completed_eos = TRUE;
+    if (frame->ref_frame0) {
+      schro_encoder_frame_unref (frame->ref_frame0);
+    }
+    if (frame->ref_frame1) {
+      schro_encoder_frame_unref (frame->ref_frame1);
+    }
+    if (frame->is_ref) {
+      schro_encoder_reference_add (frame->encoder, frame);
+    }
+
+    SCHRO_INFO("PICTURE: %d %d %d",
+        frame->frame_number, frame->is_ref, frame->params.num_refs);
+
+    if (frame->start_access_unit) {
+      frame->access_unit_buffer = schro_encoder_encode_access_unit (frame->encoder);
+    }
+    if (frame->last_frame) {
+      frame->encoder->completed_eos = TRUE;
+    }
   }
 }
 
@@ -545,6 +551,8 @@ schro_encoder_analyse_picture (SchroEncoderFrame *frame)
 void
 schro_encoder_predict_picture (SchroEncoderFrame *frame)
 {
+  SCHRO_INFO("predict picture %d", frame->frame_number);
+
   frame->tmpbuf = malloc(SCHRO_LIMIT_WIDTH * 2);
   frame->tmpbuf2 = malloc(SCHRO_LIMIT_WIDTH * 2);
 
@@ -602,6 +610,8 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
   int residue_bits_start;
   SchroBuffer *subbuffer;
   int frame_width, frame_height;
+
+  SCHRO_INFO("encode picture %d", frame->frame_number);
 
   frame->output_buffer = schro_buffer_new_and_alloc (frame->output_buffer_size);
 
@@ -1897,10 +1907,12 @@ out:
 
   SCHRO_ASSERT(arith->offset < frame->subband_size);
 
+#if 0
   if (component == 0 && index > 0) {
     SCHRO_INFO("SUBBAND_EST: %d %d %d %d", component, index,
         frame->estimated_entropy, arith->offset);
   }
+#endif
 
   schro_bits_encode_uint (frame->bits, arith->offset);
   if (arith->offset > 0) {

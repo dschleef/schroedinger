@@ -1,3 +1,11 @@
+2007-07-09  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	  Use the async changes to make the engines more fine grained.
+	  Some engines are broken.
+
 2007-07-08  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroasync-pthread.c:
