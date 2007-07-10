@@ -4,11 +4,19 @@
 
 playback = 0
 
-file = '/home/ds/public_html/dude_clip.mpg'
+#file = '/home/ds/public_html/dude_clip.mpg'
+#file = '/home/ds/vob/mulholland_clip.mpg'
+file = '/home/ds/vob/luke_clip.mpg'
+#file = '/home/ds/vob/x3_clip.mpg'
 seek_time = 0
 length = 28
 fps = 24
-audiochan = 1
+audiochan = 0
+#quant_base = 22
+#quant_base = 18
+quant_base = 14
+#quant_base = 8
+engine = 3
 
 #file = '/mnt/wallace/home/ds/spirited_away.1.vob'
 #seek_time = 10
@@ -162,12 +170,19 @@ class Moo:
                 videorate.link (xvimagesink,
                         gst.caps_from_string("video/x-raw-yuv,framerate=%d/1" % fps));
             else:
+                queue = gst.element_factory_make("queue");
+                self.bin.add (queue);
+                queue.set_state (gst.STATE_PLAYING);
+                pad.link (queue.get_pad("sink"));
+
                 videorate = gst.element_factory_make("videorate");
                 self.bin.add (videorate);
                 videorate.set_state (gst.STATE_PLAYING);
-                pad.link (videorate.get_pad("sink"));
+                queue.get_pad("src").link (videorate.get_pad("sink"));
 
                 schroenc = gst.element_factory_make("schroenc");
+                schroenc.set_property ("engine", engine);
+                schroenc.set_property ("quant_base", quant_base);
                 self.seeker = schroenc;
                 self.bin.add (schroenc);
                 schroenc.set_state (gst.STATE_PLAYING);
@@ -199,10 +214,15 @@ class Moo:
                     pad.link (audioconvert.get_pad("sink"));
                     audioconvert.get_pad("src").link(alsasink.get_pad("sink"));
                 else:
+                    queue = gst.element_factory_make("queue");
+                    self.bin.add (queue);
+                    queue.set_state (gst.STATE_PLAYING);
+                    pad.link (queue.get_pad("sink"));
+
                     audioconvert = gst.element_factory_make ("audioconvert");
                     self.bin.add (audioconvert);
                     audioconvert.set_state (gst.STATE_PLAYING);
-                    pad.link (audioconvert.get_pad("sink"));
+                    queue.get_pad("src").link (audioconvert.get_pad("sink"));
 
                     vorbisenc = gst.element_factory_make ("vorbisenc");
                     self.bin.add (vorbisenc);

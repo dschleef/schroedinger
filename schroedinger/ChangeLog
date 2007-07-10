@@ -1,5 +1,10 @@
 2007-07-09  David Schleef  <ds@schleef.org>
 
+	* misc/pydvdrip:
+	  random changes
+
+2007-07-09  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:
 	* schroedinger/schroengine.c:
