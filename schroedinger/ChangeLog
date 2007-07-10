@@ -1,3 +1,7 @@
+2007-07-10  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroengine.c: Fix lossless encoder.
+
 2007-07-09  David Schleef  <ds@schleef.org>
 
 	* misc/pydvdrip:
