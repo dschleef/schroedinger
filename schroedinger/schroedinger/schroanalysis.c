@@ -21,15 +21,15 @@ schro_encoder_frame_analyse (SchroEncoder *encoder, SchroEncoderFrame *frame)
   }
 
   schro_frame_downsample (frame->downsampled_frames[0],
-      frame->original_frame, 1);
+      frame->original_frame);
   schro_frame_downsample (frame->downsampled_frames[1],
-      frame->downsampled_frames[0], 1);
+      frame->downsampled_frames[0]);
   schro_frame_downsample (frame->downsampled_frames[2],
-      frame->downsampled_frames[1], 1);
+      frame->downsampled_frames[1]);
   schro_frame_downsample (frame->downsampled_frames[3],
-      frame->downsampled_frames[2], 1);
+      frame->downsampled_frames[2]);
   schro_frame_downsample (frame->downsampled_frames[4],
-      frame->downsampled_frames[3], 1);
+      frame->downsampled_frames[3]);
 
 }
 

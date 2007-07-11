@@ -1086,6 +1086,96 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
 }
 
 void
+notoil_downsample_horiz_u8 (uint8_t *dest, uint8_t *src, int n)
+{
+  static const int taps[12] = { 4, -4, -8, 4, 46, 86, 86, 46, 4, -8, -4, 4 };
+  int i;
+  int j;
+  int x;
+
+  for(i=0;i<n;i++){
+    x = 0;
+    for(j=0;j<12;j++){
+      x += taps[j]*src[CLAMP(i*2 + j - 5, 0, n*2-1)];
+    }
+    dest[i] = CLAMP((x + 128) >> 8,0,255);
+  }
+}
+
+void
+notoil_downsample_vert_u8 (uint8_t *dest, uint8_t *src[], int n)
+{
+  static const int taps[12] = { 4, -4, -8, 4, 46, 86, 86, 46, 4, -8, -4, 4 };
+  int i;
+  int j;
+  int x;
+
+  for(i=0;i<n;i++){
+    x = 0;
+    for(j=0;j<12;j++){
+      x += taps[j]*src[j][i];
+    }
+    dest[i] = CLAMP((x + 128) >> 8,0,255);
+  }
+}
+
+void
+schro_frame_component_downsample (SchroFrameComponent *dest,
+    SchroFrameComponent *src)
+{
+  int i,j;
+  uint8_t *tmp, *tmp0, *tmp1;
+  uint8_t *tmplist[12];
+
+  tmp = malloc(dest->width * 12);
+  for(i=0;i<12;i++){
+    tmplist[i] = tmp + dest->width * i;
+  }
+
+  for(i=0;i<7;i++){
+    notoil_downsample_horiz_u8 (tmplist[i+5], src->data + src->stride * i,
+        dest->width);
+  }
+  for(i=0;i<5;i++){
+    memcpy (tmplist[i], tmplist[5], dest->width);
+  }
+  notoil_downsample_vert_u8 (dest->data + dest->stride * 0, tmplist,
+      dest->width);
+
+  for (j=1;j<dest->height;j++){
+    tmp0 = tmplist[0];
+    tmp1 = tmplist[1];
+    for(i=0;i<10;i++){
+      tmplist[i] = tmplist[i+2];
+    }
+    tmplist[10] = tmp0;
+    tmplist[11] = tmp1;
+
+    notoil_downsample_horiz_u8 (tmplist[10],
+        src->data + src->stride * CLAMP(j*2+5,0,src->height-1), dest->width);
+    notoil_downsample_horiz_u8 (tmplist[11],
+        src->data + src->stride * CLAMP(j*2+6,0,src->height-1), dest->width);
+    
+    notoil_downsample_vert_u8 (dest->data + dest->stride * j, tmplist,
+        dest->width);
+  }
+
+  free (tmp);
+}
+
+void
+schro_frame_downsample (SchroFrame *dest, SchroFrame *src)
+{
+  schro_frame_component_downsample (&dest->components[0],
+      &src->components[0]);
+  schro_frame_component_downsample (&dest->components[1],
+      &src->components[1]);
+  schro_frame_component_downsample (&dest->components[2],
+      &src->components[2]);
+}
+
+#if 0
+void
 notoil_downsample2x2_u8 (uint8_t *dest, uint8_t *src1, uint8_t *src2,
     int n)
 {
@@ -1149,6 +1239,7 @@ schro_frame_downsample (SchroFrame *dest, SchroFrame *src, int shift)
     }
   }
 }
+#endif
 
 void
 schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src)

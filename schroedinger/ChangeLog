@@ -1,5 +1,16 @@
 2007-07-10  David Schleef  <ds@schleef.org>
 
+	* gst/Makefile.am:
+	* gst/gstschro.c:
+	* gst/gstschrodownsample.c:
+	* schroedinger/schroanalysis.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	  Implement 12-tap downsampling filter used in Dirac.  Add a
+	  downsampling GStreamer plugin for good measure.
+
+2007-07-10  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroengine.c: Fix lossless encoder.
 
 2007-07-09  David Schleef  <ds@schleef.org>
