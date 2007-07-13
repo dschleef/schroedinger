@@ -375,7 +375,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
       if (params->mv_precision > 0) {
         schro_upsampled_frame_upsample (decoder->ref0);
         if (decoder->ref1) {
-          schro_upsampled_frame_upsample (decoder->ref0);
+          schro_upsampled_frame_upsample (decoder->ref1);
         }
       }
 
@@ -950,11 +950,11 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
     if (arith[i] == NULL) continue;
 
     if (arith[i]->offset < arith[i]->buffer->length) {
-      SCHRO_WARNING("arith decoding didn't consume buffer (%d < %d)",
+      SCHRO_WARNING("arith decoding %d didn't consume buffer (%d < %d)", i,
           arith[i]->offset, arith[i]->buffer->length);
     }
     if (arith[i]->offset > arith[i]->buffer->length + 6) {
-      SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
+      SCHRO_ERROR("arith decoding %d overran buffer (%d > %d)", i,
           arith[i]->offset, arith[i]->buffer->length);
     }
     schro_buffer_unref (arith[i]->buffer);
@@ -999,6 +999,7 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith **arith,
       mv[1] = mv[0];
       schro_decoder_decode_prediction_unit (decoder, arith,
           decoder->motion_field->motion_vectors, i + 2, j);
+      mv[3] = mv[2];
       memcpy(mv + params->x_num_blocks, mv, 4*sizeof(*mv));
 
       mv += 2*params->x_num_blocks;
@@ -1007,6 +1008,7 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith **arith,
       mv[1] = mv[0];
       schro_decoder_decode_prediction_unit (decoder, arith,
           decoder->motion_field->motion_vectors, i + 2, j + 2);
+      mv[3] = mv[2];
       memcpy(mv + params->x_num_blocks, mv, 4*sizeof(*mv));
       break;
     case 2:

@@ -1,3 +1,8 @@
+2007-07-12  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
+	  Fix decoding bugs triggered by streams encoded by dirac.
+
 2007-07-10  David Schleef  <ds@schleef.org>
 
 	* gst/Makefile.am:
