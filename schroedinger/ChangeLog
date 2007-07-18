@@ -1,5 +1,13 @@
 2007-07-18  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroquantiser.c:
+	  Add a bunch of estimation code.
+
+2007-07-18  David Schleef  <ds@schleef.org>
+
 	* gst/gstschrodec.c:
 	  Hack to get around Dirac not putting sizes on EOS frames.
 	* gst/gstschrodownsample.c:

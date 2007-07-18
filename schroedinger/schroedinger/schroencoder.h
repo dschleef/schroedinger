@@ -261,6 +261,9 @@ SchroEncoderFrame * schro_encoder_frame_new (SchroEncoder *encoder);
 void schro_encoder_frame_ref (SchroEncoderFrame *frame);
 void schro_encoder_frame_unref (SchroEncoderFrame *frame);
 
+void schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
+    int index);
+
 SCHRO_END_DECLS
 
 #endif

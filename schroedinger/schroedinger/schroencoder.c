@@ -1495,69 +1495,6 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int componen
   }
 }
 
-static int
-ilog2 (unsigned int x)
-{
-  int i;
-  for(i=0;i<60;i++){
-    if (x*4 < schro_table_quant[i]) return i;
-  }
-#if 0
-  for(i=0;x>1;i++){
-    x >>= 1;
-  }
-#endif
-  return i;
-}
-
-static void
-schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
-    int index)
-{
-  SchroSubband *subband = frame->subbands + index;
-  int i;
-  int j;
-  int16_t *data;
-  int stride;
-  int width;
-  int height;
-  int offset;
-  int x;
-  int hist[64];
-  int entropy;
-
-  if (component == 0) {
-    stride = subband->stride >> 1;
-    width = subband->w;
-    height = subband->h;
-    offset = subband->offset;
-  } else {
-    stride = subband->chroma_stride >> 1;
-    width = subband->chroma_w;
-    height = subband->chroma_h;
-    offset = subband->chroma_offset;
-  }
-
-  for(i=0;i<64;i++) hist[i] = 0;
-
-  data = (int16_t *)frame->iwt_frame->components[component].data + offset;
-  for(j=0;j<height;j++){
-    for(i=0;i<width;i++){
-      x = ilog2(abs(data[i]));
-      hist[x]++;
-    }
-    data += stride;
-  }
-
-  entropy = 0;
-  for(i=subband->quant_index;i<64;i++){
-    x = 4 + i - subband->quant_index;
-    entropy += x * hist[i];
-  }
-
-  frame->estimated_entropy = entropy/16;
-}
-
 static void
 schro_encoder_encode_transform_data (SchroEncoderFrame *frame)
 {
@@ -1568,7 +1505,7 @@ schro_encoder_encode_transform_data (SchroEncoderFrame *frame)
   for(component=0;component<3;component++) {
     for (i=0;i < 1 + 3*params->transform_depth; i++) {
       if (i != 0) schro_bits_sync (frame->bits);
-      if (0) schro_encoder_estimate_subband (frame, component, i);
+      schro_encoder_estimate_subband (frame, component, i);
       schro_encoder_encode_subband (frame, component, i);
     }
   }
@@ -1908,10 +1845,8 @@ out:
   SCHRO_ASSERT(arith->offset < frame->subband_size);
 
 #if 0
-  if (component == 0 && index > 0) {
-    SCHRO_INFO("SUBBAND_EST: %d %d %d %d", component, index,
-        frame->estimated_entropy, arith->offset);
-  }
+  SCHRO_ERROR("SUBBAND_EST: %d %d %d %d", component, index,
+      frame->estimated_entropy, arith->offset*8);
 #endif
 
   schro_bits_encode_uint (frame->bits, arith->offset);
