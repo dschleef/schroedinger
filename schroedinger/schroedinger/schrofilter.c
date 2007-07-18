@@ -5,10 +5,13 @@
 
 #include <schroedinger/schrofilter.h>
 #include <schroedinger/schrodebug.h>
+#include <schroedinger/schrowavelet.h>
+#include <schroedinger/schrotables.h>
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <stdio.h>
 
 void
 sort_u8 (uint8_t *d, int n)
@@ -773,5 +776,120 @@ schro_frame_filter_lowpass2 (SchroFrame *frame, double sigma)
       SCHRO_ASSERT(0);
       break;
   }
+}
+
+
+static void
+wavelet_fwd (SchroFrameComponent *comp)
+{
+  int level;
+  int16_t *tmp;
+
+  tmp = malloc(2*comp->width*sizeof(int16_t));
+
+  for(level=0;level<4;level++){
+    schro_wavelet_transform_2d (SCHRO_WAVELET_5_3,
+        comp->data, comp->stride << level,
+        comp->width >> level, comp->height >> level, tmp);
+  }
+
+  free (tmp);
+}
+
+static void
+wavelet_rev (SchroFrameComponent *comp)
+{
+  int level;
+  int16_t *tmp;
+
+  tmp = malloc(2*comp->width*sizeof(int16_t));
+
+  for(level=3;level>=0;level--){
+    schro_wavelet_inverse_transform_2d (SCHRO_WAVELET_5_3,
+        comp->data, comp->stride << level,
+        comp->width >> level, comp->height >> level, tmp);
+  }
+
+  free (tmp);
+}
+
+static int
+ilog2 (unsigned int x)
+{
+  int i;
+  for(i=0;i<60;i++){
+    if (x*4 < schro_table_quant[i]) return i;
+  }
+  return 60;
+}
+
+static void
+histogram (SchroFrameComponent *comp)
+{
+  int hist[64];
+  int i,j;
+  int16_t *data;
+  int stride = comp->stride;
+
+  memset (hist, 0, 64*sizeof(int));
+
+  for(j=0;j<comp->height>>1;j++){
+    data = OFFSET(comp->data,stride*(j*2+1));
+    for(i=0;i<comp->width>>1;i++){
+      int x = ilog2(abs(data[i]));
+      hist[x]++;
+    }
+  }
+
+  for(i=0;i<64;i++){
+    printf("%d %d\n", i, hist[i]);
+  }
+
+}
+
+static void
+wavelet_filter (SchroFrameComponent *comp)
+{
+  int i,j;
+  int16_t *data;
+  int stride = comp->stride;
+
+  for(j=0;j<comp->height;j++){
+    data = OFFSET(comp->data,j*stride);
+    for(i=0;i<comp->width;i++){
+      if (abs(data[i]) < 10) {
+        data[i] = 0;
+      }
+    }
+  }
+}
+
+
+void
+schro_frame_filter_wavelet (SchroFrame *frame)
+{
+  SchroFrame *tmpframe;
+
+  tmpframe = schro_frame_new_and_alloc (
+      SCHRO_FRAME_FORMAT_S16_444 | frame->format,
+      ROUND_UP_POW2(frame->width,5), ROUND_UP_POW2(frame->height,5));
+  schro_frame_convert (tmpframe, frame);
+
+  wavelet_fwd (&tmpframe->components[0]);
+  wavelet_fwd (&tmpframe->components[1]);
+  wavelet_fwd (&tmpframe->components[2]);
+
+  if (1) histogram (&tmpframe->components[0]);
+
+  wavelet_filter (&tmpframe->components[0]);
+  wavelet_filter (&tmpframe->components[1]);
+  wavelet_filter (&tmpframe->components[2]);
+
+  wavelet_rev (&tmpframe->components[0]);
+  wavelet_rev (&tmpframe->components[1]);
+  wavelet_rev (&tmpframe->components[2]);
+
+  schro_frame_convert (frame, tmpframe);
+  schro_frame_unref (tmpframe);
 }
 

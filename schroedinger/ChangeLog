@@ -1,5 +1,16 @@
 2007-07-18  David Schleef  <ds@schleef.org>
 
+	* gst/gstschrodec.c:
+	  Hack to get around Dirac not putting sizes on EOS frames.
+	* gst/gstschrodownsample.c:
+	  Resize output video.
+	* schroedinger/schrofilter.c:
+	* schroedinger/schrofilter.h:
+	  Add a wavelet filter.  This was an attempt at writing a
+	  wavelet denoising filter, but kinda failed.
+
+2007-07-18  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schromotion.c:
 	  Fix division to make it agree with the spec.
 	* testsuite/wavelet.c:

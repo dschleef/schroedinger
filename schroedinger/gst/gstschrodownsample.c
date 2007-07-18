@@ -102,8 +102,12 @@ static void gst_schrodownsample_set_property (GObject * object, guint prop_id,
 static void gst_schrodownsample_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec);
 
-static GstFlowReturn gst_schrodownsample_transform_ip (GstBaseTransform * base_transform,
-    GstBuffer *buf);
+static GstCaps *gst_schrodownsample_transform_caps (GstBaseTransform * base_transform,
+    GstPadDirection direction, GstCaps *caps);
+static GstFlowReturn gst_schrodownsample_transform (GstBaseTransform * base_transform,
+    GstBuffer *inbuf, GstBuffer *outbuf);
+static gboolean gst_schrodownsample_get_unit_size (GstBaseTransform * base_transform,
+    GstCaps *caps, guint *size);
 
 static GstStaticPadTemplate gst_schrodownsample_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
@@ -184,7 +188,9 @@ gst_schrodownsample_class_init (gpointer g_class, gpointer class_data)
       g_param_spec_int ("level", "level", "level",
         0, 100, 0, G_PARAM_READWRITE));
 
-  base_transform_class->transform_ip = gst_schrodownsample_transform_ip;
+  base_transform_class->transform = gst_schrodownsample_transform;
+  base_transform_class->transform_caps = gst_schrodownsample_transform_caps;
+  base_transform_class->get_unit_size = gst_schrodownsample_get_unit_size;
 }
 
 static void
@@ -240,28 +246,117 @@ gst_schrodownsample_get_property (GObject * object, guint prop_id, GValue * valu
   }
 }
 
+static void
+transform_value (GValue *dest, const GValue *src, GstPadDirection dir)
+{
+  g_value_init (dest, G_VALUE_TYPE (src));
+
+  if (G_VALUE_HOLDS_INT (src)) {
+    int x;
+
+    x = g_value_get_int (src);
+    if (dir == GST_PAD_SINK) {
+      g_value_set_int (dest, x/2);
+    } else {
+      g_value_set_int (dest, x*2);
+    }
+  } else if (GST_VALUE_HOLDS_INT_RANGE (src)) {
+    int min, max;
+
+    min = gst_value_get_int_range_min (src);
+    max = gst_value_get_int_range_max (src);
+
+    if (dir == GST_PAD_SINK) {
+      min = (min+1)/2;
+      if (max == G_MAXINT) {
+        max = G_MAXINT/2;
+      } else {
+        max = (max+1)/2;
+      }
+    } else {
+      if (max > G_MAXINT/2) {
+        max = G_MAXINT;
+      } else {
+        max = max*2;
+      }
+      if (min > G_MAXINT/2) {
+        min = G_MAXINT;
+      } else {
+        min = min*2;
+      }
+    }
+    gst_value_set_int_range (dest, min, max);
+  } else {
+    /* FIXME */
+    g_warning ("case not handled");
+    g_value_set_int (dest, 100);
+  }
+}
+
+static GstCaps *
+gst_schrodownsample_transform_caps (GstBaseTransform * base_transform,
+    GstPadDirection direction, GstCaps *caps)
+{
+  int i;
+  GstStructure *structure;
+  GValue new_value = { 0 };
+  const GValue *value;
+
+  caps = gst_caps_copy (caps);
+
+  for(i=0;i<gst_caps_get_size (caps);i++){
+    structure = gst_caps_get_structure (caps, i);
+
+    value = gst_structure_get_value (structure, "width");
+    transform_value (&new_value, value, direction);
+    gst_structure_set_value (structure, "width", &new_value);
+    g_value_unset (&new_value);
+
+    value = gst_structure_get_value (structure, "height");
+    transform_value (&new_value, value, direction);
+    gst_structure_set_value (structure, "height", &new_value);
+    g_value_unset (&new_value);
+  }
+
+  return caps;
+}
+
+static gboolean
+gst_schrodownsample_get_unit_size (GstBaseTransform * base_transform,
+    GstCaps *caps, guint *size)
+{
+  int width, height;
+
+  gst_structure_get_int (gst_caps_get_structure(caps, 0),
+      "width", &width);
+  gst_structure_get_int (gst_caps_get_structure(caps, 0),
+      "height", &height);
+
+  *size = width * height * 3 / 2;
+
+  return TRUE;
+}
+
 static GstFlowReturn
-gst_schrodownsample_transform_ip (GstBaseTransform * base_transform,
-    GstBuffer *buf)
+gst_schrodownsample_transform (GstBaseTransform * base_transform,
+    GstBuffer *inbuf, GstBuffer *outbuf)
 {
   GstSchrodownsample *compress;
   SchroFrame *frame;
-  SchroFrame *tmpframe;
+  SchroFrame *outframe;
   int width, height;
   
   g_return_val_if_fail (GST_IS_SCHRODOWNSAMPLE (base_transform), GST_FLOW_ERROR);
   compress = GST_SCHRODOWNSAMPLE (base_transform);
 
-  gst_structure_get_int (gst_caps_get_structure(buf->caps, 0),
+  gst_structure_get_int (gst_caps_get_structure(inbuf->caps, 0),
       "width", &width);
-  gst_structure_get_int (gst_caps_get_structure(buf->caps, 0),
+  gst_structure_get_int (gst_caps_get_structure(inbuf->caps, 0),
       "height", &height);
 
-  frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA(buf), width, height);
-  tmpframe = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420, width/2, height/2);
-  schro_frame_downsample (tmpframe, frame);
-  schro_frame_convert (frame, tmpframe);
-  schro_frame_unref (tmpframe);
+  frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA(inbuf), width, height);
+  outframe = schro_frame_new_from_data_I420 (GST_BUFFER_DATA(outbuf), width/2, height/2);
+  schro_frame_downsample (outframe, frame);
 
   return GST_FLOW_OK;
 }
