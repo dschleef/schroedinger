@@ -1004,9 +1004,10 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
       break;
     case 2:
       {
-        int shift = 3 - params->mv_precision;
-        *pred_x = ((((vx[0] + vx[1])>>shift) + 1)/2) <<shift;
-        *pred_y = ((((vy[0] + vy[1])>>shift) + 1)/2) <<shift;
+        int mask = ~(7 >> params->mv_precision);
+        int ack = 8 >> params->mv_precision;
+        *pred_x = ((vx[0] + vx[1] + ack)>>1)&mask;
+        *pred_y = ((vy[0] + vy[1] + ack)>>1)&mask;
       }
       break;
     case 3:

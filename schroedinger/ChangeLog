@@ -1,3 +1,11 @@
+2007-07-18  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schromotion.c:
+	  Fix division to make it agree with the spec.
+	* testsuite/wavelet.c:
+	* testsuite/wavelet_2d.c:
+	  Don't use $ as an identifier. :)
+
 2007-07-12  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:

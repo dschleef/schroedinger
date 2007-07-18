@@ -247,16 +247,16 @@ picture_compare (Picture *dest, Picture *src)
 void
 local_test (int filter)
 {
-  int $;
+  int i;
   Picture *p;
   Picture *ref;
 
   p = picture_new (20, 20);
   ref = picture_new (20, 20);
 
-  for($=0;$<sizeof(generators)/sizeof(generators[0]);$++){
-    printf("  test \"%s\":\n", generators[$].name);
-    generators[$].create(ref);
+  for(i=0;i<sizeof(generators)/sizeof(generators[0]);i++){
+    printf("  test \"%s\":\n", generators[i].name);
+    generators[i].create(ref);
     picture_copy (p, ref);
     dump(ref);
     iwt_ref(ref,filter);
@@ -275,7 +275,7 @@ local_test (int filter)
 void
 random_test (int filter)
 {
-  int $;
+  int i;
   Picture *p;
   Picture *ref;
 
@@ -283,7 +283,7 @@ random_test (int filter)
   ref = picture_new (20, 20);
 
   printf("  Random tests:\n");
-  for($=0;$<100;$++){
+  for(i=0;i<100;i++){
     gen_random(ref);
     picture_copy (p, ref);
     iwt_ref(ref,filter);
@@ -304,16 +304,16 @@ out:
 void
 inv_test (int filter)
 {
-  int $;
+  int i;
   Picture *p;
   Picture *ref;
 
   p = picture_new (20, 20);
   ref = picture_new (20, 20);
 
-  for($=0;$<sizeof(generators)/sizeof(generators[0]);$++){
-    printf("  test \"%s\":\n", generators[$].name);
-    generators[$].create(ref);
+  for(i=0;i<sizeof(generators)/sizeof(generators[0]);i++){
+    printf("  test \"%s\":\n", generators[i].name);
+    generators[i].create(ref);
     iwt_ref(ref,filter);
     picture_copy (p, ref);
     iiwt_ref(ref,filter);

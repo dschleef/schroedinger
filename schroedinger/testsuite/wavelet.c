@@ -108,11 +108,11 @@ local_test(int filter)
 {
   int16_t *a = tmp + 10;
   int n = 20;
-  int $;
+  int i;
 
-  for($=0;$<sizeof(generators)/sizeof(generators[0]);$++){
-    printf("  test \"%s\":\n", generators[$].name);
-    generators[$].create(a,n);
+  for(i=0;i<sizeof(generators)/sizeof(generators[0]);i++){
+    printf("  test \"%s\":\n", generators[i].name);
+    generators[i].create(a,n);
     dump(a,n);
     split(a,n,filter);
     deinterleave(a,n);
@@ -136,18 +136,18 @@ random_test(int filter)
 {
   int16_t *a = tmp + 10;
   int n = 20;
-  int $;
+  int i;
   int16_t b[100];
   int16_t c[100];
   int failed = 0;
 
   printf("  testing random arrays (split):\n");
-  for($=0;$<100;$++){
+  for(i=0;i<100;i++){
 #if 0
     {
       int i;
       for(i=0;i<n;i++){
-        a[i] = (i==$)*100;
+        a[i] = (i==i)*100;
       }
     }
 #endif
@@ -175,7 +175,7 @@ random_test(int filter)
   printf("\n");
 
   printf("  testing random arrays (synth):\n");
-  for($=0;$<100;$++){
+  for(i=0;i<100;i++){
     gen_random(a,n);
     memcpy(b,a,n*sizeof(int16_t));
 
