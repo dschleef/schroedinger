@@ -1,5 +1,10 @@
 2007-07-18  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroparams.c:
+	  Revert accidental change.
+
+2007-07-18  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:
 	* schroedinger/schroparams.c:

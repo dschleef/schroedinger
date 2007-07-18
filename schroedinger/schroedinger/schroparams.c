@@ -114,8 +114,7 @@ schro_params_init (SchroParams *params, int video_format)
 
   /* other initializations */
 
-  //params->spatial_partition_flag = TRUE;
-params->spatial_partition_flag = FALSE;
+  params->spatial_partition_flag = TRUE;
   params->nondefault_partition_flag = FALSE;
   params->codeblock_mode_index = 1;
   params->have_global_motion = FALSE;
