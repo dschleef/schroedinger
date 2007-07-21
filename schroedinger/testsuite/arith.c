@@ -32,7 +32,7 @@ decode(SchroBuffer *dest, SchroBuffer *src)
     for(j=0;j<8;j++){
       if (verbose) printf("[%04x %04x] %04x -> ", a->range[0], a->range[1],
           a->code);
-      bit = schro_arith_context_decode_bit (a, 0);
+      bit = schro_arith_decode_bit (a, 0);
       if (verbose) printf("%d\n", bit);
       value |= bit << (7-j);
     }
@@ -60,7 +60,7 @@ encode (SchroBuffer *dest, SchroBuffer *src)
     for(j=0;j<8;j++){
       bit = (src->data[i]>>(7-j))&1;
       if (verbose) printf("[%04x %04x] %d\n", a->range[0], a->range[1], bit);
-      schro_arith_context_encode_bit (a, 0, bit);
+      schro_arith_encode_bit (a, 0, bit);
     }
   }
   schro_arith_flush (a);

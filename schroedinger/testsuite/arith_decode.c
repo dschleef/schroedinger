@@ -29,7 +29,7 @@ main (int argc, char *argv[])
     printf("hi=%d lo=%d code=%04x count0=%d count1=%d\n",
         a->high, a->low, a->code, a->contexts[0].count0,
         a->contexts[0].count1);
-    value = schro_arith_context_binary_decode (a, 0);
+    value = schro_arith_binary_decode (a, 0);
     printf(" --> %d\n", value);
   }
 
@@ -65,7 +65,7 @@ main (int argc, char *argv[])
   i = 0;
   while (a->offset < n_bytes) {
     for(j=0;j<8;j++){
-      output_buffer[i] |= schro_arith_context_decode_bit (a, 0) << (7-j);
+      output_buffer[i] |= schro_arith_decode_bit (a, 0) << (7-j);
     }
     i++;
   }

@@ -9,7 +9,7 @@
 #include <schroedinger/schrotables.h>
 #include <schroedinger/schrodebug.h>
 
-static int __schro_arith_context_decode_bit (SchroArith *arith, int i);
+static int __schro_arith_decode_bit (SchroArith *arith, int i);
 
 SchroArith *
 schro_arith_new (void)
@@ -175,9 +175,9 @@ schro_arith_init_contexts (SchroArith *arith)
 }
 
 int
-_schro_arith_context_decode_bit (SchroArith *arith, int i)
+_schro_arith_decode_bit (SchroArith *arith, int i)
 {
-  return __schro_arith_context_decode_bit (arith, i);
+  return __schro_arith_decode_bit (arith, i);
 }
 
 static const unsigned int lut[256] = {
@@ -217,7 +217,7 @@ static const unsigned int lut[256] = {
 };
 
 static int
-__schro_arith_context_decode_bit (SchroArith *arith, int i)
+__schro_arith_decode_bit (SchroArith *arith, int i)
 {
   unsigned int range;
   unsigned int probability0;
@@ -265,7 +265,7 @@ __schro_arith_context_decode_bit (SchroArith *arith, int i)
 }
 
 void
-_schro_arith_context_encode_bit (SchroArith *arith, int i, int value)
+_schro_arith_encode_bit (SchroArith *arith, int i, int value)
 {
   unsigned int range;
   unsigned int probability0;
@@ -329,7 +329,7 @@ maxbit (unsigned int x)
 }
 
 void
-_schro_arith_context_encode_uint (SchroArith *arith, int cont_context,
+_schro_arith_encode_uint (SchroArith *arith, int cont_context,
     int value_context, int value)
 {
   int i;
@@ -338,16 +338,16 @@ _schro_arith_context_encode_uint (SchroArith *arith, int cont_context,
   value++;
   n_bits = maxbit(value);
   for(i=0;i<n_bits - 1;i++){
-    _schro_arith_context_encode_bit (arith, cont_context, 0);
-    _schro_arith_context_encode_bit (arith, value_context,
+    _schro_arith_encode_bit (arith, cont_context, 0);
+    _schro_arith_encode_bit (arith, value_context,
         (value>>(n_bits - 2 - i))&1);
     cont_context = arith->contexts[cont_context].next;
   }
-  _schro_arith_context_encode_bit (arith, cont_context, 1);
+  _schro_arith_encode_bit (arith, cont_context, 1);
 }
 
 void
-_schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
+_schro_arith_encode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value)
 {
   int sign;
@@ -358,23 +358,23 @@ _schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
   } else {
     sign = 0;
   }
-  _schro_arith_context_encode_uint (arith, cont_context, value_context, value);
+  _schro_arith_encode_uint (arith, cont_context, value_context, value);
   if (value) {
-    _schro_arith_context_encode_bit (arith, sign_context, sign);
+    _schro_arith_encode_bit (arith, sign_context, sign);
   }
 }
 
 int
-_schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
+_schro_arith_decode_uint (SchroArith *arith, int cont_context,
     int value_context)
 {
   int bits;
   int count=0;
 
   bits = 0;
-  while(!__schro_arith_context_decode_bit (arith, cont_context)) {
+  while(!__schro_arith_decode_bit (arith, cont_context)) {
     bits <<= 1;
-    bits |= __schro_arith_context_decode_bit (arith, value_context);
+    bits |= __schro_arith_decode_bit (arith, value_context);
     cont_context = arith->contexts[cont_context].next;
     count++;
 
@@ -385,7 +385,7 @@ _schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
 }
 
 int
-_schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
+_schro_arith_decode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context)
 {
   int bits;
@@ -393,9 +393,9 @@ _schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
   int value;
 
   bits = 0;
-  while(!__schro_arith_context_decode_bit (arith, cont_context)) {
+  while(!__schro_arith_decode_bit (arith, cont_context)) {
     bits <<= 1;
-    bits |= __schro_arith_context_decode_bit (arith, value_context);
+    bits |= __schro_arith_decode_bit (arith, value_context);
     cont_context = arith->contexts[cont_context].next;
     count++;
 
@@ -405,7 +405,7 @@ _schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
   value = (1<<count) - 1 + bits;
 
   if (value) {
-    if (__schro_arith_context_decode_bit (arith, sign_context)) {
+    if (__schro_arith_decode_bit (arith, sign_context)) {
       value = -value;
     }
   }
@@ -416,44 +416,44 @@ _schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
 /* wrappers */
 
 void
-schro_arith_context_encode_bit (SchroArith *arith, int i, int value)
+schro_arith_encode_bit (SchroArith *arith, int i, int value)
 {
-  _schro_arith_context_encode_bit (arith, i, value);
+  _schro_arith_encode_bit (arith, i, value);
 }
 
 void
-schro_arith_context_encode_uint (SchroArith *arith, int cont_context,
+schro_arith_encode_uint (SchroArith *arith, int cont_context,
     int value_context, int value)
 {
-  _schro_arith_context_encode_uint (arith, cont_context, value_context, value);
+  _schro_arith_encode_uint (arith, cont_context, value_context, value);
 }
 
 void
-schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
+schro_arith_encode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value)
 {
-  _schro_arith_context_encode_sint (arith, cont_context, value_context,
+  _schro_arith_encode_sint (arith, cont_context, value_context,
       sign_context, value);
 }
 
 int
-schro_arith_context_decode_bit (SchroArith *arith, int context)
+schro_arith_decode_bit (SchroArith *arith, int context)
 {
-  return __schro_arith_context_decode_bit (arith, context);
+  return __schro_arith_decode_bit (arith, context);
 }
 
 int
-schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
+schro_arith_decode_uint (SchroArith *arith, int cont_context,
     int value_context)
 {
-  return _schro_arith_context_decode_uint (arith, cont_context, value_context);
+  return _schro_arith_decode_uint (arith, cont_context, value_context);
 }
 
 int
-schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
+schro_arith_decode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context)
 {
-  return _schro_arith_context_decode_sint (arith, cont_context,
+  return _schro_arith_decode_sint (arith, cont_context,
       value_context, sign_context);
 }
 

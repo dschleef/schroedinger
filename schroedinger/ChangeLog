@@ -1,3 +1,16 @@
+2007-07-20  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* testsuite/arith.c:
+	* testsuite/arith2.c:
+	* testsuite/arith_decode.c:
+	* testsuite/arith_encode.c:
+	* testsuite/arith_speed.c:
+	  s/schro_arith_context/schro_arith/
+
 2007-07-18  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroparams.c:

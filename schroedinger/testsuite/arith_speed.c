@@ -84,7 +84,7 @@ encode (SchroBuffer *buffer, int n, int freq)
 
   for(i=0;i<n;i++){
     bit = oil_rand_u8() < freq;
-    schro_arith_context_encode_bit (a, 0, bit);
+    schro_arith_encode_bit (a, 0, bit);
   }
   schro_arith_flush (a);
 

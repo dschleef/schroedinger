@@ -26,14 +26,14 @@ decode(uint8_t *dest, uint8_t *src, int n_bytes)
   schro_bits_decode_init (bits, buffer);
 
   schro_arith_decode_init (a, bits);
-  schro_arith_context_init (a, 0, 1, 1);
+  schro_arith_init (a, 0, 1, 1);
 
   for(i=0;i<n_bytes;i++){
     value = 0;
     printf("%d:\n", i);
     for(j=0;j<8;j++){
       printf("[%04x %04x] %04x -> ", a->low, a->high, a->code);
-      bit = schro_arith_context_decode_bit (a, 0);
+      bit = schro_arith_decode_bit (a, 0);
       printf("%d\n", bit);
       value |= bit << (7-j);
     }
@@ -65,14 +65,14 @@ encode (uint8_t *dest, uint8_t *src, int n_bytes)
 #endif
 
   schro_arith_encode_init (a, bits);
-  schro_arith_context_init (a, 0, 1, 1);
+  schro_arith_init (a, 0, 1, 1);
 
   for(i=0;i<n_bytes;i++){
     printf("%d:\n", i);
     for(j=0;j<8;j++){
       bit = (src[i]>>(7-j))&1;
       printf("[%04x %04x] %d\n", a->low, a->high, bit);
-      schro_arith_context_encode_bit (a, 0, bit);
+      schro_arith_encode_bit (a, 0, bit);
     }
   }
   schro_arith_flush (a);

@@ -114,30 +114,30 @@ void schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer);
 void schro_arith_flush (SchroArith *arith);
 void schro_arith_init_contexts (SchroArith *arith);
 
-void schro_arith_context_encode_bit (SchroArith *arith, int context, int value);
-void schro_arith_context_encode_uint (SchroArith *arith, int cont_context,
+void schro_arith_encode_bit (SchroArith *arith, int context, int value);
+void schro_arith_encode_uint (SchroArith *arith, int cont_context,
     int value_context, int value);
-void schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
+void schro_arith_encode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value);
 
-int schro_arith_context_decode_bit (SchroArith *arith, int context);
-int schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
+int schro_arith_decode_bit (SchroArith *arith, int context);
+int schro_arith_decode_uint (SchroArith *arith, int cont_context,
     int value_context);
-int schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
+int schro_arith_decode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context);
 
-void _schro_arith_context_encode_bit (SchroArith *arith, int context, int
+void _schro_arith_encode_bit (SchroArith *arith, int context, int
     value) SCHRO_INTERNAL;
-void _schro_arith_context_encode_uint (SchroArith *arith, int cont_context,
+void _schro_arith_encode_uint (SchroArith *arith, int cont_context,
     int value_context, int value) SCHRO_INTERNAL;
-void _schro_arith_context_encode_sint (SchroArith *arith, int cont_context,
+void _schro_arith_encode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value) SCHRO_INTERNAL;
 
-int _schro_arith_context_decode_bit (SchroArith *arith, int context)
+int _schro_arith_decode_bit (SchroArith *arith, int context)
   SCHRO_INTERNAL; 
-int _schro_arith_context_decode_uint (SchroArith *arith, int cont_context,
+int _schro_arith_decode_uint (SchroArith *arith, int cont_context,
     int value_context) SCHRO_INTERNAL;
-int _schro_arith_context_decode_sint (SchroArith *arith, int cont_context,
+int _schro_arith_decode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context) SCHRO_INTERNAL;
 
 SCHRO_END_DECLS
