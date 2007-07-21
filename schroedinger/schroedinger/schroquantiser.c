@@ -42,7 +42,7 @@ schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame)
   int base;
   int i;
 
-  base = frame->encoder->prefs[SCHRO_PREF_QUANT_BASE] - 4;
+  base = frame->encoder->prefs[SCHRO_PREF_QUANT_BASE];
 
   if (depth >= 1) {
     subbands[(depth-1)*3 + 1].quant_index = base;
@@ -66,6 +66,10 @@ schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame)
       subbands[i].quant_index += 4;
     }
   }
+
+  subbands[(depth-1)*3 + 1].quant_index = 4;
+  subbands[(depth-1)*3 + 2].quant_index = 5;
+  subbands[(depth-1)*3 + 3].quant_index = 6;
 
 }
 
@@ -102,7 +106,6 @@ schro_encoder_choose_quantisers_hardcoded (SchroEncoderFrame *frame)
       subbands[i].quant_index += 4;
     }
   }
-
 }
 
 
@@ -147,20 +150,22 @@ static double pow4(double x)
 /* 1.0/log(2.0) */
 #define INV_LOG_2 1.44269504088896338700
 
-static double probability_to_entropy (double x)
+static double
+probability_to_entropy (double x)
 {
   if (x <= 0 || x >= 1.0) return 0;
 
   return -(x * log(x) + (1-x) * log(1-x))*INV_LOG_2;
 }
 
-static double entropy (int a, int total)
+static double
+entropy (double a, double total)
 {
   double x;
 
   if (total == 0) return 0;
 
-  x = (double)a / total;
+  x = a / total;
   return probability_to_entropy (x) * total;
 }
 
@@ -266,8 +271,7 @@ ilog2 (int x)
   return i;
 }
 
-#if 0
-#define SHIFT 2
+#define SHIFT 3
 
 static int
 ilogx (int x)
@@ -288,88 +292,61 @@ iexpx (int x)
 
   return ((1<<SHIFT)|(x&((1<<SHIFT)-1))) << ((x>>SHIFT)-1);
 }
-#endif
 
+static int
+ilogx_size (int i)
+{
+  if (i < (1<<SHIFT)) return 1;
+  return 1 << ((i>>SHIFT)-1);
+}
+
+static double
+rehist (int hist[], int start, int end)
+{
+  int i;
+  int iend;
+  int size;
+  double x;
+
+  if (start >= end) return 0;
+
+  i = ilogx(start);
+  size = ilogx_size(i);
+  x = (double)(iexpx(i+1) - start)/size * hist[i];
+
+  i++;
+  iend = ilogx(end);
+  while (i <= iend) {
+    x += hist[i];
+    i++;
+  }
+
+  size = ilogx_size(iend);
+  x -= (double)(iexpx(iend+1) - end)/size * hist[iend];
+
+  return x;
+}
 
 static double
 estimate_histogram_entropy (int hist[], int quant_index, int volume)
 {
-  int i;
-  double x;
-  int cont1;
-  double data_entropy;
-  double estimated_entropy;
-  int bin1, bin2, bin3, bin4, bin5, bin6;
-  int n;
+  double estimated_entropy = 0;
+  double bin1, bin2, bin3, bin4, bin5, bin6;
+  int quant_factor;
 
-  data_entropy = 0;
-  bin1 = 0;
-  bin2 = 0;
-  bin3 = 0;
-  bin4 = 0;
-  bin5 = 0;
-  bin6 = 0;
-  for(i=0;i<4;i++){
-    bin1 += hist[quant_index + i];
-    bin2 += hist[quant_index + i + 4];
-    bin3 += hist[quant_index + i + 8];
-    bin4 += hist[quant_index + i + 12];
-    bin5 += hist[quant_index + i + 16];
-  }
-  for(i=quant_index + 20; i < 64; i++) {
-    bin6 += hist[quant_index + i];
-  }
-  for(i=quant_index;i<64;i++){
-    x = (i - quant_index)/4.0;
-    data_entropy += x * hist[i];
-  }
-  for(i=quant_index+4;i<64;i++){
-    cont1 += hist[i];
-  }
+  quant_factor = schro_table_quant[quant_index];
 
-  estimated_entropy = 0;
-
-  bin1 = 0;
-  for(i=quant_index;i<64;i++){
-    bin1 += hist[i];
-  }
-
-  bin2 = 0;
-  /* 6.5 is good for some points, 7 good for others. */
-  bin2 += hist[quant_index+6]/2;
-  for(i=quant_index+7;i<64;i++){
-    bin2 += hist[i];
-  }
-
-  bin3 = 0;
-  bin3 += hist[quant_index+11]/2;
-  for(i=quant_index+12;i<64;i++){
-    bin3 += hist[i];
-  }
-
-  bin4 = 0;
-  for(i=quant_index+16;i<64;i++){
-    bin4 += hist[i];
-  }
-
-  bin5 = 0;
-  for(i=quant_index+20;i<64;i++){
-    bin5 += hist[i];
-  }
-
-  bin6 = 0;
-  for(i=quant_index+24;i<64;i++){
-    bin6 += hist[i];
-  }
-
-  n = bin1+bin2+bin3+bin4+bin5+bin6;
+  bin1 = rehist (hist, (quant_factor+3)/4, 32000);
+  bin2 = rehist (hist, (quant_factor*3+3)/4, 32000);
+  bin3 = rehist (hist, (quant_factor*7+3)/4, 32000);
+  bin4 = rehist (hist, (quant_factor*15+3)/4, 32000);
+  bin5 = rehist (hist, (quant_factor*31+3)/4, 32000);
+  bin6 = rehist (hist, (quant_factor*63+3)/4, 32000);
 
   /* entropy of sign bit */
   estimated_entropy += bin1;
 
   /* entropy of first continue bit */
-  //x = (double)n / (width*height);
-  /* HACK needs scale factor of about 0.75 (ranges from 0.5 to 0.95) */
   estimated_entropy += entropy (bin1, volume);
   estimated_entropy += entropy (bin2, bin1);
   estimated_entropy += entropy (bin3, bin2);
@@ -378,10 +355,8 @@ estimate_histogram_entropy (int hist[], int quant_index, int volume)
   estimated_entropy += entropy (bin6, bin5);
 
   /* data entropy */
-  /* both seem to work equally well */
   estimated_entropy += bin1 + bin2 + bin3 + bin4 + bin5 + bin6;
-  //frame->estimated_entropy += data_entropy;
-
+  
   return estimated_entropy;
 }
 
@@ -559,6 +534,73 @@ estimate_histogram_error (int hist[], int quant_index, int num_refs, int volume)
 #endif
 }
 
+double
+schro_encoder_estimate_subband_arith (SchroEncoderFrame *frame, int component,
+    int index, int quant_index)
+{
+  SchroSubband *subband = frame->subbands + index;
+  int i;
+  int j;
+  int16_t *data;
+  int stride;
+  int width;
+  int height;
+  int offset;
+  int q;
+  int quant_factor;
+  int estimated_entropy;
+  SchroArith *arith;
+
+  arith = schro_arith_new ();
+  schro_arith_estimate_init (arith);
+
+  if (component == 0) {
+    stride = subband->stride >> 1;
+    width = subband->w;
+    height = subband->h;
+    offset = subband->offset;
+  } else {
+    stride = subband->chroma_stride >> 1;
+    width = subband->chroma_w;
+    height = subband->chroma_h;
+    offset = subband->chroma_offset;
+  }
+  quant_factor = schro_table_quant[quant_index];
+
+  data = (int16_t *)frame->iwt_frame->components[component].data + offset;
+  for(j=0;j<height;j++) {
+    for(i=0;i<width;i++) {
+      q = quantize(data[i], quant_factor, 0);
+      schro_arith_estimate_sint (arith,
+          SCHRO_CTX_ZPZN_F1, SCHRO_CTX_COEFF_DATA, SCHRO_CTX_SIGN_ZERO, q);
+    }
+    data += stride;
+  }
+
+  estimated_entropy = 0;
+
+  estimated_entropy += arith->contexts[SCHRO_CTX_ZPZN_F1].n_bits;
+  estimated_entropy += arith->contexts[SCHRO_CTX_ZP_F2].n_bits;
+  estimated_entropy += arith->contexts[SCHRO_CTX_ZP_F3].n_bits;
+  estimated_entropy += arith->contexts[SCHRO_CTX_ZP_F4].n_bits;
+  estimated_entropy += arith->contexts[SCHRO_CTX_ZP_F5].n_bits;
+  estimated_entropy += arith->contexts[SCHRO_CTX_ZP_F6p].n_bits;
+
+  estimated_entropy += arith->contexts[SCHRO_CTX_COEFF_DATA].n_bits;
+
+  estimated_entropy += arith->contexts[SCHRO_CTX_SIGN_ZERO].n_bits;
+
+#if 0
+  for(i=0;i<SCHRO_CTX_LAST;i++){
+    estimated_entropy += arith->contexts[i].n_bits;
+  }
+#endif
+
+  schro_arith_free (arith);
+
+  return estimated_entropy;
+}
+
 void
 schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
     int index)
@@ -571,8 +613,12 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
   int width;
   int height;
   int offset;
-  int hist[64 + 24];
-  int skip = 4;
+  int hist[(16<<SHIFT)+24] = { 0 };
+  int skip = 8;
+
+  for(i=0;i<(16<<SHIFT)+24;i++){
+    hist[i] = 0;
+  }
 
   if (component == 0) {
     stride = subband->stride >> 1;
@@ -586,20 +632,18 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
     offset = subband->chroma_offset;
   }
 
-  for(i=0;i<64 + 24;i++) hist[i] = 0;
-
   data = (int16_t *)frame->iwt_frame->components[component].data + offset;
   for(j=0;j<height;j+=skip){
     for(i=0;i<width;i+=skip){
-      hist[ilog2(data[i])]++;
+      hist[ilogx(data[i])]++;
     }
     data += stride * skip;
   }
-  for(i=0;i<64;i++){
+  for(i=0;i<(16<<SHIFT)+24;i++){
     hist[i] *= skip*skip;
   }
 
-  if (component == 0 && index == 10) {
+  if (0 && component == 0 && index == 10) {
     static int n = 0;
     static double sum[64] = { 0 };
 
@@ -626,8 +670,29 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
     SCHRO_ERROR("SUBBAND_CURVE:  ");
   }
 
+  if (component == 0 && index == 10) {
+    for(i=0;i<20;i++){
+      double est_entropy;
+      double arith_entropy;
+
+      est_entropy = estimate_histogram_entropy (hist, i, width*height);
+      arith_entropy = schro_encoder_estimate_subband_arith (frame, component,
+          index, i);
+
+      SCHRO_ERROR("SUBBAND_CURVE: %d %d %d %g %g", component, index, i,
+          est_entropy/(width*height), arith_entropy/(width*height));
+    }
+
+    SCHRO_ERROR("SUBBAND_CURVE:  ");
+  }
+
+#if 0
   frame->estimated_entropy =
     estimate_histogram_entropy (hist, subband->quant_index, width*height);
+#endif
+  frame->estimated_entropy =
+    schro_encoder_estimate_subband_arith (frame, component, index,
+        subband->quant_index);
 }
 
 

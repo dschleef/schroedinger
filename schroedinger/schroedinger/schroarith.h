@@ -88,10 +88,11 @@ typedef struct _SchroArith SchroArith;
 typedef struct _SchroArithContext SchroArithContext;
 
 struct _SchroArithContext {
-  uint16_t count[2];
   int next;
-  int n;
   uint16_t probability;
+  int stat_range;
+  int n_bits;
+  int n_symbols;
 };
 
 struct _SchroArith {
@@ -111,8 +112,8 @@ SchroArith * schro_arith_new (void);
 void schro_arith_free (SchroArith *arith);
 void schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer);
 void schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer);
+void schro_arith_estimate_init (SchroArith *arith);
 void schro_arith_flush (SchroArith *arith);
-void schro_arith_init_contexts (SchroArith *arith);
 
 void schro_arith_encode_bit (SchroArith *arith, int context, int value);
 void schro_arith_encode_uint (SchroArith *arith, int cont_context,
@@ -139,6 +140,12 @@ int _schro_arith_decode_uint (SchroArith *arith, int cont_context,
     int value_context) SCHRO_INTERNAL;
 int _schro_arith_decode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context) SCHRO_INTERNAL;
+
+void schro_arith_estimate_bit (SchroArith *arith, int i, int value);
+void schro_arith_estimate_uint (SchroArith *arith, int cont_context,
+    int value_context, int value);
+void schro_arith_estimate_sint (SchroArith *arith, int cont_context,
+    int value_context, int sign_context, int value);
 
 SCHRO_END_DECLS
 

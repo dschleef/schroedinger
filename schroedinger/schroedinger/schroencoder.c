@@ -845,7 +845,6 @@ schro_encoder_encode_superblock_split (SchroEncoderFrame *frame)
 
   arith = schro_arith_new ();
   schro_arith_encode_init (arith, frame->subband_buffer);
-  schro_arith_init_contexts (arith);
 
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
@@ -884,7 +883,6 @@ schro_encoder_encode_prediction_modes (SchroEncoderFrame *frame)
 
   arith = schro_arith_new ();
   schro_arith_encode_init (arith, frame->subband_buffer);
-  schro_arith_init_contexts (arith);
 
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
@@ -944,7 +942,6 @@ schro_encoder_encode_vector_data (SchroEncoderFrame *frame, int ref, int xy)
 
   arith = schro_arith_new ();
   schro_arith_encode_init (arith, frame->subband_buffer);
-  schro_arith_init_contexts (arith);
 
   if (xy == 0) {
     if (ref == 0) {
@@ -1019,7 +1016,6 @@ schro_encoder_encode_dc_data (SchroEncoderFrame *frame, int comp)
 
   arith = schro_arith_new ();
   schro_arith_encode_init (arith, frame->subband_buffer);
-  schro_arith_init_contexts (arith);
 
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
@@ -1088,7 +1084,6 @@ schro_encoder_encode_motion_data (SchroEncoderFrame *frame)
 
   arith = schro_arith_new ();
   schro_arith_encode_init (arith, frame->subband_buffer);
-  schro_arith_init_contexts (arith);
 
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
@@ -1505,7 +1500,7 @@ schro_encoder_encode_transform_data (SchroEncoderFrame *frame)
   for(component=0;component<3;component++) {
     for (i=0;i < 1 + 3*params->transform_depth; i++) {
       if (i != 0) schro_bits_sync (frame->bits);
-      schro_encoder_estimate_subband (frame, component, i);
+      if (0) schro_encoder_estimate_subband (frame, component, i);
       schro_encoder_encode_subband (frame, component, i);
     }
   }
@@ -1692,7 +1687,6 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
 
   arith = schro_arith_new ();
   schro_arith_encode_init (arith, frame->subband_buffer);
-  schro_arith_init_contexts (arith);
 
   quant_data = frame->quant_data;
   subband_zero_flag = schro_encoder_quantize_subband (frame, component,

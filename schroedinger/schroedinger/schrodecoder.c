@@ -935,7 +935,6 @@ schro_decoder_decode_prediction_data (SchroDecoder *decoder)
 
     arith[i] = schro_arith_new ();
     schro_arith_decode_init (arith[i], buffer);
-    schro_arith_init_contexts (arith[i]);
 
     schro_bits_skip (decoder->bits, length);
   }
@@ -1441,7 +1440,6 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
 
     arith = schro_arith_new ();
     schro_arith_decode_init (arith, buffer);
-    schro_arith_init_contexts (arith);
 
     if (params->spatial_partition_flag) {
       if (index == 0) {

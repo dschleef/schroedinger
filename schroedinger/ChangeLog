@@ -4,6 +4,15 @@
 	* schroedinger/schroarith.h:
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
+	* schroedinger/schroquantiser.c:
+	  Add arith estimators.  Improve subband estimators.
+
+2007-07-20  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
 	* testsuite/arith.c:
 	* testsuite/arith2.c:
 	* testsuite/arith_decode.c:
