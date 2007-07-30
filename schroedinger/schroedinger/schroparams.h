@@ -3,6 +3,7 @@
 #define __SCHRO_PARAMS_H__
 
 #include <schroedinger/schrobitstream.h>
+#include <schroedinger/schroframe.h>
 #include <schroedinger/schro-stdint.h>
 
 SCHRO_BEGIN_DECLS
@@ -126,8 +127,6 @@ struct _SchroParams {
 };
 
 struct _SchroSubband {
-  int x;
-  int y;
   int w;
   int h;
   int offset;
@@ -138,10 +137,12 @@ struct _SchroSubband {
   int chroma_stride;
   int has_parent;
   int scale_factor_shift;
-  int horizontally_oriented;
-  int vertically_oriented;
   int quant_index;
+  int position;
 };
+
+#define SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position) (((position)&3) == 2)
+#define SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position) (((position)&3) == 1)
 
 struct _SchroMotionVector {
   unsigned int pred_mode : 2;
@@ -198,10 +199,18 @@ void schro_params_set_default_codeblock (SchroParams *params);
 
 void schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
     int luma_frame_stride, int chroma_frame_stride);
+void schro_subband_get_frame_component (SchroFrameComponent *dest,
+    SchroFrameComponent *full_frame, int position);
 
 /* FIXME should be SchroFrameFormat */
 int schro_params_get_frame_format (int depth,
     SchroChromaFormat chroma_format);
+
+/* FIXME should be moved */
+void schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
+    int16_t *tmp);
+void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
+    int16_t *tmp);
 
 SCHRO_END_DECLS
 

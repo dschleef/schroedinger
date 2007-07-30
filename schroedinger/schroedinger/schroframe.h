@@ -3,7 +3,6 @@
 #define __SCHRO_FRAME_H__
 
 #include <schroedinger/schro-stdint.h>
-#include <schroedinger/schroparams.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -92,10 +91,12 @@ void schro_frame_shift_right (SchroFrame *frame, int shift);
 void schro_frame_edge_extend (SchroFrame *frame, int width, int height);
 void schro_frame_zero_extend (SchroFrame *frame, int width, int height);
 
+#if 0
 void schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp);
 void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp);
+#endif
 
 void schro_frame_downsample (SchroFrame *dest, SchroFrame *src);
 void schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src);

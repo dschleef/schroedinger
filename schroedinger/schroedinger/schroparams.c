@@ -115,6 +115,7 @@ schro_params_init (SchroParams *params, int video_format)
   /* other initializations */
 
   params->spatial_partition_flag = TRUE;
+params->spatial_partition_flag = FALSE;
   params->nondefault_partition_flag = FALSE;
   params->codeblock_mode_index = 1;
   params->have_global_motion = FALSE;
@@ -833,8 +834,7 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
   chroma_h = params->iwt_chroma_height >> params->transform_depth;
   chroma_stride = chroma_frame_stride << params->transform_depth;
 
-  subbands[0].x = 0;
-  subbands[0].y = 0;
+  subbands[0].position = 0;
   subbands[0].w = w;
   subbands[0].h = h;
   subbands[0].offset = 0;
@@ -845,13 +845,10 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
   subbands[0].chroma_stride = chroma_stride;
   subbands[0].has_parent = 0;
   subbands[0].scale_factor_shift = 0;
-  subbands[0].horizontally_oriented = 0;
-  subbands[0].vertically_oriented = 0;
 
   for(i=0; i<params->transform_depth; i++) {
     /* hl */
-    subbands[1+3*i].x = 1;
-    subbands[1+3*i].y = 0;
+    subbands[1+3*i].position = 1;
     subbands[1+3*i].w = w;
     subbands[1+3*i].h = h;
     subbands[1+3*i].offset = w;
@@ -862,12 +859,9 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
     subbands[1+3*i].chroma_stride = chroma_stride;
     subbands[1+3*i].has_parent = (i>0);
     subbands[1+3*i].scale_factor_shift = i;
-    subbands[1+3*i].horizontally_oriented = 0;
-    subbands[1+3*i].vertically_oriented = 1;
 
     /* lh */
-    subbands[2+3*i].x = 0;
-    subbands[2+3*i].y = 1;
+    subbands[2+3*i].position = 2;
     subbands[2+3*i].w = w;
     subbands[2+3*i].h = h;
     subbands[2+3*i].offset = (stride/2/sizeof(int16_t));
@@ -878,12 +872,9 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
     subbands[2+3*i].chroma_stride = chroma_stride;
     subbands[2+3*i].has_parent = (i>0);
     subbands[2+3*i].scale_factor_shift = i;
-    subbands[2+3*i].horizontally_oriented = 1;
-    subbands[2+3*i].vertically_oriented = 0;
 
     /* hh */
-    subbands[3+3*i].x = 1;
-    subbands[3+3*i].y = 1;
+    subbands[3+3*i].position = 3;
     subbands[3+3*i].w = w;
     subbands[3+3*i].h = h;
     subbands[3+3*i].offset = w + (stride/2/sizeof(int16_t));
@@ -894,8 +885,6 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
     subbands[3+3*i].chroma_stride = chroma_stride;
     subbands[3+3*i].has_parent = (i>0);
     subbands[3+3*i].scale_factor_shift = i;
-    subbands[3+3*i].horizontally_oriented = 0;
-    subbands[3+3*i].vertically_oriented = 0;
 
     w <<= 1;
     h <<= 1;
@@ -903,6 +892,25 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
     chroma_w <<= 1;
     chroma_h <<= 1;
     chroma_stride >>= 1;
+  }
+
+}
+
+void
+schro_subband_get_frame_component (SchroFrameComponent *dest,
+    SchroFrameComponent *full_frame, int position)
+{
+  int shift = (position>>2) + 1;
+
+  dest->stride = full_frame->stride << shift;
+  dest->width = full_frame->width >> shift;
+  dest->height = full_frame->height >> shift;
+
+  if (position & 2) {
+    dest->data = OFFSET(full_frame->data, (dest->stride>>1) * sizeof(int16_t));
+  }
+  if (position & 1) {
+    dest->data = OFFSET(full_frame->data, dest->width * sizeof(int16_t));
   }
 
 }

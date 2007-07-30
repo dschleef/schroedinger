@@ -1177,8 +1177,8 @@ dequantize (int q, int quant_factor, int quant_offset)
 
 void
 codeblock_line_decode_generic (int16_t *p, int stride, int j, int xmin, int xmax,
-    int16_t *parent_data, int horizontally_oriented,
-    int vertically_oriented, SchroArith *arith, int quant_factor,
+    int16_t *parent_data, int position,
+    SchroArith *arith, int quant_factor,
     int quant_offset)
 {
   int i;
@@ -1202,9 +1202,9 @@ codeblock_line_decode_generic (int16_t *p, int stride, int j, int xmin, int xmax
     if (i>0 && j>0) nhood_or |= p[-stride-1];
 
     previous_value = 0;
-    if (horizontally_oriented) {
+    if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position)) {
       if (i > 0) previous_value = p[-1];
-    } else if (vertically_oriented) {
+    } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position)) {
       if (j > 0) previous_value = p[-stride];
     }
 
@@ -1522,10 +1522,10 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
       while(x < xmax) {
         x2 = xmax;
         if (subband->has_parent) {
-          if (subband->horizontally_oriented) {
+          if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(subband->position)) {
             codeblock_line_decode_p_horiz (p, stride, j, x, x2, parent_line,
                 arith, quant_factor, quant_offset, prev_line);
-          } else if (subband->vertically_oriented) {
+          } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(subband->position)) {
             codeblock_line_decode_p_vert (p, stride, j, x, x2, parent_line,
                 arith, quant_factor, quant_offset, prev_line);
           } else {
@@ -1534,7 +1534,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
           }
         } else {
           codeblock_line_decode_generic (p, stride, j, x, x2, parent_line,
-              subband->horizontally_oriented, subband->vertically_oriented,
+              subband->position,
               arith, quant_factor, quant_offset);
         }
         x = x2;

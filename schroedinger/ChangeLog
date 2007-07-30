@@ -1,3 +1,13 @@
+2007-07-30  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrofilter.h:
+	* schroedinger/schrofilter.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	  Refactor code attempting to get rid of SchroSubband.
+
 2007-07-24  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:

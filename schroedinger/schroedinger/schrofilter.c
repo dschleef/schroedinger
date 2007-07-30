@@ -7,6 +7,7 @@
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schrowavelet.h>
 #include <schroedinger/schrotables.h>
+#include <schroedinger/schrobitstream.h>
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <string.h>
