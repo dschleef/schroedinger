@@ -24,7 +24,6 @@ decode(SchroBuffer *dest, SchroBuffer *src)
   a = schro_arith_new();
 
   schro_arith_decode_init (a, src);
-  schro_arith_init_contexts (a);
 
   for(i=0;i<dest->length;i++){
     value = 0;
@@ -53,7 +52,6 @@ encode (SchroBuffer *dest, SchroBuffer *src)
   a = schro_arith_new();
 
   schro_arith_encode_init (a, dest);
-  schro_arith_init_contexts (a);
 
   for(i=0;i<src->length;i++){
     if (verbose) printf("%d:\n", i);

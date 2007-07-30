@@ -157,6 +157,7 @@ struct _SchroEncoder {
 
   int prefs[SCHRO_PREF_LAST];
 
+  int internal_testing;
 
   /* engine specific stuff */
 

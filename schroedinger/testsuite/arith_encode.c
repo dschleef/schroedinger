@@ -26,7 +26,6 @@ main (int argc, char *argv[])
   }
 
   schro_arith_decode_init (a);
-  schro_arith_init_contexts (a);
 
   for(i=0;i<10000;i++){
     printf("hi=%d lo=%d code=%04x count0=%d count1=%d\n",
@@ -62,7 +61,6 @@ main (int argc, char *argv[])
 
   output_buffer = schro_buffer_new_and_alloc (BUFFER_SIZE);
   schro_arith_encode_init (a, output_buffer);
-  schro_arith_init_contexts (a);
 
   for(i=0;i<n_bytes;i++){
     for(j=0;j<8;j++){

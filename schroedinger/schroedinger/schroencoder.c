@@ -1500,7 +1500,7 @@ schro_encoder_encode_transform_data (SchroEncoderFrame *frame)
   for(component=0;component<3;component++) {
     for (i=0;i < 1 + 3*params->transform_depth; i++) {
       if (i != 0) schro_bits_sync (frame->bits);
-      if (0) schro_encoder_estimate_subband (frame, component, i);
+      schro_encoder_estimate_subband (frame, component, i);
       schro_encoder_encode_subband (frame, component, i);
     }
   }
@@ -1790,11 +1790,11 @@ out:
 //nhood_or = 0;
       
       previous_value = 0;
-      if (subband->horizontally_oriented) {
+      if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(subband->position)) {
         if (i > 0) {
           previous_value = quant_data[j*width + i - 1];
         }
-      } else if (subband->vertically_oriented) {
+      } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(subband->position)) {
         if (j > 0) {
           previous_value = quant_data[(j-1)*width + i];
         }
@@ -1838,10 +1838,8 @@ out:
 
   SCHRO_ASSERT(arith->offset < frame->subband_size);
 
-#if 0
-  SCHRO_ERROR("SUBBAND_EST: %d %d %d %d", component, index,
+  SCHRO_INFO("SUBBAND_EST: %d %d %d %d", component, index,
       frame->estimated_entropy, arith->offset*8);
-#endif
 
   schro_bits_encode_uint (frame->bits, arith->offset);
   if (arith->offset > 0) {
