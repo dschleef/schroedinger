@@ -136,13 +136,13 @@ struct _SchroSubband {
   int chroma_offset;
   int chroma_stride;
   int has_parent;
-  int scale_factor_shift;
   int quant_index;
   int position;
 };
 
 #define SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position) (((position)&3) == 2)
 #define SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position) (((position)&3) == 1)
+#define SCHRO_SUBBAND_SHIFT(position) ((position)>>2)
 
 struct _SchroMotionVector {
   unsigned int pred_mode : 2;

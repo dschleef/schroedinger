@@ -844,11 +844,10 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
   subbands[0].chroma_offset = 0;
   subbands[0].chroma_stride = chroma_stride;
   subbands[0].has_parent = 0;
-  subbands[0].scale_factor_shift = 0;
 
   for(i=0; i<params->transform_depth; i++) {
     /* hl */
-    subbands[1+3*i].position = 1;
+    subbands[1+3*i].position = 1 | (i<<2);
     subbands[1+3*i].w = w;
     subbands[1+3*i].h = h;
     subbands[1+3*i].offset = w;
@@ -858,10 +857,9 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
     subbands[1+3*i].chroma_offset = chroma_w;
     subbands[1+3*i].chroma_stride = chroma_stride;
     subbands[1+3*i].has_parent = (i>0);
-    subbands[1+3*i].scale_factor_shift = i;
 
     /* lh */
-    subbands[2+3*i].position = 2;
+    subbands[2+3*i].position = 2 | (i<<2);
     subbands[2+3*i].w = w;
     subbands[2+3*i].h = h;
     subbands[2+3*i].offset = (stride/2/sizeof(int16_t));
@@ -871,10 +869,9 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
     subbands[2+3*i].chroma_offset = (chroma_stride/2/sizeof(int16_t));
     subbands[2+3*i].chroma_stride = chroma_stride;
     subbands[2+3*i].has_parent = (i>0);
-    subbands[2+3*i].scale_factor_shift = i;
 
     /* hh */
-    subbands[3+3*i].position = 3;
+    subbands[3+3*i].position = 3 | (i<<2);
     subbands[3+3*i].w = w;
     subbands[3+3*i].h = h;
     subbands[3+3*i].offset = w + (stride/2/sizeof(int16_t));
@@ -884,7 +881,6 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
     subbands[3+3*i].chroma_offset = chroma_w + (chroma_stride/2/sizeof(int16_t));
     subbands[3+3*i].chroma_stride = chroma_stride;
     subbands[3+3*i].has_parent = (i>0);
-    subbands[3+3*i].scale_factor_shift = i;
 
     w <<= 1;
     h <<= 1;

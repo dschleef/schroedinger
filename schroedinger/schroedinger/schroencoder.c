@@ -1450,7 +1450,7 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int componen
   int16_t *data;
   int i,j;
 
-  shift = params->transform_depth - subband->scale_factor_shift;
+  shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(subband->position);
 
   if (component == 0) {
     stride = subband->stride >> 1;
@@ -1704,8 +1704,8 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
       horiz_codeblocks = params->horiz_codeblocks[0];
       vert_codeblocks = params->vert_codeblocks[0];
     } else {
-      horiz_codeblocks = params->horiz_codeblocks[subband->scale_factor_shift+1];
-      vert_codeblocks = params->vert_codeblocks[subband->scale_factor_shift+1];
+      horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(subband->position)+1];
+      vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(subband->position)+1];
     }
   } else {
     horiz_codeblocks = 1;

@@ -1431,7 +1431,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
       return;
     }
 
-    scale_factor = 1<<(params->transform_depth - subband->scale_factor_shift);
+    scale_factor = 1<<(params->transform_depth - SCHRO_SUBBAND_SHIFT(subband->position));
 
     schro_bits_sync (decoder->bits);
 
@@ -1446,8 +1446,8 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
         vert_codeblocks = params->vert_codeblocks[0];
         horiz_codeblocks = params->horiz_codeblocks[0];
       } else {
-        vert_codeblocks = params->vert_codeblocks[subband->scale_factor_shift+1];
-        horiz_codeblocks = params->horiz_codeblocks[subband->scale_factor_shift+1];
+        vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(subband->position)+1];
+        horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(subband->position)+1];
       }
     } else {
       vert_codeblocks = 1;
