@@ -1,5 +1,10 @@
 2007-07-30  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.c:
+	  Refactoring to get rid of SchroSubband
+
+2007-07-30  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroparams.c:
