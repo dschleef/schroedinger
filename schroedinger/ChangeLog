@@ -1,3 +1,9 @@
+2007-07-31  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  Oops, last checkin was supposed to be decoder, not encoder.
+
 2007-07-30  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:

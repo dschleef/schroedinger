@@ -1433,30 +1433,6 @@ schro_encoder_clean_up_transform (SchroEncoderFrame *frame)
   }
 }
 
-#if 0
-static void
-schro_encoder_get_subband (SchroFrame *frame, int component, int position,
-    SchroParams *params, int16_t *data, int *width, int *height, int *stride)
-{
-
-  if (component == 0) {
-    stride = subband->stride >> 1;
-    width = subband->w;
-    w = ROUND_UP_SHIFT(params->video_format->width, shift);
-    height = subband->h;
-    h = ROUND_UP_SHIFT(params->video_format->height, shift);
-    offset = subband->offset;
-  } else {
-    stride = subband->chroma_stride >> 1;
-    width = subband->chroma_w;
-    w = ROUND_UP_SHIFT(params->video_format->width, shift);
-    height = subband->chroma_h;
-    h = ROUND_UP_SHIFT(params->video_format->height, shift);
-    offset = subband->chroma_offset;
-  }
-}
-#endif
-
 static void
 schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int component,
     int index)
@@ -1476,9 +1452,6 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int componen
 
   shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(subband->position);
 
-  //schro_encoder_get_subband (frame->iwt_frame, component, subband->position,
-  //    params, &data, &width, &height, &stride);
-
   if (component == 0) {
     stride = subband->stride >> 1;
     width = subband->w;
@@ -1489,9 +1462,9 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int componen
   } else {
     stride = subband->chroma_stride >> 1;
     width = subband->chroma_w;
-    w = ROUND_UP_SHIFT(params->video_format->chroma_width, shift);
+    w = ROUND_UP_SHIFT(params->video_format->width, shift);
     height = subband->chroma_h;
-    h = ROUND_UP_SHIFT(params->video_format->chroma_height, shift);
+    h = ROUND_UP_SHIFT(params->video_format->height, shift);
     offset = subband->chroma_offset;
   }
 
