@@ -1,5 +1,10 @@
 2007-08-01  David Schleef  <ds@schleef.org>
 
+	* gst/gstschrotoy.c:
+	  Update to subband changes.
+
+2007-08-01  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrobuffer.c:
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:

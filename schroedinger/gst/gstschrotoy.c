@@ -304,7 +304,7 @@ gst_schrotoy_handle_src_event (GstPad * pad, GstEvent * event)
 
 static void
 quantize_frame (SchroFrame *frame, int *quant_index_0, int *quant_index_1,
-    SchroSubband *subbands);
+    SchroSubband *subbands, SchroParams *params);
 
 static void
 mark_frame (SchroFrame *frame, int val)
@@ -468,7 +468,7 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
 #endif
 
     quantize_frame (compress->tmp_frame, quant_index_0, quant_index_1,
-        compress->subbands);
+        compress->subbands, &compress->params);
   }
 
   schro_frame_inverse_iwt_transform (compress->tmp_frame, &compress->params,
@@ -512,7 +512,7 @@ quantize (int value, int quant_factor, int quant_offset)
 
 static void
 quantize_frame (SchroFrame *frame, int *quant_index_0, int *quant_index_1,
-    SchroSubband *subbands)
+    SchroSubband *subbands, SchroParams *params)
 {
   int index;
   int i,j;
@@ -520,17 +520,17 @@ quantize_frame (SchroFrame *frame, int *quant_index_0, int *quant_index_1,
   int quant_factor;
   int quant_offset;
   int16_t *data;
-  int stride, width, height, offset;
+  int16_t *line;
+  int16_t *prev_line;
+  int stride, width, height;
   int side;
 
   for(index=0;index<13;index++){
     for (side=0;side<2;side++) {
       int xmin, xmax;
 
-      stride = subbands[index].stride >> 1;
-      width = subbands[index].w;
-      height = subbands[index].h;
-      offset = subbands[index].offset;
+      schro_subband_get (frame, 0, subbands[index].position, params,
+          &data, &stride, &width, &height);
 
       if (side) {
         if (quant_index_1[index] == 0) continue;
@@ -548,39 +548,37 @@ quantize_frame (SchroFrame *frame, int *quant_index_0, int *quant_index_1,
       GST_DEBUG("side=%d index=%d quant_factor=%d %dx%d",
           side, index, quant_factor, width, height);
 
-      data = (int16_t *)frame->components[0].data + offset;
-
       if (index == 0) {
         int pred_value;
 
         for(j=0;j<height;j++){
+          prev_line = OFFSET(data, (j-1)*stride);
+          line = OFFSET(data, j*stride);
           for(i=xmin;i<xmax;i++){
             if (j>0) {
               if (i>0) {
-                pred_value = schro_divide(data[j*stride + i - 1] +
-                    data[(j-1)*stride + i] + data[(j-1)*stride + i - 1] + 1,3);
+                pred_value = schro_divide(line[i - 1] +
+                    prev_line[i] + prev_line[i - 1] + 1,3);
               } else {
-                pred_value = data[(j-1)*stride + i];
+                pred_value = prev_line[i];
               }
             } else {
               if (i>0) {
-                pred_value = data[j*stride + i - 1];
+                pred_value = line[i - 1];
               } else {
                 pred_value = 0;
               }
             }
-            q = quantize (data[j*stride+i] - pred_value,
-                quant_factor, quant_offset);
-            data[j*stride + i] = dequantize (q, quant_factor, quant_offset)
-              + pred_value;
+            q = quantize (line[i] - pred_value, quant_factor, quant_offset);
+            line[i] = dequantize (q, quant_factor, quant_offset) + pred_value;
           }
         }
       } else {
         for(j=0;j<height;j++){
+          line = OFFSET(data, j*stride);
           for(i=xmin;i<xmax;i++){
-            q = quantize (data[j*stride+i], quant_factor, quant_offset);
-            data[j*stride + i] = dequantize (q, quant_factor, quant_offset);
-            data[j*stride + i] = 0;
+            q = quantize (line[i], quant_factor, quant_offset);
+            line[i] = dequantize (q, quant_factor, quant_offset);
           }
         }
       }
