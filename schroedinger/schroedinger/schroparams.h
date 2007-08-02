@@ -127,14 +127,14 @@ struct _SchroParams {
 };
 
 struct _SchroSubband {
-  int w;
-  int h;
-  int offset;
-  int stride;
-  int chroma_w;
-  int chroma_h;
-  int chroma_offset;
-  int chroma_stride;
+  //int w;
+  //int h;
+  //int offset;
+  //int stride;
+  //int chroma_w;
+  //int chroma_h;
+  //int chroma_offset;
+  //int chroma_stride;
   int has_parent;
   int quant_index;
   int position;
@@ -201,6 +201,8 @@ void schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
     int luma_frame_stride, int chroma_frame_stride);
 void schro_subband_get_frame_component (SchroFrameComponent *dest,
     SchroFrameComponent *full_frame, int position);
+void schro_subband_get (SchroFrame *frame, int component, int position,
+    SchroParams *params, int16_t **data, int *stride, int *width, int *height);
 
 /* FIXME should be SchroFrameFormat */
 int schro_params_get_frame_format (int depth,

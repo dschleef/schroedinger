@@ -835,51 +835,19 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
   chroma_stride = chroma_frame_stride << params->transform_depth;
 
   subbands[0].position = 0;
-  subbands[0].w = w;
-  subbands[0].h = h;
-  subbands[0].offset = 0;
-  subbands[0].stride = stride;
-  subbands[0].chroma_w = chroma_w;
-  subbands[0].chroma_h = chroma_h;
-  subbands[0].chroma_offset = 0;
-  subbands[0].chroma_stride = chroma_stride;
   subbands[0].has_parent = 0;
 
   for(i=0; i<params->transform_depth; i++) {
     /* hl */
     subbands[1+3*i].position = 1 | (i<<2);
-    subbands[1+3*i].w = w;
-    subbands[1+3*i].h = h;
-    subbands[1+3*i].offset = w;
-    subbands[1+3*i].stride = stride;
-    subbands[1+3*i].chroma_w = chroma_w;
-    subbands[1+3*i].chroma_h = chroma_h;
-    subbands[1+3*i].chroma_offset = chroma_w;
-    subbands[1+3*i].chroma_stride = chroma_stride;
     subbands[1+3*i].has_parent = (i>0);
 
     /* lh */
     subbands[2+3*i].position = 2 | (i<<2);
-    subbands[2+3*i].w = w;
-    subbands[2+3*i].h = h;
-    subbands[2+3*i].offset = (stride/2/sizeof(int16_t));
-    subbands[2+3*i].stride = stride;
-    subbands[2+3*i].chroma_w = chroma_w;
-    subbands[2+3*i].chroma_h = chroma_h;
-    subbands[2+3*i].chroma_offset = (chroma_stride/2/sizeof(int16_t));
-    subbands[2+3*i].chroma_stride = chroma_stride;
     subbands[2+3*i].has_parent = (i>0);
 
     /* hh */
     subbands[3+3*i].position = 3 | (i<<2);
-    subbands[3+3*i].w = w;
-    subbands[3+3*i].h = h;
-    subbands[3+3*i].offset = w + (stride/2/sizeof(int16_t));
-    subbands[3+3*i].stride = stride;
-    subbands[3+3*i].chroma_w = chroma_w;
-    subbands[3+3*i].chroma_h = chroma_h;
-    subbands[3+3*i].chroma_offset = chroma_w + (chroma_stride/2/sizeof(int16_t));
-    subbands[3+3*i].chroma_stride = chroma_stride;
     subbands[3+3*i].has_parent = (i>0);
 
     w <<= 1;
@@ -910,6 +878,34 @@ schro_subband_get_frame_component (SchroFrameComponent *dest,
   }
 
 }
+
+void
+schro_subband_get (SchroFrame *frame, int component, int position,
+    SchroParams *params,
+    int16_t **data, int *stride, int *width, int *height)
+{   
+  int shift;
+  SchroFrameComponent *comp = &frame->components[component];
+  
+  shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
+  
+  *stride = comp->stride << shift;
+  if (component == 0) {
+    *width = params->iwt_luma_width >> shift;
+    *height = params->iwt_luma_height >> shift;
+  } else {
+    *width = params->iwt_chroma_width >> shift;
+    *height = params->iwt_chroma_height >> shift;
+  } 
+  
+  *data = comp->data;
+  if (position & 2) {
+    *data = OFFSET(*data, (*stride)>>1);
+  } 
+  if (position & 1) {
+    *data = OFFSET(*data, (*width)*sizeof(int16_t));
+  } 
+} 
 
 int
 schro_params_get_frame_format (int depth, SchroChromaFormat chroma_format)

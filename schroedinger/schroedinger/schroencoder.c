@@ -1443,49 +1443,40 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int componen
   int stride;
   int width;
   int height;
-  int offset;
   int w;
   int h;
   int shift;
   int16_t *data;
+  int16_t *line;
   int i,j;
 
+  schro_subband_get (frame->iwt_frame, component, subband->position,
+      params, &data, &stride, &width, &height);
+
   shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(subband->position);
-
   if (component == 0) {
-    stride = subband->stride >> 1;
-    width = subband->w;
     w = ROUND_UP_SHIFT(params->video_format->width, shift);
-    height = subband->h;
     h = ROUND_UP_SHIFT(params->video_format->height, shift);
-    offset = subband->offset;
   } else {
-    stride = subband->chroma_stride >> 1;
-    width = subband->chroma_w;
-    w = ROUND_UP_SHIFT(params->video_format->width, shift);
-    height = subband->chroma_h;
-    h = ROUND_UP_SHIFT(params->video_format->height, shift);
-    offset = subband->chroma_offset;
+    w = ROUND_UP_SHIFT(params->video_format->chroma_width, shift);
+    h = ROUND_UP_SHIFT(params->video_format->chroma_height, shift);
   }
-
-  data = (int16_t *)frame->iwt_frame->components[component].data + offset;
-
-  SCHRO_LOG("subband index=%d %d x %d at offset %d with stride %d; clean area %d %d", index,
-      width, height, offset, stride, w, h);
 
   h = MIN (h + wavelet_extent[params->wavelet_filter_index], height);
   w = MIN (w + wavelet_extent[params->wavelet_filter_index], width);
 
   if (w < width) {
     for(j=0;j<h;j++){
+      line = OFFSET(data, j*stride);
       for(i=w;i<width;i++){
-        data[j*stride + i] = 0;
+        line[i] = 0;
       }
     }
   }
   for(j=h;j<height;j++){
+    line = OFFSET(data, j*stride);
     for(i=0;i<width;i++){
-      data[j*stride + i] = 0;
+      line[i] = 0;
     }
   }
 }
@@ -1550,9 +1541,10 @@ schro_encoder_quantize_subband (SchroEncoderFrame *frame, int component, int ind
   int stride;
   int width;
   int height;
-  int offset;
   int i,j;
   int16_t *data;
+  int16_t *line;
+  int16_t *prev_line;
   int subband_zero_flag;
 
   subband_zero_flag = 1;
@@ -1567,36 +1559,28 @@ schro_encoder_quantize_subband (SchroEncoderFrame *frame, int component, int ind
     quant_offset = schro_table_offset_1_2[subband->quant_index];
   }
 
-  if (component == 0) {
-    stride = subband->stride >> 1;
-    width = subband->w;
-    height = subband->h;
-    offset = subband->offset;
-  } else {
-    stride = subband->chroma_stride >> 1;
-    width = subband->chroma_w;
-    height = subband->chroma_h;
-    offset = subband->chroma_offset;
-  }
-
-  data = (int16_t *)frame->iwt_frame->components[component].data + offset;
+  schro_subband_get (frame->iwt_frame, component, subband->position,
+      &frame->params, &data, &stride, &width, &height);
 
   if (index == 0) {
     for(j=0;j<height;j++){
+      line = OFFSET(data, j*stride);
+      prev_line = OFFSET(data, (j-1)*stride);
+
       for(i=0;i<width;i++){
         int q;
 
         if (frame->params.num_refs == 0) {
           if (j>0) {
             if (i>0) {
-              pred_value = schro_divide(data[j*stride + i - 1] +
-                  data[(j-1)*stride + i] + data[(j-1)*stride + i - 1] + 1,3);
+              pred_value = schro_divide(line[i - 1] +
+                  prev_line[i] + prev_line[i - 1] + 1,3);
             } else {
-              pred_value = data[(j-1)*stride + i];
+              pred_value = prev_line[i];
             }
           } else {
             if (i>0) {
-              pred_value = data[j*stride + i - 1];
+              pred_value = line[i - 1];
             } else {
               pred_value = 0;
             }
@@ -1605,12 +1589,12 @@ schro_encoder_quantize_subband (SchroEncoderFrame *frame, int component, int ind
           pred_value = 0;
         }
 
-        q = quantize(data[j*stride + i] - pred_value, quant_factor,
+        q = quantize(line[i] - pred_value, quant_factor,
             quant_offset, inv_quant_factor);
-        data[j*stride + i] = dequantize(q, quant_factor, quant_offset) +
+        line[i] = dequantize(q, quant_factor, quant_offset) +
           pred_value;
         quant_data[j*width + i] = q;
-        if (data[j*stride + i] != 0) {
+        if (line[i] != 0) {
           subband_zero_flag = 0;
         }
 
@@ -1618,14 +1602,16 @@ schro_encoder_quantize_subband (SchroEncoderFrame *frame, int component, int ind
     }
   } else {
     for(j=0;j<height;j++){
+      line = OFFSET(data, j*stride);
+
       for(i=0;i<width;i++){
         int q;
 
-        q = quantize(data[j*stride + i], quant_factor, quant_offset,
+        q = quantize(line[i], quant_factor, quant_offset,
             inv_quant_factor);
-        data[j*stride + i] = dequantize(q, quant_factor, quant_offset);
+        line[i] = dequantize(q, quant_factor, quant_offset);
         quant_data[j*width + i] = q;
-        if (data[j*stride + i] != 0) {
+        if (line[i] != 0) {
           subband_zero_flag = 0;
         }
 
@@ -1641,16 +1627,15 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
 {
   SchroParams *params = &frame->params;
   SchroSubband *subband = frame->subbands + index;
-  SchroSubband *parent_subband = NULL;
   SchroArith *arith;
   int16_t *data;
-  int16_t *parent_data = NULL;
+  int16_t *parent_data;
+  int parent_stride;
   int i,j;
   int subband_zero_flag;
   int stride;
   int width;
   int height;
-  int offset;
   int16_t *quant_data;
   int x,y;
   int horiz_codeblocks;
@@ -1658,31 +1643,17 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
   int have_zero_flags;
   int have_quant_offset;
 
-  if (component == 0) {
-    stride = subband->stride >> 1;
-    width = subband->w;
-    height = subband->h;
-    offset = subband->offset;
-  } else {
-    stride = subband->chroma_stride >> 1;
-    width = subband->chroma_w;
-    height = subband->chroma_h;
-    offset = subband->chroma_offset;
-  }
+  schro_subband_get (frame->iwt_frame, component, subband->position,
+      params, &data, &stride, &width, &height);
 
-  SCHRO_LOG("subband index=%d %d x %d at offset %d with stride %d", index,
-      width, height, offset, stride);
-
-  data = (int16_t *)frame->iwt_frame->components[component].data + offset;
   if (subband->has_parent) {
-    parent_subband = subband - 3;
-    if (component == 0) {
-      parent_data = (int16_t *)frame->iwt_frame->components[component].data +
-        parent_subband->offset;
-    } else {
-      parent_data = (int16_t *)frame->iwt_frame->components[component].data +
-        parent_subband->chroma_offset;
-    }
+    int parent_width;
+    int parent_height;
+    schro_subband_get (frame->iwt_frame, component, subband->position - 4,
+        params, &parent_data, &parent_stride, &parent_width, &parent_height);
+  } else {
+    parent_data = NULL;
+    parent_stride = 0;
   }
 
   arith = schro_arith_new ();
@@ -1759,6 +1730,8 @@ out:
   }
 
   for(j=ymin;j<ymax;j++){
+    int16_t *parent_line = OFFSET(parent_data, (j>>1)*parent_stride);
+
     for(i=xmin;i<xmax;i++){
       int parent;
       int cont_context;
@@ -1771,7 +1744,7 @@ out:
        * are constant over the entire codeblock. */
 
       if (subband->has_parent) {
-        parent = parent_data[(j>>1)*(stride<<1) + (i>>1)];
+        parent = parent_line[(i>>1)];
       } else {
         parent = 0;
       }

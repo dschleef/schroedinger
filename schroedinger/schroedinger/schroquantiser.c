@@ -185,15 +185,21 @@ error_calculation_subband (SchroEncoderFrame *frame, int component,
   int q;
   int value;
   int16_t *data;
-  double vol = subband->w * subband->h;
+  int16_t *line;
+  double vol;
   double entropy;
   double x;
+  int width;
+  int height;
+  int stride;
 
   data_entropy = 0;
   count_pos = 0;
   count_neg = 0;
   count_0 = 0;
   error_total = 0;
+
+  vol = width * height;
 
   quant_factor = schro_table_quant[subband->quant_index];
   if (frame->params.num_refs > 0) {
@@ -202,10 +208,13 @@ error_calculation_subband (SchroEncoderFrame *frame, int component,
     quant_offset = schro_table_offset_1_2[subband->quant_index];
   }
 
-  data = OFFSET(frame->iwt_frame->components[component].data, 2*subband->offset);
-  for(j=0;j<subband->h;j++){
-    for(i=0;i<subband->w;i++){
-      q = quantize(data[i], quant_factor, quant_offset);
+  schro_subband_get (frame->iwt_frame, component, subband->position,
+      &frame->params, &data, &stride, &width, &height);
+
+  for(j=0;j<height;j++){
+    line = OFFSET(data, j*stride);
+    for(i=0;i<width;i++){
+      q = quantize(line[i], quant_factor, quant_offset);
       value = dequantize(q, quant_factor, quant_offset);
 
       if (q > 0) count_pos++;
@@ -213,9 +222,8 @@ error_calculation_subband (SchroEncoderFrame *frame, int component,
       if (q == 0) count_0++;
       data_entropy += abs(q);
 
-      error_total += pow4(value - data[i]);
+      error_total += pow4(value - line[i]);
     }
-    data = OFFSET(data, subband->stride);
   }
 
 #if 0
@@ -350,10 +358,10 @@ measure_error_subband (SchroEncoderFrame *frame, int component, int index,
   int i;
   int j;
   int16_t *data;
+  int16_t *line;
   int stride;
   int width;
   int height;
-  int offset;
   int skip = 1;
   double error = 0;
   int q;
@@ -361,17 +369,8 @@ measure_error_subband (SchroEncoderFrame *frame, int component, int index,
   int quant_offset;
   int value;
 
-  if (component == 0) {
-    stride = subband->stride >> 1;
-    width = subband->w;
-    height = subband->h;
-    offset = subband->offset;
-  } else {
-    stride = subband->chroma_stride >> 1;
-    width = subband->chroma_w;
-    height = subband->chroma_h;
-    offset = subband->chroma_offset;
-  }
+  schro_subband_get (frame->iwt_frame, component, subband->position,
+      &frame->params, &data, &stride, &width, &height);
 
   quant_factor = schro_table_quant[quant_index];
   if (frame->params.num_refs > 0) {
@@ -381,14 +380,13 @@ measure_error_subband (SchroEncoderFrame *frame, int component, int index,
   }
 
   error = 0;
-  data = (int16_t *)frame->iwt_frame->components[component].data + offset;
   for(j=0;j<height;j+=skip){
+    line = OFFSET(data, j*stride);
     for(i=0;i<width;i+=skip){
-      q = quantize(abs(data[i]), quant_factor, quant_offset);
+      q = quantize(abs(line[i]), quant_factor, quant_offset);
       value = dequantize(q, quant_factor, quant_offset);
-      error += pow4(value - abs(data[i]));
+      error += pow4(value - abs(line[i]));
     }
-    data += stride * skip;
   }
   error *= skip*skip;
 
@@ -478,10 +476,10 @@ schro_encoder_estimate_subband_arith (SchroEncoderFrame *frame, int component,
   int i;
   int j;
   int16_t *data;
+  int16_t *line;
   int stride;
   int width;
   int height;
-  int offset;
   int q;
   int quant_factor;
   int estimated_entropy;
@@ -490,27 +488,18 @@ schro_encoder_estimate_subband_arith (SchroEncoderFrame *frame, int component,
   arith = schro_arith_new ();
   schro_arith_estimate_init (arith);
 
-  if (component == 0) {
-    stride = subband->stride >> 1;
-    width = subband->w;
-    height = subband->h;
-    offset = subband->offset;
-  } else {
-    stride = subband->chroma_stride >> 1;
-    width = subband->chroma_w;
-    height = subband->chroma_h;
-    offset = subband->chroma_offset;
-  }
+  schro_subband_get (frame->iwt_frame, component, subband->position,
+      &frame->params, &data, &stride, &width, &height);
+
   quant_factor = schro_table_quant[quant_index];
 
-  data = (int16_t *)frame->iwt_frame->components[component].data + offset;
   for(j=0;j<height;j++) {
+    line = OFFSET(data, j*stride);
     for(i=0;i<width;i++) {
-      q = quantize(data[i], quant_factor, 0);
+      q = quantize(line[i], quant_factor, 0);
       schro_arith_estimate_sint (arith,
           SCHRO_CTX_ZPZN_F1, SCHRO_CTX_COEFF_DATA, SCHRO_CTX_SIGN_ZERO, q);
     }
-    data += stride;
   }
 
   estimated_entropy = 0;
@@ -545,41 +534,31 @@ schro_encoder_generate_subband_histogram (SchroEncoderFrame *frame,
   int i;
   int j;
   int16_t *data;
+  int16_t *line;
   int stride;
   int width;
   int height;
-  int offset;
 
   for(i=0;i<(16<<SHIFT)+24;i++){
     hist[i] = 0;
   }
 
-  if (component == 0) {
-    stride = subband->stride >> 1;
-    width = subband->w;
-    height = subband->h;
-    offset = subband->offset;
-  } else {
-    stride = subband->chroma_stride >> 1;
-    width = subband->chroma_w;
-    height = subband->chroma_h;
-    offset = subband->chroma_offset;
-  }
+  schro_subband_get (frame->iwt_frame, component, subband->position,
+      &frame->params, &data, &stride, &width, &height);
 
-  data = (int16_t *)frame->iwt_frame->components[component].data + offset;
   if (index > 0) {
     for(j=0;j<height;j+=skip){
+      line = OFFSET(data, j*stride);
       for(i=0;i<width;i+=skip){
-        hist[ilogx(data[i])]++;
+        hist[ilogx(line[i])]++;
       }
-      data += stride * skip;
     }
   } else {
     for(j=0;j<height;j+=skip){
+      line = OFFSET(data, j*stride);
       for(i=1;i<width;i+=skip){
-        hist[ilogx(data[i] - data[i-1])]++;
+        hist[ilogx(line[i] - line[i-1])]++;
       }
-      data += stride * skip;
     }
   }
   for(i=0;i<(16<<SHIFT)+24;i++){
@@ -624,15 +603,16 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
   int i;
   int hist[(16<<SHIFT)+24] = { 0 };
   int vol;
+  int16_t *data;
+  int stride;
+  int width, height;
   double lambda;
 
   schro_encoder_generate_subband_histogram (frame, component, index, hist, 4);
 
-  if (component == 0) {
-    vol = subband->w * subband->h;
-  } else {
-    vol = subband->chroma_w * subband->chroma_h;
-  }
+  schro_subband_get (frame->iwt_frame, component, subband->position,
+      &frame->params, &data, &stride, &width, &height);
+  vol = width * height;
 
   if (frame->encoder->internal_testing) {
     for(i=0;i<30;i++){

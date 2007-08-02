@@ -1177,14 +1177,13 @@ dequantize (int q, int quant_factor, int quant_offset)
 #endif
 
 void
-codeblock_line_decode_generic (int16_t *p, int16_t *prev_line, int j, int xmin, int xmax,
+codeblock_line_decode_generic (int16_t *line, int16_t *prev_line, int j, int xmin, int xmax,
     int16_t *parent_data, int position,
     SchroArith *arith, int quant_factor,
     int quant_offset)
 {
   int i;
 
-  p += xmin;
   for(i=xmin;i<xmax;i++){
     int v;
     int parent;
@@ -1199,12 +1198,12 @@ codeblock_line_decode_generic (int16_t *p, int16_t *prev_line, int j, int xmin, 
 
     nhood_or = 0;
     if (j>0) nhood_or |= prev_line[i];
-    if (i>0) nhood_or |= p[-1];
+    if (i>0) nhood_or |= line[i-1];
     if (i>0 && j>0) nhood_or |= prev_line[i-1];
 
     previous_value = 0;
     if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position)) {
-      if (i > 0) previous_value = p[-1];
+      if (i > 0) previous_value = line[i-1];
     } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position)) {
       if (j > 0) previous_value = prev_line[i];
     }
@@ -1235,11 +1234,10 @@ codeblock_line_decode_generic (int16_t *p, int16_t *prev_line, int j, int xmin, 
       if (_schro_arith_decode_bit (arith, sign_context)) { \
         v = -v; \
       } \
-      p[0] = v; \
+      line[i] = v; \
     } else { \
-      p[0] = 0; \
+      line[i] = 0; \
     } \
-    p++; \
   } while(0)
 
     STUFF;
@@ -1247,13 +1245,12 @@ codeblock_line_decode_generic (int16_t *p, int16_t *prev_line, int j, int xmin, 
 }
 
 void
-codeblock_line_decode_p_horiz (int16_t *p, int j, int xmin, int xmax,
+codeblock_line_decode_p_horiz (int16_t *line, int j, int xmin, int xmax,
     int16_t *parent_data, SchroArith *arith, int quant_factor,
     int quant_offset, int16_t *prev)
 {
   int i;
 
-  p += xmin;
   if (xmin == 0) {
     int v;
     int parent;
@@ -1277,24 +1274,22 @@ codeblock_line_decode_p_horiz (int16_t *p, int j, int xmin, int xmax,
     parent = parent_data[(i>>1)];
 
     nhood_or = prev[i];
-    nhood_or |= p[-1];
+    nhood_or |= line[i-1];
     nhood_or |= prev[i-1];
 
-    previous_value = 0;
-    previous_value = p[-1];
+    previous_value = line[i-1];
 
     STUFF;
   }
 }
 
 void
-codeblock_line_decode_p_vert (int16_t *p, int j, int xmin, int xmax,
+codeblock_line_decode_p_vert (int16_t *line, int j, int xmin, int xmax,
     int16_t *parent_data, SchroArith *arith, int quant_factor,
     int quant_offset, int16_t *prev)
 {
   int i;
 
-  p += xmin;
   if (xmin == 0) {
     int v;
     int parent;
@@ -1319,7 +1314,7 @@ codeblock_line_decode_p_vert (int16_t *p, int j, int xmin, int xmax,
     parent = parent_data[(i>>1)];
 
     nhood_or = prev[i];
-    nhood_or |= p[-1];
+    nhood_or |= line[i-1];
     nhood_or |= prev[i-1];
 
     previous_value = prev[i];
@@ -1329,13 +1324,12 @@ codeblock_line_decode_p_vert (int16_t *p, int j, int xmin, int xmax,
 }
 
 void
-codeblock_line_decode_p_diag (int16_t *p, int j, int xmin, int xmax,
+codeblock_line_decode_p_diag (int16_t *line, int j, int xmin, int xmax,
     int16_t *parent_data, SchroArith *arith, int quant_factor,
     int quant_offset, int16_t *prev)
 {
   int i;
 
-  p += xmin;
   if (xmin == 0) {
     int v;
     int parent;
@@ -1359,7 +1353,7 @@ codeblock_line_decode_p_diag (int16_t *p, int j, int xmin, int xmax,
     parent = parent_data[(i>>1)];
 
     nhood_or = prev[i];
-    nhood_or |= p[-1];
+    nhood_or |= line[i-1];
     nhood_or |= prev[i-1];
     previous_value = 0;
 
@@ -1431,7 +1425,6 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
 {
   SchroParams *params = &decoder->params;
   SchroSubband *subband = decoder->subbands + index;
-  SchroSubband *parent_subband = NULL;
   int16_t *data;
   int16_t *line;
   int16_t *parent_data = NULL;
@@ -1443,43 +1436,24 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
   int height;
   int width;
   int stride;
-  //int offset;
+  int parent_stride;
   int x,y;
 
-#if 0
-  if (component == 0) {
-    stride = subband->stride >> 1;
-    width = subband->w;
-    height = subband->h;
-    offset = subband->offset;
-  } else {
-    stride = subband->chroma_stride >> 1;
-    width = subband->chroma_w;
-    height = subband->chroma_h;
-    offset = subband->chroma_offset;
-  }
-
-  data = (int16_t *)decoder->frame->components[component].data + offset;
-
-  SCHRO_ERROR("subband index=%d %d x %d at offset %d stride=%d data=%p",
-      index, width, height, offset, stride, data);
-#endif
-
-  schro_decoder_get_subband (decoder->frame, component, subband->position,
+  schro_subband_get (decoder->frame, component, subband->position,
       params, &data, &stride, &width, &height);
 
   SCHRO_DEBUG("subband index=%d %d x %d stride=%d data=%p",
       index, width, height, stride, data);
 
   if (subband->has_parent) {
-    parent_subband = subband-3;
-    if (component == 0) {
-      parent_data = (int16_t *)decoder->frame->components[component].data +
-        parent_subband->offset;
-    } else {
-      parent_data = (int16_t *)decoder->frame->components[component].data +
-        parent_subband->chroma_offset;
-    }
+    int parent_width;
+    int parent_height;
+
+    schro_subband_get (decoder->frame, component, subband->position - 4,
+        params, &parent_data, &parent_stride, &parent_width, &parent_height);
+  } else {
+    parent_data = NULL;
+    parent_stride = 0;
   }
 
   subband_length = schro_bits_decode_uint (decoder->bits);
@@ -1580,7 +1554,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
       int16_t *prev_line;
       int x,x2;
       if (subband->has_parent) {
-        parent_line = OFFSET(parent_data, (j>>1)*(stride<<1));
+        parent_line = OFFSET(parent_data, (j>>1)*parent_stride);
       } else {
         parent_line = NULL;
       }
