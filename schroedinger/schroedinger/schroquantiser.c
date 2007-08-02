@@ -226,16 +226,6 @@ error_calculation_subband (SchroEncoderFrame *frame, int component,
     }
   }
 
-#if 0
-  {
-    double error_per_pixel;
-    double perceptual_weight = 1.0;
-
-    error_per_pixel = error_total / vol;
-    error = sqrt(error_per_pixel) / (perceptual_weight * perceptual_weight);
-  }
-#endif
-
   entropy = 0;
 
   /* data symbols (assume probability of 0.5) */
@@ -255,8 +245,6 @@ error_calculation_subband (SchroEncoderFrame *frame, int component,
     x = count_pos / (count_pos + count_neg);
     entropy += probability_to_entropy(x) * (count_pos + count_neg);
   }
-
-  //SCHRO_ERROR("estimated entropy %g", entropy);
 
   frame->estimated_entropy = entropy;
 }
@@ -396,64 +384,6 @@ measure_error_subband (SchroEncoderFrame *frame, int component, int index,
 static double
 estimate_histogram_error (int hist[], int quant_index, int num_refs, int volume)
 {
-#if 0
-  int i;
-  double x;
-  double estimated_error;
-  int j;
-  int range_start, range_end;
-
-  estimated_error = 0;
-
-  for(i=0;i<quant_index;i++){
-    range_start = schro_table_quant[i]/4;
-    range_end = schro_table_quant[i+1]/4;
-    for(j=range_start;j<range_end;j++){
-      estimated_error += pow4(j) * hist[i]/(range_end - range_start);
-    }
-  }
-
-  range_end = schro_table_quant[quant_index]/4;
-  x = 0;
-  for(i=0;i<range_end;i++){
-    x += pow4(i);
-  }
-  x /= range_end;
-
-  for(i=quant_index;i<64;i++){
-    estimated_error += x * hist[i];
-  }
-
-  return estimated_error;
-#else
-#if 0
-  int i;
-  double estimated_error;
-  int j;
-  int q;
-  int quant_factor, quant_offset;
-  int err;
-  int size;
-
-  estimated_error = 0;
-
-  quant_factor = schro_table_quant[quant_index];
-  if (num_refs > 0) {
-    quant_offset = schro_table_offset_3_8[quant_index];
-  } else {
-    quant_offset = schro_table_offset_1_2[quant_index];
-  }
-
-  for(i=0;i<32000;i++){
-    q = quantize (i, quant_factor, quant_offset);
-    err = dequantize (q, quant_factor, quant_offset) - i;
-    j = ilogx(i);
-    size = ilogx_size (j);
-    estimated_error += pow4(err) * hist[j] / size;
-  }
-
-  return estimated_error;
-#else
   int i;
   double estimated_error;
 
@@ -464,8 +394,6 @@ estimate_histogram_error (int hist[], int quant_index, int num_refs, int volume)
   }
 
   return estimated_error;
-#endif
-#endif
 }
 
 double
@@ -514,12 +442,6 @@ schro_encoder_estimate_subband_arith (SchroEncoderFrame *frame, int component,
   estimated_entropy += arith->contexts[SCHRO_CTX_COEFF_DATA].n_bits;
 
   estimated_entropy += arith->contexts[SCHRO_CTX_SIGN_ZERO].n_bits;
-
-#if 0
-  for(i=0;i<SCHRO_CTX_LAST;i++){
-    estimated_entropy += arith->contexts[i].n_bits;
-  }
-#endif
 
   schro_arith_free (arith);
 

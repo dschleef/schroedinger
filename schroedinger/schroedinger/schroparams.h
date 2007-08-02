@@ -127,14 +127,6 @@ struct _SchroParams {
 };
 
 struct _SchroSubband {
-  //int w;
-  //int h;
-  //int offset;
-  //int stride;
-  //int chroma_w;
-  //int chroma_h;
-  //int chroma_offset;
-  //int chroma_stride;
   int has_parent;
   int quant_index;
   int position;

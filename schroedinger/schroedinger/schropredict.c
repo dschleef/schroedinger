@@ -468,13 +468,6 @@ schro_motion_field_global_prediction (SchroMotionField *mf,
     gm->a01 = rint(a01/8 * (1<<(gm->a_exp + mv_precision)));
     gm->a10 = rint(a10/8 * (1<<(gm->a_exp + mv_precision)));
     gm->a11 = rint((1.0 + a11/8) * (1<<(gm->a_exp + mv_precision)));
-#if 0
-    gm->a_exp = 16;
-    gm->a00 = 65536;
-    gm->a01 = 0;
-    gm->a10 = 0;
-    gm->a11 = 65536;
-#endif
   }
 
   for(j=0;j<mf->y_num_blocks;j++) {

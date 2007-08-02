@@ -4,20 +4,11 @@
 #endif
 #include <schroedinger/schro.h>
 #include <liboil/liboil.h>
-//#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-//#include <stdio.h>
 
-#if 0
-static void schro_encoder_reference_retire (SchroEncoder *encoder,
-    SchroPictureNumber frame_number);
-static void schro_encoder_reference_retire_all (SchroEncoder *encoder,
-    SchroPictureNumber frame_number);
-#endif
 static void schro_encoder_engine_init (SchroEncoder *encoder);
 static void schro_encoder_encode_picture_prediction (SchroEncoderFrame *frame);
-//static void schro_encoder_encode_motion_data (SchroEncoderFrame *frame);
 static void schro_encoder_encode_superblock_split (SchroEncoderFrame *frame);
 static void schro_encoder_encode_prediction_modes (SchroEncoderFrame *frame);
 static void schro_encoder_encode_vector_data (SchroEncoderFrame *frame, int ref, int xy);
@@ -254,12 +245,6 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         frame->state = SCHRO_ENCODER_FRAME_STATE_FREE;
         encoder->output_slot++;
 
-#if 0
-        if (frame->n_retire > 0) {
-          schro_encoder_reference_retire (encoder, frame->retire);
-        }
-#endif
-
         schro_encoder_shift_frame_queue (encoder);
       }
 
@@ -487,6 +472,7 @@ schro_encoder_iterate (SchroEncoder *encoder)
   SCHRO_INFO("iterate %d", encoder->completed_eos);
 
 #if 0
+  /* For debugging purposes */
   {
     int i;
     for(i=0;i<encoder->frame_queue->n;i++){
@@ -667,11 +653,6 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
   frame->output_buffer = subbuffer;
 
   if (frame->params.num_refs > 0) {
-#if 0
-    frame->metric_to_cost =
-      (double)(frame->bits->offset - residue_bits_start) /
-      frame->stats_metric;
-#endif
     SCHRO_INFO("pred bits %d, residue bits %d, dc %d, global = %d, motion %d",
         residue_bits_start, schro_bits_get_offset(frame->bits)*8 - residue_bits_start,
         frame->stats_dc, frame->stats_global, frame->stats_motion);
@@ -1073,129 +1054,6 @@ schro_encoder_encode_dc_data (SchroEncoderFrame *frame, int comp)
 
   schro_arith_free (arith);
 }
-
-#if 0
-static void
-schro_encoder_encode_motion_data (SchroEncoderFrame *frame)
-{
-  SchroParams *params = &frame->params;
-  int i,j;
-  SchroArith *arith;
-
-  arith = schro_arith_new ();
-  schro_arith_encode_init (arith, frame->subband_buffer);
-
-  for(j=0;j<params->y_num_blocks;j+=4){
-    for(i=0;i<params->x_num_blocks;i+=4){
-      int k,l;
-      int split_prediction;
-      int split_residual;
-      SchroMotionVector *mv =
-        &task->motion_field->motion_vectors[j*params->x_num_blocks + i];
-
-      SCHRO_ASSERT(mv->split < 3);
-
-      split_prediction = schro_motion_split_prediction (
-          task->motion_field->motion_vectors, params, i, j);
-      split_residual = (mv->split - split_prediction + 3)%3;
-      _schro_arith_encode_uint (arith, SCHRO_CTX_SB_F1,
-          SCHRO_CTX_SB_DATA, split_residual);
-
-      for(l=0;l<4;l+=(4>>mv->split)) {
-        for(k=0;k<4;k+=(4>>mv->split)) {
-          SchroMotionVector *mv =
-            &task->motion_field->motion_vectors[(j+l)*params->x_num_blocks + i + k];
-          int pred_mode;
-
-          pred_mode = schro_motion_get_mode_prediction(task->motion_field,
-              i+k,j+l) ^ mv->pred_mode;
-
-          _schro_arith_encode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF1,
-              pred_mode & 1);
-          if (params->num_refs > 1) {
-            _schro_arith_encode_bit (arith, SCHRO_CTX_BLOCK_MODE_REF2,
-                pred_mode >> 1);
-          }
-          if (mv->pred_mode == 0) {
-            int pred[3];
-            SchroMotionVectorDC *mvdc = (SchroMotionVectorDC *)mv;
-
-            schro_motion_dc_prediction (task->motion_field->motion_vectors,
-                params, i+k, j+l, pred);
-
-            _schro_arith_encode_sint (arith,
-                SCHRO_CTX_LUMA_DC_CONT_BIN1, SCHRO_CTX_LUMA_DC_VALUE,
-                SCHRO_CTX_LUMA_DC_SIGN,
-                mvdc->dc[0] - pred[0]);
-            _schro_arith_encode_sint (arith,
-                SCHRO_CTX_CHROMA1_DC_CONT_BIN1, SCHRO_CTX_CHROMA1_DC_VALUE,
-                SCHRO_CTX_CHROMA1_DC_SIGN,
-                mvdc->dc[1] - pred[1]);
-            _schro_arith_encode_sint (arith,
-                SCHRO_CTX_CHROMA2_DC_CONT_BIN1, SCHRO_CTX_CHROMA2_DC_VALUE,
-                SCHRO_CTX_CHROMA2_DC_SIGN,
-                mvdc->dc[2] - pred[2]);
-          } else {
-            int pred_x, pred_y;
-
-            if (params->have_global_motion) {
-              int pred;
-              schro_motion_field_get_global_prediction (task->motion_field,
-                  i+k, j+l, &pred);
-              _schro_arith_encode_bit (arith, SCHRO_CTX_GLOBAL_BLOCK,
-                  mv->using_global ^ pred);
-            } else {
-              SCHRO_ASSERT(mv->using_global == FALSE);
-            }
-            if (!mv->using_global) {
-              if (mv->pred_mode & 1) {
-                schro_motion_vector_prediction (task->motion_field->motion_vectors,
-                    params, i+k, j+l, &pred_x, &pred_y, 1);
-
-                _schro_arith_encode_sint(arith,
-                    SCHRO_CTX_MV_REF1_H_CONT_BIN1,
-                    SCHRO_CTX_MV_REF1_H_VALUE,
-                    SCHRO_CTX_MV_REF1_H_SIGN,
-                    (mv->x1 - pred_x)>>3);
-                _schro_arith_encode_sint(arith,
-                    SCHRO_CTX_MV_REF1_V_CONT_BIN1,
-                    SCHRO_CTX_MV_REF1_V_VALUE,
-                    SCHRO_CTX_MV_REF1_V_SIGN,
-                    (mv->y1 - pred_y)>>3);
-              }
-              if (mv->pred_mode & 2) {
-                schro_motion_vector_prediction (task->motion_field->motion_vectors,
-                    params, i+k, j+l, &pred_x, &pred_y, 2);
-
-                _schro_arith_encode_sint(arith,
-                    SCHRO_CTX_MV_REF2_H_CONT_BIN1,
-                    SCHRO_CTX_MV_REF2_H_VALUE,
-                    SCHRO_CTX_MV_REF2_H_SIGN,
-                    (mv->x2 - pred_x)>>3);
-                _schro_arith_encode_sint(arith,
-                    SCHRO_CTX_MV_REF2_V_CONT_BIN1,
-                    SCHRO_CTX_MV_REF2_V_VALUE,
-                    SCHRO_CTX_MV_REF2_V_SIGN,
-                    (mv->y2 - pred_y)>>3);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  schro_arith_flush (arith);
-
-  schro_bits_sync (task->bits);
-  schro_bits_encode_uint(task->bits, arith->offset);
-
-  schro_bits_sync (task->bits);
-  schro_bits_append (task->bits, arith->buffer->data, arith->offset);
-
-  schro_arith_free (arith);
-}
-#endif
 
 
 void
@@ -1925,24 +1783,6 @@ schro_encoder_reference_get (SchroEncoder *encoder,
 {
   return schro_queue_find (encoder->reference_queue, frame_number);
 }
-
-#if 0
-void
-schro_encoder_reference_retire_all (SchroEncoder *encoder,
-    SchroPictureNumber frame_number)
-{
-  schro_queue_clear (encoder->reference_queue);
-}
-#endif
-
-#if 0
-void
-schro_encoder_reference_retire (SchroEncoder *encoder,
-    SchroPictureNumber frame_number)
-{
-  schro_queue_delete (encoder->reference_queue, frame_number);
-}
-#endif
 
 static const int pref_range[][2] = {
   { 0, 5 },

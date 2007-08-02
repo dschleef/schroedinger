@@ -4,9 +4,7 @@
 #endif
 #include <schroedinger/schro.h>
 #include <liboil/liboil.h>
-//#include <stdlib.h>
 #include <string.h>
-//#include <stdio.h>
 #include <schroedinger/schrooil.h>
 
 
@@ -1183,44 +1181,4 @@ schro_upsampled_frame_free (SchroUpsampledFrame *df)
   }
   free(df);
 }
-
-#if 0
-typedef struct _SchroBlock SchroBlock;
-struct _SchroBlock {
-  uint8_t *blocks[3];
-  int strides[3];
-  uint8_t *tmpdata;
-};
-
-void
-get_block_simple (SchroBlock *dest, SchroUpsampledFrame *upframe, int x, int y)
-{
-  SchroFrame *srcframe;
-  SchroFrameComponent *comp;
-  int upsample_index;
-  int sx, sy;
-
-  upsample_index = (x&4)>>2 | (y&4)>>1;
-
-  sx = x >> 3;
-  sy = y >> 3;
-
-  srcframe = upframe->frames[upsample_index];
-
-  comp = &srcframe->components[0];
-  dest->blocks[0] = OFFSET(comp->data, comp->stride * sy + sx);
-  dest->strides[0] = comp->stride;
-
-  sx >>= SCHRO_FRAME_FORMAT_H_SHIFT(srcframe->format);
-  sy >>= SCHRO_FRAME_FORMAT_V_SHIFT(srcframe->format);
-
-  comp = &srcframe->components[1];
-  dest->blocks[1] = OFFSET(comp->data, comp->stride * sy + sx);
-  dest->strides[1] = comp->stride;
-
-  comp = &srcframe->components[2];
-  dest->blocks[2] = OFFSET(comp->data, comp->stride * sy + sx);
-  dest->strides[2] = comp->stride;
-}
-#endif
 

@@ -1,5 +1,19 @@
 2007-08-01  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrobuffer.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schrometric.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.c:
+	* schroedinger/schroquantiser.c:
+	  Remove dead code.
+
+2007-08-01  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroparams.c:
