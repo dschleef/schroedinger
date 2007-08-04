@@ -33,3 +33,43 @@ schro_encoder_frame_analyse (SchroEncoder *encoder, SchroEncoderFrame *frame)
 
 }
 
+static double
+schro_frame_component_squared_error (SchroFrameComponent *a,
+    SchroFrameComponent *b)
+{
+  int i;
+  int j;
+  uint8_t *da, *db;
+  double sum;
+  
+  sum = 0;
+  for(j=0;j<a->height;j++){
+    da = OFFSET(a->data, a->stride * j);
+    db = OFFSET(b->data, b->stride * j);
+    for(i=0;i<a->width;i++){
+      sum += (da[i]-db[i])*(da[i]-db[i]);
+    }
+  }
+  return sum;
+}
+
+double
+schro_frame_mean_squared_error (SchroFrame *a, SchroFrame *b)
+{
+  double sum, n;
+
+  sum = schro_frame_component_squared_error (&a->components[0],
+      &b->components[0]);
+  n = a->components[0].width * a->components[0].height;
+
+  sum += schro_frame_component_squared_error (&a->components[1],
+      &b->components[1]);
+  n += a->components[1].width * a->components[1].height;
+
+  sum += schro_frame_component_squared_error (&a->components[2],
+      &b->components[2]);
+  n += a->components[2].width * a->components[2].height;
+
+  return sum/n;
+}
+

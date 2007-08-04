@@ -3,6 +3,7 @@
 #include "config.h"
 #endif
 #include <schroedinger/schro.h>
+#include <schroedinger/schrophasecorrelation.h>
 #include <liboil/liboil.h>
 #include <string.h>
 #include <math.h>
@@ -55,6 +56,7 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
   }
 
   //schro_encoder_hierarchical_prediction (frame);
+  schro_encoder_phasecorr_prediction (frame);
   schro_encoder_hierarchical_prediction_2 (frame);
   //schro_encoder_zero_prediction (frame);
 

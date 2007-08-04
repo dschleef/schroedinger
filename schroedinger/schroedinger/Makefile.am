@@ -25,6 +25,7 @@ pkginclude_HEADERS = \
 	schrometric.h \
 	schromotion.h \
 	schroparams.h \
+	schrophasecorrelation.h \
 	schropredict.h \
 	schroqueue.h \
 	schrossim.h \
@@ -55,6 +56,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schromotion.c \
 	schrooil.c \
 	schroparams.c \
+	schrophasecorrelation.c \
 	schropredict.c \
 	schroquantiser.c \
 	schroqueue.c \

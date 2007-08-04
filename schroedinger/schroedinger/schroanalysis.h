@@ -8,6 +8,8 @@
 SCHRO_BEGIN_DECLS
 
 void schro_encoder_frame_analyse (SchroEncoder *encoder, SchroEncoderFrame *frame);
+double schro_frame_mean_squared_error (SchroFrame *a, SchroFrame *b);
+
 
 SCHRO_END_DECLS
 

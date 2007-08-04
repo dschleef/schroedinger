@@ -6,6 +6,7 @@
 #include <liboil/liboil.h>
 #include <unistd.h>
 #include <string.h>
+#include <math.h>
 
 static void schro_encoder_engine_init (SchroEncoder *encoder);
 static void schro_encoder_encode_picture_prediction (SchroEncoderFrame *frame);
@@ -676,8 +677,6 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
   SchroFrameFormat frame_format;
   SchroFrame *frame;
 
-  if (!encoder_frame->is_ref) return;
-
   schro_frame_inverse_iwt_transform (encoder_frame->iwt_frame, &encoder_frame->params,
       encoder_frame->tmpbuf);
   if (encoder_frame->params.num_refs > 0) {
@@ -692,25 +691,29 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
   schro_frame_convert (frame, encoder_frame->iwt_frame);
   encoder_frame->reconstructed_frame =
     schro_upsampled_frame_new (frame);
-  schro_upsampled_frame_upsample (encoder_frame->reconstructed_frame);
 
+  if (encoder_frame->is_ref) {
+    schro_upsampled_frame_upsample (encoder_frame->reconstructed_frame);
+  }
 }
 
 void
 schro_encoder_postanalyse_picture (SchroEncoderFrame *frame)
 {
 #if 0
+  double mse;
+
+  mse = schro_frame_mean_squared_error (frame->original_frame,
+      frame->reconstructed_frame->frames[0]);
+
+  SCHRO_ERROR("mse %g psnr %g", mse, 10*log(255*255/mse)/log(10));
+#endif
+
+#if 0
   double mssim;
 
   mssim = schro_ssim (frame->original_frame,
       frame->reconstructed_frame->frames[0]);
-#if 0
-  if (mssim < 0.9) {
-    frame->encoder->prefs[SCHRO_PREF_QUANT_BASE]--;
-  } else {
-    frame->encoder->prefs[SCHRO_PREF_QUANT_BASE]++;
-  }
-#endif
   SCHRO_ERROR("mssim %g quant_base %d", mssim,
       frame->encoder->prefs[SCHRO_PREF_QUANT_BASE]);
 #endif

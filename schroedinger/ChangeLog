@@ -1,3 +1,18 @@
+2007-08-03  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroanalysis.c:
+	* schroedinger/schroanalysis.h:
+	* schroedinger/schroencoder.c:
+	  Calculate MSE and PSNR (disabled for now).
+	* schroedinger/Makefile.am:
+	* schroedinger/schrophasecorrelation.c:
+	* schroedinger/schrophasecorrelation.h:
+	* schroedinger/schropredict.c:
+	  Add some primitive phase correlation code.
+	* testsuite/tables.c:
+	* schroedinger/schrotables.c:
+	  Make tables const.
+
 2007-08-01  David Schleef  <ds@schleef.org>
 
 	* gst/gstschrotoy.c:

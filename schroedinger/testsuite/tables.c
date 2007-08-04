@@ -108,7 +108,7 @@ main (int argc, char *argv[])
   printf("\n");
 
   /* schro_table_offset_3_8 */
-  printf("uint32_t schro_table_offset_3_8[%d] = {\n", n + 1);
+  printf("const uint32_t schro_table_offset_3_8[%d] = {\n", n + 1);
   for(i=0;i<n;i+=4) {
     printf("  %10uu, %10uu, %10uu, %10uu,\n",
         get_offset_3_8(i),
@@ -121,7 +121,7 @@ main (int argc, char *argv[])
   printf("\n");
 
   /* schro_table_offset_1_2 */
-  printf("uint32_t schro_table_offset_1_2[%d] = {\n", n+1);
+  printf("const uint32_t schro_table_offset_1_2[%d] = {\n", n+1);
   for(i=0;i<n;i+=4) {
     printf("  %10uu, %10uu, %10uu, %10uu,\n",
         get_offset_1_2(i),
@@ -134,7 +134,7 @@ main (int argc, char *argv[])
   printf("\n");
 
   /* schro_table_quant */
-  printf("uint32_t schro_table_quant[%d] = {\n", n + 1);
+  printf("const uint32_t schro_table_quant[%d] = {\n", n + 1);
   for(i=0;i<n;i+=4) {
     printf("  %10uu, %10uu, %10uu, %10uu,\n",
         get_quant(i),
@@ -147,7 +147,7 @@ main (int argc, char *argv[])
   printf("\n");
 
   /* schro_table_inverse_quant */
-  printf("uint32_t schro_table_inverse_quant[%d] = {\n", n + 1);
+  printf("const uint32_t schro_table_inverse_quant[%d] = {\n", n + 1);
   for(i=0;i<n;i+=4) {
     printf("  %10uu, %10uu, %10uu, %10uu,\n",
         get_inv_quant(i),
@@ -160,7 +160,7 @@ main (int argc, char *argv[])
   printf("\n");
 
   /* schro_table_division_factor */
-  printf("uint16_t schro_table_division_factor[257] = {\n");
+  printf("const uint16_t schro_table_division_factor[257] = {\n");
   for(i=0;i<256;i+=4) {
     printf("  %5u, %5u, %5u, %5u,\n",
         get_factor(i),
@@ -169,10 +169,10 @@ main (int argc, char *argv[])
         get_factor(i+3));
   }
   printf("  %5u\n", get_factor(i));
-  printf("};\n");
+  printf("};\n\n");
 
   /* schro_table_error_hist */
-  printf("double schro_table_error_hist_shift3_1_2[60][%d] = {\n",
+  printf("const double schro_table_error_hist_shift3_1_2[60][%d] = {\n",
       ((16-SHIFT)<<SHIFT));
   for(i=0;i<60;i++){
     int quant_factor = get_quant(i);
@@ -202,7 +202,7 @@ main (int argc, char *argv[])
     }
     printf("  },\n");
   }
-  printf("};\n");
+  printf("};\n\n");
 
   return 0;
 }
