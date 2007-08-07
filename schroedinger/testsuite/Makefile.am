@@ -6,7 +6,7 @@ noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 obmc phasecorrelation motion \
 	 quant decode \
 	 global_motion upsample \
-	 motion2 sort filter ssim gaussian
+	 motion2 sort filter ssim gaussian fft
 
 TESTS = arith bits bits2 encode wavelet tables wavelet_2d
 
@@ -104,6 +104,10 @@ ssim_SOURCES = ssim.c
 gaussian_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 gaussian_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 gaussian_SOURCES = gaussian.c
+
+fft_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+fft_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+fft_SOURCES = fft.c
 
 
 #struct_offsets_SOURCES = struct_offsets.c

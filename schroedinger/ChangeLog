@@ -1,3 +1,9 @@
+2007-08-07  David Schleef  <ds@schleef.org>
+
+	* testsuite/Makefile.am:
+	* testsuite/fft.c:
+	  Add fft code.
+
 2007-08-03  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroanalysis.c:
