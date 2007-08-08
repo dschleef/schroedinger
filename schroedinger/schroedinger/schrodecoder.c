@@ -238,7 +238,7 @@ schro_decoder_iterate (SchroDecoder *decoder)
 
   schro_decoder_decode_parse_header(decoder);
 
-  if (decoder->code == SCHRO_PARSE_CODE_ACCESS_UNIT) {
+  if (decoder->parse_code == SCHRO_PARSE_CODE_ACCESS_UNIT) {
     SCHRO_INFO ("decoding access unit");
     schro_decoder_decode_access_unit(decoder);
 
@@ -254,7 +254,7 @@ schro_decoder_iterate (SchroDecoder *decoder)
     return SCHRO_DECODER_FIRST_ACCESS_UNIT;
   }
 
-  if (decoder->code == SCHRO_PARSE_CODE_AUXILIARY_DATA) {
+  if (decoder->parse_code == SCHRO_PARSE_CODE_AUXILIARY_DATA) {
     schro_buffer_unref (decoder->input_buffer);
     decoder->input_buffer = NULL;
     schro_bits_free (decoder->bits);
@@ -285,12 +285,12 @@ schro_decoder_iterate (SchroDecoder *decoder)
 
   schro_decoder_decode_picture_header(decoder);
 
-  params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->code);
+  params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->parse_code);
 
   schro_params_init (params, decoder->video_format.index);
 
   if (!decoder->have_frame_number) {
-    if (SCHRO_PARSE_CODE_NUM_REFS (decoder->code) > 0) {
+    if (SCHRO_PARSE_CODE_NUM_REFS (decoder->parse_code) > 0) {
       SCHRO_ERROR("expected I frame after access unit header");
     }
     decoder->next_frame_number = decoder->picture_number;
@@ -298,7 +298,7 @@ schro_decoder_iterate (SchroDecoder *decoder)
     SCHRO_INFO("next frame number after seek %d", decoder->next_frame_number);
   }
 
-  if (SCHRO_PARSE_CODE_IS_NON_REFERENCE (decoder->code) &&
+  if (SCHRO_PARSE_CODE_IS_NON_REFERENCE (decoder->parse_code) &&
        decoder->skip_value > decoder->skip_ratio) {
 
     decoder->skip_value = 0.8 * decoder->skip_value;
@@ -328,7 +328,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
   output_picture = schro_queue_pull (decoder->output_queue);
 
-  if (SCHRO_PARSE_CODE_NUM_REFS(decoder->code) > 0) {
+  if (SCHRO_PARSE_CODE_NUM_REFS(decoder->parse_code) > 0) {
     int skip = 0;
 
     SCHRO_DEBUG("inter");
@@ -421,7 +421,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
       schro_frame_convert (output_picture, decoder->mc_tmp_frame);
     }
   } else if (!_schro_decode_prediction_only) {
-    if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
+    if (SCHRO_PARSE_CODE_IS_INTER(decoder->parse_code)) {
       schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
     }
 
@@ -433,7 +433,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
     }
   } else {
     SchroFrame *frame;
-    if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
+    if (SCHRO_PARSE_CODE_IS_INTER(decoder->parse_code)) {
       frame = decoder->mc_tmp_frame;
     } else {
       frame = decoder->frame;
@@ -445,13 +445,13 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
       schro_frame_convert (output_picture, frame);
     }
 
-    if (SCHRO_PARSE_CODE_IS_INTER(decoder->code)) {
+    if (SCHRO_PARSE_CODE_IS_INTER(decoder->parse_code)) {
       schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
     }
   }
   output_picture->frame_number = decoder->picture_number;
 
-  if (SCHRO_PARSE_CODE_IS_REFERENCE(decoder->code)) {
+  if (SCHRO_PARSE_CODE_IS_REFERENCE(decoder->parse_code)) {
     SchroFrame *ref;
     SchroFrameFormat frame_format;
 
@@ -570,10 +570,10 @@ schro_decoder_decode_parse_header (SchroDecoder *decoder)
     return;
   }
 
-  decoder->code = schro_bits_decode_bits (decoder->bits, 8);
-  SCHRO_DEBUG ("parse code %02x", decoder->code);
+  decoder->parse_code = schro_bits_decode_bits (decoder->bits, 8);
+  SCHRO_DEBUG ("parse code %02x", decoder->parse_code);
 
-  decoder->n_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->code);
+  decoder->n_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->parse_code);
   SCHRO_DEBUG("n_refs %d", decoder->n_refs);
 
   decoder->next_parse_offset = schro_bits_decode_bits (decoder->bits, 32);
@@ -591,8 +591,6 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
 
   SCHRO_DEBUG("decoding access unit");
   /* parse parameters */
-  decoder->au_picture_number = schro_bits_decode_bits (decoder->bits, 32);
-  SCHRO_DEBUG("au picture number = %d", decoder->au_picture_number);
   decoder->major_version = schro_bits_decode_uint (decoder->bits);
   SCHRO_DEBUG("major_version = %d", decoder->major_version);
   decoder->minor_version = schro_bits_decode_uint (decoder->bits);
@@ -602,8 +600,8 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
   decoder->level = schro_bits_decode_uint (decoder->bits);
   SCHRO_DEBUG("level = %d", decoder->level);
 
-  if (decoder->major_version != 0 || decoder->minor_version != 11) {
-    SCHRO_ERROR("Expecting version number 0.11, got %d.%d",
+  if (decoder->major_version != 0 || decoder->minor_version != 108) {
+    SCHRO_ERROR("Expecting version number 0.108, got %d.%d",
         decoder->major_version, decoder->minor_version);
     //SCHRO_MILD_ASSERT(0);
   }
@@ -614,9 +612,11 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
   }
 
   /* sequence parameters */
+  /* format default */
   index = schro_bits_decode_uint (decoder->bits);
   schro_params_set_video_format (format, index);
 
+  /* image dimensions */
   bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
     format->width = schro_bits_decode_uint (decoder->bits);
@@ -781,16 +781,20 @@ schro_decoder_decode_picture_header (SchroDecoder *decoder)
     SCHRO_DEBUG("ref2 %d", decoder->reference2);
   }
 
-  decoder->n_retire = schro_bits_decode_uint (decoder->bits);
-  SCHRO_DEBUG("n_retire %d", decoder->n_retire);
+  if (!SCHRO_PARSE_CODE_IS_LOW_DELAY(decoder->parse_code)) {
+    decoder->n_retire = schro_bits_decode_uint (decoder->bits);
+    SCHRO_DEBUG("n_retire %d", decoder->n_retire);
 
-  SCHRO_ASSERT(decoder->n_retire <= SCHRO_MAX_REFERENCE_FRAMES);
+    SCHRO_ASSERT(decoder->n_retire <= SCHRO_MAX_REFERENCE_FRAMES);
 
-  for(i=0;i<decoder->n_retire;i++){
-    int offset;
-    offset = schro_bits_decode_sint (decoder->bits);
-    decoder->retire_list[i] = decoder->picture_number + offset;
-    SCHRO_DEBUG("retire %d", decoder->picture_number + offset);
+    for(i=0;i<decoder->n_retire;i++){
+      int offset;
+      offset = schro_bits_decode_sint (decoder->bits);
+      decoder->retire_list[i] = decoder->picture_number + offset;
+      SCHRO_DEBUG("retire %d", decoder->picture_number + offset);
+    }
+  } else {
+    decoder->n_retire = 0;
   }
 }
 
@@ -1108,10 +1112,14 @@ void
 schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
 {
   int bit;
+  int i;
   SchroParams *params = &decoder->params;
 
+#if 0
+  /* FIXME depends on video_format */
   params->wavelet_filter_index = SCHRO_WAVELET_DESL_9_3;
   params->transform_depth = 4;
+#endif
 
   /* transform */
   bit = schro_bits_decode_bit (decoder->bits);
@@ -1127,19 +1135,52 @@ schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
   }
   SCHRO_DEBUG ("transform depth %d", params->transform_depth);
 
-  /* spatial partitioning */
-  params->spatial_partition_flag = schro_bits_decode_bit (decoder->bits);
-  SCHRO_DEBUG ("spatial_partitioning %d", params->spatial_partition_flag);
-  if (params->spatial_partition_flag) {
-    params->nondefault_partition_flag = schro_bits_decode_bit (decoder->bits);
-    if (params->nondefault_partition_flag) {
-      int i;
-      for(i=0;i<params->transform_depth + 1;i++) {
-        params->horiz_codeblocks[i] = schro_bits_decode_uint (decoder->bits);
-        params->vert_codeblocks[i] = schro_bits_decode_uint (decoder->bits);
+  if (!SCHRO_PARSE_CODE_IS_LOW_DELAY(decoder->parse_code)) {
+    /* spatial partitioning */
+    params->spatial_partition_flag = schro_bits_decode_bit (decoder->bits);
+    SCHRO_DEBUG ("spatial_partitioning %d", params->spatial_partition_flag);
+    if (params->spatial_partition_flag) {
+      params->nondefault_partition_flag = schro_bits_decode_bit (decoder->bits);
+      if (params->nondefault_partition_flag) {
+        int i;
+        for(i=0;i<params->transform_depth + 1;i++) {
+          params->horiz_codeblocks[i] = schro_bits_decode_uint (decoder->bits);
+          params->vert_codeblocks[i] = schro_bits_decode_uint (decoder->bits);
+        }
       }
+      params->codeblock_mode_index = schro_bits_decode_uint (decoder->bits);
     }
-    params->codeblock_mode_index = schro_bits_decode_uint (decoder->bits);
+  } else {
+    /* slice parameters */
+    params->slice_width_exp = schro_bits_decode_uint(decoder->bits);
+    params->slice_height_exp = schro_bits_decode_uint(decoder->bits);
+
+    params->slice_bytes_num = schro_bits_decode_uint(decoder->bits);
+    params->slice_bytes_denom = schro_bits_decode_uint(decoder->bits);
+
+    /* quant matrix */
+    bit = schro_bits_decode_bit (decoder->bits);
+    if (bit) {
+      params->quant_matrix[0] = schro_bits_decode_uint (decoder->bits);
+      for(i=0;i<params->transform_depth;i++){
+        params->quant_matrix[1+3*i] = schro_bits_decode_uint (decoder->bits);
+        params->quant_matrix[2+3*i] = schro_bits_decode_uint (decoder->bits);
+        params->quant_matrix[3+3*i] = schro_bits_decode_uint (decoder->bits);
+      }
+    } else {
+      /* FIXME set default quant matrix */
+      SCHRO_ASSERT(0);
+    }
+    bit = schro_bits_decode_bit (decoder->bits);
+    if (bit) {
+      params->luma_quant_offset = schro_bits_decode_sint (decoder->bits);
+      params->chroma1_quant_offset = schro_bits_decode_sint (decoder->bits);
+      params->chroma2_quant_offset = schro_bits_decode_sint (decoder->bits);
+    } else {
+      params->luma_quant_offset = 0;
+      params->chroma1_quant_offset = 0;
+      params->chroma2_quant_offset = 0;
+    }
   }
 }
 

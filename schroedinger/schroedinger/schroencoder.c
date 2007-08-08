@@ -34,7 +34,7 @@ schro_encoder_new (void)
   memset (encoder, 0, sizeof(SchroEncoder));
 
   encoder->version_major = 0;
-  encoder->version_minor = 11;
+  encoder->version_minor = 108;
   encoder->profile = 0;
   encoder->level = 0;
 
@@ -618,7 +618,8 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
 
   /* encode header */
   schro_encoder_encode_parse_info (frame->bits,
-      SCHRO_PARSE_CODE_PICTURE(frame->is_ref, frame->params.num_refs));
+      SCHRO_PARSE_CODE_PICTURE(frame->is_ref, frame->params.num_refs,
+        frame->is_lowdelay));
   schro_encoder_encode_picture_header (frame);
 
   if (frame->params.num_refs > 0) {
@@ -1071,8 +1072,6 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
   schro_encoder_encode_parse_info (bits, SCHRO_PARSE_CODE_ACCESS_UNIT);
   
   /* parse parameters */
-  schro_bits_encode_bits (bits, 32, encoder->au_frame);
-
   schro_bits_encode_uint (bits, encoder->version_major);
   schro_bits_encode_uint (bits, encoder->version_minor);
   schro_bits_encode_uint (bits, encoder->profile);
@@ -1227,10 +1226,14 @@ schro_encoder_encode_picture_header (SchroEncoderFrame *frame)
   }
 
   /* retire list */
-  schro_bits_encode_uint (frame->bits, frame->n_retire);
-  for(i=0;i<frame->n_retire;i++){
-    schro_bits_encode_sint (frame->bits,
-        (int32_t)(frame->retire[i] - frame->frame_number));
+  if (!frame->is_lowdelay) {
+    schro_bits_encode_uint (frame->bits, frame->n_retire);
+    for(i=0;i<frame->n_retire;i++){
+      schro_bits_encode_sint (frame->bits,
+          (int32_t)(frame->retire[i] - frame->frame_number));
+    }
+  } else {
+    SCHRO_ASSERT(frame->n_retire == 0);
   }
 }
 
@@ -1263,18 +1266,49 @@ schro_encoder_encode_transform_parameters (SchroEncoderFrame *frame)
   }
 
   /* spatial partitioning */
-  schro_bits_encode_bit (bits, params->spatial_partition_flag);
-  if (params->spatial_partition_flag) {
-    schro_bits_encode_bit (bits, params->nondefault_partition_flag);
-    if (params->nondefault_partition_flag) {
-      int i;
+  if (!frame->is_lowdelay) {
+    schro_bits_encode_bit (bits, params->spatial_partition_flag);
+    if (params->spatial_partition_flag) {
+      schro_bits_encode_bit (bits, params->nondefault_partition_flag);
+      if (params->nondefault_partition_flag) {
+        int i;
 
-      for(i=0;i<params->transform_depth+1;i++){
-        schro_bits_encode_uint (bits, params->horiz_codeblocks[i]);
-        schro_bits_encode_uint (bits, params->vert_codeblocks[i]);
+        for(i=0;i<params->transform_depth+1;i++){
+          schro_bits_encode_uint (bits, params->horiz_codeblocks[i]);
+          schro_bits_encode_uint (bits, params->vert_codeblocks[i]);
+        }
+      }
+      schro_bits_encode_uint (bits, params->codeblock_mode_index);
+    }
+  } else {
+    int encode_quant_matrix;
+    int encode_quant_offsets;
+
+    schro_bits_encode_uint (bits, params->slice_width_exp);
+    schro_bits_encode_uint (bits, params->slice_height_exp);
+    schro_bits_encode_uint (bits, params->slice_bytes_num);
+    schro_bits_encode_uint (bits, params->slice_bytes_denom);
+
+    /* FIXME */
+    encode_quant_matrix = TRUE;
+    encode_quant_offsets = TRUE;
+
+    schro_bits_encode_bit (bits, encode_quant_matrix);
+    if (encode_quant_matrix) {
+      int i;
+      schro_bits_encode_uint (bits, params->quant_matrix[0]);
+      for(i=0;i<params->transform_depth;i++){
+        schro_bits_encode_uint (bits, params->quant_matrix[1+3*i]);
+        schro_bits_encode_uint (bits, params->quant_matrix[2+3*i]);
+        schro_bits_encode_uint (bits, params->quant_matrix[3+3*i]);
       }
     }
-    schro_bits_encode_uint (bits, params->codeblock_mode_index);
+    schro_bits_encode_bit (bits, encode_quant_offsets);
+    if (encode_quant_offsets) {
+      schro_bits_encode_uint (bits, params->luma_quant_offset);
+      schro_bits_encode_uint (bits, params->chroma1_quant_offset);
+      schro_bits_encode_uint (bits, params->chroma2_quant_offset);
+    }
   }
 }
 

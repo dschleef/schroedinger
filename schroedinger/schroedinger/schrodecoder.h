@@ -37,8 +37,7 @@ struct _SchroDecoder {
   int16_t *tmpbuf;
   int16_t *tmpbuf2;
 
-  int code;
-  SchroPictureNumber au_picture_number;
+  int parse_code;
   int next_parse_offset;
   int prev_parse_offset;
 

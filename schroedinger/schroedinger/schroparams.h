@@ -109,9 +109,14 @@ struct _SchroParams {
   int picture_weight_2;
 
   /* DiracPro parameters */
-  int slice_width;
-  int slice_height;
-  int slice_bits;
+  int slice_width_exp;
+  int slice_height_exp;
+  int slice_bytes_num;
+  int slice_bytes_denom;
+  int quant_matrix[3*SCHRO_MAX_TRANSFORM_DEPTH+1];
+  int luma_quant_offset;
+  int chroma1_quant_offset;
+  int chroma2_quant_offset;
 
   /* calculated sizes */
   int iwt_chroma_width;

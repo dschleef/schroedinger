@@ -87,35 +87,9 @@ schro_params_init (SchroParams *params, int video_format)
     }
   }
 
-  switch(video_format) {
-    case 0: case 3: case 4: case 5: case 6: case 7: case 8:
-      params->slice_width = 32;
-      params->slice_height = 32;
-      params->slice_bits = 512;
-      break;
-    case 1: case 2:
-      params->slice_width = 16;
-      params->slice_height = 16;
-      params->slice_bits = 256;
-      break;
-    case 9:
-      params->slice_width = 48;
-      params->slice_height = 48;
-      params->slice_bits = 768;
-      break;
-    case 10: case 11: case 12:
-      params->slice_width = 64;
-      params->slice_height = 64;
-      params->slice_bits = 1024;
-      break;
-    default:
-      SCHRO_ASSERT(0);
-  }
-
   /* other initializations */
 
   params->spatial_partition_flag = TRUE;
-params->spatial_partition_flag = FALSE;
   params->nondefault_partition_flag = FALSE;
   params->codeblock_mode_index = 1;
   params->have_global_motion = FALSE;

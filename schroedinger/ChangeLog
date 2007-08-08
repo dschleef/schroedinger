@@ -1,3 +1,15 @@
+2007-08-08  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	  Update to spec version 1.0.0_pre8.  Add some low delay
+	  parsing.  Changes BITSTREAM.
+
 2007-08-07  David Schleef  <ds@schleef.org>
 
 	* testsuite/Makefile.am:
