@@ -23,6 +23,10 @@ static void schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame,
 static void schro_encoder_fixup_offsets (SchroEncoder *encoder,
     SchroBuffer *buffer);
 static int schro_encoder_iterate (SchroEncoder *encoder);
+static void schro_encoder_encode_slice (SchroEncoderFrame *frame, int x, int y,
+    int slice_bytes);
+static int schro_encoder_estimate_slice (SchroEncoderFrame *frame, int x, int y,
+    int slice_bytes, int qindex);
 
 
 SchroEncoder *
@@ -1718,6 +1722,314 @@ out:
     schro_bits_append (frame->bits, arith->buffer->data, arith->offset);
   }
   schro_arith_free (arith);
+}
+
+void
+schro_encoder_encode_low_delay_transform_data (SchroEncoderFrame *frame)
+{
+  SchroParams *params = &frame->params;
+  int x,y;
+  int slice_width;
+  int slice_height;
+
+  slice_width = 1<<params->slice_width_exp;
+  slice_height = 1<<params->slice_height_exp;
+
+  for(y=0;y<params->iwt_luma_height;y+=slice_height) {
+    for(x=0;x<params->iwt_luma_width;x+=slice_width) {
+      schro_encoder_estimate_slice (frame, x, y, 10, 10);
+      schro_encoder_encode_slice (frame, x, y, 10);
+    }
+  }
+
+}
+
+/* FIXME dup'd in schrodecoder.c */
+static void
+schro_slice_get (SchroFrame *frame, int component, int position,
+    SchroParams *params,
+    int16_t **data, int *stride, int *width, int *height)
+{
+  int shift;
+  int w;
+  SchroFrameComponent *comp = &frame->components[component];
+
+  shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
+
+  *stride = comp->stride << shift;
+  *width = (1<<params->slice_width_exp) >> shift;
+  *height = (1<<params->slice_height_exp) >> shift;
+  w = params->iwt_luma_width >> shift;
+  if (component > 0) {
+    *width >>= params->video_format->chroma_h_shift;
+    *height >>= params->video_format->chroma_v_shift;
+    w = params->iwt_chroma_width >> shift;
+  }
+
+  *data = comp->data;
+  if (position & 2) {
+    *data = OFFSET(*data, (*stride)>>1);
+  }
+  if (position & 1) {
+    *data = OFFSET(*data, w*sizeof(int16_t));
+  }
+}
+
+/* FIXME dup'd in schrodecoder.c */
+static int
+ilog2up (unsigned int x)
+{
+  int i;
+
+  for(i=0;i<32;i++){
+    if (x == 0) return i;
+    x >>= 1;
+  }
+  return 0;
+}
+
+static int
+schro_dc_predict (int16_t *data, int stride, int x, int y)
+{
+  int16_t *line = OFFSET(data, stride * y);
+  int16_t *prev_line = OFFSET(data, stride * (y-1));
+
+  if (y > 0) {
+    if (x > 0) {
+      return schro_divide(line[x-1] + prev_line[x] + prev_line[x-1] + 1,3);
+    } else {
+      return prev_line[x];
+    }
+  } else {
+    if (x > 0) {
+      return line[x-1];
+    } else {
+      return 0;
+    }
+  }
+}
+
+static void
+schro_encoder_encode_slice (SchroEncoderFrame *frame, int x, int y,
+    int slice_bytes)
+{
+  SchroParams *params = &frame->params;
+  int qindex;
+  int16_t *data;
+  int16_t *line;
+  int stride;
+  int width;
+  int height;
+  int length_bits;
+  int i;
+  int quant_index;
+  int quant_factor;
+  int quant_offset;
+  int ix, iy;
+  int q;
+
+  qindex = 20;
+
+  schro_bits_encode_bits (frame->bits, 7, qindex);
+
+  length_bits = ilog2up (8*slice_bytes);
+  schro_bits_encode_bits (frame->bits, length_bits, 0);
+  
+  for (i=0;i<1+3*params->transform_depth;i++){
+    schro_slice_get (frame->iwt_frame, 0, frame->subbands[i].position,
+        params, &data, &stride, &width, &height);
+
+    quant_index = qindex + params->quant_matrix[i] + params->luma_quant_offset;
+    quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
+    quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+
+    if (i==0) {
+      int pred_value;
+
+      for(iy=0;iy<height;iy++) {
+        line = OFFSET(data, stride * (y+iy));
+        for(ix=0;ix<width;ix++){
+          pred_value = schro_dc_predict (data, stride, x+ix, y+iy);
+          q = quantize (data[x+ix] - pred_value, quant_factor, quant_offset,
+              0);
+          schro_bits_encode_sint (frame->bits, q);
+          data[x+ix] = pred_value + dequantize (q, quant_factor, quant_offset);
+        }
+      }
+    } else {
+      for(iy=0;iy<height;iy++) {
+        line = OFFSET(data, stride * (y+iy));
+        for(ix=0;ix<width;ix++){
+          q = quantize (data[x+ix], quant_factor, quant_offset, 0);
+          schro_bits_encode_sint (frame->bits, q);
+          data[x+ix] = dequantize (q, quant_factor, quant_offset);
+        }
+      }
+    }
+  }
+
+  for (i=0;i<1+3*params->transform_depth;i++){
+    int16_t *data2;
+    int quant_factor2;
+    int quant_offset2;
+
+    schro_slice_get (frame->iwt_frame, 1, frame->subbands[i].position,
+        params, &data, &stride, &width, &height);
+    schro_slice_get (frame->iwt_frame, 2, frame->subbands[i].position,
+        params, &data2, &stride, &width, &height);
+
+    quant_index = qindex + params->quant_matrix[i] + params->chroma1_quant_offset;
+    quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
+    quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+
+    quant_index = qindex + params->quant_matrix[i] + params->chroma2_quant_offset;
+    quant_factor2 = schro_table_quant[CLAMP(quant_index,0,60)];
+    quant_offset2  = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+
+    if (i==0) {
+      int pred_value;
+      int16_t *line2;
+
+      for(iy=0;iy<height;iy++) {
+        line = OFFSET(data, stride * (y+iy));
+        line2 = OFFSET(data2, stride * (y+iy));
+        for(ix=0;ix<width;ix++){
+          pred_value = schro_dc_predict (data, stride, x+ix, y+iy);
+          q = quantize (data[x+ix] - pred_value, quant_factor, quant_offset,
+              0);
+          schro_bits_encode_sint (frame->bits, q);
+          data[x+ix] = pred_value + dequantize (q, quant_factor, quant_offset);
+
+          pred_value = schro_dc_predict (data2, stride, x+ix, y+iy);
+          q = quantize (data2[x+ix] - pred_value, quant_factor2, quant_offset2,
+              0);
+          schro_bits_encode_sint (frame->bits, q);
+          data2[x+ix] = pred_value + dequantize (q, quant_factor2, quant_offset2);
+        }
+      }
+    } else {
+      for(iy=0;iy<height;iy++) {
+        line = OFFSET(data, stride * (y+iy));
+        for(ix=0;ix<width;ix++){
+          q = quantize (data[x+ix], quant_factor, quant_offset, 0);
+          schro_bits_encode_sint (frame->bits, q);
+          data[x+ix] = dequantize (q, quant_factor, quant_offset);
+        }
+      }
+    }
+  }
+}
+
+static int
+schro_encoder_estimate_slice (SchroEncoderFrame *frame, int x, int y,
+    int slice_bytes, int qindex)
+{
+  SchroParams *params = &frame->params;
+  int16_t *data;
+  int16_t *line;
+  int stride;
+  int width;
+  int height;
+  int length_bits;
+  int i;
+  int quant_index;
+  int quant_factor;
+  int quant_offset;
+  int ix, iy;
+  int q;
+  int n_bits = 0;
+
+  n_bits += 7;
+
+  length_bits = ilog2up (8*slice_bytes);
+  n_bits += length_bits;
+  
+  for (i=0;i<1+3*params->transform_depth;i++){
+    schro_slice_get (frame->iwt_frame, 0, frame->subbands[i].position,
+        params, &data, &stride, &width, &height);
+
+    quant_index = qindex + params->quant_matrix[i] + params->luma_quant_offset;
+    quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
+    quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+
+    if (i==0) {
+      int pred_value;
+
+      for(iy=0;iy<height;iy++) {
+        line = OFFSET(data, stride * (y+iy));
+        for(ix=0;ix<width;ix++){
+          pred_value = schro_dc_predict (data, stride, x+ix, y+iy);
+          q = quantize (data[x+ix] - pred_value, quant_factor, quant_offset,
+              0);
+          n_bits += schro_bits_estimate_sint (q);
+          data[x+ix] = pred_value + dequantize (q, quant_factor, quant_offset);
+        }
+      }
+    } else {
+      for(iy=0;iy<height;iy++) {
+        line = OFFSET(data, stride * (y+iy));
+        for(ix=0;ix<width;ix++){
+          q = quantize (data[x+ix], quant_factor, quant_offset, 0);
+          n_bits += schro_bits_estimate_sint (q);
+        }
+      }
+    }
+  }
+
+  for (i=0;i<1+3*params->transform_depth;i++){
+    int16_t *data2;
+    int quant_factor2;
+    int quant_offset2;
+
+    schro_slice_get (frame->iwt_frame, 1, frame->subbands[i].position,
+        params, &data, &stride, &width, &height);
+    schro_slice_get (frame->iwt_frame, 2, frame->subbands[i].position,
+        params, &data2, &stride, &width, &height);
+
+    quant_index = qindex + params->quant_matrix[i] + params->chroma1_quant_offset;
+    quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
+    quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+
+    quant_index = qindex + params->quant_matrix[i] + params->chroma2_quant_offset;
+    quant_factor2 = schro_table_quant[CLAMP(quant_index,0,60)];
+    quant_offset2  = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+
+    if (i==0) {
+      int pred_value;
+      int16_t *line2;
+
+      for(iy=0;iy<height;iy++) {
+        line = OFFSET(data, stride * (y+iy));
+        line2 = OFFSET(data2, stride * (y+iy));
+        for(ix=0;ix<width;ix++){
+          pred_value = schro_dc_predict (data, stride, x+ix, y+iy);
+          q = quantize (data[x+ix] - pred_value, quant_factor, quant_offset,
+              0);
+          n_bits += schro_bits_estimate_sint (q);
+          data[x+ix] = pred_value + dequantize (q, quant_factor, quant_offset);
+
+          pred_value = schro_dc_predict (data2, stride, x+ix, y+iy);
+          q = quantize (data2[x+ix] - pred_value, quant_factor2, quant_offset2,
+              0);
+          n_bits += schro_bits_estimate_sint (q);
+          data2[x+ix] = pred_value + dequantize (q, quant_factor2, quant_offset2);
+        }
+      }
+    } else {
+      for(iy=0;iy<height;iy++) {
+        line = OFFSET(data, stride * (y+iy));
+        for(ix=0;ix<width;ix++){
+          q = quantize (data[x+ix], quant_factor, quant_offset, 0);
+          n_bits += schro_bits_estimate_sint (q);
+
+          q = quantize (data2[x+ix], quant_factor2, quant_offset2, 0);
+          n_bits += schro_bits_estimate_sint (q);
+        }
+      }
+    }
+  }
+
+  return n_bits;
 }
 
 /* frame queue */

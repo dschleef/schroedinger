@@ -1,3 +1,11 @@
+2007-08-13  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrobits.c:
+	* schroedinger/schrobits.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	  First attempt at low delay syntax
+
 2007-08-08  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrobitstream.h:

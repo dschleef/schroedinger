@@ -27,13 +27,27 @@ schro_bits_free (SchroBits *bits)
   free(bits);
 }
 
+void
+schro_bits_copy (SchroBits *dest, SchroBits *src)
+{
+  memcpy (dest, src, sizeof(SchroBits));
+}
+
 static void
 schro_bits_shift_in (SchroBits *bits)
 {
-  if (bits->n < bits->buffer->length) {
+  if (bits->n_bits >= 8) {
     bits->value = bits->buffer->data[bits->n];
     bits->n++;
     bits->shift = 7;
+    bits->n_bits-=8;
+    return;
+  }
+  if (bits->n_bits > 0) {
+    bits->value = bits->buffer->data[bits->n] >> (8-bits->n_bits);
+    bits->n++;
+    bits->shift = 8 - bits->n_bits;
+    bits->n_bits = 0;
     return;
   }
   bits->value = 0xff;
@@ -60,12 +74,19 @@ schro_bits_shift_out (SchroBits *bits)
 }
 
 void
+schro_bits_set_length (SchroBits *bits, int n_bits)
+{
+  bits->n_bits = n_bits;
+}
+
+void
 schro_bits_decode_init (SchroBits *bits, SchroBuffer *buffer)
 {
   bits->buffer = buffer;
   bits->n = 0;
   bits->shift = -1;
   bits->type = SCHRO_BITS_DECODE;
+  bits->n_bits = buffer->length * 8;
 }
 
 void
@@ -143,6 +164,30 @@ schro_bits_skip (SchroBits *bits, int n_bytes)
 
   bits->n += n_bytes;
 }
+
+void
+schro_bits_skip_bits (SchroBits *bits, int n_bits)
+{
+  if (bits->shift >= 0) {
+    if (n_bits <= bits->shift + 1) {
+      bits->shift -= n_bits;
+      return;
+    }
+    n_bits -= bits->shift + 1;
+    bits->shift = -1;
+  }
+  if (n_bits >= 8) {
+    bits->n += (n_bits>>3);
+    bits->n_bits -= (n_bits & ~7);
+    if (bits->n_bits < 0) {
+      bits->error = TRUE;
+    }
+  }
+  schro_bits_shift_in (bits);
+
+  bits->shift -= n_bits;
+}
+
 
 void
 schro_bits_encode_bit (SchroBits *bits, int value)
@@ -260,5 +305,28 @@ int schro_bits_decode_sint (SchroBits *bits)
   }
 
   return value;
+}
+
+int
+schro_bits_estimate_uint (int value)
+{
+  int n_bits;
+
+  value++;
+  n_bits = maxbit(value);
+  return n_bits + n_bits - 1;
+}
+
+int
+schro_bits_estimate_sint (int value)
+{
+  int n_bits;
+
+  if (value < 0) {
+    value = -value;
+  }
+  n_bits = schro_bits_estimate_uint (value);
+  if (value) n_bits++;
+  return n_bits;
 }
 

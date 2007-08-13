@@ -21,6 +21,8 @@ static SchroUpsampledFrame * schro_decoder_reference_get (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
 static void schro_decoder_reference_retire (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
+static void schro_decoder_decode_slice (SchroDecoder *decoder, int x, int y,
+    int slice_bytes);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
@@ -1199,7 +1201,6 @@ schro_decoder_decode_transform_data (SchroDecoder *decoder)
   }
 }
 
-#if 0
 static int
 dequantize (int q, int quant_factor, int quant_offset)
 {
@@ -1210,7 +1211,6 @@ dequantize (int q, int quant_factor, int quant_offset)
     return (q * quant_factor + quant_offset + 2)>>2;
   }
 }
-#endif
 
 void
 codeblock_line_decode_generic (int16_t *line, int16_t *prev_line, int j, int xmin, int xmax,
@@ -1654,6 +1654,170 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
   }
 }
 
+void
+schro_decoder_decode_low_delay_transform_data (SchroDecoder *decoder)
+{
+  SchroParams *params = &decoder->params;
+  int x,y;
+  int slice_width;
+  int slice_height;
+
+
+  slice_width = 1<<params->slice_width_exp;
+  slice_height = 1<<params->slice_height_exp;
+
+  for(y=0;y<params->iwt_luma_height;y+=slice_height) {
+
+    for(x=0;x<params->iwt_luma_width;x+=slice_width) {
+      /* FIXME */
+      schro_decoder_decode_slice (decoder, x, y, 10);
+    }
+  }
+
+  if (decoder->n_refs == 0) {
+    int i;
+    int16_t *data;
+    int stride;
+    int width;
+    int height;
+
+    for(i=0;i<3;i++){
+      schro_subband_get (decoder->frame, i, decoder->subbands[0].position,
+          params, &data, &stride, &width, &height);
+
+      schro_decoder_subband_dc_predict (data, stride, width, height);
+    }
+  }
+}
+
+void
+schro_slice_get (SchroFrame *frame, int component, int position,
+    SchroParams *params,
+    int16_t **data, int *stride, int *width, int *height)
+{
+  int shift;
+  int w;
+  SchroFrameComponent *comp = &frame->components[component];
+
+  shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
+
+  *stride = comp->stride << shift;
+  *width = (1<<params->slice_width_exp) >> shift;
+  *height = (1<<params->slice_height_exp) >> shift;
+  w = params->iwt_luma_width >> shift;
+  if (component > 0) {
+    *width >>= params->video_format->chroma_h_shift;
+    *height >>= params->video_format->chroma_v_shift;
+    w = params->iwt_chroma_width >> shift;
+  }
+
+  *data = comp->data;
+  if (position & 2) {
+    *data = OFFSET(*data, (*stride)>>1);
+  }
+  if (position & 1) {
+    *data = OFFSET(*data, w*sizeof(int16_t));
+  }
+}
+
+static int
+ilog2up (unsigned int x)
+{
+  int i;
+
+  for(i=0;i<32;i++){
+    if (x == 0) return i;
+    x >>= 1;
+  }
+  return 0;
+}
+
+static void
+schro_decoder_decode_slice (SchroDecoder *decoder, int x, int y,
+    int slice_bytes)
+{
+  SchroParams *params = &decoder->params;
+  int16_t *data;
+  int16_t *line;
+  int stride;
+  int width;
+  int height;
+  int i;
+  int ix, iy;
+  int quant_factor;
+  int quant_offset;
+  int quant_index;
+  int value;
+  int qindex;
+  int length_bits;
+  int slice_y_length;
+  SchroBits ybits;
+  SchroBits slice_bits;
+
+  schro_bits_copy (&slice_bits, decoder->bits);
+  schro_bits_set_length (&slice_bits, slice_bytes * 8);
+
+  qindex = schro_bits_decode_bits (&slice_bits, 7);
+  length_bits = ilog2up(8*slice_bytes);
+
+  slice_y_length = schro_bits_decode_bits (&slice_bits, length_bits);
+
+  schro_bits_copy (&ybits, decoder->bits);
+  schro_bits_set_length (&ybits, slice_y_length);
+
+  schro_bits_skip (&slice_bits, slice_y_length);
+
+  for(i=0;i<1+3*params->transform_depth;i++) {
+    schro_slice_get (decoder->frame, 0, decoder->subbands[i].position,
+        params, &data, &stride, &width, &height);
+
+    quant_index = qindex + params->quant_matrix[i] + params->luma_quant_offset;
+
+    quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
+    quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+
+    for(iy=0;iy<height;iy++){
+      line = OFFSET(data, stride * (y + iy));
+      for(ix=0;ix<width;ix++){
+        value = schro_bits_decode_sint (&ybits);
+        data[x+ix] = dequantize (value, quant_factor, quant_offset);
+      }
+    }
+  }
+
+  for(i=0;i<1+3*params->transform_depth;i++) {
+    int16_t *data2;
+    int16_t *line2;
+    int quant_factor2;
+    int quant_offset2;
+
+    schro_slice_get (decoder->frame, 1, decoder->subbands[i].position,
+        params, &data, &stride, &width, &height);
+    schro_slice_get (decoder->frame, 2, decoder->subbands[i].position,
+        params, &data2, &stride, &width, &height);
+
+    quant_index = qindex + params->quant_matrix[i] + params->chroma1_quant_offset;
+    quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
+    quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+
+    quant_index = qindex + params->quant_matrix[i] + params->chroma2_quant_offset;
+    quant_factor2 = schro_table_quant[CLAMP(quant_index,0,60)];
+    quant_offset2 = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+
+    for(iy=0;iy<height;iy++){
+      line = OFFSET(data, stride * (y + iy));
+      line2 = OFFSET(data2, stride * (y + iy));
+      for(ix=0;ix<width;ix++){
+        value = schro_bits_decode_sint (&slice_bits);
+        data[x+ix] = dequantize (value, quant_factor, quant_offset);
+        value = schro_bits_decode_sint (&slice_bits);
+        data2[x+ix] = dequantize (value, quant_factor2, quant_offset2);
+      }
+    }
+  }
+
+  schro_bits_skip (decoder->bits, slice_bytes);
+}
 
 
 /* reference pool */
