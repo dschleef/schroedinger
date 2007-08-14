@@ -1316,6 +1316,28 @@ codeblock_line_decode_generic (SchroDecoderSubbandContext *ctx,
   }
 }
 
+static void
+codeblock_line_decode_noarith (SchroDecoderSubbandContext *ctx,
+    int16_t *line, SchroDecoder *decoder)
+{
+  int i;
+
+  for(i=ctx->xmin;i<ctx->xmax;i++){
+    int v;
+
+    v = schro_bits_decode_uint (decoder->bits);
+    if (v) {
+      v = (ctx->quant_offset + ctx->quant_factor * v + 2)>>2;
+      if (schro_bits_decode_bit (decoder->bits)) {
+        v = -v;
+      }
+      line[i] = v;
+    } else {
+      line[i] = 0;
+    }
+  }
+}
+
 #if 0
 static void
 codeblock_line_decode_deep (SchroDecoderSubbandContext *ctx,
@@ -1572,7 +1594,11 @@ schro_decoder_decode_codeblock (SchroDecoder *decoder,
     int bit;
 
     /* zero codeblock */
-    bit = _schro_arith_decode_bit (ctx->arith, SCHRO_CTX_ZERO_CODEBLOCK);
+    if (SCHRO_PARSE_CODE_IS_NOARITH(decoder->parse_code)) {
+      bit = schro_bits_decode_bit (decoder->bits);
+    } else {
+      bit = _schro_arith_decode_bit (ctx->arith, SCHRO_CTX_ZERO_CODEBLOCK);
+    }
     if (bit) {
       schro_decoder_zero_block (ctx, ctx->xmin, ctx->ymin,
           ctx->xmax, ctx->ymax);
@@ -1581,9 +1607,13 @@ schro_decoder_decode_codeblock (SchroDecoder *decoder,
   }
 
   if (ctx->have_quant_offset) {
-    ctx->quant_index += _schro_arith_decode_sint (ctx->arith,
-        SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
-        SCHRO_CTX_QUANTISER_SIGN);
+    if (SCHRO_PARSE_CODE_IS_NOARITH(decoder->parse_code)) {
+      ctx->quant_index += schro_bits_decode_sint (decoder->bits);
+    } else {
+      ctx->quant_index += _schro_arith_decode_sint (ctx->arith,
+          SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
+          SCHRO_CTX_QUANTISER_SIGN);
+    }
 
     /* FIXME check quant_index */
     SCHRO_MILD_ASSERT(ctx->quant_index >= 0);
@@ -1611,7 +1641,9 @@ schro_decoder_decode_codeblock (SchroDecoder *decoder,
     } else {
       prev_line = OFFSET(ctx->data, (j-1)*ctx->stride);
     }
-    if (ctx->position >= 4) {
+    if (SCHRO_PARSE_CODE_IS_NOARITH(decoder->parse_code)) {
+      codeblock_line_decode_noarith (ctx, p, decoder);
+    } else if (ctx->position >= 4) {
       if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(ctx->position)) {
         codeblock_line_decode_p_horiz (ctx, p, j, parent_line, prev_line);
       } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(ctx->position)) {
@@ -1669,11 +1701,12 @@ schro_decoder_decode_subband (SchroDecoder *decoder,
   buffer = schro_buffer_new_subbuffer (decoder->bits->buffer,
       schro_bits_get_offset(decoder->bits), ctx->subband_length);
 
-  ctx->arith = schro_arith_new ();
-  schro_arith_decode_init (ctx->arith, buffer);
+  if (!SCHRO_PARSE_CODE_IS_NOARITH(decoder->parse_code)) {
+    ctx->arith = schro_arith_new ();
+    schro_arith_decode_init (ctx->arith, buffer);
+  }
 
   schro_decoder_setup_codeblocks (decoder, ctx);
-
 
   for(y=0;y<ctx->vert_codeblocks;y++){
     ctx->ymin = (ctx->height*y)/ctx->vert_codeblocks;
@@ -1687,22 +1720,24 @@ schro_decoder_decode_subband (SchroDecoder *decoder,
       schro_decoder_decode_codeblock (decoder, ctx);
     }
   }
+  if (!SCHRO_PARSE_CODE_IS_NOARITH(decoder->parse_code)) {
 #if 0
-  if (arith->offset < buffer->length) {
-    SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
-        arith->offset, buffer->length);
-  }
+    if (arith->offset < buffer->length) {
+      SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
+          arith->offset, buffer->length);
+    }
 #endif
 #if 0
-  if (arith->offset > buffer->length + 6) {
-    SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
-        arith->offset, buffer->length);
-  }
+    if (arith->offset > buffer->length + 6) {
+      SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
+          arith->offset, buffer->length);
+    }
 #endif
-  schro_arith_free (ctx->arith);
-  schro_buffer_unref (buffer);
+    schro_arith_free (ctx->arith);
+    schro_buffer_unref (buffer);
 
-  schro_bits_skip (decoder->bits, ctx->subband_length);
+    schro_bits_skip (decoder->bits, ctx->subband_length);
+  }
 
   if (ctx->position == 0 && decoder->n_refs == 0) {
     schro_decoder_subband_dc_predict (ctx->data, ctx->stride, ctx->width, ctx->height);
