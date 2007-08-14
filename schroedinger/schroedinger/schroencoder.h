@@ -92,7 +92,6 @@ struct _SchroEncoderFrame {
 
   int estimated_entropy;
 
-
   int subband_size;
   SchroBuffer *subband_buffer;
 
@@ -101,7 +100,7 @@ struct _SchroEncoderFrame {
   int16_t *tmpbuf;
   int16_t *tmpbuf2;
 
-  SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
+  int quant_index[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3];
   SchroBits *bits;
   SchroParams params;
   SchroEncoder *encoder;

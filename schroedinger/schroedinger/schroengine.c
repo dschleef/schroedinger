@@ -65,9 +65,6 @@ init_params (SchroEncoderFrame *frame)
   
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
-  schro_params_init_subbands (params, frame->subbands,
-      frame->iwt_frame->components[0].stride,
-      frame->iwt_frame->components[1].stride);
   schro_encoder_choose_quantisers (frame);
 }
 
@@ -637,6 +634,7 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
   SchroEncoderFrame *frame;
   int i;
   int j;
+  int comp;
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     int is_ref;
@@ -707,8 +705,10 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
         params->ybsep_luma = 8;
         params->yblen_luma = 8;
 
-        for(j=0;j<19;j++){
-          frame->subbands[j].quant_index = 0;
+        for(comp=0;comp<3;comp++){
+          for(j=0;j<1+3*SCHRO_MAX_TRANSFORM_DEPTH;j++){
+            frame->quant_index[comp][j] = 0;
+          }
         }
 
         if (params->num_refs > 0) {

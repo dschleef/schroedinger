@@ -61,7 +61,6 @@ struct _GstSchrotoy
 
   SchroVideoFormat format;
   SchroParams params;
-  SchroSubband subbands[20];
 
   SchroFrame *tmp_frame;
   int16_t *tmpbuf;
@@ -304,7 +303,7 @@ gst_schrotoy_handle_src_event (GstPad * pad, GstEvent * event)
 
 static void
 quantize_frame (SchroFrame *frame, int *quant_index_0, int *quant_index_1,
-    SchroSubband *subbands, SchroParams *params);
+    SchroParams *params);
 
 static void
 mark_frame (SchroFrame *frame, int val)
@@ -391,9 +390,6 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
       params->video_format->width, params->video_format->height);
 
   schro_frame_convert (compress->tmp_frame, frame);
-  schro_params_init_subbands (&compress->params, compress->subbands,
-      compress->tmp_frame->components[0].stride,
-      compress->tmp_frame->components[1].stride);
   schro_frame_iwt_transform (compress->tmp_frame, &compress->params,
       compress->tmpbuf);
 
@@ -468,7 +464,7 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
 #endif
 
     quantize_frame (compress->tmp_frame, quant_index_0, quant_index_1,
-        compress->subbands, &compress->params);
+        &compress->params);
   }
 
   schro_frame_inverse_iwt_transform (compress->tmp_frame, &compress->params,
@@ -512,7 +508,7 @@ quantize (int value, int quant_factor, int quant_offset)
 
 static void
 quantize_frame (SchroFrame *frame, int *quant_index_0, int *quant_index_1,
-    SchroSubband *subbands, SchroParams *params)
+    SchroParams *params)
 {
   int index;
   int i,j;
@@ -528,8 +524,10 @@ quantize_frame (SchroFrame *frame, int *quant_index_0, int *quant_index_1,
   for(index=0;index<13;index++){
     for (side=0;side<2;side++) {
       int xmin, xmax;
+      int position;
 
-      schro_subband_get (frame, 0, subbands[index].position, params,
+      position = schro_subband_get_position (index);
+      schro_subband_get (frame, 0, position, params,
           &data, &stride, &width, &height);
 
       if (side) {

@@ -1,5 +1,18 @@
 2007-08-14  David Schleef  <ds@schleef.org>
 
+	* gst/gstschrodownsample.c:
+	* gst/gstschrofilter.c:
+	* gst/gstschrotoy.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schroquantiser.c:
+	  More refactoring.  Remove SchroSubband completely.
+
+2007-08-14  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c: Add some noarith code.
 	* schroedinger/schroencoder.c: Refactoring.
 

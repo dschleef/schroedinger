@@ -61,7 +61,6 @@ struct _GstSchrofilter
 
   SchroVideoFormat format;
   SchroParams params;
-  SchroSubband subbands[20];
 
   SchroFrame *tmp_frame;
   int16_t *tmpbuf;

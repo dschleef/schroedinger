@@ -12,7 +12,6 @@ typedef uint32_t SchroPictureNumber;
 
 typedef struct _SchroVideoFormat SchroVideoFormat;
 typedef struct _SchroParams SchroParams;
-typedef struct _SchroSubband SchroSubband;
 typedef struct _SchroMotionVector SchroMotionVector;
 typedef struct _SchroMotionVectorDC SchroMotionVectorDC;
 typedef struct _SchroMotionField SchroMotionField;
@@ -131,11 +130,6 @@ struct _SchroParams {
   int y_num_blocks;
 };
 
-struct _SchroSubband {
-  int quant_index;
-  int position;
-};
-
 #define SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position) (((position)&3) == 2)
 #define SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position) (((position)&3) == 1)
 #define SCHRO_SUBBAND_SHIFT(position) ((position)>>2)
@@ -195,8 +189,6 @@ int schro_params_get_block_params (SchroParams *params);
 
 void schro_params_set_default_codeblock (SchroParams *params);
 
-void schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
-    int luma_frame_stride, int chroma_frame_stride);
 void schro_subband_get_frame_component (SchroFrameComponent *dest,
     SchroFrameComponent *full_frame, int position);
 void schro_subband_get (SchroFrame *frame, int component, int position,

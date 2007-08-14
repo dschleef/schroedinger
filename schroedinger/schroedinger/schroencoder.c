@@ -1337,7 +1337,6 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int componen
     int index)
 {
   static const int wavelet_extent[8] = { 2, 1, 2, 0, 0, 0, 4, 2 };
-  SchroSubband *subband = frame->subbands + index;
   SchroParams *params = &frame->params;
   int stride;
   int width;
@@ -1348,11 +1347,13 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int componen
   int16_t *data;
   int16_t *line;
   int i,j;
+  int position;
 
-  schro_subband_get (frame->iwt_frame, component, subband->position,
+  position = schro_subband_get_position (index);
+  schro_subband_get (frame->iwt_frame, component, position,
       params, &data, &stride, &width, &height);
 
-  shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(subband->position);
+  shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
   if (component == 0) {
     w = ROUND_UP_SHIFT(params->video_format->width, shift);
     h = ROUND_UP_SHIFT(params->video_format->height, shift);
@@ -1429,10 +1430,9 @@ static int
 schro_encoder_quantize_subband (SchroEncoderFrame *frame, int component, int index,
     int16_t *quant_data)
 {
-  SchroSubband *subband = frame->subbands + index;
   int pred_value;
+  int quant_index;
   int quant_factor;
-  unsigned int inv_quant_factor;
   int quant_offset;
   int stride;
   int width;
@@ -1442,20 +1442,22 @@ schro_encoder_quantize_subband (SchroEncoderFrame *frame, int component, int ind
   int16_t *line;
   int16_t *prev_line;
   int subband_zero_flag;
+  int position;
 
   subband_zero_flag = 1;
 
   /* FIXME doesn't handle quantisation of codeblocks */
 
-  quant_factor = schro_table_quant[subband->quant_index];
-  inv_quant_factor = schro_table_inverse_quant[subband->quant_index];
+  quant_index = frame->quant_index[component][index];
+  quant_factor = schro_table_quant[quant_index];
   if (frame->params.num_refs > 0) {
-    quant_offset = schro_table_offset_3_8[subband->quant_index];
+    quant_offset = schro_table_offset_3_8[quant_index];
   } else {
-    quant_offset = schro_table_offset_1_2[subband->quant_index];
+    quant_offset = schro_table_offset_1_2[quant_index];
   }
 
-  schro_subband_get (frame->iwt_frame, component, subband->position,
+  position = schro_subband_get_position (index);
+  schro_subband_get (frame->iwt_frame, component, position,
       &frame->params, &data, &stride, &width, &height);
 
   if (index == 0) {
@@ -1520,7 +1522,6 @@ void
 schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index)
 {
   SchroParams *params = &frame->params;
-  SchroSubband *subband = frame->subbands + index;
   SchroArith *arith;
   int16_t *data;
   int16_t *parent_data;
@@ -1536,14 +1537,16 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
   int vert_codeblocks;
   int have_zero_flags;
   int have_quant_offset;
+  int position;
 
-  schro_subband_get (frame->iwt_frame, component, subband->position,
+  position = schro_subband_get_position (index);
+  schro_subband_get (frame->iwt_frame, component, position,
       params, &data, &stride, &width, &height);
 
-  if (subband->position >= 4) {
+  if (position >= 4) {
     int parent_width;
     int parent_height;
-    schro_subband_get (frame->iwt_frame, component, subband->position - 4,
+    schro_subband_get (frame->iwt_frame, component, position - 4,
         params, &parent_data, &parent_stride, &parent_width, &parent_height);
   } else {
     parent_data = NULL;
@@ -1569,8 +1572,8 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
       horiz_codeblocks = params->horiz_codeblocks[0];
       vert_codeblocks = params->vert_codeblocks[0];
     } else {
-      horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(subband->position)+1];
-      vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(subband->position)+1];
+      horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
+      vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
     }
   } else {
     horiz_codeblocks = 1;
@@ -1637,7 +1640,7 @@ out:
       /* FIXME This code is so ugly.  Most of these if statements
        * are constant over the entire codeblock. */
 
-      if (subband->position >= 4) {
+      if (position >= 4) {
         parent = parent_line[(i>>1)];
       } else {
         parent = 0;
@@ -1657,11 +1660,11 @@ out:
 //nhood_or = 0;
       
       previous_value = 0;
-      if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(subband->position)) {
+      if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position)) {
         if (i > 0) {
           previous_value = quant_data[j*width + i - 1];
         }
-      } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(subband->position)) {
+      } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position)) {
         if (j > 0) {
           previous_value = quant_data[(j-1)*width + i];
         }
@@ -1710,7 +1713,8 @@ out:
 
   schro_bits_encode_uint (frame->bits, arith->offset);
   if (arith->offset > 0) {
-    schro_bits_encode_uint (frame->bits, subband->quant_index);
+    schro_bits_encode_uint (frame->bits,
+        frame->quant_index[component][index]);
 
     schro_bits_sync (frame->bits);
 
@@ -1831,7 +1835,8 @@ schro_encoder_encode_slice (SchroEncoderFrame *frame, int x, int y,
   schro_bits_encode_bits (frame->bits, length_bits, 0);
   
   for (i=0;i<1+3*params->transform_depth;i++){
-    schro_slice_get (frame->iwt_frame, 0, frame->subbands[i].position,
+    schro_slice_get (frame->iwt_frame, 0,
+        schro_subband_get_position(i),
         params, &data, &stride, &width, &height);
 
     quant_index = qindex + params->quant_matrix[i] + params->luma_quant_offset;
@@ -1867,9 +1872,11 @@ schro_encoder_encode_slice (SchroEncoderFrame *frame, int x, int y,
     int quant_factor2;
     int quant_offset2;
 
-    schro_slice_get (frame->iwt_frame, 1, frame->subbands[i].position,
+    schro_slice_get (frame->iwt_frame, 1,
+        schro_subband_get_position(i),
         params, &data, &stride, &width, &height);
-    schro_slice_get (frame->iwt_frame, 2, frame->subbands[i].position,
+    schro_slice_get (frame->iwt_frame, 2,
+        schro_subband_get_position(i),
         params, &data2, &stride, &width, &height);
 
     quant_index = qindex + params->quant_matrix[i] + params->chroma1_quant_offset;
@@ -1937,7 +1944,8 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame, int x, int y,
   n_bits += length_bits;
   
   for (i=0;i<1+3*params->transform_depth;i++){
-    schro_slice_get (frame->iwt_frame, 0, frame->subbands[i].position,
+    schro_slice_get (frame->iwt_frame, 0,
+        schro_subband_get_position(i),
         params, &data, &stride, &width, &height);
 
     quant_index = qindex + params->quant_matrix[i] + params->luma_quant_offset;
@@ -1972,9 +1980,11 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame, int x, int y,
     int quant_factor2;
     int quant_offset2;
 
-    schro_slice_get (frame->iwt_frame, 1, frame->subbands[i].position,
+    schro_slice_get (frame->iwt_frame, 1,
+        schro_subband_get_position(i),
         params, &data, &stride, &width, &height);
-    schro_slice_get (frame->iwt_frame, 2, frame->subbands[i].position,
+    schro_slice_get (frame->iwt_frame, 2,
+        schro_subband_get_position(i),
         params, &data2, &stride, &width, &height);
 
     quant_index = qindex + params->quant_matrix[i] + params->chroma1_quant_offset;

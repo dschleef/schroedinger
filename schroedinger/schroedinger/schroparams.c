@@ -782,36 +782,6 @@ schro_params_set_default_codeblock (SchroParams *params)
 
 }
 
-/**
- * schro_params_init_subbands:
- * @params: pointer to SchroParams structure
- * @subbands: pointer to array of SchroSubband structures
- *
- * Initializes the array of subband structures based on the values in the
- * @params structure.
- *
- */
-void
-schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
-    int luma_frame_stride, int chroma_frame_stride)
-{
-  int i;
-
-  subbands[0].position = 0;
-
-  for(i=0; i<params->transform_depth; i++) {
-    /* hl */
-    subbands[1+3*i].position = 1 | (i<<2);
-
-    /* lh */
-    subbands[2+3*i].position = 2 | (i<<2);
-
-    /* hh */
-    subbands[3+3*i].position = 3 | (i<<2);
-  }
-
-}
-
 void
 schro_subband_get_frame_component (SchroFrameComponent *dest,
     SchroFrameComponent *full_frame, int position)
