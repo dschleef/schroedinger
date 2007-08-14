@@ -132,7 +132,6 @@ struct _SchroParams {
 };
 
 struct _SchroSubband {
-  int has_parent;
   int quant_index;
   int position;
 };

@@ -794,42 +794,18 @@ schro_params_init_subbands (SchroParams *params, SchroSubband *subbands,
     int luma_frame_stride, int chroma_frame_stride)
 {
   int i;
-  int w;
-  int h;
-  int stride;
-  int chroma_w;
-  int chroma_h;
-  int chroma_stride;
-
-  w = params->iwt_luma_width >> params->transform_depth;
-  h = params->iwt_luma_height >> params->transform_depth;
-  stride = luma_frame_stride << params->transform_depth;
-  chroma_w = params->iwt_chroma_width >> params->transform_depth;
-  chroma_h = params->iwt_chroma_height >> params->transform_depth;
-  chroma_stride = chroma_frame_stride << params->transform_depth;
 
   subbands[0].position = 0;
-  subbands[0].has_parent = 0;
 
   for(i=0; i<params->transform_depth; i++) {
     /* hl */
     subbands[1+3*i].position = 1 | (i<<2);
-    subbands[1+3*i].has_parent = (i>0);
 
     /* lh */
     subbands[2+3*i].position = 2 | (i<<2);
-    subbands[2+3*i].has_parent = (i>0);
 
     /* hh */
     subbands[3+3*i].position = 3 | (i<<2);
-    subbands[3+3*i].has_parent = (i>0);
-
-    w <<= 1;
-    h <<= 1;
-    stride >>= 1;
-    chroma_w <<= 1;
-    chroma_h <<= 1;
-    chroma_stride >>= 1;
   }
 
 }

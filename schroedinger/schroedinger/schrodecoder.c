@@ -1462,18 +1462,20 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
   SchroParams *params = &decoder->params;
   SchroSubband *subband = decoder->subbands + index;
   int16_t *data;
-  int16_t *line;
-  int16_t *parent_data = NULL;
-  int quant_index;
-  int quant_factor;
-  int quant_offset;
-  int subband_length;
-  int scale_factor;
   int height;
   int width;
   int stride;
+  int16_t *parent_data = NULL;
   int parent_stride;
+  int quant_index;
+  int subband_length;
   int x,y;
+  SchroBuffer *buffer;
+  SchroArith *arith;
+  int vert_codeblocks;
+  int horiz_codeblocks;
+  int have_zero_flags;
+  int have_quant_offset;
 
   schro_subband_get (decoder->frame, component, subband->position,
       params, &data, &stride, &width, &height);
@@ -1481,7 +1483,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
   SCHRO_DEBUG("subband index=%d %d x %d stride=%d data=%p",
       index, width, height, stride, data);
 
-  if (subband->has_parent) {
+  if (subband->position >= 4) {
     int parent_width;
     int parent_height;
 
@@ -1495,162 +1497,153 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int index)
   subband_length = schro_bits_decode_uint (decoder->bits);
   SCHRO_DEBUG("subband %d %d length %d", component, index, subband_length);
 
-  if (subband_length > 0) {
-    int i,j;
-    SchroBuffer *buffer;
-    SchroArith *arith;
-    int vert_codeblocks;
-    int horiz_codeblocks;
-    int have_zero_flags;
-    int have_quant_offset;
-
-    quant_index = schro_bits_decode_uint (decoder->bits);
-    SCHRO_DEBUG("quant index %d", quant_index);
-    if ((unsigned int)quant_index > 60) {
-      SCHRO_ERROR("quant_index too big (%u > 60)", quant_index);
-      return;
-    }
-
-    scale_factor = 1<<(params->transform_depth - SCHRO_SUBBAND_SHIFT(subband->position));
-
-    schro_bits_sync (decoder->bits);
-
-    buffer = schro_buffer_new_subbuffer (decoder->bits->buffer,
-        schro_bits_get_offset(decoder->bits), subband_length);
-
-    arith = schro_arith_new ();
-    schro_arith_decode_init (arith, buffer);
-
-    if (params->spatial_partition_flag) {
-      if (index == 0) {
-        vert_codeblocks = params->vert_codeblocks[0];
-        horiz_codeblocks = params->horiz_codeblocks[0];
-      } else {
-        vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(subband->position)+1];
-        horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(subband->position)+1];
-      }
-    } else {
-      vert_codeblocks = 1;
-      horiz_codeblocks = 1;
-    }
-    if ((horiz_codeblocks > 1 || vert_codeblocks > 1) && index > 0) {
-      have_zero_flags = TRUE;
-    } else {
-      have_zero_flags = FALSE;
-    }
-    if (horiz_codeblocks > 1 || vert_codeblocks > 1) {
-      if (params->codeblock_mode_index == 1) {
-        have_quant_offset = TRUE;
-      } else {
-        have_quant_offset = FALSE;
-      }
-    } else {
-      have_quant_offset = FALSE;
-    }
-
-    for(y=0;y<vert_codeblocks;y++){
-      int ymin = (height*y)/vert_codeblocks;
-      int ymax = (height*(y+1))/vert_codeblocks;
-
-      for(x=0;x<horiz_codeblocks;x++){
-        int xmin = (width*x)/horiz_codeblocks;
-        int xmax = (width*(x+1))/horiz_codeblocks;
-        int zero_codeblock;
-
-        if (have_zero_flags) {
-          zero_codeblock = _schro_arith_decode_bit (arith,
-              SCHRO_CTX_ZERO_CODEBLOCK);
-          if (zero_codeblock) {
-            for(j=ymin;j<ymax;j++){
-              line = OFFSET(data, j*stride);
-              for(i=xmin;i<xmax;i++){
-                line[i] = 0;
-              }
-            }
-            continue;
-          }
-        }
-
-        if (have_quant_offset) {
-          quant_index += _schro_arith_decode_sint (arith,
-              SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
-              SCHRO_CTX_QUANTISER_SIGN);
-        }
-        quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
-        if (params->num_refs > 0) {
-          quant_offset = schro_table_offset_3_8[CLAMP(quant_index,0,60)];
-        } else {
-          quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
-        }
-        //SCHRO_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
-
-    for(j=ymin;j<ymax;j++){
-      int16_t *p = OFFSET(data,j*stride);
-      int16_t *parent_line;
-      int16_t *prev_line;
-      int x,x2;
-      if (subband->has_parent) {
-        parent_line = OFFSET(parent_data, (j>>1)*parent_stride);
-      } else {
-        parent_line = NULL;
-      }
-      if (j==0) {
-        prev_line = schro_zero;
-      } else {
-        prev_line = OFFSET(data, (j-1)*stride);
-      }
-      x = xmin;
-      while(x < xmax) {
-        x2 = xmax;
-        if (subband->has_parent) {
-          if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(subband->position)) {
-            codeblock_line_decode_p_horiz (p, j, x, x2, parent_line,
-                arith, quant_factor, quant_offset, prev_line);
-          } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(subband->position)) {
-            codeblock_line_decode_p_vert (p, j, x, x2, parent_line,
-                arith, quant_factor, quant_offset, prev_line);
-          } else {
-            codeblock_line_decode_p_diag (p, j, x, x2, parent_line,
-                arith, quant_factor, quant_offset, prev_line);
-          }
-        } else {
-          codeblock_line_decode_generic (p, prev_line, j, x, x2, parent_line,
-              subband->position,
-              arith, quant_factor, quant_offset);
-        }
-        x = x2;
-      }
-    }
-      }
-    }
-#if 0
-    if (arith->offset < buffer->length) {
-      SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
-          arith->offset, buffer->length);
-    }
-#endif
-#if 0
-    if (arith->offset > buffer->length + 6) {
-      SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
-          arith->offset, buffer->length);
-    }
-#endif
-    schro_arith_free (arith);
-    schro_buffer_unref (buffer);
-
-    schro_bits_skip (decoder->bits, subband_length);
-
-    if (index == 0 && decoder->n_refs == 0) {
-      schro_decoder_subband_dc_predict (data, stride, width, height);
-    }
-  } else {
+  if (subband_length == 0) {
     int j;
+    int16_t *line;
 
     SCHRO_DEBUG("subband is zero");
     for(j=0;j<height;j++){
       line = OFFSET(data, j*stride);
       oil_splat_s16_ns (line, schro_zero, width);
     }
+    return;
+  }
+
+  quant_index = schro_bits_decode_uint (decoder->bits);
+  SCHRO_DEBUG("quant index %d", quant_index);
+  if ((unsigned int)quant_index > 60) {
+    SCHRO_ERROR("quant_index too big (%u > 60)", quant_index);
+    return;
+  }
+
+  schro_bits_sync (decoder->bits);
+
+  buffer = schro_buffer_new_subbuffer (decoder->bits->buffer,
+      schro_bits_get_offset(decoder->bits), subband_length);
+
+  arith = schro_arith_new ();
+  schro_arith_decode_init (arith, buffer);
+
+  if (params->spatial_partition_flag) {
+    if (index == 0) {
+      vert_codeblocks = params->vert_codeblocks[0];
+      horiz_codeblocks = params->horiz_codeblocks[0];
+    } else {
+      vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(subband->position)+1];
+      horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(subband->position)+1];
+    }
+  } else {
+    vert_codeblocks = 1;
+    horiz_codeblocks = 1;
+  }
+  if ((horiz_codeblocks > 1 || vert_codeblocks > 1) && index > 0) {
+    have_zero_flags = TRUE;
+  } else {
+    have_zero_flags = FALSE;
+  }
+  if (horiz_codeblocks > 1 || vert_codeblocks > 1) {
+    if (params->codeblock_mode_index == 1) {
+      have_quant_offset = TRUE;
+    } else {
+      have_quant_offset = FALSE;
+    }
+  } else {
+    have_quant_offset = FALSE;
+  }
+
+  for(y=0;y<vert_codeblocks;y++){
+    int ymin = (height*y)/vert_codeblocks;
+    int ymax = (height*(y+1))/vert_codeblocks;
+
+    for(x=0;x<horiz_codeblocks;x++){
+      int xmin = (width*x)/horiz_codeblocks;
+      int xmax = (width*(x+1))/horiz_codeblocks;
+      int quant_factor;
+      int quant_offset;
+      int16_t *line;
+      int j;
+
+      if (have_zero_flags) {
+        int zero_codeblock;
+
+        zero_codeblock = _schro_arith_decode_bit (arith,
+            SCHRO_CTX_ZERO_CODEBLOCK);
+        if (zero_codeblock) {
+          for(j=ymin;j<ymax;j++){
+            line = OFFSET(data, j*stride);
+            oil_splat_s16_ns (line + xmin, schro_zero, xmax - xmin);
+          }
+          continue;
+        }
+      }
+
+      if (have_quant_offset) {
+        quant_index += _schro_arith_decode_sint (arith,
+            SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
+            SCHRO_CTX_QUANTISER_SIGN);
+        //error = schro_decoder_verify_quant_index (decoder, quant_index);
+      }
+
+      quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
+      if (params->num_refs > 0) {
+        quant_offset = schro_table_offset_3_8[CLAMP(quant_index,0,60)];
+      } else {
+        quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+      }
+      //SCHRO_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
+
+      for(j=ymin;j<ymax;j++){
+        int16_t *p = OFFSET(data,j*stride);
+        int16_t *parent_line;
+        int16_t *prev_line;
+        if (subband->position >= 4) {
+          parent_line = OFFSET(parent_data, (j>>1)*parent_stride);
+        } else {
+          parent_line = NULL;
+        }
+        if (j==0) {
+          prev_line = schro_zero;
+        } else {
+          prev_line = OFFSET(data, (j-1)*stride);
+        }
+        if (subband->position >= 4) {
+          if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(subband->position)) {
+            codeblock_line_decode_p_horiz (p, j, xmin, xmax, parent_line,
+                arith, quant_factor, quant_offset, prev_line);
+          } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(subband->position)) {
+            codeblock_line_decode_p_vert (p, j, xmin, xmax, parent_line,
+                arith, quant_factor, quant_offset, prev_line);
+          } else {
+            codeblock_line_decode_p_diag (p, j, xmin, xmax, parent_line,
+                arith, quant_factor, quant_offset, prev_line);
+          }
+        } else {
+          codeblock_line_decode_generic (p, prev_line, j, xmin, xmax, parent_line,
+              subband->position,
+              arith, quant_factor, quant_offset);
+        }
+      }
+    }
+  }
+#if 0
+  if (arith->offset < buffer->length) {
+    SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
+        arith->offset, buffer->length);
+  }
+#endif
+#if 0
+  if (arith->offset > buffer->length + 6) {
+    SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
+        arith->offset, buffer->length);
+  }
+#endif
+  schro_arith_free (arith);
+  schro_buffer_unref (buffer);
+
+  schro_bits_skip (decoder->bits, subband_length);
+
+  if (index == 0 && decoder->n_refs == 0) {
+    schro_decoder_subband_dc_predict (data, stride, width, height);
   }
 }
 

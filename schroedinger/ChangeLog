@@ -1,5 +1,14 @@
 2007-08-13  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	  Remove more SchroSubband stuff.  Refactor
+	  schro_decoder_decode_subband().
+
+2007-08-13  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrobits.c:
 	* schroedinger/schrobits.h:
 	* schroedinger/schrodecoder.c:

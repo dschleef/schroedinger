@@ -1545,7 +1545,7 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
   schro_subband_get (frame->iwt_frame, component, subband->position,
       params, &data, &stride, &width, &height);
 
-  if (subband->has_parent) {
+  if (subband->position >= 4) {
     int parent_width;
     int parent_height;
     schro_subband_get (frame->iwt_frame, component, subband->position - 4,
@@ -1642,7 +1642,7 @@ out:
       /* FIXME This code is so ugly.  Most of these if statements
        * are constant over the entire codeblock. */
 
-      if (subband->has_parent) {
+      if (subband->position >= 4) {
         parent = parent_line[(i>>1)];
       } else {
         parent = 0;
