@@ -8,6 +8,8 @@
 #include <string.h>
 
 
+const int16_t schro_zero[SCHRO_LIMIT_WIDTH];
+
 void
 schro_params_init (SchroParams *params, int video_format)
 {
@@ -856,6 +858,21 @@ schro_subband_get (SchroFrame *frame, int component, int position,
     *data = OFFSET(*data, (*width)*sizeof(int16_t));
   } 
 } 
+
+int
+schro_subband_get_position (int index)
+{
+  const int subband_position[] = {
+    0, 1, 2, 3,
+    5, 6, 7,
+    9, 10, 11,
+    13, 14, 15,
+    17, 18, 19,
+    21, 22, 23,
+    25, 26, 27 };
+
+  return subband_position[index];
+}
 
 int
 schro_params_get_frame_format (int depth, SchroChromaFormat chroma_format)

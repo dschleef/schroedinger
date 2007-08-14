@@ -1,6 +1,16 @@
 2007-08-13  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schrooil.c:
+	* schroedinger/schrooil.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	  Refactor code.
+
+2007-08-13  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroparams.c:
 	* schroedinger/schroparams.h:

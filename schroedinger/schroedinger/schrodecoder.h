@@ -50,8 +50,6 @@ struct _SchroDecoder {
   SchroVideoFormat video_format;
   SchroParams params;
 
-  SchroSubband subbands[1+SCHRO_MAX_TRANSFORM_DEPTH*3];
-
   SchroMotionField *motion_field;
 
   int zero_residual;

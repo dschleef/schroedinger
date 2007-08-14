@@ -8,9 +8,9 @@
 
 
 void
-oil_splat_s16_ns (int16_t *dest, int16_t *src, int n)
+oil_splat_s16_ns (int16_t *dest, const int16_t *src, int n)
 {
-  oil_splat_u16_ns ((uint16_t *)dest, (uint16_t *)src, n);
+  oil_splat_u16_ns ((uint16_t *)dest, (const uint16_t *)src, n);
 }
 
 void
@@ -34,7 +34,7 @@ oil_lift_haar_synth (int16_t *i1, int16_t *i2, int n)
 }
 
 void
-oil_synth_haar (int16_t *d, int16_t *s, int n)
+oil_synth_haar (int16_t *d, const int16_t *s, int n)
 {
   int i;
 
@@ -45,7 +45,7 @@ oil_synth_haar (int16_t *d, int16_t *s, int n)
 }
 
 void
-oil_split_haar (int16_t *d, int16_t *s, int n)
+oil_split_haar (int16_t *d, const int16_t *s, int n)
 {
   int i;
 
@@ -56,8 +56,8 @@ oil_split_haar (int16_t *d, int16_t *s, int n)
 }
 
 void
-oil_multsumshift8_str_s16 (int16_t *d, int16_t *s, int sstr, int16_t *s2_8,
-    int16_t *s3_1, int16_t *s4_1, int n)
+oil_multsumshift8_str_s16 (int16_t *d, const int16_t *s, int sstr,
+    const int16_t *s2_8, const int16_t *s3_1, const int16_t *s4_1, int n)
 {
   int i;
   int x;

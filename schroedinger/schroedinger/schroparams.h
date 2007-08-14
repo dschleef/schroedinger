@@ -171,6 +171,8 @@ struct _SchroMotionField {
   SchroMotionVector *motion_vectors;
 };
 
+extern const int16_t schro_zero[];
+
 void schro_params_init (SchroParams *params, int video_format);
 
 void schro_params_calculate_iwt_sizes (SchroParams *params);
@@ -199,6 +201,7 @@ void schro_subband_get_frame_component (SchroFrameComponent *dest,
     SchroFrameComponent *full_frame, int position);
 void schro_subband_get (SchroFrame *frame, int component, int position,
     SchroParams *params, int16_t **data, int *stride, int *width, int *height);
+int schro_subband_get_position (int index);
 
 /* FIXME should be SchroFrameFormat */
 int schro_params_get_frame_format (int depth,
