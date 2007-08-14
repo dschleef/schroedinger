@@ -1225,7 +1225,7 @@ schro_decoder_decode_transform_data (SchroDecoder *decoder)
   int i;
   int component;
   SchroParams *params = &decoder->params;
-  SchroDecoderSubbandContext context, *ctx = &context;
+  SchroDecoderSubbandContext context = { 0 }, *ctx = &context;
 
   for(component=0;component<3;component++){
     for(i=0;i<1+3*params->transform_depth;i++) {
@@ -1250,7 +1250,7 @@ dequantize (int q, int quant_factor, int quant_offset)
   }
 }
 
-void
+static void
 codeblock_line_decode_generic (SchroDecoderSubbandContext *ctx,
     int16_t *line, int j, const int16_t *parent_data, const int16_t *prev)
 {
@@ -1316,33 +1316,96 @@ codeblock_line_decode_generic (SchroDecoderSubbandContext *ctx,
   }
 }
 
-void
-codeblock_line_decode_p_horiz (SchroDecoderSubbandContext *ctx,
-    int16_t *line, int j, const int16_t *parent_data, const int16_t *prev)
+#if 0
+static void
+codeblock_line_decode_deep (SchroDecoderSubbandContext *ctx,
+    int32_t *line, int j, const int32_t *parent_data, const int32_t *prev)
 {
   int i;
-  int xmin = ctx->xmin;
 
-  if (xmin == 0) {
+  for(i=ctx->xmin;i<ctx->xmax;i++){
     int v;
     int parent;
     int nhood_or;
     int previous_value;
 
-    i = 0;
+    if (parent_data) {
+      parent = parent_data[(i>>1)];
+    } else {
+      parent = 0;
+    }
+
+    nhood_or = 0;
+    if (j>0) nhood_or |= prev[i];
+    if (i>0) nhood_or |= line[i-1];
+    if (i>0 && j>0) nhood_or |= prev[i-1];
+
+    previous_value = 0;
+    if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(ctx->position)) {
+      if (i > 0) previous_value = line[i-1];
+    } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(ctx->position)) {
+      if (j > 0) previous_value = prev[i];
+    }
+
+    STUFF;
+  }
+}
+
+static void
+codeblock_line_decode_deep_parent (SchroDecoderSubbandContext *ctx,
+    int16_t *line, int j, const int32_t *parent_data, const int16_t *prev)
+{
+  int i;
+
+  for(i=ctx->xmin;i<ctx->xmax;i++){
+    int v;
+    int parent;
+    int nhood_or;
+    int previous_value;
+
+    if (parent_data) {
+      parent = parent_data[(i>>1)];
+    } else {
+      parent = 0;
+    }
+
+    nhood_or = 0;
+    if (j>0) nhood_or |= prev[i];
+    if (i>0) nhood_or |= line[i-1];
+    if (i>0 && j>0) nhood_or |= prev[i-1];
+
+    previous_value = 0;
+    if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(ctx->position)) {
+      if (i > 0) previous_value = line[i-1];
+    } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(ctx->position)) {
+      if (j > 0) previous_value = prev[i];
+    }
+
+    STUFF;
+  }
+}
+#endif
+
+
+static void
+codeblock_line_decode_p_horiz (SchroDecoderSubbandContext *ctx,
+    int16_t *line, int j, const int16_t *parent_data, const int16_t *prev)
+{
+  int i = ctx->xmin;
+  int v;
+  int parent;
+  int nhood_or;
+  int previous_value;
+
+  if (i == 0) {
     parent = parent_data[(i>>1)];
     nhood_or = prev[i];
     previous_value = 0;
 
     STUFF;
-    xmin++;
+    i++;
   }
-  for(i=xmin;i<ctx->xmax;i++){
-    int v;
-    int parent;
-    int nhood_or;
-    int previous_value;
-
+  for(;i<ctx->xmax;i++){
     parent = parent_data[(i>>1)];
 
     nhood_or = prev[i];
@@ -1355,34 +1418,25 @@ codeblock_line_decode_p_horiz (SchroDecoderSubbandContext *ctx,
   }
 }
 
-void
+static void
 codeblock_line_decode_p_vert (SchroDecoderSubbandContext *ctx,
     int16_t *line, int j, const int16_t *parent_data, const int16_t *prev)
 {
-  int i;
-  int xmin = ctx->xmin;
+  int i = ctx->xmin;
+  int v;
+  int parent;
+  int nhood_or;
+  int previous_value;
 
-  if (xmin == 0) {
-    int v;
-    int parent;
-    int nhood_or;
-    int previous_value;
-
-    i = 0;
-
+  if (i == 0) {
     parent = parent_data[(i>>1)];
     nhood_or = prev[i];
     previous_value = prev[i];
 
     STUFF;
-    xmin++;
+    i++;
   }
-  for(i=xmin;i<ctx->xmax;i++){
-    int v;
-    int parent;
-    int nhood_or;
-    int previous_value;
-
+  for(;i<ctx->xmax;i++){
     parent = parent_data[(i>>1)];
 
     nhood_or = prev[i];
@@ -1395,35 +1449,28 @@ codeblock_line_decode_p_vert (SchroDecoderSubbandContext *ctx,
   }
 }
 
-void
+static void
 codeblock_line_decode_p_diag (SchroDecoderSubbandContext *ctx,
     int16_t *line, int j,
     const int16_t *parent_data,
     const int16_t *prev)
 {
   int i;
-  int xmin = ctx->xmin;
+  int v;
+  int parent;
+  int nhood_or;
+  int previous_value;
 
-  if (xmin == 0) {
-    int v;
-    int parent;
-    int nhood_or;
-    int previous_value;
-
-    i = 0;
+  i = ctx->xmin;
+  if (i == 0) {
     parent = parent_data[(i>>1)];
     nhood_or = prev[i];
     previous_value = 0;
 
     STUFF;
-    xmin++;
+    i++;
   }
-  for(i=xmin;i<ctx->xmax;i++){
-    int v;
-    int parent;
-    int nhood_or;
-    int previous_value;
-
+  for(;i<ctx->xmax;i++){
     parent = parent_data[(i>>1)];
 
     nhood_or = prev[i];
