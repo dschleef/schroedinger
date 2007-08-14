@@ -7,6 +7,41 @@
 #include <schroedinger/schrooil.h>
 #include <string.h>
 
+
+typedef struct _SchroDecoderSubbandContext SchroDecoderSubbandContext;
+
+struct _SchroDecoderSubbandContext {
+  int component;
+  int position;
+
+  int16_t *data;
+  int height;
+  int width;
+  int stride;
+
+  int16_t *parent_data;
+  int parent_stride;
+  int parent_width;
+  int parent_height;
+
+  int quant_index;
+  int subband_length;
+  SchroArith *arith;
+  int vert_codeblocks;
+  int horiz_codeblocks;
+  int have_zero_flags;
+  int have_quant_offset;
+
+  int ymin;
+  int ymax;
+  int xmin;
+  int xmax;
+
+  int quant_factor;
+  int quant_offset;
+  int16_t *line;
+};
+
 int _schro_decode_prediction_only;
 
 static void schro_decoder_decode_macroblock(SchroDecoder *decoder,
@@ -23,6 +58,8 @@ static void schro_decoder_reference_retire (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
 static void schro_decoder_decode_slice (SchroDecoder *decoder, int x, int y,
     int slice_bytes);
+static void schro_decoder_decode_subband (SchroDecoder *decoder,
+    SchroDecoderSubbandContext *ctx);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
@@ -1188,13 +1225,16 @@ schro_decoder_decode_transform_data (SchroDecoder *decoder)
   int i;
   int component;
   SchroParams *params = &decoder->params;
-  int position;
+  SchroDecoderSubbandContext context, *ctx = &context;
 
   for(component=0;component<3;component++){
     for(i=0;i<1+3*params->transform_depth;i++) {
       if (i != 0) schro_bits_sync (decoder->bits);
-      position = schro_subband_get_position(i);
-      schro_decoder_decode_subband (decoder, component, position);
+
+      ctx->component = component;
+      ctx->position = schro_subband_get_position(i);
+
+      schro_decoder_decode_subband (decoder, ctx);
     }
   }
 }
@@ -1211,15 +1251,12 @@ dequantize (int q, int quant_factor, int quant_offset)
 }
 
 void
-codeblock_line_decode_generic (int16_t *line, const int16_t *prev_line,
-    int j, int xmin, int xmax,
-    const int16_t *parent_data, int position,
-    SchroArith *arith, int quant_factor,
-    int quant_offset)
+codeblock_line_decode_generic (SchroDecoderSubbandContext *ctx,
+    int16_t *line, int j, const int16_t *parent_data, const int16_t *prev)
 {
   int i;
 
-  for(i=xmin;i<xmax;i++){
+  for(i=ctx->xmin;i<ctx->xmax;i++){
     int v;
     int parent;
     int nhood_or;
@@ -1232,15 +1269,15 @@ codeblock_line_decode_generic (int16_t *line, const int16_t *prev_line,
     }
 
     nhood_or = 0;
-    if (j>0) nhood_or |= prev_line[i];
+    if (j>0) nhood_or |= prev[i];
     if (i>0) nhood_or |= line[i-1];
-    if (i>0 && j>0) nhood_or |= prev_line[i-1];
+    if (i>0 && j>0) nhood_or |= prev[i-1];
 
     previous_value = 0;
-    if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position)) {
+    if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(ctx->position)) {
       if (i > 0) previous_value = line[i-1];
-    } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position)) {
-      if (j > 0) previous_value = prev_line[i];
+    } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(ctx->position)) {
+      if (j > 0) previous_value = prev[i];
     }
 
 #define STUFF \
@@ -1262,11 +1299,11 @@ codeblock_line_decode_generic (int16_t *line, const int16_t *prev_line,
  \
     value_context = SCHRO_CTX_COEFF_DATA; \
  \
-    v = _schro_arith_decode_uint (arith, cont_context, \
+    v = _schro_arith_decode_uint (ctx->arith, cont_context, \
         value_context); \
     if (v) { \
-      v = (quant_offset + quant_factor * v + 2)>>2; \
-      if (_schro_arith_decode_bit (arith, sign_context)) { \
+      v = (ctx->quant_offset + ctx->quant_factor * v + 2)>>2; \
+      if (_schro_arith_decode_bit (ctx->arith, sign_context)) { \
         v = -v; \
       } \
       line[i] = v; \
@@ -1280,11 +1317,11 @@ codeblock_line_decode_generic (int16_t *line, const int16_t *prev_line,
 }
 
 void
-codeblock_line_decode_p_horiz (int16_t *line, int j, int xmin, int xmax,
-    const int16_t *parent_data, SchroArith *arith, int quant_factor,
-    int quant_offset, const int16_t *prev)
+codeblock_line_decode_p_horiz (SchroDecoderSubbandContext *ctx,
+    int16_t *line, int j, const int16_t *parent_data, const int16_t *prev)
 {
   int i;
+  int xmin = ctx->xmin;
 
   if (xmin == 0) {
     int v;
@@ -1300,7 +1337,7 @@ codeblock_line_decode_p_horiz (int16_t *line, int j, int xmin, int xmax,
     STUFF;
     xmin++;
   }
-  for(i=xmin;i<xmax;i++){
+  for(i=xmin;i<ctx->xmax;i++){
     int v;
     int parent;
     int nhood_or;
@@ -1319,11 +1356,11 @@ codeblock_line_decode_p_horiz (int16_t *line, int j, int xmin, int xmax,
 }
 
 void
-codeblock_line_decode_p_vert (int16_t *line, int j, int xmin, int xmax,
-    const int16_t *parent_data, SchroArith *arith, int quant_factor,
-    int quant_offset, const int16_t *prev)
+codeblock_line_decode_p_vert (SchroDecoderSubbandContext *ctx,
+    int16_t *line, int j, const int16_t *parent_data, const int16_t *prev)
 {
   int i;
+  int xmin = ctx->xmin;
 
   if (xmin == 0) {
     int v;
@@ -1340,7 +1377,7 @@ codeblock_line_decode_p_vert (int16_t *line, int j, int xmin, int xmax,
     STUFF;
     xmin++;
   }
-  for(i=xmin;i<xmax;i++){
+  for(i=xmin;i<ctx->xmax;i++){
     int v;
     int parent;
     int nhood_or;
@@ -1359,11 +1396,13 @@ codeblock_line_decode_p_vert (int16_t *line, int j, int xmin, int xmax,
 }
 
 void
-codeblock_line_decode_p_diag (int16_t *line, int j, int xmin, int xmax,
-    const int16_t *parent_data, SchroArith *arith, int quant_factor,
-    int quant_offset, const int16_t *prev)
+codeblock_line_decode_p_diag (SchroDecoderSubbandContext *ctx,
+    int16_t *line, int j,
+    const int16_t *parent_data,
+    const int16_t *prev)
 {
   int i;
+  int xmin = ctx->xmin;
 
   if (xmin == 0) {
     int v;
@@ -1379,7 +1418,7 @@ codeblock_line_decode_p_diag (int16_t *line, int j, int xmin, int xmax,
     STUFF;
     xmin++;
   }
-  for(i=xmin;i<xmax;i++){
+  for(i=xmin;i<ctx->xmax;i++){
     int v;
     int parent;
     int nhood_or;
@@ -1427,205 +1466,178 @@ schro_decoder_subband_dc_predict (int16_t *data, int stride, int width,
 
 }
 
-typedef struct _SchroDecoderSubbandContext SchroDecoderSubbandContext;
-
-struct _SchroDecoderSubbandContext {
-  int16_t *data;
-  int height;
-  int width;
-  int stride;
-
-  int16_t *parent_data;
-  int parent_stride;
-
-  int quant_index;
-  int subband_length;
-  int x;
-  int y;
-  SchroBuffer *buffer;
-  SchroArith *arith;
-  int vert_codeblocks;
-  int horiz_codeblocks;
-  int have_zero_flags;
-  int have_quant_offset;
-
-  int ymin;
-  int ymax;
-  int xmin;
-  int xmax;
-
-  int quant_factor;
-  int quant_offset;
-  int16_t *line;
-};
-
-void
-schro_decoder_decode_subband (SchroDecoder *decoder, int component, int position)
+static void
+schro_decoder_setup_codeblocks (SchroDecoder *decoder,
+    SchroDecoderSubbandContext *ctx)
 {
   SchroParams *params = &decoder->params;
-  //SchroDecoderSubbandContext context, *ctx = &context;
-  int16_t *data;
-  int height;
-  int width;
-  int stride;
-  int16_t *parent_data = NULL;
-  int parent_stride;
-  int quant_index;
-  int subband_length;
+
+  if (params->spatial_partition_flag) {
+    if (ctx->position == 0) {
+      ctx->vert_codeblocks = params->vert_codeblocks[0];
+      ctx->horiz_codeblocks = params->horiz_codeblocks[0];
+    } else {
+      ctx->vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(ctx->position)+1];
+      ctx->horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(ctx->position)+1];
+    }
+  } else {
+    ctx->vert_codeblocks = 1;
+    ctx->horiz_codeblocks = 1;
+  }
+  if ((ctx->horiz_codeblocks > 1 || ctx->vert_codeblocks > 1) && ctx->position > 0) {
+    ctx->have_zero_flags = TRUE;
+  } else {
+    ctx->have_zero_flags = FALSE;
+  }
+  if (ctx->horiz_codeblocks > 1 || ctx->vert_codeblocks > 1) {
+    if (params->codeblock_mode_index == 1) {
+      ctx->have_quant_offset = TRUE;
+    } else {
+      ctx->have_quant_offset = FALSE;
+    }
+  } else {
+    ctx->have_quant_offset = FALSE;
+  }
+}
+
+static void
+schro_decoder_zero_block (SchroDecoderSubbandContext *ctx,
+    int x1, int y1, int x2, int y2)
+{
+  int j;
+  int16_t *line;
+
+  SCHRO_DEBUG("subband is zero");
+  for(j=y1;j<y2;j++){
+    line = OFFSET(ctx->data, j*ctx->stride);
+    oil_splat_s16_ns (line + x1, schro_zero, x2 - x1);
+  }
+}
+
+static void
+schro_decoder_decode_codeblock (SchroDecoder *decoder,
+    SchroDecoderSubbandContext *ctx)
+{
+  SchroParams *params = &decoder->params;
+  int j;
+
+  if (ctx->have_zero_flags) {
+    int bit;
+
+    /* zero codeblock */
+    bit = _schro_arith_decode_bit (ctx->arith, SCHRO_CTX_ZERO_CODEBLOCK);
+    if (bit) {
+      schro_decoder_zero_block (ctx, ctx->xmin, ctx->ymin,
+          ctx->xmax, ctx->ymax);
+      return;
+    }
+  }
+
+  if (ctx->have_quant_offset) {
+    ctx->quant_index += _schro_arith_decode_sint (ctx->arith,
+        SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
+        SCHRO_CTX_QUANTISER_SIGN);
+
+    /* FIXME check quant_index */
+    SCHRO_MILD_ASSERT(ctx->quant_index >= 0);
+    SCHRO_MILD_ASSERT(ctx->quant_index <= 60);
+  }
+
+  ctx->quant_factor = schro_table_quant[ctx->quant_index];
+  if (params->num_refs > 0) {
+    ctx->quant_offset = schro_table_offset_3_8[ctx->quant_index];
+  } else {
+    ctx->quant_offset = schro_table_offset_1_2[ctx->quant_index];
+  }
+
+  for(j=ctx->ymin;j<ctx->ymax;j++){
+    int16_t *p = OFFSET(ctx->data,j*ctx->stride);
+    const int16_t *parent_line;
+    const int16_t *prev_line;
+    if (ctx->position >= 4) {
+      parent_line = OFFSET(ctx->parent_data, (j>>1)*ctx->parent_stride);
+    } else {
+      parent_line = NULL;
+    }
+    if (j==0) {
+      prev_line = schro_zero;
+    } else {
+      prev_line = OFFSET(ctx->data, (j-1)*ctx->stride);
+    }
+    if (ctx->position >= 4) {
+      if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(ctx->position)) {
+        codeblock_line_decode_p_horiz (ctx, p, j, parent_line, prev_line);
+      } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(ctx->position)) {
+        codeblock_line_decode_p_vert (ctx, p, j, parent_line, prev_line);
+      } else {
+        codeblock_line_decode_p_diag (ctx, p, j, parent_line, prev_line);
+      }
+    } else {
+      codeblock_line_decode_generic (ctx, p, j, parent_line, prev_line);
+    }
+  }
+}
+
+void
+schro_decoder_decode_subband (SchroDecoder *decoder,
+    SchroDecoderSubbandContext *ctx)
+{
+  SchroParams *params = &decoder->params;
   int x,y;
   SchroBuffer *buffer;
-  SchroArith *arith;
-  int vert_codeblocks;
-  int horiz_codeblocks;
-  int have_zero_flags;
-  int have_quant_offset;
 
-  schro_subband_get (decoder->frame, component, position,
-      params, &data, &stride, &width, &height);
+  schro_subband_get (decoder->frame, ctx->component, ctx->position,
+      params, &ctx->data, &ctx->stride, &ctx->width, &ctx->height);
 
-  SCHRO_DEBUG("subband index=%d %d x %d stride=%d data=%p",
-      index, width, height, stride, data);
+  SCHRO_DEBUG("subband position=%d %d x %d stride=%d data=%p",
+      ctx->position, ctx->width, ctx->height, ctx->stride, ctx->data);
 
-  if (position >= 4) {
-    int parent_width;
-    int parent_height;
-
-    schro_subband_get (decoder->frame, component, position - 4,
-        params, &parent_data, &parent_stride, &parent_width, &parent_height);
+  if (ctx->position >= 4) {
+    schro_subband_get (decoder->frame, ctx->component, ctx->position - 4,
+        params, &ctx->parent_data, &ctx->parent_stride, &ctx->parent_width, &ctx->parent_height);
   } else {
-    parent_data = NULL;
-    parent_stride = 0;
+    ctx->parent_data = NULL;
+    ctx->parent_stride = 0;
   }
 
-  subband_length = schro_bits_decode_uint (decoder->bits);
-  SCHRO_DEBUG("subband %d %d length %d", component, index, subband_length);
+  ctx->subband_length = schro_bits_decode_uint (decoder->bits);
+  SCHRO_DEBUG("subband %d %d length %d", ctx->component, ctx->position,
+      ctx->subband_length);
 
-  if (subband_length == 0) {
-    int j;
-    int16_t *line;
-
+  if (ctx->subband_length == 0) {
     SCHRO_DEBUG("subband is zero");
-    for(j=0;j<height;j++){
-      line = OFFSET(data, j*stride);
-      oil_splat_s16_ns (line, schro_zero, width);
-    }
+    schro_decoder_zero_block (ctx, 0, 0, ctx->width, ctx->height);
     return;
   }
 
-  quant_index = schro_bits_decode_uint (decoder->bits);
-  SCHRO_DEBUG("quant index %d", quant_index);
-  if ((unsigned int)quant_index > 60) {
-    SCHRO_ERROR("quant_index too big (%u > 60)", quant_index);
-    return;
-  }
+  ctx->quant_index = schro_bits_decode_uint (decoder->bits);
+  SCHRO_DEBUG("quant index %d", ctx->quant_index);
+
+  /* FIXME check quant_index */
+  SCHRO_MILD_ASSERT(ctx->quant_index >= 0);
+  SCHRO_MILD_ASSERT(ctx->quant_index <= 60);
 
   schro_bits_sync (decoder->bits);
 
   buffer = schro_buffer_new_subbuffer (decoder->bits->buffer,
-      schro_bits_get_offset(decoder->bits), subband_length);
+      schro_bits_get_offset(decoder->bits), ctx->subband_length);
 
-  arith = schro_arith_new ();
-  schro_arith_decode_init (arith, buffer);
+  ctx->arith = schro_arith_new ();
+  schro_arith_decode_init (ctx->arith, buffer);
 
-  if (params->spatial_partition_flag) {
-    if (index == 0) {
-      vert_codeblocks = params->vert_codeblocks[0];
-      horiz_codeblocks = params->horiz_codeblocks[0];
-    } else {
-      vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
-      horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
-    }
-  } else {
-    vert_codeblocks = 1;
-    horiz_codeblocks = 1;
-  }
-  if ((horiz_codeblocks > 1 || vert_codeblocks > 1) && index > 0) {
-    have_zero_flags = TRUE;
-  } else {
-    have_zero_flags = FALSE;
-  }
-  if (horiz_codeblocks > 1 || vert_codeblocks > 1) {
-    if (params->codeblock_mode_index == 1) {
-      have_quant_offset = TRUE;
-    } else {
-      have_quant_offset = FALSE;
-    }
-  } else {
-    have_quant_offset = FALSE;
-  }
+  schro_decoder_setup_codeblocks (decoder, ctx);
 
-  for(y=0;y<vert_codeblocks;y++){
-    int ymin = (height*y)/vert_codeblocks;
-    int ymax = (height*(y+1))/vert_codeblocks;
 
-    for(x=0;x<horiz_codeblocks;x++){
-      int xmin = (width*x)/horiz_codeblocks;
-      int xmax = (width*(x+1))/horiz_codeblocks;
-      int quant_factor;
-      int quant_offset;
-      int16_t *line;
-      int j;
+  for(y=0;y<ctx->vert_codeblocks;y++){
+    ctx->ymin = (ctx->height*y)/ctx->vert_codeblocks;
+    ctx->ymax = (ctx->height*(y+1))/ctx->vert_codeblocks;
 
-      if (have_zero_flags) {
-        int zero_codeblock;
+    for(x=0;x<ctx->horiz_codeblocks;x++){
 
-        zero_codeblock = _schro_arith_decode_bit (arith,
-            SCHRO_CTX_ZERO_CODEBLOCK);
-        if (zero_codeblock) {
-          for(j=ymin;j<ymax;j++){
-            line = OFFSET(data, j*stride);
-            oil_splat_s16_ns (line + xmin, schro_zero, xmax - xmin);
-          }
-          continue;
-        }
-      }
-
-      if (have_quant_offset) {
-        quant_index += _schro_arith_decode_sint (arith,
-            SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
-            SCHRO_CTX_QUANTISER_SIGN);
-        //error = schro_decoder_verify_quant_index (decoder, quant_index);
-      }
-
-      quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
-      if (params->num_refs > 0) {
-        quant_offset = schro_table_offset_3_8[CLAMP(quant_index,0,60)];
-      } else {
-        quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
-      }
-      //SCHRO_DEBUG("quant factor %d offset %d", quant_factor, quant_offset);
-
-      for(j=ymin;j<ymax;j++){
-        int16_t *p = OFFSET(data,j*stride);
-        const int16_t *parent_line;
-        const int16_t *prev_line;
-        if (position >= 4) {
-          parent_line = OFFSET(parent_data, (j>>1)*parent_stride);
-        } else {
-          parent_line = NULL;
-        }
-        if (j==0) {
-          prev_line = schro_zero;
-        } else {
-          prev_line = OFFSET(data, (j-1)*stride);
-        }
-        if (position >= 4) {
-          if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position)) {
-            codeblock_line_decode_p_horiz (p, j, xmin, xmax, parent_line,
-                arith, quant_factor, quant_offset, prev_line);
-          } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position)) {
-            codeblock_line_decode_p_vert (p, j, xmin, xmax, parent_line,
-                arith, quant_factor, quant_offset, prev_line);
-          } else {
-            codeblock_line_decode_p_diag (p, j, xmin, xmax, parent_line,
-                arith, quant_factor, quant_offset, prev_line);
-          }
-        } else {
-          codeblock_line_decode_generic (p, prev_line, j, xmin, xmax, parent_line,
-              position,
-              arith, quant_factor, quant_offset);
-        }
-      }
+      ctx->xmin = (ctx->width*x)/ctx->horiz_codeblocks;
+      ctx->xmax = (ctx->width*(x+1))/ctx->horiz_codeblocks;
+      
+      schro_decoder_decode_codeblock (decoder, ctx);
     }
   }
 #if 0
@@ -1640,13 +1652,13 @@ schro_decoder_decode_subband (SchroDecoder *decoder, int component, int position
         arith->offset, buffer->length);
   }
 #endif
-  schro_arith_free (arith);
+  schro_arith_free (ctx->arith);
   schro_buffer_unref (buffer);
 
-  schro_bits_skip (decoder->bits, subband_length);
+  schro_bits_skip (decoder->bits, ctx->subband_length);
 
-  if (position == 0 && decoder->n_refs == 0) {
-    schro_decoder_subband_dc_predict (data, stride, width, height);
+  if (ctx->position == 0 && decoder->n_refs == 0) {
+    schro_decoder_subband_dc_predict (ctx->data, ctx->stride, ctx->width, ctx->height);
   }
 }
 
