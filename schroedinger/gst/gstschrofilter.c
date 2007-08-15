@@ -256,7 +256,8 @@ gst_schrofilter_transform_ip (GstBaseTransform * base_transform,
       "height", &height);
 
   frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA(buf), width, height);
-  schro_frame_filter_lowpass2 (frame, 5.0);
+  //schro_frame_filter_lowpass2 (frame, 5.0);
+  schro_frame_filter_wavelet (frame);
 
   return GST_FLOW_OK;
 }

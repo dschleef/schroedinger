@@ -1,3 +1,13 @@
+2007-08-15  David Schleef  <ds@schleef.org>
+
+	* gst/gstschrofilter.c:
+	* schroedinger/Makefile.am:
+	* schroedinger/schrofilter.c:
+	* schroedinger/schrohistogram.c:
+	* schroedinger/schrohistogram.h:
+	* schroedinger/schroquantiser.c:
+	  Move histogram code to separate file.
+
 2007-08-14  David Schleef  <ds@schleef.org>
 
 	* gst/gstschrodownsample.c:

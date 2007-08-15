@@ -3,6 +3,7 @@
 #include "config.h"
 #endif
 #include <schroedinger/schro.h>
+#include <schroedinger/schrohistogram.h>
 #include <liboil/liboil.h>
 #include <string.h>
 #include <math.h>
@@ -256,64 +257,8 @@ error_calculation_subband (SchroEncoderFrame *frame, int component,
   frame->estimated_entropy = entropy;
 }
 
-#define SHIFT 3
-
-static int
-ilogx (int x)
-{
-  int i = 0;
-  if (x < 0) x = -x;
-  while (x >= 2<<SHIFT) {
-    x >>= 1;
-    i++;
-  }
-  return x + (i << SHIFT);
-}
-
-static int
-iexpx (int x)
-{
-  if (x < (1<<SHIFT)) return x;
-
-  return ((1<<SHIFT)|(x&((1<<SHIFT)-1))) << ((x>>SHIFT)-1);
-}
-
-static int
-ilogx_size (int i)
-{
-  if (i < (1<<SHIFT)) return 1;
-  return 1 << ((i>>SHIFT)-1);
-}
-
 static double
-rehist (int hist[], int start, int end)
-{
-  int i;
-  int iend;
-  int size;
-  double x;
-
-  if (start >= end) return 0;
-
-  i = ilogx(start);
-  size = ilogx_size(i);
-  x = (double)(iexpx(i+1) - start)/size * hist[i];
-
-  i++;
-  iend = ilogx(end);
-  while (i <= iend) {
-    x += hist[i];
-    i++;
-  }
-
-  size = ilogx_size(iend);
-  x -= (double)(iexpx(iend+1) - end)/size * hist[iend];
-
-  return x;
-}
-
-static double
-estimate_histogram_entropy (int hist[], int quant_index, int volume)
+estimate_histogram_entropy (SchroHistogram *hist, int quant_index, int volume)
 {
   double estimated_entropy = 0;
   double bin1, bin2, bin3, bin4, bin5, bin6;
@@ -321,12 +266,12 @@ estimate_histogram_entropy (int hist[], int quant_index, int volume)
 
   quant_factor = schro_table_quant[quant_index];
 
-  bin1 = rehist (hist, (quant_factor+3)/4, 32000);
-  bin2 = rehist (hist, (quant_factor*3+3)/4, 32000);
-  bin3 = rehist (hist, (quant_factor*7+3)/4, 32000);
-  bin4 = rehist (hist, (quant_factor*15+3)/4, 32000);
-  bin5 = rehist (hist, (quant_factor*31+3)/4, 32000);
-  bin6 = rehist (hist, (quant_factor*63+3)/4, 32000);
+  bin1 = schro_histogram_get_range (hist, (quant_factor+3)/4, 32000);
+  bin2 = schro_histogram_get_range (hist, (quant_factor*3+3)/4, 32000);
+  bin3 = schro_histogram_get_range (hist, (quant_factor*7+3)/4, 32000);
+  bin4 = schro_histogram_get_range (hist, (quant_factor*15+3)/4, 32000);
+  bin5 = schro_histogram_get_range (hist, (quant_factor*31+3)/4, 32000);
+  bin6 = schro_histogram_get_range (hist, (quant_factor*63+3)/4, 32000);
 
   /* entropy of sign bit */
   estimated_entropy += bin1;
@@ -390,18 +335,11 @@ measure_error_subband (SchroEncoderFrame *frame, int component, int index,
 }
 
 static double
-estimate_histogram_error (int hist[], int quant_index, int num_refs, int volume)
+estimate_histogram_error (SchroHistogram *hist, int quant_index,
+    int num_refs, int volume)
 {
-  int i;
-  double estimated_error;
-
-  estimated_error = 0;
-
-  for(i=0;i<((16-SHIFT)<<SHIFT);i++){
-    estimated_error += hist[i] * schro_table_error_hist_shift3_1_2[quant_index][i];
-  }
-
-  return estimated_error;
+  return schro_histogram_apply_table (hist,
+    (SchroHistogramTable *)(schro_table_error_hist_shift3_1_2[quant_index]));
 }
 
 double
@@ -459,7 +397,7 @@ schro_encoder_estimate_subband_arith (SchroEncoderFrame *frame, int component,
 
 void
 schro_encoder_generate_subband_histogram (SchroEncoderFrame *frame,
-    int component, int index, int *hist, int skip)
+    int component, int index, SchroHistogram *hist, int skip)
 {
   int i;
   int j;
@@ -470,9 +408,7 @@ schro_encoder_generate_subband_histogram (SchroEncoderFrame *frame,
   int height;
   int position;
 
-  for(i=0;i<(16<<SHIFT)+24;i++){
-    hist[i] = 0;
-  }
+  schro_histogram_init (hist);
 
   position = schro_subband_get_position (index);
   schro_subband_get (frame->iwt_frame, component, position,
@@ -480,26 +416,22 @@ schro_encoder_generate_subband_histogram (SchroEncoderFrame *frame,
 
   if (index > 0) {
     for(j=0;j<height;j+=skip){
-      line = OFFSET(data, j*stride);
-      for(i=0;i<width;i+=skip){
-        hist[ilogx(line[i])]++;
-      }
+      schro_histogram_add_array_s16 (hist, OFFSET(data, j*stride), width);
     }
+    schro_histogram_scale (hist, skip);
   } else {
     for(j=0;j<height;j+=skip){
       line = OFFSET(data, j*stride);
       for(i=1;i<width;i+=skip){
-        hist[ilogx(line[i] - line[i-1])]++;
+        schro_histogram_add(hist, (line[i] - line[i-1]));
       }
     }
-  }
-  for(i=0;i<(16<<SHIFT)+24;i++){
-    hist[i] *= skip*skip;
+    schro_histogram_scale (hist, skip*skip);
   }
 }
 
 static int
-pick_quant (int *hist, double lambda, int vol)
+pick_quant (SchroHistogram *hist, double lambda, int vol)
 {
   double error;
   double entropy;
@@ -532,7 +464,7 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
     int index)
 {
   int i;
-  int hist[(16<<SHIFT)+24] = { 0 };
+  SchroHistogram hist;
   int vol;
   int16_t *data;
   int stride;
@@ -540,7 +472,7 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
   double lambda;
   int position;
 
-  schro_encoder_generate_subband_histogram (frame, component, index, hist, 4);
+  schro_encoder_generate_subband_histogram (frame, component, index, &hist, 4);
 
   position = schro_subband_get_position (index);
   schro_subband_get (frame->iwt_frame, component, position,
@@ -555,8 +487,8 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
       double arith_entropy;
 
       error = measure_error_subband (frame, component, index, i);
-      est_entropy = estimate_histogram_entropy (hist, i, vol);
-      est_error = estimate_histogram_error (hist, i, frame->params.num_refs,
+      est_entropy = estimate_histogram_entropy (&hist, i, vol);
+      est_error = estimate_histogram_error (&hist, i, frame->params.num_refs,
           vol);
       arith_entropy = schro_encoder_estimate_subband_arith (frame, component,
           index, i);
@@ -576,10 +508,10 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
   if (component > 0) {
     lambda *= 0.1;
   }
-  frame->quant_index[component][index] = pick_quant (hist, lambda, vol);
+  frame->quant_index[component][index] = pick_quant (&hist, lambda, vol);
 
   frame->estimated_entropy =
-    estimate_histogram_entropy (hist, frame->quant_index[component][index],
+    estimate_histogram_entropy (&hist, frame->quant_index[component][index],
         vol);
 }
 

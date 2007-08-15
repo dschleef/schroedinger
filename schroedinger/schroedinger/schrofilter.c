@@ -8,6 +8,8 @@
 #include <schroedinger/schrowavelet.h>
 #include <schroedinger/schrotables.h>
 #include <schroedinger/schrobitstream.h>
+#include <schroedinger/schrohistogram.h>
+#include <schroedinger/schroparams.h>
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <string.h>
@@ -780,115 +782,69 @@ schro_frame_filter_lowpass2 (SchroFrame *frame, double sigma)
 }
 
 
-static void
-wavelet_fwd (SchroFrameComponent *comp)
-{
-  int level;
-  int16_t *tmp;
-
-  tmp = malloc(2*comp->width*sizeof(int16_t));
-
-  for(level=0;level<4;level++){
-    schro_wavelet_transform_2d (SCHRO_WAVELET_5_3,
-        comp->data, comp->stride << level,
-        comp->width >> level, comp->height >> level, tmp);
-  }
-
-  free (tmp);
-}
-
-static void
-wavelet_rev (SchroFrameComponent *comp)
-{
-  int level;
-  int16_t *tmp;
-
-  tmp = malloc(2*comp->width*sizeof(int16_t));
-
-  for(level=3;level>=0;level--){
-    schro_wavelet_inverse_transform_2d (SCHRO_WAVELET_5_3,
-        comp->data, comp->stride << level,
-        comp->width >> level, comp->height >> level, tmp);
-  }
-
-  free (tmp);
-}
-
-static int
-ilog2 (unsigned int x)
-{
-  int i;
-  for(i=0;i<60;i++){
-    if (x*4 < schro_table_quant[i]) return i;
-  }
-  return 60;
-}
-
-static void
-histogram (SchroFrameComponent *comp)
-{
-  int hist[64];
-  int i,j;
-  int16_t *data;
-  int stride = comp->stride;
-
-  memset (hist, 0, 64*sizeof(int));
-
-  for(j=0;j<comp->height>>1;j++){
-    data = OFFSET(comp->data,stride*(j*2+1));
-    for(i=0;i<comp->width>>1;i++){
-      int x = ilog2(abs(data[i]));
-      hist[x]++;
-    }
-  }
-
-  for(i=0;i<64;i++){
-    printf("%d %d\n", i, hist[i]);
-  }
-
-}
-
-static void
-wavelet_filter (SchroFrameComponent *comp)
-{
-  int i,j;
-  int16_t *data;
-  int stride = comp->stride;
-
-  for(j=0;j<comp->height;j++){
-    data = OFFSET(comp->data,j*stride);
-    for(i=0;i<comp->width;i++){
-      if (abs(data[i]) < 10) {
-        data[i] = 0;
-      }
-    }
-  }
-}
-
-
 void
 schro_frame_filter_wavelet (SchroFrame *frame)
 {
   SchroFrame *tmpframe;
+  SchroFrameComponent *comp;
+  SchroHistogram hist;
+  int component;
+  int16_t *tmp;
+  SchroParams params;
+  int i;
+
+  tmp = malloc(2*frame->width*sizeof(int16_t));
 
   tmpframe = schro_frame_new_and_alloc (
       SCHRO_FRAME_FORMAT_S16_444 | frame->format,
       ROUND_UP_POW2(frame->width,5), ROUND_UP_POW2(frame->height,5));
   schro_frame_convert (tmpframe, frame);
 
-  wavelet_fwd (&tmpframe->components[0]);
-  wavelet_fwd (&tmpframe->components[1]);
-  wavelet_fwd (&tmpframe->components[2]);
+  params.transform_depth = 1;
+  params.iwt_luma_width = frame->width;
+  params.iwt_luma_height = frame->height;
+  params.iwt_chroma_width = frame->components[1].width;
+  params.iwt_chroma_height = frame->components[1].height;
 
-  if (1) histogram (&tmpframe->components[0]);
+  for(component=0;component<3;component++){
+    comp = &tmpframe->components[component];
 
-  wavelet_filter (&tmpframe->components[0]);
-  wavelet_filter (&tmpframe->components[1]);
-  wavelet_filter (&tmpframe->components[2]);
+    schro_wavelet_transform_2d (SCHRO_WAVELET_5_3,
+        comp->data, comp->stride, comp->width, comp->height, tmp);
 
-  wavelet_rev (&tmpframe->components[0]);
-  wavelet_rev (&tmpframe->components[1]);
-  wavelet_rev (&tmpframe->components[2]);
+
+    for(i=1;i<4;i++){
+      int width;
+      int height;
+      int stride;
+      int16_t *data;
+      int y;
+      int cutoff;
+
+      schro_subband_get (tmpframe, component, i, &params, &data, &stride,
+          &width, &height);
+      schro_histogram_init (&hist);
+
+      for(y=0;y<height;y++){
+        schro_histogram_add_array_s16 (&hist, OFFSET(data, y*stride),
+            width);
+      }
+
+      //histogram (&tmpframe->components[component]);
+
+      cutoff = 100;
+      for(y=0;y<height;y++){
+        int16_t *line = OFFSET(data, stride*y);
+        int x;
+        for(x=0;x<width;x++){
+          if (line[x] > -cutoff && line[x] < cutoff) line[x] = 0;
+        }
+      }
+    }
+
+    schro_wavelet_inverse_transform_2d (SCHRO_WAVELET_5_3,
+        comp->data, comp->stride, comp->width, comp->height, tmp);
+  }
 
   schro_frame_convert (frame, tmpframe);
   schro_frame_unref (tmpframe);
