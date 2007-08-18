@@ -4,81 +4,31 @@
 #endif
 
 #include <schroedinger/schro.h>
+#include <schroedinger/schrofft.h>
 #include <math.h>
+#include <string.h>
 
 
-#define oil_rand_f64() (((rand()/(RAND_MAX+1.0))+rand())/(RAND_MAX+1.0))
+#define COMPLEX_MULT_R(a,b,c,d) ((a)*(c) - (b)*(d))
+#define COMPLEX_MULT_I(a,b,c,d) ((a)*(d) + (b)*(c))
 
 
-void
-discrete_fourier_transform (double *d1, double *d2, double *s1, double *s2,
-    double *s3, int n)
-{
-  int mask = n-1;
-  double x;
-  double y;
-  int i;
-  int j;
-
-  for(i=0;i<n;i++){
-    x = 0;
-    y = 0;
-    for(j=0;j<n;j++){
-      x += s1[j] * s2[(i*j)&mask];
-      y += s1[j] * s3[(i*j)&mask];
-    }
-    d1[i] = x;
-    d2[i] = y;
-  }
-}
-
-void
-complex_discrete_fourier_transform (double *d1, double *d2,
-    double *s1, double *s2, double *s3, double *s4, int n)
-{
-  int mask = n-1;
-  double x;
-  double y;
-  int i;
-  int j;
-
-  for(i=0;i<n;i++){
-    x = 0;
-    y = 0;
-    for(j=0;j<n;j++){
-      x += s1[j] * s3[(i*j)&mask] - s2[j] * s4[(j*i)&mask];
-      y += s1[j] * s4[(i*j)&mask] + s2[j] * s3[(j*i)&mask];
-    }
-    d1[i] = x;
-    d2[i] = y;
-  }
-}
-
-
-void sincos_array (double *d1, double *d2, double inc, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    d1[i] = cos(inc*i);
-    d2[i] = sin(inc*i);
-  }
-}
-
-void complex_mult (double *d1, double *d2, double *s1, double *s2,
-    double *s3, double *s4, int n)
+static void
+complex_mult_f32 (float *d1, float *d2, float *s1, float *s2,
+    float *s3, float *s4, int n)
 {
   int i;
   for(i=0;i<n;i++){
-    d1[i] = s1[i] * s3[i] - s2[i] * s4[i];
-    d2[i] = s1[i] * s4[i] + s2[i] * s3[i];
+    d1[i] = COMPLEX_MULT_R(s1[i], s2[i], s3[i], s4[i]);
+    d2[i] = COMPLEX_MULT_I(s1[i], s2[i], s3[i], s4[i]);
   }
 }
 
-void complex_normalize (double *i1, double *i2, int n)
+static void
+complex_normalize_f32 (float *i1, float *i2, int n)
 {
   int i;
-  double x;
+  float x;
   for(i=0;i<n;i++){
     x = sqrt(i1[i]*i1[i] + i2[i]*i2[i]);
     if (x > 0) x = 1/x;
@@ -88,10 +38,10 @@ void complex_normalize (double *i1, double *i2, int n)
 }
 
 int
-get_max_f64 (double *src, int n)
+get_max_f32 (float *src, int n)
 {
   int i;
-  double max;
+  float max;
   int max_i;
 
   max = src[0];
@@ -107,30 +57,53 @@ get_max_f64 (double *src, int n)
   return max_i;
 }
 
-#define N 4096
 
 void
 schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
 {
   SchroFrame *ref;
   SchroFrame *src;
+  int shift;
+  int n;
   uint8_t *line;
-  double image1[N];
-  double image2[N];
+  float *image1;
+  float *image2;
   int i,j;
-  double s[N], c[N];
-  double ft1r[N];
-  double ft1i[N];
-  double ft2r[N];
-  double ft2i[N];
-  double conv_r[N], conv_i[N];
-  double resr[N], resi[N];
-  double weight[N];
-  double sum;
-  double weight2;
+  float *s, *c;
+  float *zero;
+  float *ft1r;
+  float *ft1i;
+  float *ft2r;
+  float *ft2i;
+  float *conv_r, *conv_i;
+  float *resr, *resi;
+  float *weight;
+  float sum;
+  float weight2;
 
-/* disable this for checkin */
-return;
+  shift = 12;
+  n = 1<<shift;
+
+  /* tables */
+  s = malloc(n*sizeof(float));
+  c = malloc(n*sizeof(float));
+  weight = malloc(n*sizeof(float));
+  zero = malloc(n*sizeof(float));
+  memset (zero, 0, n*sizeof(float));
+
+  image1 = malloc(n*sizeof(float));
+  image2 = malloc(n*sizeof(float));
+
+  ft1r = malloc(n*sizeof(float));
+  ft1i = malloc(n*sizeof(float));
+  ft2r = malloc(n*sizeof(float));
+  ft2i = malloc(n*sizeof(float));
+  conv_r = malloc(n*sizeof(float));
+  conv_i = malloc(n*sizeof(float));
+  resr = malloc(n*sizeof(float));
+  resi = malloc(n*sizeof(float));
+
+
   src = frame->downsampled_frames[0];
   ref = frame->ref_frame0->downsampled_frames[0];
 
@@ -140,7 +113,7 @@ return;
   sum = 0;
   for(j=0;j<64;j++){
     for(i=0;i<64;i++){
-      double d2;
+      float d2;
       d2 = ((i-32)*(i-32) + (j-32)*(j-32))/(32.0*32.0);
       //weight = 1 - d2;
       //if (weight < 0) weight = 0;
@@ -185,24 +158,24 @@ return;
     }
   }
 
-  sincos_array (c, s, 2*M_PI/N, N);
+  schro_fft_generate_tables_f32 (c, s, shift);
 
-  discrete_fourier_transform (ft1r, ft1i, image1, c, s, N);
-  discrete_fourier_transform (ft2r, ft2i, image2, c, s, N);
+  schro_fft_fwd_f32 (ft1r, ft1i, image1, zero, c, s, shift);
+  schro_fft_fwd_f32 (ft2r, ft2i, image2, zero, c, s, shift);
 
-  for(i=0;i<N;i++){
+  for(i=0;i<n;i++){
     ft2i[i] = -ft2i[i];
   }
-  complex_mult (conv_r, conv_i, ft1r, ft1i, ft2r, ft2i, N);
 
-  complex_normalize (conv_r, conv_i, N);
+  complex_mult_f32 (conv_r, conv_i, ft1r, ft1i, ft2r, ft2i, n);
+  complex_normalize_f32 (conv_r, conv_i, n);
 
-  complex_discrete_fourier_transform (resi, resr, conv_i, conv_r, c, s, N);
+  schro_fft_rev_f32 (resr, resi, conv_r, conv_i, c, s, shift);
 
   {
     int x,y;
 
-    i = get_max_f64 (resr, N);
+    i = get_max_f32 (resr, n);
 
     x = i&0x3f;
     if (x >= 32) x -= 64;
@@ -221,5 +194,21 @@ return;
   }
 #endif
 
+  free(s);
+  free(c);
+  free(weight);
+  free(zero);
+
+  free(image1);
+  free(image2);
+
+  free(ft1r);
+  free(ft1i);
+  free(ft2r);
+  free(ft2i);
+  free(conv_r);
+  free(conv_i);
+  free(resr);
+  free(resi);
 }
 

@@ -1,3 +1,12 @@
+2007-08-17  David Schleef  <ds@schleef.org>
+
+	* schroedinger/Makefile.am:
+	* schroedinger/schrofft.c:
+	* schroedinger/schrofft.h:
+	* schroedinger/schrophasecorrelation.c:
+	* testsuite/fft.c:
+	  Separate FFT code into separate file.
+
 2007-08-15  David Schleef  <ds@schleef.org>
 
 	* gst/gstschrofilter.c:

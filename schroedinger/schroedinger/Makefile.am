@@ -22,6 +22,7 @@ pkginclude_HEADERS = \
 	schrobits.h \
 	schrobitstream.h \
 	schrodebug.h \
+	schrofft.h \
 	schrohistogram.h \
 	schrometric.h \
 	schromotion.h \
@@ -50,6 +51,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrodebug.c \
 	schroencoder.c \
 	schroengine.c \
+	schrofft.c \
 	schrofilter.c \
 	schroframe.c \
 	schrohistogram.c \
