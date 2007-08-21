@@ -1,3 +1,10 @@
+2007-08-20  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.h:
+	* schroedinger/schrophasecorrelation.c:
+	* schroedinger/schropredict.c:
+	  Add phase correlation as a prediction method.
+
 2007-08-17  David Schleef  <ds@schleef.org>
 
 	* schroedinger/Makefile.am:

@@ -55,9 +55,12 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
         params->y_num_blocks);
   }
 
-  //schro_encoder_hierarchical_prediction (frame);
+//#define USE_PHASE_CORRELATION
+#ifdef USE_PHASE_CORRELATION
   schro_encoder_phasecorr_prediction (frame);
+#else
   schro_encoder_hierarchical_prediction_2 (frame);
+#endif
   //schro_encoder_zero_prediction (frame);
 
   if (params->have_global_motion) {
@@ -67,10 +70,17 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
   schro_encoder_dc_prediction (frame);
 
   n = 0;
+#ifndef USE_PHASE_CORRELATION
   fields[n++] = frame->motion_fields[SCHRO_MOTION_FIELD_HIER_REF0];
   if (params->num_refs > 1) {
     fields[n++] = frame->motion_fields[SCHRO_MOTION_FIELD_HIER_REF1];
   }
+#else
+  fields[n++] = frame->motion_fields[SCHRO_MOTION_FIELD_PHASECORR_REF0];
+  if (params->num_refs > 1) {
+    fields[n++] = frame->motion_fields[SCHRO_MOTION_FIELD_PHASECORR_REF1];
+  }
+#endif
   fields[n++] = frame->motion_fields[SCHRO_MOTION_FIELD_DC];
   if (params->have_global_motion) {
     fields[n++] = frame->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF0];
