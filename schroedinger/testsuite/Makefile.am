@@ -6,7 +6,8 @@ noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 obmc phasecorrelation motion \
 	 quant decode \
 	 global_motion upsample \
-	 motion2 sort filter ssim gaussian fft
+	 motion2 sort filter ssim gaussian fft \
+	 wavelet_gain
 
 TESTS = arith bits bits2 encode wavelet tables wavelet_2d
 
@@ -56,6 +57,10 @@ encode_big_SOURCES = encode_big.c
 wavelet_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 wavelet_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_SOURCES = wavelet.c
+
+wavelet_gain_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+wavelet_gain_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+wavelet_gain_SOURCES = wavelet_gain.c
 
 #wavelet2_CFLAGS = $(SCHRO_CFLAGS)
 #wavelet2_LDADD = $(SCHRO_LIBS)
