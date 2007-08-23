@@ -59,150 +59,6 @@ random_triangle (void)
 }
 
 
-void
-random_test(int filter, int level)
-{
-  int16_t *a = tmp+10;
-  float sintable[N];
-  float costable[N];
-  float dr[N];
-  float di[N];
-  float sr[N];
-  float si[N];
-  double power[N];
-  int i;
-  int j;
-  double total;
-  int n_cycles = 10000;
-  int amplitude = 100;
-  double p0 = 0;
-
-  for(i=0;i<N;i++){
-    power[i] = 0;
-  }
-
-  for(j=0;j<n_cycles;j++){
-    for(i=0;i<N;i++){
-      a[i] = 0;
-    }
-    if (level == 0) {
-      for(i=0;i<(N>>4);i++){
-        a[i]=rint(amplitude*random_std());
-      }
-    } else {
-      for(i=((N>>5)<<level);i<((N>>4)<<level);i++){
-        a[i]=rint(amplitude*random_std());
-      }
-    }
-
-    interleave(a,N>>3);
-    synth_schro_ext(a,N>>3,filter);
-    interleave(a,N>>2);
-    synth_schro_ext(a,N>>2,filter);
-    interleave(a,N>>1);
-    synth_schro_ext(a,N>>1,filter);
-    interleave(a,N);
-    synth_schro_ext(a,N,filter);
-
-    for(i=0;i<N;i++){
-      si[i] = 0;
-      sr[i] = a[i];
-      p0 += a[i]*a[i];
-    }
-
-    schro_fft_generate_tables_f32 (costable, sintable, SHIFT);
-    schro_fft_fwd_f32 (dr, di, sr, si, costable, sintable, SHIFT);
-
-    for(i=0;i<N;i++){
-      power[i] += dr[i]*dr[i]+di[i]*di[i];
-    }
-
-  }
-
-  total = 0;
-  for(i=0;i<(N>>1);i++){
-    double x;
-
-    x = power[i]/n_cycles;
-    x /= (amplitude*amplitude);
-    if (level == 0) {
-      x /= (1<<(filtershift[filter]*4));
-    } else {
-      x /= (1<<(filtershift[filter]*(5-level)));
-    }
-    /* divide by size of subband */
-#if 0
-    if (level == 0) {
-      x /= (1<<(SHIFT-4+level));
-    } else {
-      x /= (1<<(SHIFT-5+level));
-    }
-#endif
-    /* divide by FFT normalization */
-    x /= (1<<SHIFT);
-    /* unknown */
-    x *= 8;
-
-    total += x;
-    printf("%d %g %g\n", i, x, total);
-  }
-  fprintf(stderr, "%g\n", p0/n_cycles/(1<<(SHIFT-5+level)));
-  printf("\n");
-}
-
-
-void
-response_test(int filter)
-{
-  int16_t *a = tmp+10;
-  double p0, p1, p2, p3, p4;
-  int i;
-  int j;
-  int k;
-
-  for(j=0;j<128;j++){
-    p0 = 0;
-    p1 = 0;
-    p2 = 0;
-    p3 = 0;
-    p4 = 0;
-
-    for(k=0;k<100;k++){
-      for(i=0;i<256;i++){
-        a[i] = 128*sin(i*2*M_PI*j/256.0 + k*(M_PI/100.0));
-      }
-
-      split_schro_ext(a,256,filter);
-      deinterleave(a,256);
-      split_schro_ext(a,128,filter);
-      deinterleave(a,128);
-      split_schro_ext(a,64,filter);
-      deinterleave(a,64);
-      split_schro_ext(a,32,filter);
-      deinterleave(a,32);
-
-      for(i=0;i<16;i++){
-        p0 += a[i]*a[i]*(1<<(filtershift[filter]*4));
-      }
-      for(i=16;i<32;i++){
-        p1 += a[i]*a[i]*(1<<(filtershift[filter]*3));
-      }
-      for(i=32;i<64;i++){
-        p2 += a[i]*a[i]*(1<<(filtershift[filter]*2));
-      }
-      for(i=64;i<128;i++){
-        p3 += a[i]*a[i]*(1<<(filtershift[filter]*1));
-      }
-      for(i=128;i<256;i++){
-        p4 += a[i]*a[i];
-      }
-    }
-    printf("%d %g %g %g %g %g\n", j, p0, p1, p2, p3, p4);
-  }
-
-  printf("\n");
-}
-
 double
 gain_test(int filter, int level, int n_levels)
 {
@@ -291,7 +147,6 @@ int
 main (int argc, char *argv[])
 {
   int filter;
-  int level;
 
   schro_init();
 
@@ -300,11 +155,7 @@ main (int argc, char *argv[])
     filter = strtol(argv[1], NULL, 0);
   }
 
-  if (0) {
-    for(level=0;level<=4;level++){
-      random_test(filter, level);
-    }
-  } else {
+  {
     double a[5];
     double b[9];
     int i;
@@ -383,6 +234,7 @@ deinterleave (int16_t *a, int n)
   }
 }
 
+#if 0
 void
 extend(int16_t *a, int n)
 {
@@ -561,6 +413,7 @@ split (int16_t *a, int n, int filter)
       break;
   }
 }
+#endif
 
 void
 split_schro_ext (int16_t *a, int n, int filter)
@@ -639,6 +492,7 @@ synth_schro_ext (int16_t *a, int n, int filter)
 
 
 
+#if 0
 
 void
 schro_split_desl93 (int16_t *hi, int16_t *lo, int n)
@@ -1119,4 +973,6 @@ synth_schro (int16_t *a, int n, int filter)
 
   oil_interleave2_s16 (a, hi, lo, n/2);
 }
+
+#endif
 
