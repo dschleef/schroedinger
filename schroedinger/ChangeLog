@@ -2,6 +2,14 @@
 
 	* testsuite/Makefile.am:
 	* testsuite/wavelet_gain.c:
+	* testsuite/wavelet_gain_curve.c:
+	* testsuite/wavelet_noise_gain.c:
+	  More hacking.
+	  
+2007-08-23  David Schleef  <ds@schleef.org>
+
+	* testsuite/Makefile.am:
+	* testsuite/wavelet_gain.c:
 	* testsuite/wavelet_noise_gain.c:
 	  Add a program specifically to generate default low-delay
 	  tables.

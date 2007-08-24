@@ -7,7 +7,8 @@ noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 quant decode \
 	 global_motion upsample \
 	 motion2 sort filter ssim gaussian fft \
-	 wavelet_gain wavelet_noise_gain
+	 wavelet_gain wavelet_noise_gain \
+	 wavelet_gain_curve
 
 TESTS = arith bits bits2 encode wavelet tables wavelet_2d
 
@@ -65,6 +66,10 @@ wavelet_gain_SOURCES = wavelet_gain.c
 wavelet_noise_gain_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 wavelet_noise_gain_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_noise_gain_SOURCES = wavelet_noise_gain.c
+
+wavelet_gain_curve_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+wavelet_gain_curve_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+wavelet_gain_curve_SOURCES = wavelet_gain_curve.c
 
 #wavelet2_CFLAGS = $(SCHRO_CFLAGS)
 #wavelet2_LDADD = $(SCHRO_LIBS)
