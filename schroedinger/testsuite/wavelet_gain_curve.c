@@ -27,6 +27,7 @@ void deinterleave (int16_t *a, int n);
 void interleave (int16_t *a, int n);
 void dump (int16_t *a, int n);
 void dump_cmp (int16_t *a, int16_t *b, int n);
+void solve (double *matrix, double *col, int n);
 
 #define SHIFT 8
 #define N (1<<SHIFT)
@@ -58,6 +59,27 @@ random_triangle (void)
   return random () * (1.0/RAND_MAX) - random () * (1.0/RAND_MAX);
 }
 
+double
+sum_f64 (double *a, int n)
+{
+  double sum = 0;
+  int i;
+  for(i=0;i<n;i++){
+    sum += a[i];
+  }
+  return sum;
+}
+
+double
+multsum_f64 (double *a, double *b, int n)
+{
+  double sum = 0;
+  int i;
+  for(i=0;i<n;i++){
+    sum += a[i]*b[i];
+  }
+  return sum;
+}
 
 void
 random_test(double *dest, int filter, double *weights)
@@ -137,16 +159,56 @@ random_test(double *dest, int filter, double *weights)
 }
 
 int
+quant_index (double x)
+{
+  int i = 0;
+
+  x *= x;
+  x *= x;
+  while (x*x > 2) {
+    x *= 0.5;
+    i++;
+  } 
+    
+  return i;
+}
+
+void
+print_subband_quants (double *a, int filter, int n_levels)
+{
+  double min;
+  double c[10];
+  double b[20];
+  int i;
+
+  for(i=0;i<n_levels+1;i++){
+    c[i] = 1/sqrt(a[i]);
+    //printf("%d %g\n", i, c[i]);
+  }
+
+  b[0] = c[0] * c[0] / (1<<(n_levels*filtershift[filter])); 
+  for(i=0;i<n_levels;i++){
+    b[i*2+1] = c[i+0] * c[i+1] / (1<<((n_levels-i)*filtershift[filter]));
+    b[i*2+2] = c[i+1] * c[i+1] / (1<<((n_levels-i)*filtershift[filter]));
+  }
+
+  min = b[0];
+  for(i=0;i<n_levels*2+1;i++){
+    if (b[i] < min) min = b[i];
+  }
+
+  for(i=0;i<n_levels*2+1;i++){
+    printf("%d %5.3f %5.3f %d\n", i, b[i], b[i]/min, quant_index(b[i]/min));
+  }
+}
+
+int
 main (int argc, char *argv[])
 {
   int filter;
-  double weights[5];
-  double weights2[5];
-  double a[N];
-  double b[N];
-  double c[N];
-  //double curves[5][N];
-  //double matrix[5][5];
+  double curves[5][N];
+  double matrix[5*5];
+  double column[5];
   int i;
   int j;
 
@@ -157,31 +219,82 @@ main (int argc, char *argv[])
     filter = strtol(argv[1], NULL, 0);
   }
 
-  weights[0] = 1/3.612;
-  weights[1] = 1/1.971;
-  weights[2] = 1/1.384;
-  weights[3] = 1/0.991;
-  weights[4] = 1/0.821;
-
-  random_test(a, filter, weights);
-
-  memset(b,0,sizeof(b));
   for(j=0;j<5;j++){
-    memset(weights2,0,sizeof(weights2));
-    weights2[j] = weights[j];
-    random_test(c, filter, weights2);
-    for(i=0;i<N/2;i++){
-      b[i] += c[i];
+    double weights[5];
+
+    memset(weights,0,sizeof(weights));
+    weights[j] = 1;
+    random_test(curves[j], filter, weights);
+  }
+
+  for(i=0;i<5;i++){
+    column[i] = sum_f64 (curves[i], N/2);
+    matrix[i*5+i] = multsum_f64 (curves[i], curves[i], N/2);
+    for(j=0;j<5;j++){
+      matrix[i*5+j] = multsum_f64 (curves[i], curves[j], N/2);
+      matrix[j*5+i] = matrix[i*5+j];
     }
   }
 
+  solve (matrix, column, 5);
 
+#if 1
   for(i=0;i<N/2;i++){
-    printf("%d %g %g\n", i, a[i], b[i]);
+    double x = 0;
+    for(j=0;j<5;j++){
+      x += column[j] * curves[j][i];
+    }
+#if 1
+    printf("%d %g %g %g %g %g %g\n", i, x,
+      column[0] * curves[0][i],
+      column[1] * curves[1][i],
+      column[2] * curves[2][i],
+      column[3] * curves[3][i],
+      column[4] * curves[4][i]);
+#else
+    printf("%d %g %g %g %g %g %g\n", i, x,
+      curves[0][i], curves[1][i], curves[2][i], curves[3][i], curves[4][i]);
+#endif
   }
+#else
+  print_subband_quants (column, filter, 4);
+#endif
 
   return 0;
 }
+
+void
+solve (double *matrix, double *column, int n)
+{
+  int i;
+  int j;
+  int k;
+  double x;
+
+  for(i=0;i<n;i++){
+    x = 1/matrix[i*n+i];
+    for(k=i;k<n;k++) {
+      matrix[i*n+k] *= x;
+    }
+    column[i] *= x;
+
+    for(j=i+1;j<n;j++){
+      x = matrix[j*n+i];
+      for(k=i;k<n;k++) {
+        matrix[j*n+k] -= matrix[i*n+k] * x;
+      }
+      column[j] -= column[i] * x;
+    }
+  }
+
+  for(i=n-1;i>0;i--) {
+    for(j=i-1;j>=0;j--) {
+      column[j] -= matrix[j*n+i] * column[i];
+      matrix[j*n+i] = 0;
+    }
+  }
+}
+
 
 void
 interleave (int16_t *a, int n)

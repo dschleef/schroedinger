@@ -1,3 +1,8 @@
+2007-08-24  David Schleef  <ds@schleef.org>
+
+	* testsuite/wavelet_gain_curve.c:
+	  More hacking.
+
 2007-08-23  David Schleef  <ds@schleef.org>
 
 	* testsuite/Makefile.am:
