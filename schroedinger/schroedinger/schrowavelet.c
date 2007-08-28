@@ -533,6 +533,9 @@ void schro_iwt_fidelity (int16_t *data, int stride, int width, int height,
 {
   int i;
 
+  /* FIXME */
+  SCHRO_ASSERT(height>=16);
+
 #define ROW(row) ((int16_t *)OFFSET(data, (row)*stride))
   for(i=0;i<height + 16;i++){
     int i1 = i-8;
@@ -961,6 +964,9 @@ void schro_iiwt_fidelity (int16_t *data, int stride, int width, int height,
     int16_t *tmp)
 {
   int i;
+
+  /* FIXME */
+  SCHRO_ASSERT(height>=16);
 
 #define ROW(row) ((int16_t *)OFFSET(data, (row)*stride))
   for(i=-16;i<height;i++){
