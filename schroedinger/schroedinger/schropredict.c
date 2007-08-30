@@ -24,20 +24,6 @@ void schro_motion_global_metric (SchroMotionField *mf, SchroFrame *frame,
     SchroFrame *ref);
 
 
-int cost (int value)
-{
-  int n;
-  if (value == 0) return 1;
-  if (value < 0) value = -value;
-  value++;
-  n = 0;
-  while (value) {
-    n+=2;
-    value>>=1;
-  }
-  return n;
-}
-
 void
 schro_encoder_motion_predict (SchroEncoderFrame *frame)
 {

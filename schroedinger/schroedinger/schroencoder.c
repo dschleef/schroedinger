@@ -71,6 +71,8 @@ schro_encoder_new (void)
   encoder->reference_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_encoder_frame_unref);
 
+  schro_encoder_set_default_subband_weights (encoder);
+
   return encoder;
 }
 
@@ -103,6 +105,14 @@ schro_encoder_free (SchroEncoder *encoder)
   }
 
   free (encoder);
+}
+
+void
+schro_encoder_set_viewing_distance (SchroEncoder *encoder, double dist)
+{
+  //encoder->viewing_distance = 3.0;
+
+
 }
 
 SchroVideoFormat *

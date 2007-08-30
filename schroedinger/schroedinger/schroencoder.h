@@ -159,6 +159,12 @@ struct _SchroEncoder {
 
   int internal_testing;
 
+  double pixels_per_degree_horiz;
+  double pixels_per_degree_vert;
+  double pixels_per_degree_diag;
+
+  double subband_weights[8][SCHRO_MAX_TRANSFORM_DEPTH][3*SCHRO_MAX_TRANSFORM_DEPTH+1];
+
   /* engine specific stuff */
 
   int gop_picture;
@@ -222,6 +228,9 @@ void schro_encoder_encode_access_unit_header (SchroEncoder *encoder, SchroBits *
 void schro_encoder_encode_parse_info (SchroBits *bits, int parse_code);
 void schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_start (SchroEncoder *encoder);
+
+void schro_encoder_set_default_subband_weights (SchroEncoder *encoder);
+void schro_encoder_set_viewing_distance (SchroEncoder *encoder, double dist);
 
 SchroStateEnum schro_encoder_wait (SchroEncoder *encoder);
 SchroBuffer * schro_encoder_pull (SchroEncoder *encoder,

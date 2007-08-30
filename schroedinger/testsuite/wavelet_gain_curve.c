@@ -209,6 +209,7 @@ main (int argc, char *argv[])
   double curves[5][N];
   double matrix[5*5];
   double column[5];
+  double target[N];
   int i;
   int j;
 
@@ -227,18 +228,33 @@ main (int argc, char *argv[])
     random_test(curves[j], filter, weights);
   }
 
+  for(i=0;i<N/2;i++){
+    //double x = ((double)i)/(N/2);
+    //target[i] = 1.0 + 4*x*x;
+    target[i] = 1.0;
+  }
+  for(i=0;i<N/2;i++){
+    for(j=0;j<5;j++){
+      curves[j][i] /= target[i];
+    }
+  }
   for(i=0;i<5;i++){
     column[i] = sum_f64 (curves[i], N/2);
     matrix[i*5+i] = multsum_f64 (curves[i], curves[i], N/2);
-    for(j=0;j<5;j++){
+    for(j=i+1;j<5;j++){
       matrix[i*5+j] = multsum_f64 (curves[i], curves[j], N/2);
       matrix[j*5+i] = matrix[i*5+j];
+    }
+  }
+  for(i=0;i<N/2;i++){
+    for(j=0;j<5;j++){
+      curves[j][i] *= target[i];
     }
   }
 
   solve (matrix, column, 5);
 
-#if 1
+#if 0
   for(i=0;i<N/2;i++){
     double x = 0;
     for(j=0;j<5;j++){

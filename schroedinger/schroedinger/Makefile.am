@@ -67,7 +67,8 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrossim.c \
 	schrotables.c \
 	schroutils.c \
-	schrowavelet.c
+	schrowavelet.c \
+	schrowavelettables.c
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ERROR_CFLAGS)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)

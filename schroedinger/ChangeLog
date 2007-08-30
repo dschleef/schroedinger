@@ -1,3 +1,21 @@
+2007-08-30  David Schleef  <ds@schleef.org>
+
+	* schroedinger/Makefile.am:
+	* schroedinger/schrowavelettables.c:
+	* schroedinger/schrotables.h:
+	  Add wavelet frequency response tables.
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schropredict.c:
+	* schroedinger/schroquantiser.c:
+	  Add perceptual weighting.  Not hooked up yet.
+	* testsuite/Makefile.am:
+	* testsuite/wavelet_gain_curve.c:
+	* testsuite/wavelet_tables.c:
+	* testsuite/perceptual_weight.c:
+	  more hacking
+
 2007-08-28  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrowavelet.c:

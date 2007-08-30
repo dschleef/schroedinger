@@ -8,7 +8,8 @@ noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 global_motion upsample \
 	 motion2 sort filter ssim gaussian fft \
 	 wavelet_gain wavelet_noise_gain \
-	 wavelet_gain_curve
+	 wavelet_gain_curve wavelet_tables \
+	 perceptual_weight
 
 TESTS = arith bits bits2 encode wavelet tables wavelet_2d
 
@@ -71,6 +72,10 @@ wavelet_gain_curve_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 wavelet_gain_curve_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_gain_curve_SOURCES = wavelet_gain_curve.c
 
+wavelet_tables_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+wavelet_tables_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+wavelet_tables_SOURCES = wavelet_tables.c
+
 #wavelet2_CFLAGS = $(SCHRO_CFLAGS)
 #wavelet2_LDADD = $(SCHRO_LIBS)
 #wavelet2_SOURCES = wavelet2.c
@@ -122,6 +127,10 @@ gaussian_SOURCES = gaussian.c
 fft_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 fft_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 fft_SOURCES = fft.c
+
+perceptual_weight_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+perceptual_weight_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+perceptual_weight_SOURCES = perceptual_weight.c
 
 
 #struct_offsets_SOURCES = struct_offsets.c

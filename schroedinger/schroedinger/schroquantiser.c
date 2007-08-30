@@ -21,6 +21,200 @@ static const int wavelet_gain_diag[] = { 128, 128, 128, 64, 128, 256, -64, 90 };
 void schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_hardcoded (SchroEncoderFrame *frame);
 
+#define CURVE_SIZE 128
+
+#if 0
+static double
+perceptual_weight(double ppd)
+{
+  /* I pretty much pulled this out of my ass (ppd = pixels per degree) */
+  if (ppd < 8) return 1;
+  return 1.0/(0.34 * ppd * exp (-0.125 * ppd));
+}
+#else
+static double
+perceptual_weight(double ppd)
+{
+  return 1;
+}
+#endif
+
+static double
+weighted_sum (const float *h1, const float *v1, double *weight)
+{
+  int i,j;
+  double sum;
+  double rowsum;
+
+  sum = 0;
+  for(j=0;j<CURVE_SIZE;j++){
+    rowsum = 0;
+    for(i=0;i<CURVE_SIZE;i++){
+      rowsum += h1[i]*v1[j]*weight[CURVE_SIZE*j+i];
+    }
+    sum += rowsum;
+  }
+  return sum;
+}
+
+static double
+dot_product (const float *h1, const float *v1, const float *h2,
+    const float *v2, double *weight)
+{
+  int i,j;
+  double sum;
+  double rowsum;
+
+  sum = 0;
+  for(j=0;j<CURVE_SIZE;j++){
+    rowsum = 0;
+    for(i=0;i<CURVE_SIZE;i++){
+      rowsum += h1[i]*v1[j]*h2[i]*v2[j]*weight[CURVE_SIZE*j+i]*weight[CURVE_SIZE*j+i];
+    }
+    sum += rowsum;
+  }
+  return sum;
+}
+
+void
+solve (double *matrix, double *column, int n)
+{
+  int i;
+  int j;
+  int k;
+  double x;
+
+  for(i=0;i<n;i++){
+    x = 1/matrix[i*n+i];
+    for(k=i;k<n;k++) {
+      matrix[i*n+k] *= x;
+    }
+    column[i] *= x;
+
+    for(j=i+1;j<n;j++){
+      x = matrix[j*n+i];
+      for(k=i;k<n;k++) {
+        matrix[j*n+k] -= matrix[i*n+k] * x;
+      }
+      column[j] -= column[i] * x;
+    }
+  }
+
+  for(i=n-1;i>0;i--) {
+    for(j=i-1;j>=0;j--) {
+      column[j] -= matrix[j*n+i] * column[i];
+      matrix[j*n+i] = 0;
+    }
+  }
+}
+
+void
+schro_encoder_set_default_subband_weights (SchroEncoder *encoder)
+{
+  int wavelet;
+  int n_levels;
+  double *matrix;
+  int n;
+  int i,j;
+  double column[SCHRO_MAX_SUBBANDS];
+  double *weight;
+
+  matrix = malloc (sizeof(double)*SCHRO_MAX_SUBBANDS*SCHRO_MAX_SUBBANDS);
+  weight = malloc (sizeof(double)*CURVE_SIZE*CURVE_SIZE);
+
+encoder->pixels_per_degree_horiz = encoder->video_format.width/(2.0*atan(0.5/3.0)*180/M_PI);
+encoder->pixels_per_degree_vert = encoder->pixels_per_degree_horiz;
+
+  for(j=0;j<CURVE_SIZE;j++){
+    for(i=0;i<CURVE_SIZE;i++){
+      double fv = j*encoder->pixels_per_degree_vert*(1.0/CURVE_SIZE);
+      double fh = i*encoder->pixels_per_degree_horiz*(1.0/CURVE_SIZE);
+
+      weight[j*CURVE_SIZE+i] = perceptual_weight (sqrt(fv*fv+fh*fh));
+    }
+  }
+
+  for(wavelet=0;wavelet<8;wavelet++) {
+    //for(n_levels=1;n_levels<=SCHRO_MAX_TRANSFORM_DEPTH;n_levels++){
+    for(n_levels=1;n_levels<=4;n_levels++){
+      const float *h_curve[SCHRO_MAX_SUBBANDS];
+      const float *v_curve[SCHRO_MAX_SUBBANDS];
+      int hi[SCHRO_MAX_SUBBANDS];
+      int vi[SCHRO_MAX_SUBBANDS];
+
+      n = 3*n_levels+1;
+
+      for(i=0;i<n;i++){
+        int position = schro_subband_get_position(i);
+        int n_transforms;
+
+        n_transforms = n_levels - SCHRO_SUBBAND_SHIFT(position);
+        if (position&1) {
+          hi[i] = (n_transforms-1)*2;
+        } else {
+          hi[i] = (n_transforms-1)*2+1;
+        }
+        if (position&2) {
+          vi[i] = (n_transforms-1)*2;
+        } else {
+          vi[i] = (n_transforms-1)*2+1;
+        }
+        h_curve[i] = schro_tables_wavelet_noise_curve[wavelet][hi[i]];
+        v_curve[i] = schro_tables_wavelet_noise_curve[wavelet][vi[i]];
+      }
+
+      for(i=0;i<n;i++){
+        column[i] = weighted_sum(h_curve[i], v_curve[i], weight);
+        matrix[i*n+i] = dot_product (h_curve[i], v_curve[i],
+            h_curve[i], v_curve[i], weight);
+        for(j=i+1;j<n;j++) {
+          matrix[i*n+j] = dot_product (h_curve[i], v_curve[i],
+              h_curve[j], v_curve[j], weight);
+          matrix[j*n+i] = matrix[i*n+j];
+        }
+      }
+#if 1
+      for(i=0;i<n;i++){
+        double x = 1.0/matrix[i*n+i];
+        for(j=0;j<n;j++){
+          matrix[i*n+j] *= x;
+        }
+        column[i] *= x;
+      }
+#endif
+
+      SCHRO_DEBUG("wavelet %d n_levels %d", wavelet, n_levels);
+#if 0
+      for(j=0;j<n;j++){
+        for(i=0;i<n;i++){
+          SCHRO_DEBUG("%d %d (%d %d %d %d) %g", j, i,
+              vi[j], hi[j], vi[i], hi[i],
+              matrix[n*j+i]);
+        }
+      }
+#endif
+
+      solve (matrix, column, n);
+
+      for(i=0;i<n;i++){
+        if (column[i] < 0) {
+          SCHRO_ERROR("BROKEN wavelet %d n_levels %d", wavelet, n_levels);
+          break;
+        }
+      }
+
+      for(i=0;i<n;i++){
+        SCHRO_DEBUG("%g", 1.0/sqrt(column[i]));
+        encoder->subband_weights[wavelet][n_levels-1][i] =
+          1.0/sqrt(column[i]);
+      }
+    }
+  }
+
+  free(weight);
+  free(matrix);
+}
+
 void
 schro_encoder_choose_quantisers (SchroEncoderFrame *frame)
 {
@@ -515,4 +709,43 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
         vol);
 }
 
+#if 0
+/* This is 64*log2 of the gain of the DC part of the wavelet transform */
+static const int wavelet_gain[] = { 64, 64, 64, 0, 64, 128, 128, 103 };
+/* horizontal/vertical part */
+static const int wavelet_gain_hv[] = { 64, 64, 64, 0, 64, 128, 0, 65 };
+/* diagonal part */
+static const int wavelet_gain_diag[] = { 128, 128, 128, 64, 128, 256, -64, 90 };
+#endif
+
+
+double
+subband_sensitivity (SchroEncoderFrame *frame, int position)
+{
+  double ppd;
+
+  switch (position & 3) {
+    case 0:
+      ppd = 0;
+      break;
+    case 1:
+      ppd = frame->encoder->pixels_per_degree_vert;
+      break;
+    case 2:
+      ppd = frame->encoder->pixels_per_degree_horiz;
+      break;
+    case 3:
+      ppd = frame->encoder->pixels_per_degree_diag;
+      break;
+  }
+
+  /* shift for lower frequency subbands */
+  //ppd /= (1<<(params->transform_depth - 1 - SCHRO_SUBBAND_SHIFT(position)));
+
+  /* approximately middle of frequency response of subband */
+  ppd *= 0.75;
+
+
+  return 0;
+}
 

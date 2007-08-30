@@ -14,6 +14,8 @@ extern uint32_t schro_table_inverse_quant[61];
 extern uint16_t schro_table_division_factor[257];
 extern double schro_table_error_hist_shift3_1_2[60][104];
 
+extern const float schro_tables_wavelet_noise_curve[8][8][128];
+
 SCHRO_END_DECLS
 
 #endif
