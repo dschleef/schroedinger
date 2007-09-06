@@ -1,3 +1,9 @@
+2007-09-06  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schromotion.c:
+	  Fix some spec discrepancies noticed by Wladimir van der Laan
+	  <laanwj@gmail.com>.
+
 2007-08-30  David Schleef  <ds@schleef.org>
 
 	* schroedinger/Makefile.am:

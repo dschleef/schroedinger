@@ -819,6 +819,9 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
       if (mv->pred_mode == 0) {
         schro_motion_get_dc_block (motion, mv);
       } else {
+        /* FIXME bipredictive not supported right now. ETOOLAZY. */
+        SCHRO_ASSERT(mv->pred_mode != 3);
+
         if (mv->pred_mode & 1) {
           if (mv->using_global) {
             SchroGlobalMotion *gm = &motion->params->global_motion[0];
@@ -1154,7 +1157,7 @@ schro_upsampled_frame_upsample (SchroUpsampledFrame *df)
       df->frames[0]->width, df->frames[0]->height);
   schro_frame_upsample_horiz (df->frames[1], df->frames[0]);
   schro_frame_upsample_vert (df->frames[2], df->frames[0]);
-  schro_frame_upsample_horiz (df->frames[3], df->frames[1]);
+  schro_frame_upsample_horiz (df->frames[3], df->frames[2]);
 }
 
 SchroUpsampledFrame *
