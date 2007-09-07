@@ -1,3 +1,17 @@
+2007-09-07  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroengine.h:
+	* schroedinger/schrohistogram.c:
+	* schroedinger/schrohistogram.h:
+	* schroedinger/schroquantiser.c:
+	  More hacking for perceptual weighting.  Rearrange code to
+	  handle multiple quantiser engines.
+	* tools/dump_packets.c:
+	  Fix spec compliance.
+
 2007-09-06  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schromotion.c:

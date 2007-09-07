@@ -9,35 +9,32 @@
 #include <math.h>
 
 
-#if 0
-/* This is 64*log2 of the gain of the DC part of the wavelet transform */
-static const int wavelet_gain[] = { 64, 64, 64, 0, 64, 128, 128, 103 };
-/* horizontal/vertical part */
-static const int wavelet_gain_hv[] = { 64, 64, 64, 0, 64, 128, 0, 65 };
-/* diagonal part */
-static const int wavelet_gain_diag[] = { 128, 128, 128, 64, 128, 256, -64, 90 };
-#endif
-
 void schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_hardcoded (SchroEncoderFrame *frame);
+void schro_encoder_choose_quantisers_perceptual (SchroEncoderFrame *frame);
+void schro_encoder_choose_quantisers_lossless (SchroEncoderFrame *frame);
 
 #define CURVE_SIZE 128
 
-#if 0
-static double
-perceptual_weight(double ppd)
+double
+schro_encoder_perceptual_weight_moo (double ppd)
 {
   /* I pretty much pulled this out of my ass (ppd = pixels per degree) */
   if (ppd < 8) return 1;
   return 1.0/(0.34 * ppd * exp (-0.125 * ppd));
 }
-#else
-static double
-perceptual_weight(double ppd)
+
+double
+schro_encoder_perceptual_weight_constant (double ppd)
 {
   return 1;
 }
-#endif
+
+double
+schro_encoder_perceptual_weight_ccir959 (double ppd)
+{
+  return 0.255 * pow(1 + 0.2561 * ppd, 0.75);
+}
 
 static double
 weighted_sum (const float *h1, const float *v1, double *weight)
@@ -111,6 +108,14 @@ solve (double *matrix, double *column, int n)
 void
 schro_encoder_set_default_subband_weights (SchroEncoder *encoder)
 {
+  schro_encoder_calculate_subband_weights (encoder,
+      schro_encoder_perceptual_weight_constant);
+}
+
+void
+schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
+    double (*perceptual_weight)(double))
+{
   int wavelet;
   int n_levels;
   double *matrix;
@@ -121,9 +126,6 @@ schro_encoder_set_default_subband_weights (SchroEncoder *encoder)
 
   matrix = malloc (sizeof(double)*SCHRO_MAX_SUBBANDS*SCHRO_MAX_SUBBANDS);
   weight = malloc (sizeof(double)*CURVE_SIZE*CURVE_SIZE);
-
-encoder->pixels_per_degree_horiz = encoder->video_format.width/(2.0*atan(0.5/3.0)*180/M_PI);
-encoder->pixels_per_degree_vert = encoder->pixels_per_degree_horiz;
 
   for(j=0;j<CURVE_SIZE;j++){
     for(i=0;i<CURVE_SIZE;i++){
@@ -173,17 +175,7 @@ encoder->pixels_per_degree_vert = encoder->pixels_per_degree_horiz;
           matrix[j*n+i] = matrix[i*n+j];
         }
       }
-#if 1
-      for(i=0;i<n;i++){
-        double x = 1.0/matrix[i*n+i];
-        for(j=0;j<n;j++){
-          matrix[i*n+j] *= x;
-        }
-        column[i] *= x;
-      }
-#endif
 
-      SCHRO_DEBUG("wavelet %d n_levels %d", wavelet, n_levels);
 #if 0
       for(j=0;j<n;j++){
         for(i=0;i<n;i++){
@@ -203,6 +195,7 @@ encoder->pixels_per_degree_vert = encoder->pixels_per_degree_horiz;
         }
       }
 
+      SCHRO_DEBUG("wavelet %d n_levels %d", wavelet, n_levels);
       for(i=0;i<n;i++){
         SCHRO_DEBUG("%g", 1.0/sqrt(column[i]));
         encoder->subband_weights[wavelet][n_levels-1][i] =
@@ -220,12 +213,31 @@ schro_encoder_choose_quantisers (SchroEncoderFrame *frame)
 {
 
   switch (frame->encoder->quantiser_engine) {
-    case 0:
+    case SCHRO_QUANTISER_ENGINE_PERCEPTUAL:
+      schro_encoder_choose_quantisers_perceptual (frame);
+      break;
+    case SCHRO_QUANTISER_ENGINE_LOSSLESS:
+      schro_encoder_choose_quantisers_lossless (frame);
+      break;
+    case SCHRO_QUANTISER_ENGINE_HARDCODED:
       schro_encoder_choose_quantisers_hardcoded (frame);
       break;
-    case 1:
+    case SCHRO_QUANTISER_ENGINE_SIMPLE:
       schro_encoder_choose_quantisers_simple (frame);
       break;
+  }
+}
+
+void
+schro_encoder_choose_quantisers_lossless (SchroEncoderFrame *frame)
+{
+  int i;
+  int component;
+
+  for(component=0;component<3;component++){
+    for(i=0;i<1 + 3*frame->params.transform_depth; i++) {
+      frame->quant_index[component][i] = 0;
+    }
   }
 }
 
@@ -532,8 +544,10 @@ static double
 estimate_histogram_error (SchroHistogram *hist, int quant_index,
     int num_refs, int volume)
 {
-  return schro_histogram_apply_table (hist,
+  double x;
+  x = schro_histogram_apply_table (hist,
     (SchroHistogramTable *)(schro_table_error_hist_shift3_1_2[quant_index]));
+  return sqrt(x/volume);
 }
 
 double
@@ -627,30 +641,85 @@ schro_encoder_generate_subband_histogram (SchroEncoderFrame *frame,
 static int
 pick_quant (SchroHistogram *hist, double lambda, int vol)
 {
-  double error;
+  double x;
+  double min;
+  int i;
+  int i_min;
   double entropy;
-  double new_error;
-  double new_entropy;
-  int index;
+  double error;
 
-  index = 30;
-  entropy = estimate_histogram_entropy (hist, index, vol);
-  error = estimate_histogram_error (hist, index, 0, vol);
-
-  while (index > 0) {
-    new_entropy = estimate_histogram_entropy (hist, index - 1, vol);
-    new_error = estimate_histogram_error (hist, index - 1, 0, vol);
-
-    if (new_entropy - entropy > lambda * (error - new_error)) {
-      return index;
+  i_min = -1;
+  min = 0;
+  for(i=0;i<60;i++){
+    entropy = estimate_histogram_entropy (hist, i, vol);
+    error = estimate_histogram_error (hist, i, 0, vol);
+    
+    x = entropy + lambda * error;
+    if (i == 0 || x < min) {
+      i_min = i;
+      min = x;
     }
-
-    entropy = new_entropy;
-    error = new_error;
-    index--;
   }
 
-  return 0;
+  return i_min;
+}
+
+static double
+pow2 (int i, void *priv)
+{
+  return i*i;
+}
+
+static double
+estimate_histogram_sigma (SchroHistogram *hist, int volume)
+{
+  static SchroHistogramTable table;
+  static int table_inited;
+  int i;
+  int j;
+  int n;
+  double sigma;
+
+  if (!table_inited) {
+    schro_histogram_table_generate (&table, pow2, NULL);
+    table_inited = TRUE;
+  }
+
+  sigma = sqrt(schro_histogram_apply_table (hist, &table) / volume);
+  //SCHRO_ERROR("sigma %g", sigma);
+  for(i=0;i<10;i++) {
+    j = ceil (sigma*2.0);
+    n = schro_histogram_get_range (hist, 0, j);
+    sigma = (1/0.95) *
+      sqrt (schro_histogram_apply_table_range (hist, &table, 0, j) / n);
+    //SCHRO_ERROR("sigma %g (%d)", sigma, j);
+  }
+
+  return sigma;
+}
+
+static int
+sigma_to_quant (double x)
+{
+  int i;
+  for(i=0;i<60;i++){
+    if (schro_table_quant[i] >= x*4) return i;
+  }
+  return i;
+}
+
+void
+schro_encoder_choose_quantisers_perceptual (SchroEncoderFrame *frame)
+{
+  SchroParams *params = &frame->params;
+  int i;
+  int component;
+
+  for(component=0;component<3;component++){
+    for(i=0;i<1 + 3*params->transform_depth; i++) {
+      schro_encoder_estimate_subband (frame, component, i);
+    }
+  }
 }
 
 void
@@ -665,6 +734,7 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
   int width, height;
   double lambda;
   int position;
+  double sigma;
 
   schro_encoder_generate_subband_histogram (frame, component, index, &hist, 4);
 
@@ -674,7 +744,7 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
   vol = width * height;
 
   if (frame->encoder->internal_testing) {
-    for(i=0;i<30;i++){
+    for(i=0;i<60;i++){
       double est_entropy;
       double error;
       double est_error;
@@ -689,63 +759,48 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
 
       SCHRO_INFO("SUBBAND_CURVE: %d %d %d %g %g %g %g", component, index, i,
           est_entropy/vol, arith_entropy/vol,
-          sqrt(est_error/vol), sqrt(error/vol));
+          est_error, sqrt(error/vol));
     }
   }
 
-  //lambda = 0.0001;
+if (1) {
+  lambda = 10;
   if (index == 0) {
-    lambda = 0.0001;
-  } else {
-    lambda = 0.00001;
+    //lambda *= 10;
   }
+#if 0
   if (component > 0) {
+    lambda *= 0.3;
+  }
+#endif
+  if (!frame->is_ref) {
     lambda *= 0.1;
   }
+
+  {
+    double weight;
+    weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
+      [frame->params.transform_depth-1][index];
+    lambda /= weight*weight;
+  }
   frame->quant_index[component][index] = pick_quant (&hist, lambda, vol);
+} else {
+  sigma = estimate_histogram_sigma (&hist, vol);
+  if (component == 0) {
+    //SCHRO_ERROR("index %d sigma %g", index, sigma);
+  }
+
+  frame->quant_index[component][index] = sigma_to_quant (sigma*2);
+#if 1
+  if (index == 0) {
+    frame->quant_index[component][index] = 0;
+  }
+#endif
+}
+
 
   frame->estimated_entropy =
     estimate_histogram_entropy (&hist, frame->quant_index[component][index],
         vol);
-}
-
-#if 0
-/* This is 64*log2 of the gain of the DC part of the wavelet transform */
-static const int wavelet_gain[] = { 64, 64, 64, 0, 64, 128, 128, 103 };
-/* horizontal/vertical part */
-static const int wavelet_gain_hv[] = { 64, 64, 64, 0, 64, 128, 0, 65 };
-/* diagonal part */
-static const int wavelet_gain_diag[] = { 128, 128, 128, 64, 128, 256, -64, 90 };
-#endif
-
-
-double
-subband_sensitivity (SchroEncoderFrame *frame, int position)
-{
-  double ppd;
-
-  switch (position & 3) {
-    case 0:
-      ppd = 0;
-      break;
-    case 1:
-      ppd = frame->encoder->pixels_per_degree_vert;
-      break;
-    case 2:
-      ppd = frame->encoder->pixels_per_degree_horiz;
-      break;
-    case 3:
-      ppd = frame->encoder->pixels_per_degree_diag;
-      break;
-  }
-
-  /* shift for lower frequency subbands */
-  //ppd /= (1<<(params->transform_depth - 1 - SCHRO_SUBBAND_SHIFT(position)));
-
-  /* approximately middle of frequency response of subband */
-  ppd *= 0.75;
-
-
-  return 0;
 }
 

@@ -32,7 +32,8 @@ void schro_histogram_table_generate (SchroHistogramTable *table,
     double (*func)(int value, void *priv), void *priv);
 double schro_histogram_apply_table (SchroHistogram *hist,
     SchroHistogramTable *table);
-
+double schro_histogram_apply_table_range (SchroHistogram *hist,
+    SchroHistogramTable *table, int start, int end);
 
 SCHRO_END_DECLS
 

@@ -108,11 +108,34 @@ schro_encoder_free (SchroEncoder *encoder)
 }
 
 void
-schro_encoder_set_viewing_distance (SchroEncoder *encoder, double dist)
+schro_encoder_use_perceptual_weighting (SchroEncoder *encoder,
+    SchroEncoderPerceptualEnum type, double viewing_distance)
 {
-  //encoder->viewing_distance = 3.0;
 
+  encoder->pixels_per_degree_horiz =
+    encoder->video_format.width/(2.0*atan(0.5/3.0)*180/M_PI);
+  encoder->pixels_per_degree_vert =
+    encoder->video_format.aspect_ratio_numerator * 
+    (encoder->pixels_per_degree_horiz / encoder->video_format.aspect_ratio_denominator);
 
+  SCHRO_ERROR("pixels per degree horiz=%g vert=%g",
+      encoder->pixels_per_degree_horiz, encoder->pixels_per_degree_vert);
+
+  switch(type) {
+    default:
+    case SCHRO_ENCODER_PERCEPTUAL_CONSTANT:
+      schro_encoder_calculate_subband_weights (encoder,
+          schro_encoder_perceptual_weight_constant);
+      break;
+    case SCHRO_ENCODER_PERCEPTUAL_CCIR959:
+      schro_encoder_calculate_subband_weights (encoder,
+          schro_encoder_perceptual_weight_ccir959);
+      break;
+    case SCHRO_ENCODER_PERCEPTUAL_MOO:
+      schro_encoder_calculate_subband_weights (encoder,
+          schro_encoder_perceptual_weight_moo);
+      break;
+  }
 }
 
 SchroVideoFormat *
@@ -1398,10 +1421,10 @@ schro_encoder_encode_transform_data (SchroEncoderFrame *frame)
   int component;
   SchroParams *params = &frame->params;
 
+  schro_encoder_choose_quantisers (frame);
   for(component=0;component<3;component++) {
     for (i=0;i < 1 + 3*params->transform_depth; i++) {
       if (i != 0) schro_bits_sync (frame->bits);
-      schro_encoder_estimate_subband (frame, component, i);
       schro_encoder_encode_subband (frame, component, i);
     }
   }

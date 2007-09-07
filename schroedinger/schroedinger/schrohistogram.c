@@ -100,6 +100,34 @@ schro_histogram_apply_table (SchroHistogram *hist,
   return sum;
 }
 
+double
+schro_histogram_apply_table_range (SchroHistogram *hist,
+    SchroHistogramTable *table, int start, int end)
+{
+  int i;
+  int iend;
+  int size;
+  double sum;
+
+  if (start >= end) return 0;
+
+  i = ilogx(start);
+  size = ilogx_size(i);
+  sum = (double)(iexpx(i+1) - start)/size * hist->bins[i] * table->weights[i];
+
+  i++;
+  iend = ilogx(end);
+  while (i <= iend) {
+    sum += hist->bins[i] * table->weights[i];
+    i++;
+  }
+
+  size = ilogx_size(iend);
+  sum -= (double)(iexpx(iend+1) - end)/size * hist->bins[iend] * table->weights[iend];
+
+  return sum;
+}
+
 
 void
 schro_histogram_init (SchroHistogram *hist)

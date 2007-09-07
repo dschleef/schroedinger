@@ -164,7 +164,6 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     int bit;
 
     /* parse parameters */
-    g_print("  au_picture_number: %u\n", schro_bits_decode_bits(bits, 32));
     g_print("  version.major: %d\n", schro_bits_decode_uint(bits));
     g_print("  version.minor: %d\n", schro_bits_decode_uint(bits));
     g_print("  profile: %d\n", schro_bits_decode_uint(bits));
@@ -475,7 +474,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       schro_bits_sync (bits);
       for(j=0;j<3;j++){
         g_print("  component %d:\n",j);
-        g_print("    subband  length  quantiser_index\n");
+        g_print("    comp subband  length  quantiser_index\n");
         for(i=0;i<1+depth*3;i++){
           int length;
 
@@ -487,12 +486,12 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
           if (i!=0) schro_bits_sync(bits);
           length = schro_bits_decode_uint(bits);
           if (length > 0) {
-            g_print("    %4d:   %6d    %3d\n", i, length,
+            g_print("    %4d %4d:   %6d    %3d\n", j, i, length,
                 schro_bits_decode_uint(bits));
             schro_bits_sync(bits);
             schro_bits_skip (bits, length);
           } else {
-            g_print("    %4d:   %6d\n", i, length);
+            g_print("    %4d %4d:   %6d\n", j, i, length);
           }
         }
       }

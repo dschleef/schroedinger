@@ -51,6 +51,12 @@ typedef enum {
   SCHRO_ENCODER_FRAME_STATE_FREE
 } SchroEncoderFrameStateEnum;
 
+typedef enum {
+  SCHRO_ENCODER_PERCEPTUAL_CONSTANT,
+  SCHRO_ENCODER_PERCEPTUAL_CCIR959,
+  SCHRO_ENCODER_PERCEPTUAL_MOO
+} SchroEncoderPerceptualEnum;
+
 struct _SchroEncoderParams {
   int ignore;
 };
@@ -230,7 +236,13 @@ void schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_start (SchroEncoder *encoder);
 
 void schro_encoder_set_default_subband_weights (SchroEncoder *encoder);
-void schro_encoder_set_viewing_distance (SchroEncoder *encoder, double dist);
+void schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
+        double (*perceptual_weight)(double));
+void schro_encoder_use_perceptual_weighting (SchroEncoder *encoder,
+    SchroEncoderPerceptualEnum type, double dist);
+double schro_encoder_perceptual_weight_constant (double ppd);
+double schro_encoder_perceptual_weight_ccir959 (double ppd);
+double schro_encoder_perceptual_weight_moo (double ppd);
 
 SchroStateEnum schro_encoder_wait (SchroEncoder *encoder);
 SchroBuffer * schro_encoder_pull (SchroEncoder *encoder,
