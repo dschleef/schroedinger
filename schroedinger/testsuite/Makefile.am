@@ -1,7 +1,7 @@
 
 SUBDIRS = check perf coder installation
 
-noinst_PROGRAMS = arith arith_encode bits bits2 \
+noinst_PROGRAMS = arith arith_encode bits bits2 arith_speed \
 	 encode wavelet tables wavelet_2d \
 	 obmc phasecorrelation motion \
 	 quant decode \
@@ -28,9 +28,9 @@ arith_encode_SOURCES = arith_encode.c
 # arith_decode_LDADD = $(SCHRO_LIBS)
 # arith_decode_SOURCES = arith_decode.c
 
-# arith_speed_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-# arith_speed_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
-# arith_speed_SOURCES = arith_speed.c
+arith_speed_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+arith_speed_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+arith_speed_SOURCES = arith_speed.c
 
 # arith_fixup_shift_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 # arith_fixup_shift_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
