@@ -105,6 +105,8 @@ struct _SchroArith {
   int carry;
   SchroArithContext contexts[SCHRO_CTX_LAST];
 
+  uint16_t lut[512];
+
   SchroBuffer *buffer;
 };
 

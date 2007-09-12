@@ -1,5 +1,11 @@
 2007-09-12  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	  Improve(?) somewhat
+
+2007-09-12  David Schleef  <ds@schleef.org>
+
 	* testsuite/Makefile.am:
 	* testsuite/arith_speed.c:
 	  Update arith_speed.
