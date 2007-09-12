@@ -55,7 +55,8 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
   encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_5_3;
-  encoder->prefs[SCHRO_PREF_QUANT_BASE] = 20;
+  encoder->prefs[SCHRO_PREF_LAMBDA] = 50;
+  encoder->prefs[SCHRO_PREF_PSNR] = 30;
 
   schro_params_set_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_SD576);
@@ -539,6 +540,9 @@ schro_encoder_iterate (SchroEncoder *encoder)
         break;
       case 5:
         ret = schro_encoder_engine_lossless (encoder);
+        break;
+      case 6:
+        ret = schro_encoder_engine_backtest (encoder);
         break;
       default:
         ret = FALSE;
@@ -2167,12 +2171,13 @@ schro_encoder_reference_get (SchroEncoder *encoder,
 }
 
 static const int pref_range[][2] = {
-  { 0, 5 },
-  { 2, 20 },
-  { 1, 8 },
-  { 0, 7 },
-  { 0, 7 },
-  { 0, 60 },
+  { 0, 6 }, /* engine */
+  { 2, 20 }, /* ref distance */
+  { 1, SCHRO_MAX_ENCODER_TRANSFORM_DEPTH }, /* transform depth */
+  { 0, 7 }, /* intra wavelet */
+  { 0, 7 }, /* inter wavelet */
+  { 0, 100 }, /* lambda */
+  { 0, 100 }, /* psnr */
   /* last */
   { 0, 0 }
 };

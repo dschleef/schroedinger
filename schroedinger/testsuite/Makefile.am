@@ -9,7 +9,7 @@ noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 motion2 sort filter ssim gaussian fft \
 	 wavelet_gain wavelet_noise_gain \
 	 wavelet_gain_curve wavelet_tables \
-	 perceptual_weight
+	 perceptual_weight perceptual_curves
 
 TESTS = arith bits bits2 encode wavelet tables wavelet_2d
 
@@ -131,6 +131,10 @@ fft_SOURCES = fft.c
 perceptual_weight_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 perceptual_weight_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 perceptual_weight_SOURCES = perceptual_weight.c
+
+perceptual_curves_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+perceptual_curves_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+perceptual_curves_SOURCES = perceptual_curves.c
 
 
 #struct_offsets_SOURCES = struct_offsets.c

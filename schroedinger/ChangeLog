@@ -1,3 +1,20 @@
+2007-09-12  David Schleef  <ds@schleef.org>
+
+	* gst/gstschroenc.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Change around encoder preferences.
+	* schroedinger/schroengine.c:
+	* schroedinger/schroengine.h:
+	  Fix bug in slot ordering.  Add backtest engine.
+	* schroedinger/schrobitstream.h:
+	  Add max encoder transform depth.
+	* schroedinger/schroquantiser.c:
+	  Change simple quantiser to approximate psnr.
+	* testsuite/Makefile.am:
+	* testsuite/perceptual_curves.c:
+	  Add test to plot internal perceptual curves.
+
 2007-09-07  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:

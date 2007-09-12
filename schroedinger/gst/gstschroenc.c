@@ -97,7 +97,8 @@ enum
   ARG_TRANSFORM_DEPTH,
   ARG_INTRA_WAVELET,
   ARG_INTER_WAVELET,
-  ARG_QUANT_BASE
+  ARG_LAMBDA,
+  ARG_PSNR
 };
 
 static void gst_schro_enc_finalize (GObject *object);
@@ -156,8 +157,7 @@ gst_schro_enc_class_init (GstSchroEncClass * klass)
   GstElementClass *gstelement_class;
   static const char *arg_names[] = {
     "engine", "ref_distance", "transform_depth", "intra_wavelet",
-    "inter_wavelet", "quant_base", "quant_offset_nonref",
-    "quant_offset_subband", "quant_dc", "quant_dc_offset_nonref" };
+    "inter_wavelet", "lambda", "psnr" };
   int i;
   SchroEncoder *enc;
 
@@ -169,7 +169,7 @@ gst_schro_enc_class_init (GstSchroEncClass * klass)
   gobject_class->finalize = gst_schro_enc_finalize;
 
   enc = schro_encoder_new ();
-  for(i=0;i<10;i++){
+  for(i=0;i<sizeof(arg_names)/sizeof(arg_names[0]);i++){
     int min, max, val;
     schro_encoder_preference_get_range (enc, i, &min, &max);
     val = schro_encoder_preference_get (enc, i);
@@ -254,6 +254,11 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
 
   schro_encoder_set_video_format (schro_enc->encoder, schro_enc->video_format);
 
+#if 0
+  schro_encoder_use_perceptual_weighting (schro_enc->encoder,
+      SCHRO_ENCODER_PERCEPTUAL_MOO, 3.0);
+#endif
+
   schro_enc->duration = gst_util_uint64_scale_int (GST_SECOND,
           schro_enc->fps_d, schro_enc->fps_n);
 
@@ -294,7 +299,8 @@ gst_schro_enc_set_property (GObject * object, guint prop_id,
     case ARG_TRANSFORM_DEPTH:
     case ARG_INTRA_WAVELET:
     case ARG_INTER_WAVELET:
-    case ARG_QUANT_BASE:
+    case ARG_LAMBDA:
+    case ARG_PSNR:
       schro_encoder_preference_set (src->encoder, prop_id - ARG_ENGINE,
           g_value_get_int(value));
       break;
@@ -318,7 +324,8 @@ gst_schro_enc_get_property (GObject * object, guint prop_id, GValue * value,
     case ARG_TRANSFORM_DEPTH:
     case ARG_INTRA_WAVELET:
     case ARG_INTER_WAVELET:
-    case ARG_QUANT_BASE:
+    case ARG_LAMBDA:
+    case ARG_PSNR:
       g_value_set_int (value,
           schro_encoder_preference_get (src->encoder, prop_id - ARG_ENGINE));
       break;

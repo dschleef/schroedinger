@@ -33,7 +33,8 @@ schro_encoder_perceptual_weight_constant (double ppd)
 double
 schro_encoder_perceptual_weight_ccir959 (double ppd)
 {
-  return 0.255 * pow(1 + 0.2561 * ppd, 0.75);
+  ppd *= 0.5;
+  return 0.255 / pow(1 + 0.2561 * ppd * ppd, -0.75);
 }
 
 static double
@@ -165,41 +166,44 @@ schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
         v_curve[i] = schro_tables_wavelet_noise_curve[wavelet][vi[i]];
       }
 
-      for(i=0;i<n;i++){
-        column[i] = weighted_sum(h_curve[i], v_curve[i], weight);
-        matrix[i*n+i] = dot_product (h_curve[i], v_curve[i],
-            h_curve[i], v_curve[i], weight);
-        for(j=i+1;j<n;j++) {
-          matrix[i*n+j] = dot_product (h_curve[i], v_curve[i],
-              h_curve[j], v_curve[j], weight);
-          matrix[j*n+i] = matrix[i*n+j];
-        }
-      }
-
-#if 0
-      for(j=0;j<n;j++){
+      if (0) {
         for(i=0;i<n;i++){
-          SCHRO_DEBUG("%d %d (%d %d %d %d) %g", j, i,
-              vi[j], hi[j], vi[i], hi[i],
-              matrix[n*j+i]);
+          column[i] = weighted_sum(h_curve[i], v_curve[i], weight);
+          matrix[i*n+i] = dot_product (h_curve[i], v_curve[i],
+              h_curve[i], v_curve[i], weight);
+          for(j=i+1;j<n;j++) {
+            matrix[i*n+j] = dot_product (h_curve[i], v_curve[i],
+                h_curve[j], v_curve[j], weight);
+            matrix[j*n+i] = matrix[i*n+j];
+          }
         }
-      }
-#endif
 
-      solve (matrix, column, n);
+        solve (matrix, column, n);
 
-      for(i=0;i<n;i++){
-        if (column[i] < 0) {
-          SCHRO_ERROR("BROKEN wavelet %d n_levels %d", wavelet, n_levels);
-          break;
+        for(i=0;i<n;i++){
+          if (column[i] < 0) {
+            SCHRO_ERROR("BROKEN wavelet %d n_levels %d", wavelet, n_levels);
+            break;
+          }
         }
-      }
 
-      SCHRO_DEBUG("wavelet %d n_levels %d", wavelet, n_levels);
-      for(i=0;i<n;i++){
-        SCHRO_DEBUG("%g", 1.0/sqrt(column[i]));
-        encoder->subband_weights[wavelet][n_levels-1][i] =
-          1.0/sqrt(column[i]);
+        SCHRO_DEBUG("wavelet %d n_levels %d", wavelet, n_levels);
+        for(i=0;i<n;i++){
+          SCHRO_DEBUG("%g", 1.0/sqrt(column[i]));
+          encoder->subband_weights[wavelet][n_levels-1][i] =
+            1.0/sqrt(column[i]);
+        }
+      } else {
+        for(i=0;i<n;i++){
+          int position = schro_subband_get_position(i);
+          int n_transforms;
+          double size;
+
+          n_transforms = n_levels - SCHRO_SUBBAND_SHIFT(position);
+          size = (1.0/CURVE_SIZE)*(1<<n_transforms);
+          encoder->subband_weights[wavelet][n_levels-1][i] = size *
+            sqrt(weighted_sum(h_curve[i], v_curve[i], weight));
+        }
       }
     }
   }
@@ -241,43 +245,48 @@ schro_encoder_choose_quantisers_lossless (SchroEncoderFrame *frame)
   }
 }
 
+int
+to_quant_index (double x)
+{
+  int i = 0;
+
+  x *= x;
+  x *= x;
+  while (x*x > 2) {
+    x *= 0.5;
+    i++;
+  }
+
+  return i;
+}
+
 void
 schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame)
 {
-  int depth = frame->params.transform_depth;
-  int base;
+  SchroParams *params = &frame->params;
+  int psnr;
   int i;
   int component;
+  double noise_amplitude;
+  double a;
 
-  base = frame->encoder->prefs[SCHRO_PREF_QUANT_BASE];
+  psnr = frame->encoder->prefs[SCHRO_PREF_PSNR];
+
+  noise_amplitude = 255.0 * pow(0.1, psnr*0.05) * sqrt(CURVE_SIZE);
+SCHRO_ERROR("noise %g", noise_amplitude);
 
   for(component=0;component<3;component++){
-    if (depth >= 1) {
-      frame->quant_index[component][(depth-1)*3 + 1] = base;
-      frame->quant_index[component][(depth-1)*3 + 2] = base;
-      frame->quant_index[component][(depth-1)*3 + 3] = base + 4;
-    }
-    if (depth >= 2) {
-      frame->quant_index[component][(depth-2)*3 + 1] = base - 5;
-      frame->quant_index[component][(depth-2)*3 + 2] = base - 5;
-      frame->quant_index[component][(depth-2)*3 + 3] = base - 1;
-    }
-    for(i=3;i<=depth;i++){
-      frame->quant_index[component][(depth-i)*3 + 1] = base - 6;
-      frame->quant_index[component][(depth-i)*3 + 2] = base - 6;
-      frame->quant_index[component][(depth-i)*3 + 3] = base - 2;
-    }
-    frame->quant_index[component][0] = base - 10;
+    for(i=0;i<1 + 3*params->transform_depth; i++) {
+      a = noise_amplitude *
+        frame->encoder->subband_weights[params->wavelet_filter_index]
+          [params->transform_depth-1][i];
+//SCHRO_ERROR("i %d a %g", i, a);
 
-    if (!frame->is_ref) {
-      for(i=0;i<depth*3+1;i++){
-        frame->quant_index[component][i] += 4;
-      }
-    }
+      /* FIXME hack */
+      if (i==0) a *= 0.1;
 
-    frame->quant_index[component][(depth-1)*3 + 1] = 4;
-    frame->quant_index[component][(depth-1)*3 + 2] = 5;
-    frame->quant_index[component][(depth-1)*3 + 3] = 6;
+      frame->quant_index[component][i] = to_quant_index (a);
+    }
   }
 
 }
@@ -764,7 +773,7 @@ schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
   }
 
 if (1) {
-  lambda = 10;
+  lambda = 1;
   if (index == 0) {
     //lambda *= 10;
   }
