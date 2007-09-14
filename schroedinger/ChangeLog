@@ -1,3 +1,13 @@
+2007-09-14  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrodecoder.c:
+	* testsuite/Makefile.am:
+	* testsuite/arith_speed.c:
+	* testsuite/struct_offsets.c:
+	  Arithmetic decoder speed improvements.
+
 2007-09-12  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroarith.c:

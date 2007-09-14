@@ -145,6 +145,7 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
   memset(arith, 0, sizeof(SchroArith));
   arith->range[0] = 0;
   arith->range[1] = 0x10000;
+  arith->range_size = arith->range[1] - arith->range[0];
   arith->code = 0;
 
   arith->buffer = buffer;
@@ -156,7 +157,7 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
 
   for(i=0;i<SCHRO_CTX_LAST;i++){
     arith->contexts[i].next = next_list[i];
-    arith->contexts[i].probability = 0x8000;
+    arith->probabilities[i] = 0x8000;
   }
 
   for(i=0;i<256;i++){
@@ -173,6 +174,7 @@ schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer)
   memset(arith, 0, sizeof(SchroArith));
   arith->range[0] = 0;
   arith->range[1] = 0x10000;
+  arith->range_size = arith->range[1] - arith->range[0];
   arith->code = 0;
 
   arith->buffer = buffer;
@@ -181,7 +183,7 @@ schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer)
 
   for(i=0;i<SCHRO_CTX_LAST;i++){
     arith->contexts[i].next = next_list[i];
-    arith->contexts[i].probability = 0x8000;
+    arith->probabilities[i] = 0x8000;
   }
 }
 
@@ -194,7 +196,7 @@ schro_arith_estimate_init (SchroArith *arith)
   for(i=0;i<SCHRO_CTX_LAST;i++){
     arith->contexts[i].stat_range = 0x10000;
     arith->contexts[i].next = next_list[i];
-    arith->contexts[i].probability = 0x8000;
+    arith->probabilities[i] = 0x8000;
   }
 }
 
@@ -236,7 +238,7 @@ _schro_arith_decode_bit (SchroArith *arith, int i)
   return __schro_arith_decode_bit (arith, i);
 }
 
-#define faster
+//#define faster
 #ifdef faster
 static int
 __schro_arith_decode_bit (SchroArith *arith, int i)
@@ -245,11 +247,11 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
   int value;
   int lut_index;
 
-  range_x_prob = (arith->range[1] * arith->contexts[i].probability) >> 16;
-  lut_index = arith->contexts[i].probability>>8;
+  range_x_prob = (arith->range[1] * arith->probabilities[i]) >> 16;
+  lut_index = arith->probabilities[i]>>8;
 
   value = (arith->code - arith->range[0] >= range_x_prob);
-  arith->contexts[i].probability += arith->lut[(value<<8) | lut_index];
+  arith->probabilities[i] += arith->lut[(value<<8) | lut_index];
   if (value) {
     arith->range[0] += range_x_prob;
     arith->range[1] -= range_x_prob;
@@ -290,7 +292,7 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
   unsigned int count;
   int value;
 
-  probability0 = arith->contexts[i].probability;
+  probability0 = arith->probabilities[i];
   count = arith->code - arith->range[0];
   range = arith->range[1];
   range_x_prob = (range * probability0) >> 16;
@@ -299,10 +301,10 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
   if (value) {
     arith->range[0] = arith->range[0] + range_x_prob;
     arith->range[1] -= range_x_prob;
-    arith->contexts[i].probability -= lut[arith->contexts[i].probability>>8];
+    arith->probabilities[i] -= lut[arith->probabilities[i]>>8];
   } else {
     arith->range[1] = range_x_prob;
-    arith->contexts[i].probability += lut[255-(arith->contexts[i].probability>>8)];
+    arith->probabilities[i] += lut[255-(arith->probabilities[i]>>8)];
   }
 
   while (arith->range[1] <= 0x4000) {
@@ -337,17 +339,17 @@ _schro_arith_encode_bit (SchroArith *arith, int i, int value)
   unsigned int probability0;
   unsigned int range_x_prob;
 
-  probability0 = arith->contexts[i].probability;
+  probability0 = arith->probabilities[i];
   range = arith->range[1];
   range_x_prob = (range * probability0) >> 16;
 
   if (value) {
     arith->range[0] = arith->range[0] + range_x_prob;
     arith->range[1] -= range_x_prob;
-    arith->contexts[i].probability -= lut[arith->contexts[i].probability>>8];
+    arith->probabilities[i] -= lut[arith->probabilities[i]>>8];
   } else {
     arith->range[1] = range_x_prob;
-    arith->contexts[i].probability += lut[255-(arith->contexts[i].probability>>8)];
+    arith->probabilities[i] += lut[255-(arith->probabilities[i]>>8)];
   }
 
   while (arith->range[1] <= 0x4000) {
@@ -391,16 +393,16 @@ schro_arith_estimate_bit (SchroArith *arith, int i, int value)
   unsigned int probability0;
   unsigned int range_x_prob;
 
-  probability0 = arith->contexts[i].probability;
+  probability0 = arith->probabilities[i];
   range = arith->contexts[i].stat_range;
   range_x_prob = (range * probability0) >> 16;
 
   if (value) {
     arith->contexts[i].stat_range -= range_x_prob;
-    arith->contexts[i].probability -= lut[arith->contexts[i].probability>>8];
+    arith->probabilities[i] -= lut[arith->probabilities[i]>>8];
   } else {
     arith->contexts[i].stat_range = range_x_prob;
-    arith->contexts[i].probability += lut[255-(arith->contexts[i].probability>>8)];
+    arith->probabilities[i] += lut[255-(arith->probabilities[i]>>8)];
   }
   arith->contexts[i].n_symbols++;
 

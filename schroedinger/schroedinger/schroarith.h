@@ -89,7 +89,7 @@ typedef struct _SchroArithContext SchroArithContext;
 
 struct _SchroArithContext {
   int next;
-  uint16_t probability;
+  //uint16_t probability;
   int stat_range;
   int n_bits;
   int n_symbols;
@@ -98,14 +98,16 @@ struct _SchroArithContext {
 struct _SchroArith {
   uint32_t range[2];
   uint32_t code;
+  uint32_t range_size;
+  uint16_t probabilities[SCHRO_CTX_LAST];
+  uint16_t lut[512];
+
   int cntr;
 
   uint8_t *dataptr;
   int offset;
   int carry;
   SchroArithContext contexts[SCHRO_CTX_LAST];
-
-  uint16_t lut[512];
 
   SchroBuffer *buffer;
 };

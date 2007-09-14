@@ -1947,6 +1947,7 @@ schro_decoder_reference_retire (SchroDecoder *decoder,
 static void
 schro_decoder_error (SchroDecoder *decoder, const char *s)
 {
+  SCHRO_DEBUG("decoder error");
   decoder->error = TRUE;
   if (!decoder->error_message) {
     decoder->error_message = strdup(s);
