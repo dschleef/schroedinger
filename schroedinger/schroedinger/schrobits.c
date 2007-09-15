@@ -106,6 +106,16 @@ schro_bits_get_offset (SchroBits *bits)
   return bits->n;
 }
 
+int
+schro_bits_get_bit_offset (SchroBits *bits)
+{
+  if (bits->type == SCHRO_BITS_DECODE) {
+    return bits->n*8 + (7 - bits->shift);
+  } else {
+    return bits->n*8 + (7 - bits->shift);
+  }
+}
+
 void
 schro_bits_flush (SchroBits *bits)
 {
@@ -160,6 +170,7 @@ schro_bits_skip (SchroBits *bits, int n_bytes)
 {
   if (bits->shift != -1) {
     SCHRO_ERROR ("skipping on unsyncronized bits");
+    SCHRO_ASSERT(0);
   }
 
   bits->n += n_bytes;

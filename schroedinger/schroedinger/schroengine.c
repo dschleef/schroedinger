@@ -940,3 +940,77 @@ schro_encoder_engine_backtest (SchroEncoder *encoder)
   return FALSE;
 }
 
+int
+schro_encoder_engine_lowdelay (SchroEncoder *encoder)
+{
+  SchroParams *params;
+  SchroEncoderFrame *frame;
+  int i;
+
+  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
+
+  for(i=0;i<encoder->frame_queue->n;i++) {
+    frame = encoder->frame_queue->elements[i].data;
+
+    if (frame->busy) continue;
+
+    switch (frame->state) {
+      case SCHRO_ENCODER_FRAME_STATE_NEW:
+        frame->state = SCHRO_ENCODER_FRAME_STATE_ANALYSE;
+        frame->busy = TRUE;
+        schro_async_run_locked (encoder->async,
+            (void (*)(void *))schro_encoder_analyse_picture, frame);
+        return TRUE;
+      case SCHRO_ENCODER_FRAME_STATE_ANALYSE:
+        schro_engine_check_new_access_unit (encoder, frame);
+
+        frame->presentation_frame = frame->frame_number;
+
+        frame->slot = frame->frame_number;
+
+        frame->output_buffer_size =
+          schro_engine_pick_output_buffer_size (encoder, frame);
+
+        /* set up params */
+        params = &frame->params;
+        params->is_lowdelay = TRUE;
+
+        /* FIXME should be parameters */
+        params->slice_width_exp = 5;
+        params->slice_height_exp = 5;
+        params->slice_bytes_num = 1024;
+        params->slice_bytes_denom = 1;
+
+        init_params (frame);
+        schro_params_init_lowdelay_quantisers(params);
+
+        frame->state = SCHRO_ENCODER_FRAME_STATE_PREDICT;
+        frame->busy = TRUE;
+        schro_async_run_locked (encoder->async,
+            (void (*)(void *))schro_encoder_predict_picture, frame);
+        return TRUE;
+      case SCHRO_ENCODER_FRAME_STATE_PREDICT:
+        frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
+        frame->busy = TRUE;
+        schro_async_run_locked (encoder->async,
+            (void (*)(void *))schro_encoder_encode_picture, frame);
+        return TRUE;
+      case SCHRO_ENCODER_FRAME_STATE_ENCODING:
+        frame->state = SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT;
+        frame->busy = TRUE;
+        schro_async_run_locked (encoder->async,
+            (void (*)(void *))schro_encoder_reconstruct_picture, frame);
+        return TRUE;
+      case SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT:
+        frame->state = SCHRO_ENCODER_FRAME_STATE_POSTANALYSE;
+        frame->busy = TRUE;
+        schro_async_run_locked (encoder->async,
+            (void (*)(void *))schro_encoder_postanalyse_picture, frame);
+        return TRUE;
+      default:
+        break;
+    }
+  }
+
+  return FALSE;
+}

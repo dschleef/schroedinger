@@ -108,6 +108,7 @@ struct _SchroParams {
   int picture_weight_2;
 
   /* DiracPro parameters */
+  int is_lowdelay;
   int slice_width_exp;
   int slice_height_exp;
   int slice_bytes_num;
@@ -204,6 +205,7 @@ void schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp);
 void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp);
+void schro_params_init_lowdelay_quantisers (SchroParams *params);
 
 SCHRO_END_DECLS
 

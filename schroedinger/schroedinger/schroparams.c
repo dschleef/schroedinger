@@ -96,7 +96,6 @@ schro_params_init (SchroParams *params, int video_format)
   params->codeblock_mode_index = 1;
   params->have_global_motion = FALSE;
   params->picture_pred_mode = 0;
-
 }
 
 /*

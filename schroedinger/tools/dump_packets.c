@@ -144,6 +144,12 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     case SCHRO_PARSE_CODE_END_SEQUENCE:
       parse_code = "end of sequence";
       break;
+    case SCHRO_PARSE_CODE_LD_INTRA_REF:
+      parse_code = "low-delay intra ref";
+      break;
+    case SCHRO_PARSE_CODE_LD_INTRA_NON_REF:
+      parse_code = "low-delay intra non-ref";
+      break;
     default:
       parse_code = "unknown";
       break;
@@ -290,6 +296,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     int bit;
     int n;
     int i;
+    int lowdelay = SCHRO_PARSE_CODE_IS_LOW_DELAY(data[4]);
 
     g_print("  num refs: %d\n", num_refs);
 
@@ -301,10 +308,12 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     if (num_refs > 1) {
       g_print("  ref2_offset: %d\n", schro_bits_decode_sint(bits));
     }
-    n = schro_bits_decode_uint(bits);
-    g_print("  n retire: %d\n", n);
-    for(i=0;i<n;i++){
-      g_print("    %d: %d\n", i, schro_bits_decode_sint(bits));
+    if (!lowdelay) {
+      n = schro_bits_decode_uint(bits);
+      g_print("  n retire: %d\n", n);
+      for(i=0;i<n;i++){
+        g_print("    %d: %d\n", i, schro_bits_decode_sint(bits));
+      }
     }
 
     if (num_refs > 0) {
@@ -454,46 +463,91 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         depth = 4;
       }
 
-      bit = schro_bits_decode_bit (bits);
-      g_print("  spatial partition flag: %s\n", bit ? "yes" : "no");
-      if (bit) {
+      if (!lowdelay) {
         bit = schro_bits_decode_bit (bits);
-        g_print("    non-default partition flag: %s\n", bit ? "yes" : "no");
+        g_print("  spatial partition flag: %s\n", bit ? "yes" : "no");
         if (bit) {
-          for(i=0;i<depth+1;i++){
-            g_print("      number of codeblocks depth=%d\n", i);
-            g_print("        horizontal codeblocks: %d\n",
-                schro_bits_decode_uint(bits));
-            g_print("        vertical codeblocks: %d\n",
-                schro_bits_decode_uint(bits));
+          bit = schro_bits_decode_bit (bits);
+          g_print("    non-default partition flag: %s\n", bit ? "yes" : "no");
+          if (bit) {
+            for(i=0;i<depth+1;i++){
+              g_print("      number of codeblocks depth=%d\n", i);
+              g_print("        horizontal codeblocks: %d\n",
+                  schro_bits_decode_uint(bits));
+              g_print("        vertical codeblocks: %d\n",
+                  schro_bits_decode_uint(bits));
+            }
+          }
+          g_print("    codeblock mode index: %d\n", schro_bits_decode_uint(bits));
+        }
+
+        schro_bits_sync (bits);
+        for(j=0;j<3;j++){
+          g_print("  component %d:\n",j);
+          g_print("    comp subband  length  quantiser_index\n");
+          for(i=0;i<1+depth*3;i++){
+            int length;
+
+            if(bits->error) {
+              g_print("    PAST END\n");
+              continue;
+            }
+
+            if (i!=0) schro_bits_sync(bits);
+            length = schro_bits_decode_uint(bits);
+            if (length > 0) {
+              g_print("    %4d %4d:   %6d    %3d\n", j, i, length,
+                  schro_bits_decode_uint(bits));
+              schro_bits_sync(bits);
+              schro_bits_skip (bits, length);
+            } else {
+              g_print("    %4d %4d:   %6d\n", j, i, length);
+            }
           }
         }
-        g_print("    codeblock mode index: %d\n", schro_bits_decode_uint(bits));
-      }
+      } else {
+#if 0
+        int n_slices;
+        int length;
+#endif
+        int slice_width_exp;
+        int slice_height_exp;
+        int slice_bytes_numerator;
+        int slice_bytes_denominator;
 
-      schro_bits_sync (bits);
-      for(j=0;j<3;j++){
-        g_print("  component %d:\n",j);
-        g_print("    comp subband  length  quantiser_index\n");
-        for(i=0;i<1+depth*3;i++){
-          int length;
+        slice_width_exp = schro_bits_decode_uint(bits);
+        slice_height_exp = schro_bits_decode_uint(bits);
+        slice_bytes_numerator = schro_bits_decode_uint(bits);
+        slice_bytes_denominator = schro_bits_decode_uint(bits);
 
-          if(bits->error) {
-            g_print("    PAST END\n");
-            continue;
-          }
+        g_print("  slice_width_exp: %d\n", slice_width_exp);
+        g_print("  slice_height_exp: %d\n", slice_height_exp);
+        g_print("  slice_bytes_numerator: %d\n", slice_bytes_numerator);
+        g_print("  slice_bytes_denominator: %d\n", slice_bytes_denominator);
 
-          if (i!=0) schro_bits_sync(bits);
-          length = schro_bits_decode_uint(bits);
-          if (length > 0) {
-            g_print("    %4d %4d:   %6d    %3d\n", j, i, length,
-                schro_bits_decode_uint(bits));
-            schro_bits_sync(bits);
-            schro_bits_skip (bits, length);
-          } else {
-            g_print("    %4d %4d:   %6d\n", j, i, length);
+        bit = schro_bits_decode_bit (bits);
+        g_print("  encode_quant_matrix: %s\n", bit ? "yes" : "no");
+        if (bit) {
+          for(i=0;i<1+depth*3;i++){
+            g_print("    %2d: %d\n", i, schro_bits_decode_uint(bits));
           }
         }
+
+        bit = schro_bits_decode_bit (bits);
+        g_print("  encode_quant_offsets: %s\n", bit ? "yes" : "no");
+        if (bit) {
+          g_print("    luma_offset: %d\n", schro_bits_decode_uint(bits));
+          g_print("    chroma1_offset: %d\n", schro_bits_decode_uint(bits));
+          g_print("    chroma2_offset: %d\n", schro_bits_decode_uint(bits));
+        }
+
+        schro_bits_sync (bits);
+
+#if 0
+        n_slices = (width>>slice_width_exp) * (height>>slice_width_exp);
+        length = (slice_bytes_numerator * n_slices) / slice_bytes_denominator;
+        schro_bits_skip (bits, length);
+#endif
       }
     }
   } else if (data[4] == SCHRO_PARSE_CODE_AUXILIARY_DATA) {

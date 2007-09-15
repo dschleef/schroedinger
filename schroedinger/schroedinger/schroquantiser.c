@@ -385,6 +385,23 @@ schro_tables_lowdelay_quants[8][4][9] = {
 };
 
 void
+schro_params_init_lowdelay_quantisers (SchroParams *params)
+{
+  int i;
+  const int *table;
+
+  table = schro_tables_lowdelay_quants[params->wavelet_filter_index]
+      [params->transform_depth-1];
+
+  params->quant_matrix[0] = table[0];
+  for(i=0;i<params->transform_depth; i++) {
+    params->quant_matrix[1+3*i+0] = table[1 + 2*i + 0];
+    params->quant_matrix[1+3*i+1] = table[1 + 2*i + 0];
+    params->quant_matrix[1+3*i+2] = table[1 + 2*i + 1];
+  }
+}
+
+void
 schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;

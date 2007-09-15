@@ -83,7 +83,6 @@ struct _SchroEncoderFrame {
   int slot;
   int last_frame;
 
-  int is_lowdelay;
   int is_ref;
   int num_refs;
   SchroPictureNumber picture_number_ref0;

@@ -1,3 +1,19 @@
+2007-09-15  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrobits.c:
+	* schroedinger/schrobits.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroengine.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schroquantiser.c:
+	* tools/dump_packets.c:
+	  Fix up low delay syntax.  Works now, although not spec compliant.
+
 2007-09-14  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroengine.c:

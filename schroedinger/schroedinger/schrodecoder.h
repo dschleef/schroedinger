@@ -99,6 +99,7 @@ void schro_decoder_decode_frame_prediction (SchroDecoder *decoder);
 void schro_decoder_decode_prediction_data (SchroDecoder *decoder);
 void schro_decoder_decode_transform_parameters (SchroDecoder *decoder);
 void schro_decoder_decode_transform_data (SchroDecoder *decoder);
+void schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder);
 void schro_decoder_iwt_transform (SchroDecoder *decoder, int component);
 void schro_decoder_copy_from_frame_buffer (SchroDecoder *decoder, SchroBuffer *buffer);
 void schro_decoder_set_earliest_frame (SchroDecoder *decoder, SchroPictureNumber earliest_frame);

@@ -38,6 +38,7 @@ void schro_bits_set_length (SchroBits *bits, int n_bits);
 void schro_bits_sync (SchroBits *bits);
 void schro_bits_flush (SchroBits *bits);
 int schro_bits_get_offset (SchroBits *bits);
+int schro_bits_get_bit_offset (SchroBits *bits);
 void schro_bits_dumpbits (SchroBits *bits);
 
 void schro_bits_append (SchroBits *bits, uint8_t *data, int len);

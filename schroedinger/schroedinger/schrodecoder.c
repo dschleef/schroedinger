@@ -7,6 +7,8 @@
 #include <schroedinger/schrooil.h>
 #include <string.h>
 
+#include <liboil/liboilrandom.h>
+
 
 typedef struct _SchroDecoderSubbandContext SchroDecoderSubbandContext;
 
@@ -324,6 +326,7 @@ schro_decoder_iterate (SchroDecoder *decoder)
   schro_decoder_decode_picture_header(decoder);
 
   params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->parse_code);
+  params->is_lowdelay = SCHRO_PARSE_CODE_IS_LOW_DELAY(decoder->parse_code);
 
   schro_params_init (params, decoder->video_format.index);
 
@@ -442,7 +445,11 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
     schro_params_calculate_iwt_sizes (params);
 
     schro_bits_sync (decoder->bits);
-    schro_decoder_decode_transform_data (decoder);
+    if (params->is_lowdelay) {
+      schro_decoder_decode_lowdelay_transform_data (decoder);
+    } else {
+      schro_decoder_decode_transform_data (decoder);
+    }
 
     schro_frame_inverse_iwt_transform (decoder->frame, &decoder->params,
         decoder->tmpbuf);
@@ -1150,12 +1157,6 @@ schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
   int i;
   SchroParams *params = &decoder->params;
 
-#if 0
-  /* FIXME depends on video_format */
-  params->wavelet_filter_index = SCHRO_WAVELET_DESL_9_3;
-  params->transform_depth = 4;
-#endif
-
   /* transform */
   bit = schro_bits_decode_bit (decoder->bits);
   if (bit) {
@@ -1745,25 +1746,51 @@ schro_decoder_decode_subband (SchroDecoder *decoder,
 }
 
 void
-schro_decoder_decode_low_delay_transform_data (SchroDecoder *decoder)
+schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder)
 {
   SchroParams *params = &decoder->params;
   int x,y;
   int slice_width;
   int slice_height;
-
+  int n_bytes;
+  int remainder;
+  int accumulator;
+  int extra;
 
   slice_width = 1<<params->slice_width_exp;
   slice_height = 1<<params->slice_height_exp;
 
+  n_bytes = params->slice_bytes_num / params->slice_bytes_denom;
+  remainder = params->slice_bytes_num % params->slice_bytes_denom;
+
+  /* FIXME remove */
+  oil_random_u8(decoder->frame->components[0].data,
+      decoder->frame->components[0].width *
+      decoder->frame->components[0].height * 2);
+  oil_random_u8(decoder->frame->components[1].data,
+      decoder->frame->components[1].width *
+      decoder->frame->components[1].height * 2);
+  oil_random_u8(decoder->frame->components[2].data,
+      decoder->frame->components[2].width *
+      decoder->frame->components[2].height * 2);
+
+  accumulator = 0;
   for(y=0;y<params->iwt_luma_height;y+=slice_height) {
 
     for(x=0;x<params->iwt_luma_width;x+=slice_width) {
-      /* FIXME */
-      schro_decoder_decode_slice (decoder, x, y, 10);
+      accumulator += remainder;
+      if (accumulator >= params->slice_bytes_denom) {
+        extra = 1;
+        accumulator -= params->slice_bytes_denom;
+      } else {
+        extra = 0;
+      }
+
+      schro_decoder_decode_slice (decoder, x, y, n_bytes + extra);
     }
   }
 
+#if 1
   if (decoder->n_refs == 0) {
     int i;
     int16_t *data;
@@ -1778,6 +1805,7 @@ schro_decoder_decode_low_delay_transform_data (SchroDecoder *decoder)
       schro_decoder_subband_dc_predict (data, stride, width, height);
     }
   }
+#endif
 }
 
 void
@@ -1842,9 +1870,8 @@ schro_decoder_decode_slice (SchroDecoder *decoder, int x, int y,
   int qindex;
   int length_bits;
   int slice_y_length;
-  SchroBits ybits;
+  //SchroBits ybits;
   SchroBits slice_bits;
-  int position;
 
   schro_bits_copy (&slice_bits, decoder->bits);
   schro_bits_set_length (&slice_bits, slice_bytes * 8);
@@ -1854,15 +1881,21 @@ schro_decoder_decode_slice (SchroDecoder *decoder, int x, int y,
 
   slice_y_length = schro_bits_decode_bits (&slice_bits, length_bits);
 
+#if 0
   schro_bits_copy (&ybits, decoder->bits);
   schro_bits_set_length (&ybits, slice_y_length);
 
-  schro_bits_skip (&slice_bits, slice_y_length);
+  schro_bits_skip_bits (&slice_bits, slice_y_length);
+#endif
 
   for(i=0;i<1+3*params->transform_depth;i++) {
-    position = schro_subband_get_position(i);
-    schro_slice_get (decoder->frame, 0, position,
+    int pos = schro_subband_get_position(i); 
+    int sx = x >> (params->transform_depth - SCHRO_SUBBAND_SHIFT(pos));
+    int sy = y >> (params->transform_depth - SCHRO_SUBBAND_SHIFT(pos));
+
+    schro_slice_get (decoder->frame, 0, pos,
         params, &data, &stride, &width, &height);
+//SCHRO_ERROR("offset %d stride %d width %d height %d", (char *)data - (char *)decoder->frame->components[0].data, stride, width, height);
 
     quant_index = qindex + params->quant_matrix[i] + params->luma_quant_offset;
 
@@ -1870,10 +1903,10 @@ schro_decoder_decode_slice (SchroDecoder *decoder, int x, int y,
     quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
 
     for(iy=0;iy<height;iy++){
-      line = OFFSET(data, stride * (y + iy));
+      line = OFFSET(data, stride * (sy + iy));
       for(ix=0;ix<width;ix++){
-        value = schro_bits_decode_sint (&ybits);
-        data[x+ix] = dequantize (value, quant_factor, quant_offset);
+        value = schro_bits_decode_sint (&slice_bits);
+        line[sx+ix] = dequantize (value, quant_factor, quant_offset);
       }
     }
   }
@@ -1883,11 +1916,13 @@ schro_decoder_decode_slice (SchroDecoder *decoder, int x, int y,
     int16_t *line2;
     int quant_factor2;
     int quant_offset2;
+    int pos = schro_subband_get_position(i);
+    int sx = x >> (params->transform_depth - SCHRO_SUBBAND_SHIFT(pos) + params->video_format->chroma_h_shift);
+    int sy = y >> (params->transform_depth - SCHRO_SUBBAND_SHIFT(pos) + params->video_format->chroma_v_shift);
 
-    position = schro_subband_get_position(i);
-    schro_slice_get (decoder->frame, 1, position,
+    schro_slice_get (decoder->frame, 1, pos,
         params, &data, &stride, &width, &height);
-    schro_slice_get (decoder->frame, 2, position,
+    schro_slice_get (decoder->frame, 2, pos,
         params, &data2, &stride, &width, &height);
 
     quant_index = qindex + params->quant_matrix[i] + params->chroma1_quant_offset;
@@ -1899,13 +1934,17 @@ schro_decoder_decode_slice (SchroDecoder *decoder, int x, int y,
     quant_offset2 = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
 
     for(iy=0;iy<height;iy++){
-      line = OFFSET(data, stride * (y + iy));
-      line2 = OFFSET(data2, stride * (y + iy));
+      line = OFFSET(data, stride * (sy + iy));
+      line2 = OFFSET(data2, stride * (sy + iy));
       for(ix=0;ix<width;ix++){
         value = schro_bits_decode_sint (&slice_bits);
-        data[x+ix] = dequantize (value, quant_factor, quant_offset);
+        line[sx+ix] = dequantize (value, quant_factor, quant_offset);
+//if(i==0)        line[sx+ix] = 128*16;
+//if(i!=0)        line[sx+ix] = 0;
         value = schro_bits_decode_sint (&slice_bits);
-        data2[x+ix] = dequantize (value, quant_factor2, quant_offset2);
+        line2[sx+ix] = dequantize (value, quant_factor2, quant_offset2);
+//if(i==0)        line2[sx+ix] = 128*16;
+//if(i!=0)        line2[sx+ix] = 0;
       }
     }
   }
