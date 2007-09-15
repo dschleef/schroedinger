@@ -1,5 +1,15 @@
 2007-09-14  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroengine.c:
+	* schroedinger/schroengine.h:
+	* schroedinger/schroquantiser.c:
+	* schroedinger/schrowavelettables.c:
+	* testsuite/wavelet_tables.c:
+	  Add low-delay quantiser that uses the lowdelay quantisation
+	  tables.
+
+2007-09-14  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroarith.c:
 	* schroedinger/schroarith.h:
 	* schroedinger/schrodecoder.c:

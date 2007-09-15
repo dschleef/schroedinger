@@ -126,6 +126,27 @@ random_test(double *dest, int filter, int n_levels, int hl)
 }
 
 int
+quant_index (double x)
+{
+  int i = 0;
+
+  if (x > 1e10) return 60;
+
+  x *= x;
+  x *= x;
+  while (x*x > 2) {
+    x *= 0.5;
+    i++;
+    if (i >= 60) break;
+  }
+
+  return i;
+}
+
+float wavelet_noise_curve[8][8][N/2];
+double wavelet_gain[8][2];
+
+int
 main (int argc, char *argv[])
 {
   int filter;
@@ -151,12 +172,109 @@ main (int argc, char *argv[])
         if ((j&3) == 0) printf("   ");
         printf(" %8.6f,", curve[j]);
         if ((j&3) == 3) printf("\n");
+        wavelet_noise_curve[filter][i][j] = curve[j];
       }
       printf((i<7)?"  },\n":"}\n"); 
     }
     printf((filter<7)?"},\n":"}\n"); 
   }
   printf("};\n"); 
+  printf("\n"); 
+
+  printf("const double schro_tables_wavelet_gain[8][2] = {\n");
+  for(filter=0;filter<8;filter++){
+    double sum1 = 0;
+    double sum2 = 0;
+    for(j=0;j<N/2;j++){
+      sum1 += wavelet_noise_curve[filter][0][j];
+      sum2 += wavelet_noise_curve[filter][1][j];
+    }
+    sum1 *= 1<<filtershift[filter];
+    sum1 /= N/2;
+    sum2 *= 1<<filtershift[filter];
+    sum2 /= N/2;
+sum1 *= 4;
+sum2 *= 4;
+    printf("  { %g, %g },\n", sum1, sum2);
+    wavelet_gain[filter][0] = sum1;
+    wavelet_gain[filter][1] = sum2;
+  }
+  printf("};\n"); 
+  printf("\n"); 
+
+  printf("#if 0\n");
+  printf("const int schro_tables_lowdelay_quants[8][4][9] = {\n");
+  for(filter=0;filter<8;filter++){
+    printf("  { /* wavelet %d */\n", filter);
+    for(i=1;i<=4;i++){
+      double alpha, beta;
+      double gains[10];
+      double min;
+      int n;
+      double shift;
+
+      n = 1 + 2*i;
+      alpha = wavelet_gain[filter][1];
+      beta = wavelet_gain[filter][0];
+      shift = alpha / (1<<filtershift[filter]);
+
+      switch(i) {
+        case 1:
+          gains[0] = sqrt(alpha*alpha);
+          gains[1] = sqrt(alpha*beta);
+          gains[2] = sqrt(beta*beta);
+          break;
+        case 2:
+          gains[0] = sqrt(alpha*alpha)*shift;
+          gains[1] = sqrt(alpha*beta)*shift;
+          gains[2] = sqrt(beta*beta)*shift;
+          gains[3] = sqrt(alpha*beta);
+          gains[4] = sqrt(beta*beta);
+          break;
+        case 3:
+          gains[0] = sqrt(alpha*alpha)*shift*shift;
+          gains[1] = sqrt(alpha*beta)*shift*shift;
+          gains[2] = sqrt(beta*beta)*shift*shift;
+          gains[3] = sqrt(alpha*beta)*shift;
+          gains[4] = sqrt(beta*beta)*shift;
+          gains[5] = sqrt(alpha*beta);
+          gains[6] = sqrt(beta*beta);
+          break;
+        case 4:
+          gains[0] = sqrt(alpha*alpha)*shift*shift*shift;
+          gains[1] = sqrt(alpha*beta)*shift*shift*shift;
+          gains[2] = sqrt(beta*beta)*shift*shift*shift;
+          gains[3] = sqrt(alpha*beta)*shift*shift;
+          gains[4] = sqrt(beta*beta)*shift*shift;
+          gains[5] = sqrt(alpha*beta)*shift;
+          gains[6] = sqrt(beta*beta)*shift;
+          gains[7] = sqrt(alpha*beta);
+          gains[8] = sqrt(beta*beta);
+          break;
+      }
+
+      min = gains[0];
+      for(j=0;j<n;j++){
+        if (gains[j] < min) min = gains[j];
+      }
+      for(j=0;j<n;j++){
+        gains[j] /= min;
+      }
+
+      printf("    { ");
+      for(j=0;j<n-1;j++){
+        printf("%2d, ", quant_index(gains[j]));
+      }
+      printf("%d },\n", quant_index(gains[j]));
+    }
+    printf("  },\n");
+  }
+  printf("};\n"); 
+  printf("#endif\n");
+  printf("\n"); 
+
+
+
 
   return 0;
 }

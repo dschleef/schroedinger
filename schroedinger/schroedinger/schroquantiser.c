@@ -13,6 +13,7 @@ void schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_hardcoded (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_perceptual (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_lossless (SchroEncoderFrame *frame);
+void schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame);
 
 #define CURVE_SIZE 128
 
@@ -229,6 +230,9 @@ schro_encoder_choose_quantisers (SchroEncoderFrame *frame)
     case SCHRO_QUANTISER_ENGINE_SIMPLE:
       schro_encoder_choose_quantisers_simple (frame);
       break;
+    case SCHRO_QUANTISER_ENGINE_LOWDELAY:
+      schro_encoder_choose_quantisers_lowdelay (frame);
+      break;
   }
 }
 
@@ -328,7 +332,86 @@ schro_encoder_choose_quantisers_hardcoded (SchroEncoderFrame *frame)
   }
 }
 
+static const int
+schro_tables_lowdelay_quants[8][4][9] = {
+  { /* wavelet 0 */
+    {  5,  3, 0 },
+    {  6,  3,  0,  5, 2 },
+    {  5,  2,  0,  4,  1,  6, 3 },
+    {  5,  3,  0,  4,  2,  6,  3,  8, 5 },
+  },
+  { /* wavelet 1 */
+    {  4,  2, 0 },
+    {  4,  2,  0,  4, 2 },
+    {  5,  3,  0,  5,  3,  7, 5 },
+    {  5,  3,  0,  5,  2,  7,  5,  9, 7 },
+  },
+  { /* wavelet 2 */
+    {  5,  2, 0 },
+    {  6,  3,  0,  4, 2 },
+    {  6,  3,  0,  4,  1,  5, 3 },
+    {  5,  3,  0,  4,  1,  5,  2,  6, 4 },
+  },
+  { /* wavelet 3 */
+    {  8,  4, 0 },
+    { 12,  8,  4,  4, 0 },
+    { 16, 12,  8,  8,  4,  4, 0 },
+    { 20, 16, 12, 12,  8,  8,  4,  4, 0 },
+  },
+  { /* wavelet 4 */
+    {  8,  4, 0 },
+    {  8,  4,  0,  4, 0 },
+    {  8,  4,  0,  4,  0,  4, 0 },
+    {  8,  4,  0,  4,  0,  4,  0,  4, 0 },
+  },
+  { /* wavelet 5 */
+    {  8,  4, 0 },
+    {  8,  4,  0,  8, 4 },
+    {  8,  4,  0,  8,  4, 12, 8 },
+    {  8,  4,  0,  8,  4, 12,  8, 16, 12 },
+  },
+  { /* wavelet 6 */
+    {  0,  4, 7 },
+    {  0,  3,  7,  7, 10 },
+    {  0,  4,  7,  7, 11, 11, 14 },
+    {  0,  3,  7,  7, 10, 10, 14, 14, 17 },
+  },
+  { /* wavelet 7 */
+    {  4,  2, 0 },
+    {  3,  2,  0,  4, 2 },
+    {  3,  1,  0,  4,  2,  6, 4 },
+    {  3,  2,  0,  4,  3,  7,  5,  9, 7 },
+  },
+};
 
+void
+schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame)
+{
+  SchroParams *params = &frame->params;
+  int psnr;
+  int i;
+  int component;
+  int base;
+  const int *table;
+
+  psnr = frame->encoder->prefs[SCHRO_PREF_PSNR];
+  /* completely made up */
+  base = 12 + (30 - psnr)/2;
+
+  table = schro_tables_lowdelay_quants[params->wavelet_filter_index]
+      [params->transform_depth-1];
+
+  for(component=0;component<3;component++){
+    frame->quant_index[component][0] = base + table[0];
+
+    for(i=0;i<params->transform_depth; i++) {
+      frame->quant_index[component][1+3*i+0] = base + table[1 + 2*i + 0];
+      frame->quant_index[component][1+3*i+1] = base + table[1 + 2*i + 0];
+      frame->quant_index[component][1+3*i+2] = base + table[1 + 2*i + 1];
+    }
+  }
+
+}
 
 static int
 dequantize (int q, int quant_factor, int quant_offset)

@@ -75,7 +75,8 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
   int i;
 
   //encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_PERCEPTUAL;
-  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_SIMPLE;
+  //encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_SIMPLE;
+  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
