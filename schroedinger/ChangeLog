@@ -1,5 +1,10 @@
 2007-09-15  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c: Remove test code that was slowing
+	  down decoding.
+
+2007-09-15  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrobits.c:
 	* schroedinger/schrobits.h:
 	* schroedinger/schrodecoder.c:

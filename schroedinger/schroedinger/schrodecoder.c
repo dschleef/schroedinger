@@ -1763,17 +1763,6 @@ schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder)
   n_bytes = params->slice_bytes_num / params->slice_bytes_denom;
   remainder = params->slice_bytes_num % params->slice_bytes_denom;
 
-  /* FIXME remove */
-  oil_random_u8(decoder->frame->components[0].data,
-      decoder->frame->components[0].width *
-      decoder->frame->components[0].height * 2);
-  oil_random_u8(decoder->frame->components[1].data,
-      decoder->frame->components[1].width *
-      decoder->frame->components[1].height * 2);
-  oil_random_u8(decoder->frame->components[2].data,
-      decoder->frame->components[2].width *
-      decoder->frame->components[2].height * 2);
-
   accumulator = 0;
   for(y=0;y<params->iwt_luma_height;y+=slice_height) {
 
