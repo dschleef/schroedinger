@@ -940,12 +940,47 @@ schro_encoder_engine_backtest (SchroEncoder *encoder)
   return FALSE;
 }
 
+void
+reduce_fraction (int *n, int *d)
+{
+  static const int primes[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
+    91 };
+  int i;
+  int p;
+
+  SCHRO_DEBUG("reduce %d/%d", *n, *d);
+  for(i=0;i<sizeof(primes)/sizeof(primes[0]);i++){
+    p = primes[i];
+    while (*n % p == 0 && *d % p == 0) {
+      *n /= p;
+      *d /= p;
+    }
+  }
+  SCHRO_DEBUG("to %d/%d", *n, *d);
+}
+
+int
+multdiv64 (int a, int b, int c)
+{
+  long long x;
+
+  x = a;
+  x *= b;
+  x /= c;
+
+  return (int)x;
+}
+
 int
 schro_encoder_engine_lowdelay (SchroEncoder *encoder)
 {
   SchroParams *params;
   SchroEncoderFrame *frame;
   int i;
+  int n_slices;
+  int num;
+  int denom;
+  int bytes_per_picture;
 
   encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
 
@@ -978,11 +1013,20 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
         /* FIXME should be parameters */
         params->slice_width_exp = 4;
         params->slice_height_exp = 4;
-        params->slice_bytes_num = 256;
-        params->slice_bytes_denom = 1;
-
         init_params (frame);
         schro_params_init_lowdelay_quantisers(params);
+
+        bytes_per_picture = multdiv64(encoder->prefs[SCHRO_PREF_BITRATE],
+            encoder->video_format.frame_rate_denominator,
+            encoder->video_format.frame_rate_numerator * 8);
+        n_slices = (params->iwt_luma_width>>params->slice_width_exp) *
+          (params->iwt_luma_height>>params->slice_height_exp);
+        num = bytes_per_picture;
+        denom = n_slices;
+        SCHRO_ASSERT(denom != 0);
+        reduce_fraction (&num, &denom);
+        params->slice_bytes_num = num;
+        params->slice_bytes_denom = denom;
 
         frame->state = SCHRO_ENCODER_FRAME_STATE_PREDICT;
         frame->busy = TRUE;
@@ -1014,3 +1058,4 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
 
   return FALSE;
 }
+

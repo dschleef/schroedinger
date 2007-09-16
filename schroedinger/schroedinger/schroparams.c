@@ -160,17 +160,29 @@ schro_params_calculate_iwt_sizes (SchroParams *params)
 {
   SchroVideoFormat *video_format = params->video_format;
 
-  params->iwt_chroma_width =
-    ROUND_UP_POW2(video_format->chroma_width,params->transform_depth);
-  params->iwt_chroma_height =
-    ROUND_UP_POW2(video_format->chroma_height, params->transform_depth);
+  if (params->is_lowdelay) {
+    params->iwt_chroma_width = ROUND_UP_POW2(video_format->chroma_width,
+          params->slice_width_exp);
+    params->iwt_chroma_height = ROUND_UP_POW2(video_format->chroma_height,
+          params->slice_height_exp);
+
+    params->iwt_luma_width = ROUND_UP_POW2(video_format->width,
+          params->slice_width_exp + video_format->chroma_h_shift);
+    params->iwt_luma_height = ROUND_UP_POW2(video_format->height,
+          params->slice_height_exp + video_format->chroma_v_shift);
+  } else {
+    params->iwt_chroma_width =
+      ROUND_UP_POW2(video_format->chroma_width,params->transform_depth);
+    params->iwt_chroma_height =
+      ROUND_UP_POW2(video_format->chroma_height, params->transform_depth);
+
+    params->iwt_luma_width =
+      ROUND_UP_POW2(video_format->width,params->transform_depth);
+    params->iwt_luma_height =
+      ROUND_UP_POW2(video_format->height,params->transform_depth);
+  }
   SCHRO_DEBUG ("iwt chroma size %d x %d", params->iwt_chroma_width,
       params->iwt_chroma_height);
-
-  params->iwt_luma_width =
-    ROUND_UP_POW2(video_format->width,params->transform_depth);
-  params->iwt_luma_height =
-    ROUND_UP_POW2(video_format->height,params->transform_depth);
   SCHRO_DEBUG ("iwt luma size %d x %d", params->iwt_luma_width,
       params->iwt_luma_height);
 }

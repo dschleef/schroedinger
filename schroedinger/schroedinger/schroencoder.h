@@ -29,6 +29,7 @@ typedef enum {
   SCHRO_PREF_INTER_WAVELET,
   SCHRO_PREF_LAMBDA,
   SCHRO_PREF_PSNR,
+  SCHRO_PREF_BITRATE,
   SCHRO_PREF_LAST
 } SchroPrefEnum;
 
@@ -287,6 +288,8 @@ void schro_encoder_frame_unref (SchroEncoderFrame *frame);
 
 void schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
     int index);
+void schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame);
+
 
 SCHRO_END_DECLS
 

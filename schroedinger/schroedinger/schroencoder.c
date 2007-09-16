@@ -16,7 +16,6 @@ static void schro_encoder_encode_vector_data (SchroEncoderFrame *frame, int ref,
 static void schro_encoder_encode_dc_data (SchroEncoderFrame *frame, int comp);
 static void schro_encoder_encode_transform_parameters (SchroEncoderFrame *frame);
 static void schro_encoder_encode_transform_data (SchroEncoderFrame *frame);
-static void schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame);
 static int schro_encoder_pull_is_ready_locked (SchroEncoder *encoder);
 static void schro_encoder_encode_codec_comment (SchroEncoder *encoder);
 static void schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame,
@@ -58,6 +57,7 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_5_3;
   encoder->prefs[SCHRO_PREF_LAMBDA] = 50;
   encoder->prefs[SCHRO_PREF_PSNR] = 30;
+  encoder->prefs[SCHRO_PREF_BITRATE] = 13824000;
 
   schro_params_set_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_SD576);
@@ -1768,6 +1768,7 @@ out:
   schro_arith_free (arith);
 }
 
+#if 0
 static void
 schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame)
 {
@@ -2131,6 +2132,7 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame, int x, int y,
 
   return n_bits;
 }
+#endif
 
 /* frame queue */
 
@@ -2241,6 +2243,7 @@ static const int pref_range[][2] = {
   { 0, 7 }, /* inter wavelet */
   { 0, 100 }, /* lambda */
   { 0, 100 }, /* psnr */
+  { 0, 1000000000 }, /* bitrate */
   /* last */
   { 0, 0 }
 };
@@ -2279,6 +2282,8 @@ int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
     default:
       break;
   }
+
+  SCHRO_DEBUG("setting encoder preference %d to %d", pref, value);
 
   encoder->prefs[pref] = value;
 

@@ -1,5 +1,15 @@
 2007-09-15  David Schleef  <ds@schleef.org>
 
+	* gst/gstschroenc.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schrolowdelay.c:
+	* schroedinger/schroparams.c:
+	  Move encoder lowdelay code.  Add bitrate parameter.
+
+2007-09-15  David Schleef  <ds@schleef.org>
+
 	* schroedinger/Makefile.am:
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schrodecoder.h:
