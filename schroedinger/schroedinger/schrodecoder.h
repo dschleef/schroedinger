@@ -104,6 +104,10 @@ void schro_decoder_iwt_transform (SchroDecoder *decoder, int component);
 void schro_decoder_copy_from_frame_buffer (SchroDecoder *decoder, SchroBuffer *buffer);
 void schro_decoder_set_earliest_frame (SchroDecoder *decoder, SchroPictureNumber earliest_frame);
 void schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio);
+void schro_decoder_subband_dc_predict (int16_t *data, int stride, int width,
+        int height);
+
+void schro_decoder_decode_lowdelay_transform_data_2 (SchroDecoder *decoder);
 
 SCHRO_END_DECLS
 

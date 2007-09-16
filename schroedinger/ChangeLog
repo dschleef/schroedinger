@@ -1,5 +1,15 @@
 2007-09-15  David Schleef  <ds@schleef.org>
 
+	* schroedinger/Makefile.am:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	* schroedinger/schrolowdelay.c:
+	  Move lowdelay code to separate file.
+
+2007-09-15  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c: Remove test code that was slowing
 	  down decoding.
 

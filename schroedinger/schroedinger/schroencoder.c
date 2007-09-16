@@ -1797,8 +1797,8 @@ schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame)
         extra = 0;
       }
 
-      schro_encoder_estimate_slice (frame, x, y, n_bytes + extra, 20);
-      schro_encoder_encode_slice (frame, x, y, n_bytes + extra, 20);
+      schro_encoder_estimate_slice (frame, x, y, n_bytes + extra, 10);
+      schro_encoder_encode_slice (frame, x, y, n_bytes + extra, 10);
     }
   }
 

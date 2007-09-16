@@ -976,9 +976,9 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
         params->is_lowdelay = TRUE;
 
         /* FIXME should be parameters */
-        params->slice_width_exp = 5;
-        params->slice_height_exp = 5;
-        params->slice_bytes_num = 1024;
+        params->slice_width_exp = 4;
+        params->slice_height_exp = 4;
+        params->slice_bytes_num = 256;
         params->slice_bytes_denom = 1;
 
         init_params (frame);

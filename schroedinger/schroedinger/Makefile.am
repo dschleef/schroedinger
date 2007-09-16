@@ -56,6 +56,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schroframe.c \
 	schrohistogram.c \
 	schrobuffer.c \
+	schrolowdelay.c \
 	schrometric.c \
 	schromotion.c \
 	schrooil.c \
