@@ -506,10 +506,6 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
           }
         }
       } else {
-#if 0
-        int n_slices;
-        int length;
-#endif
         int slice_width_exp;
         int slice_height_exp;
         int slice_bytes_numerator;
@@ -536,18 +532,12 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         bit = schro_bits_decode_bit (bits);
         g_print("  encode_quant_offsets: %s\n", bit ? "yes" : "no");
         if (bit) {
-          g_print("    luma_offset: %d\n", schro_bits_decode_uint(bits));
-          g_print("    chroma1_offset: %d\n", schro_bits_decode_uint(bits));
-          g_print("    chroma2_offset: %d\n", schro_bits_decode_uint(bits));
+          g_print("    luma_offset: %d\n", schro_bits_decode_sint(bits));
+          g_print("    chroma1_offset: %d\n", schro_bits_decode_sint(bits));
+          g_print("    chroma2_offset: %d\n", schro_bits_decode_sint(bits));
         }
 
         schro_bits_sync (bits);
-
-#if 0
-        n_slices = (width>>slice_width_exp) * (height>>slice_width_exp);
-        length = (slice_bytes_numerator * n_slices) / slice_bytes_denominator;
-        schro_bits_skip (bits, length);
-#endif
       }
     }
   } else if (data[4] == SCHRO_PARSE_CODE_AUXILIARY_DATA) {

@@ -1354,9 +1354,9 @@ schro_encoder_encode_transform_parameters (SchroEncoderFrame *frame)
     }
     schro_bits_encode_bit (bits, encode_quant_offsets);
     if (encode_quant_offsets) {
-      schro_bits_encode_uint (bits, params->luma_quant_offset);
-      schro_bits_encode_uint (bits, params->chroma1_quant_offset);
-      schro_bits_encode_uint (bits, params->chroma2_quant_offset);
+      schro_bits_encode_sint (bits, params->luma_quant_offset);
+      schro_bits_encode_sint (bits, params->chroma1_quant_offset);
+      schro_bits_encode_sint (bits, params->chroma2_quant_offset);
     }
   }
 }

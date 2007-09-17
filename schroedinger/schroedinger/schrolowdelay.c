@@ -568,19 +568,22 @@ schro_encoder_pick_slice_index (SchroEncoderFrame *frame,
   int i;
   int n;
   int size;
+  int stuffbits;
+
+  /* FIXME this offset is to give a little breathing room for variations
+   * in the predicted value */
+  stuffbits = luma_runs[0].width * luma_runs[0].height * 2;
 
   i = 0;
   n = schro_encoder_estimate_slice (frame, luma_runs, chroma_runs,
       slice_x, slice_y, slice_bytes, i);
-  if (n <= slice_bytes*8 - 8) return i;
+  if (n <= slice_bytes*8 - stuffbits) return i;
 
   size = 32;
   while (size >= 1) {
     n = schro_encoder_estimate_slice (frame, luma_runs, chroma_runs,
         slice_x, slice_y, slice_bytes, i + size);
-    /* FIXME the -8 is to give a little breathing room for variations
-     * in the predicted value */
-    if (n >= slice_bytes*8 - 8) {
+    if (n >= slice_bytes*8 - stuffbits) {
       i += size;
     }
     size >>= 1;

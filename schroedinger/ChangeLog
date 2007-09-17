@@ -1,3 +1,13 @@
+2007-09-16  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	* tools/dump_packets.c:
+	  Oops, quant offsets are sint.
+	* schroedinger/schrolowdelay.c:
+	  Improve bit allocation.
+	* schroedinger/schroquantiser.c:
+	  Use quant offsets to allow all quants to drop to 0.
+
 2007-09-15  David Schleef  <ds@schleef.org>
 
 	* gst/gstschroenc.c:

@@ -389,6 +389,7 @@ schro_params_init_lowdelay_quantisers (SchroParams *params)
 {
   int i;
   const int *table;
+  int max;
 
   table = schro_tables_lowdelay_quants[params->wavelet_filter_index]
       [params->transform_depth-1];
@@ -399,6 +400,15 @@ schro_params_init_lowdelay_quantisers (SchroParams *params)
     params->quant_matrix[1+3*i+1] = table[1 + 2*i + 0];
     params->quant_matrix[1+3*i+2] = table[1 + 2*i + 1];
   }
+
+  max = params->quant_matrix[0];
+  for(i=0;i<1+3*params->transform_depth; i++) {
+    if (max < params->quant_matrix[i]) max = params->quant_matrix[i];
+  }
+
+  params->luma_quant_offset = -max;
+  params->chroma1_quant_offset = -max;
+  params->chroma2_quant_offset = -max;
 }
 
 void
