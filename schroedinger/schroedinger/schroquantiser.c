@@ -114,6 +114,8 @@ schro_encoder_set_default_subband_weights (SchroEncoder *encoder)
       schro_encoder_perceptual_weight_constant);
 }
 
+//static int filtershift[] = { 1, 1, 1, 0, 1, 2, 0, 1 };
+
 void
 schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
     double (*perceptual_weight)(double))
@@ -191,8 +193,7 @@ schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
         SCHRO_DEBUG("wavelet %d n_levels %d", wavelet, n_levels);
         for(i=0;i<n;i++){
           SCHRO_DEBUG("%g", 1.0/sqrt(column[i]));
-          encoder->subband_weights[wavelet][n_levels-1][i] =
-            1.0/sqrt(column[i]);
+          encoder->subband_weights[wavelet][n_levels-1][i] = sqrt(column[i]);
         }
       } else {
         for(i=0;i<n;i++){
@@ -202,12 +203,46 @@ schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
 
           n_transforms = n_levels - SCHRO_SUBBAND_SHIFT(position);
           size = (1.0/CURVE_SIZE)*(1<<n_transforms);
-          encoder->subband_weights[wavelet][n_levels-1][i] = size *
-            sqrt(weighted_sum(h_curve[i], v_curve[i], weight));
+          encoder->subband_weights[wavelet][n_levels-1][i] = 1.0/(size *
+            sqrt(weighted_sum(h_curve[i], v_curve[i], weight)));
         }
       }
     }
   }
+
+#if 0
+  for(wavelet=0;wavelet<8;wavelet++) {
+    for(n_levels=1;n_levels<=4;n_levels++){
+      double alpha, beta, shift;
+      double gain;
+
+      alpha = schro_tables_wavelet_gain[wavelet][0];
+      beta = schro_tables_wavelet_gain[wavelet][1];
+      shift = (1<<filtershift[wavelet]);
+
+      n = 3*n_levels+1;
+
+      gain = shift;
+      for(i=n_levels-1;i>=0;i--){
+        encoder->subband_weights[wavelet][n_levels-1][1+3*i+0] =
+          sqrt(alpha*beta)*gain;
+        encoder->subband_weights[wavelet][n_levels-1][1+3*i+1] =
+          sqrt(alpha*beta)*gain;
+        encoder->subband_weights[wavelet][n_levels-1][1+3*i+2] =
+          sqrt(beta*beta)*gain;
+        gain *= alpha;
+        gain *= shift;
+      }
+      encoder->subband_weights[wavelet][n_levels-1][0] = gain / shift;
+      if (wavelet == 3 && n_levels == 3) {
+        for(i=0;i<10;i++){
+          SCHRO_ERROR("%g",
+              encoder->subband_weights[wavelet][n_levels-1][i]);
+        }
+      }
+    }
+  }
+#endif
 
   free(weight);
   free(matrix);
@@ -273,26 +308,36 @@ schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame)
   int component;
   double noise_amplitude;
   double a;
+  double max;
+  double *table;
 
   psnr = frame->encoder->prefs[SCHRO_PREF_PSNR];
 
-  noise_amplitude = 255.0 * pow(0.1, psnr*0.05) * sqrt(CURVE_SIZE);
-SCHRO_ERROR("noise %g", noise_amplitude);
+  noise_amplitude = 255.0 * pow(0.1, psnr*0.05);
+  SCHRO_DEBUG("noise %g", noise_amplitude);
+
+  table = frame->encoder->subband_weights[params->wavelet_filter_index]
+    [params->transform_depth-1];
 
   for(component=0;component<3;component++){
     for(i=0;i<1 + 3*params->transform_depth; i++) {
       a = noise_amplitude *
         frame->encoder->subband_weights[params->wavelet_filter_index]
           [params->transform_depth-1][i];
-//SCHRO_ERROR("i %d a %g", i, a);
-
-      /* FIXME hack */
-      if (i==0) a *= 0.1;
 
       frame->quant_index[component][i] = to_quant_index (a);
     }
   }
 
+  max = table[0];
+  for(i=0;i<1 + 3*params->transform_depth; i++) {
+    if (table[i] > max) max = table[i];
+  }
+
+  for(i=0;i<1 + 3*params->transform_depth; i++) {
+    params->quant_matrix[i] = to_quant_index (max/table[i]);
+    SCHRO_DEBUG("%g %g %d", table[i], max/table[i], params->quant_matrix[i]);
+  }
 }
 
 void
@@ -389,7 +434,6 @@ schro_params_init_lowdelay_quantisers (SchroParams *params)
 {
   int i;
   const int *table;
-  int max;
 
   table = schro_tables_lowdelay_quants[params->wavelet_filter_index]
       [params->transform_depth-1];
@@ -401,14 +445,9 @@ schro_params_init_lowdelay_quantisers (SchroParams *params)
     params->quant_matrix[1+3*i+2] = table[1 + 2*i + 1];
   }
 
-  max = params->quant_matrix[0];
-  for(i=0;i<1+3*params->transform_depth; i++) {
-    if (max < params->quant_matrix[i]) max = params->quant_matrix[i];
-  }
-
-  params->luma_quant_offset = -max;
-  params->chroma1_quant_offset = -max;
-  params->chroma2_quant_offset = -max;
+  params->luma_quant_offset = 0;
+  params->chroma1_quant_offset = 0;
+  params->chroma2_quant_offset = 0;
 }
 
 void
@@ -429,12 +468,12 @@ schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame)
       [params->transform_depth-1];
 
   for(component=0;component<3;component++){
-    frame->quant_index[component][0] = base + table[0];
+    frame->quant_index[component][0] = base - table[0];
 
     for(i=0;i<params->transform_depth; i++) {
-      frame->quant_index[component][1+3*i+0] = base + table[1 + 2*i + 0];
-      frame->quant_index[component][1+3*i+1] = base + table[1 + 2*i + 0];
-      frame->quant_index[component][1+3*i+2] = base + table[1 + 2*i + 1];
+      frame->quant_index[component][1+3*i+0] = base - table[1 + 2*i + 0];
+      frame->quant_index[component][1+3*i+1] = base - table[1 + 2*i + 0];
+      frame->quant_index[component][1+3*i+2] = base - table[1 + 2*i + 1];
     }
   }
 

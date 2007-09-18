@@ -75,8 +75,8 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
   int i;
 
   //encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_PERCEPTUAL;
-  //encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_SIMPLE;
-  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
+  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_SIMPLE;
+  //encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
@@ -982,7 +982,8 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
   int denom;
   int bytes_per_picture;
 
-  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
+  //encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
+  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_SIMPLE;
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
@@ -1014,7 +1015,7 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
         params->slice_width_exp = 4;
         params->slice_height_exp = 4;
         init_params (frame);
-        schro_params_init_lowdelay_quantisers(params);
+        //schro_params_init_lowdelay_quantisers(params);
 
         bytes_per_picture = multdiv64(encoder->prefs[SCHRO_PREF_BITRATE],
             encoder->video_format.frame_rate_denominator,

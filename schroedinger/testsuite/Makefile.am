@@ -10,7 +10,7 @@ noinst_PROGRAMS = arith arith_encode bits bits2 arith_speed \
 	 wavelet_gain wavelet_noise_gain \
 	 wavelet_gain_curve wavelet_tables \
 	 perceptual_weight perceptual_curves \
-	 struct_offsets
+	 struct_offsets wavelet_noise_2d
 
 TESTS = arith bits bits2 encode wavelet tables wavelet_2d
 
@@ -84,6 +84,10 @@ wavelet_tables_SOURCES = wavelet_tables.c
 wavelet_2d_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 wavelet_2d_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_2d_SOURCES = wavelet_2d.c
+
+wavelet_noise_2d_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+wavelet_noise_2d_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+wavelet_noise_2d_SOURCES = wavelet_noise_2d.c
 
 tables_CFLAGS = 
 tables_LDADD = -lm

@@ -624,6 +624,9 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
   schro_frame_iwt_transform (frame->iwt_frame, &frame->params,
       frame->tmpbuf);
   schro_encoder_clean_up_transform (frame);
+
+  /* FIXME this needs a better place */
+  schro_encoder_choose_quantisers (frame);
 }
 
 void
@@ -750,7 +753,7 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
 void
 schro_encoder_postanalyse_picture (SchroEncoderFrame *frame)
 {
-#if 0
+#if 1
   double mse;
 
   mse = schro_frame_mean_squared_error (frame->original_frame,
@@ -1433,7 +1436,6 @@ schro_encoder_encode_transform_data (SchroEncoderFrame *frame)
   int component;
   SchroParams *params = &frame->params;
 
-  schro_encoder_choose_quantisers (frame);
   for(component=0;component<3;component++) {
     for (i=0;i < 1 + 3*params->transform_depth; i++) {
       if (i != 0) schro_bits_sync (frame->bits);

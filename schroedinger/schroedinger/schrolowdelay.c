@@ -154,7 +154,7 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
 
     run = luma_runs + i;
 
-    quant_index = base_index + params->quant_matrix[i] + params->luma_quant_offset;
+    quant_index = base_index - params->quant_matrix[i] + params->luma_quant_offset;
 
     quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
     quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
@@ -179,11 +179,11 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
 
     run = chroma_runs + i;
 
-    quant_index = base_index + params->quant_matrix[i] + params->chroma1_quant_offset;
+    quant_index = base_index - params->quant_matrix[i] + params->chroma1_quant_offset;
     quant_factor1 = schro_table_quant[CLAMP(quant_index,0,60)];
     quant_offset1 = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
 
-    quant_index = base_index + params->quant_matrix[i] + params->chroma2_quant_offset;
+    quant_index = base_index - params->quant_matrix[i] + params->chroma2_quant_offset;
     quant_factor2 = schro_table_quant[CLAMP(quant_index,0,60)];
     quant_offset2 = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
 
@@ -347,7 +347,7 @@ schro_encoder_encode_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs,
 
     run = luma_runs + i;
 
-    quant_index = base_index + params->quant_matrix[i] + params->luma_quant_offset;
+    quant_index = base_index - params->quant_matrix[i] + params->luma_quant_offset;
 
     quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
     quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
@@ -386,11 +386,11 @@ schro_encoder_encode_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs,
 
     run = chroma_runs + i;
 
-    quant_index = base_index + params->quant_matrix[i] + params->chroma1_quant_offset;
+    quant_index = base_index - params->quant_matrix[i] + params->chroma1_quant_offset;
     quant_factor1 = schro_table_quant[CLAMP(quant_index,0,60)];
     quant_offset1 = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
 
-    quant_index = base_index + params->quant_matrix[i] + params->chroma2_quant_offset;
+    quant_index = base_index - params->quant_matrix[i] + params->chroma2_quant_offset;
     quant_factor2 = schro_table_quant[CLAMP(quant_index,0,60)];
     quant_offset2 = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
 
@@ -478,7 +478,7 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs
 
     run = luma_runs + i;
 
-    quant_index = base_index + params->quant_matrix[i] + params->luma_quant_offset;
+    quant_index = base_index - params->quant_matrix[i] + params->luma_quant_offset;
 
     quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
     quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
@@ -515,11 +515,11 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs
 
     run = chroma_runs + i;
 
-    quant_index = base_index + params->quant_matrix[i] + params->chroma1_quant_offset;
+    quant_index = base_index - params->quant_matrix[i] + params->chroma1_quant_offset;
     quant_factor1 = schro_table_quant[CLAMP(quant_index,0,60)];
     quant_offset1 = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
 
-    quant_index = base_index + params->quant_matrix[i] + params->chroma2_quant_offset;
+    quant_index = base_index - params->quant_matrix[i] + params->chroma2_quant_offset;
     quant_factor2 = schro_table_quant[CLAMP(quant_index,0,60)];
     quant_offset2 = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
 

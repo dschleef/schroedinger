@@ -49,7 +49,7 @@ random_std (void)
     x = -5.0 + random () * (1.0/RAND_MAX) * 10;
     y = random () * (1.0/RAND_MAX);
 
-    if (y < exp(-x*x)) return x;
+    if (y < exp(-x*x*0.5)) return x;
   }
 }
 
