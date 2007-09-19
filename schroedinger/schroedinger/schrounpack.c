@@ -280,7 +280,7 @@ schro_unpack_decode_sint_s16 (int16_t *dest, SchroUnpack *unpack, int n)
       for(j=0;j<m;j++){
         dest[j] = schro_table_unpack_sint[i][1+2*j];
       }
-      _schro_unpack_shift_out (unpack, schro_table_unpack_sint[i][1+2*j+1]);
+      _schro_unpack_shift_out (unpack, schro_table_unpack_sint[i][2*m]);
       dest += m;
       n -= m;
     }

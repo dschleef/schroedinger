@@ -131,8 +131,9 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
   int length_bits;
   int slice_y_length;
   int i;
+  int j;
   int x,y;
-  int value;
+  int16_t *tmp = decoder->tmpbuf;
 
   schro_unpack_init_with_data (&y_unpack,
       decoder->bits->buffer->data + decoder->bits->n, slice_bytes, 1);
@@ -146,6 +147,9 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
   schro_unpack_limit_bits_remaining (&y_unpack, slice_y_length);
   schro_unpack_skip_bits (&uv_unpack, slice_y_length);
 
+  schro_unpack_decode_sint_s16 (tmp, &y_unpack,
+      1<<(params->slice_width_exp+params->slice_height_exp));
+  j = 0;
   for(i=0;i<1+3*params->transform_depth;i++) {
     int quant_factor;
     int quant_offset;
@@ -161,13 +165,17 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
     line = OFFSET(run->data1, run->y_stride * slice_y + run->x_stride * slice_x);
     for(y=0;y<run->height;y++){
       for (x=0; x<run->width; x++){
-        value = schro_unpack_decode_sint (&y_unpack);
-        line[x] = dequantize (value, quant_factor, quant_offset);
+        line[x] = dequantize (tmp[j++], quant_factor, quant_offset);
       }
       line = OFFSET(line, run->stride);
     }
   }
 
+  schro_unpack_decode_sint_s16 (tmp, &uv_unpack,
+      1<<(1+params->slice_width_exp+params->slice_height_exp
+        -params->video_format->chroma_h_shift
+        -params->video_format->chroma_v_shift));
+  j = 0;
   for(i=0;i<1+3*params->transform_depth;i++) {
     int quant_factor1;
     int quant_offset1;
@@ -191,10 +199,8 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
 
     for(y=0;y<run->height;y++){
       for (x=0; x<run->width; x++){
-        value = schro_unpack_decode_sint (&uv_unpack);
-        line1[x] = dequantize (value, quant_factor1, quant_offset1);
-        value = schro_unpack_decode_sint (&uv_unpack);
-        line2[x] = dequantize (value, quant_factor2, quant_offset2);
+        line1[x] = dequantize (tmp[j++], quant_factor1, quant_offset1);
+        line2[x] = dequantize (tmp[j++], quant_factor2, quant_offset2);
       }
       line1 = OFFSET(line1, run->stride);
       line2 = OFFSET(line2, run->stride);
