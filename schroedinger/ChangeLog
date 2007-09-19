@@ -1,5 +1,9 @@
 2007-09-19  David Schleef  <ds@schleef.org>
 
+	* testsuite/bits3.c: Oops, forgot to add this earlier.
+
+2007-09-19  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrolowdelay.c:
 	* schroedinger/schrounpack.c:
 	  Enable the array version of fast sint unpacking.
