@@ -10,9 +10,10 @@ noinst_PROGRAMS = arith arith_encode bits bits2 arith_speed \
 	 wavelet_gain wavelet_noise_gain \
 	 wavelet_gain_curve wavelet_tables \
 	 perceptual_weight perceptual_curves \
-	 struct_offsets wavelet_noise_2d
+	 struct_offsets wavelet_noise_2d \
+	 bits3 unpack
 
-TESTS = arith bits bits2 encode wavelet tables wavelet_2d
+TESTS = arith bits bits2 bits3 encode wavelet tables wavelet_2d unpack
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS)
 LDADD = $(SCHRO_LIBS)

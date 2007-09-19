@@ -1,5 +1,15 @@
 2007-09-18  David Schleef  <ds@schleef.org>
 
+	* schroedinger/Makefile.am:
+	* schroedinger/schrobits.c:
+	* schroedinger/schrounpack.c:
+	* schroedinger/schrounpack.h:
+	* testsuite/Makefile.am:
+	* testsuite/unpack.c:
+	  New and improved code for bitstream unpacking.
+
+2007-09-18  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.h:
 	* schroedinger/schrolowdelay.c:
 	  Incremental improvements to base quantiser selection.

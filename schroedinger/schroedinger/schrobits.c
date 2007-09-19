@@ -190,6 +190,7 @@ schro_bits_skip_bits (SchroBits *bits, int n_bits)
   if (n_bits >= 8) {
     bits->n += (n_bits>>3);
     bits->n_bits -= (n_bits & ~7);
+    n_bits &= 7;
     if (bits->n_bits < 0) {
       bits->error = TRUE;
     }

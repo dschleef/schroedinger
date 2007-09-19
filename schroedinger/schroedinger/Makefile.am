@@ -32,6 +32,7 @@ pkginclude_HEADERS = \
 	schroqueue.h \
 	schrossim.h \
 	schrotables.h \
+	schrounpack.h \
 	schroutils.h \
 	schrowavelet.h \
 	schrobitstream.h \
@@ -67,6 +68,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schroqueue.c \
 	schrossim.c \
 	schrotables.c \
+	schrounpack.c \
 	schroutils.c \
 	schrowavelet.c \
 	schrowavelettables.c
