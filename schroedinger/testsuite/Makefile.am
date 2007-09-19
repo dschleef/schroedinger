@@ -11,7 +11,7 @@ noinst_PROGRAMS = arith arith_encode bits bits2 arith_speed \
 	 wavelet_gain_curve wavelet_tables \
 	 perceptual_weight perceptual_curves \
 	 struct_offsets wavelet_noise_2d \
-	 bits3 unpack
+	 bits3 unpack unpack_tables
 
 TESTS = arith bits bits2 bits3 encode wavelet tables wavelet_2d unpack
 

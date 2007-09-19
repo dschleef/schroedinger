@@ -69,6 +69,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrossim.c \
 	schrotables.c \
 	schrounpack.c \
+	schrounpacktables.c \
 	schroutils.c \
 	schrowavelet.c \
 	schrowavelettables.c

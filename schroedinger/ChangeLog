@@ -1,6 +1,14 @@
 2007-09-18  David Schleef  <ds@schleef.org>
 
 	* schroedinger/Makefile.am:
+	* schroedinger/schrounpacktables.c:
+	* testsuite/Makefile.am:
+	* testsuite/unpack_tables.c:
+	  Add tables for fast unpacking sint.
+
+2007-09-18  David Schleef  <ds@schleef.org>
+
+	* schroedinger/Makefile.am:
 	* schroedinger/schrobits.c:
 	* schroedinger/schrounpack.c:
 	* schroedinger/schrounpack.h:
