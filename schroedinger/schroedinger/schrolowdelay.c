@@ -291,6 +291,26 @@ schro_dc_predict (int16_t *data, int stride, int x, int y)
 }
 
 static int
+schro_dc_predict_2 (int16_t *line, int stride, int x, int y)
+{
+  int16_t *prev_line = OFFSET(line, -stride);
+
+  if (y > 0) {
+    if (x > 0) {
+      return schro_divide(line[-1] + prev_line[0] + prev_line[-1] + 1,3);
+    } else {
+      return prev_line[0];
+    }
+  } else {
+    if (x > 0) {
+      return line[-1];
+    } else {
+      return 0;
+    }
+  }
+}
+
+static int
 quantize (int value, int quant_factor, int quant_offset)
 {
   unsigned int x;
@@ -450,6 +470,96 @@ schro_encoder_encode_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs,
   return end_bits - start_bits;
 }
 
+static int
+estimate_array (int16_t *data, int n)
+{
+  int i;
+  int n_bits = 0;
+
+  for(i=0;i<n;i++){
+    n_bits += schro_bits_estimate_sint (data[i]);
+  }
+  return n_bits;
+}
+
+void
+quantise_run (SchroSliceRun *run, int16_t *line, int16_t *quant_data,
+    int quant_index)
+{
+  int quant_factor;
+  int quant_offset;
+  int x,y;
+  int n = 0;
+
+  quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
+  quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+
+  for(y=0;y<run->height;y++){
+    for (x=0; x<run->width; x++){
+      quant_data[n] = quantize (line[x], quant_factor, quant_offset);
+      n++;
+    }
+    line = OFFSET(line, run->stride);
+  }
+}
+
+void
+quantise_dc_run (SchroSliceRun *run, int16_t *line, int16_t *quant_data,
+    int quant_index, int slice_x, int slice_y)
+{
+  int quant_factor;
+  int quant_offset;
+  int x,y;
+  int n = 0;
+  int pred_value;
+
+  quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
+  quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+
+  for(y=0;y<run->height;y++){
+    for (x=0; x<run->width; x++){
+      pred_value = schro_dc_predict_2 (line + x, run->stride,
+          run->width * slice_x + x, run->height * slice_y + y);
+      quant_data[n] = quantize (line[x] - pred_value, quant_factor, quant_offset);
+      line[x] = pred_value + dequantize (quant_data[n], quant_factor, quant_offset);
+      n++;
+    }
+    line = OFFSET(line, run->stride);
+  }
+}
+
+void
+copy_slice_run_out (int16_t *dest, int16_t *line, SchroSliceRun *run)
+{
+  int i;
+  int x, y;
+
+  i = 0;
+  for(y=0;y<run->height;y++){
+    for (x=0; x<run->width; x++){
+      dest[i] = line[x];
+      i++;
+    }
+    line = OFFSET(line, run->stride);
+  }
+}
+
+void
+copy_slice_run_in (int16_t *line, int16_t *src, SchroSliceRun *run)
+{
+  int i;
+  int x, y;
+
+  i = 0;
+  for(y=0;y<run->height;y++){
+    for (x=0; x<run->width; x++){
+      line[x] = src[i];
+      i++;
+    }
+    line = OFFSET(line, run->stride);
+  }
+}
+
 int
 schro_encoder_estimate_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs,
     SchroSliceRun *chroma_runs,
@@ -459,11 +569,10 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs
   SchroSliceRun *run;
   int length_bits;
   int i;
-  int x,y;
-  int value;
   int n_bits;
-  int pred_value;
-  int quant_index;
+  int16_t *quant_data = frame->quant_data;
+  int16_t tmp_dc_values[100];
+  int n;
 
   n_bits = 0;
 
@@ -471,93 +580,64 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs
   length_bits = ilog2up(8*slice_bytes);
   n_bits += length_bits;
 
+  n = 0;
   for(i=0;i<1+3*params->transform_depth;i++) {
-    int quant_factor;
-    int quant_offset;
+    int quant_index;
     int16_t *line;
 
     run = luma_runs + i;
 
     quant_index = base_index - params->quant_matrix[i] + params->luma_quant_offset;
 
-    quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
-    quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
-
     line = OFFSET(run->data1, run->y_stride * slice_y + run->x_stride * slice_x);
     if (i == 0) {
-      for(y=0;y<run->height;y++){
-        for (x=0; x<run->width; x++){
-          pred_value = schro_dc_predict (run->data1, run->stride,
-              run->width * slice_x + x, run->height * slice_y + y);
-          value = quantize (line[x] - pred_value, quant_factor, quant_offset);
-          n_bits += schro_bits_estimate_sint (value);
-        }
-        line = OFFSET(line, run->stride);
-      }
+      copy_slice_run_out (tmp_dc_values, line, run);
+      quantise_dc_run (run, line, quant_data + n, quant_index, slice_x, slice_y);
+      copy_slice_run_in (line, tmp_dc_values, run);
+      n += run->height*run->width;
     } else {
-      for(y=0;y<run->height;y++){
-        for (x=0; x<run->width; x++){
-          value = quantize (line[x], quant_factor, quant_offset);
-          n_bits += schro_bits_estimate_sint (value);
-        }
-        line = OFFSET(line, run->stride);
-      }
+      quantise_run (run, line, quant_data + n, quant_index);
+      n += run->height*run->width;
     }
   }
+  frame->slice_y_bits = estimate_array (quant_data, n);
 
+  n = 0;
   for(i=0;i<1+3*params->transform_depth;i++) {
-    int quant_factor1;
-    int quant_offset1;
-    int quant_factor2;
-    int quant_offset2;
+    int quant_index1;
+    int quant_index2;
     int16_t *line1;
     int16_t *line2;
 
     run = chroma_runs + i;
 
-    quant_index = base_index - params->quant_matrix[i] + params->chroma1_quant_offset;
-    quant_factor1 = schro_table_quant[CLAMP(quant_index,0,60)];
-    quant_offset1 = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
-
-    quant_index = base_index - params->quant_matrix[i] + params->chroma2_quant_offset;
-    quant_factor2 = schro_table_quant[CLAMP(quant_index,0,60)];
-    quant_offset2 = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+    quant_index1 = base_index - params->quant_matrix[i] + params->chroma1_quant_offset;
+    quant_index2 = base_index - params->quant_matrix[i] + params->chroma2_quant_offset;
 
     line1 = OFFSET(run->data1, run->y_stride * slice_y + run->x_stride * slice_x);
     line2 = OFFSET(run->data2, run->y_stride * slice_y + run->x_stride * slice_x);
 
     if (i == 0) {
-      for(y=0;y<run->height;y++){
-        for (x=0; x<run->width; x++){
-          pred_value = schro_dc_predict (run->data1, run->stride,
-              run->width * slice_x + x, run->height * slice_y + y);
-          value = quantize (line1[x] - pred_value, quant_factor1, quant_offset1);
-          n_bits += schro_bits_estimate_sint (value);
+      copy_slice_run_out (tmp_dc_values, line1, run);
+      quantise_dc_run (run, line1, quant_data + n, quant_index1, slice_x, slice_y);
+      copy_slice_run_in (line1, tmp_dc_values, run);
+      n += run->height*run->width;
 
-          pred_value = schro_dc_predict (run->data2, run->stride,
-              run->width * slice_x + x, run->height * slice_y + y);
-          value = quantize (line2[x] - pred_value, quant_factor2, quant_offset2);
-          n_bits += schro_bits_estimate_sint (value);
-        }
-        line1 = OFFSET(line1, run->stride);
-        line2 = OFFSET(line2, run->stride);
-      }
+      copy_slice_run_out (tmp_dc_values, line2, run);
+      quantise_dc_run (run, line2, quant_data + n, quant_index2, slice_x, slice_y);
+      copy_slice_run_in (line2, tmp_dc_values, run);
+      n += run->height*run->width;
     } else {
-      for(y=0;y<run->height;y++){
-        for (x=0; x<run->width; x++){
-          value = quantize (line1[x], quant_factor1, quant_offset1);
-          n_bits += schro_bits_estimate_sint (value);
+      quantise_run (run, line1, quant_data + n, quant_index1);
+      n += run->height*run->width;
 
-          value = quantize (line2[x], quant_factor2, quant_offset2);
-          n_bits += schro_bits_estimate_sint (value);
-        }
-        line1 = OFFSET(line1, run->stride);
-        line2 = OFFSET(line2, run->stride);
-      }
+      quantise_run (run, line2, quant_data + n, quant_index2);
+      n += run->height*run->width;
     }
   }
+  frame->slice_uv_bits = estimate_array (quant_data, n);
 
-  return n_bits;
+  return n_bits + frame->slice_y_bits + frame->slice_uv_bits;
 }
 
 int
@@ -568,22 +648,17 @@ schro_encoder_pick_slice_index (SchroEncoderFrame *frame,
   int i;
   int n;
   int size;
-  int stuffbits;
-
-  /* FIXME this offset is to give a little breathing room for variations
-   * in the predicted value */
-  stuffbits = luma_runs[0].width * luma_runs[0].height * 2;
 
   i = 0;
   n = schro_encoder_estimate_slice (frame, luma_runs, chroma_runs,
       slice_x, slice_y, slice_bytes, i);
-  if (n <= slice_bytes*8 - stuffbits) return i;
+  if (n <= slice_bytes*8) return i;
 
   size = 32;
   while (size >= 1) {
     n = schro_encoder_estimate_slice (frame, luma_runs, chroma_runs,
         slice_x, slice_y, slice_bytes, i + size);
-    if (n >= slice_bytes*8 - stuffbits) {
+    if (n >= slice_bytes*8) {
       i += size;
     }
     size >>= 1;

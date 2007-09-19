@@ -1,5 +1,11 @@
 2007-09-18  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.h:
+	* schroedinger/schrolowdelay.c:
+	  Incremental improvements to base quantiser selection.
+
+2007-09-18  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroengine.c:
 	* schroedinger/schrolowdelay.c:

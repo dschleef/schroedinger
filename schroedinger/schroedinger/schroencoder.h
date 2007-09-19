@@ -91,6 +91,14 @@ struct _SchroEncoderFrame {
   int n_retire;
   SchroPictureNumber retire[SCHRO_MAX_REFERENCE_FRAMES];
 
+  int16_t slice_y_dc_values[100];
+  int16_t slice_u_dc_values[100];
+  int16_t slice_v_dc_values[100];
+  int slice_y_n;
+  int slice_uv_n;
+  int slice_y_bits;
+  int slice_uv_bits;
+
   /* from the old SchroEncoderTask */
 
   int stats_dc;
