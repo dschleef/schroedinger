@@ -135,8 +135,8 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
   int x,y;
   int16_t *tmp = decoder->tmpbuf;
 
-  schro_unpack_init_with_data (&y_unpack,
-      decoder->bits->buffer->data + decoder->bits->n, slice_bytes, 1);
+  schro_unpack_copy (&y_unpack, &decoder->unpack);
+  schro_unpack_limit_bits_remaining (&y_unpack, slice_bytes*8);
 
   base_index = schro_unpack_decode_bits (&y_unpack, 7);
   length_bits = ilog2up(8*slice_bytes);
@@ -207,7 +207,7 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
     }
   }
 
-  schro_bits_skip (decoder->bits, slice_bytes);
+  schro_unpack_skip_bits (&decoder->unpack, slice_bytes*8);
 }
 
 void

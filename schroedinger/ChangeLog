@@ -1,5 +1,12 @@
 2007-09-19  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schrolowdelay.c:
+	  Switch over completely to SchroUnpack.
+
+2007-09-19  David Schleef  <ds@schleef.org>
+
 	* testsuite/bits3.c: Oops, forgot to add this earlier.
 
 2007-09-19  David Schleef  <ds@schleef.org>

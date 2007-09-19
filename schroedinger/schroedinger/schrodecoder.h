@@ -7,6 +7,7 @@
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schromotion.h>
 #include <schroedinger/schrobits.h>
+#include <schroedinger/schrounpack.h>
 #include <schroedinger/schrobitstream.h>
 
 SCHRO_BEGIN_DECLS
@@ -41,7 +42,7 @@ struct _SchroDecoder {
   int next_parse_offset;
   int prev_parse_offset;
 
-  SchroBits *bits;
+  SchroUnpack unpack;
 
   int major_version;
   int minor_version;
