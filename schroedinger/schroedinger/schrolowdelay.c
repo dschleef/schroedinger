@@ -5,6 +5,7 @@
 #include <schroedinger/schro.h>
 #include <liboil/liboil.h>
 #include <schroedinger/schrooil.h>
+#include <schroedinger/schrounpack.h>
 #include <string.h>
 
 
@@ -122,7 +123,8 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
     int slice_x, int slice_y, int slice_bytes)
 {
   SchroParams *params = &decoder->params;
-  SchroBits slice_bits;
+  SchroUnpack y_unpack;
+  SchroUnpack uv_unpack;
   SchroSliceRun *run;
   int quant_index;
   int base_index;
@@ -132,20 +134,17 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
   int x,y;
   int value;
 
-  schro_bits_copy (&slice_bits, decoder->bits);
-  schro_bits_set_length (&slice_bits, slice_bytes * 8);
+  schro_unpack_init_with_data (&y_unpack,
+      decoder->bits->buffer->data + decoder->bits->n, slice_bytes, 1);
 
-  base_index = schro_bits_decode_bits (&slice_bits, 7);
+  base_index = schro_unpack_decode_bits (&y_unpack, 7);
   length_bits = ilog2up(8*slice_bytes);
 
-  slice_y_length = schro_bits_decode_bits (&slice_bits, length_bits);
+  slice_y_length = schro_unpack_decode_bits (&y_unpack, length_bits);
 
-#if 0
-  schro_bits_copy (&ybits, decoder->bits);
-  schro_bits_set_length (&ybits, slice_y_length);
-
-  schro_bits_skip_bits (&slice_bits, slice_y_length);
-#endif
+  schro_unpack_copy (&uv_unpack, &y_unpack);
+  schro_unpack_limit_bits_remaining (&y_unpack, slice_y_length);
+  schro_unpack_skip_bits (&uv_unpack, slice_y_length);
 
   for(i=0;i<1+3*params->transform_depth;i++) {
     int quant_factor;
@@ -162,7 +161,7 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
     line = OFFSET(run->data1, run->y_stride * slice_y + run->x_stride * slice_x);
     for(y=0;y<run->height;y++){
       for (x=0; x<run->width; x++){
-        value = schro_bits_decode_sint (&slice_bits);
+        value = schro_unpack_decode_sint (&y_unpack);
         line[x] = dequantize (value, quant_factor, quant_offset);
       }
       line = OFFSET(line, run->stride);
@@ -192,9 +191,9 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
 
     for(y=0;y<run->height;y++){
       for (x=0; x<run->width; x++){
-        value = schro_bits_decode_sint (&slice_bits);
+        value = schro_unpack_decode_sint (&uv_unpack);
         line1[x] = dequantize (value, quant_factor1, quant_offset1);
-        value = schro_bits_decode_sint (&slice_bits);
+        value = schro_unpack_decode_sint (&uv_unpack);
         line2[x] = dequantize (value, quant_factor2, quant_offset2);
       }
       line1 = OFFSET(line1, run->stride);
@@ -351,7 +350,7 @@ schro_encoder_encode_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs,
   length_bits = ilog2up(8*slice_bytes);
 
   slice_y_length = 0;
-  schro_bits_encode_bits (frame->bits, length_bits, 0);
+  schro_bits_encode_bits (frame->bits, length_bits, frame->slice_y_bits);
 
 #if 0
   schro_bits_copy (&ybits, frame->bits);
@@ -664,6 +663,8 @@ schro_encoder_pick_slice_index (SchroEncoderFrame *frame,
     size >>= 1;
   }
 
+  schro_encoder_estimate_slice (frame, luma_runs, chroma_runs,
+      slice_x, slice_y, slice_bytes, i + 1);
   return i+1;
 }
 

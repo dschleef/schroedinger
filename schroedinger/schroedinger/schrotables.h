@@ -17,6 +17,8 @@ extern double schro_table_error_hist_shift3_1_2[60][104];
 extern const float schro_tables_wavelet_noise_curve[8][8][128];
 extern const double schro_tables_wavelet_gain[8][2];
 
+extern const int schro_table_unpack_sint[256][17];
+
 SCHRO_END_DECLS
 
 #endif

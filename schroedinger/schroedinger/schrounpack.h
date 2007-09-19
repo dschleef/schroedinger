@@ -48,6 +48,8 @@ unsigned int schro_unpack_decode_bit (SchroUnpack *unpack);
 unsigned int schro_unpack_decode_bits (SchroUnpack *unpack, int n);
 unsigned int schro_unpack_decode_uint (SchroUnpack *unpack);
 int schro_unpack_decode_sint (SchroUnpack *unpack);
+int schro_unpack_decode_sint_slow (SchroUnpack *unpack);
+void schro_unpack_decode_sint_s16 (int16_t *dest, SchroUnpack *unpack, int n);
 
 SCHRO_END_DECLS
 

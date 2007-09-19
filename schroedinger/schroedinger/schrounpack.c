@@ -5,6 +5,7 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schrounpack.h>
+#include <schroedinger/schrotables.h>
 
 #include <string.h>
 
@@ -221,7 +222,7 @@ schro_unpack_decode_uint (SchroUnpack *unpack)
 }
 
 int
-schro_unpack_decode_sint (SchroUnpack *unpack)
+schro_unpack_decode_sint_slow (SchroUnpack *unpack)
 {
   int value;
 
@@ -233,5 +234,56 @@ schro_unpack_decode_sint (SchroUnpack *unpack)
   }
 
   return value;
+}
+
+#define SHIFT 8
+
+int
+schro_unpack_decode_sint (SchroUnpack *unpack)
+{
+  int value;
+  int i;
+
+  if (unpack->n_bits_in_shift_register < SHIFT) {
+    _schro_unpack_shift_in (unpack);
+  }
+  if (unpack->n_bits_in_shift_register >= SHIFT) {
+    i = unpack->shift_register >> (32-SHIFT);
+    if (schro_table_unpack_sint[i][0] > 0) {
+      value = schro_table_unpack_sint[i][1];
+      _schro_unpack_shift_out (unpack, schro_table_unpack_sint[i][2]);
+      return value;
+    }
+  }
+
+  return schro_unpack_decode_sint_slow (unpack);
+}
+
+void
+schro_unpack_decode_sint_s16 (int16_t *dest, SchroUnpack *unpack, int n)
+{
+  int i;
+  int m;
+  int j;
+
+  while (n > 0) {
+    while (unpack->n_bits_in_shift_register < SHIFT) {
+      _schro_unpack_shift_in (unpack);
+    }
+    i = unpack->shift_register >> (32-SHIFT);
+    if (schro_table_unpack_sint[i][0] == 0) {
+      dest[0] = schro_unpack_decode_sint_slow (unpack);
+      dest++;
+      n--;
+    } else {
+      m = MIN(n, schro_table_unpack_sint[i][0]);
+      for(j=0;j<m;j++){
+        dest[j] = schro_table_unpack_sint[i][1+2*j];
+      }
+      _schro_unpack_shift_out (unpack, schro_table_unpack_sint[i][1+2*j+1]);
+      dest += m;
+      n -= m;
+    }
+  }
 }
 

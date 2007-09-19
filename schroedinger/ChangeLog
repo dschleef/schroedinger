@@ -1,3 +1,11 @@
+2007-09-19  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrolowdelay.c:
+	* schroedinger/schrotables.h:
+	* schroedinger/schrounpack.c:
+	* schroedinger/schrounpack.h:
+	  Enable fast sint unpacking.
+
 2007-09-18  David Schleef  <ds@schleef.org>
 
 	* schroedinger/Makefile.am:
