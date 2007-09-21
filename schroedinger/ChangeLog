@@ -1,3 +1,14 @@
+2007-09-21  David Schleef  <ds@schleef.org>
+
+	* configure.ac:
+	* m4/as-host-defines.m4:
+	* testsuite/Makefile.am:
+	* testsuite/prototype:
+	* testsuite/prototype/Makefile.am:
+	* testsuite/prototype/arith_speed.c:
+	  Move arith_speed.c to prototype, and hide it behind HAVE_I386,
+	  since it's i386-specific.
+
 2007-09-20  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:
