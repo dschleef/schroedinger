@@ -98,6 +98,8 @@ struct _SchroEncoderFrame {
   int slice_uv_n;
   int slice_y_bits;
   int slice_uv_bits;
+  int slice_y_trailing_zeros;
+  int slice_uv_trailing_zeros;
 
   /* from the old SchroEncoderTask */
 
@@ -172,13 +174,20 @@ struct _SchroEncoder {
 
   int prefs[SCHRO_PREF_LAST];
 
+  /* configuration flags */
   int internal_testing;
+  int calculate_psnr;
+  int calculate_ssim;
 
   double pixels_per_degree_horiz;
   double pixels_per_degree_vert;
   double pixels_per_degree_diag;
 
   double subband_weights[8][SCHRO_MAX_TRANSFORM_DEPTH][3*SCHRO_MAX_TRANSFORM_DEPTH+1];
+
+  /* statistics */
+
+  double average_psnr;
 
   /* engine specific stuff */
 

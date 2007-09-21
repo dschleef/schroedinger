@@ -753,24 +753,33 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
 void
 schro_encoder_postanalyse_picture (SchroEncoderFrame *frame)
 {
-#if 1
-  double mse;
+  if (frame->encoder->calculate_psnr) {
+    double mse;
+    double psnr;
 
-  mse = schro_frame_mean_squared_error (frame->original_frame,
-      frame->reconstructed_frame->frames[0]);
+    mse = schro_frame_mean_squared_error (frame->original_frame,
+        frame->reconstructed_frame->frames[0]);
+    psnr = 10*log(255*255/mse)/log(10);
+    if (frame->encoder->average_psnr == 0) {
+      frame->encoder->average_psnr = psnr;
+    } else {
+      double alpha = 0.9;
+      frame->encoder->average_psnr *= alpha;
+      frame->encoder->average_psnr += (1.0-alpha) * psnr;
+    }
 
-  SCHRO_ERROR("mse %g psnr %g", mse, 10*log(255*255/mse)/log(10));
-#endif
+    SCHRO_INFO("PSNR: %d mse %g psnr %g average_psnr %g",
+        frame->frame_number, mse, psnr,
+        frame->encoder->average_psnr);
+  }
 
-#if 0
-  double mssim;
+  if (frame->encoder->calculate_ssim) {
+    double mssim;
 
-  mssim = schro_ssim (frame->original_frame,
-      frame->reconstructed_frame->frames[0]);
-  SCHRO_ERROR("mssim %g quant_base %d", mssim,
-      frame->encoder->prefs[SCHRO_PREF_QUANT_BASE]);
-#endif
-
+    mssim = schro_ssim (frame->original_frame,
+        frame->reconstructed_frame->frames[0]);
+    SCHRO_INFO("SSIM: picture_number %d mssim %g", frame->frame_number, mssim);
+  }
 }
 
 static void

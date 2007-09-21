@@ -1,3 +1,13 @@
+2007-09-20  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	  Reenable calculation of PSNR and SSIM, with a flag, and track
+	  statistics (poorly).
+	* schroedinger/schrolowdelay.c:
+	  Refactor slice encoding. Estimate and encode slices ignoring
+	  trailing zeros, in order to squeeze out a higher base quant.
+
 2007-09-19  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:
