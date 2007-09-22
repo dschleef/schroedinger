@@ -1,6 +1,18 @@
 2007-09-21  David Schleef  <ds@schleef.org>
 
 	* configure.ac:
+	* testsuite/Makefile.am:
+	* testsuite/streams:
+	* testsuite/streams/Makefile.am:
+	* testsuite/streams/make_vts_streams:
+	  Add a script to generate some videotestsrc-based test streams.
+	* tools/Makefile.am:
+	* tools/drc-to-png:
+	  Add a script to extract Dirac streams to png files
+
+2007-09-21  David Schleef  <ds@schleef.org>
+
+	* configure.ac:
 	* m4/as-host-defines.m4:
 	* testsuite/Makefile.am:
 	* testsuite/prototype:

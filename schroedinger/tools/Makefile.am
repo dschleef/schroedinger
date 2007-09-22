@@ -1,4 +1,5 @@
 
+EXTRA_DIST = drc-to-png
 
 if HAVE_GST
 noinst_PROGRAMS = dump_packets

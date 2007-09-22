@@ -1,5 +1,5 @@
 
-SUBDIRS = check perf coder installation prototype
+SUBDIRS = check perf coder installation prototype streams
 
 noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 encode wavelet tables wavelet_2d \
