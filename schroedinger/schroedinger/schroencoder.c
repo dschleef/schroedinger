@@ -38,7 +38,7 @@ schro_encoder_new (void)
   memset (encoder, 0, sizeof(SchroEncoder));
 
   encoder->version_major = 0;
-  encoder->version_minor = 108;
+  encoder->version_minor = 109;
   encoder->profile = 0;
   encoder->level = 0;
 
@@ -1449,7 +1449,8 @@ schro_encoder_encode_transform_data (SchroEncoderFrame *frame)
 
   for(component=0;component<3;component++) {
     for (i=0;i < 1 + 3*params->transform_depth; i++) {
-      if (i != 0) schro_bits_sync (frame->bits);
+      //if (i != 0) schro_bits_sync (frame->bits);
+      schro_bits_sync (frame->bits);
       schro_encoder_encode_subband (frame, component, i);
     }
   }

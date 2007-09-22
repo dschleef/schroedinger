@@ -752,7 +752,7 @@ shift_rows (SchroFrame *frame, int y, int n, int shift_luma, int shift_chroma)
     } else {
       s[1] = shift_chroma;
     }
-    s[0] = (1<<s[1])>>1;
+    s[0] = ((1<<s[1])>>1) - (128<<s[1]);
 
     ymax = MIN ((y + n)>>comp->v_shift, comp->height);
     ymin = MAX (y>>comp->v_shift, 0);
@@ -820,7 +820,14 @@ schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
         schro_motion_get_dc_block (motion, mv);
       } else {
         /* FIXME bipredictive not supported right now. ETOOLAZY. */
-        SCHRO_ASSERT(mv->pred_mode != 3);
+        //SCHRO_ASSERT(mv->pred_mode != 3);
+        if (mv->pred_mode == 3) {
+          static int warning_count = 5;
+          if (warning_count >= 0) {
+            SCHRO_ERROR("bipredictive blocks not supported");
+            warning_count--;
+          }
+        }
 
         if (mv->pred_mode & 1) {
           if (mv->using_global) {
@@ -892,7 +899,7 @@ schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
     }
     switch(n) {
       case 0:
-        pred[i] = 128;
+        pred[i] = 0;
         break;
       case 1:
         pred[i] = sum;

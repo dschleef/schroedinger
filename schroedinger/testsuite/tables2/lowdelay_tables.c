@@ -217,7 +217,6 @@ split_schro_ext (int16_t *a, int n, int filter)
       break;
     case SCHRO_WAVELET_HAAR_0:
     case SCHRO_WAVELET_HAAR_1:
-    case SCHRO_WAVELET_HAAR_2:
       schro_split_ext_haar (hi, lo, n/2);
       break;
     case SCHRO_WAVELET_FIDELITY:
@@ -254,7 +253,6 @@ synth_schro_ext (int16_t *a, int n, int filter)
       break;
     case SCHRO_WAVELET_HAAR_0:
     case SCHRO_WAVELET_HAAR_1:
-    case SCHRO_WAVELET_HAAR_2:
       schro_synth_ext_haar (hi, lo, n/2);
       break;
     case SCHRO_WAVELET_FIDELITY:

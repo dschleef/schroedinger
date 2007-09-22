@@ -1,5 +1,27 @@
 2007-09-21  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroarith.c:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schromotion.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroquantiser.c:
+	* schroedinger/schrowavelet.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	* testsuite/tables2/lowdelay_tables.c:
+	* testsuite/tables2/wavelet_tables.c:
+	* testsuite/wavelet.c:
+	* testsuite/wavelet_2d.c:
+	* testsuite/wavelet_gain.c:
+	* testsuite/wavelet_gain_curve.c:
+	* testsuite/wavelet_noise_gain.c:
+	  Update to changes in spec: Haar-2 wavelet removed; conversion
+	  to/from external representation now has an offset of 128; arith
+	  encoding starts with range of 0xffff instead of 0x10000.
+
+2007-09-21  David Schleef  <ds@schleef.org>
+
 	* gst/gstschroenc.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:

@@ -113,7 +113,7 @@ schro_encoder_set_default_subband_weights (SchroEncoder *encoder)
       schro_encoder_perceptual_weight_constant);
 }
 
-//static int filtershift[] = { 1, 1, 1, 0, 1, 2, 0, 1 };
+//static int filtershift[] = { 1, 1, 1, 0, 1, 0, 1 };
 
 void
 schro_encoder_calculate_subband_weights (SchroEncoder *encoder,

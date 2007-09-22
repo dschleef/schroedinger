@@ -144,7 +144,7 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
 
   memset(arith, 0, sizeof(SchroArith));
   arith->range[0] = 0;
-  arith->range[1] = 0x10000;
+  arith->range[1] = 0xffff;
   arith->range_size = arith->range[1] - arith->range[0];
   arith->code = 0;
 
@@ -173,7 +173,7 @@ schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer)
 
   memset(arith, 0, sizeof(SchroArith));
   arith->range[0] = 0;
-  arith->range[1] = 0x10000;
+  arith->range[1] = 0xffff;
   arith->range_size = arith->range[1] - arith->range[0];
   arith->code = 0;
 
@@ -194,7 +194,7 @@ schro_arith_estimate_init (SchroArith *arith)
 
   memset(arith, 0, sizeof(SchroArith));
   for(i=0;i<SCHRO_CTX_LAST;i++){
-    arith->contexts[i].stat_range = 0x10000;
+    arith->contexts[i].stat_range = 0xffff;
     arith->contexts[i].next = next_list[i];
     arith->probabilities[i] = 0x8000;
   }

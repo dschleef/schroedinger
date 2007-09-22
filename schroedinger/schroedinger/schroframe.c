@@ -348,6 +348,15 @@ schro_frame_subtract (SchroFrame *dest, SchroFrame *src)
   SCHRO_ASSERT("subtract function unimplemented");
 }
 
+void
+offsetconvert_u8_s16 (uint8_t *dest, int16_t *src, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    dest[i] = CLAMP(src[i] + 128,0,255);
+  }
+}
+
 static void
 schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
 {
@@ -372,7 +381,7 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
     height = MIN(dcomp->height, scomp->height);
 
     for(y=0;y<height;y++){
-      oil_convert_u8_s16(ddata, sdata, width);
+      offsetconvert_u8_s16(ddata, sdata, width);
       ddata = OFFSET(ddata, dcomp->stride);
       sdata = OFFSET(sdata, scomp->stride);
     }
@@ -441,6 +450,15 @@ schro_frame_convert_s16_s16 (SchroFrame *dest, SchroFrame *src)
   schro_frame_edge_extend (dest, src->width, src->height);
 }
 
+void
+offsetconvert_s16_u8 (int16_t *dest, uint8_t *src, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    dest[i] = src[i] - 128;
+  }
+}
+
 static void
 schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
 {
@@ -462,7 +480,8 @@ schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
     height = MIN(dcomp->height, scomp->height);
 
     for(y=0;y<height;y++){
-      oil_convert_s16_u8(ddata, sdata, width);
+      //oil_convert_s16_u8(ddata, sdata, width);
+      offsetconvert_s16_u8(ddata, sdata, width);
       ddata = OFFSET(ddata, dcomp->stride);
       sdata = OFFSET(sdata, scomp->stride);
     }

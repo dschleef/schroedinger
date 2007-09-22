@@ -523,11 +523,6 @@ void schro_iwt_haar1 (int16_t *data, int stride, int width, int height, int16_t 
   schro_iwt_haar (data, stride, width, height, tmp, 1);
 }
 
-void schro_iwt_haar2 (int16_t *data, int stride, int width, int height, int16_t *tmp)
-{
-  schro_iwt_haar (data, stride, width, height, tmp, 2);
-}
-
 void schro_iwt_fidelity (int16_t *data, int stride, int width, int height,
     int16_t *tmp)
 {
@@ -695,9 +690,6 @@ schro_wavelet_transform_2d (int filter, int16_t *data, int stride, int width,
       break;
     case SCHRO_WAVELET_HAAR_1:
       schro_iwt_haar1 (data, stride, width, height, tmp);
-      break;
-    case SCHRO_WAVELET_HAAR_2:
-      schro_iwt_haar2 (data, stride, width, height, tmp);
       break;
     case SCHRO_WAVELET_FIDELITY:
       schro_iwt_fidelity (data, stride, width, height, tmp);
@@ -955,11 +947,6 @@ void schro_iiwt_haar1 (int16_t *data, int stride, int width, int height, int16_t
   schro_iiwt_haar (data, stride, width, height, tmp, 1);
 }
 
-void schro_iiwt_haar2 (int16_t *data, int stride, int width, int height, int16_t *tmp)
-{
-  schro_iiwt_haar (data, stride, width, height, tmp, 2);
-}
-
 void schro_iiwt_fidelity (int16_t *data, int stride, int width, int height,
     int16_t *tmp)
 {
@@ -1140,9 +1127,6 @@ schro_wavelet_inverse_transform_2d (int filter, int16_t *data, int stride,
       break;
     case SCHRO_WAVELET_HAAR_1:
       schro_iiwt_haar1 (data, stride, width, height, tmp);
-      break;
-    case SCHRO_WAVELET_HAAR_2:
-      schro_iiwt_haar2 (data, stride, width, height, tmp);
       break;
     case SCHRO_WAVELET_FIDELITY:
       schro_iiwt_fidelity (data, stride, width, height, tmp);

@@ -16,7 +16,7 @@ int16_t tmp[100];
 int16_t tmp2[100];
 int16_t *frame_data;
 
-int filtershift[] = { 1, 1, 1, 0, 1, 2, 0, 1 };
+int filtershift[] = { 1, 1, 1, 0, 1, 0, 1 };
 
 void synth(int16_t *a, int filter, int n);
 void split (int16_t *a, int filter, int n);
@@ -324,7 +324,6 @@ synth(int16_t *a, int n, int filter)
       break;
     case SCHRO_WAVELET_HAAR_0:
     case SCHRO_WAVELET_HAAR_1:
-    case SCHRO_WAVELET_HAAR_2:
       for(i=0;i<n;i+=2){
         a[i] -= (a[i+1] + 1)>>1;
       }
@@ -403,7 +402,6 @@ split (int16_t *a, int n, int filter)
       break;
     case SCHRO_WAVELET_HAAR_0:
     case SCHRO_WAVELET_HAAR_1:
-    case SCHRO_WAVELET_HAAR_2:
       for(i=0;i<n;i+=2){
         a[i+1] -= a[i];
       }
@@ -467,7 +465,6 @@ split_schro_ext (int16_t *a, int n, int filter)
       break;
     case SCHRO_WAVELET_HAAR_0:
     case SCHRO_WAVELET_HAAR_1:
-    case SCHRO_WAVELET_HAAR_2:
       schro_split_ext_haar (hi, lo, n/2);
       break;
     case SCHRO_WAVELET_FIDELITY:
@@ -504,7 +501,6 @@ synth_schro_ext (int16_t *a, int n, int filter)
       break;
     case SCHRO_WAVELET_HAAR_0:
     case SCHRO_WAVELET_HAAR_1:
-    case SCHRO_WAVELET_HAAR_2:
       schro_synth_ext_haar (hi, lo, n/2);
       break;
     case SCHRO_WAVELET_FIDELITY:
@@ -742,7 +738,6 @@ split_schro (int16_t *a, int n, int filter)
       break;
     case SCHRO_WAVELET_HAAR_0:
     case SCHRO_WAVELET_HAAR_1:
-    case SCHRO_WAVELET_HAAR_2:
       schro_split_haar (hi, lo, n/2);
       break;
     case SCHRO_WAVELET_FIDELITY:
@@ -988,7 +983,6 @@ synth_schro (int16_t *a, int n, int filter)
       break;
     case SCHRO_WAVELET_HAAR_0:
     case SCHRO_WAVELET_HAAR_1:
-    case SCHRO_WAVELET_HAAR_2:
       schro_synth_haar (hi, lo, n/2);
       break;
     case SCHRO_WAVELET_FIDELITY:

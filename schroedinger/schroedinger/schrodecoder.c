@@ -630,7 +630,7 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
   decoder->level = schro_unpack_decode_uint (&decoder->unpack);
   SCHRO_DEBUG("level = %d", decoder->level);
 
-  if (decoder->major_version != 0 || decoder->minor_version != 108) {
+  if (decoder->major_version != 0 || decoder->minor_version != 109) {
     SCHRO_ERROR("Expecting version number 0.108, got %d.%d",
         decoder->major_version, decoder->minor_version);
     //SCHRO_MILD_ASSERT(0);
@@ -1218,7 +1218,8 @@ schro_decoder_decode_transform_data (SchroDecoder *decoder)
 
   for(component=0;component<3;component++){
     for(i=0;i<1+3*params->transform_depth;i++) {
-      if (i != 0) schro_unpack_byte_sync (&decoder->unpack);
+      //if (i != 0) schro_unpack_byte_sync (&decoder->unpack);
+      schro_unpack_byte_sync (&decoder->unpack);
 
       ctx->component = component;
       ctx->position = schro_subband_get_position(i);

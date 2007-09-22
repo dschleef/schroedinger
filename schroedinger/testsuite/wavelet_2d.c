@@ -13,7 +13,7 @@
 #include <liboil/liboil.h>
 #include <liboil/liboilrandom.h>
 
-int filtershift[] = { 1, 1, 1, 0, 1, 2, 0, 1 };
+int filtershift[] = { 1, 1, 1, 0, 1, 0, 1 };
 
 int fail = 0;
 
@@ -508,7 +508,6 @@ schro_split_ext (int16_t *hi, int16_t *lo, int n, int filter)
       break;
     case SCHRO_WAVELET_HAAR_0:
     case SCHRO_WAVELET_HAAR_1:
-    case SCHRO_WAVELET_HAAR_2:
       schro_split_ext_haar (hi, lo, n);
       break;
     case SCHRO_WAVELET_FIDELITY:
@@ -535,7 +534,6 @@ schro_synth_ext (int16_t *hi, int16_t *lo, int n, int filter)
       break;
     case SCHRO_WAVELET_HAAR_0:
     case SCHRO_WAVELET_HAAR_1:
-    case SCHRO_WAVELET_HAAR_2:
       schro_synth_ext_haar (hi, lo, n);
       break;
     case SCHRO_WAVELET_FIDELITY:
@@ -569,9 +567,6 @@ void iwt_test(Picture *p, int filter)
     case SCHRO_WAVELET_HAAR_1:
       schro_iwt_haar1 (p->data, p->stride, p->width, p->height, tmp);
       break;
-    case SCHRO_WAVELET_HAAR_2:
-      schro_iwt_haar2 (p->data, p->stride, p->width, p->height, tmp);
-      break;
     case SCHRO_WAVELET_FIDELITY:
       schro_iwt_fidelity (p->data, p->stride, p->width, p->height, tmp);
       break;
@@ -604,9 +599,6 @@ void iiwt_test(Picture *p, int filter)
       break;
     case SCHRO_WAVELET_HAAR_1:
       schro_iiwt_haar1 (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_HAAR_2:
-      schro_iiwt_haar2 (p->data, p->stride, p->width, p->height, tmp);
       break;
     case SCHRO_WAVELET_FIDELITY:
       schro_iiwt_fidelity (p->data, p->stride, p->width, p->height, tmp);
