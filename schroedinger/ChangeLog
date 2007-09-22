@@ -1,5 +1,18 @@
 2007-09-21  David Schleef  <ds@schleef.org>
 
+	* testsuite/Makefile.am:
+	* testsuite/common.c:
+	* testsuite/common.h:
+	* testsuite/perceptual_weight.c:
+	* testsuite/tables2/lowdelay_tables.c:
+	* testsuite/wavelet_gain.c:
+	* testsuite/wavelet_gain_curve.c:
+	* testsuite/wavelet_noise_2d.c:
+	* testsuite/wavelet_noise_gain.c:
+	  Move duplicated code into separate test library.
+
+2007-09-21  David Schleef  <ds@schleef.org>
+
 	* configure.ac:
 	* testsuite/tables2/quant_tables.c:
 	  Moving stuff into tables2: fix compile problems.

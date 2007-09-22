@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "common.h"
+
 int16_t tmp[2000];
 int16_t tmp2[2000];
 
@@ -29,34 +31,6 @@ void dump_cmp (int16_t *a, int16_t *b, int n);
 
 #define SHIFT 8
 #define N (1<<SHIFT)
-
-double sgn(double x)
-{
-  if (x<0) return -1;
-  if (x>0) return 1;
-  return 0;
-}
-
-double
-random_std (void)
-{
-  double x;
-  double y;
-
-  while (1) {
-    x = -5.0 + random () * (1.0/RAND_MAX) * 10;
-    y = random () * (1.0/RAND_MAX);
-
-    if (y < exp(-x*x)) return x;
-  }
-}
-
-double
-random_triangle (void)
-{
-  return random () * (1.0/RAND_MAX) - random () * (1.0/RAND_MAX);
-}
-
 
 double
 gain_test(int filter, int level, int n_levels)
@@ -106,21 +80,6 @@ gain_test(int filter, int level, int n_levels)
 }
 
 int
-quant_index (double x)
-{
-  int i = 0;
-
-  x *= x;
-  x *= x;
-  while (x*x > 2) {
-    x *= 0.5;
-    i++;
-  }
-
-  return i;
-}
-
-int
 main (int argc, char *argv[])
 {
   int filter;
@@ -160,7 +119,7 @@ main (int argc, char *argv[])
       }
 
       for(i=0;i<n_levels*2+1;i++){
-        printf("%d %5.3f %5.3f %d\n", i, b[i], b[i]/min, quant_index(b[i]/min));
+        printf("%d %5.3f %5.3f %d\n", i, b[i], b[i]/min, gain_to_quant_index(b[i]/min));
       }
     }
   }

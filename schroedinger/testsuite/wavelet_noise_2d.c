@@ -15,6 +15,8 @@
 #include <liboil/liboil.h>
 #include <liboil/liboilrandom.h>
 
+#include "common.h"
+
 #define SHIFT 8
 #define SIZE (1<<SHIFT)
 #define N_TRIALS 100
@@ -33,19 +35,6 @@ float sr[SIZE*SIZE];
 float si[SIZE*SIZE];
 float power[SIZE*SIZE];
 
-double
-random_std (void)
-{
-  double x;
-  double y;
-
-  while (1) {
-    x = -5.0 + random () * (1.0/RAND_MAX) * 10;
-    y = random () * (1.0/RAND_MAX);
-
-    if (y < exp(-x*x*0.5)) return x;
-  }
-}
 
 void
 generate_noise (SchroFrame *frame, int n_transforms, double *weights)

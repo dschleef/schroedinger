@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "common.h"
+
 int16_t tmp[2000];
 int16_t tmp2[2000];
 
@@ -32,54 +34,6 @@ void solve (double *matrix, double *col, int n);
 #define SHIFT 8
 #define N (1<<SHIFT)
 
-double sgn(double x)
-{
-  if (x<0) return -1;
-  if (x>0) return 1;
-  return 0;
-}
-
-double
-random_std (void)
-{
-  double x;
-  double y;
-
-  while (1) {
-    x = -5.0 + random () * (1.0/RAND_MAX) * 10;
-    y = random () * (1.0/RAND_MAX);
-
-    if (y < exp(-x*x)) return x;
-  }
-}
-
-double
-random_triangle (void)
-{
-  return random () * (1.0/RAND_MAX) - random () * (1.0/RAND_MAX);
-}
-
-double
-sum_f64 (double *a, int n)
-{
-  double sum = 0;
-  int i;
-  for(i=0;i<n;i++){
-    sum += a[i];
-  }
-  return sum;
-}
-
-double
-multsum_f64 (double *a, double *b, int n)
-{
-  double sum = 0;
-  int i;
-  for(i=0;i<n;i++){
-    sum += a[i]*b[i];
-  }
-  return sum;
-}
 
 void
 random_test(double *dest, int filter, double *weights)
@@ -158,21 +112,6 @@ random_test(double *dest, int filter, double *weights)
   }
 }
 
-int
-quant_index (double x)
-{
-  int i = 0;
-
-  x *= x;
-  x *= x;
-  while (x*x > 2) {
-    x *= 0.5;
-    i++;
-  } 
-    
-  return i;
-}
-
 void
 print_subband_quants (double *a, int filter, int n_levels)
 {
@@ -198,7 +137,7 @@ print_subband_quants (double *a, int filter, int n_levels)
   }
 
   for(i=0;i<n_levels*2+1;i++){
-    printf("%d %5.3f %5.3f %d\n", i, b[i], b[i]/min, quant_index(b[i]/min));
+    printf("%d %5.3f %5.3f %d\n", i, b[i], b[i]/min, gain_to_quant_index(b[i]/min));
   }
 }
 

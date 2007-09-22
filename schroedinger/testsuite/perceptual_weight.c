@@ -13,22 +13,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-
-int
-quant_index (double x)
-{
-  int i = 0; 
-
-  x *= x;
-  x *= x;
-  while (x*x > 2) {
-    x *= 0.5;
-    i++; 
-  }
-
-  return i;
-}   
-
+#include "common.h"
 
 int
 main (int argc, char *argv[])
@@ -59,7 +44,7 @@ main (int argc, char *argv[])
       for(i=0;i<n;i++){
         x = encoder->subband_weights[filter][j][i]/min;
         printf("%2d %6.3f %6.3f %d\n", i, encoder->subband_weights[filter][j][i],
-            x, quant_index(x));
+            x, gain_to_quant_index(x));
       }
     }
   }

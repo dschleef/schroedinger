@@ -1,6 +1,8 @@
 
 SUBDIRS = check perf coder installation prototype streams tables2
 
+noinst_LTLIBRARIES = libschrotest.la
+
 noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 encode wavelet wavelet_2d \
 	 obmc phasecorrelation motion \
@@ -16,7 +18,9 @@ noinst_PROGRAMS = arith arith_encode bits bits2 \
 TESTS = arith bits bits2 bits3 encode wavelet wavelet_2d unpack
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS)
-LDADD = $(SCHRO_LIBS)
+LDADD = $(SCHRO_LIBS) libschrotest.la
+
+libschrotest_la_SOURCES = common.c
 
 arith_CFLAGS = $(SCHRO_CFLAGS)
 arith_LDADD = $(SCHRO_LIBS)
@@ -50,24 +54,18 @@ encode_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 encode_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 encode_SOURCES = encode.c
 
-encode_big_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-encode_big_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
-encode_big_SOURCES = encode_big.c
+#encode_big_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
+#encode_big_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+#encode_big_SOURCES = encode_big.c
 
 wavelet_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 wavelet_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_SOURCES = wavelet.c
 
-wavelet_gain_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-wavelet_gain_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_gain_SOURCES = wavelet_gain.c
 
-wavelet_noise_gain_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-wavelet_noise_gain_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_noise_gain_SOURCES = wavelet_noise_gain.c
 
-wavelet_gain_curve_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-wavelet_gain_curve_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_gain_curve_SOURCES = wavelet_gain_curve.c
 
 #wavelet2_CFLAGS = $(SCHRO_CFLAGS)
@@ -78,8 +76,6 @@ wavelet_2d_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 wavelet_2d_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_2d_SOURCES = wavelet_2d.c
 
-wavelet_noise_2d_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-wavelet_noise_2d_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_noise_2d_SOURCES = wavelet_noise_2d.c
 
 obmc_CFLAGS = $(SCHRO_CFLAGS)
@@ -122,8 +118,6 @@ fft_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 fft_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 fft_SOURCES = fft.c
 
-perceptual_weight_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-perceptual_weight_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 perceptual_weight_SOURCES = perceptual_weight.c
 
 perceptual_curves_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
