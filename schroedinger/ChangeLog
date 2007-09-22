@@ -1,3 +1,13 @@
+2007-09-22  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrotables.h:
+	* schroedinger/schrowavelettables.c:
+	* testsuite/Makefile.am:
+	* testsuite/tables2/Makefile.am:
+	* testsuite/tables2/lowdelay_tables.c:
+	* testsuite/tables2/wavelet_tables.c:
+	  Update wavelet tables after removal of Haar-2 wavelet.
+
 2007-09-21  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroarith.c:

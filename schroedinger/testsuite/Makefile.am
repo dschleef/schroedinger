@@ -1,5 +1,5 @@
 
-SUBDIRS = check perf coder installation prototype streams tables2
+SUBDIRS = . check perf coder installation prototype streams tables2
 
 noinst_LTLIBRARIES = libschrotest.la
 

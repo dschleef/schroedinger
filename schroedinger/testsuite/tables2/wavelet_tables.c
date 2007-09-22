@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "common.h"
+
 int16_t tmp[2000];
 int16_t tmp2[2000];
 
@@ -31,27 +33,6 @@ void solve (double *matrix, double *col, int n);
 
 #define SHIFT 8
 #define N (1<<SHIFT)
-
-double sgn(double x)
-{
-  if (x<0) return -1;
-  if (x>0) return 1;
-  return 0;
-}
-
-double
-random_std (void)
-{
-  double x;
-  double y;
-
-  while (1) {
-    x = -5.0 + random () * (1.0/RAND_MAX) * 10;
-    y = random () * (1.0/RAND_MAX);
-
-    if (y < exp(-x*x*0.5)) return x;
-  }
-}
 
 void
 random_test(double *dest, int filter, int n_levels, int hl)
@@ -143,8 +124,8 @@ quant_index (double x)
   return i;
 }
 
-float wavelet_noise_curve[8][8][N/2];
-double wavelet_gain[8][2];
+float wavelet_noise_curve[SCHRO_N_WAVELETS][8][N/2];
+double wavelet_gain[SCHRO_N_WAVELETS][2];
 
 int
 main (int argc, char *argv[])
@@ -160,8 +141,8 @@ main (int argc, char *argv[])
   printf("\n");
   printf("#include <schroedinger/schrotables.h>\n");
   printf("\n");
-  printf("const float schro_tables_wavelet_noise_curve[8][8][%d] = {\n", N/2);
-  for(filter=0;filter<8;filter++){
+  printf("const float schro_tables_wavelet_noise_curve[SCHRO_N_WAVELETS][8][%d] = {\n", N/2);
+  for(filter=0;filter<SCHRO_N_WAVELETS;filter++){
     
     printf("{\n");
     for(i=0;i<8;i++){
@@ -176,13 +157,13 @@ main (int argc, char *argv[])
       }
       printf((i<7)?"  },\n":"}\n"); 
     }
-    printf((filter<7)?"},\n":"}\n"); 
+    printf((filter<(SCHRO_N_WAVELETS-1))?"},\n":"}\n"); 
   }
   printf("};\n"); 
   printf("\n"); 
 
-  printf("const double schro_tables_wavelet_gain[8][2] = {\n");
-  for(filter=0;filter<8;filter++){
+  printf("const double schro_tables_wavelet_gain[SCHRO_N_WAVELETS][2] = {\n");
+  for(filter=0;filter<SCHRO_N_WAVELETS;filter++){
     double sum1 = 0;
     double sum2 = 0;
     for(j=0;j<N/2;j++){
@@ -203,8 +184,8 @@ sum2 *= 4;
   printf("\n"); 
 
   printf("#if 0\n");
-  printf("const int schro_tables_lowdelay_quants[8][4][9] = {\n");
-  for(filter=0;filter<8;filter++){
+  printf("const int schro_tables_lowdelay_quants[SCHRO_N_WAVELETS][4][9] = {\n");
+  for(filter=0;filter<SCHRO_N_WAVELETS;filter++){
     printf("  { /* wavelet %d */\n", filter);
     for(i=1;i<=4;i++){
       double alpha, beta;

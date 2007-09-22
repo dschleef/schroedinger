@@ -5,8 +5,8 @@ noinst_PROGRAMS = \
 	unpack_tables \
 	wavelet_tables
 
-AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS)
-LDADD = $(SCHRO_LIBS)
+AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS) -I..
+LDADD = $(SCHRO_LIBS) ../libschrotest.la
 
 lowdelay_tables_SOURCES = lowdelay_tables.c
 

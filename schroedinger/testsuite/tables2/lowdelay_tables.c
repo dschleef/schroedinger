@@ -13,10 +13,12 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "common.h"
+
 int16_t tmp[2000];
 int16_t tmp2[2000];
 
-int filtershift[] = { 1, 1, 1, 0, 1, 2, 0, 1 };
+int filtershift[] = { 1, 1, 1, 0, 1, 0, 1 };
 
 void synth(int16_t *a, int filter, int n);
 void split (int16_t *a, int filter, int n);
@@ -29,33 +31,6 @@ void dump_cmp (int16_t *a, int16_t *b, int n);
 
 #define SHIFT 8
 #define N (1<<SHIFT)
-
-double sgn(double x)
-{
-  if (x<0) return -1;
-  if (x>0) return 1;
-  return 0;
-}
-
-double
-random_std (void)
-{
-  double x;
-  double y;
-
-  while (1) {
-    x = -5.0 + random () * (1.0/RAND_MAX) * 10;
-    y = random () * (1.0/RAND_MAX);
-
-    if (y < exp(-x*x*0.5)) return x;
-  }
-}
-
-double
-random_triangle (void)
-{
-  return random () * (1.0/RAND_MAX) - random () * (1.0/RAND_MAX);
-}
 
 
 double
