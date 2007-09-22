@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
 
 unsigned int
 get_quant (int i)
@@ -17,6 +18,7 @@ get_quant (int i)
     case 3:
       return (440253 * base + 32722) / 65444;
   }
+  return 0;
 }
 
 unsigned int

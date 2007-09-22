@@ -126,6 +126,7 @@ testsuite/coder/Makefile
 testsuite/installation/Makefile
 testsuite/prototype/Makefile
 testsuite/streams/Makefile
+testsuite/tables2/Makefile
 tools/Makefile
 schroedinger-uninstalled.pc
 schroedinger.pc

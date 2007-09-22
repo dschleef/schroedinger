@@ -1,6 +1,12 @@
 2007-09-21  David Schleef  <ds@schleef.org>
 
 	* configure.ac:
+	* testsuite/tables2/quant_tables.c:
+	  Moving stuff into tables2: fix compile problems.
+
+2007-09-21  David Schleef  <ds@schleef.org>
+
+	* configure.ac:
 	* testsuite/Makefile.am:
 	* testsuite/tables.c:
 	* testsuite/tables2:
