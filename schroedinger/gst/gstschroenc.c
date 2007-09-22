@@ -93,6 +93,7 @@ enum
 {
   ARG_0,
   ARG_ENGINE,
+  ARG_QUANT_ENGINE,
   ARG_REF_DISTANCE,
   ARG_TRANSFORM_DEPTH,
   ARG_INTRA_WAVELET,
@@ -157,8 +158,8 @@ gst_schro_enc_class_init (GstSchroEncClass * klass)
   GObjectClass *gobject_class;
   GstElementClass *gstelement_class;
   static const char *arg_names[] = {
-    "engine", "ref_distance", "transform_depth", "intra_wavelet",
-    "inter_wavelet", "lambda", "psnr", "bitrate" };
+    "engine", "quant_engine", "ref_distance", "transform_depth",
+    "intra_wavelet", "inter_wavelet", "lambda", "psnr", "bitrate" };
   int i;
   SchroEncoder *enc;
 
@@ -296,6 +297,7 @@ gst_schro_enc_set_property (GObject * object, guint prop_id,
   GST_DEBUG ("gst_schro_enc_set_property");
   switch (prop_id) {
     case ARG_ENGINE:
+    case ARG_QUANT_ENGINE:
     case ARG_REF_DISTANCE:
     case ARG_TRANSFORM_DEPTH:
     case ARG_INTRA_WAVELET:
@@ -322,6 +324,7 @@ gst_schro_enc_get_property (GObject * object, guint prop_id, GValue * value,
 
   switch (prop_id) {
     case ARG_ENGINE:
+    case ARG_QUANT_ENGINE:
     case ARG_REF_DISTANCE:
     case ARG_TRANSFORM_DEPTH:
     case ARG_INTRA_WAVELET:

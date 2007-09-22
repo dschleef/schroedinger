@@ -51,12 +51,13 @@ schro_encoder_new (void)
   encoder->mid2_ref = -1;
 
   encoder->prefs[SCHRO_PREF_ENGINE] = 0;
+  encoder->prefs[SCHRO_PREF_QUANT_ENGINE] = 0;
   encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
   encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_5_3;
   encoder->prefs[SCHRO_PREF_LAMBDA] = 50;
-  encoder->prefs[SCHRO_PREF_PSNR] = 30;
+  encoder->prefs[SCHRO_PREF_PSNR] = 20;
   encoder->prefs[SCHRO_PREF_BITRATE] = 13824000;
 
   schro_params_set_video_format (&encoder->video_format,
@@ -565,6 +566,7 @@ schro_encoder_engine_init (SchroEncoder *encoder)
   encoder->engine = encoder->prefs[SCHRO_PREF_ENGINE];
   encoder->ref_distance = encoder->prefs[SCHRO_PREF_REF_DISTANCE];
 
+  encoder->quantiser_engine = encoder->prefs[SCHRO_PREF_QUANT_ENGINE];
 }
 
 void
@@ -2248,6 +2250,7 @@ schro_encoder_reference_get (SchroEncoder *encoder,
 
 static const int pref_range[][2] = {
   { 0, 7 }, /* engine */
+  { 0, 4 }, /* quant engine */
   { 2, 20 }, /* ref distance */
   { 1, SCHRO_MAX_ENCODER_TRANSFORM_DEPTH }, /* transform depth */
   { 0, 7 }, /* intra wavelet */

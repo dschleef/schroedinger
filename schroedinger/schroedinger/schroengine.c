@@ -74,10 +74,6 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
   SchroEncoderFrame *frame;
   int i;
 
-  //encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_PERCEPTUAL;
-  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_SIMPLE;
-  //encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
-
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
 
@@ -142,8 +138,6 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
   SchroParams *params;
   SchroEncoderFrame *frame;
   int i;
-
-  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_PERCEPTUAL;
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     int is_ref;
@@ -252,8 +246,6 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
   SchroParams *params;
   SchroEncoderFrame *frame;
   int i;
-
-  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_PERCEPTUAL;
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     int is_intra;
@@ -432,8 +424,6 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
 
   SCHRO_DEBUG("engine iteration");
 
-  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_PERCEPTUAL;
-
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
     SCHRO_DEBUG("analyse i=%d picture=%d state=%d busy=%d", i, frame->frame_number, frame->state, frame->busy);
@@ -553,71 +543,67 @@ static struct {
   int type;
   int depth;
 } test_wavelet_types[] = {
-  //{ SCHRO_WAVELET_DESL_9_3, 1 },
+  /* These are the main wavelet/levels that get used */
   { SCHRO_WAVELET_DESL_9_3, 2 },
   { SCHRO_WAVELET_DESL_9_3, 3 },
   { SCHRO_WAVELET_DESL_9_3, 4 },
-#if 0
-  { SCHRO_WAVELET_DESL_9_3, 5 },
-  { SCHRO_WAVELET_DESL_9_3, 6 },
-#endif
-  //{ SCHRO_WAVELET_5_3, 1 },
   { SCHRO_WAVELET_5_3, 2 },
   { SCHRO_WAVELET_5_3, 3 },
   { SCHRO_WAVELET_5_3, 4 },
-#if 0
-  { SCHRO_WAVELET_5_3, 5 },
-  { SCHRO_WAVELET_5_3, 6 },
-#endif
-  //{ SCHRO_WAVELET_13_5, 1 },
   { SCHRO_WAVELET_13_5, 2 },
   { SCHRO_WAVELET_13_5, 3 },
   { SCHRO_WAVELET_13_5, 4 },
-#if 0
-  { SCHRO_WAVELET_13_5, 5 },
-  { SCHRO_WAVELET_13_5, 6 },
-#endif
-  //{ SCHRO_WAVELET_HAAR_0, 1 },
   { SCHRO_WAVELET_HAAR_0, 2 },
   { SCHRO_WAVELET_HAAR_0, 3 },
   { SCHRO_WAVELET_HAAR_0, 4 },
-#if 0
-  { SCHRO_WAVELET_HAAR_0, 5 },
-  { SCHRO_WAVELET_HAAR_0, 6 },
-#endif
-#if SCHRO_MAX_TRANSFORM_DEPTH >= 7
-  { SCHRO_WAVELET_HAAR_0, 7 },
-#endif
-  //{ SCHRO_WAVELET_HAAR_1, 1 },
-  //{ SCHRO_WAVELET_HAAR_1, 2 },
-  //{ SCHRO_WAVELET_HAAR_1, 3 },
-  //{ SCHRO_WAVELET_HAAR_1, 4 },
-#if 0
-  { SCHRO_WAVELET_HAAR_1, 5 },
-  { SCHRO_WAVELET_HAAR_1, 6 },
-#endif
-#if SCHRO_MAX_TRANSFORM_DEPTH >= 7
-  { SCHRO_WAVELET_HAAR_1, 7 },
-#endif
-  //{ SCHRO_WAVELET_HAAR_2, 1 },
+  { SCHRO_WAVELET_HAAR_1, 2 },
+  { SCHRO_WAVELET_HAAR_1, 3 },
+  { SCHRO_WAVELET_HAAR_1, 4 },
   { SCHRO_WAVELET_HAAR_2, 2 },
+  { SCHRO_WAVELET_FIDELITY, 2 },
+  { SCHRO_WAVELET_FIDELITY, 3 },
+  { SCHRO_WAVELET_DAUB_9_7, 2 },
+  { SCHRO_WAVELET_DAUB_9_7, 3 },
+
+  /* 1-level transforms look crappy */
+  { SCHRO_WAVELET_DESL_9_3, 1 },
+  { SCHRO_WAVELET_5_3, 1 },
+  { SCHRO_WAVELET_13_5, 1 },
+  { SCHRO_WAVELET_HAAR_0, 1 },
+  { SCHRO_WAVELET_HAAR_1, 1 },
+  { SCHRO_WAVELET_HAAR_2, 1 },
+  { SCHRO_WAVELET_FIDELITY, 1 },
+  { SCHRO_WAVELET_DAUB_9_7, 1 },
+
 #ifdef SCHRO_HAVE_DEEP_WAVELETS
   { SCHRO_WAVELET_HAAR_2, 3 },
   { SCHRO_WAVELET_HAAR_2, 4 },
+  { SCHRO_WAVELET_FIDELITY, 4 },
+  { SCHRO_WAVELET_DAUB_9_7, 4 }
+#endif
+
+#ifdef USE_TRANSFORM_LEVEL_5
+  /* 5-level transforms don't decrease bitrate */
+  { SCHRO_WAVELET_DESL_9_3, 5 },
+  { SCHRO_WAVELET_5_3, 5 },
+  { SCHRO_WAVELET_13_5, 5 },
+  { SCHRO_WAVELET_HAAR_0, 5 },
+  { SCHRO_WAVELET_HAAR_1, 5 },
+#ifdef SCHRO_HAVE_DEEP_WAVELETS
   { SCHRO_WAVELET_HAAR_2, 5 },
+#endif
+#endif
+
+#ifdef USE_TRANSFORM_LEVEL_6
+  /* 6-level transforms don't decrease bitrate */
+  { SCHRO_WAVELET_DESL_9_3, 6 },
+  { SCHRO_WAVELET_5_3, 6 },
+  { SCHRO_WAVELET_13_5, 6 },
+  { SCHRO_WAVELET_HAAR_0, 6 },
+  { SCHRO_WAVELET_HAAR_1, 6 },
+#ifdef SCHRO_HAVE_DEEP_WAVELETS
   { SCHRO_WAVELET_HAAR_2, 6 },
 #endif
-  //{ SCHRO_WAVELET_FIDELITY, 1 },
-  { SCHRO_WAVELET_FIDELITY, 2 },
-  { SCHRO_WAVELET_FIDELITY, 3 },
-#ifdef SCHRO_HAVE_DEEP_WAVELETS
-  { SCHRO_WAVELET_FIDELITY, 4 },
-#endif
-  //{ SCHRO_WAVELET_DAUB_9_7, 1 },
-  { SCHRO_WAVELET_DAUB_9_7, 2 },
-  { SCHRO_WAVELET_DAUB_9_7, 3 },
-#ifdef SCHRO_HAVE_DEEP_WAVELETS
-  { SCHRO_WAVELET_DAUB_9_7, 4 }
 #endif
 };
 
@@ -629,7 +615,6 @@ schro_encoder_engine_test_intra (SchroEncoder *encoder)
   int i;
   int j;
 
-  //encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_PERCEPTUAL;
   encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_SIMPLE;
 
   for(i=0;i<encoder->frame_queue->n;i++) {
@@ -828,7 +813,7 @@ schro_encoder_engine_backtest (SchroEncoder *encoder)
   int j;
   int comp;
 
-  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_PERCEPTUAL;
+  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_SIMPLE;
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     int is_ref;
@@ -982,8 +967,7 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
   int denom;
   int bytes_per_picture;
 
-  //encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
-  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_SIMPLE;
+  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;

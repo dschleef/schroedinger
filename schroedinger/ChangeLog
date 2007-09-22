@@ -1,5 +1,16 @@
 2007-09-21  David Schleef  <ds@schleef.org>
 
+	* gst/gstschroenc.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroengine.h:
+	* schroedinger/schrohistogram.c:
+	* schroedinger/schroquantiser.c:
+	  Add new pref for quantiser engine and use it everywhere.
+
+2007-09-21  David Schleef  <ds@schleef.org>
+
 	* testsuite/Makefile.am:
 	* testsuite/common.c:
 	* testsuite/common.h:

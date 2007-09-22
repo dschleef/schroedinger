@@ -162,5 +162,38 @@ schro_histogram_scale (SchroHistogram *hist, int scale)
   hist->n*=scale;
 }
 
+static double
+pow2 (int i, void *priv)
+{
+  return i*i;
+}
+
+double
+schro_histogram_estimate_noise_level (SchroHistogram *hist, int volume)
+{
+  static SchroHistogramTable table;
+  static int table_inited;
+  int i;
+  int j;
+  int n;
+  double sigma;
+
+  if (!table_inited) {
+    schro_histogram_table_generate (&table, pow2, NULL);
+    table_inited = TRUE;
+  }
+
+  sigma = sqrt(schro_histogram_apply_table (hist, &table) / volume);
+  //SCHRO_ERROR("sigma %g", sigma);
+  for(i=0;i<10;i++) {
+    j = ceil (sigma*2.0);
+    n = schro_histogram_get_range (hist, 0, j);
+    sigma = (1/0.95) *
+      sqrt (schro_histogram_apply_table_range (hist, &table, 0, j) / n);
+    //SCHRO_ERROR("sigma %g (%d)", sigma, j);
+  }
+
+  return sigma;
+}
 
 

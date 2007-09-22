@@ -10,6 +10,7 @@
 #include <schroedinger/schroasync.h>
 #include <schroedinger/schroqueue.h>
 #include <schroedinger/schromotion.h>
+#include <schroedinger/schrohistogram.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -23,6 +24,7 @@ typedef struct _SchroPredictionList SchroPredictionList;
 
 typedef enum {
   SCHRO_PREF_ENGINE,
+  SCHRO_PREF_QUANT_ENGINE,
   SCHRO_PREF_REF_DISTANCE,
   SCHRO_PREF_TRANSFORM_DEPTH,
   SCHRO_PREF_INTRA_WAVELET,
@@ -131,6 +133,8 @@ struct _SchroEncoderFrame {
   SchroMotionField *motion_fields[32];
 
   SchroPictureNumber reference_frame_number[2];
+
+  SchroHistogram subband_hists[3][SCHRO_MAX_SUBBANDS];
 };
 
 struct _SchroEncoder {
@@ -303,7 +307,7 @@ SchroEncoderFrame * schro_encoder_frame_new (SchroEncoder *encoder);
 void schro_encoder_frame_ref (SchroEncoderFrame *frame);
 void schro_encoder_frame_unref (SchroEncoderFrame *frame);
 
-void schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
+int schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
     int index);
 void schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame);
 
