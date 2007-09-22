@@ -2,6 +2,21 @@
 
 	* configure.ac:
 	* testsuite/Makefile.am:
+	* testsuite/tables.c:
+	* testsuite/tables2:
+	* testsuite/tables2/Makefile.am:
+	* testsuite/tables2/lowdelay_tables.c:
+	* testsuite/tables2/quant_tables.c:
+	* testsuite/tables2/unpack_tables.c:
+	* testsuite/tables2/wavelet_tables.c:
+	* testsuite/unpack_tables.c:
+	* testsuite/wavelet_tables.c:
+	  Move programs that create tables into separate directory.
+
+2007-09-21  David Schleef  <ds@schleef.org>
+
+	* configure.ac:
+	* testsuite/Makefile.am:
 	* testsuite/streams:
 	* testsuite/streams/Makefile.am:
 	* testsuite/streams/make_vts_streams:

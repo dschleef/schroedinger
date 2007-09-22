@@ -1,19 +1,19 @@
 
-SUBDIRS = check perf coder installation prototype streams
+SUBDIRS = check perf coder installation prototype streams tables2
 
 noinst_PROGRAMS = arith arith_encode bits bits2 \
-	 encode wavelet tables wavelet_2d \
+	 encode wavelet wavelet_2d \
 	 obmc phasecorrelation motion \
 	 quant decode \
 	 global_motion upsample \
 	 motion2 sort filter ssim gaussian fft \
 	 wavelet_gain wavelet_noise_gain \
-	 wavelet_gain_curve wavelet_tables \
+	 wavelet_gain_curve \
 	 perceptual_weight perceptual_curves \
 	 struct_offsets wavelet_noise_2d \
-	 bits3 unpack unpack_tables
+	 bits3 unpack
 
-TESTS = arith bits bits2 bits3 encode wavelet tables wavelet_2d unpack
+TESTS = arith bits bits2 bits3 encode wavelet wavelet_2d unpack
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS)
 LDADD = $(SCHRO_LIBS)
@@ -70,10 +70,6 @@ wavelet_gain_curve_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 wavelet_gain_curve_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_gain_curve_SOURCES = wavelet_gain_curve.c
 
-wavelet_tables_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-wavelet_tables_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
-wavelet_tables_SOURCES = wavelet_tables.c
-
 #wavelet2_CFLAGS = $(SCHRO_CFLAGS)
 #wavelet2_LDADD = $(SCHRO_LIBS)
 #wavelet2_SOURCES = wavelet2.c
@@ -85,10 +81,6 @@ wavelet_2d_SOURCES = wavelet_2d.c
 wavelet_noise_2d_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 wavelet_noise_2d_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 wavelet_noise_2d_SOURCES = wavelet_noise_2d.c
-
-tables_CFLAGS = 
-tables_LDADD = -lm
-tables_SOURCES = tables.c
 
 obmc_CFLAGS = $(SCHRO_CFLAGS)
 obmc_LDADD = $(SCHRO_LIBS)
