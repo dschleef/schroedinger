@@ -703,6 +703,9 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
 
   schro_bits_flush (frame->bits);
 
+  SCHRO_INFO("PICTURE_EST: %d %d %d", frame->frame_number,
+      frame->estimated_entropy, schro_bits_get_offset (frame->bits)*8);
+
   subbuffer = schro_buffer_new_subbuffer (frame->output_buffer, 0,
       schro_bits_get_offset (frame->bits));
   schro_buffer_unref (frame->output_buffer);

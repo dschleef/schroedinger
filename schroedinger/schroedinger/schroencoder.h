@@ -307,9 +307,8 @@ SchroEncoderFrame * schro_encoder_frame_new (SchroEncoder *encoder);
 void schro_encoder_frame_ref (SchroEncoderFrame *frame);
 void schro_encoder_frame_unref (SchroEncoderFrame *frame);
 
-int schro_encoder_estimate_subband (SchroEncoderFrame *frame, int component,
-    int index);
 void schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame);
+void schro_encoder_estimate_entropy (SchroEncoderFrame *frame);
 
 
 SCHRO_END_DECLS

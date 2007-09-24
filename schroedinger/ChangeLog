@@ -1,3 +1,13 @@
+2007-09-23  David Schleef  <ds@schleef.org>
+
+	* TODO: update
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.h:
+	* schroedinger/schroquantiser.c:
+	  Rename perceptual quantiser engine to rate distortion.
+
 2007-09-22  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrotables.h:

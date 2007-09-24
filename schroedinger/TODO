@@ -7,13 +7,7 @@
 
   add bit peeling
 
-  downsampling filter from Dirac
-
   default block sizes are wrong for some video formats
-
-  Dirac Pro
-
-  pre-filtering for encoder
 
 
 schroarith.c:
@@ -36,8 +30,6 @@ schrodecoder.c:
 
   add seeking
 
-  determine a code ordering strategy
-
 schroencoder.c:
 
   don't use metric in SchroMotionVector
@@ -45,10 +37,6 @@ schroencoder.c:
 schrometric.c:
 
   handle non-8x8 blocks
-
-schromotion.c:
-
-  remove #if 0 code
 
 schroparams.c:
 

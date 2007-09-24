@@ -631,7 +631,7 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
   SCHRO_DEBUG("level = %d", decoder->level);
 
   if (decoder->major_version != 0 || decoder->minor_version != 109) {
-    SCHRO_ERROR("Expecting version number 0.108, got %d.%d",
+    SCHRO_ERROR("Expecting version number 0.109, got %d.%d",
         decoder->major_version, decoder->minor_version);
     //SCHRO_MILD_ASSERT(0);
   }
