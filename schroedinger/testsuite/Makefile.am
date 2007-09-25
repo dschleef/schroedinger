@@ -1,9 +1,9 @@
 
-SUBDIRS = . check perf coder installation prototype streams tables2
+SUBDIRS = . check perf coder installation prototype streams tables2 dirac
 
 noinst_LTLIBRARIES = libschrotest.la
 
-noinst_PROGRAMS = arith arith_encode bits bits2 \
+noinst_PROGRAMS = arith arith_encode \
 	 encode wavelet wavelet_2d \
 	 obmc phasecorrelation motion \
 	 quant decode \
@@ -13,9 +13,13 @@ noinst_PROGRAMS = arith arith_encode bits bits2 \
 	 wavelet_gain_curve \
 	 perceptual_weight perceptual_curves \
 	 struct_offsets wavelet_noise_2d \
-	 bits3 unpack
+	 unpack
 
-TESTS = arith bits bits2 bits3 encode wavelet wavelet_2d unpack
+if BUILD_BROKEN_TESTS
+noinst_PROGRAMS += bits bits2 bits3
+endif
+
+TESTS = arith encode wavelet wavelet_2d unpack
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS)
 LDADD = $(SCHRO_LIBS) libschrotest.la

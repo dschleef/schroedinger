@@ -80,16 +80,6 @@ schro_bits_set_length (SchroBits *bits, int n_bits)
 }
 
 void
-schro_bits_decode_init (SchroBits *bits, SchroBuffer *buffer)
-{
-  bits->buffer = buffer;
-  bits->n = 0;
-  bits->shift = -1;
-  bits->type = SCHRO_BITS_DECODE;
-  bits->n_bits = buffer->length * 8;
-}
-
-void
 schro_bits_encode_init (SchroBits *bits, SchroBuffer *buffer)
 {
   bits->buffer = buffer;
@@ -132,24 +122,6 @@ schro_bits_sync (SchroBits *bits)
       schro_bits_shift_out (bits);
     }
   }
-}
-
-void
-schro_bits_dumpbits (SchroBits *bits)
-{
-  char s[101];
-  SchroBits mybits;
-  int i;
-
-  oil_memcpy (&mybits, bits, sizeof(*bits));
-
-  for(i=0;i<100;i++){
-    int bit = schro_bits_decode_bit (&mybits);
-    s[i] = bit ? '1' : '0';
-  }
-  s[100] = 0;
-
-  SCHRO_DEBUG ("dump bits %s", s);
 }
 
 void
@@ -261,62 +233,6 @@ schro_bits_encode_sint (SchroBits *bits, int value)
   if (value) {
     schro_bits_encode_bit (bits, sign);
   }
-}
-
-int
-schro_bits_decode_bit (SchroBits *bits)
-{
-  int value;
-
-  if (bits->shift < 0) {
-    schro_bits_shift_in (bits);
-  }
-  value = (bits->value >> bits->shift) & 1;
-  bits->shift--;
-  return value;
-}
-
-int
-schro_bits_decode_bits (SchroBits *bits, int n)
-{
-  int value = 0;
-  int i;
-
-  for(i=0;i<n;i++){
-    value = (value << 1) | schro_bits_decode_bit (bits);
-  }
-
-  return value;
-}
-
-int schro_bits_decode_uint (SchroBits *bits)
-{
-  int count;
-  int value;
-  
-  count = 0;
-  value = 0;
-  while(!schro_bits_decode_bit (bits)) {
-    count++;
-    value <<= 1;
-    value |= schro_bits_decode_bit (bits);
-  }
-
-  return (1<<count) - 1 + value;
-}
-
-int schro_bits_decode_sint (SchroBits *bits)
-{
-  int value;
-
-  value = schro_bits_decode_uint (bits);
-  if (value) {
-    if (schro_bits_decode_bit (bits)) {
-      value = -value;
-    }
-  }
-
-  return value;
 }
 
 int

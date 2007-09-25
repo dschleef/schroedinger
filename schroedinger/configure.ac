@@ -109,6 +109,8 @@ AC_DEFINE(GST_PACKAGE_ORIGIN, "unknown", [Package origin in GStreamer plugin])
 AM_PATH_CHECK(0.9.2, HAVE_CHECK=yes, HAVE_CHECK=no)
 AM_CONDITIONAL(HAVE_CHECK, test "x$HAVE_CHECK" = "xyes")
 
+AM_CONDITIONAL(BUILD_BROKEN_TESTS, false)
+
 AS_HOST_DEFINES()
 	
 pkgconfigdir="\$(libdir)/pkgconfig"
@@ -123,6 +125,7 @@ testsuite/Makefile
 testsuite/check/Makefile
 testsuite/perf/Makefile
 testsuite/coder/Makefile
+testsuite/dirac/Makefile
 testsuite/installation/Makefile
 testsuite/prototype/Makefile
 testsuite/streams/Makefile

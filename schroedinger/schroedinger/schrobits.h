@@ -30,7 +30,6 @@ struct _SchroBits {
 SchroBits * schro_bits_new (void);
 void schro_bits_free (SchroBits *bits);
 
-void schro_bits_decode_init (SchroBits *bits, SchroBuffer *buffer);
 void schro_bits_encode_init (SchroBits *bits, SchroBuffer *buffer);
 void schro_bits_copy (SchroBits *dest, SchroBits *src);
 void schro_bits_set_length (SchroBits *bits, int n_bits);
@@ -49,11 +48,6 @@ void schro_bits_encode_bit (SchroBits *bits, int value);
 void schro_bits_encode_bits (SchroBits *bits, int n, unsigned int value);
 void schro_bits_encode_uint (SchroBits *bits, int value);
 void schro_bits_encode_sint (SchroBits *bits, int value);
-
-int schro_bits_decode_bit (SchroBits *bits);
-int schro_bits_decode_bits (SchroBits *bits, int n);
-int schro_bits_decode_uint (SchroBits *bits);
-int schro_bits_decode_sint (SchroBits *bits);
 
 int schro_bits_estimate_uint (int value);
 int schro_bits_estimate_sint (int value);

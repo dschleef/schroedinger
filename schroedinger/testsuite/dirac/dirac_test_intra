@@ -1,0 +1,78 @@
+#!/bin/bash
+
+dirac_srcdir=~/dirac/compress/encoder
+
+if [ ! -x $dirac_srcdir/dirac_encoder ]
+then
+  echo Dirac encoder missing
+  exit 1
+fi
+
+if [ ! -x $dirac_srcdir/dirac_encoder ]
+then
+  echo gst-launch missing
+  exit 1
+fi
+
+gst-inspect schrodec &>/dev/null || \
+  (echo GStreamer element schrodec missing;exit 1)
+gst-inspect pngenc &>/dev/null || \
+  (echo GStreamer element pngenc missing;exit 1)
+
+
+file=pr0n
+
+function encode
+{
+  ${dirac_srcdir}/dirac_encoder -SD576 -qf 7 -num_L1 0 \
+    -cformat 2 \
+    -wlt_depth $2 -iwlt_filter $1 \
+    -verbose \
+    $file.yuv ${file}.drc || exit 1
+
+  test -f ${file}.drc || exit 1
+
+  gst-launch-0.10 \
+    filesrc location=${file}.drc ! \
+    schrodec ! \
+    ffmpegcolorspace !  \
+    pngenc ! \
+    filesink location=${file}-$1-$2.png || exit 1
+}
+
+encode DD9_5 1
+encode DD9_5 2
+encode DD9_5 3
+encode DD9_5 4
+
+encode LEGALL5_3 1
+encode LEGALL5_3 2
+encode LEGALL5_3 3
+encode LEGALL5_3 4
+
+encode DD13_5 1
+encode DD13_5 2
+encode DD13_5 3
+encode DD13_5 4
+
+encode HAAR0 1
+encode HAAR0 2
+encode HAAR0 3
+encode HAAR0 4
+
+encode HAAR1 1
+encode HAAR1 2
+encode HAAR1 3
+encode HAAR1 4
+
+# not handled by Dirac yet
+#encode FIDELITY 1
+#encode FIDELITY 2
+#encode FIDELITY 3
+#encode FIDELITY 4
+
+encode DAUB9_7 1
+encode DAUB9_7 2
+encode DAUB9_7 3
+#encode DAUB9_7 4
+

@@ -1,0 +1,41 @@
+#!/bin/sh
+
+dirac_srcdir=~/dirac/compress/encoder
+
+if [ ! -x $dirac_srcdir/dirac_encoder ]
+then
+  echo Dirac encoder missing
+  exit 1
+fi
+
+width=352
+height=240
+format=I420
+filter=DD9_5
+depth=3
+file=output
+testname=1
+
+gst-launch-0.10 \
+  videotestsrc num-buffers=300 ! \
+  video/x-raw-yuv,format=\(fourcc\)"$format",width=$width,height=$height,framerate=30/1 ! \
+  timeoverlay ! \
+  cairotextoverlay text=$testname halign=left deltay=-100 ! \
+  filesink location=vts.yuv
+
+${dirac_srcdir}/dirac_encoder -SD576 -qf 7 -num_L1 0 \
+  -fr 30/1 \
+  -width $width -height $height \
+  -cformat 2 \
+  -verbose \
+  vts.yuv vts.intra.drc || exit 1
+
+${dirac_srcdir}/dirac_encoder -SD576 -qf 7 \
+  -fr 30/1 \
+  -width $width -height $height \
+  -cformat 2 \
+  -verbose \
+  vts.yuv vts.default.drc || exit 1
+
+
+
