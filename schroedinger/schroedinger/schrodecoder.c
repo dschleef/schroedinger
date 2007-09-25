@@ -27,6 +27,7 @@ struct _SchroDecoderSubbandContext {
   int quant_index;
   int subband_length;
   SchroArith *arith;
+  SchroUnpack unpack;
   int vert_codeblocks;
   int horiz_codeblocks;
   int have_zero_flags;
@@ -1295,6 +1296,17 @@ codeblock_line_decode_generic (SchroDecoderSubbandContext *ctx,
   }
 }
 
+static int
+dequantise (int q, int quant_factor, int quant_offset)
+{
+  if (q == 0) return 0;
+  if (q < 0) {
+    return -((-q * quant_factor + quant_offset + 2)>>2);
+  } else {
+    return (q * quant_factor + quant_offset + 2)>>2;
+  }
+}
+
 static void
 codeblock_line_decode_noarith (SchroDecoderSubbandContext *ctx,
     int16_t *line, SchroDecoder *decoder)
@@ -1302,18 +1314,8 @@ codeblock_line_decode_noarith (SchroDecoderSubbandContext *ctx,
   int i;
 
   for(i=ctx->xmin;i<ctx->xmax;i++){
-    int v;
-
-    v = schro_unpack_decode_uint (&decoder->unpack);
-    if (v) {
-      v = (ctx->quant_offset + ctx->quant_factor * v + 2)>>2;
-      if (schro_unpack_decode_bit (&decoder->unpack)) {
-        v = -v;
-      }
-      line[i] = v;
-    } else {
-      line[i] = 0;
-    }
+    line[i] = dequantise (schro_unpack_decode_sint (&ctx->unpack),
+        ctx->quant_factor, ctx->quant_offset);
   }
 }
 
@@ -1574,7 +1576,7 @@ schro_decoder_decode_codeblock (SchroDecoder *decoder,
 
     /* zero codeblock */
     if (SCHRO_PARSE_CODE_IS_NOARITH(decoder->parse_code)) {
-      bit = schro_unpack_decode_bit (&decoder->unpack);
+      bit = schro_unpack_decode_bit (&ctx->unpack);
     } else {
       bit = _schro_arith_decode_bit (ctx->arith, SCHRO_CTX_ZERO_CODEBLOCK);
     }
@@ -1587,7 +1589,7 @@ schro_decoder_decode_codeblock (SchroDecoder *decoder,
 
   if (ctx->have_quant_offset) {
     if (SCHRO_PARSE_CODE_IS_NOARITH(decoder->parse_code)) {
-      ctx->quant_index += schro_unpack_decode_sint (&decoder->unpack);
+      ctx->quant_index += schro_unpack_decode_sint (&ctx->unpack);
     } else {
       ctx->quant_index += _schro_arith_decode_sint (ctx->arith,
           SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
@@ -1642,7 +1644,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder,
 {
   SchroParams *params = &decoder->params;
   int x,y;
-  SchroBuffer *buffer;
+  SchroBuffer *buffer = NULL;
 
   schro_subband_get (decoder->frame, ctx->component, ctx->position,
       params, &ctx->data, &ctx->stride, &ctx->width, &ctx->height);
@@ -1676,16 +1678,16 @@ schro_decoder_decode_subband (SchroDecoder *decoder,
   SCHRO_MILD_ASSERT(ctx->quant_index <= 60);
 
   schro_unpack_byte_sync (&decoder->unpack);
-
-  buffer = schro_buffer_new_with_data (decoder->unpack.data,
-      ctx->subband_length);
-  buffer = schro_buffer_new_subbuffer (decoder->input_buffer,
-      schro_unpack_get_bits_read (&decoder->unpack)/8,
-      ctx->subband_length);
-
   if (!SCHRO_PARSE_CODE_IS_NOARITH(decoder->parse_code)) {
+    buffer = schro_buffer_new_subbuffer (decoder->input_buffer,
+        schro_unpack_get_bits_read (&decoder->unpack)/8,
+        ctx->subband_length);
+
     ctx->arith = schro_arith_new ();
     schro_arith_decode_init (ctx->arith, buffer);
+  } else {
+    schro_unpack_copy (&ctx->unpack, &decoder->unpack);
+    schro_unpack_limit_bits_remaining (&ctx->unpack, ctx->subband_length*8);
   }
 
   schro_decoder_setup_codeblocks (decoder, ctx);
@@ -1717,9 +1719,8 @@ schro_decoder_decode_subband (SchroDecoder *decoder,
 #endif
     schro_arith_free (ctx->arith);
     schro_buffer_unref (buffer);
-
-    schro_unpack_skip_bits (&decoder->unpack, ctx->subband_length*8);
   }
+  schro_unpack_skip_bits (&decoder->unpack, ctx->subband_length*8);
 
   if (ctx->position == 0 && decoder->n_refs == 0) {
     schro_decoder_subband_dc_predict (ctx->data, ctx->stride, ctx->width, ctx->height);

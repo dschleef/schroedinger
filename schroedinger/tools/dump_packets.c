@@ -150,6 +150,24 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     case SCHRO_PARSE_CODE_LD_INTRA_NON_REF:
       parse_code = "low-delay intra non-ref";
       break;
+    case SCHRO_PARSE_CODE_INTRA_REF_NOARITH:
+      parse_code = "intra ref noarith";
+      break;
+    case SCHRO_PARSE_CODE_INTRA_NON_REF_NOARITH:
+      parse_code = "intra non-ref noarith";
+      break;
+    case SCHRO_PARSE_CODE_INTER_REF_1_NOARITH:
+      parse_code = "inter ref 1 noarith";
+      break;
+    case SCHRO_PARSE_CODE_INTER_REF_2_NOARITH:
+      parse_code = "inter ref 2 noarith";
+      break;
+    case SCHRO_PARSE_CODE_INTER_NON_REF_1_NOARITH:
+      parse_code = "inter non-ref 1 noarith";
+      break;
+    case SCHRO_PARSE_CODE_INTER_NON_REF_2_NOARITH:
+      parse_code = "inter non-ref 2 noarith";
+      break;
     default:
       parse_code = "unknown";
       break;

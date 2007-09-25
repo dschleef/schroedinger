@@ -83,6 +83,7 @@ struct _SchroGlobalMotion {
 
 struct _SchroParams {
   SchroVideoFormat *video_format;
+  int is_noarith;
 
   /* transform parameters */
   int wavelet_filter_index;

@@ -39,7 +39,8 @@ typedef enum _SchroParseCode {
   SCHRO_PARSE_CODE_LD_INTRA_NON_REF = 0x88
 } SchroParseCode;
 
-#define SCHRO_PARSE_CODE_PICTURE(is_ref,n_refs,is_lowdelay) (8 | ((is_ref)<<2) | (n_refs) | ((is_lowdelay)<<7))
+#define SCHRO_PARSE_CODE_PICTURE(is_ref,n_refs,is_lowdelay,is_noarith) \
+  (8 | ((is_ref)<<2) | (n_refs) | ((is_lowdelay)<<7) | ((is_noarith)<<6))
 
 #define SCHRO_PARSE_CODE_IS_ACCESS_UNIT(x) ((x) == SCHRO_PARSE_CODE_ACCESS_UNIT)
 #define SCHRO_PARSE_CODE_IS_PICTURE(x) ((x) & 0x8)

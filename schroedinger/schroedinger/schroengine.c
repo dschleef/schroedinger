@@ -67,6 +67,26 @@ init_params (SchroEncoderFrame *frame)
   schro_params_calculate_iwt_sizes (params);
 }
 
+static void
+init_small_codeblocks (SchroParams *params)
+{
+  int i;
+  int shift;
+
+  params->nondefault_partition_flag = TRUE;
+  params->horiz_codeblocks[0] = 1;
+  params->vert_codeblocks[0] = 1;
+  for(i=1;i<params->transform_depth+1;i++){
+    shift = params->transform_depth + 1 - i;
+    /* Size of codeblock is 32.  This value was pulled out of my anus of
+     * holding. */
+    params->horiz_codeblocks[i] = params->iwt_luma_width >> (shift + 3);
+    params->vert_codeblocks[i] = params->iwt_luma_height >> (shift + 2);
+    SCHRO_DEBUG("codeblocks %d %d %d", i, params->horiz_codeblocks[i],
+        params->vert_codeblocks[i]);
+  }
+}
+
 int
 schro_encoder_engine_intra_only (SchroEncoder *encoder)
 {
@@ -99,6 +119,9 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
         /* set up params */
         params = &frame->params;
         init_params (frame);
+        if (params->is_noarith) {
+          init_small_codeblocks (params);
+        }
 
         frame->state = SCHRO_ENCODER_FRAME_STATE_PREDICT;
         frame->busy = TRUE;
@@ -674,8 +697,6 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
   SchroParams *params;
   SchroEncoderFrame *frame;
   int i;
-  int j;
-  int comp;
 
   encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOSSLESS;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_HAAR_0;
@@ -741,17 +762,14 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
         }
 
         init_params (frame);
+        if (params->is_noarith) {
+          init_small_codeblocks (params);
+        }
 
         params->xbsep_luma = 8;
         params->xblen_luma = 8;
         params->ybsep_luma = 8;
         params->yblen_luma = 8;
-
-        for(comp=0;comp<3;comp++){
-          for(j=0;j<1+3*SCHRO_MAX_TRANSFORM_DEPTH;j++){
-            frame->quant_index[comp][j] = 0;
-          }
-        }
 
         if (params->num_refs > 0) {
           frame->ref_frame0 = schro_encoder_reference_get (encoder,

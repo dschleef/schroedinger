@@ -1,3 +1,16 @@
+2007-09-24  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schroquantiser.c:
+	* tools/dump_packets.c:
+	  Implement noarith for intra frames.  Use small codeblocks to
+	  minimise the number of 0's encoded.
+
 2007-09-23  David Schleef  <ds@schleef.org>
 
 	* TODO: update

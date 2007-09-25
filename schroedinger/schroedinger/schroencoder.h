@@ -182,12 +182,13 @@ struct _SchroEncoder {
   int internal_testing;
   int calculate_psnr;
   int calculate_ssim;
+  //int noarith;
 
   double pixels_per_degree_horiz;
   double pixels_per_degree_vert;
   double pixels_per_degree_diag;
 
-  double subband_weights[8][SCHRO_MAX_TRANSFORM_DEPTH][3*SCHRO_MAX_TRANSFORM_DEPTH+1];
+  double subband_weights[SCHRO_N_WAVELETS][SCHRO_MAX_TRANSFORM_DEPTH][3*SCHRO_MAX_TRANSFORM_DEPTH+1];
 
   /* statistics */
 
@@ -278,6 +279,7 @@ int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
 
 void schro_encoder_init_subbands (SchroEncoderFrame *frame);
 void schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index);
+void schro_encoder_encode_subband_noarith (SchroEncoderFrame *frame, int component, int index);
 
 void schro_encoder_analyse_picture (SchroEncoderFrame *frame);
 void schro_encoder_predict_picture (SchroEncoderFrame *frame);

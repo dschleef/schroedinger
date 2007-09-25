@@ -139,8 +139,7 @@ schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
     }
   }
 
-  for(wavelet=0;wavelet<8;wavelet++) {
-    //for(n_levels=1;n_levels<=SCHRO_MAX_TRANSFORM_DEPTH;n_levels++){
+  for(wavelet=0;wavelet<SCHRO_N_WAVELETS;wavelet++) {
     for(n_levels=1;n_levels<=4;n_levels++){
       const float *h_curve[SCHRO_MAX_SUBBANDS];
       const float *v_curve[SCHRO_MAX_SUBBANDS];
@@ -251,7 +250,7 @@ void
 schro_encoder_choose_quantisers (SchroEncoderFrame *frame)
 {
 
-  switch (frame->encoder->prefs[SCHRO_PREF_QUANT_ENGINE]) {
+  switch (frame->encoder->quantiser_engine) {
     case SCHRO_QUANTISER_ENGINE_SIMPLE:
       schro_encoder_choose_quantisers_simple (frame);
       break;

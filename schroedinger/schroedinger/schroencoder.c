@@ -669,7 +669,7 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
   /* encode header */
   schro_encoder_encode_parse_info (frame->bits,
       SCHRO_PARSE_CODE_PICTURE(frame->is_ref, frame->params.num_refs,
-        frame->params.is_lowdelay));
+        frame->params.is_lowdelay, frame->params.is_noarith));
   schro_encoder_encode_picture_header (frame);
 
   if (frame->params.num_refs > 0) {
@@ -1452,9 +1452,12 @@ schro_encoder_encode_transform_data (SchroEncoderFrame *frame)
 
   for(component=0;component<3;component++) {
     for (i=0;i < 1 + 3*params->transform_depth; i++) {
-      //if (i != 0) schro_bits_sync (frame->bits);
       schro_bits_sync (frame->bits);
-      schro_encoder_encode_subband (frame, component, i);
+      if (params->is_noarith) {
+        schro_encoder_encode_subband_noarith (frame, component, i);
+      } else {
+        schro_encoder_encode_subband (frame, component, i);
+      }
     }
   }
 }
@@ -1783,6 +1786,137 @@ out:
     schro_bits_append (frame->bits, arith->buffer->data, arith->offset);
   }
   schro_arith_free (arith);
+}
+
+void
+schro_encoder_encode_subband_noarith (SchroEncoderFrame *frame,
+    int component, int index)
+{
+  SchroParams *params = &frame->params;
+  SchroBits b;
+  SchroBits *bits = &b;
+  int16_t *data;
+  int16_t *parent_data;
+  int parent_stride;
+  int i,j;
+  int subband_zero_flag;
+  int stride;
+  int width;
+  int height;
+  int16_t *quant_data;
+  int x,y;
+  int horiz_codeblocks;
+  int vert_codeblocks;
+  int have_zero_flags;
+  int have_quant_offset;
+  int position;
+
+  position = schro_subband_get_position (index);
+  schro_subband_get (frame->iwt_frame, component, position,
+      params, &data, &stride, &width, &height);
+
+  if (position >= 4) {
+    int parent_width;
+    int parent_height;
+    schro_subband_get (frame->iwt_frame, component, position - 4,
+        params, &parent_data, &parent_stride, &parent_width, &parent_height);
+  } else {
+    parent_data = NULL;
+    parent_stride = 0;
+  }
+
+  quant_data = frame->quant_data;
+  subband_zero_flag = schro_encoder_quantize_subband (frame, component,
+      index, quant_data);
+
+  if (subband_zero_flag) {
+    SCHRO_DEBUG ("subband is zero");
+    schro_bits_encode_uint (frame->bits, 0);
+    return;
+  }
+
+  schro_bits_encode_init (bits, frame->subband_buffer);
+
+  if (params->spatial_partition_flag) {
+    if (index == 0) {
+      horiz_codeblocks = params->horiz_codeblocks[0];
+      vert_codeblocks = params->vert_codeblocks[0];
+    } else {
+      horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
+      vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
+    }
+  } else {
+    horiz_codeblocks = 1;
+    vert_codeblocks = 1;
+  }
+  if ((horiz_codeblocks > 1 || vert_codeblocks > 1) && index > 0) {
+    have_zero_flags = TRUE;
+  } else {
+    have_zero_flags = FALSE;
+  }
+  if (horiz_codeblocks > 1 || vert_codeblocks > 1) {
+    if (params->codeblock_mode_index == 1) {
+      have_quant_offset = TRUE;
+    } else {
+      have_quant_offset = FALSE;
+    }
+  } else {
+    have_quant_offset = FALSE;
+  }
+
+  for(y=0;y<vert_codeblocks;y++){
+    int ymin = (height*y)/vert_codeblocks;
+    int ymax = (height*(y+1))/vert_codeblocks;
+
+    for(x=0;x<horiz_codeblocks;x++){
+      int xmin = (width*x)/horiz_codeblocks;
+      int xmax = (width*(x+1))/horiz_codeblocks;
+
+  if (have_zero_flags) {
+    int zero_codeblock = 1;
+    for(j=ymin;j<ymax;j++){
+      for(i=xmin;i<xmax;i++){
+        if (quant_data[j*width + i] != 0) {
+          zero_codeblock = 0;
+          goto out;
+        }
+      }
+    }
+out:
+    schro_bits_encode_bit (bits, zero_codeblock);
+    if (zero_codeblock) {
+      continue;
+    }
+  }
+
+  if (have_quant_offset) {
+    schro_bits_encode_sint (bits, 0);
+  }
+
+  for(j=ymin;j<ymax;j++){
+    for(i=xmin;i<xmax;i++){
+      schro_bits_encode_sint (bits, quant_data[j*width + i]);
+    }
+  }
+    }
+  }
+  schro_bits_flush (bits);
+
+  SCHRO_ASSERT(schro_bits_get_offset(bits) < frame->subband_size);
+
+  SCHRO_INFO("SUBBAND_EST: %d %d %d %d", component, index,
+      frame->estimated_entropy, schro_bits_get_offset(bits));
+
+  schro_bits_encode_uint (frame->bits, schro_bits_get_offset(bits));
+  if (schro_bits_get_offset(bits) > 0) {
+    schro_bits_encode_uint (frame->bits,
+        frame->quant_index[component][index]);
+
+    schro_bits_sync (frame->bits);
+    schro_bits_append (frame->bits, bits->buffer->data,
+        schro_bits_get_offset(bits));
+  }
+
 }
 
 #if 0
