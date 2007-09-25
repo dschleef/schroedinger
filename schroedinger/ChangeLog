@@ -1,5 +1,9 @@
 2007-09-25  David Schleef  <ds@schleef.org>
 
+	* testsuite/Makefile.am: dist common.h
+
+2007-09-25  David Schleef  <ds@schleef.org>
+
 	* configure.ac:
 	* testsuite/Makefile.am:
 	  Disable a few tests.

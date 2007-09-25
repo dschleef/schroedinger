@@ -15,6 +15,8 @@ noinst_PROGRAMS = arith arith_encode \
 	 struct_offsets wavelet_noise_2d \
 	 unpack
 
+noinst_HEADERS = common.h
+
 if BUILD_BROKEN_TESTS
 noinst_PROGRAMS += bits bits2 bits3
 endif
