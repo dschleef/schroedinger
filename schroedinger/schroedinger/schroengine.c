@@ -762,6 +762,7 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
         }
 
         init_params (frame);
+params->is_noarith = TRUE;
         if (params->is_noarith) {
           init_small_codeblocks (params);
         }

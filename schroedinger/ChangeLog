@@ -1,5 +1,15 @@
 2007-09-24  David Schleef  <ds@schleef.org>
 
+	* gst/gstschroenc.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	  Add 'noarith' preference.  Add noarith support for inter
+	  frames.
+
+2007-09-24  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrobitstream.h:
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
