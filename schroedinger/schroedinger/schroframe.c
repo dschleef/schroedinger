@@ -1105,6 +1105,20 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
 }
 
 void
+downsample_one_horiz_u8 (uint8_t *dest, uint8_t *src, int n, int i)
+{
+  static const int taps[12] = { 4, -4, -8, 4, 46, 86, 86, 46, 4, -8, -4, 4 };
+  int j;
+  int x;
+
+  x = 0;
+  for(j=0;j<12;j++){
+    x += taps[j]*src[CLAMP(i*2 + j - 5, 0, n-1)];
+  }
+  dest[0] = CLAMP((x + 128) >> 8,0,255);
+}
+
+void
 notoil_downsample_horiz_u8 (uint8_t *dest, uint8_t *src, int n)
 {
   static const int taps[12] = { 4, -4, -8, 4, 46, 86, 86, 46, 4, -8, -4, 4 };
@@ -1115,10 +1129,34 @@ notoil_downsample_horiz_u8 (uint8_t *dest, uint8_t *src, int n)
   for(i=0;i<n;i++){
     x = 0;
     for(j=0;j<12;j++){
-      x += taps[j]*src[CLAMP(i*2 + j - 5, 0, n*2-1)];
+      x += taps[j]*src[i*2 + j];
     }
     dest[i] = CLAMP((x + 128) >> 8,0,255);
   }
+}
+
+void
+downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src)
+{
+  int i;
+
+  if (n_dest < 7) {
+    for(i=0;i<n_dest;i++){
+      downsample_one_horiz_u8 (dest + i, src, n_src, i);
+    }
+  } else {
+    downsample_one_horiz_u8 (dest + 0, src, n_src, 0);
+    downsample_one_horiz_u8 (dest + 1, src, n_src, 1);
+    downsample_one_horiz_u8 (dest + 2, src, n_src, 2);
+
+    notoil_downsample_horiz_u8 (dest + 3, src + 1, n_dest - 7);
+
+    downsample_one_horiz_u8 (dest + n_dest - 4, src, n_src, n_dest-4);
+    downsample_one_horiz_u8 (dest + n_dest - 3, src, n_src, n_dest-3);
+    downsample_one_horiz_u8 (dest + n_dest - 2, src, n_src, n_dest-2);
+    downsample_one_horiz_u8 (dest + n_dest - 1, src, n_src, n_dest-1);
+  }
+
 }
 
 void
@@ -1152,8 +1190,8 @@ schro_frame_component_downsample (SchroFrameComponent *dest,
   }
 
   for(i=0;i<7;i++){
-    notoil_downsample_horiz_u8 (tmplist[i+5], src->data + src->stride * i,
-        dest->width);
+    downsample_horiz_u8 (tmplist[i+5], dest->width,
+        src->data + src->stride * CLAMP(i, 0, src->height - 1), src->width);
   }
   for(i=0;i<5;i++){
     memcpy (tmplist[i], tmplist[5], dest->width);
@@ -1170,10 +1208,10 @@ schro_frame_component_downsample (SchroFrameComponent *dest,
     tmplist[10] = tmp0;
     tmplist[11] = tmp1;
 
-    notoil_downsample_horiz_u8 (tmplist[10],
-        src->data + src->stride * CLAMP(j*2+5,0,src->height-1), dest->width);
-    notoil_downsample_horiz_u8 (tmplist[11],
-        src->data + src->stride * CLAMP(j*2+6,0,src->height-1), dest->width);
+    downsample_horiz_u8 (tmplist[10], dest->width,
+        src->data + src->stride * CLAMP(j*2+5,0,src->height-1), src->width);
+    downsample_horiz_u8 (tmplist[11], dest->width,
+        src->data + src->stride * CLAMP(j*2+6,0,src->height-1), src->width);
     
     notoil_downsample_vert_u8 (dest->data + dest->stride * j, tmplist,
         dest->width);
@@ -1315,7 +1353,7 @@ int
 schro_frame_calculate_average_luma (SchroFrame *frame)
 {
   SchroFrameComponent *comp;
-  int i,j;
+  int j;
   int sum = 0;
   int n;
 
@@ -1323,25 +1361,19 @@ schro_frame_calculate_average_luma (SchroFrame *frame)
 
   switch (SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
     case SCHRO_FRAME_FORMAT_DEPTH_U8:
-      {
-        uint8_t *data;
-        data = comp->data;
-        for(j=0;j<comp->height;j++){
-          for(i=0;i<comp->width;i++){
-            sum += data[comp->stride * j + i];
-          }
-        }
+      for(j=0;j<comp->height;j++){
+        int32_t linesum;
+        oil_sum_s32_u8 (&linesum, OFFSET(comp->data, comp->stride * j),
+            comp->width);
+        sum += linesum;
       }
       break;
     case SCHRO_FRAME_FORMAT_DEPTH_S16:
-      {
-        int16_t *data;
-        for(j=0;j<comp->height;j++){
-          data = OFFSET(comp->data, comp->stride * j);
-          for(i=0;i<comp->width;i++){
-            sum += data[i];
-          }
-        }
+      for(j=0;j<comp->height;j++){
+        int32_t linesum;
+        oil_sum_s32_s16 (&linesum, OFFSET(comp->data, comp->stride * j),
+            comp->width);
+        sum += linesum;
       }
       break;
     default:

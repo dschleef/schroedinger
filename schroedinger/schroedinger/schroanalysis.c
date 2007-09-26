@@ -11,7 +11,7 @@ schro_encoder_frame_analyse (SchroEncoder *encoder, SchroEncoderFrame *frame)
 {
   int i;
 
-  SCHRO_DEBUG("downsampling frame");
+  SCHRO_DEBUG("downsampling frame %d", frame->frame_number);
 
   for(i=0;i<5;i++){
     frame->downsampled_frames[i] =

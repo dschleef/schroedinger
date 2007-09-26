@@ -123,3 +123,29 @@ void oil_add_const_rshift_u16 (uint16_t *d1, const uint16_t *s1,
   }
 }
 
+void
+oil_sum_s32_u8 (int32_t *d_1, uint8_t *src, int n)
+{
+  int i;
+  int x = 0;
+
+  for(i=0;i<n;i++){
+    x += src[i];
+  }
+
+  d_1[0] = x;
+}
+
+void
+oil_sum_s32_s16 (int32_t *d_1, int16_t *src, int n)
+{
+  int i;
+  int x = 0;
+
+  for(i=0;i<n;i++){
+    x += src[i];
+  }
+
+  d_1[0] = x;
+}
+

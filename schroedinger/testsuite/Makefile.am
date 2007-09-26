@@ -13,7 +13,7 @@ noinst_PROGRAMS = arith arith_encode \
 	 wavelet_gain_curve \
 	 perceptual_weight perceptual_curves \
 	 struct_offsets wavelet_noise_2d \
-	 unpack
+	 unpack downsample
 
 noinst_HEADERS = common.h
 
@@ -21,7 +21,7 @@ if BUILD_BROKEN_TESTS
 noinst_PROGRAMS += bits bits2 bits3
 endif
 
-TESTS = arith encode wavelet wavelet_2d unpack
+TESTS = arith encode wavelet wavelet_2d unpack downsample
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS)
 LDADD = $(SCHRO_LIBS) libschrotest.la

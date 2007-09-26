@@ -82,7 +82,7 @@ AC_ARG_ENABLE(gstreamer, AC_HELP_STRING([--disable-gstreamer],
               [disable gstreamer support (default=enabled)]))
 if test "x$enable_gstreamer" != xno
 then
-  PKG_CHECK_MODULES(GST, gstreamer-0.10 gstreamer-base-0.10 gstreamer-plugins-base-0.10,
+  PKG_CHECK_MODULES(GST, gstreamer-0.10 >= 0.10.12 gstreamer-base-0.10 gstreamer-plugins-base-0.10,
       HAVE_GST=yes, HAVE_GST=no)
 else
   HAVE_GST=no

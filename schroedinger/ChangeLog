@@ -1,5 +1,17 @@
 2007-09-26  David Schleef  <ds@schleef.org>
 
+	* configure.ac: Bump gstreamer requirement to 0.10.12
+	* schroedinger/schroanalysis.c: improve log message
+	* schroedinger/schrooil.c:
+	* schroedinger/schrooil.h:
+	* schroedinger/schroframe.c:
+	  Fix downsampling bug.  Move some code to schrooil.
+	* testsuite/Makefile.am:
+	* testsuite/downsample.c: Downsampling test.
+	* testsuite/tables2/Makefile.am: Fix distcheck.
+
+2007-09-26  David Schleef  <ds@schleef.org>
+
 	* testsuite/tables2/unpack_tables.c:
 	  Fix stupid buffer overflow.
 
