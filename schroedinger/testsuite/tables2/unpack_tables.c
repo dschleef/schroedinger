@@ -29,7 +29,7 @@ int generate_table (void)
     data[1] = (i<<(16-SHIFT))&0xff;
     data[2] = 0;
     data[3] = 0;
-    memset (array, 0, 20*sizeof(int));
+    memset (array, 0, SHIFT*2*sizeof(int));
 
     schro_unpack_init_with_data (&unpack, data, 4, 1);
     schro_unpack_limit_bits_remaining (&unpack, SHIFT);

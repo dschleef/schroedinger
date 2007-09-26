@@ -1,3 +1,8 @@
+2007-09-26  David Schleef  <ds@schleef.org>
+
+	* testsuite/tables2/unpack_tables.c:
+	  Fix stupid buffer overflow.
+
 2007-09-25  David Schleef  <ds@schleef.org>
 
 	* testsuite/Makefile.am: dist common.h
