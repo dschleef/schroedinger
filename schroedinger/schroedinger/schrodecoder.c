@@ -6,6 +6,7 @@
 #include <liboil/liboil.h>
 #include <schroedinger/schrooil.h>
 #include <string.h>
+#include <stdio.h>
 
 
 typedef struct _SchroDecoderSubbandContext SchroDecoderSubbandContext;
@@ -291,6 +292,18 @@ schro_decoder_iterate (SchroDecoder *decoder)
   }
 
   if (decoder->parse_code == SCHRO_PARSE_CODE_AUXILIARY_DATA) {
+    int code;
+
+    code = schro_unpack_decode_bits (&decoder->unpack, 8);
+
+    if (code == SCHRO_AUX_DATA_MD5_CHECKSUM) {
+      int i;
+      for(i=0;i<16;i++){
+        decoder->md5_checksum[i] = schro_unpack_decode_bits (&decoder->unpack, 8);
+      }
+      decoder->has_md5 = TRUE;
+    }
+
     schro_buffer_unref (decoder->input_buffer);
     decoder->input_buffer = NULL;
     
@@ -515,6 +528,23 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
   schro_buffer_unref (decoder->input_buffer);
   decoder->input_buffer = NULL;
+
+  if (decoder->has_md5) {
+    uint32_t state[4];
+
+    schro_frame_md5 (output_picture, state);
+    if (memcmp (state, decoder->md5_checksum, 16) != 0) {
+      char a[65];
+      char b[65];
+      for(i=0;i<16;i++){
+        sprintf(a+2*i, "%02x", ((uint8_t *)state)[i]);
+        sprintf(b+2*i, "%02x", decoder->md5_checksum[i]);
+      }
+      SCHRO_ERROR("MD5 checksum mismatch (%s should be %s)", a, b);
+    }
+
+    decoder->has_md5 = FALSE;
+  }
 
   SCHRO_DEBUG("adding %d to queue", output_picture->frame_number);
   schro_queue_add (decoder->frame_queue, output_picture,

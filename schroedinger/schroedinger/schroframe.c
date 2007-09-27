@@ -1467,3 +1467,46 @@ schro_frame_convert_to_444 (SchroFrame *frame)
   return dest;
 }
 
+void
+schro_frame_md5 (SchroFrame *frame, uint32_t *state)
+{
+  uint8_t *line;
+  int x,y,k;
+
+  state[0] = 0x67452301;
+  state[1] = 0xefcdab89;
+  state[2] = 0x98badcfe;
+  state[3] = 0x10325476;
+  
+  x = 0;
+  y = 0;
+  k = 0;
+  for(k=0;k<3;k++){
+    for(y=0;y<frame->components[k].height;y++){
+      line = OFFSET(frame->components[k].data,
+          frame->components[k].stride * y);
+      for(x=0;x+63<frame->components[k].width;x+=64){
+        oil_md5 (state, (uint32_t *)(line + x));
+      }
+      if (x < frame->components[k].width) {
+        uint8_t tmp[64];
+        int left;
+        left = frame->components[k].width - x;
+        memcpy (tmp, line + x, left);
+        memset (tmp + left, 0, 64 - left);
+        oil_md5 (state, (uint32_t *)tmp);
+      }
+    }
+  }
+
+  SCHRO_DEBUG("md5 %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+      state[0]&0xff, (state[0]>>8)&0xff, (state[0]>>16)&0xff,
+      (state[0]>>24)&0xff,
+      state[1]&0xff, (state[1]>>8)&0xff, (state[1]>>16)&0xff,
+      (state[1]>>24)&0xff,
+      state[2]&0xff, (state[2]>>8)&0xff, (state[2]>>16)&0xff,
+      (state[2]>>24)&0xff,
+      state[3]&0xff, (state[3]>>8)&0xff, (state[3]>>16)&0xff,
+      (state[3]>>24)&0xff);
+}
+

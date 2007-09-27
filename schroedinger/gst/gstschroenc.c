@@ -101,7 +101,8 @@ enum
   ARG_LAMBDA,
   ARG_PSNR,
   ARG_BITRATE,
-  ARG_NOARITH
+  ARG_NOARITH,
+  ARG_MD5
 };
 
 static void gst_schro_enc_finalize (GObject *object);
@@ -161,7 +162,7 @@ gst_schro_enc_class_init (GstSchroEncClass * klass)
   static const char *arg_names[] = {
     "engine", "quant_engine", "ref_distance", "transform_depth",
     "intra_wavelet", "inter_wavelet", "lambda", "psnr", "bitrate",
-    "noarith" };
+    "noarith", "md5" };
   int i;
   SchroEncoder *enc;
 
@@ -308,6 +309,7 @@ gst_schro_enc_set_property (GObject * object, guint prop_id,
     case ARG_PSNR:
     case ARG_BITRATE:
     case ARG_NOARITH:
+    case ARG_MD5:
       schro_encoder_preference_set (src->encoder, prop_id - ARG_ENGINE,
           g_value_get_int(value));
       break;
@@ -336,6 +338,7 @@ gst_schro_enc_get_property (GObject * object, guint prop_id, GValue * value,
     case ARG_PSNR:
     case ARG_BITRATE:
     case ARG_NOARITH:
+    case ARG_MD5:
       g_value_set_int (value,
           schro_encoder_preference_get (src->encoder, prop_id - ARG_ENGINE));
       break;

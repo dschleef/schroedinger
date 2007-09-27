@@ -560,8 +560,34 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     }
   } else if (data[4] == SCHRO_PARSE_CODE_AUXILIARY_DATA) {
     int length = next - 14;
-    g_print("  code: %d\n", data[13]);
-    g_print("  string: %.*s\n", length, data + 14);
+    int code = data[13];
+    switch (code) {
+      case 0:
+        g_print("  code: 0 (invalid)\n");
+        break;
+      case 1:
+        g_print("  code: 1 (encoder implementation/version)\n");
+        g_print("  string: %.*s\n", length, data + 14);
+        break;
+      case 2:
+        g_print("  code: 2 (SMPTE 12M timecode)\n");
+        break;
+      case 3:
+        {
+          int i;
+          g_print("  code: 3 (MD5 checksum)\n");
+          g_print("  checksum: ");
+          for(i=0;i<16;i++){
+            g_print("%02x", data[14+i]);
+          }
+          g_print("\n");
+        }
+        break;
+      default:
+        g_print("  code: %d (unknown)\n", code);
+        g_print("  string: %.*s\n", length, data + 14);
+        break;
+    }
 
     schro_unpack_skip_bits (&unpack, (4 + 4 + length)*8);
   }

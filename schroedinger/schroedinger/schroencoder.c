@@ -60,6 +60,7 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_PSNR] = 20;
   encoder->prefs[SCHRO_PREF_BITRATE] = 13824000;
   encoder->prefs[SCHRO_PREF_NOARITH] = 0;
+  encoder->prefs[SCHRO_PREF_MD5] = 0;
 
   schro_params_set_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_SD576);
@@ -280,6 +281,9 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
       if (frame->access_unit_buffer) {
         buffer = frame->access_unit_buffer;
         frame->access_unit_buffer = NULL;
+      } else if (frame->inserted_buffer) {
+        buffer = frame->inserted_buffer;
+        frame->inserted_buffer = NULL;
       } else {
         buffer = frame->output_buffer;
         frame->output_buffer = NULL;
@@ -350,12 +354,26 @@ schro_encoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer)
 static void
 schro_encoder_encode_codec_comment (SchroEncoder *encoder)
 {
-  char *s = "\001Schrodinger " VERSION;
+  char *s = "Schroedinger " VERSION;
   SchroBuffer *buffer;
 
-  buffer = schro_encoder_encode_auxiliary_data (encoder, s, strlen(s));
+  buffer = schro_encoder_encode_auxiliary_data (encoder,
+      SCHRO_AUX_DATA_ENCODER_STRING, s, strlen(s));
   
   schro_encoder_insert_buffer (encoder, buffer);
+}
+
+static void
+schro_encoder_encode_md5_checksum (SchroEncoderFrame *frame)
+{
+  SchroBuffer *buffer;
+  uint32_t checksum[4];
+
+  schro_frame_md5 (frame->reconstructed_frame->frames[0], checksum);
+  buffer = schro_encoder_encode_auxiliary_data (frame->encoder,
+      SCHRO_AUX_DATA_MD5_CHECKSUM, checksum, 16);
+  
+  schro_encoder_frame_insert_buffer (frame, buffer);
 }
 
 void
@@ -368,19 +386,31 @@ schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer)
   encoder->inserted_buffer = buffer;
 }
 
+void
+schro_encoder_frame_insert_buffer (SchroEncoderFrame *frame,
+    SchroBuffer *buffer)
+{
+  if (frame->inserted_buffer) {
+    SCHRO_ERROR("dropping previously inserted buffer");
+    schro_buffer_unref (frame->inserted_buffer);
+  }
+  frame->inserted_buffer = buffer;
+}
+
 SchroBuffer *
-schro_encoder_encode_auxiliary_data (SchroEncoder *encoder, void *data,
-    int size)
+schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
+    SchroAuxiliaryDataID id, void *data, int size)
 {
   SchroBits *bits;
   SchroBuffer *buffer;
 
-  buffer = schro_buffer_new_and_alloc (size + SCHRO_PARSE_HEADER_SIZE);
+  buffer = schro_buffer_new_and_alloc (size + SCHRO_PARSE_HEADER_SIZE + 1);
 
   bits = schro_bits_new ();
   schro_bits_encode_init (bits, buffer);
 
   schro_encoder_encode_parse_info (bits, SCHRO_PARSE_CODE_AUXILIARY_DATA);
+  schro_bits_encode_bits (bits, 8, id);
   schro_bits_append (bits, data, size);
 
   schro_bits_free (bits);
@@ -750,6 +780,8 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
   schro_frame_convert (frame, encoder_frame->iwt_frame);
   encoder_frame->reconstructed_frame =
     schro_upsampled_frame_new (frame);
+
+  schro_encoder_encode_md5_checksum (encoder_frame);
 
   if (encoder_frame->is_ref) {
     schro_upsampled_frame_upsample (encoder_frame->reconstructed_frame);
@@ -2426,6 +2458,9 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
 
     if (frame->tmpbuf) free (frame->tmpbuf);
     if (frame->tmpbuf2) free (frame->tmpbuf2);
+    if (frame->inserted_buffer) {
+      schro_buffer_unref (frame->inserted_buffer);
+    }
     free (frame);
   }
 }
@@ -2463,6 +2498,7 @@ static const int pref_range[][2] = {
   { 0, 100 }, /* psnr */
   { 0, 1000000000 }, /* bitrate */
   { 0, 1 }, /* noarith */
+  { 0, 1 }, /* md5 */
   /* last */
   { 0, 0 }
 };

@@ -33,6 +33,7 @@ typedef enum {
   SCHRO_PREF_PSNR,
   SCHRO_PREF_BITRATE,
   SCHRO_PREF_NOARITH,
+  SCHRO_PREF_MD5,
   SCHRO_PREF_LAST
 } SchroPrefEnum;
 
@@ -81,6 +82,7 @@ struct _SchroEncoderFrame {
   SchroUpsampledFrame *reconstructed_frame;
 
   SchroBuffer *access_unit_buffer;
+  SchroBuffer *inserted_buffer;
   int output_buffer_size;
   SchroBuffer *output_buffer;
   int presentation_frame;
@@ -252,11 +254,12 @@ int schro_encoder_push_ready (SchroEncoder *encoder);
 void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
 
 SchroBuffer * schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
-    void *data, int size);
+    SchroAuxiliaryDataID id, void *data, int size);
 void schro_encoder_copy_to_frame_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_encode_access_unit_header (SchroEncoder *encoder, SchroBits *bits);
 void schro_encoder_encode_parse_info (SchroBits *bits, int parse_code);
 void schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
+void schro_encoder_frame_insert_buffer (SchroEncoderFrame *frame, SchroBuffer *buffer);
 void schro_encoder_start (SchroEncoder *encoder);
 
 void schro_encoder_set_default_subband_weights (SchroEncoder *encoder);

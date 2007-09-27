@@ -70,6 +70,9 @@ struct _SchroDecoder {
 
   int error;
   char *error_message;
+
+  int has_md5;
+  uint8_t md5_checksum[32];
 };
 
 enum {
