@@ -1760,18 +1760,15 @@ schro_decoder_decode_subband (SchroDecoder *decoder,
     }
   }
   if (!params->is_noarith) {
-#if 0
-    if (arith->offset < buffer->length) {
+    schro_arith_decode_flush (ctx->arith);
+    if (ctx->arith->offset < buffer->length) {
       SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
-          arith->offset, buffer->length);
+          ctx->arith->offset, buffer->length);
     }
-#endif
-#if 0
-    if (arith->offset > buffer->length + 6) {
+    if (ctx->arith->offset > buffer->length + 4) {
       SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
-          arith->offset, buffer->length);
+          ctx->arith->offset, buffer->length);
     }
-#endif
     schro_arith_free (ctx->arith);
     schro_buffer_unref (buffer);
   }

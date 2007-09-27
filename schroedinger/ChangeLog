@@ -1,3 +1,11 @@
+2007-09-27  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrodecoder.c:
+	  Clean up ends of buffers when encoding.  Warn when the buffer
+	  is overrun by too much or underrun when decoding.
+
 2007-09-26  David Schleef  <ds@schleef.org>
 
 	* configure.ac: Bump gstreamer requirement to 0.10.12

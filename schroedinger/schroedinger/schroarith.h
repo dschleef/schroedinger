@@ -100,6 +100,7 @@ struct _SchroArith {
   uint32_t code;
   uint32_t range_size;
   uint16_t probabilities[SCHRO_CTX_LAST];
+  uint8_t shift;
   uint16_t lut[512];
 
   int cntr;
@@ -118,6 +119,7 @@ void schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer);
 void schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer);
 void schro_arith_estimate_init (SchroArith *arith);
 void schro_arith_flush (SchroArith *arith);
+void schro_arith_decode_flush (SchroArith *arith);
 
 void schro_arith_encode_bit (SchroArith *arith, int context, int value);
 void schro_arith_encode_uint (SchroArith *arith, int cont_context,

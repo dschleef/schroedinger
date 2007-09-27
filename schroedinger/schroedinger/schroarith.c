@@ -154,6 +154,7 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
   arith->code = arith->dataptr[0] << 8;
   arith->code |= arith->dataptr[1];
   arith->offset = 2;
+  arith->shift = arith->dataptr[2];
 
   for(i=0;i<SCHRO_CTX_LAST;i++){
     arith->contexts[i].next = next_list[i];
@@ -201,10 +202,34 @@ schro_arith_estimate_init (SchroArith *arith)
 }
 
 void
+schro_arith_decode_flush (SchroArith *arith)
+{
+  if (arith->cntr > 0) {
+    arith->offset++;
+  }
+}
+
+void
 schro_arith_flush (SchroArith *arith)
 {
+  int extra_byte;
+  int i;
+
+  if (arith->cntr > 0) {
+    extra_byte = TRUE;
+  } else {
+    extra_byte = FALSE;
+  }
+
+for(i=0;i<16;i++){
+  if ((arith->range[0] | ((1<<(i+1))-1)) > arith->range[1] - 1) break;
+}
+arith->range[0] |= ((1<<i)-1);
+//arith->range[0] += arith->range[1] - 1;
+
   while (arith->cntr < 8) {
     arith->range[0] <<= 1;
+    arith->range[0] |= 1;
     arith->cntr++;
   }
 
@@ -227,8 +252,13 @@ schro_arith_flush (SchroArith *arith)
   arith->offset++;
   arith->dataptr[arith->offset] = arith->range[0] >> 8;
   arith->offset++;
-  arith->dataptr[arith->offset] = arith->range[0] >> 0;
-  arith->offset++;
+  if (extra_byte) {
+    arith->dataptr[arith->offset] = arith->range[0] >> 0;
+    arith->offset++;
+  }
+  while (arith->offset > 1 && arith->dataptr[arith->offset-1] == 0xff) {
+    arith->offset--;
+  }
 }
 
   
@@ -238,7 +268,7 @@ _schro_arith_decode_bit (SchroArith *arith, int i)
   return __schro_arith_decode_bit (arith, i);
 }
 
-//#define faster
+#define faster
 #ifdef faster
 static int
 __schro_arith_decode_bit (SchroArith *arith, int i)
@@ -264,12 +294,17 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
     arith->range[1] <<= 1;
 
     arith->code <<= 1;
-    arith->code |= (arith->dataptr[arith->offset] >> (7-arith->cntr))&1;
+    arith->code |= arith->shift >> (7-arith->cntr)&1;
 
     arith->cntr++;
 
     if (arith->cntr == 8) {
       arith->offset++;
+      if (arith->offset < arith->buffer->length) {
+        arith->shift = arith->dataptr[arith->offset];
+      } else {
+        arith->shift = 0xff;
+      }
       arith->range[0] &= 0xffff;
       arith->code &= 0xffff;
 
