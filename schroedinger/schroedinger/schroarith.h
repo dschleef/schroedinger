@@ -93,6 +93,7 @@ struct _SchroArithContext {
   int stat_range;
   int n_bits;
   int n_symbols;
+  int ones;
 };
 
 struct _SchroArith {

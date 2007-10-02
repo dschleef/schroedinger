@@ -123,6 +123,8 @@ struct _SchroEncoderFrame {
   int16_t *tmpbuf2;
 
   int quant_index[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3];
+  double est_entropy[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3][60];
+  double est_error[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3][60];
   SchroBits *bits;
   SchroParams params;
   SchroEncoder *encoder;

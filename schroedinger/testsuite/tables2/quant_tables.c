@@ -84,10 +84,51 @@ quantize (int value, int quant_factor, int quant_offset)
   return value;
 }
 
-static double pow4(double x)
+static double pow2(double x)
 {
-  x = x*x;
   return x*x;
+}
+
+static int
+maxbit (unsigned int x)
+{
+  int i;
+  for(i=0;x;i++){
+    x >>= 1;
+  }
+  return i;
+}
+
+static int onebits (int value)
+{
+  int i;
+  int n_bits;
+  int ones = 0;
+
+  if (value < 0) value = -value;
+  if (value == 0) return 0;
+  value++;
+  n_bits = maxbit (value);
+  for(i=0;i<n_bits - 1;i++){
+    ones += (value>>(n_bits - 2 - i))&1;
+  }
+  return ones;
+}
+
+static int zerobits (int value)
+{
+  int i;
+  int n_bits;
+  int zeros = 0;
+
+  if (value < 0) value = -value;
+  if (value == 0) return 0;
+  value++;
+  n_bits = maxbit (value);
+  for(i=0;i<n_bits - 1;i++){
+    zeros += 1^((value>>(n_bits - 2 - i))&1);
+  }
+  return zeros;
 }
 
 #define SHIFT 3
@@ -194,7 +235,69 @@ main (int argc, char *argv[])
       for(k=kmin;k<kmax;k++){
         q = quantize(abs(k), quant_factor, quant_offset);
         value = dequantize(q, quant_factor, quant_offset);
-        x += pow4(value - k);
+        x += pow2(value - k);
+      }
+      if ((j>>SHIFT) > 0) {
+        x *= 1.0/(1<<((j>>SHIFT)-1));
+      }
+      printf("%g, ", x);
+      if ((j&0x7)==0x7) printf("\n");
+    }
+    printf("  },\n");
+  }
+  printf("};\n\n");
+
+  /* schro_table_onebits_hist */
+  printf("const double schro_table_onebits_hist_shift3_1_2[60][%d] = {\n",
+      ((16-SHIFT)<<SHIFT));
+  for(i=0;i<60;i++){
+    int quant_factor = get_quant(i);
+    int quant_offset = get_offset_1_2(i);
+    int j;
+
+    printf("  { /* %d */\n", i);
+    for(j=0;j<((16-SHIFT)<<SHIFT);j++){
+      int kmin = iexpx(j);
+      int kmax = iexpx(j+1);
+      int k;
+      double x = 0;
+      int q;
+
+      if ((j&0x7)==0) printf("    ");
+      for(k=kmin;k<kmax;k++){
+        q = quantize(abs(k), quant_factor, quant_offset);
+        x += onebits(q);
+      }
+      if ((j>>SHIFT) > 0) {
+        x *= 1.0/(1<<((j>>SHIFT)-1));
+      }
+      printf("%g, ", x);
+      if ((j&0x7)==0x7) printf("\n");
+    }
+    printf("  },\n");
+  }
+  printf("};\n\n");
+
+  /* schro_table_zerobits_hist */
+  printf("const double schro_table_zerobits_hist_shift3_1_2[60][%d] = {\n",
+      ((16-SHIFT)<<SHIFT));
+  for(i=0;i<60;i++){
+    int quant_factor = get_quant(i);
+    int quant_offset = get_offset_1_2(i);
+    int j;
+
+    printf("  { /* %d */\n", i);
+    for(j=0;j<((16-SHIFT)<<SHIFT);j++){
+      int kmin = iexpx(j);
+      int kmax = iexpx(j+1);
+      int k;
+      double x = 0;
+      int q;
+
+      if ((j&0x7)==0) printf("    ");
+      for(k=kmin;k<kmax;k++){
+        q = quantize(abs(k), quant_factor, quant_offset);
+        x += zerobits(q);
       }
       if ((j>>SHIFT) > 0) {
         x *= 1.0/(1<<((j>>SHIFT)-1));

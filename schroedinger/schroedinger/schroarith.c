@@ -435,6 +435,7 @@ schro_arith_estimate_bit (SchroArith *arith, int i, int value)
   if (value) {
     arith->contexts[i].stat_range -= range_x_prob;
     arith->probabilities[i] -= lut[arith->probabilities[i]>>8];
+    arith->contexts[i].ones++;
   } else {
     arith->contexts[i].stat_range = range_x_prob;
     arith->probabilities[i] += lut[255-(arith->probabilities[i]>>8)];

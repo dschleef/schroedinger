@@ -56,7 +56,7 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
   encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_5_3;
-  encoder->prefs[SCHRO_PREF_LAMBDA] = 50;
+  encoder->prefs[SCHRO_PREF_LAMBDA] = 1;
   encoder->prefs[SCHRO_PREF_PSNR] = 20;
   encoder->prefs[SCHRO_PREF_BITRATE] = 13824000;
   encoder->prefs[SCHRO_PREF_NOARITH] = 0;

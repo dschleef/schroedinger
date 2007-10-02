@@ -1,3 +1,18 @@
+2007-10-02  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.h:
+	* schroedinger/schroquantiser.c:
+	* schroedinger/schrotables.c:
+	* schroedinger/schrotables.h:
+	* testsuite/tables2/quant_tables.c:
+	  Rewrite some of the quantisation code, hopefully making it
+	  faster and more accurate.  Add converstion from entropy to
+	  lambda and back.
+
 2007-09-27  David Schleef  <ds@schleef.org>
 
 	* gst/gstschroenc.c:
