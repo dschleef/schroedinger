@@ -123,6 +123,7 @@ struct _SchroEncoderFrame {
   int16_t *tmpbuf2;
 
   int quant_index[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3];
+  int have_estimate_tables;
   double est_entropy[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3][60];
   double est_error[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3][60];
   SchroBits *bits;
@@ -139,6 +140,7 @@ struct _SchroEncoderFrame {
 
   SchroPictureNumber reference_frame_number[2];
 
+  int have_histograms;
   SchroHistogram subband_hists[3][SCHRO_MAX_SUBBANDS];
 
   int allocated_bits;

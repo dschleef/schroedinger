@@ -312,10 +312,10 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
 
       encoder->buffer_level += buffer->length * 8;
       if (encoder->buffer_level < 0) {
-        SCHRO_ERROR("buffer underrun");
+        SCHRO_DEBUG("buffer underrun");
         encoder->buffer_level = 0;
       }
-      SCHRO_ERROR("buffer level %d", encoder->buffer_level);
+      SCHRO_DEBUG("buffer level %d", encoder->buffer_level);
 
       schro_encoder_fixup_offsets (encoder, buffer);
 

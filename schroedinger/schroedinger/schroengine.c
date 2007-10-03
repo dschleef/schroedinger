@@ -92,13 +92,27 @@ schro_encoder_recalculate_allocations (SchroEncoder *encoder)
 {
   SchroEncoderFrame *frame;
   int i;
+  int buffer_level;
+
+  buffer_level = encoder->buffer_level;
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
 
-    frame->allocated_bits = encoder->bits_per_picture;
+    if (frame->actual_bits) {
+      buffer_level += frame->actual_bits;
+    } else if (frame->state == SCHRO_ENCODER_FRAME_STATE_NEW ||
+        frame->state == SCHRO_ENCODER_FRAME_STATE_ANALYSE ||
+        frame->state == SCHRO_ENCODER_FRAME_STATE_PREDICT) {
+      frame->allocated_bits = muldiv64 (encoder->buffer_size - buffer_level,
+          encoder->video_format.frame_rate_denominator * 2,
+          encoder->video_format.frame_rate_numerator);
+      buffer_level += frame->allocated_bits;
+    } else {
+      buffer_level += frame->allocated_bits;
+    }
+    buffer_level -= encoder->bits_per_picture;
   }
-
 }
 
 int

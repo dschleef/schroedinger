@@ -1,3 +1,12 @@
+2007-10-03  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroquantiser.c:
+	  Improve picture allocation.  Refactor much of the quantiser
+	  code.
+
 2007-10-02  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:
