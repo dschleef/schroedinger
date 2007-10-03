@@ -291,8 +291,31 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         frame->state = SCHRO_ENCODER_FRAME_STATE_FREE;
         encoder->output_slot++;
 
+        encoder->buffer_level -= encoder->bits_per_picture;
+        {
+          /* FIXME move this */
+          double x;
+
+          x = (double)frame->actual_bits / frame->estimated_entropy;
+          if (encoder->average_arith_context_ratio == 0) {
+            encoder->average_arith_context_ratio = x;
+          } else {
+            double alpha = 0.9;
+            encoder->average_arith_context_ratio *= alpha;
+            encoder->average_arith_context_ratio += (1.0-alpha) * x;
+          }
+
+        }
+
         schro_encoder_shift_frame_queue (encoder);
       }
+
+      encoder->buffer_level += buffer->length * 8;
+      if (encoder->buffer_level < 0) {
+        SCHRO_ERROR("buffer underrun");
+        encoder->buffer_level = 0;
+      }
+      SCHRO_ERROR("buffer level %d", encoder->buffer_level);
 
       schro_encoder_fixup_offsets (encoder, buffer);
 
@@ -598,6 +621,14 @@ schro_encoder_engine_init (SchroEncoder *encoder)
   encoder->ref_distance = encoder->prefs[SCHRO_PREF_REF_DISTANCE];
 
   encoder->quantiser_engine = encoder->prefs[SCHRO_PREF_QUANT_ENGINE];
+
+  encoder->buffer_size = encoder->prefs[SCHRO_PREF_BITRATE];
+  encoder->buffer_level = encoder->buffer_size / 2;
+  encoder->bits_per_picture = muldiv64 (encoder->prefs[SCHRO_PREF_BITRATE],
+        encoder->video_format.frame_rate_denominator,
+        encoder->video_format.frame_rate_numerator);
+
+  schro_encoder_recalculate_allocations (encoder);
 }
 
 void
@@ -733,9 +764,10 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
   }
 
   schro_bits_flush (frame->bits);
+  frame->actual_bits = schro_bits_get_offset (frame->bits)*8;
 
-  SCHRO_INFO("PICTURE_EST: %d %d %d", frame->frame_number,
-      frame->estimated_entropy, schro_bits_get_offset (frame->bits)*8);
+  SCHRO_ERROR("PICTURE_EST: %d %d %d %d", frame->frame_number,
+      frame->allocated_bits, frame->estimated_entropy, frame->actual_bits);
 
   subbuffer = schro_buffer_new_subbuffer (frame->output_buffer, 0,
       schro_bits_get_offset (frame->bits));
@@ -781,7 +813,9 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
   encoder_frame->reconstructed_frame =
     schro_upsampled_frame_new (frame);
 
-  schro_encoder_encode_md5_checksum (encoder_frame);
+  if (encoder_frame->encoder->prefs[SCHRO_PREF_MD5]) {
+    schro_encoder_encode_md5_checksum (encoder_frame);
+  }
 
   if (encoder_frame->is_ref) {
     schro_upsampled_frame_upsample (encoder_frame->reconstructed_frame);

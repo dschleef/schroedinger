@@ -51,4 +51,6 @@
 #define SCHRO_END_DECLS
 #endif
 
+int muldiv64 (int a, int b, int c);
+
 #endif

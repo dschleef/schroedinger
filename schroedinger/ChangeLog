@@ -1,5 +1,15 @@
 2007-10-02  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroquantiser.c:
+	* schroedinger/schroutils.c:
+	* schroedinger/schroutils.h:
+	  Implement basics of bitrate limitation.
+
+2007-10-02  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroarith.c:
 	* schroedinger/schroarith.h:
 	* schroedinger/schroencoder.c:

@@ -87,12 +87,29 @@ init_small_codeblocks (SchroParams *params)
   }
 }
 
+void
+schro_encoder_recalculate_allocations (SchroEncoder *encoder)
+{
+  SchroEncoderFrame *frame;
+  int i;
+
+  for(i=0;i<encoder->frame_queue->n;i++) {
+    frame = encoder->frame_queue->elements[i].data;
+
+    frame->allocated_bits = encoder->bits_per_picture;
+  }
+
+}
+
 int
 schro_encoder_engine_intra_only (SchroEncoder *encoder)
 {
   SchroParams *params;
   SchroEncoderFrame *frame;
   int i;
+
+  /* FIXME there must be a better place to put this */
+  schro_encoder_recalculate_allocations (encoder);
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
@@ -954,18 +971,6 @@ reduce_fraction (int *n, int *d)
 }
 
 int
-multdiv64 (int a, int b, int c)
-{
-  long long x;
-
-  x = a;
-  x *= b;
-  x /= c;
-
-  return (int)x;
-}
-
-int
 schro_encoder_engine_lowdelay (SchroEncoder *encoder)
 {
   SchroParams *params;
@@ -1010,7 +1015,7 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
         init_params (frame);
         //schro_params_init_lowdelay_quantisers(params);
 
-        bytes_per_picture = multdiv64(encoder->prefs[SCHRO_PREF_BITRATE],
+        bytes_per_picture = muldiv64(encoder->prefs[SCHRO_PREF_BITRATE],
             encoder->video_format.frame_rate_denominator,
             encoder->video_format.frame_rate_numerator * 8);
         n_slices = (params->iwt_luma_width>>params->slice_width_exp) *

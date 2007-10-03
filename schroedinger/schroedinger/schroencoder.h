@@ -140,6 +140,9 @@ struct _SchroEncoderFrame {
   SchroPictureNumber reference_frame_number[2];
 
   SchroHistogram subband_hists[3][SCHRO_MAX_SUBBANDS];
+
+  int allocated_bits;
+  int actual_bits;
 };
 
 struct _SchroEncoder {
@@ -187,7 +190,6 @@ struct _SchroEncoder {
   int internal_testing;
   int calculate_psnr;
   int calculate_ssim;
-  //int noarith;
 
   double pixels_per_degree_horiz;
   double pixels_per_degree_vert;
@@ -195,9 +197,14 @@ struct _SchroEncoder {
 
   double subband_weights[SCHRO_N_WAVELETS][SCHRO_MAX_TRANSFORM_DEPTH][3*SCHRO_MAX_TRANSFORM_DEPTH+1];
 
+  int buffer_size;
+  int buffer_level;
+  int bits_per_picture;
+
   /* statistics */
 
   double average_psnr;
+  double average_arith_context_ratio;
 
   /* engine specific stuff */
 
@@ -317,6 +324,7 @@ void schro_encoder_frame_unref (SchroEncoderFrame *frame);
 
 void schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame);
 void schro_encoder_estimate_entropy (SchroEncoderFrame *frame);
+void schro_encoder_recalculate_allocations (SchroEncoder *encoder);
 
 
 SCHRO_END_DECLS
