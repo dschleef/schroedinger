@@ -766,7 +766,7 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
   schro_bits_flush (frame->bits);
   frame->actual_bits = schro_bits_get_offset (frame->bits)*8;
 
-  SCHRO_ERROR("PICTURE_EST: %d %d %d %d", frame->frame_number,
+  schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d\n", frame->frame_number,
       frame->allocated_bits, frame->estimated_entropy, frame->actual_bits);
 
   subbuffer = schro_buffer_new_subbuffer (frame->output_buffer, 0,
@@ -840,9 +840,8 @@ schro_encoder_postanalyse_picture (SchroEncoderFrame *frame)
       frame->encoder->average_psnr += (1.0-alpha) * psnr;
     }
 
-    SCHRO_INFO("PSNR: %d mse %g psnr %g average_psnr %g",
-        frame->frame_number, mse, psnr,
-        frame->encoder->average_psnr);
+    schro_dump(SCHRO_DUMP_PSNR, "%d %g %g %g\n",
+        frame->frame_number, mse, psnr, frame->encoder->average_psnr);
   }
 
   if (frame->encoder->calculate_ssim) {
@@ -850,7 +849,7 @@ schro_encoder_postanalyse_picture (SchroEncoderFrame *frame)
 
     mssim = schro_ssim (frame->original_frame,
         frame->reconstructed_frame->frames[0]);
-    SCHRO_INFO("SSIM: picture_number %d mssim %g", frame->frame_number, mssim);
+    schro_dump(SCHRO_DUMP_SSIM, "%d %g\n", frame->frame_number, mssim);
   }
 }
 
@@ -1910,8 +1909,11 @@ out:
 
   SCHRO_ASSERT(arith->offset < frame->subband_size);
 
-  SCHRO_INFO("SUBBAND_EST: %d %d %d %d", component, index,
-      frame->estimated_entropy, arith->offset*8);
+  //schro_encoder_calculate_test_info (frame);
+  schro_dump(SCHRO_DUMP_SUBBAND_EST, "%d %d %d %g %d %g\n",
+      frame->frame_number, component, index,
+      frame->est_entropy[component][index][frame->quant_index[component][index]],
+      arith->offset*8, 0.0/*frame->subband_info[component][index]*/);
 
   schro_bits_encode_uint (frame->bits, arith->offset);
   if (arith->offset > 0) {
@@ -2036,8 +2038,9 @@ schro_encoder_encode_subband_noarith (SchroEncoderFrame *frame,
 
   SCHRO_ASSERT(schro_bits_get_offset(bits) < frame->subband_size);
 
-  SCHRO_INFO("SUBBAND_EST: %d %d %d %d", component, index,
-      frame->estimated_entropy, schro_bits_get_offset(bits));
+  schro_dump(SCHRO_DUMP_SUBBAND_EST, "%d %d %d %d %d\n",
+      frame->frame_number, component, index,
+      frame->estimated_entropy, schro_bits_get_offset(bits)*8);
 
   schro_bits_encode_uint (frame->bits, schro_bits_get_offset(bits));
   if (schro_bits_get_offset(bits) > 0) {

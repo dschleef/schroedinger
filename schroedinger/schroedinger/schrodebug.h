@@ -17,6 +17,18 @@ enum
   SCHRO_LEVEL_LOG
 };
 
+enum
+{
+  SCHRO_DUMP_SUBBAND_CURVE,
+  SCHRO_DUMP_SUBBAND_EST,
+  SCHRO_DUMP_PICTURE,
+  SCHRO_DUMP_PSNR,
+  SCHRO_DUMP_SSIM,
+  SCHRO_DUMP_LAMBDA_CURVE,
+  SCHRO_DUMP_HIST_TEST,
+  SCHRO_DUMP_LAST
+};
+
 #define SCHRO_ERROR(...) \
   SCHRO_DEBUG_LEVEL(SCHRO_LEVEL_ERROR, __VA_ARGS__)
 #define SCHRO_WARNING(...) \
@@ -49,6 +61,8 @@ void schro_debug_log (int level, const char *file, const char *function,
     int line, const char *format, ...);
 void schro_debug_set_level (int level);
 int schro_debug_get_level (void);
+
+void schro_dump (int type, const char *format, ...);
 
 SCHRO_END_DECLS
 

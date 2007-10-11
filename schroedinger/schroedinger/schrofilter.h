@@ -14,6 +14,8 @@ void schro_frame_filter_cwm7 (SchroFrame *frame);
 void schro_frame_filter_cwmN (SchroFrame *frame, int weight);
 void schro_frame_filter_cwmN_ref (SchroFrame *frame, int weight);
 void schro_frame_filter_wavelet (SchroFrame *frame);
+void schro_frame_filter_addnoise (SchroFrame *frame, double sigma);
+void schro_frame_filter_adaptive_lowpass (SchroFrame *frame);
 
 void schro_filter_cwmN (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n, int weight);
 void schro_filter_cwmN_ref (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n, int weight);

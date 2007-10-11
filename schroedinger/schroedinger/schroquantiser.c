@@ -803,8 +803,8 @@ schro_encoder_dump_subband_curves (SchroEncoderFrame *frame)
         arith_entropy = schro_encoder_estimate_subband_arith (frame,
             component, i, j);
 
-        SCHRO_INFO("SUBBAND_CURVE: %d %d %d %g %g %g %g", component, i, j,
-            est_entropy/vol, arith_entropy/vol,
+        schro_dump (SCHRO_DUMP_SUBBAND_CURVE, "%d %d %d %g %g %g %g\n",
+            component, i, j, est_entropy/vol, arith_entropy/vol,
             est_error/vol, error/vol);
       }
     }
@@ -1009,7 +1009,8 @@ base_lambda = 0.1;
       qsum += quant_index;
     }
   }
-    SCHRO_INFO("LAMBDA_CURVE: %d %g %g %d", j, lambda_mult * base_lambda, n, qsum);
+    schro_dump (SCHRO_DUMP_LAMBDA_CURVE, "%d %g %g %d",
+        j, lambda_mult * base_lambda, n, qsum);
   }
 }
 

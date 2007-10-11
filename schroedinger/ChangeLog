@@ -1,3 +1,14 @@
+2007-10-11  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schro.c:
+	* schroedinger/schrodebug.c:
+	* schroedinger/schrodebug.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schrofilter.h:
+	* schroedinger/schroquantiser.c:
+	  Add schro_dump() and switch over from outputting internal data
+	  from debugging to dumping.
+
 2007-10-03  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:

@@ -16,6 +16,7 @@ static const char *schro_debug_level_names[] = {
 };
 
 static int schro_debug_level = SCHRO_LEVEL_ERROR;
+int _schro_dump_enable;
 
 void
 schro_debug_log (int level, const char *file, const char *function,
@@ -62,4 +63,36 @@ schro_debug_get_level (void)
 {
   return schro_debug_level;
 }
+
+
+static FILE *dump_files[SCHRO_DUMP_LAST];
+
+static const char *dump_file_names[SCHRO_DUMP_LAST] = {
+  "schro_dump.subband_curve",
+  "schro_dump.subband_est",
+  "schro_dump.picture",
+  "schro_dump.psnr",
+  "schro_dump.ssim",
+  "schro_dump.lambda_curve",
+  "schro_dump.hist_test"
+};
+
+void
+schro_dump (int type, const char *format, ...)
+{
+  va_list varargs;
+
+  if (!_schro_dump_enable) return;
+
+  if (dump_files[type] == NULL) {
+    dump_files[type] = fopen (dump_file_names[type], "w");
+  }
+
+  va_start (varargs, format);
+  vfprintf (dump_files[type], format, varargs);
+  va_end (varargs);
+
+  fflush (dump_files[type]);
+}
+
 

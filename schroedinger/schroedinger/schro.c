@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 extern int _schro_decode_prediction_only;
+extern int _schro_dump_enable;
 
 /**
  * schro_init:
@@ -35,6 +36,11 @@ schro_init(void)
   s = getenv ("SCHRO_DECODE_PREDICTION_ONLY");
   if (s && s[0]) {
     _schro_decode_prediction_only = TRUE;
+  }
+
+  s = getenv ("SCHRO_DUMP");
+  if (s && s[0]) {
+    _schro_dump_enable = TRUE;
   }
 }
 
