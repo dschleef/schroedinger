@@ -15,7 +15,7 @@ typedef struct _SchroHistogramTable SchroHistogramTable;
 
 struct _SchroHistogram {
   int n;
-  int bins[SCHRO_HISTOGRAM_SIZE];
+  double bins[SCHRO_HISTOGRAM_SIZE];
 };
 
 struct _SchroHistogramTable {
@@ -26,7 +26,7 @@ double schro_histogram_get_range (SchroHistogram *hist, int start, int end);
 void schro_histogram_init (SchroHistogram *hist);
 void schro_histogram_add (SchroHistogram *hist, int value);
 void schro_histogram_add_array_s16 (SchroHistogram *hist, int16_t *src, int n);
-void schro_histogram_scale (SchroHistogram *hist, int scale);
+void schro_histogram_scale (SchroHistogram *hist, double scale);
 
 void schro_histogram_table_generate (SchroHistogramTable *table,
     double (*func)(int value, void *priv), void *priv);
@@ -34,6 +34,8 @@ double schro_histogram_apply_table (SchroHistogram *hist,
     SchroHistogramTable *table);
 double schro_histogram_apply_table_range (SchroHistogram *hist,
     SchroHistogramTable *table, int start, int end);
+double schro_histogram_estimate_noise_level (SchroHistogram *hist);
+double schro_histogram_estimate_slope (SchroHistogram *hist);
 
 SCHRO_END_DECLS
 

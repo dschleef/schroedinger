@@ -28,7 +28,6 @@ void schro_encoder_encode_slice (SchroEncoderFrame *frame, int x, int y,
 int schro_encoder_estimate_slice (SchroEncoderFrame *frame, int x, int y,
     int slice_bytes, int qindex);
 
-
 SchroEncoder *
 schro_encoder_new (void)
 {
@@ -191,7 +190,7 @@ schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
   encoder_frame->encoder = encoder;
 
   format = schro_params_get_frame_format (8, encoder->video_format.chroma_format);
-  if (0 /* !filtering */ && format == frame->format) {
+  if (format == frame->format) {
     encoder_frame->original_frame = frame;
   } else {
     encoder_frame->original_frame = schro_frame_new_and_alloc (format,
@@ -536,9 +535,6 @@ schro_encoder_frame_complete (SchroEncoderFrame *frame)
       schro_encoder_reference_add (frame->encoder, frame);
     }
 
-    SCHRO_INFO("PICTURE: %d %d %d",
-        frame->frame_number, frame->is_ref, frame->params.num_refs);
-
     if (frame->start_access_unit) {
       frame->access_unit_buffer = schro_encoder_encode_access_unit (frame->encoder);
     }
@@ -635,13 +631,22 @@ void
 schro_encoder_analyse_picture (SchroEncoderFrame *frame)
 {
 
-  //schro_frame_filter_lowpass2 (encoder_frame->original_frame, 5.0);
-  //schro_frame_filter_cwm7 (encoder_frame->original_frame);
-  //schro_frame_filter_cwmN (encoder_frame->original_frame, 5);
+frame->filtering = TRUE;
 
-  schro_encoder_frame_analyse (frame->encoder, frame);
+  if (frame->filtering) {
+    frame->filtered_frame = schro_frame_dup (frame->original_frame);
+    //schro_frame_filter_addnoise (frame->filtered_frame, 0);
+    //schro_frame_filter_lowpass2 (frame->filtered_frame, 2.0);
+    schro_frame_filter_adaptive_lowpass (frame->filtered_frame);
+    //schro_frame_filter_cwm7 (frame->filtered_frame);
+    //schro_frame_filter_cwmN (frame->filtered_frame, 5);
+  } else {
+    frame->filtered_frame = schro_frame_ref (frame->original_frame);
+  }
 
-  schro_frame_calculate_average_luma (frame->original_frame);
+  schro_encoder_frame_downsample (frame);
+
+  schro_frame_calculate_average_luma (frame->filtered_frame);
 }
 
 void
@@ -655,7 +660,7 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
   if (frame->params.num_refs > 0) {
     schro_encoder_motion_predict (frame);
 
-    schro_frame_convert (frame->iwt_frame, frame->original_frame);
+    schro_frame_convert (frame->iwt_frame, frame->filtered_frame);
 
     {
       SchroMotion *motion;
@@ -682,7 +687,7 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
         frame->params.video_format->width,
         frame->params.video_format->height);
   } else {
-    schro_frame_convert (frame->iwt_frame, frame->original_frame);
+    schro_frame_convert (frame->iwt_frame, frame->filtered_frame);
   }
 
   schro_frame_iwt_transform (frame->iwt_frame, &frame->params,
@@ -829,7 +834,7 @@ schro_encoder_postanalyse_picture (SchroEncoderFrame *frame)
     double mse;
     double psnr;
 
-    mse = schro_frame_mean_squared_error (frame->original_frame,
+    mse = schro_frame_mean_squared_error (frame->filtered_frame,
         frame->reconstructed_frame->frames[0]);
     psnr = 10*log(255*255/mse)/log(10);
     if (frame->encoder->average_psnr == 0) {
@@ -847,7 +852,7 @@ schro_encoder_postanalyse_picture (SchroEncoderFrame *frame)
   if (frame->encoder->calculate_ssim) {
     double mssim;
 
-    mssim = schro_ssim (frame->original_frame,
+    mssim = schro_ssim (frame->filtered_frame,
         frame->reconstructed_frame->frames[0]);
     schro_dump(SCHRO_DUMP_SSIM, "%d %g\n", frame->frame_number, mssim);
   }
@@ -1909,11 +1914,11 @@ out:
 
   SCHRO_ASSERT(arith->offset < frame->subband_size);
 
-  //schro_encoder_calculate_test_info (frame);
+  schro_encoder_calculate_test_info (frame);
   schro_dump(SCHRO_DUMP_SUBBAND_EST, "%d %d %d %g %d %g\n",
       frame->frame_number, component, index,
       frame->est_entropy[component][index][frame->quant_index[component][index]],
-      arith->offset*8, 0.0/*frame->subband_info[component][index]*/);
+      arith->offset*8, frame->subband_info[component][index]);
 
   schro_bits_encode_uint (frame->bits, arith->offset);
   if (arith->offset > 0) {
@@ -2475,6 +2480,9 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
     if (frame->original_frame) {
       schro_frame_unref (frame->original_frame);
     }
+    if (frame->filtered_frame) {
+      schro_frame_unref (frame->filtered_frame);
+    }
     if (frame->reconstructed_frame) {
       schro_upsampled_frame_free (frame->reconstructed_frame);
     }
@@ -2581,4 +2589,5 @@ int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
 
   return value;
 }
+
 

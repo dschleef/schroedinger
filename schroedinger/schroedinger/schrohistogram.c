@@ -153,7 +153,7 @@ schro_histogram_add_array_s16 (SchroHistogram *hist, int16_t *src, int n)
 }
 
 void
-schro_histogram_scale (SchroHistogram *hist, int scale)
+schro_histogram_scale (SchroHistogram *hist, double scale)
 {
   int i;
   for(i=0;i<SCHRO_HISTOGRAM_SIZE;i++){
@@ -169,7 +169,7 @@ pow2 (int i, void *priv)
 }
 
 double
-schro_histogram_estimate_noise_level (SchroHistogram *hist, int volume)
+schro_histogram_estimate_noise_level (SchroHistogram *hist)
 {
   static SchroHistogramTable table;
   static int table_inited;
@@ -183,17 +183,71 @@ schro_histogram_estimate_noise_level (SchroHistogram *hist, int volume)
     table_inited = TRUE;
   }
 
-  sigma = sqrt(schro_histogram_apply_table (hist, &table) / volume);
-  //SCHRO_ERROR("sigma %g", sigma);
-  for(i=0;i<10;i++) {
+  sigma = sqrt(schro_histogram_apply_table (hist, &table) / hist->n);
+  SCHRO_DEBUG("sigma %g", sigma);
+  for(i=0;i<5;i++) {
     j = ceil (sigma*2.0);
     n = schro_histogram_get_range (hist, 0, j);
-    sigma = (1/0.95) *
+    sigma = 1.14 *
       sqrt (schro_histogram_apply_table_range (hist, &table, 0, j) / n);
-    //SCHRO_ERROR("sigma %g (%d)", sigma, j);
+    SCHRO_DEBUG("sigma %g (%d)", sigma, j);
   }
+  SCHRO_DEBUG("sigma %g n %d", sigma, n);
 
   return sigma;
+}
+
+double
+schro_histogram_estimate_slope (SchroHistogram *hist)
+{
+  int i;
+  int n;
+  double x,y;
+  double m_x;
+  double m_y;
+  double m_xx;
+  double m_xy;
+  double ave_x, ave_y;
+  double slope, y0;
+
+  m_x = 0;
+  m_y = 0;
+  m_xx = 0;
+  m_xy = 0;
+  n = 0;
+  for(i=0;i<SCHRO_HISTOGRAM_SIZE;i++){
+    if (i>0 && hist->bins[i] > 0) {
+      x = sqrt(iexpx(i));
+      y = log(hist->bins[i]/ilogx_size(i));
+      m_x += x;
+      m_y += y;
+      m_xy += x*y;
+      m_xx += x*x;
+      n++;
+    }
+  }
+
+  ave_x = m_x/n;
+  ave_y = m_y/n;
+
+  slope = (n*m_xy - m_x*m_y)/(n*m_xx - m_x * m_x);
+  y0 = ave_y - slope*ave_x;
+
+  SCHRO_DEBUG("n %d slope %g y0 %g", n, slope, y0);
+
+#if 0
+  for(i=0;i<SCHRO_HISTOGRAM_SIZE;i++){
+    //if (hist->bins[i]/ilogx_size(i) >= hist->n*0.0003 &&
+    //    hist->bins[i]/ilogx_size(i) < hist->n*0.03) {
+    if (i>0 && hist->bins[i] > 0) {
+      x = sqrt(iexpx(i));
+      y = y0 + slope * x;
+      hist->bins[i] = exp(y) * ilogx_size(i);
+    }
+  }
+#endif
+
+  return slope;
 }
 
 

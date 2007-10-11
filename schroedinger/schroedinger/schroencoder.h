@@ -78,6 +78,7 @@ struct _SchroEncoderFrame {
 
   SchroPictureNumber frame_number;
   SchroFrame *original_frame;
+  SchroFrame *filtered_frame;
   SchroFrame *downsampled_frames[5];
   SchroUpsampledFrame *reconstructed_frame;
 
@@ -89,6 +90,7 @@ struct _SchroEncoderFrame {
   int slot;
   int last_frame;
 
+  int filtering;
   int is_ref;
   int num_refs;
   SchroPictureNumber picture_number_ref0;
@@ -126,6 +128,7 @@ struct _SchroEncoderFrame {
   int have_estimate_tables;
   double est_entropy[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3][60];
   double est_error[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3][60];
+  double subband_info[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3];
   SchroBits *bits;
   SchroParams params;
   SchroEncoder *encoder;
@@ -142,6 +145,7 @@ struct _SchroEncoderFrame {
 
   int have_histograms;
   SchroHistogram subband_hists[3][SCHRO_MAX_SUBBANDS];
+  SchroHistogram hist_test;
 
   int allocated_bits;
   int actual_bits;
@@ -327,6 +331,8 @@ void schro_encoder_frame_unref (SchroEncoderFrame *frame);
 void schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame);
 void schro_encoder_estimate_entropy (SchroEncoderFrame *frame);
 void schro_encoder_recalculate_allocations (SchroEncoder *encoder);
+
+void schro_encoder_calculate_test_info (SchroEncoderFrame *frame);
 
 
 SCHRO_END_DECLS

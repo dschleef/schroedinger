@@ -1,5 +1,24 @@
 2007-10-11  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrossim.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	  Move schro_frame_dup()
+	* schroedinger/schrohistogram.c:
+	* schroedinger/schrohistogram.h:
+	  Add slope estimation.  Change bins to double.
+	* schroedinger/schrofilter.c:
+	  Add addnoise and adaptive_lowpass filters.
+	* schroedinger/schroanalysis.c:
+	* schroedinger/schroanalysis.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schropredict.c:
+	  Use new filtered_frame instead of incorrectly named
+	  original_frame
+
+2007-10-11  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schro.c:
 	* schroedinger/schrodebug.c:
 	* schroedinger/schrodebug.h:

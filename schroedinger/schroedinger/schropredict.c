@@ -297,11 +297,11 @@ schro_encoder_global_prediction (SchroEncoderFrame *frame)
     schro_motion_field_global_prediction (mf, &frame->params.global_motion[i],
         frame->params.mv_precision);
     if (i == 0) {
-      schro_motion_global_metric (mf, frame->original_frame,
-          frame->ref_frame0->original_frame);
+      schro_motion_global_metric (mf, frame->filtered_frame,
+          frame->ref_frame0->filtered_frame);
     } else {
-      schro_motion_global_metric (mf, frame->original_frame,
-          frame->ref_frame1->original_frame);
+      schro_motion_global_metric (mf, frame->filtered_frame,
+          frame->ref_frame1->filtered_frame);
     }
     if (i == 0) {
       frame->motion_fields[SCHRO_MOTION_FIELD_GLOBAL_REF0] = mf;
@@ -663,7 +663,7 @@ static SchroFrame *
 get_downsampled(SchroEncoderFrame *frame, int i)
 {
   if (i==0) {
-    return frame->original_frame;
+    return frame->filtered_frame;
   }
   return frame->downsampled_frames[i-1];
 }
@@ -761,7 +761,7 @@ schro_encoder_dc_prediction (SchroEncoderFrame *encoder_frame)
   int luma_w, luma_h;
   int chroma_w, chroma_h;
   SchroMotionField *motion_field;
-  SchroFrame *orig_frame = encoder_frame->original_frame;
+  SchroFrame *orig_frame = encoder_frame->filtered_frame;
 
   motion_field = schro_motion_field_new (params->x_num_blocks,
       params->y_num_blocks);

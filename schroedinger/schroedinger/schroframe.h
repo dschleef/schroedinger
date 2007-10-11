@@ -83,6 +83,7 @@ void schro_frame_set_free_callback (SchroFrame *frame,
     SchroFrameFreeFunc free_func, void *priv);
 void schro_frame_unref (SchroFrame *frame);
 SchroFrame *schro_frame_ref (SchroFrame *frame);
+SchroFrame *schro_frame_dup (SchroFrame *frame);
 void schro_frame_convert (SchroFrame *dest, SchroFrame *src);
 void schro_frame_add (SchroFrame *dest, SchroFrame *src);
 void schro_frame_subtract (SchroFrame *dest, SchroFrame *src);

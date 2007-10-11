@@ -7,19 +7,6 @@
 
 
 SchroFrame *
-schro_frame_dup (SchroFrame *frame)
-{
-  SchroFrame *newframe;
-  
-  newframe = schro_frame_new_and_alloc (frame->format,
-      frame->width, frame->height);
-
-  schro_frame_convert (newframe, frame);
-
-  return newframe;
-}
-
-SchroFrame *
 schro_frame_dup16 (SchroFrame *frame)
 {
   SchroFrame *newframe;

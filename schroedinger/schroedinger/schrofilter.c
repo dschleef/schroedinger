@@ -850,3 +850,93 @@ schro_frame_filter_wavelet (SchroFrame *frame)
   schro_frame_unref (tmpframe);
 }
 
+
+double
+random_std (void)
+{
+  double x;
+  double y;
+
+  while (1) {
+    x = -5.0 + random () * (1.0/RAND_MAX) * 10;
+    y = random () * (1.0/RAND_MAX);
+
+    if (y < exp(-x*x*0.5)) return x;
+  }
+}
+
+void
+addnoise_u8 (uint8_t *dest, int n, double sigma)
+{
+  int i;
+  int x;
+
+  for(i=0;i<n;i++){
+dest[i] = 128;
+    x = rint(random_std() * sigma) + dest[i];
+    dest[i] = CLAMP(x,0,255);
+  }
+}
+
+void
+schro_frame_component_filter_addnoise (SchroFrameComponent *comp, double sigma)
+{
+  int i;
+
+  for(i=0;i<comp->height;i++){
+    addnoise_u8 ( OFFSET(comp->data, comp->stride * i), comp->width, sigma);
+  }
+}
+
+void
+schro_frame_filter_addnoise (SchroFrame *frame, double sigma)
+{
+  schro_frame_component_filter_addnoise (&frame->components[0], sigma);
+  schro_frame_component_filter_addnoise (&frame->components[1], sigma);
+  schro_frame_component_filter_addnoise (&frame->components[2], sigma);
+}
+
+
+
+
+
+void
+schro_frame_filter_adaptive_lowpass (SchroFrame *frame)
+{
+  SchroHistogram hist;
+  double slope;
+  SchroFrame *tmp;
+  int16_t tmpdata[2048];
+  double sigma;
+  int j;
+
+  tmp = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16_444 | frame->format,
+      frame->width, frame->height);
+  schro_frame_convert (tmp, frame);
+
+  schro_wavelet_transform_2d (SCHRO_WAVELET_5_3,
+      tmp->components[0].data, tmp->components[0].stride,
+      tmp->components[0].width, tmp->components[0].height, tmpdata);
+
+  schro_histogram_init (&hist);
+  for(j=0;j<tmp->height/2;j++){
+    schro_histogram_add_array_s16 (&hist,
+        OFFSET(tmp->components[0].data, tmp->components[0].stride * (2*j+1)),
+        tmp->width/2);
+  }
+
+  schro_frame_unref(tmp);
+
+  slope = schro_histogram_estimate_slope (&hist);
+
+  /* good for 2 Mb DVD intra-only rip */
+  sigma = -1.0/slope;
+  if (sigma > 1.0) {
+    SCHRO_ERROR("enabling filtering (slope %g)", slope);
+
+    schro_frame_filter_lowpass2 (frame, sigma);
+  }
+}
+
+
+

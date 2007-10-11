@@ -182,6 +182,18 @@ schro_frame_new_from_data_I420 (void *data, int width, int height)
 }
 
 SchroFrame *
+schro_frame_dup (SchroFrame *frame)
+{
+  SchroFrame *dup_frame;
+
+  dup_frame = schro_frame_new_and_alloc (frame->format, frame->width,
+      frame->height);
+  schro_frame_convert (dup_frame, frame);
+
+  return dup_frame;
+}
+
+SchroFrame *
 schro_frame_ref (SchroFrame *frame)
 {
   frame->refcount++;
