@@ -631,8 +631,6 @@ void
 schro_encoder_analyse_picture (SchroEncoderFrame *frame)
 {
 
-frame->filtering = TRUE;
-
   if (frame->filtering) {
     frame->filtered_frame = schro_frame_dup (frame->original_frame);
     //schro_frame_filter_addnoise (frame->filtered_frame, 0);
@@ -1914,7 +1912,6 @@ out:
 
   SCHRO_ASSERT(arith->offset < frame->subband_size);
 
-  schro_encoder_calculate_test_info (frame);
   schro_dump(SCHRO_DUMP_SUBBAND_EST, "%d %d %d %g %d %g\n",
       frame->frame_number, component, index,
       frame->est_entropy[component][index][frame->quant_index[component][index]],

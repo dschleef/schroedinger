@@ -13,7 +13,7 @@ noinst_PROGRAMS = arith arith_encode \
 	 wavelet_gain_curve \
 	 perceptual_weight perceptual_curves \
 	 struct_offsets wavelet_noise_2d \
-	 unpack downsample
+	 unpack downsample hist_noise_level
 
 noinst_HEADERS = common.h
 
