@@ -881,3 +881,71 @@ schro_params_get_frame_format (int depth, SchroChromaFormat chroma_format)
   SCHRO_ASSERT(0);
 }
 
+
+const int
+schro_tables_lowdelay_quants[7][4][9] = {
+  { /* wavelet 0 */
+    {  5,  3, 0 },
+    {  6,  3,  0,  5, 2 },
+    {  5,  2,  0,  4,  1,  6, 3 },
+    {  5,  3,  0,  4,  2,  6,  3,  8, 5 },
+  },
+  { /* wavelet 1 */
+    {  4,  2, 0 },
+    {  4,  2,  0,  4, 2 },
+    {  5,  3,  0,  5,  3,  7, 5 },
+    {  5,  3,  0,  5,  2,  7,  5,  9, 7 },
+  },
+  { /* wavelet 2 */
+    {  5,  2, 0 },
+    {  6,  3,  0,  4, 2 },
+    {  6,  3,  0,  4,  1,  5, 3 },
+    {  5,  3,  0,  4,  1,  5,  2,  6, 4 },
+  },
+  { /* wavelet 3 */
+    {  8,  4, 0 },
+    { 12,  8,  4,  4, 0 },
+    { 16, 12,  8,  8,  4,  4, 0 },
+    { 20, 16, 12, 12,  8,  8,  4,  4, 0 },
+  },
+  { /* wavelet 4 */
+    {  8,  4, 0 },
+    {  8,  4,  0,  4, 0 },
+    {  8,  4,  0,  4,  0,  4, 0 },
+    {  8,  4,  0,  4,  0,  4,  0,  4, 0 },
+  },
+  { /* wavelet 5 */
+    {  0,  4, 7 },
+    {  0,  3,  7,  7, 10 },
+    {  0,  4,  7,  7, 11, 11, 14 },
+    {  0,  3,  7,  7, 10, 10, 14, 14, 17 },
+  },
+  { /* wavelet 6 */
+    {  4,  2, 0 },
+    {  3,  2,  0,  4, 2 },
+    {  3,  1,  0,  4,  2,  6, 4 },
+    {  3,  2,  0,  4,  3,  7,  5,  9, 7 },
+  },
+};
+
+void
+schro_params_init_lowdelay_quantisers (SchroParams *params)
+{
+  int i;
+  const int *table;
+
+  table = schro_tables_lowdelay_quants[params->wavelet_filter_index]
+      [params->transform_depth-1];
+
+  params->quant_matrix[0] = table[0];
+  for(i=0;i<params->transform_depth; i++) {
+    params->quant_matrix[1+3*i+0] = table[1 + 2*i + 0];
+    params->quant_matrix[1+3*i+1] = table[1 + 2*i + 0];
+    params->quant_matrix[1+3*i+2] = table[1 + 2*i + 1];
+  }
+
+  params->luma_quant_offset = 0;
+  params->chroma1_quant_offset = 0;
+  params->chroma2_quant_offset = 0;
+}
+

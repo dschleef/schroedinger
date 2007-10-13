@@ -251,3 +251,62 @@ schro_histogram_estimate_slope (SchroHistogram *hist)
 }
 
 
+double
+schro_histogram_estimate_entropy (SchroHistogram *hist, int quant_index,
+    int noarith)
+{
+#define N 12
+  double estimated_entropy = 0;
+  double bin[N];
+  int quant_factor;
+  int i;
+  double post5;
+
+  quant_factor = schro_table_quant[quant_index];
+
+  bin[0] = schro_histogram_get_range (hist, 0, 32000);
+  for(i=0;i<N;i++){
+    bin[i] = schro_histogram_get_range (hist, (quant_factor*((1<<i)-1)+3)/4, 32000);
+  }
+
+  if (!noarith) {
+    double ones, zeros;
+
+    /* entropy of sign bit */
+    estimated_entropy += bin[1];
+
+    /* entropy of continue bits */
+    estimated_entropy += schro_utils_entropy (bin[1], bin[0]);
+    estimated_entropy += schro_utils_entropy (bin[2], bin[1]);
+    estimated_entropy += schro_utils_entropy (bin[3], bin[2]);
+    estimated_entropy += schro_utils_entropy (bin[4], bin[3]);
+    estimated_entropy += schro_utils_entropy (bin[5], bin[4]);
+
+    post5 = 0;
+    for(i=6;i<N;i++){
+      post5 += bin[i];
+    }
+    estimated_entropy += schro_utils_entropy (post5, post5 + bin[5]);
+
+    /* data entropy */
+    ones = schro_histogram_apply_table (hist,
+        (SchroHistogramTable *)(schro_table_onebits_hist_shift3_1_2[quant_index]));
+    zeros = schro_histogram_apply_table (hist,
+        (SchroHistogramTable *)(schro_table_zerobits_hist_shift3_1_2[quant_index]));
+
+    estimated_entropy += schro_utils_entropy (ones, zeros + ones);
+  } else {
+    /* entropy of sign bit */
+    estimated_entropy += bin[1];
+
+    /* entropy of continue bits */
+    estimated_entropy += bin[0];
+    /* entropy of continue and data bits */
+    for(i=1;i<N;i++){
+      estimated_entropy += 2*bin[i];
+    }
+  }
+  
+  return estimated_entropy;
+}
+

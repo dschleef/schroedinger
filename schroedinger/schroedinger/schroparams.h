@@ -168,6 +168,7 @@ struct _SchroMotionField {
 };
 
 extern const int16_t schro_zero[];
+extern const int schro_tables_lowdelay_quants[7][4][9];
 
 void schro_params_init (SchroParams *params, int video_format);
 

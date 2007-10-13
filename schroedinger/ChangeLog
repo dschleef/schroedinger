@@ -1,5 +1,17 @@
 2007-10-12  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroencoder.c:
+	* schroedinger/schrohistogram.c:
+	* schroedinger/schrohistogram.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schroquantiser.c:
+	* schroedinger/schroutils.c:
+	* schroedinger/schroutils.h:
+	  Move code around.
+
+2007-10-12  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c: Fix compile error.
 	* testsuite/Makefile.am:
 	* testsuite/hist_noise_level.c: Add test.

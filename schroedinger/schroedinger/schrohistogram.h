@@ -37,6 +37,9 @@ double schro_histogram_apply_table_range (SchroHistogram *hist,
 double schro_histogram_estimate_noise_level (SchroHistogram *hist);
 double schro_histogram_estimate_slope (SchroHistogram *hist);
 
+double schro_histogram_estimate_entropy (SchroHistogram *hist, int quant_index,
+    int noarith);
+
 SCHRO_END_DECLS
 
 #endif
