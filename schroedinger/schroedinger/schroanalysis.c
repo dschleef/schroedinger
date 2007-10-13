@@ -4,6 +4,7 @@
 #endif
 
 #include <schroedinger/schro.h>
+#include <schroedinger/schrooil.h>
 
 void
 schro_encoder_frame_downsample (SchroEncoderFrame *frame)
@@ -35,18 +36,19 @@ static double
 schro_frame_component_squared_error (SchroFrameComponent *a,
     SchroFrameComponent *b)
 {
-  int i;
   int j;
-  uint8_t *da, *db;
   double sum;
   
+  SCHRO_ASSERT(a->width == b->width);
+  SCHRO_ASSERT(a->height == b->height);
+
   sum = 0;
   for(j=0;j<a->height;j++){
-    da = OFFSET(a->data, a->stride * j);
-    db = OFFSET(b->data, b->stride * j);
-    for(i=0;i<a->width;i++){
-      sum += (da[i]-db[i])*(da[i]-db[i]);
-    }
+    int32_t linesum;
+
+    oil_sum_square_diff_u8 (&linesum, OFFSET(a->data, a->stride * j),
+    OFFSET(b->data, b->stride * j), a->width);
+    sum += linesum;
   }
   return sum;
 }

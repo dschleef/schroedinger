@@ -22,6 +22,19 @@ void oil_add_const_rshift_u16 (uint16_t *d, const uint16_t *s1,
     const int16_t *s2_2, int n);
 void oil_sum_s32_u8 (int32_t *d_1, uint8_t *src, int n);
 void oil_sum_s32_s16 (int32_t *d_1, int16_t *src, int n);
+void oil_sum_square_diff_u8 (int32_t *d_1, uint8_t *s1, uint8_t *s2, int n);
+void oil_fir_4tap_u8 (uint8_t *d, const uint8_t *s1_np3, const int16_t *s2_4,
+    const int16_t *s3_2, int n);
+void oil_fir_8tap_u8 (uint8_t *d, const uint8_t *s1_np3, const int16_t *s2_4,
+    const int16_t *s3_2, int n);
+void oil_fir_10tap_u8 (uint8_t *d, const uint8_t *s1_np3, const int16_t *s2_4,
+    const int16_t *s3_2, int n);
+void oil_fir_4tap_s16 (int16_t *d, const int16_t *s1_np3, const int32_t *s2_4,
+    const int32_t *s3_2, int n);
+void oil_fir_8tap_s16 (int16_t *d, const int16_t *s1_np3, const int32_t *s2_4,
+    const int32_t *s3_2, int n);
+void oil_fir_10tap_s16 (int16_t *d, const int16_t *s1_np3, const int32_t *s2_4,
+    const int32_t *s3_2, int n);
 
 SCHRO_END_DECLS
 

@@ -10,6 +10,8 @@
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schrohistogram.h>
 #include <schroedinger/schroparams.h>
+#include <schroedinger/schrooil.h>
+
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <string.h>
@@ -236,6 +238,7 @@ schro_filter_cwm7 (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n)
 }
 #endif
 
+/* FIXME move to schrooil */
 void
 schro_filter_cwm7 (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n)
 {
@@ -322,23 +325,27 @@ lowpass_u8 (uint8_t *d, uint8_t *s, int n)
   int i;
   int j;
   int x;
-  static int taps[] = { 2, 9, 28, 55, 68, 55, 28, 9, 2, 0 };
+  const int16_t taps[] = { 2, 9, 28, 55, 68, 55, 28, 9, 2, 0 };
+  const int16_t offsetshift[] = { 128, 8 };
 
-  for(i=0;i<n;i++){
+  for(i=0;i<4;i++){
     x = 0;
-    if (i<4 || i > n-5) {
-      for(j=0;j<9;j++) {
-        x += s[CLAMP(i+j-4,0,n-1)]*taps[j];
-      }
-    } else {
-      for(j=0;j<9;j++) {
-        x += s[i+j-4]*taps[j];
-      }
+    for(j=0;j<9;j++) {
+      x += s[CLAMP(i+j-4,0,n-1)]*taps[j];
+    }
+    d[i] = (x + 128)>>8;
+  }
+  oil_fir_10tap_u8 (d+4, s, taps, offsetshift, n - 9);
+  for(i=n-6;i<n;i++){
+    x = 0;
+    for(j=0;j<9;j++) {
+      x += s[CLAMP(i+j-4,0,n-1)]*taps[j];
     }
     d[i] = (x + 128)>>8;
   }
 }
 
+/* FIXME move to schrooil */
 static void
 lowpass_vert_u8 (uint8_t *d, uint8_t *s, int n)
 {
@@ -405,23 +412,27 @@ lowpass_s16 (int16_t *d, int16_t *s, int n)
   int i;
   int j;
   int x;
-  static int taps[] = { 2, 9, 28, 55, 68, 55, 28, 9, 2, 0 };
+  const int32_t taps[] = { 2, 9, 28, 55, 68, 55, 28, 9, 2, 0 };
+  const int32_t offsetshift[] = { 128, 8 };
 
-  for(i=0;i<n;i++){
+  for(i=0;i<4;i++){
     x = 0;
-    if (i<4 || i > n-5) {
-      for(j=0;j<9;j++) {
-        x += s[CLAMP(i+j-4,0,n-1)]*taps[j];
-      }
-    } else {
-      for(j=0;j<9;j++) {
-        x += s[i+j-4]*taps[j];
-      }
+    for(j=0;j<9;j++) {
+      x += s[CLAMP(i+j-4,0,n-1)]*taps[j];
+    }
+    d[i] = (x + 128)>>8;
+  }
+  oil_fir_10tap_s16 (d+4, s, taps, offsetshift, n - 9);
+  for(i=n-6;i<n;i++){
+    x = 0;
+    for(j=0;j<9;j++) {
+      x += s[CLAMP(i+j-4,0,n-1)]*taps[j];
     }
     d[i] = (x + 128)>>8;
   }
 }
 
+/* FIXME move to schrooil */
 static void
 lowpass_vert_s16 (int16_t *d, int16_t *s, int n)
 {
@@ -483,6 +494,7 @@ schro_frame_filter_lowpass_16 (SchroFrame *frame)
 
 
 
+/* FIXME move to schrooil */
 static void
 iir3_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
 {
@@ -499,6 +511,7 @@ iir3_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
   }
 }
 
+/* FIXME move to schrooil */
 static void
 iir3_rev_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
 {
@@ -548,6 +561,7 @@ iir3_across_u8_f64 (uint8_t *d, uint8_t *s, double *i1, double *i2, double *i3,
   }
 }
 
+/* FIXME move to schrooil */
 static void
 notoil_convert_f64_u8 (double *dest, uint8_t *src, int n)
 {
@@ -558,6 +572,7 @@ notoil_convert_f64_u8 (double *dest, uint8_t *src, int n)
 }
 
 
+/* FIXME move to schrooil */
 static void
 iir3_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
 {
@@ -574,6 +589,7 @@ iir3_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
   }
 }
 
+/* FIXME move to schrooil */
 static void
 iir3_rev_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
 {
@@ -606,6 +622,7 @@ lowpass2_s16 (int16_t *d, int16_t *s, double *coeff, int n)
   iir3_rev_s16_f64 (d, s, state, coeff, n);
 }
 
+/* FIXME move to schrooil */
 static void
 iir3_across_s16_f64 (int16_t *d, int16_t *s, double *i1, double *i2, double *i3,
     double *s2_4, int n)
@@ -622,6 +639,8 @@ iir3_across_s16_f64 (int16_t *d, int16_t *s, double *i1, double *i2, double *i3,
     d[i] = rint(x);
   }
 }
+
+/* FIXME move to schrooil */
 static void
 notoil_convert_f64_s16 (double *dest, int16_t *src, int n)
 {
@@ -698,8 +717,6 @@ schro_frame_component_filter_lowpass2_u8 (SchroFrameComponent *comp,
         OFFSET(comp->data, comp->stride * i),
         i1, i2, i3, v_coeff, comp->width);
   }
-
-
 
   free (i1);
   free (i2);
@@ -830,8 +847,6 @@ schro_frame_filter_wavelet (SchroFrame *frame)
             width);
       }
 
-      //histogram (&tmpframe->components[component]);
-
       cutoff = 100;
       for(y=0;y<height;y++){
         int16_t *line = OFFSET(data, stride*y);
@@ -872,7 +887,6 @@ addnoise_u8 (uint8_t *dest, int n, double sigma)
   int x;
 
   for(i=0;i<n;i++){
-dest[i] = 128;
     x = rint(random_std() * sigma) + dest[i];
     dest[i] = CLAMP(x,0,255);
   }

@@ -630,11 +630,11 @@ schro_encoder_engine_init (SchroEncoder *encoder)
 void
 schro_encoder_analyse_picture (SchroEncoderFrame *frame)
 {
-
   if (frame->filtering) {
     frame->filtered_frame = schro_frame_dup (frame->original_frame);
     //schro_frame_filter_addnoise (frame->filtered_frame, 0);
     //schro_frame_filter_lowpass2 (frame->filtered_frame, 2.0);
+    //schro_frame_filter_lowpass (frame->filtered_frame);
     schro_frame_filter_adaptive_lowpass (frame->filtered_frame);
     //schro_frame_filter_cwm7 (frame->filtered_frame);
     //schro_frame_filter_cwmN (frame->filtered_frame, 5);

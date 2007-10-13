@@ -1,5 +1,14 @@
 2007-10-12  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroanalysis.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schrofilter.c:
+	* schroedinger/schrooil.c:
+	* schroedinger/schrooil.h:
+	  Move more code around.
+
+2007-10-12  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	* schroedinger/schrohistogram.c:
 	* schroedinger/schrohistogram.h:
