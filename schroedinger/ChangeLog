@@ -1,3 +1,21 @@
+2007-10-16  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrooil.c: Stupidity fix.
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	  Add frame marking.  Creates a white or black square in the
+	  upper left corner of image.  This is sort of silly -- we should
+	  push a comment packet with real information, and let the decoder
+	  stamp the image with the info.
+	* schroedinger/schroutils.h: Add begin/end decls
+	* schroedinger/schroanalysis.c: whitespace
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schrodebug.c:
+	* schroedinger/schrodebug.h:
+	  Add scene change score.
+
 2007-10-12  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroanalysis.c:

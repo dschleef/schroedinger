@@ -1,6 +1,6 @@
 
-#ifndef __SCHRO_SCHROUTILS_H__
-#define __SCHRO_SCHROUTILS_H__
+#ifndef __SCHRO_UTILS_H__
+#define __SCHRO_UTILS_H__
 
 #ifndef TRUE
 #define TRUE 1
@@ -51,12 +51,16 @@
 #define SCHRO_END_DECLS
 #endif
 
+SCHRO_BEGIN_DECLS
+
 int muldiv64 (int a, int b, int c);
 int schro_utils_multiplier_to_quant_index (double x);
 int schro_dequantise (int q, int quant_factor, int quant_offset);
 int schro_quantise (int value, int quant_factor, int quant_offset);
 double schro_utils_probability_to_entropy (double x);
 double schro_utils_entropy (double a, double total);
+
+SCHRO_END_DECLS
 
 #endif
 

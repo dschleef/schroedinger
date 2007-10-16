@@ -149,6 +149,10 @@ struct _SchroEncoderFrame {
 
   int allocated_bits;
   int actual_bits;
+  double average_luma;
+
+  double scene_change_score;
+  int have_scene_change_score;
 };
 
 struct _SchroEncoder {

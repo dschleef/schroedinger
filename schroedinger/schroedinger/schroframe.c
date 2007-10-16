@@ -286,7 +286,8 @@ schro_frame_convert (SchroFrame *dest, SchroFrame *src)
     }
   }
 
-  SCHRO_ERROR("conversion unimplemented");
+  SCHRO_ERROR("conversion unimplemented (%d -> %d)",
+      src->format, dest->format);
   SCHRO_ASSERT(0);
 }
 
@@ -1361,7 +1362,7 @@ schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
   }
 }
 
-int
+double
 schro_frame_calculate_average_luma (SchroFrame *frame)
 {
   SchroFrameComponent *comp;
@@ -1394,7 +1395,7 @@ schro_frame_calculate_average_luma (SchroFrame *frame)
   }
 
   n = comp->height * comp->width;
-  return (sum + n/2) / n;
+  return (double)sum / n;
 }
 
 static void
@@ -1521,4 +1522,22 @@ schro_frame_md5 (SchroFrame *frame, uint32_t *state)
       state[3]&0xff, (state[3]>>8)&0xff, (state[3]>>16)&0xff,
       (state[3]>>24)&0xff);
 }
+
+void
+schro_frame_mark (SchroFrame *frame, int value)
+{
+  uint8_t *line;
+  int y;
+  int i;
+
+  for(y=0;y<MIN(10,frame->components[0].height);y++){
+    line = OFFSET(frame->components[0].data,
+        frame->components[0].stride * y);
+    for(i=0;i<10;i++){
+      line[i] = value;
+    }
+  }
+
+}
+
 

@@ -160,6 +160,7 @@ oil_sum_square_diff_u8 (int32_t *d_1, uint8_t *s1, uint8_t *s2, int n)
     x = s1[i] - s2[i];
     sum += x*x;
   }
+  d_1[0] = sum;
 }
 
 void

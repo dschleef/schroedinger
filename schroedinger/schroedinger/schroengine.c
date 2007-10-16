@@ -3,8 +3,9 @@
 #include "config.h"
 #endif
 #include <schroedinger/schro.h>
-#include <schroedinger/schroencoder.h>
 #include <liboil/liboil.h>
+
+#include <math.h>
 
 
 void
@@ -17,6 +18,38 @@ schro_engine_check_new_access_unit(SchroEncoder *encoder,
     encoder->au_frame = frame->frame_number;
   }
 }
+
+int
+schro_engine_get_scene_change_score (SchroEncoder *encoder, int i)
+{
+  SchroEncoderFrame *frame1;
+  SchroEncoderFrame *frame2;
+
+  frame1 = encoder->frame_queue->elements[i].data;
+  if (frame1->have_scene_change_score) return TRUE;
+
+  /* FIXME Just because it's the first picture in the queue doesn't
+   * mean it's a scene change.  (But likely is.) */
+  if (i == 0) {
+    frame1->scene_change_score = 1.23;
+    frame1->have_scene_change_score = TRUE;
+    return TRUE;
+  }
+
+  frame2 = encoder->frame_queue->elements[i-1].data;
+  if (frame2->state == SCHRO_ENCODER_FRAME_STATE_ANALYSE && frame2->busy) {
+    return FALSE;
+  }
+
+  SCHRO_DEBUG("%g %g", frame1->average_luma, frame2->average_luma);
+
+  frame1->scene_change_score = schro_frame_mean_squared_error (frame1->downsampled_frames[3],
+      frame2->downsampled_frames[3]);
+
+  frame1->have_scene_change_score = TRUE;
+  return TRUE;
+}
+
 
 int
 schro_engine_pick_output_buffer_size (SchroEncoder *encoder,
@@ -209,6 +242,10 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
             (void (*)(void *))schro_encoder_analyse_picture, frame);
         return TRUE;
       case SCHRO_ENCODER_FRAME_STATE_ANALYSE:
+        if (!schro_engine_get_scene_change_score (encoder, i)) {
+          continue;
+        }
+
         schro_engine_check_new_access_unit (encoder, frame);
 
         is_ref = FALSE;
@@ -225,6 +262,13 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
             continue;
           }
         }
+
+        schro_dump (SCHRO_DUMP_SCENE_CHANGE, "%d %g %g\n",
+            frame->frame_number, frame->scene_change_score,
+            frame->average_luma);
+        SCHRO_DEBUG("frame change score %g", frame->scene_change_score);
+        schro_frame_mark (frame->filtered_frame,
+            (frame->scene_change_score>250)?255:0);
 
         frame->presentation_frame = frame->frame_number;
         frame->slot = encoder->next_slot;
@@ -268,6 +312,17 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
         schro_async_run_locked (encoder->async,
             (void (*)(void *))schro_encoder_predict_picture, frame);
         return TRUE;
+      default:
+        break;
+    }
+  }
+  for(i=0;i<encoder->frame_queue->n;i++) {
+    frame = encoder->frame_queue->elements[i].data;
+    SCHRO_DEBUG("backref i=%d picture=%d state=%d busy=%d", i, frame->frame_number, frame->state, frame->busy);
+
+    if (frame->busy) continue;
+
+    switch (frame->state) {
       case SCHRO_ENCODER_FRAME_STATE_PREDICT:
         frame->state = SCHRO_ENCODER_FRAME_STATE_ENCODING;
         frame->busy = TRUE;

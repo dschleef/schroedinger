@@ -644,7 +644,8 @@ schro_encoder_analyse_picture (SchroEncoderFrame *frame)
 
   schro_encoder_frame_downsample (frame);
 
-  schro_frame_calculate_average_luma (frame->filtered_frame);
+  frame->average_luma =
+    schro_frame_calculate_average_luma (frame->filtered_frame);
 }
 
 void
