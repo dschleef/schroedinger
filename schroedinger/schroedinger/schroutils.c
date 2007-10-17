@@ -4,6 +4,7 @@
 #endif
 
 #include <schroedinger/schroutils.h>
+#include <schroedinger/schrodebug.h>
 #include <schroedinger/schro-stdint.h>
 
 #include <math.h>
@@ -88,6 +89,26 @@ schro_utils_entropy (double a, double total)
   
   x = a / total;
   return schro_utils_probability_to_entropy (x) * total;
+}
+
+void
+schro_utils_reduce_fraction (int *n, int *d)
+{
+  static const int primes[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
+    91 };
+  int i;
+  int p;
+
+  SCHRO_DEBUG("reduce %d/%d", *n, *d);
+  for(i=0;i<sizeof(primes)/sizeof(primes[0]);i++){
+    p = primes[i];
+    while (*n % p == 0 && *d % p == 0) {
+      *n /= p;
+      *d /= p;
+    }
+    if (*d == 1) break;
+  }
+  SCHRO_DEBUG("to %d/%d", *n, *d);
 }
 
 

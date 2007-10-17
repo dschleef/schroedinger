@@ -18,6 +18,8 @@ static void schro_encoder_encode_transform_parameters (SchroEncoderFrame *frame)
 static void schro_encoder_encode_transform_data (SchroEncoderFrame *frame);
 static int schro_encoder_pull_is_ready_locked (SchroEncoder *encoder);
 static void schro_encoder_encode_codec_comment (SchroEncoder *encoder);
+static void schro_encoder_encode_bitrate_comment (SchroEncoder *encoder,
+    unsigned int bitrate);
 static void schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame,
     int component, int index);
 static void schro_encoder_fixup_offsets (SchroEncoder *encoder,
@@ -86,6 +88,11 @@ schro_encoder_start (SchroEncoder *encoder)
   encoder->async = schro_async_new (0, (int (*)(void *))schro_encoder_iterate,
       encoder);
   schro_encoder_engine_init (encoder);
+
+  if (encoder->prefs[SCHRO_PREF_ENGINE] == 7) {
+  schro_encoder_encode_bitrate_comment (encoder,
+      encoder->prefs[SCHRO_PREF_BITRATE]);
+  }
 }
 
 void
@@ -386,6 +393,23 @@ schro_encoder_encode_codec_comment (SchroEncoder *encoder)
 }
 
 static void
+schro_encoder_encode_bitrate_comment (SchroEncoder *encoder,
+    unsigned int bitrate)
+{
+  uint8_t s[4];
+  SchroBuffer *buffer;
+
+  s[0] = (bitrate>>24)&0xff;
+  s[1] = (bitrate>>16)&0xff;
+  s[2] = (bitrate>>8)&0xff;
+  s[3] = (bitrate>>0)&0xff;
+  buffer = schro_encoder_encode_auxiliary_data (encoder,
+      SCHRO_AUX_DATA_BITRATE, s, 4);
+  
+  schro_encoder_insert_buffer (encoder, buffer);
+}
+
+static void
 schro_encoder_encode_md5_checksum (SchroEncoderFrame *frame)
 {
   SchroBuffer *buffer;
@@ -630,7 +654,7 @@ schro_encoder_engine_init (SchroEncoder *encoder)
 void
 schro_encoder_analyse_picture (SchroEncoderFrame *frame)
 {
-  if (frame->filtering) {
+  if (frame->need_filtering) {
     frame->filtered_frame = schro_frame_dup (frame->original_frame);
     //schro_frame_filter_addnoise (frame->filtered_frame, 0);
     //schro_frame_filter_lowpass2 (frame->filtered_frame, 2.0);
@@ -642,10 +666,21 @@ schro_encoder_analyse_picture (SchroEncoderFrame *frame)
     frame->filtered_frame = schro_frame_ref (frame->original_frame);
   }
 
-  schro_encoder_frame_downsample (frame);
+  if (frame->need_downsampling) {
+    schro_encoder_frame_downsample (frame);
+    frame->have_downsampling = TRUE;
+  }
 
-  frame->average_luma =
-    schro_frame_calculate_average_luma (frame->filtered_frame);
+  if (frame->need_average_luma) {
+    if (frame->have_downsampling) {
+      frame->average_luma =
+        schro_frame_calculate_average_luma (frame->downsampled_frames[3]);
+    } else {
+      frame->average_luma =
+        schro_frame_calculate_average_luma (frame->filtered_frame);
+    }
+    frame->have_average_luma = TRUE;
+  }
 }
 
 void
@@ -1427,9 +1462,13 @@ schro_encoder_encode_picture_header (SchroEncoderFrame *frame)
   schro_bits_sync(frame->bits);
   schro_bits_encode_bits (frame->bits, 32, frame->frame_number);
 
-  for(i=0;i<frame->params.num_refs;i++){
+  if (frame->params.num_refs > 0) {
     schro_bits_encode_sint (frame->bits,
-        (int32_t)(frame->reference_frame_number[i] - frame->frame_number));
+        (int32_t)(frame->picture_number_ref0 - frame->frame_number));
+    if (frame->params.num_refs > 1) {
+      schro_bits_encode_sint (frame->bits,
+          (int32_t)(frame->picture_number_ref1 - frame->frame_number));
+    }
   }
 
   /* retire list */

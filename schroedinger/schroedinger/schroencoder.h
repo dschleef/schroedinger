@@ -69,10 +69,23 @@ struct _SchroEncoderParams {
 
 struct _SchroEncoderFrame {
   int refcount;
-
-  int valid;
   SchroEncoderFrameStateEnum state;
   int busy;
+
+  /* Bits telling the engine stages which stuff needs to happen */
+  unsigned int need_downsampling;
+  unsigned int need_filtering;
+  unsigned int need_average_luma;
+
+  /* bits indicating that a particular analysis has happened.  Mainly
+   * for verification */
+  unsigned int have_estimate_tables;
+  unsigned int have_histograms;
+  unsigned int have_scene_change_score;
+  unsigned int have_downsampling;
+  unsigned int have_average_luma;
+
+  /* other stuff */
 
   int start_access_unit;
 
@@ -90,7 +103,6 @@ struct _SchroEncoderFrame {
   int slot;
   int last_frame;
 
-  int filtering;
   int is_ref;
   int num_refs;
   SchroPictureNumber picture_number_ref0;
@@ -125,7 +137,6 @@ struct _SchroEncoderFrame {
   int16_t *tmpbuf2;
 
   int quant_index[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3];
-  int have_estimate_tables;
   double est_entropy[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3][60];
   double est_error[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3][60];
   double subband_info[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3];
@@ -141,9 +152,8 @@ struct _SchroEncoderFrame {
   SchroMotionField *motion_field;
   SchroMotionField *motion_fields[32];
 
-  SchroPictureNumber reference_frame_number[2];
+  //SchroPictureNumber reference_frame_number[2];
 
-  int have_histograms;
   SchroHistogram subband_hists[3][SCHRO_MAX_SUBBANDS];
   SchroHistogram hist_test;
 
@@ -152,7 +162,6 @@ struct _SchroEncoderFrame {
   double average_luma;
 
   double scene_change_score;
-  int have_scene_change_score;
 };
 
 struct _SchroEncoder {
@@ -197,9 +206,10 @@ struct _SchroEncoder {
   int prefs[SCHRO_PREF_LAST];
 
   /* configuration flags */
-  int internal_testing;
-  int calculate_psnr;
-  int calculate_ssim;
+  schro_bool internal_testing;
+  schro_bool calculate_psnr;
+  schro_bool calculate_ssim;
+  schro_bool enable_filtering;
 
   double pixels_per_degree_horiz;
   double pixels_per_degree_vert;

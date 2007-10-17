@@ -9,6 +9,8 @@
 #define FALSE 0
 #endif
 
+typedef unsigned int schro_bool;
+
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 #define DIVIDE_ROUND_UP(a,b) (((a) + (b) - 1)/(b))
 #ifndef MIN
@@ -59,6 +61,7 @@ int schro_dequantise (int q, int quant_factor, int quant_offset);
 int schro_quantise (int value, int quant_factor, int quant_offset);
 double schro_utils_probability_to_entropy (double x);
 double schro_utils_entropy (double a, double total);
+void schro_utils_reduce_fraction (int *n, int *d);
 
 SCHRO_END_DECLS
 

@@ -1,3 +1,20 @@
+2007-10-17  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroengine.c: Improve various engine stuff.  Fix
+	  lossless engine.  Backref engine needs fixing, too.
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schropredict.c:
+	  Add need/have flags.  Remove reference_frame_number, since it's
+	  duplicated.
+	* schroedinger/schroutils.c:
+	* schroedinger/schroutils.h:
+	  Move reduce_fraction to here.  Add schro_bool.
+	* schroedinger/schrobitstream.h:
+	* tools/dump_packets.c:
+	  Add bitrate tag
+	* schroedinger/schrounpack.c: Fix bug.
+
 2007-10-16  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrooil.c: Stupidity fix.

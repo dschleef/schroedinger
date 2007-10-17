@@ -583,9 +583,20 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
           g_print("\n");
         }
         break;
+      case 4:
+        {
+          int bitrate;
+          g_print("  code: %d (bitrate)\n", code);
+          bitrate = (data[14]<<24);
+          bitrate |= (data[15]<<16);
+          bitrate |= (data[16]<<8);
+          bitrate |= (data[17]<<0);
+          g_print("  bitrate: %d\n", bitrate);
+        }
+        break;
       default:
         g_print("  code: %d (unknown)\n", code);
-        g_print("  string: %.*s\n", length, data + 14);
+        dump_hex (data + 14, length, "    ");
         break;
     }
 

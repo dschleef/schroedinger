@@ -123,6 +123,8 @@ _schro_unpack_shift_out (SchroUnpack *unpack, int n)
 {
   unsigned int value;
 
+  if (n == 0) return 0;
+
   value = unpack->shift_register >> (32 - n);
   unpack->shift_register <<= n;
   unpack->n_bits_in_shift_register -= n;

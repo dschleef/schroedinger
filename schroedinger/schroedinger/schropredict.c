@@ -662,6 +662,8 @@ schro_motion_field_dump (SchroMotionField *field)
 static SchroFrame *
 get_downsampled(SchroEncoderFrame *frame, int i)
 {
+  SCHRO_ASSERT(frame->have_downsampling);
+
   if (i==0) {
     return frame->filtered_frame;
   }
