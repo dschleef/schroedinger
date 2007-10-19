@@ -653,8 +653,19 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
 
   SCHRO_ASSERT(frame->have_estimate_tables);
   /* FIXME bad place to adjust for arith context ratio */
-  base_lambda = schro_encoder_entropy_to_lambda (frame,
-      frame->allocated_bits);
+  if (frame->num_refs == 0) {
+    base_lambda = schro_encoder_entropy_to_lambda (frame,
+        frame->allocated_bits*frame->allocation_modifier);
+  } else {
+    if (frame->num_refs == 1) {
+      base_lambda = frame->ref_frame0->base_lambda;
+    } else {
+      base_lambda = 0.5 *
+        (frame->ref_frame0->base_lambda + frame->ref_frame1->base_lambda);
+    }
+    base_lambda *= 0.2;
+  }
+  frame->base_lambda = base_lambda;
   SCHRO_DEBUG("LAMBDA: %g", base_lambda);
 
   for(component=0;component<3;component++){
@@ -674,16 +685,14 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
 
       lambda = base_lambda;
       if (i == 0) {
-        //lambda *= 10;
+        /* FIXME lame, but needed */
+        lambda *= 5;
       }
 #if 0
       if (component > 0) {
         lambda *= 0.3;
       }
 #endif
-      if (frame->is_ref) {
-        lambda *= 10;
-      }
 
       weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
         [frame->params.transform_depth-1][i];

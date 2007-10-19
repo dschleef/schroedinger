@@ -63,6 +63,8 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_NOARITH] = 0;
   encoder->prefs[SCHRO_PREF_MD5] = 0;
 
+  encoder->enable_filtering = TRUE;
+
   schro_params_set_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_SD576);
 
@@ -129,7 +131,7 @@ schro_encoder_use_perceptual_weighting (SchroEncoder *encoder,
     encoder->video_format.aspect_ratio_numerator * 
     (encoder->pixels_per_degree_horiz / encoder->video_format.aspect_ratio_denominator);
 
-  SCHRO_ERROR("pixels per degree horiz=%g vert=%g",
+  SCHRO_DEBUG("pixels per degree horiz=%g vert=%g",
       encoder->pixels_per_degree_horiz, encoder->pixels_per_degree_vert);
 
   switch(type) {
@@ -321,7 +323,10 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         SCHRO_DEBUG("buffer underrun");
         encoder->buffer_level = 0;
       }
-      SCHRO_DEBUG("buffer level %d", encoder->buffer_level);
+      if (encoder->buffer_level < 0) {
+      }
+      SCHRO_DEBUG("buffer level %d (%d)", encoder->buffer_level,
+          encoder->buffer_size);
 
       schro_encoder_fixup_offsets (encoder, buffer);
 
@@ -643,7 +648,7 @@ schro_encoder_engine_init (SchroEncoder *encoder)
   encoder->quantiser_engine = encoder->prefs[SCHRO_PREF_QUANT_ENGINE];
 
   encoder->buffer_size = encoder->prefs[SCHRO_PREF_BITRATE];
-  encoder->buffer_level = encoder->buffer_size / 2;
+  encoder->buffer_level = 0;
   encoder->bits_per_picture = muldiv64 (encoder->prefs[SCHRO_PREF_BITRATE],
         encoder->video_format.frame_rate_denominator,
         encoder->video_format.frame_rate_numerator);
@@ -659,9 +664,9 @@ schro_encoder_analyse_picture (SchroEncoderFrame *frame)
     //schro_frame_filter_addnoise (frame->filtered_frame, 0);
     //schro_frame_filter_lowpass2 (frame->filtered_frame, 2.0);
     //schro_frame_filter_lowpass (frame->filtered_frame);
-    schro_frame_filter_adaptive_lowpass (frame->filtered_frame);
+    //schro_frame_filter_adaptive_lowpass (frame->filtered_frame);
     //schro_frame_filter_cwm7 (frame->filtered_frame);
-    //schro_frame_filter_cwmN (frame->filtered_frame, 5);
+    schro_frame_filter_cwmN (frame->filtered_frame, 5);
   } else {
     frame->filtered_frame = schro_frame_ref (frame->original_frame);
   }
@@ -778,6 +783,7 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
     schro_bits_sync(frame->bits);
     schro_encoder_encode_picture_prediction (frame);
     schro_bits_sync(frame->bits);
+    frame->actual_mc_bits = -schro_bits_get_offset(frame->bits) * 8;
     schro_encoder_encode_superblock_split (frame);
     schro_encoder_encode_prediction_modes (frame);
     schro_encoder_encode_vector_data (frame, 0, 0);
@@ -789,6 +795,7 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
     schro_encoder_encode_dc_data (frame, 0);
     schro_encoder_encode_dc_data (frame, 1);
     schro_encoder_encode_dc_data (frame, 2);
+    frame->actual_mc_bits += schro_bits_get_offset(frame->bits) * 8;
   }
 
   schro_bits_sync(frame->bits);
@@ -806,8 +813,12 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
   schro_bits_flush (frame->bits);
   frame->actual_bits = schro_bits_get_offset (frame->bits)*8;
 
-  schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d\n", frame->frame_number,
-      frame->allocated_bits, frame->estimated_entropy, frame->actual_bits);
+  schro_dump (SCHRO_DUMP_PICTURE, "%d %d %g %d %d %g %d %d %d %d\n",
+      frame->frame_number, frame->num_refs,
+      frame->allocated_bits*frame->allocation_modifier,
+      frame->estimated_entropy, frame->actual_bits,
+      frame->scene_change_score, frame->actual_mc_bits,
+      frame->stats_dc, frame->stats_global, frame->stats_motion);
 
   subbuffer = schro_buffer_new_subbuffer (frame->output_buffer, 0,
       schro_bits_get_offset (frame->bits));

@@ -911,7 +911,20 @@ schro_frame_filter_addnoise (SchroFrame *frame, double sigma)
 }
 
 
+static int
+ilogx_size (int i)
+{
+  if (i < (1<<SCHRO_HISTOGRAM_SHIFT)) return 1;
+  return 1 << ((i>>SCHRO_HISTOGRAM_SHIFT)-1);
+}
 
+static int
+iexpx (int x)
+{
+  if (x < (1<<SCHRO_HISTOGRAM_SHIFT)) return x;
+
+  return ((1<<SCHRO_HISTOGRAM_SHIFT)|(x&((1<<SCHRO_HISTOGRAM_SHIFT)-1))) << ((x>>SCHRO_HISTOGRAM_SHIFT)-1);
+}
 
 
 void
@@ -923,6 +936,7 @@ schro_frame_filter_adaptive_lowpass (SchroFrame *frame)
   int16_t tmpdata[2048];
   double sigma;
   int j;
+  int i;
 
   tmp = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16_444 | frame->format,
       frame->width, frame->height);
@@ -942,6 +956,11 @@ schro_frame_filter_adaptive_lowpass (SchroFrame *frame)
   schro_frame_unref(tmp);
 
   slope = schro_histogram_estimate_slope (&hist);
+
+  for(i=0;i<SCHRO_HISTOGRAM_SIZE;i++) {
+    schro_dump (SCHRO_DUMP_HIST_TEST, "%d %d %g\n", frame->frame_number,
+        iexpx(i), hist.bins[i]/ilogx_size(i));
+  }
 
   /* good for 2 Mb DVD intra-only rip */
   sigma = -1.0/slope;

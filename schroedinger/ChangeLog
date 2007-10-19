@@ -1,3 +1,14 @@
+2007-10-19  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schrofilter.c:
+	* schroedinger/schroquantiser.c:
+	  Fix backref engine.  Calculate frame sizes and lambda for
+	  backref engine.  Fix some buffer calculations.  This makes
+	  the backref engine mostly work for constant bitrate encoding.
+
 2007-10-17  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroengine.c: Improve various engine stuff.  Fix

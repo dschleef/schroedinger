@@ -158,10 +158,14 @@ struct _SchroEncoderFrame {
   SchroHistogram hist_test;
 
   int allocated_bits;
+  double allocation_modifier;
   int actual_bits;
+  int actual_mc_bits;
   double average_luma;
 
   double scene_change_score;
+
+  double base_lambda;
 };
 
 struct _SchroEncoder {
