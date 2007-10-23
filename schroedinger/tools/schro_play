@@ -1,0 +1,384 @@
+#!/usr/bin/env python
+
+import pygtk
+pygtk.require('2.0')
+import gtk
+import gtk.gdk
+import gobject
+
+import pygst
+pygst.require('0.10')
+import gst
+import gst.interfaces
+
+import sys
+import struct
+
+class VideoWidget(gtk.DrawingArea):
+    def __init__(self):
+        gtk.DrawingArea.__init__(self)
+
+        self.imagesink = None
+        self.set_flags(gtk.DOUBLE_BUFFERED)
+
+        self.playing = False
+        self.player = gst.element_factory_make("playbin", "player")
+        self.on_eos = False
+	self.toplevel = None
+	self.toplevel_signal_handle = 0
+
+	style = self.style.copy()
+	style.bg[gtk.STATE_NORMAL] = gtk.gdk.Color(0,0,0)
+	self.set_style(style)
+
+        bus = self.player.get_bus()
+        bus.enable_sync_message_emission()
+        bus.add_signal_watch()
+        bus.connect('sync-message::element', self.on_sync_message)
+        bus.connect('message', self.on_message)
+
+        #self.connect('expose_event', lambda x,y: self.do_expose_event(x,y))
+        self.connect_object('expose_event', self.do_expose_event, self)
+        self.connect('hierarchy_changed', lambda *x: self.do_hierarchy_changed_event(x))
+        self.connect('property_notify_event', lambda *x: self.do_property_notify_event(x))
+
+    def on_sync_message(self, bus, message):
+	print 'got sync message %s' % message.structure;
+        if message.structure is None:
+            return
+        if message.structure.get_name() == 'prepare-xwindow-id':
+            self.set_sink(message.src)
+            message.src.set_property('force-aspect-ratio', True)
+            
+    def on_message(self, bus, message):
+	print 'got message %s' % message.structure;
+        t = message.type
+        if t == gst.MESSAGE_ERROR:
+            err, debug = message.parse_error()
+            print "Error: %s" % err, debug
+            if self.on_eos:
+                self.on_eos()
+            self.playing = False
+        elif t == gst.MESSAGE_EOS:
+            if self.on_eos:
+                self.on_eos()
+            self.playing = False
+
+    def set_location(self, location):
+	print 'setting location %s' % location
+        self.player.set_property('uri', location)
+	self.play()
+
+    def query_position(self):
+        "Returns a (position, duration) tuple"
+        try:
+            position, format = self.player.query_position(gst.FORMAT_TIME)
+        except:
+            position = gst.CLOCK_TIME_NONE
+
+        try:
+            duration, format = self.player.query_duration(gst.FORMAT_TIME)
+        except:
+            duration = gst.CLOCK_TIME_NONE
+
+        return (position, duration)
+
+    def seek(self, location):
+        """
+        @param location: time to seek to, in nanoseconds
+        """
+        gst.debug("seeking to %r" % location)
+        event = gst.event_new_seek(1.0, gst.FORMAT_TIME,
+            gst.SEEK_FLAG_FLUSH | gst.SEEK_FLAG_ACCURATE,
+            gst.SEEK_TYPE_SET, location,
+            gst.SEEK_TYPE_NONE, 0)
+
+        res = self.player.send_event(event)
+        if res:
+            gst.info("setting new stream time to 0")
+            self.player.set_new_stream_time(0L)
+        else:
+            gst.error("seek to %r failed" % location)
+
+    def toplevel_configure_event(self,event):
+	"Signal handler for notification of movement of toplevel window"
+        self.queue_draw_area(0,0,1,1)
+        return False
+
+    def do_hierarchy_changed_event(self,event):
+	if self.toplevel:
+	    self.toplevel.disconnect(self.toplevel_signal_handle);
+	self.toplevel = self.get_toplevel()
+	self.toplevel_signal_handle = self.toplevel.connect('configure_event',
+			    lambda *x: self.toplevel_configure_event(x))
+
+    def do_expose_event(self,src,event=None):
+	if event == None:
+	    # FIXME Sometimes a signal comes in with the wrong number of
+	    # arguments, with src==the event and event=None.
+	    event = src
+	    src = None
+        if self.imagesink:
+            self.imagesink.expose()
+        else:
+	    x,y,width,height = event.area
+	    print "%d %d %d %d" % (x,y,width,height)
+	    self.get_parent_window().clear_area(x,y,width,height)
+        return False
+
+    def set_sink(self, sink):
+        assert self.window.xid
+        self.imagesink = sink
+        self.unset_flags(gtk.DOUBLE_BUFFERED)
+        self.imagesink.set_xwindow_id(self.window.xid)
+
+    def pause(self):
+        gst.info("pausing player")
+        self.player.set_state(gst.STATE_PAUSED)
+        self.playing = False
+
+    def play(self):
+        gst.info("playing player")
+        self.player.set_state(gst.STATE_PLAYING)
+        self.playing = True
+        
+    def stop(self):
+        self.player.set_state(gst.STATE_NULL)
+        gst.info("stopped player")
+
+    def get_state(self, timeout=1):
+        return self.player.get_state(timeout=timeout)
+
+    def is_playing(self):
+        return self.playing
+    
+class Player(gtk.Window):
+    UPDATE_INTERVAL = 500
+    def __init__(self):
+        gtk.Window.__init__(self)
+        self.set_default_size(410, 325)
+
+	self.is_playing = False
+	self.at_beginning = True
+	self.at_end = False
+
+        self.create_ui()
+        self.show_all()
+
+        self.player = VideoWidget()
+
+        def on_eos():
+            self.player.seek(0L)
+            self.toggle_playpause()
+        #self.player.on_eos = lambda *x: on_eos()
+        
+        self.update_id = -1
+        self.changed_id = -1
+        self.seek_timeout_id = -1
+
+        self.connect('delete-event', lambda *x: gtk.main_quit())
+
+    def create_ui(self):
+        vbox = gtk.VBox()
+        self.add(vbox)
+
+	self.accelgroup = gtk.AccelGroup()
+	self.add_accel_group (self.accelgroup)
+
+        self.menubar = gtk.MenuBar()
+        vbox.pack_start(self.menubar, expand=False)
+
+	gtk.accel_map_add_entry("<SchroPlay>/File/Open", ascii('o'), gtk.gdk.CONTROL_MASK)
+	gtk.accel_map_add_entry("<SchroPlay>/File/Close", ascii('w'), gtk.gdk.CONTROL_MASK)
+	gtk.accel_map_add_entry("<SchroPlay>/File/Quit", ascii('q'), gtk.gdk.CONTROL_MASK)
+	gtk.accel_map_add_entry("<SchroPlay>/Edit/Cut", ascii('x'), gtk.gdk.CONTROL_MASK)
+	gtk.accel_map_add_entry("<SchroPlay>/Edit/Copy", ascii('c'), gtk.gdk.CONTROL_MASK)
+	gtk.accel_map_add_entry("<SchroPlay>/Edit/Paste", ascii('v'), gtk.gdk.CONTROL_MASK)
+	gtk.accel_map_add_entry("<SchroPlay>/Help/Contents", 0xffbe, 0)
+
+        file = gtk.MenuItem("_File")
+        self.menubar.append(file)
+        filemenu = gtk.Menu()
+        file.set_submenu(filemenu)
+	file_open = gtk.ImageMenuItem(gtk.STOCK_OPEN)
+        file_open.connect('activate', lambda *x: self.open())
+        file_open.set_accel_path('<SchroPlay>/File/Open')
+        filemenu.append(file_open)
+        file_close = gtk.ImageMenuItem(gtk.STOCK_CLOSE)
+	file_close.set_sensitive(False)
+        filemenu.append(file_close)
+        filemenu.append(gtk.SeparatorMenuItem())
+        file_quit = gtk.ImageMenuItem(gtk.STOCK_QUIT)
+        file_quit.connect('activate', lambda *x: gtk.main_quit())
+        filemenu.append(file_quit)
+	filemenu.set_accel_path("<SchroPlay>/File")
+	filemenu.set_accel_group(self.accelgroup)
+
+        edit = gtk.MenuItem("_Edit")
+        self.menubar.append(edit)
+	editmenu = gtk.Menu()
+	edit.set_submenu(editmenu)
+	edit_cut = gtk.ImageMenuItem(gtk.STOCK_CUT)
+	edit_cut.set_sensitive(False)
+	editmenu.append(edit_cut)
+	edit_copy = gtk.ImageMenuItem(gtk.STOCK_COPY)
+	editmenu.append(edit_copy)
+	edit_copy.set_sensitive(False)
+	edit_paste = gtk.ImageMenuItem(gtk.STOCK_PASTE)
+	edit_paste.set_sensitive(False)
+	editmenu.append(edit_paste)
+	editmenu.set_accel_path("<SchroPlay>/Edit")
+	editmenu.set_accel_group(self.accelgroup)
+
+        help = gtk.MenuItem("_Help")
+        self.menubar.append(help)
+        helpmenu = gtk.Menu()
+	help.set_submenu(helpmenu)
+	help_contents = gtk.ImageMenuItem(gtk.STOCK_HELP)
+	help_contents.get_child().set_label("_Contents")
+	help_contents.connect('activate', lambda *x: self.help_contents())
+	helpmenu.append(help_contents)
+	help_about = gtk.ImageMenuItem(gtk.STOCK_ABOUT)
+	help_about.connect('activate', lambda *x: self.help_about())
+	helpmenu.append(help_about)
+	helpmenu.set_accel_path("<SchroPlay>/Help")
+	helpmenu.set_accel_group(self.accelgroup)
+
+        self.videowidget = VideoWidget()
+        vbox.pack_start(self.videowidget, expand=True)
+        
+        hbox = gtk.HBox()
+        vbox.pack_start(hbox, expand=False)
+        
+        self.pause_image = gtk.image_new_from_stock(gtk.STOCK_MEDIA_PAUSE,
+                                                    gtk.ICON_SIZE_BUTTON)
+        self.pause_image.show()
+        self.play_image = gtk.image_new_from_stock(gtk.STOCK_MEDIA_PLAY,
+                                                   gtk.ICON_SIZE_BUTTON)
+        self.play_image.show()
+        self.button = button = gtk.Button()
+        button.add(self.play_image)
+        button.set_property('can-default', True)
+        button.set_focus_on_click(False)
+        button.show()
+        hbox.pack_start(button, False)
+        button.set_property('has-default', True)
+        button.connect('clicked', lambda *args: self.toggle_playpause())
+
+	self.back_button = gtk.Button()
+	self.back_button.add(gtk.image_new_from_stock(gtk.STOCK_MEDIA_REWIND,
+				gtk.ICON_SIZE_BUTTON))
+        hbox.pack_start(self.back_button, False)
+
+	self.forward_button = gtk.Button()
+	self.forward_button.add(gtk.image_new_from_stock(gtk.STOCK_MEDIA_FORWARD,
+				gtk.ICON_SIZE_BUTTON))
+        hbox.pack_start(self.forward_button, False)
+
+	self.update_playpause()
+        
+        self.adjustment = gtk.Adjustment(0.0, 0.00, 100.0, 0.1, 1.0, 1.0)
+        hscale = gtk.HScale(self.adjustment)
+        hscale.set_digits(2)
+        hscale.set_update_policy(gtk.UPDATE_CONTINUOUS)
+        hbox.pack_start(hscale)
+        self.hscale = hscale
+
+    def open(self):
+        #help(gtk.FileChooserDialog)
+        fc = gtk.FileChooserDialog("Open File", None,
+	    gtk.FILE_CHOOSER_ACTION_OPEN,
+            (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+	    gtk.STOCK_OPEN, gtk.RESPONSE_ACCEPT))
+	fc.run()
+	self.open_file(fc.get_filename())
+	fc.destroy()
+
+    def open_file(self,filename):
+	uri = 'file://' + filename
+	self.videowidget.set_location(uri)
+
+    def help_conents(self):
+        print 'help::contents\n'
+
+    def help_about(self):
+	dialog = gtk.AboutDialog()
+	dialog.set_program_name('SchroPlay')
+	dialog.set_version('0.0.0')
+	dialog.set_copyright('Copyright 2007 David A. Schleef')
+	dialog.set_license('LGPL')
+	dialog.set_authors(('David A. Schleef',''))
+	dialog.run()
+	dialog.destroy()
+
+    def update_playpause(self):
+        self.button.remove(self.button.child)
+        if self.is_playing:
+            self.button.add(self.pause_image)
+        else:
+            self.button.add(self.play_image)
+	self.back_button.set_sensitive(not self.at_beginning)
+	self.forward_button.set_sensitive(not self.at_end)
+
+    def set_playpause(self,value):
+	self.is_playing = value;
+	self.update_playpause()
+
+    def toggle_playpause(self):
+        if self.is_playing:
+	    self.is_playing = False
+        else:
+	    self.is_playing = True
+	self.update_playpause()
+
+    def scale_format_value_cb(self, scale, value):
+        return "ignore"
+
+    def scale_button_press_cb(self, widget, event):
+        # see seek.c:start_seek
+        gst.debug('starting seek')
+        
+        self.button.set_sensitive(False)
+        self.was_playing = self.player.is_playing()
+        if self.was_playing:
+            self.player.pause()
+
+        # don't timeout-update position during seek
+        if self.update_id != -1:
+            gobject.source_remove(self.update_id)
+            self.update_id = -1
+
+        # make sure we get changed notifies
+        if self.changed_id == -1:
+            self.changed_id = self.hscale.connect('value-changed',
+                self.scale_value_changed_cb)
+
+def ascii(s):
+	return struct.unpack('b',s[0])[0];
+
+def main(args):
+    def usage():
+        sys.stderr.write("usage: %s URI-OF-MEDIA-FILE\n" % args[0])
+        sys.exit(1)
+
+    # Need to register our derived widget types for implicit event
+    # handlers to get called.
+    gobject.type_register(Player)
+    gobject.type_register(VideoWidget)
+
+    player = Player()
+
+    #if len(args) != 2:
+    #    usage()
+
+    #if not gst.uri_is_valid(args[1]):
+    #    sys.stderr.write("Error: Invalid URI: %s\n" % args[1])
+    #    sys.exit(1)
+
+    #w.load_file(args[1])
+
+    gtk.main()
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
+

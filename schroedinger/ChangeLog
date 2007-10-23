@@ -1,3 +1,9 @@
+2007-10-22  David Schleef  <ds@schleef.org>
+
+	* tools/schro_play: A little pygtk/pygst program to play
+	  dirac (or other) streams, maybe eventually with some schro
+	  specific features.
+
 2007-10-19  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:
