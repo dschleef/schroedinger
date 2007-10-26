@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+import pygtk
+pygtk.require('2.0')
+import gtk
+import gtk.gdk
+import gtk.glade
+import gobject
+
+import sys
+#import struct
+#import os
+
+
+class SchroConfigDialog():
+	def __init__(self):
+		self.create_ui()
+		self.obj.show_all()
+
+	def create_ui(self):
+		#help(gtk.glade)
+		xml = gtk.glade.XML("encoding_preferences.glade", "encoding_preferences")
+		self.obj = xml.get_widget("encoding_preferences")
+
+
+def main(args):
+	w = SchroConfigDialog()
+
+	w.obj.run()
+	w.obj.destroy()
+
+	#gtk.main()
+
+if __name__ == '__main__':
+	sys.exit(main(sys.argv))
