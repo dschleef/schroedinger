@@ -1,0 +1,231 @@
+#!/usr/bin/env python
+
+import pygtk
+pygtk.require('2.0')
+import gtk
+import gtk.gdk
+import gtk.glade
+import gobject
+
+import sys
+#import struct
+#import os
+
+
+class SchroConfigDialog():
+	def __init__(self):
+		self.pixels_per_second = 720*480*24;
+		self.duration = 10*60
+
+		self.get_picture_list()
+
+		self.create_ui()
+		self.obj.show_all()
+
+		self.update_ui()
+
+	def create_ui(self):
+		#help(gtk.glade)
+		xml = gtk.glade.XML("encoding_preferences.glade", "encoding_preferences")
+		self.obj = xml.get_widget("encoding_preferences")
+
+		self.cbr_radio = xml.get_widget("cbr_radio")
+		self.cbr_value = xml.get_widget("cbr_value")
+		self.cbr_type = xml.get_widget("cbr_type")
+		self.cbr_result = xml.get_widget("cbr_result")
+
+		self.vbr_radio = xml.get_widget("vbr_radio")
+		self.vbr_value = xml.get_widget("vbr_value")
+
+		self.intended_use = xml.get_widget("intended_use")
+
+		self.suggestion = xml.get_widget("suggestion")
+		self.suggestion_text = xml.get_widget("suggestion_text")
+		self.estimated_size = xml.get_widget("estimated_size")
+
+		self.filter_type = xml.get_widget("filter_type")
+		self.filter_cwm = xml.get_widget("filter_cwm")
+		self.filter_adaptive_low_pass = xml.get_widget("filter_adaptive_low_pass")
+		self.filter_low_pass = xml.get_widget("filter_low_pass")
+		self.filter_add_noise = xml.get_widget("filter_add_noise")
+
+		self.custom_features = xml.get_widget("custom_features")
+		self.enable_box = xml.get_widget("enable_box")
+		self.enable_low_delay = xml.get_widget("enable_low_delay")
+		self.enable_inter_frames = xml.get_widget("enable_inter_frames")
+		self.enable_global_motion = xml.get_widget("enable_global_motion")
+		self.enable_arithmetic_coding = xml.get_widget("enable_arithmetic_coding")
+		self.enable_codeblocks = xml.get_widget("enable_codeblocks")
+		self.enable_multiquant = xml.get_widget("enable_multiquant")
+		self.enable_perceptual = xml.get_widget("enable_perceptual")
+		self.intra_wavelet = xml.get_widget("intra_wavelet")
+		self.inter_wavelet = xml.get_widget("inter_wavelet")
+
+		self.picture_difficulty = xml.get_widget("picture_difficulty")
+		self.picture_next = xml.get_widget("picture_next")
+		self.picture_previous = xml.get_widget("picture_previous")
+		self.preview_picture = xml.get_widget("preview_picture")
+
+		# signals
+		self.cbr_radio.connect("toggled", lambda x: self.changed(x))
+		self.vbr_radio.connect("toggled", lambda x: self.changed(x))
+		self.cbr_type.connect("changed", lambda x: self.changed_cbr_type())
+		self.cbr_value.connect("changed", lambda x: self.changed_cbr_value())
+		self.vbr_value.connect("format-value", lambda w,x: self.vbr_format_value(x))
+		self.filter_type.connect("changed", lambda x: self.changed_filter_type())
+		self.custom_features.connect("toggled", lambda x: self.changed(x))
+		self.picture_next.connect("pressed", lambda x: self.change_picture(1))
+		self.picture_previous.connect("pressed", lambda x: self.change_picture(0))
+
+		# default values
+		self.bitrate = self.pixels_per_second * 1.0;
+		self.cbr_radio.set_active(True)
+		self.cbr_value.set_value(1.0)
+		self.cbr_type.set_active(0)
+		self.intended_use.set_active(0)
+		self.filter_type.set_active(0)
+		self.enable_low_delay.set_active(False)
+		self.enable_inter_frames.set_active(True)
+		self.enable_global_motion.set_active(True)
+		self.enable_arithmetic_coding.set_active(True)
+		self.enable_codeblocks.set_active(True)
+		self.enable_multiquant.set_active(True)
+		self.enable_perceptual.set_active(True)
+		self.intra_wavelet.set_active(0)
+		self.inter_wavelet.set_active(0)
+		self.preview_index = 0
+
+	def get_picture_list(self):
+		self.preview_list = ["preview_images/1-160x120.jpg", "preview_images/2-160x120.jpg"]
+
+	def changed_cbr_value(self):
+		type = self.cbr_type.get_active()
+		value = self.cbr_value.get_value()
+		if type == 0:
+			self.bitrate = value * self.pixels_per_second
+		elif type == 1:
+			self.bitrate = value
+		elif type == 2:
+			self.bitrate = value * 1000
+		elif type == 3:
+			self.bitrate = value * 1000000
+
+		self.update_ui()
+
+	def changed_cbr_type(self):
+		type = self.cbr_type.get_active()
+		if type == 0:
+			value = self.bitrate / self.pixels_per_second
+			digits = 1
+			max = 10
+		elif type == 1:
+			value = self.bitrate
+			digits = 0
+			max = 1000000000
+		elif type == 2:
+			value = self.bitrate / 1000
+			digits = 3
+			max = 1000000
+		elif type == 3:
+			value = self.bitrate / 1000000
+			digits = 3
+			max = 1000
+
+		self.cbr_value.set_digits(digits)
+		self.cbr_value.set_range(0,max)
+		self.cbr_value.set_value(value)
+
+		self.update_ui()
+
+	def vbr_format_value(self, x):
+		if x == -50.0:
+			return "lossless"
+		else:
+			return '%.1f' % x
+
+	def changed_filter_type(self):
+		self.update_ui()
+
+	def changed(self, widget):
+		self.update_ui()
+
+	def change_picture(self, next):
+		if next:
+			self.preview_index += 1
+		else:
+			self.preview_index -= 1
+		if self.preview_index < 0:
+			self.preview_index = len(self.preview_list) - 1
+		if self.preview_index > len(self.preview_list) - 1:
+			self.preview_index = 0
+
+		self.preview_picture.set_from_file(self.preview_list[self.preview_index])
+
+	def update_ui(self):
+		sel = self.cbr_radio.get_active()
+		self.cbr_value.set_sensitive(sel)
+		self.cbr_type.set_sensitive(sel)
+
+		sel = self.vbr_radio.get_active()
+		self.vbr_value.set_sensitive(sel)
+
+		if self.cbr_radio.get_active():
+			size = self.bitrate * self.duration / 8000000
+			self.estimated_size.set_markup ("<b>Estimated file size:</b> %g MB" % size)
+		else:
+			self.estimated_size.set_markup ("<b>Estimated file size:</b> unknown")
+
+		self.update_cbr_result()
+		self.update_suggestion()
+
+		type = self.filter_type.get_active()
+		self.filter_cwm.hide()
+		self.filter_adaptive_low_pass.hide()
+		self.filter_low_pass.hide()
+		self.filter_add_noise.hide()
+		if type == 1:
+			self.filter_adaptive_low_pass.show()
+		elif type == 2:
+			self.filter_low_pass.show()
+		elif type == 3:
+			self.filter_cwm.show()
+		elif type == 4:
+			self.filter_add_noise.show()
+			
+		sel = self.custom_features.get_active()
+		self.enable_box.set_sensitive(sel)
+			
+
+	def update_cbr_result(self):
+		if self.bitrate < 500:
+			markup = '<b>%g bits/sec</b>' % self.bitrate
+		elif self.bitrate < 500000:
+			markup = '<b>%g kbits/sec</b>' % (self.bitrate/1000)
+		elif self.bitrate < 500000000:
+			markup = '<b>%g Mbits/sec</b>' % (self.bitrate/1000000)
+		else:
+			markup = '<b>%g Gbits/sec</b>' % (self.bitrate/1000000000)
+		self.cbr_result.set_markup (markup)
+
+	def update_suggestion(self):
+		text = None
+		if self.bitrate < 1000:
+			text = "Schro doesn't work at bitrates less than 1 kbit/sec"
+
+		if text:
+			self.suggestion_text.set_markup ("<b>Suggestion:</b> %s" % text)
+			self.suggestion.show()
+		else:
+			self.suggestion.hide()
+
+
+def main(args):
+	w = SchroConfigDialog()
+
+	w.obj.run()
+	w.obj.destroy()
+
+	#gtk.main()
+
+if __name__ == '__main__':
+	sys.exit(main(sys.argv))

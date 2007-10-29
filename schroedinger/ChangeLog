@@ -1,3 +1,13 @@
+2007-10-29  David Schleef  <ds@schleef.org>
+
+	* schro-transcode/encoding_preferences.glade:
+	* schro-transcode/preview_images/1-160x120.jpg:
+	* schro-transcode/preview_images/2-160x120.jpg:
+	* schro-transcode/schro_config_dialog:
+	* schro-transcode:
+	  Start a side project for a schroedinger-focussed transcoder GUI.
+	  Actually just the encoding preferences dialog.
+
 2007-10-26  David Schleef  <ds@schleef.org>
 
 	* tools/encoding_preferences.glade:
