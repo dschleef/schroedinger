@@ -1,5 +1,21 @@
 2007-10-29  David Schleef  <ds@schleef.org>
 
+	* schro-transcode/encoding_preferences.glade:
+	* schro-transcode/encoding_preferences.gladep:
+	* schro-transcode/preview_images/1-160x120.jpg:
+	* schro-transcode/preview_images/2-160x120.jpg:
+	* schro-transcode/schro_config_dialog:
+	* transcode/encoding_preferences.glade:
+	* transcode/encoding_preferences.gladep:
+	* transcode/preview_images/1-160x120.jpg:
+	* transcode/preview_images/2-160x120.jpg:
+	* transcode/preview_images:
+	* transcode/schro_config_dialog:
+	* transcode:
+	  Move schro-transcode to transcode, since I'm addicted to 'cd sch^I'
+
+2007-10-29  David Schleef  <ds@schleef.org>
+
 	* schro-transcode/encoding_preferences.gladep:
 	  Add glade project file.
 
