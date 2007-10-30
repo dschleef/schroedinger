@@ -1,5 +1,11 @@
 2007-10-29  David Schleef  <ds@schleef.org>
 
+	* doc/tmpl:
+	* doc/tmpl/ignore.sgml:
+	  Add a dummy file to fix gtk-doc warnings.
+
+2007-10-29  David Schleef  <ds@schleef.org>
+
 	* schro-transcode/encoding_preferences.glade:
 	* schro-transcode/encoding_preferences.gladep:
 	* schro-transcode/preview_images/1-160x120.jpg:
