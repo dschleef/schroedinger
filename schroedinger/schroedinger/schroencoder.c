@@ -63,7 +63,7 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_NOARITH] = 0;
   encoder->prefs[SCHRO_PREF_MD5] = 0;
 
-  encoder->enable_filtering = TRUE;
+  //encoder->enable_filtering = TRUE;
 
   schro_params_set_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_SD576);

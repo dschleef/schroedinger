@@ -12,7 +12,7 @@ cd tmp-build-dir &&
   ./autogen.sh &&
   make &&
   make distcheck &&
-  cd .. &&
+  cd ../.. &&
   rm -rf tmp-build-dir &&
   echo SUCCESS!
 

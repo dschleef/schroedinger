@@ -4,9 +4,10 @@
 function encode {
   gst-launch-0.10 \
     videotestsrc num-buffers=300 ! \
-    video/x-raw-yuv,format=\(fourcc\)"$format",width=$width,height=$height,framerate=30/1 ! \
     timeoverlay ! \
     cairotextoverlay text=$testname halign=left deltay=-100 ! \
+    ffmpegcolorspace ! \
+    video/x-raw-yuv,format=\(fourcc\)"$format",width=$width,height=$height,framerate=30/1 ! \
     schroenc $schroopts ! \
     filesink location=vts.$testname.drc
 }
@@ -38,10 +39,9 @@ testname="test_intra"
 schroopts="engine=4"
 encode
 
-# broken playback
-#testname="lossless"
-#schroopts="engine=5"
-#encode
+testname="lossless"
+schroopts="engine=5"
+encode
 
 # broken playback
 #testname="backtest"

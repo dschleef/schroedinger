@@ -1,5 +1,34 @@
 2007-10-29  David Schleef  <ds@schleef.org>
 
+	* gst/Makefile.am:
+	* gst/gstframestore.c:
+	* gst/gstschro.c:
+	* gst/gstschrofilter.c:
+	* tools/schro_play:
+	  Add framestore.  Change schrofilter to lowpass2,5.0, because
+	  that's actually semi-useful.
+	* misc/dvd-to-ogg:
+	* misc/dvd-to-ogg-effective:
+	* misc/dvdtest:
+	* misc/fgenc:
+	* misc/fgtest:
+	* play.py:
+	* misc/spidertest:
+	  remove
+	* misc/gst-transcode:
+	* misc/vtstest:
+	  Clean up
+	* misc/pydvdrip:
+	  Random changes.
+	* schroedinger/schroencoder.c:
+	  Disable filtering by default.
+	* testsuite/manual/build_from_svn:
+	  Minor fix.
+	* testsuite/streams/make_vts_streams:
+	  Add a formerly broken stream
+
+2007-10-29  David Schleef  <ds@schleef.org>
+
 	* doc/tmpl:
 	* doc/tmpl/ignore.sgml:
 	  Add a dummy file to fix gtk-doc warnings.

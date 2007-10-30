@@ -1,8 +1,17 @@
 #!/bin/sh
 
+format=I420
+width=320
+height=240
+schroopts="engine=1"
+
+
+#export SCHRO_DECODE_PREDICTION_ONLY=1
+#export SCHRO_THREADS=1
+#valgrind \
 gdb -args  \
 gst-launch-0.10 videotestsrc num-buffers=100 ! \
-	video/x-raw-yuv,width=320,height=240 ! \
-	schroenc ! schrodec ! xvimagesink sync=false
+  video/x-raw-yuv,format=\(fourcc\)$format,width=$width,height=$height,framerate=10/1 ! \
+  schroenc $schroopts ! filesink location=output.drc
 
 

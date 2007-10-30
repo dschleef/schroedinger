@@ -2,13 +2,9 @@
 # -*- Mode: Python -*-
 # vi:si:et:sw=4:sts=4:ts=4
 
-file = '/home/ds/vob/mulholland_clip.mpg'
-mux_element = "oggmux";
-video_encoder_element = "ffenc_mpeg1video";
-#video_encoder_element = "schroenc";
-#video_encoder_element = "theoraenc";
-audio_encoder_element = "ffenc_mp2";
-#audio_encoder_element = "vorbisenc";
+
+# This transcoder uses the framerate element to create a constant
+# framerate stream.  So adjust as necessary.
 fps = 24
 audiochan = 1
 
@@ -22,6 +18,7 @@ import pygst
 pygst.require('0.10')
 import gst
 
+file = sys.argv[1];
 
 mainloop = gobject.MainLoop();
 
@@ -85,7 +82,7 @@ class Moo:
 
         structure = caps[0];
         stream_type = structure.get_name();
-        if stream_type == "video/x-raw-yuv":
+        if stream_type == "video/x-raw-yuv" or stream_type == "video/x-raw-rgb":
             colorspace = gst.element_factory_make("ffmpegcolorspace");
             self.bin.add (colorspace);
             colorspace.set_state (gst.STATE_PLAYING);
@@ -96,7 +93,6 @@ class Moo:
             videorate.set_state (gst.STATE_PLAYING);
             colorspace.get_pad("src").link(videorate.get_pad("sink"));
 
-            #venc = gst.element_factory_make(video_encoder_element);
             venc = gst.element_factory_make("schroenc");
             self.seeker = venc;
             self.bin.add (venc);
@@ -104,7 +100,7 @@ class Moo:
             videorate.link (venc,
                     gst.caps_from_string("video/x-raw-yuv,framerate=%d/1" % fps));
 
-            self.mux = gst.element_factory_make(mux_element);
+            self.mux = gst.element_factory_make("oggmux");
             self.bin.add (self.mux);
             self.mux.set_state (gst.STATE_PLAYING);
             venc.get_pad("src").link(self.mux.get_pad("sink_%d"));
@@ -122,7 +118,7 @@ class Moo:
                 audioconvert.set_state (gst.STATE_PLAYING);
                 pad.link (audioconvert.get_pad("sink"));
 
-                aenc = gst.element_factory_make (audio_encoder_element);
+                aenc = gst.element_factory_make ("vorbisenc");
                 self.bin.add (aenc);
                 aenc.set_state (gst.STATE_PLAYING);
                 audioconvert.get_pad("src").link(aenc.get_pad("sink"));

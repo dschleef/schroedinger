@@ -1,8 +1,0 @@
-#!/bin/sh
-
-gst-launch-0.10 filesrc location=/home/ds/media/family.guy.402.pdtv-lol.\[BT\].avi \
-  ! decodebin ! schroenc ! oggmux ! filesink location=family_guy.ogg
-
-#gst-launch-0.10 filesrc location=/home/ds/media/pianostripper5.mpg \
-#  ! decodebin ! schroenc ! schrodec ! xvimagesink
-

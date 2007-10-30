@@ -26,6 +26,10 @@ class VideoWidget(gtk.DrawingArea):
 
         self.playing = False
         self.player = gst.element_factory_make("playbin", "player")
+	self.videosink = gst.parse_bin_from_description("framestore ! xvimagesink qos=false", True)
+	self.framestore = self.videosink.get_by_name("framestore0")
+	self.imagesink = self.videosink.get_by_name("xvimagesink0")
+	self.player.set_property("video-sink", self.videosink)
         self.on_eos = False
 	self.toplevel = None
 	self.toplevel_signal_handle = 0
@@ -47,7 +51,7 @@ class VideoWidget(gtk.DrawingArea):
         self.connect('size_request', self.do_size_request)
 
     def on_sync_message(self, bus, message):
-	print 'got sync message %s' % message.structure;
+	#print 'got sync message %s' % message.structure;
         if message.structure is None:
             return
         if message.structure.get_name() == 'prepare-xwindow-id':
@@ -55,7 +59,7 @@ class VideoWidget(gtk.DrawingArea):
             message.src.set_property('force-aspect-ratio', True)
             
     def on_message(self, bus, message):
-	print 'got message %s' % message.structure;
+	#print 'got message %s' % message.structure;
         t = message.type
         if t == gst.MESSAGE_ERROR:
             err, debug = message.parse_error()
@@ -89,14 +93,37 @@ class VideoWidget(gtk.DrawingArea):
 
         return duration
 
-    def seek(self, location):
+    def seek(self, location, accurate=False):
         """
         @param location: time to seek to, in nanoseconds
         """
         print("seeking to %r" % location)
+	accurate_flag = 0
+	if accurate:
+	    accurate_flag = gst.SEEK_FLAG_ACCURATE
         event = gst.event_new_seek(1.0, gst.FORMAT_TIME,
-            gst.SEEK_FLAG_FLUSH,
+            gst.SEEK_FLAG_FLUSH | accurate_flag,
             gst.SEEK_TYPE_SET, location,
+            gst.SEEK_TYPE_NONE, 0)
+
+        res = self.player.send_event(event)
+        if res:
+            print("setting new stream time to 0")
+            self.player.set_new_stream_time(0L)
+        else:
+            print("seek to %r failed" % location)
+
+    def seekcur(self, location, accurate=False):
+        """
+        @param location: time to seek to, in nanoseconds
+        """
+        print("seeking to %r" % location)
+	accurate_flag = 0
+	if accurate:
+	    accurate_flag = gst.SEEK_FLAG_ACCURATE
+        event = gst.event_new_seek(1.0, gst.FORMAT_TIME,
+            gst.SEEK_FLAG_FLUSH | accurate_flag,
+            gst.SEEK_TYPE_CUR, location,
             gst.SEEK_TYPE_NONE, 0)
 
         res = self.player.send_event(event)
@@ -141,17 +168,31 @@ class VideoWidget(gtk.DrawingArea):
     def set_playing(self, value):
 	if value:
             self.playing = True
+	    self.imagesink.set_property("async", True);
             self.player.set_state(gst.STATE_PLAYING)
 	else:
             self.playing = False
+	    self.imagesink.set_property("async", False);
             self.player.set_state(gst.STATE_PAUSED)
 
     def jump_back(self):
 	now = self.query_position()
-	now -= 5000000000
+	now -= 5*gst.SECOND
 	if now < 0:
 	    now = 0
-	self.seek(now)
+	self.seek(now, False)
+
+    def step_forward(self):
+	#now = 30*gst.MSECOND
+	#self.seekcur(now, False)
+	self.framestore.set_property("step", True)
+
+    def step_back(self):
+	now = self.query_position()
+	now -= 30*gst.MSECOND
+	if now < 0:
+	    now = 0
+	self.seek(now, False)
 
     def get_state(self, timeout=1):
         return self.player.get_state(timeout=timeout)
@@ -162,7 +203,6 @@ class VideoWidget(gtk.DrawingArea):
 class Player(gtk.Window):
     def __init__(self):
         gtk.Window.__init__(self)
-        #self.set_default_size(410, 325)
 
 	self.is_playing = False
 	self.at_beginning = True
@@ -289,11 +329,13 @@ class Player(gtk.Window):
 	self.back_button = gtk.Button()
 	self.back_button.add(gtk.image_new_from_stock(gtk.STOCK_MEDIA_REWIND,
 				gtk.ICON_SIZE_BUTTON))
+        self.back_button.connect('clicked', self.do_stepback)
         hbox.pack_start(self.back_button, False)
 
 	self.forward_button = gtk.Button()
 	self.forward_button.add(gtk.image_new_from_stock(gtk.STOCK_MEDIA_FORWARD,
 				gtk.ICON_SIZE_BUTTON))
+        self.forward_button.connect('clicked', self.do_stepforward)
         hbox.pack_start(self.forward_button, False)
 
 	self.update_playpause()
@@ -302,7 +344,6 @@ class Player(gtk.Window):
         hbox.pack_start(self.position_label)
 
     def open(self):
-        #help(gtk.FileChooserDialog)
         fc = gtk.FileChooserDialog("Open File", None,
 	    gtk.FILE_CHOOSER_ACTION_OPEN,
             (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
@@ -363,6 +404,8 @@ class Player(gtk.Window):
 	self.forward_button.set_sensitive(self.have_media and not self.at_end)
 
     def set_playpause(self,value):
+	if self.is_playing == value:
+	    return
 	self.is_playing = value
 	self.videowidget.set_playing(value)
 	self.update_playpause()
@@ -375,24 +418,14 @@ class Player(gtk.Window):
     def do_jumpback(self,moo):
 	self.videowidget.jump_back()
 
-    def scale_button_press_cb(self, widget, event):
-        # see seek.c:start_seek
-        gst.debug('starting seek')
-        
-        self.button.set_sensitive(False)
-        self.was_playing = self.player.is_playing()
-        if self.was_playing:
-            self.player.pause()
+    def do_stepforward(self,moo):
+	self.set_playpause(False)
+	self.videowidget.step_forward()
 
-        # don't timeout-update position during seek
-        if self.update_id != -1:
-            gobject.source_remove(self.update_id)
-            self.update_id = -1
+    def do_stepback(self,moo):
+	self.set_playpause(False)
+	self.videowidget.step_back()
 
-        # make sure we get changed notifies
-        if self.changed_id == -1:
-            self.changed_id = self.hscale.connect('value-changed',
-                self.scale_value_changed_cb)
 
 def ascii(s):
 	return struct.unpack('b',s[0])[0];

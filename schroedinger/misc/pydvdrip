@@ -6,17 +6,19 @@ playback = 0
 
 #file = '/home/ds/public_html/dude_clip.mpg'
 #file = '/home/ds/vob/mulholland_clip.mpg'
-file = '/home/ds/vob/luke_clip.mpg'
-#file = '/home/ds/vob/x3_clip.mpg'
+#file = '/home/ds/vob/luke_clip.mpg'
+file = '/home/ds/vob/x3_clip.mpg'
+#file = '/home/ds/vob/curb_your_enthusiasm.1.vob'
 seek_time = 0
 length = 28
-fps = 24
+fps = 30
 audiochan = 0
-#quant_base = 22
-#quant_base = 18
-quant_base = 14
-#quant_base = 8
-engine = 3
+engine = 1
+psnr = 30
+bitrate = 2000000
+quant_engine = 1
+intra_wavelet=0
+#transform_depth=4
 
 #file = '/mnt/wallace/home/ds/spirited_away.1.vob'
 #seek_time = 10
@@ -182,7 +184,11 @@ class Moo:
 
                 schroenc = gst.element_factory_make("schroenc");
                 schroenc.set_property ("engine", engine);
-                schroenc.set_property ("quant_base", quant_base);
+                schroenc.set_property ("bitrate", bitrate);
+                #schroenc.set_property ("psnr", psnr);
+                schroenc.set_property ("quant-engine", quant_engine);
+                schroenc.set_property ("intra-wavelet", intra_wavelet);
+                #schroenc.set_property ("transform-depth", transform_depth);
                 self.seeker = schroenc;
                 self.bin.add (schroenc);
                 schroenc.set_state (gst.STATE_PLAYING);
