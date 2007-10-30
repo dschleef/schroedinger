@@ -68,6 +68,7 @@ struct _SchroEncoderParams {
 };
 
 struct _SchroEncoderFrame {
+  /*< private >*/
   int refcount;
   SchroEncoderFrameStateEnum state;
   int busy;
@@ -152,8 +153,6 @@ struct _SchroEncoderFrame {
   SchroMotionField *motion_field;
   SchroMotionField *motion_fields[32];
 
-  //SchroPictureNumber reference_frame_number[2];
-
   SchroHistogram subband_hists[3][SCHRO_MAX_SUBBANDS];
   SchroHistogram hist_test;
 
@@ -169,6 +168,7 @@ struct _SchroEncoderFrame {
 };
 
 struct _SchroEncoder {
+  /*< private >*/
   SchroAsync *async;
 
   SchroPictureNumber next_frame_number;
@@ -245,7 +245,6 @@ struct _SchroEncoderSettings {
   int transform_depth;
   int wavelet_filter_index;
 
-#if 0
   /* stuff we don't handle yet */
   int profile;
   int level;
@@ -254,8 +253,6 @@ struct _SchroEncoderSettings {
   int ybsep_luma;
   int xblen_luma;
   int yblen_luma;
-#endif
-
 };
 
 enum {

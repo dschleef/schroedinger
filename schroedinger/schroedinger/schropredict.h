@@ -10,9 +10,6 @@ SCHRO_BEGIN_DECLS
 
 #define SCHRO_PREDICTION_METRIC_INVALID (-1)
 
-//typedef struct _SchroPredictionList SchroPredictionList;
-//typedef struct _SchroPredictionVector SchroPredictionVector;
-
 struct _SchroPredictionVector {
   unsigned int pred_mode : 2;
   unsigned int using_global : 1;

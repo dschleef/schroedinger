@@ -39,8 +39,6 @@ int schro_unpack_get_bits_remaining (SchroUnpack *unpack);
 
 void schro_unpack_limit_bits_remaining (SchroUnpack *unpack, int n_bits);
 
-//void schro_unpack_dumpbits (SchroUnpack *unpack);
-//
 void schro_unpack_byte_sync (SchroUnpack *unpack);
 void schro_unpack_skip_bits (SchroUnpack *unpack, int n_bits);
 

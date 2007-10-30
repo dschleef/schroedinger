@@ -15,6 +15,7 @@ SCHRO_BEGIN_DECLS
 typedef struct _SchroDecoder SchroDecoder;
 
 struct _SchroDecoder {
+  /*< private >*/
   SchroFrame *frame;
   SchroFrame *mc_tmp_frame;
   int n_reference_pictures;

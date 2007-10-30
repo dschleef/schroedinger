@@ -89,7 +89,6 @@ typedef struct _SchroArithContext SchroArithContext;
 
 struct _SchroArithContext {
   int next;
-  //uint16_t probability;
   int stat_range;
   int n_bits;
   int n_symbols;

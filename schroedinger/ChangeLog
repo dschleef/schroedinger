@@ -1,5 +1,27 @@
 2007-10-29  David Schleef  <ds@schleef.org>
 
+	* TODO:
+	* doc/Makefile.am:
+	* doc/schroedinger-0.1-docs.sgml:
+	* doc/schroedinger-0.1-sections.txt:
+	* schroedinger/schroarith.h:
+	* schroedinger/schroasync.h:
+	* schroedinger/schrobits.c:
+	* schroedinger/schrobits.h:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroframe.h:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schropredict.h:
+	* schroedinger/schrowavelet.h:
+	* schroedinger/schrounpack.h:
+	  Fix up documentation so it builds all current symbols.  Fix
+	  some headers to remove symbols that are no longer used.
+	* tools/encoding_preferences.glade:
+	* tools/schro_config_dialog:
+	  Delete these, since they were moved to schro-transcode.
+
+2007-10-29  David Schleef  <ds@schleef.org>
+
 	* schro-transcode/encoding_preferences.glade:
 	* schro-transcode/preview_images/1-160x120.jpg:
 	* schro-transcode/preview_images/2-160x120.jpg:

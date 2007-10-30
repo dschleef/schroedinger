@@ -34,28 +34,6 @@ schro_bits_copy (SchroBits *dest, SchroBits *src)
 }
 
 static void
-schro_bits_shift_in (SchroBits *bits)
-{
-  if (bits->n_bits >= 8) {
-    bits->value = bits->buffer->data[bits->n];
-    bits->n++;
-    bits->shift = 7;
-    bits->n_bits-=8;
-    return;
-  }
-  if (bits->n_bits > 0) {
-    bits->value = bits->buffer->data[bits->n] >> (8-bits->n_bits);
-    bits->n++;
-    bits->shift = 8 - bits->n_bits;
-    bits->n_bits = 0;
-    return;
-  }
-  bits->value = 0xff;
-  bits->shift = 7;
-  bits->error = TRUE;
-}
-
-static void
 schro_bits_shift_out (SchroBits *bits)
 {
   if (bits->n < bits->buffer->length) {
@@ -74,17 +52,10 @@ schro_bits_shift_out (SchroBits *bits)
 }
 
 void
-schro_bits_set_length (SchroBits *bits, int n_bits)
-{
-  bits->n_bits = n_bits;
-}
-
-void
 schro_bits_encode_init (SchroBits *bits, SchroBuffer *buffer)
 {
   bits->buffer = buffer;
   bits->n = 0;
-  bits->type = SCHRO_BITS_ENCODE;
 
   bits->value = 0;
   bits->shift = 7;
@@ -99,11 +70,7 @@ schro_bits_get_offset (SchroBits *bits)
 int
 schro_bits_get_bit_offset (SchroBits *bits)
 {
-  if (bits->type == SCHRO_BITS_DECODE) {
-    return bits->n*8 + (7 - bits->shift);
-  } else {
-    return bits->n*8 + (7 - bits->shift);
-  }
+  return bits->n*8 + (7 - bits->shift);
 }
 
 void
@@ -115,12 +82,8 @@ schro_bits_flush (SchroBits *bits)
 void
 schro_bits_sync (SchroBits *bits)
 {
-  if (bits->type == SCHRO_BITS_DECODE) {
-    bits->shift = -1;
-  } else {
-    if (bits->shift != 7) {
-      schro_bits_shift_out (bits);
-    }
+  if (bits->shift != 7) {
+    schro_bits_shift_out (bits);
   }
 }
 
@@ -136,42 +99,6 @@ schro_bits_append (SchroBits *bits, uint8_t *data, int len)
   oil_memcpy (bits->buffer->data + bits->n, data, len);
   bits->n += len;
 }
-
-void
-schro_bits_skip (SchroBits *bits, int n_bytes)
-{
-  if (bits->shift != -1) {
-    SCHRO_ERROR ("skipping on unsyncronized bits");
-    SCHRO_ASSERT(0);
-  }
-
-  bits->n += n_bytes;
-}
-
-void
-schro_bits_skip_bits (SchroBits *bits, int n_bits)
-{
-  if (bits->shift >= 0) {
-    if (n_bits <= bits->shift + 1) {
-      bits->shift -= n_bits;
-      return;
-    }
-    n_bits -= bits->shift + 1;
-    bits->shift = -1;
-  }
-  if (n_bits >= 8) {
-    bits->n += (n_bits>>3);
-    bits->n_bits -= (n_bits & ~7);
-    n_bits &= 7;
-    if (bits->n_bits < 0) {
-      bits->error = TRUE;
-    }
-  }
-  schro_bits_shift_in (bits);
-
-  bits->shift -= n_bits;
-}
-
 
 void
 schro_bits_encode_bit (SchroBits *bits, int value)
