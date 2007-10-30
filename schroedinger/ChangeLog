@@ -1,5 +1,14 @@
 2007-10-29  David Schleef  <ds@schleef.org>
 
+	* configure.ac:
+	* testsuite/Makefile.am:
+	* testsuite/manual:
+	* testsuite/manual/Makefile.am:
+	* testsuite/manual/build_from_svn:
+	  Script to do full build from svn.
+
+2007-10-29  David Schleef  <ds@schleef.org>
+
 	* TODO:
 	* doc/Makefile.am:
 	* doc/schroedinger-0.1-docs.sgml:

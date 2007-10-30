@@ -128,6 +128,7 @@ testsuite/perf/Makefile
 testsuite/coder/Makefile
 testsuite/dirac/Makefile
 testsuite/installation/Makefile
+testsuite/manual/Makefile
 testsuite/prototype/Makefile
 testsuite/streams/Makefile
 testsuite/tables2/Makefile

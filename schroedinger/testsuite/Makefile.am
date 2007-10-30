@@ -1,5 +1,6 @@
 
-SUBDIRS = . check perf coder installation prototype streams tables2 dirac
+SUBDIRS = . check perf coder installation prototype streams tables2 dirac \
+	  manual
 
 noinst_LTLIBRARIES = libschrotest.la
 
