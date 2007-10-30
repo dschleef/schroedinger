@@ -1,5 +1,10 @@
 2007-10-29  David Schleef  <ds@schleef.org>
 
+	* schro-transcode/encoding_preferences.gladep:
+	  Add glade project file.
+
+2007-10-29  David Schleef  <ds@schleef.org>
+
 	* configure.ac:
 	* testsuite/Makefile.am:
 	* testsuite/manual:
