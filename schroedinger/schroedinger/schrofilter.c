@@ -114,7 +114,7 @@ schro_filter_cwmN (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n, int
 }
 
 void
-schro_frame_component_filter_cwmN (SchroFrameComponent *comp, int weight)
+schro_frame_component_filter_cwmN (SchroFrameData *comp, int weight)
 {
   int i;
   uint8_t *tmp;
@@ -162,7 +162,7 @@ schro_frame_filter_cwmN (SchroFrame *frame, int weight)
 
 
 void
-schro_frame_component_filter_cwmN_ref (SchroFrameComponent *comp, int weight)
+schro_frame_component_filter_cwmN_ref (SchroFrameData *comp, int weight)
 {
   int i;
   uint8_t *tmp;
@@ -271,7 +271,7 @@ schro_filter_cwm7 (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n)
 }
 
 void
-schro_frame_component_filter_cwm7 (SchroFrameComponent *comp)
+schro_frame_component_filter_cwm7 (SchroFrameData *comp)
 {
   int i;
   uint8_t *tmp;
@@ -365,7 +365,7 @@ lowpass_vert_u8 (uint8_t *d, uint8_t *s, int n)
 
 
 void
-schro_frame_component_filter_lowpass (SchroFrameComponent *comp)
+schro_frame_component_filter_lowpass (SchroFrameData *comp)
 {
   int i;
   uint8_t *tmp;
@@ -452,7 +452,7 @@ lowpass_vert_s16 (int16_t *d, int16_t *s, int n)
 
 
 void
-schro_frame_component_filter_lowpass_16 (SchroFrameComponent *comp)
+schro_frame_component_filter_lowpass_16 (SchroFrameData *comp)
 {
   int i;
   int16_t *tmp;
@@ -677,7 +677,7 @@ generate_coeff (double *coeff, double sigma)
 }
 
 void
-schro_frame_component_filter_lowpass2_u8 (SchroFrameComponent *comp,
+schro_frame_component_filter_lowpass2_u8 (SchroFrameData *comp,
     double h_sigma, double v_sigma)
 {
   int i;
@@ -724,7 +724,7 @@ schro_frame_component_filter_lowpass2_u8 (SchroFrameComponent *comp,
 }
 
 void
-schro_frame_component_filter_lowpass2_s16 (SchroFrameComponent *comp,
+schro_frame_component_filter_lowpass2_s16 (SchroFrameData *comp,
     double h_sigma, double v_sigma)
 {
   int i;
@@ -803,7 +803,7 @@ void
 schro_frame_filter_wavelet (SchroFrame *frame)
 {
   SchroFrame *tmpframe;
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   SchroHistogram hist;
   int component;
   int16_t *tmp;
@@ -893,7 +893,7 @@ addnoise_u8 (uint8_t *dest, int n, double sigma)
 }
 
 void
-schro_frame_component_filter_addnoise (SchroFrameComponent *comp, double sigma)
+schro_frame_component_filter_addnoise (SchroFrameData *comp, double sigma)
 {
   int i;
 

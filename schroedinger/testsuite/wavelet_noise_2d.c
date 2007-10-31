@@ -46,7 +46,7 @@ generate_noise (SchroFrame *frame, int n_transforms, double *weights)
   int pos;
   int w, h, x_offset, y_offset, y_skip;
   int16_t *data;
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
 
   for(k=0;k<3;k++){
     comp = frame->components + k;

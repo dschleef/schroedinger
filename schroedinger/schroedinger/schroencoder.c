@@ -2124,7 +2124,7 @@ schro_slice_get (SchroFrame *frame, int component, int position,
 {
   int shift;
   int w;
-  SchroFrameComponent *comp = &frame->components[component];
+  SchroFrameData *comp = &frame->components[component];
 
   shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
 

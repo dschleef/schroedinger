@@ -24,7 +24,7 @@ void
 schro_frame_create_pattern (SchroFrame *frame, int type)
 {
   int i,j,k;
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
 
   switch (type) {
     case 0:
@@ -49,8 +49,8 @@ schro_frame_create_pattern (SchroFrame *frame, int type)
 int
 schro_frame_compare (SchroFrame *a, SchroFrame *b)
 {
-  SchroFrameComponent *comp_a;
-  SchroFrameComponent *comp_b;
+  SchroFrameData *comp_a;
+  SchroFrameData *comp_b;
   int k;
   int i,j;
 
@@ -74,7 +74,7 @@ schro_frame_compare (SchroFrame *a, SchroFrame *b)
 void
 schro_frame_dump (SchroFrame *frame)
 {
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   int i,j;
 
   comp = &frame->components[0];

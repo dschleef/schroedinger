@@ -17,17 +17,13 @@ general:
 
 schroarith.c:
 
-  demote schro_arith_new()
-
   move next_list to elsewhere
 
-  make arith a friend class of SchroUnpack and SchroBits
+  integrate with SchroPack and SchroUnpack
 
-schrobits.c:
+schropack.c:
 
   figure out how to push disjoint buffers if possible
-
-  rename to schropack.c
 
 schrodecoder.c:
 

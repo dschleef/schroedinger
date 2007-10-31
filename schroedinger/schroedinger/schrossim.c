@@ -23,8 +23,8 @@ schro_frame_dup16 (SchroFrame *frame)
 static void
 schro_frame_multiply_s16 (SchroFrame *dest, SchroFrame *src)
 {
-  SchroFrameComponent *dcomp;
-  SchroFrameComponent *scomp;
+  SchroFrameData *dcomp;
+  SchroFrameData *scomp;
   int i;
   int16_t *ddata;
   int16_t *sdata;

@@ -33,8 +33,8 @@ schro_encoder_frame_downsample (SchroEncoderFrame *frame)
 }
 
 static double
-schro_frame_component_squared_error (SchroFrameComponent *a,
-    SchroFrameComponent *b)
+schro_frame_component_squared_error (SchroFrameData *a,
+    SchroFrameData *b)
 {
   int j;
   double sum;

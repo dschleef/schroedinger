@@ -207,7 +207,7 @@ void
 schro_motion_get_global_block (SchroMotion *motion, SchroMotionVector *mv,
     int x, int y, SchroGlobalMotion *gm, int refmask)
 {
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   SchroFrame *srcframe;
   int offset;
   int i,j;
@@ -337,7 +337,7 @@ schro_motion_get_block (SchroMotion *motion, SchroMotionVector *mv,
   int stride;
   int i,j;
   SchroFrame *srcframe;
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   int sx, sy;
   int w, h;
   int upsample_index;
@@ -484,7 +484,7 @@ int
 get_pixel_generic (SchroUpsampledFrame *upframe, int x, int y, int comp_index)
 {
   int v = 0;
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   int upsample_index;
   SchroFrame *srcframe;
   int sx, sy;
@@ -673,7 +673,7 @@ schro_motion_get_block_generic (SchroMotion *motion, SchroMotionVector *mv,
 static void
 copy_block (SchroFrame *dest, SchroMotion *motion, int x, int y, int reg)
 {
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   SchroObmc *obmc;
   SchroObmcRegion *region;
   int k;
@@ -718,7 +718,7 @@ copy_block (SchroFrame *dest, SchroMotion *motion, int x, int y, int reg)
 static void
 clear_rows (SchroFrame *frame, int y, int n)
 {
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   uint8_t zero = 0;
   int ymin, ymax;
   int k;
@@ -738,7 +738,7 @@ clear_rows (SchroFrame *frame, int y, int n)
 static void
 shift_rows (SchroFrame *frame, int y, int n, int shift_luma, int shift_chroma)
 {
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   int ymin, ymax;
   uint16_t *data;
   int16_t s[2];

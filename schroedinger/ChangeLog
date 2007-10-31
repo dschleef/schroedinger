@@ -1,6 +1,25 @@
 2007-10-31  David Schleef  <ds@schleef.org>
 
 	* TODO:
+	* schroedinger/schroanalysis.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schrofilter.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schrolowdelay.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.c:
+	* schroedinger/schrossim.c:
+	* testsuite/downsample.c:
+	* testsuite/motion2.c:
+	* testsuite/wavelet_noise_2d.c:
+	  Rename SchroFrameComponent to SchroFrameData.
+
+2007-10-31  David Schleef  <ds@schleef.org>
+
+	* TODO:
 	* doc/schroedinger-0.1-sections.txt:
 	* schroedinger/Makefile.am:
 	* schroedinger/schro.h:

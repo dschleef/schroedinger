@@ -794,8 +794,8 @@ schro_params_set_default_codeblock (SchroParams *params)
 }
 
 void
-schro_subband_get_frame_component (SchroFrameComponent *dest,
-    SchroFrameComponent *full_frame, int position)
+schro_subband_get_frame_component (SchroFrameData *dest,
+    SchroFrameData *full_frame, int position)
 {
   int shift = (position>>2) + 1;
 
@@ -818,7 +818,7 @@ schro_subband_get (SchroFrame *frame, int component, int position,
     int16_t **data, int *stride, int *width, int *height)
 {   
   int shift;
-  SchroFrameComponent *comp = &frame->components[component];
+  SchroFrameData *comp = &frame->components[component];
   
   shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
   

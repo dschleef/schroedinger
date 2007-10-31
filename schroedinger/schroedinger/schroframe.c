@@ -373,8 +373,8 @@ offsetconvert_u8_s16 (uint8_t *dest, int16_t *src, int n)
 static void
 schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
 {
-  SchroFrameComponent *dcomp;
-  SchroFrameComponent *scomp;
+  SchroFrameData *dcomp;
+  SchroFrameData *scomp;
   uint8_t *ddata;
   int16_t *sdata;
   int i;
@@ -406,8 +406,8 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
 static void
 schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src)
 {
-  SchroFrameComponent *dcomp;
-  SchroFrameComponent *scomp;
+  SchroFrameData *dcomp;
+  SchroFrameData *scomp;
   uint8_t *ddata;
   uint8_t *sdata;
   int i;
@@ -436,8 +436,8 @@ schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src)
 static void
 schro_frame_convert_s16_s16 (SchroFrame *dest, SchroFrame *src)
 {
-  SchroFrameComponent *dcomp;
-  SchroFrameComponent *scomp;
+  SchroFrameData *dcomp;
+  SchroFrameData *scomp;
   int16_t *ddata;
   int16_t *sdata;
   int i;
@@ -475,8 +475,8 @@ offsetconvert_s16_u8 (int16_t *dest, uint8_t *src, int n)
 static void
 schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
 {
-  SchroFrameComponent *dcomp;
-  SchroFrameComponent *scomp;
+  SchroFrameData *dcomp;
+  SchroFrameData *scomp;
   int16_t *ddata;
   uint8_t *sdata;
   int i;
@@ -744,8 +744,8 @@ schro_frame_convert_ayuv_u8_444 (SchroFrame *dest, SchroFrame *src)
 static void
 schro_frame_add_s16_s16 (SchroFrame *dest, SchroFrame *src)
 {
-  SchroFrameComponent *dcomp;
-  SchroFrameComponent *scomp;
+  SchroFrameData *dcomp;
+  SchroFrameData *scomp;
   int16_t *ddata;
   int16_t *sdata;
   int i;
@@ -772,8 +772,8 @@ schro_frame_add_s16_s16 (SchroFrame *dest, SchroFrame *src)
 static void
 schro_frame_add_s16_u8 (SchroFrame *dest, SchroFrame *src)
 {
-  SchroFrameComponent *dcomp;
-  SchroFrameComponent *scomp;
+  SchroFrameData *dcomp;
+  SchroFrameData *scomp;
   int16_t *ddata;
   uint8_t *sdata;
   int i;
@@ -800,8 +800,8 @@ schro_frame_add_s16_u8 (SchroFrame *dest, SchroFrame *src)
 static void
 schro_frame_subtract_s16_s16 (SchroFrame *dest, SchroFrame *src)
 {
-  SchroFrameComponent *dcomp;
-  SchroFrameComponent *scomp;
+  SchroFrameData *dcomp;
+  SchroFrameData *scomp;
   int16_t *ddata;
   int16_t *sdata;
   int i;
@@ -828,8 +828,8 @@ schro_frame_subtract_s16_s16 (SchroFrame *dest, SchroFrame *src)
 static void
 schro_frame_subtract_s16_u8 (SchroFrame *dest, SchroFrame *src)
 {
-  SchroFrameComponent *dcomp;
-  SchroFrameComponent *scomp;
+  SchroFrameData *dcomp;
+  SchroFrameData *scomp;
   int16_t *ddata;
   uint8_t *sdata;
   int i;
@@ -866,7 +866,7 @@ schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
   //SCHRO_ASSERT(frame->format == SCHRO_FRAME_FORMAT_S16_420);
 
   for(component=0;component<3;component++){
-    SchroFrameComponent *comp = &frame->components[component];
+    SchroFrameData *comp = &frame->components[component];
 
     if (component == 0) {
       width = params->iwt_luma_width;
@@ -905,7 +905,7 @@ schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
   //SCHRO_ASSERT(frame->format == SCHRO_FRAME_FORMAT_S16_420);
 
   for(component=0;component<3;component++){
-    SchroFrameComponent *comp = &frame->components[component];
+    SchroFrameData *comp = &frame->components[component];
 
     if (component == 0) {
       width = params->iwt_luma_width;
@@ -934,7 +934,7 @@ schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
 
 void schro_frame_shift_left (SchroFrame *frame, int shift)
 {
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   int16_t *data;
   int i;
   int y;
@@ -953,7 +953,7 @@ void schro_frame_shift_left (SchroFrame *frame, int shift)
 
 void schro_frame_shift_right (SchroFrame *frame, int shift)
 {
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   int16_t *data;
   int i;
   int y;
@@ -974,7 +974,7 @@ void schro_frame_shift_right (SchroFrame *frame, int shift)
 void
 schro_frame_edge_extend (SchroFrame *frame, int width, int height)
 {
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   int i;
   int y;
   int chroma_width;
@@ -1048,7 +1048,7 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
 void
 schro_frame_zero_extend (SchroFrame *frame, int width, int height)
 {
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   int i;
   int y;
   int chroma_width;
@@ -1190,8 +1190,8 @@ notoil_downsample_vert_u8 (uint8_t *dest, uint8_t *src[], int n)
 }
 
 void
-schro_frame_component_downsample (SchroFrameComponent *dest,
-    SchroFrameComponent *src)
+schro_frame_component_downsample (SchroFrameData *dest,
+    SchroFrameData *src)
 {
   int i,j;
   uint8_t *tmp, *tmp0, *tmp1;
@@ -1248,8 +1248,8 @@ void
 schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src)
 {
   int i, j, k, l;
-  SchroFrameComponent *dcomp;
-  SchroFrameComponent *scomp;
+  SchroFrameData *dcomp;
+  SchroFrameData *scomp;
 
   if (SCHRO_FRAME_FORMAT_DEPTH(dest->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
       SCHRO_FRAME_FORMAT_DEPTH(src->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
@@ -1305,8 +1305,8 @@ void
 schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
 {
   int i, j, k, l;
-  SchroFrameComponent *dcomp;
-  SchroFrameComponent *scomp;
+  SchroFrameData *dcomp;
+  SchroFrameData *scomp;
 
   if (SCHRO_FRAME_FORMAT_DEPTH(dest->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
       SCHRO_FRAME_FORMAT_DEPTH(src->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
@@ -1365,7 +1365,7 @@ schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
 double
 schro_frame_calculate_average_luma (SchroFrame *frame)
 {
-  SchroFrameComponent *comp;
+  SchroFrameData *comp;
   int j;
   int sum = 0;
   int n;
@@ -1399,8 +1399,8 @@ schro_frame_calculate_average_luma (SchroFrame *frame)
 }
 
 static void
-schro_frame_component_planar_copy_u8 (SchroFrameComponent *dest,
-    SchroFrameComponent *src)
+schro_frame_component_planar_copy_u8 (SchroFrameData *dest,
+    SchroFrameData *src)
 {
   int j;
 
@@ -1432,8 +1432,8 @@ horiz_upsample (uint8_t *d, uint8_t *s, int n)
 }
 
 static void
-schro_frame_component_convert_420_to_444 (SchroFrameComponent *dest,
-    SchroFrameComponent *src)
+schro_frame_component_convert_420_to_444 (SchroFrameData *dest,
+    SchroFrameData *src)
 {
   int j;
   uint8_t *tmp;

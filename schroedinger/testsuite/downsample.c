@@ -79,7 +79,7 @@ main (int argc, char *argv[])
 
 
 int
-component_get (SchroFrameComponent *src, int i, int j)
+component_get (SchroFrameData *src, int i, int j)
 {
   uint8_t *data;
 
@@ -91,8 +91,8 @@ component_get (SchroFrameComponent *src, int i, int j)
 }
 
 void
-ref_frame_component_downsample (SchroFrameComponent *dest,
-    SchroFrameComponent *src)
+ref_frame_component_downsample (SchroFrameData *dest,
+    SchroFrameData *src)
 {
   static const int taps[12] = { 4, -4, -8, 4, 46, 86, 86, 46, 4, -8, -4, 4 };
   int i,j;

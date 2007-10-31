@@ -37,7 +37,7 @@ schro_lowdelay_get_luma_slice_run (SchroFrame *frame,
 {
   int shift;
   int w;
-  SchroFrameComponent *comp = &frame->components[0];
+  SchroFrameData *comp = &frame->components[0];
   
   shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
 
@@ -67,8 +67,8 @@ schro_lowdelay_get_chroma_slice_run (SchroFrame *frame,
 {
   int shift;
   int w;
-  SchroFrameComponent *comp1 = &frame->components[1];
-  SchroFrameComponent *comp2 = &frame->components[2];
+  SchroFrameData *comp1 = &frame->components[1];
+  SchroFrameData *comp2 = &frame->components[2];
   
   shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
 

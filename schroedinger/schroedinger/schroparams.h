@@ -205,8 +205,8 @@ int schro_params_get_block_params (SchroParams *params);
 
 void schro_params_set_default_codeblock (SchroParams *params);
 
-void schro_subband_get_frame_component (SchroFrameComponent *dest,
-    SchroFrameComponent *full_frame, int position);
+void schro_subband_get_frame_component (SchroFrameData *dest,
+    SchroFrameData *full_frame, int position);
 void schro_subband_get (SchroFrame *frame, int component, int position,
     SchroParams *params, int16_t **data, int *stride, int *width, int *height);
 int schro_subband_get_position (int index);

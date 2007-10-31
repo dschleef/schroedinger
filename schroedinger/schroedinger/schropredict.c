@@ -719,7 +719,7 @@ schro_encoder_hierarchical_prediction (SchroEncoderFrame *frame)
 }
 
 static int
-schro_block_average (uint8_t *dest, SchroFrameComponent *comp,
+schro_block_average (uint8_t *dest, SchroFrameData *comp,
     int x, int y, int w, int h)
 {
   int xmax = MIN(x + w, comp->width);

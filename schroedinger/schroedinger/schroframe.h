@@ -7,7 +7,7 @@
 SCHRO_BEGIN_DECLS
 
 typedef struct _SchroFrame SchroFrame;
-typedef struct _SchroFrameComponent SchroFrameComponent;
+typedef struct _SchroFrameData SchroFrameData;
 
 typedef void (*SchroFrameFreeFunc)(SchroFrame *frame, void *priv);
 
@@ -47,7 +47,8 @@ typedef enum _SchroFrameFormat {
 
 #define SCHRO_FRAME_IS_PACKED(format) (((format)>>8) & 0x1)
 
-struct _SchroFrameComponent {
+struct _SchroFrameData {
+  SchroFrameFormat format;
   void *data;
   int stride;
   int width;
@@ -67,7 +68,7 @@ struct _SchroFrame {
   int width;
   int height;
 
-  SchroFrameComponent components[3];
+  SchroFrameData components[3];
 
   uint32_t frame_number;
 };
