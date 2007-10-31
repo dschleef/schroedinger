@@ -1,3 +1,20 @@
+2007-10-30  David Schleef  <ds@schleef.org>
+
+	* doc/schroedinger-0.1-sections.txt:
+	* schroedinger/schro.h:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schrolimits.h:
+	* schroedinger/schrolowdelay.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schroquantiser.c:
+	  Move and rename hard-coded limitations to schrolimits.h
+
 2007-10-29  David Schleef  <ds@schleef.org>
 
 	* gst/Makefile.am:

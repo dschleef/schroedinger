@@ -76,7 +76,7 @@ schro_encoder_new (void)
   encoder->frame_queue = schro_queue_new (encoder->queue_depth,
       (SchroQueueFreeFunc)schro_encoder_frame_unref);
 
-  encoder->reference_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
+  encoder->reference_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_encoder_frame_unref);
 
   schro_encoder_set_default_subband_weights (encoder);
@@ -764,9 +764,9 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
   frame->subband_buffer = schro_buffer_new_and_alloc (frame->subband_size);
 
   frame_width = ROUND_UP_POW2(frame->encoder->video_format.width,
-      SCHRO_MAX_TRANSFORM_DEPTH + frame->encoder->video_format.chroma_h_shift);
+      SCHRO_LIMIT_TRANSFORM_DEPTH + frame->encoder->video_format.chroma_h_shift);
   frame_height = ROUND_UP_POW2(frame->encoder->video_format.height,
-      SCHRO_MAX_TRANSFORM_DEPTH + frame->encoder->video_format.chroma_v_shift);
+      SCHRO_LIMIT_TRANSFORM_DEPTH + frame->encoder->video_format.chroma_v_shift);
 
   frame->quant_data = malloc (sizeof(int16_t) * frame_width * frame_height / 4);
 
@@ -2464,9 +2464,9 @@ schro_encoder_frame_new (SchroEncoder *encoder)
       encoder->video_format.chroma_format);
   
   frame_width = ROUND_UP_POW2(encoder->video_format.width,
-      SCHRO_MAX_TRANSFORM_DEPTH + encoder->video_format.chroma_h_shift);
+      SCHRO_LIMIT_TRANSFORM_DEPTH + encoder->video_format.chroma_h_shift);
   frame_height = ROUND_UP_POW2(encoder->video_format.height,
-      SCHRO_MAX_TRANSFORM_DEPTH + encoder->video_format.chroma_v_shift);
+      SCHRO_LIMIT_TRANSFORM_DEPTH + encoder->video_format.chroma_v_shift);
 
   encoder_frame->iwt_frame = schro_frame_new_and_alloc (frame_format,
       frame_width, frame_height);
@@ -2556,7 +2556,7 @@ static const int pref_range[][2] = {
   { 0, 7 }, /* engine */
   { 0, 4 }, /* quant engine */
   { 2, 20 }, /* ref distance */
-  { 1, SCHRO_MAX_ENCODER_TRANSFORM_DEPTH }, /* transform depth */
+  { 1, SCHRO_LIMIT_ENCODER_TRANSFORM_DEPTH }, /* transform depth */
   { 0, 7 }, /* intra wavelet */
   { 0, 7 }, /* inter wavelet */
   { 0, 100 }, /* lambda */

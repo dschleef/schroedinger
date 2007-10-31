@@ -14,6 +14,7 @@
 #include <schroedinger/schroengine.h>
 #include <schroedinger/schrofilter.h>
 #include <schroedinger/schroframe.h>
+#include <schroedinger/schrolimits.h>
 #include <schroedinger/schromotion.h>
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schropredict.h>

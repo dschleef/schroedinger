@@ -4,6 +4,7 @@
 
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schroframe.h>
+#include <schroedinger/schrolimits.h>
 #include <schroedinger/schro-stdint.h>
 
 SCHRO_BEGIN_DECLS
@@ -90,8 +91,8 @@ struct _SchroParams {
   int transform_depth;
   int spatial_partition_flag;
   int nondefault_partition_flag;
-  int horiz_codeblocks[SCHRO_MAX_TRANSFORM_DEPTH + 1];
-  int vert_codeblocks[SCHRO_MAX_TRANSFORM_DEPTH + 1];
+  int horiz_codeblocks[SCHRO_LIMIT_TRANSFORM_DEPTH + 1];
+  int vert_codeblocks[SCHRO_LIMIT_TRANSFORM_DEPTH + 1];
   int codeblock_mode_index;
 
   /* motion prediction parameters */
@@ -114,7 +115,7 @@ struct _SchroParams {
   int slice_height_exp;
   int slice_bytes_num;
   int slice_bytes_denom;
-  int quant_matrix[3*SCHRO_MAX_TRANSFORM_DEPTH+1];
+  int quant_matrix[3*SCHRO_LIMIT_TRANSFORM_DEPTH+1];
   int luma_quant_offset;
   int chroma1_quant_offset;
   int chroma2_quant_offset;

@@ -127,10 +127,10 @@ schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
   double *matrix;
   int n;
   int i,j;
-  double column[SCHRO_MAX_SUBBANDS];
+  double column[SCHRO_LIMIT_SUBBANDS];
   double *weight;
 
-  matrix = malloc (sizeof(double)*SCHRO_MAX_SUBBANDS*SCHRO_MAX_SUBBANDS);
+  matrix = malloc (sizeof(double)*SCHRO_LIMIT_SUBBANDS*SCHRO_LIMIT_SUBBANDS);
   weight = malloc (sizeof(double)*CURVE_SIZE*CURVE_SIZE);
 
   for(j=0;j<CURVE_SIZE;j++){
@@ -144,10 +144,10 @@ schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
 
   for(wavelet=0;wavelet<SCHRO_N_WAVELETS;wavelet++) {
     for(n_levels=1;n_levels<=4;n_levels++){
-      const float *h_curve[SCHRO_MAX_SUBBANDS];
-      const float *v_curve[SCHRO_MAX_SUBBANDS];
-      int hi[SCHRO_MAX_SUBBANDS];
-      int vi[SCHRO_MAX_SUBBANDS];
+      const float *h_curve[SCHRO_LIMIT_SUBBANDS];
+      const float *v_curve[SCHRO_LIMIT_SUBBANDS];
+      int hi[SCHRO_LIMIT_SUBBANDS];
+      int vi[SCHRO_LIMIT_SUBBANDS];
 
       n = 3*n_levels+1;
 

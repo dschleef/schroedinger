@@ -56,7 +56,7 @@ struct _SchroDecoder {
 
   int zero_residual;
   int n_retire;
-  int retire_list[SCHRO_MAX_REFERENCE_FRAMES];
+  int retire_list[SCHRO_LIMIT_REFERENCE_FRAMES];
 
   SchroQueue *frame_queue;
 

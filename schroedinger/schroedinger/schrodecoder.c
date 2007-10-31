@@ -80,11 +80,11 @@ schro_decoder_new (void)
   decoder->skip_value = 1.0;
   decoder->skip_ratio = 1.0;
 
-  decoder->reference_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
+  decoder->reference_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_upsampled_frame_free);
-  decoder->frame_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
+  decoder->frame_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_frame_unref);
-  decoder->output_queue = schro_queue_new (SCHRO_MAX_REFERENCE_FRAMES,
+  decoder->output_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_frame_unref);
 
   return decoder;
@@ -563,9 +563,9 @@ schro_decoder_init (SchroDecoder *decoder)
   frame_format = schro_params_get_frame_format (16,
       video_format->chroma_format);
   frame_width = ROUND_UP_POW2(video_format->width,
-      SCHRO_MAX_TRANSFORM_DEPTH + video_format->chroma_h_shift);
+      SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_h_shift);
   frame_height = ROUND_UP_POW2(video_format->height,
-      SCHRO_MAX_TRANSFORM_DEPTH + video_format->chroma_v_shift);
+      SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_v_shift);
 
   decoder->mc_tmp_frame = schro_frame_new_and_alloc (frame_format,
       frame_width, frame_height);
@@ -847,7 +847,7 @@ schro_decoder_decode_picture_header (SchroDecoder *decoder)
     decoder->n_retire = schro_unpack_decode_uint (&decoder->unpack);
     SCHRO_DEBUG("n_retire %d", decoder->n_retire);
 
-    SCHRO_ASSERT(decoder->n_retire <= SCHRO_MAX_REFERENCE_FRAMES);
+    SCHRO_ASSERT(decoder->n_retire <= SCHRO_LIMIT_REFERENCE_FRAMES);
 
     for(i=0;i<decoder->n_retire;i++){
       int offset;

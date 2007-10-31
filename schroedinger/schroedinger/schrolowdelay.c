@@ -219,8 +219,8 @@ void
 schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder)
 {
   SchroParams *params = &decoder->params;
-  SchroSliceRun luma_runs[SCHRO_MAX_SUBBANDS];
-  SchroSliceRun chroma_runs[SCHRO_MAX_SUBBANDS];
+  SchroSliceRun luma_runs[SCHRO_LIMIT_SUBBANDS];
+  SchroSliceRun chroma_runs[SCHRO_LIMIT_SUBBANDS];
   int x,y;
   int n_horiz_slices;
   int n_vert_slices;
@@ -758,8 +758,8 @@ void
 schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
-  SchroSliceRun luma_runs[SCHRO_MAX_SUBBANDS];
-  SchroSliceRun chroma_runs[SCHRO_MAX_SUBBANDS];
+  SchroSliceRun luma_runs[SCHRO_LIMIT_SUBBANDS];
+  SchroSliceRun chroma_runs[SCHRO_LIMIT_SUBBANDS];
   int x,y;
   int n_horiz_slices;
   int n_vert_slices;

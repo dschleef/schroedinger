@@ -72,7 +72,7 @@ schro_params_init (SchroParams *params, int video_format)
       params->horiz_codeblocks[i] = 1;
       params->vert_codeblocks[i] = 1;
     }
-    for(i=3;i<SCHRO_MAX_TRANSFORM_DEPTH+1;i++){
+    for(i=3;i<SCHRO_LIMIT_TRANSFORM_DEPTH+1;i++){
       params->horiz_codeblocks[i] = 4;
       params->vert_codeblocks[i] = 3;
     }
@@ -83,7 +83,7 @@ schro_params_init (SchroParams *params, int video_format)
     }
     params->horiz_codeblocks[2] = 8;
     params->vert_codeblocks[2] = 6;
-    for(i=3;i<SCHRO_MAX_TRANSFORM_DEPTH+1;i++){
+    for(i=3;i<SCHRO_LIMIT_TRANSFORM_DEPTH+1;i++){
       params->horiz_codeblocks[i] = 12;
       params->vert_codeblocks[i] = 8;
     }
@@ -773,7 +773,7 @@ schro_params_set_default_codeblock (SchroParams *params)
       params->horiz_codeblocks[i] = 1;
       params->vert_codeblocks[i] = 1;
     }
-    for(i=3;i<SCHRO_MAX_TRANSFORM_DEPTH+1;i++){
+    for(i=3;i<SCHRO_LIMIT_TRANSFORM_DEPTH+1;i++){
       params->horiz_codeblocks[i] = 4;
       params->vert_codeblocks[i] = 3;
     }
@@ -784,7 +784,7 @@ schro_params_set_default_codeblock (SchroParams *params)
     }
     params->horiz_codeblocks[2] = 8;
     params->vert_codeblocks[2] = 6;
-    for(i=3;i<SCHRO_MAX_TRANSFORM_DEPTH+1;i++){
+    for(i=3;i<SCHRO_LIMIT_TRANSFORM_DEPTH+1;i++){
       params->horiz_codeblocks[i] = 12;
       params->vert_codeblocks[i] = 8;
     }

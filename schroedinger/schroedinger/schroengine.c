@@ -1050,7 +1050,7 @@ schro_encoder_engine_backtest (SchroEncoder *encoder)
         params->yblen_luma = 8;
 
         for(comp=0;comp<3;comp++){
-          for(j=0;j<1+3*SCHRO_MAX_TRANSFORM_DEPTH;j++){
+          for(j=0;j<SCHRO_LIMIT_SUBBANDS;j++){
             frame->quant_index[comp][j] = 0;
           }
         }

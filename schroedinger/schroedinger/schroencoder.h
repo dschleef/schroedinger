@@ -109,7 +109,7 @@ struct _SchroEncoderFrame {
   SchroPictureNumber picture_number_ref0;
   SchroPictureNumber picture_number_ref1;
   int n_retire;
-  SchroPictureNumber retire[SCHRO_MAX_REFERENCE_FRAMES];
+  SchroPictureNumber retire[SCHRO_LIMIT_REFERENCE_FRAMES];
 
   int16_t slice_y_dc_values[100];
   int16_t slice_u_dc_values[100];
@@ -137,10 +137,10 @@ struct _SchroEncoderFrame {
   int16_t *tmpbuf;
   int16_t *tmpbuf2;
 
-  int quant_index[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3];
-  double est_entropy[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3][60];
-  double est_error[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3][60];
-  double subband_info[3][1+SCHRO_MAX_TRANSFORM_DEPTH*3];
+  int quant_index[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3];
+  double est_entropy[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3][60];
+  double est_error[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3][60];
+  double subband_info[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3];
   SchroBits *bits;
   SchroParams params;
   SchroEncoder *encoder;
@@ -153,7 +153,7 @@ struct _SchroEncoderFrame {
   SchroMotionField *motion_field;
   SchroMotionField *motion_fields[32];
 
-  SchroHistogram subband_hists[3][SCHRO_MAX_SUBBANDS];
+  SchroHistogram subband_hists[3][SCHRO_LIMIT_SUBBANDS];
   SchroHistogram hist_test;
 
   int allocated_bits;
@@ -219,7 +219,7 @@ struct _SchroEncoder {
   double pixels_per_degree_vert;
   double pixels_per_degree_diag;
 
-  double subband_weights[SCHRO_N_WAVELETS][SCHRO_MAX_TRANSFORM_DEPTH][3*SCHRO_MAX_TRANSFORM_DEPTH+1];
+  double subband_weights[SCHRO_N_WAVELETS][SCHRO_LIMIT_TRANSFORM_DEPTH][SCHRO_LIMIT_SUBBANDS];
 
   int buffer_size;
   int buffer_level;
