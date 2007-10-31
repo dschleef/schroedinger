@@ -264,16 +264,11 @@ schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder)
 
   if (decoder->n_refs == 0) {
     int i;
-    int16_t *data;
-    int stride;
-    int width;
-    int height;
+    SchroFrameData fd;
 
     for(i=0;i<3;i++){
-      schro_subband_get (decoder->frame, i, 0,
-          params, &data, &stride, &width, &height);
-
-      schro_decoder_subband_dc_predict (data, stride, width, height);
+      schro_subband_get_frame_data (&fd, decoder->frame, i, 0, params);
+      schro_decoder_subband_dc_predict (&fd);
     }
   }
 }

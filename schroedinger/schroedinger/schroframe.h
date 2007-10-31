@@ -3,6 +3,7 @@
 #define __SCHRO_FRAME_H__
 
 #include <schroedinger/schro-stdint.h>
+#include <schroedinger/schroutils.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -73,6 +74,7 @@ struct _SchroFrame {
   uint32_t frame_number;
 };
 
+#define SCHRO_FRAME_DATA_GET_LINE(fd,i) (OFFSET((fd)->data,(fd)->stride*(i)))
 
 SchroFrame * schro_frame_new (void);
 SchroFrame * schro_frame_new_and_alloc (SchroFrameFormat format, int width,

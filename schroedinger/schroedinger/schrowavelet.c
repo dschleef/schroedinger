@@ -672,30 +672,32 @@ void schro_iwt_daub_9_7 (int16_t *data, int stride, int width, int height,
 }
 
 void
-schro_wavelet_transform_2d (int filter, int16_t *data, int stride, int width,
-    int height, int16_t *tmp)
+schro_wavelet_transform_2d (SchroFrameData *fd, int filter, int16_t *tmp)
 {
+  SCHRO_ASSERT(SCHRO_FRAME_FORMAT_DEPTH(fd->format) ==
+      SCHRO_FRAME_FORMAT_DEPTH_S16);
+
   switch (filter) {
     case SCHRO_WAVELET_DESL_9_3:
-      schro_iwt_desl_9_3 (data, stride, width, height, tmp);
+      schro_iwt_desl_9_3 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_5_3:
-      schro_iwt_5_3 (data, stride, width, height, tmp);
+      schro_iwt_5_3 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_13_5:
-      schro_iwt_13_5 (data, stride, width, height, tmp);
+      schro_iwt_13_5 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_HAAR_0:
-      schro_iwt_haar0 (data, stride, width, height, tmp);
+      schro_iwt_haar0 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_HAAR_1:
-      schro_iwt_haar1 (data, stride, width, height, tmp);
+      schro_iwt_haar1 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_FIDELITY:
-      schro_iwt_fidelity (data, stride, width, height, tmp);
+      schro_iwt_fidelity (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_DAUB_9_7:
-      schro_iwt_daub_9_7(data, stride, width, height, tmp);
+      schro_iwt_daub_9_7(fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
   }
 }
@@ -1109,30 +1111,33 @@ void schro_iiwt_daub_9_7 (int16_t *data, int stride, int width, int height,
 }
 
 void
-schro_wavelet_inverse_transform_2d (int filter, int16_t *data, int stride,
-    int width, int height, int16_t *tmp)
+schro_wavelet_inverse_transform_2d (SchroFrameData *fd, int filter,
+    int16_t *tmp)
 {
+  SCHRO_ASSERT(SCHRO_FRAME_FORMAT_DEPTH(fd->format) ==
+      SCHRO_FRAME_FORMAT_DEPTH_S16);
+
   switch (filter) {
     case SCHRO_WAVELET_DESL_9_3:
-      schro_iiwt_desl_9_3 (data, stride, width, height, tmp);
+      schro_iiwt_desl_9_3 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_5_3:
-      schro_iiwt_5_3 (data, stride, width, height, tmp);
+      schro_iiwt_5_3 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_13_5:
-      schro_iiwt_13_5 (data, stride, width, height, tmp);
+      schro_iiwt_13_5 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_HAAR_0:
-      schro_iiwt_haar0 (data, stride, width, height, tmp);
+      schro_iiwt_haar0 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_HAAR_1:
-      schro_iiwt_haar1 (data, stride, width, height, tmp);
+      schro_iiwt_haar1 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_FIDELITY:
-      schro_iiwt_fidelity (data, stride, width, height, tmp);
+      schro_iiwt_fidelity (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_DAUB_9_7:
-      schro_iiwt_daub_9_7(data, stride, width, height, tmp);
+      schro_iiwt_daub_9_7(fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
   }
 }

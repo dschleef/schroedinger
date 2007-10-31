@@ -1571,28 +1571,27 @@ codeblock_line_decode_p_diag (SchroDecoderSubbandContext *ctx,
 }
 
 void
-schro_decoder_subband_dc_predict (int16_t *data, int stride, int width,
-    int height)
+schro_decoder_subband_dc_predict (SchroFrameData *fd)
 {
   int16_t *prev_line;
   int16_t *line;
   int i,j;
   int pred_value;
 
-  line = OFFSET(data, 0);
-  for(i=1;i<width;i++){
+  line = SCHRO_FRAME_DATA_GET_LINE(fd, 0);
+  for(i=1;i<fd->width;i++){
     pred_value = line[i-1];
     line[i] += pred_value;
   }
   
-  for(j=1;j<height;j++){
-    line = OFFSET(data, j*stride);
-    prev_line = OFFSET(data, (j-1)*stride);
+  for(j=1;j<fd->height;j++){
+    line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    prev_line = SCHRO_FRAME_DATA_GET_LINE(fd, j-1);
 
     pred_value = prev_line[0];
     line[0] += pred_value;
 
-    for(i=1;i<width;i++){
+    for(i=1;i<fd->width;i++){
       pred_value = schro_divide(line[i-1] + prev_line[i] +
           prev_line[i-1] + 1,3);
       line[i] += pred_value;
@@ -1805,7 +1804,12 @@ schro_decoder_decode_subband (SchroDecoder *decoder,
   schro_unpack_skip_bits (&decoder->unpack, ctx->subband_length*8);
 
   if (ctx->position == 0 && decoder->n_refs == 0) {
-    schro_decoder_subband_dc_predict (ctx->data, ctx->stride, ctx->width, ctx->height);
+    SchroFrameData fd;
+    fd.data = ctx->data;
+    fd.stride = ctx->stride;
+    fd.height = ctx->height;
+    fd.width = ctx->width;
+    schro_decoder_subband_dc_predict (&fd);
   }
 }
 

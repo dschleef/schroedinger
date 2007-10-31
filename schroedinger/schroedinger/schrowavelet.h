@@ -3,14 +3,15 @@
 #define _SCHRO_WAVELET_H_
 
 #include <schroedinger/schro-stdint.h>
+#include <schroedinger/schroframe.h>
 #include <schroedinger/schroutils.h>
 
 SCHRO_BEGIN_DECLS
 
 #ifndef SCHRO_DISABLE_UNSTABLE_API
 
-void schro_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width, int height, int16_t *tmp);
-void schro_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int width, int height, int16_t *tmp);
+void schro_wavelet_transform_2d (SchroFrameData *fd, int type, int16_t *tmp);
+void schro_wavelet_inverse_transform_2d (SchroFrameData *fd, int type, int16_t *tmp);
 
 void schro_split_ext_desl93 (int16_t *hi, int16_t *lo, int n);
 void schro_split_ext_53 (int16_t *hi, int16_t *lo, int n);

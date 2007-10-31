@@ -284,7 +284,7 @@ schro_params_init_lowdelay_quantisers
 <SECTION>
 <FILE>schroframe</FILE>
 SchroFrame
-SchroFrameComponent
+SchroFrameData
 SchroFrameFreeFunc
 SchroFrameFormat
 SchroUpsampledFrame
@@ -511,7 +511,7 @@ SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED
 SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED
 SCHRO_SUBBAND_SHIFT
 schro_subband_get
-schro_subband_get_frame_component
+schro_subband_get_frame_data
 schro_subband_get_position
 </SECTION>
 

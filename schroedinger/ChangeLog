@@ -1,5 +1,22 @@
 2007-10-31  David Schleef  <ds@schleef.org>
 
+	* doc/schroedinger-0.1-sections.txt:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schrofilter.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schrolowdelay.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schrowavelet.c:
+	* schroedinger/schrowavelet.h:
+	* testsuite/perf/wavelet_speed.c:
+	  Convert various code to use SchroFrameData instead of passing
+	  around data/stride/width/height.
+
+2007-10-31  David Schleef  <ds@schleef.org>
+
 	* TODO:
 	* schroedinger/schroanalysis.c:
 	* schroedinger/schroencoder.c:

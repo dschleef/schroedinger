@@ -35,26 +35,28 @@ int oil_profile_get_min (OilProfile *prof)
 void
 wavelet_speed (int filter, int width, int height)
 {
-  int stride;
   OilProfile prof1;
   OilProfile prof2;
   double ave_fwd, ave_rev;
-  //double std;
   int i;
+  SchroFrameData fd;
 
-  stride = width*2;
+  fd.format = SCHRO_FRAME_FORMAT_S16_444;
+  fd.data = data;
+  fd.stride = width*2;
+  fd.width = width;
+  fd.height = height;
 
   oil_profile_init (&prof1);
   oil_profile_init (&prof2);
 
   for(i=0;i<10;i++){
     oil_profile_start (&prof1);
-    schro_wavelet_transform_2d (filter, data, stride, width, height, tmp);
+    schro_wavelet_transform_2d (&fd, filter, tmp);
     oil_profile_stop (&prof1);
 
     oil_profile_start (&prof2);
-    schro_wavelet_inverse_transform_2d (filter, data, stride, width, height,
-        tmp);
+    schro_wavelet_inverse_transform_2d (&fd, filter, tmp);
     oil_profile_stop (&prof2);
   }
 

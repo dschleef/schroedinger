@@ -826,9 +826,7 @@ schro_frame_filter_wavelet (SchroFrame *frame)
   for(component=0;component<3;component++){
     comp = &tmpframe->components[component];
 
-    schro_wavelet_transform_2d (SCHRO_WAVELET_5_3,
-        comp->data, comp->stride, comp->width, comp->height, tmp);
-
+    schro_wavelet_transform_2d (comp, SCHRO_WAVELET_5_3, tmp);
 
     for(i=1;i<4;i++){
       int width;
@@ -857,8 +855,7 @@ schro_frame_filter_wavelet (SchroFrame *frame)
       }
     }
 
-    schro_wavelet_inverse_transform_2d (SCHRO_WAVELET_5_3,
-        comp->data, comp->stride, comp->width, comp->height, tmp);
+    schro_wavelet_inverse_transform_2d (comp, SCHRO_WAVELET_5_3, tmp);
   }
 
   schro_frame_convert (frame, tmpframe);
@@ -942,9 +939,8 @@ schro_frame_filter_adaptive_lowpass (SchroFrame *frame)
       frame->width, frame->height);
   schro_frame_convert (tmp, frame);
 
-  schro_wavelet_transform_2d (SCHRO_WAVELET_5_3,
-      tmp->components[0].data, tmp->components[0].stride,
-      tmp->components[0].width, tmp->components[0].height, tmpdata);
+  schro_wavelet_transform_2d (&tmp->components[0], SCHRO_WAVELET_5_3,
+      tmpdata);
 
   schro_histogram_init (&hist);
   for(j=0;j<tmp->height/2;j++){

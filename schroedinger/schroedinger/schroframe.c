@@ -857,7 +857,6 @@ void
 schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp)
 {
-  int16_t *frame_data;
   int component;
   int width;
   int height;
@@ -876,18 +875,17 @@ schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
       height = params->iwt_chroma_height;
     }
     
-    frame_data = (int16_t *)comp->data;
     for(level=0;level<params->transform_depth;level++) {
-      int w;
-      int h;
-      int stride;
+      SchroFrameData fd;
 
-      w = width >> level;
-      h = height >> level;
-      stride = comp->stride << level;
+      fd.format = frame->format;
+      fd.data = comp->data;
+      fd.width = width >> level;
+      fd.height = height >> level;
+      fd.stride = comp->stride << level;
 
-      schro_wavelet_transform_2d (params->wavelet_filter_index,
-          frame_data, stride, w, h, tmp);
+      schro_wavelet_transform_2d (&fd, params->wavelet_filter_index,
+          tmp);
     }
   }
 }
@@ -896,7 +894,6 @@ void
 schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp)
 {
-  int16_t *frame_data;
   int width;
   int height;
   int level;
@@ -915,18 +912,17 @@ schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
       height = params->iwt_chroma_height;
     }
     
-    frame_data = (int16_t *)comp->data;
     for(level=params->transform_depth-1; level >=0;level--) {
-      int w;
-      int h;
-      int stride;
+      SchroFrameData fd;
 
-      w = width >> level;
-      h = height >> level;
-      stride = comp->stride << level;
+      fd.format = frame->format;
+      fd.data = comp->data;
+      fd.width = width >> level;
+      fd.height = height >> level;
+      fd.stride = comp->stride << level;
 
-      schro_wavelet_inverse_transform_2d (params->wavelet_filter_index,
-          frame_data, stride, w, h, tmp);
+      schro_wavelet_inverse_transform_2d (&fd, params->wavelet_filter_index,
+          tmp);
     }
   }
 }

@@ -794,22 +794,14 @@ schro_params_set_default_codeblock (SchroParams *params)
 }
 
 void
-schro_subband_get_frame_component (SchroFrameData *dest,
-    SchroFrameData *full_frame, int position)
+schro_subband_get_frame_data (SchroFrameData *fd,
+    SchroFrame *frame, int component, int position,
+    SchroParams *params)
 {
-  int shift = (position>>2) + 1;
-
-  dest->stride = full_frame->stride << shift;
-  dest->width = full_frame->width >> shift;
-  dest->height = full_frame->height >> shift;
-
-  if (position & 2) {
-    dest->data = OFFSET(full_frame->data, (dest->stride>>1) * sizeof(int16_t));
-  }
-  if (position & 1) {
-    dest->data = OFFSET(full_frame->data, dest->width * sizeof(int16_t));
-  }
-
+  int16_t *data;
+  schro_subband_get (frame, component, position, params,
+      &data, &fd->stride, &fd->width, &fd->height);
+  fd->data = data;
 }
 
 void

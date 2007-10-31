@@ -112,8 +112,8 @@ void schro_decoder_decode_transform_data (SchroDecoder *decoder);
 void schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder);
 void schro_decoder_iwt_transform (SchroDecoder *decoder, int component);
 void schro_decoder_copy_from_frame_buffer (SchroDecoder *decoder, SchroBuffer *buffer);
-void schro_decoder_subband_dc_predict (int16_t *data, int stride, int width,
-        int height);
+
+void schro_decoder_subband_dc_predict (SchroFrameData *fd);
 
 void schro_decoder_decode_lowdelay_transform_data_2 (SchroDecoder *decoder);
 
