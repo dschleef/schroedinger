@@ -1,4 +1,10 @@
 
+BUGS:
+
+  setting NOARITH preference doesn't do anything
+
+general:
+
   add copyright blocks
 
   stabilize API

@@ -65,24 +65,23 @@ schro_decoder_subband_dc_predict
 </SECTION>
 
 <SECTION>
-<FILE>schrobits</FILE>
-SchroBits
-schro_bits_new
-schro_bits_free
-schro_bits_encode_init
-schro_bits_sync
-schro_bits_dumpbits
-schro_bits_append
-schro_bits_encode_bit
-schro_bits_encode_bits
-schro_bits_encode_uint
-schro_bits_encode_sint
-schro_bits_copy
-schro_bits_estimate_sint
-schro_bits_estimate_uint
-schro_bits_flush
-schro_bits_get_bit_offset
-schro_bits_get_offset
+<FILE>schropack</FILE>
+SchroPack
+schro_pack_new
+schro_pack_free
+schro_pack_encode_init
+schro_pack_sync
+schro_pack_append
+schro_pack_encode_bit
+schro_pack_encode_bits
+schro_pack_encode_uint
+schro_pack_encode_sint
+schro_pack_copy
+schro_pack_estimate_sint
+schro_pack_estimate_uint
+schro_pack_flush
+schro_pack_get_bit_offset
+schro_pack_get_offset
 </SECTION>
 
 <SECTION>
@@ -122,7 +121,6 @@ schro_iiwt_daub_9_7
 
 <SECTION>
 <FILE>schroarith</FILE>
-SCHRO_ARITH_N_CONTEXTS
 SchroArith
 SchroArithContext
 schro_arith_new
@@ -152,15 +150,6 @@ schro_buffer_new_with_data
 schro_buffer_new_subbuffer
 schro_buffer_ref
 schro_buffer_unref
-<SUBSECTION Private>
-SchroBufferQueue
-schro_buffer_queue_new
-schro_buffer_queue_free
-schro_buffer_queue_get_depth
-schro_buffer_queue_get_offset
-schro_buffer_queue_push
-schro_buffer_queue_pull
-schro_buffer_queue_peek
 </SECTION>
 
 <SECTION>

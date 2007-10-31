@@ -355,13 +355,13 @@ schro_encoder_encode_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs,
   int slice_y_size;
   int slice_uv_size;
 
-  start_bits = schro_bits_get_bit_offset (frame->bits);
+  start_bits = schro_pack_get_bit_offset (frame->pack);
 
-  schro_bits_encode_bits (frame->bits, 7, base_index);
+  schro_pack_encode_bits (frame->pack, 7, base_index);
   length_bits = ilog2up(8*slice_bytes);
 
   slice_y_length = frame->slice_y_bits - frame->slice_y_trailing_zeros;
-  schro_bits_encode_bits (frame->bits, length_bits,
+  schro_pack_encode_bits (frame->pack, length_bits,
       slice_y_length);
 
   slice_y_size = 1<<(params->slice_width_exp+params->slice_height_exp);
@@ -369,16 +369,16 @@ schro_encoder_encode_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs,
       +params->video_format->chroma_v_shift);
 
   for(i=0;i<slice_y_size - frame->slice_y_trailing_zeros;i++) {
-    schro_bits_encode_sint (frame->bits, quant_data[i]);
+    schro_pack_encode_sint (frame->pack, quant_data[i]);
   }
 
   quant_data += slice_y_size;
   for(i=0;i<slice_uv_size - frame->slice_uv_trailing_zeros/2;i++) {
-    schro_bits_encode_sint (frame->bits, quant_data[i]);
-    schro_bits_encode_sint (frame->bits, quant_data[i+slice_uv_size]);
+    schro_pack_encode_sint (frame->pack, quant_data[i]);
+    schro_pack_encode_sint (frame->pack, quant_data[i+slice_uv_size]);
   }
 
-  end_bits = schro_bits_get_bit_offset (frame->bits);
+  end_bits = schro_pack_get_bit_offset (frame->pack);
   SCHRO_DEBUG("total bits %d used bits %d expected %d", slice_bytes*8,
       end_bits - start_bits,
       7 + length_bits + frame->slice_y_bits + frame->slice_uv_bits -
@@ -394,7 +394,7 @@ schro_encoder_encode_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs,
   } else {
     int left = slice_bytes*8 - (end_bits - start_bits);
     for(i=0;i<left; i++) {
-      schro_bits_encode_bit (frame->bits, 1);
+      schro_pack_encode_bit (frame->pack, 1);
     }
   }
 
@@ -408,7 +408,7 @@ estimate_array (int16_t *data, int n)
   int n_bits = 0;
 
   for(i=0;i<n;i++){
-    n_bits += schro_bits_estimate_sint (data[i]);
+    n_bits += schro_pack_estimate_sint (data[i]);
   }
   return n_bits;
 }

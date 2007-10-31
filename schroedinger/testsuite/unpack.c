@@ -10,12 +10,12 @@
 int fail;
 
 void
-dump_bits (SchroBits *bits, int n)
+dump_bits (SchroPack *pack, int n)
 {
   int i;
   
   for(i=0;i<n*8;i++){
-    printf(" %d", (bits->buffer->data[(i>>3)] >> (7 - (i&7))) & 1);
+    printf(" %d", (pack->buffer->data[(i>>3)] >> (7 - (i&7))) & 1);
   }
   printf("\n");
 }
@@ -38,7 +38,7 @@ schro_unpack_dump (SchroUnpack *unpack)
 int test1 (void)
 {
   SchroBuffer *buffer = schro_buffer_new_and_alloc (100);
-  SchroBits *bits;
+  SchroPack *pack;
   SchroUnpack unpack;
   int i;
   int ref[800];
@@ -50,13 +50,13 @@ int test1 (void)
   }
   guard = random()&1;
 
-  bits = schro_bits_new ();
-  schro_bits_encode_init (bits, buffer);
+  pack = schro_pack_new ();
+  schro_pack_encode_init (pack, buffer);
   for(i=0;i<800;i++){
-    schro_bits_encode_bit (bits, ref[i]);
+    schro_pack_encode_bit (pack, ref[i]);
   }
-  schro_bits_flush(bits);
-  schro_bits_free (bits);
+  schro_pack_flush(pack);
+  schro_pack_free (pack);
 
 
   schro_unpack_init_with_data (&unpack, buffer->data, buffer->length, guard);
@@ -86,7 +86,7 @@ int test1 (void)
 int test2 (void)
 {
   SchroBuffer *buffer = schro_buffer_new_and_alloc (1000);
-  SchroBits *bits;
+  SchroPack *pack;
   SchroUnpack unpack;
   int i;
   int ref[100];
@@ -98,14 +98,14 @@ int test2 (void)
     ref[i] = random()&0xff;
   }
 
-  bits = schro_bits_new ();
-  schro_bits_encode_init (bits, buffer);
+  pack = schro_pack_new ();
+  schro_pack_encode_init (pack, buffer);
   for(i=0;i<100;i++){
-    schro_bits_encode_uint (bits, ref[i]);
+    schro_pack_encode_uint (pack, ref[i]);
   }
-  schro_bits_flush(bits);
-  n_bytes = schro_bits_get_offset (bits);
-  schro_bits_free (bits);
+  schro_pack_flush(pack);
+  n_bytes = schro_pack_get_offset (pack);
+  schro_pack_free (pack);
 
 
   schro_unpack_init_with_data (&unpack, buffer->data, n_bytes, 1);
@@ -127,7 +127,7 @@ int test2 (void)
 int test3 (void)
 {
   SchroBuffer *buffer = schro_buffer_new_and_alloc (1000);
-  SchroBits *bits;
+  SchroPack *pack;
   SchroUnpack unpack;
   SchroUnpack unpack2;
   int i;
@@ -142,21 +142,21 @@ int test3 (void)
     ref[i] = (random()&0xff) - 128;
   }
 
-  bits = schro_bits_new ();
-  schro_bits_encode_init (bits, buffer);
+  pack = schro_pack_new ();
+  schro_pack_encode_init (pack, buffer);
   n_bits = 0;
   for(i=0;i<50;i++){
-    schro_bits_encode_sint (bits, ref[i]);
-    n_bits += schro_bits_estimate_sint (ref[i]);
+    schro_pack_encode_sint (pack, ref[i]);
+    n_bits += schro_pack_estimate_sint (ref[i]);
   }
   n_bits2 = 0;
   for(i=50;i<100;i++){
-    schro_bits_encode_sint (bits, ref[i]);
-    n_bits2 += schro_bits_estimate_sint (ref[i]);
+    schro_pack_encode_sint (pack, ref[i]);
+    n_bits2 += schro_pack_estimate_sint (ref[i]);
   }
-  schro_bits_flush(bits);
-  n_bytes = schro_bits_get_offset (bits);
-  schro_bits_free (bits);
+  schro_pack_flush(pack);
+  n_bytes = schro_pack_get_offset (pack);
+  schro_pack_free (pack);
 
 
   schro_unpack_init_with_data (&unpack, buffer->data, n_bytes, 1);

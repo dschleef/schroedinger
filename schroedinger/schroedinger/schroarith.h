@@ -3,7 +3,7 @@
 #define _SCHRO_ARITH_H_
 
 #include <schroedinger/schro-stdint.h>
-#include <schroedinger/schrobits.h>
+#include <schroedinger/schropack.h>
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schroutils.h>
 

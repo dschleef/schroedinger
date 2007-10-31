@@ -19,13 +19,13 @@ pkginclude_HEADERS = \
 	schroarith.h \
 	schroanalysis.h \
 	schroasync.h \
-	schrobits.h \
 	schrobitstream.h \
 	schrodebug.h \
 	schrofft.h \
 	schrohistogram.h \
 	schrometric.h \
 	schromotion.h \
+	schropack.h \
 	schroparams.h \
 	schrophasecorrelation.h \
 	schropredict.h \
@@ -47,7 +47,6 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schroanalysis.c \
 	schroarith.c \
 	schroasync-pthread.c \
-	schrobits.c \
 	schrodecoder.c \
 	schrodebug.c \
 	schroencoder.c \
@@ -61,6 +60,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrometric.c \
 	schromotion.c \
 	schrooil.c \
+	schropack.c \
 	schroparams.c \
 	schrophasecorrelation.c \
 	schropredict.c \

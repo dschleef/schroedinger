@@ -5,7 +5,6 @@
 #include <schroedinger/schroanalysis.h>
 #include <schroedinger/schroarith.h>
 #include <schroedinger/schroasync.h>
-#include <schroedinger/schrobits.h>
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schrodecoder.h>
@@ -16,6 +15,7 @@
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schrolimits.h>
 #include <schroedinger/schromotion.h>
+#include <schroedinger/schropack.h>
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schropredict.h>
 #include <schroedinger/schroqueue.h>

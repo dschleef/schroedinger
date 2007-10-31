@@ -1,3 +1,21 @@
+2007-10-31  David Schleef  <ds@schleef.org>
+
+	* TODO:
+	* doc/schroedinger-0.1-sections.txt:
+	* schroedinger/Makefile.am:
+	* schroedinger/schro.h:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrobits.c:
+	* schroedinger/schrobits.h:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schrolowdelay.c:
+	* schroedinger/schropack.c:
+	* schroedinger/schropack.h:
+	* testsuite/unpack.c:
+	  Global change from SchroBits to SchroPack.
+
 2007-10-30  David Schleef  <ds@schleef.org>
 
 	* TODO:

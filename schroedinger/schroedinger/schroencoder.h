@@ -3,7 +3,7 @@
 #define __SCHRO_ENCODER_H__
 
 #include <schroedinger/schroutils.h>
-#include <schroedinger/schrobits.h>
+#include <schroedinger/schropack.h>
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schroframe.h>
@@ -141,7 +141,7 @@ struct _SchroEncoderFrame {
   double est_entropy[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3][60];
   double est_error[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3][60];
   double subband_info[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3];
-  SchroBits *bits;
+  SchroPack *pack;
   SchroParams params;
   SchroEncoder *encoder;
   SchroFrame *iwt_frame;
@@ -286,8 +286,8 @@ void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
 SchroBuffer * schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
     SchroAuxiliaryDataID id, void *data, int size);
 void schro_encoder_copy_to_frame_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
-void schro_encoder_encode_access_unit_header (SchroEncoder *encoder, SchroBits *bits);
-void schro_encoder_encode_parse_info (SchroBits *bits, int parse_code);
+void schro_encoder_encode_access_unit_header (SchroEncoder *encoder, SchroPack *bits);
+void schro_encoder_encode_parse_info (SchroPack *bits, int parse_code);
 void schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_frame_insert_buffer (SchroEncoderFrame *frame, SchroBuffer *buffer);
 void schro_encoder_start (SchroEncoder *encoder);

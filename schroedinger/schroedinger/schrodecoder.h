@@ -6,7 +6,6 @@
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schromotion.h>
-#include <schroedinger/schrobits.h>
 #include <schroedinger/schrounpack.h>
 #include <schroedinger/schrobitstream.h>
 
