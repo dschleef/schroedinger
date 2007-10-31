@@ -6,6 +6,8 @@
 
 SCHRO_BEGIN_DECLS
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 typedef enum {
   SCHRO_QUANTISER_ENGINE_SIMPLE,
   SCHRO_QUANTISER_ENGINE_RATE_DISTORTION,
@@ -22,6 +24,8 @@ int schro_encoder_engine_test_intra (SchroEncoder *encoder);
 int schro_encoder_engine_lossless (SchroEncoder *encoder);
 int schro_encoder_engine_backtest (SchroEncoder *encoder);
 int schro_encoder_engine_lowdelay (SchroEncoder *encoder);
+
+#endif
 
 SCHRO_END_DECLS
 

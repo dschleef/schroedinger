@@ -97,6 +97,12 @@ int schro_decoder_is_access_unit (SchroBuffer *buffer);
 int schro_decoder_is_intra (SchroBuffer *buffer);
 int schro_decoder_is_picture (SchroBuffer *buffer);
 int schro_decoder_iterate (SchroDecoder *decoder);
+
+void schro_decoder_set_earliest_frame (SchroDecoder *decoder, SchroPictureNumber earliest_frame);
+void schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio);
+
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 void schro_decoder_decode_parse_header (SchroDecoder *decoder);
 void schro_decoder_decode_access_unit (SchroDecoder *decoder);
 void schro_decoder_decode_picture_header (SchroDecoder *decoder);
@@ -107,12 +113,12 @@ void schro_decoder_decode_transform_data (SchroDecoder *decoder);
 void schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder);
 void schro_decoder_iwt_transform (SchroDecoder *decoder, int component);
 void schro_decoder_copy_from_frame_buffer (SchroDecoder *decoder, SchroBuffer *buffer);
-void schro_decoder_set_earliest_frame (SchroDecoder *decoder, SchroPictureNumber earliest_frame);
-void schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio);
 void schro_decoder_subband_dc_predict (int16_t *data, int stride, int width,
         int height);
 
 void schro_decoder_decode_lowdelay_transform_data_2 (SchroDecoder *decoder);
+
+#endif
 
 SCHRO_END_DECLS
 

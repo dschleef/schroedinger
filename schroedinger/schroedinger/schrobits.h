@@ -7,8 +7,6 @@
 
 SCHRO_BEGIN_DECLS
 
-#define SCHRO_ARITH_N_CONTEXTS 64
-
 typedef struct _SchroBits SchroBits;
 
 struct _SchroBits {
@@ -22,6 +20,8 @@ struct _SchroBits {
 
   int error;
 };
+
+#ifndef SCHRO_DISABLE_UNSTABLE_API
 
 SchroBits * schro_bits_new (void);
 void schro_bits_free (SchroBits *bits);
@@ -43,6 +43,8 @@ void schro_bits_encode_sint (SchroBits *bits, int value);
 
 int schro_bits_estimate_uint (int value);
 int schro_bits_estimate_sint (int value);
+
+#endif
 
 SCHRO_END_DECLS
 

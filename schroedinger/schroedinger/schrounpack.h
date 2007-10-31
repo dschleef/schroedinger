@@ -30,6 +30,8 @@ struct _SchroUnpack {
   int overrun;
 };
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 void schro_unpack_init_with_data (SchroUnpack *unpack, uint8_t *data,
     int n_bytes, unsigned int guard_bit);
 void schro_unpack_copy (SchroUnpack *dest, SchroUnpack *src);
@@ -48,6 +50,8 @@ unsigned int schro_unpack_decode_uint (SchroUnpack *unpack);
 int schro_unpack_decode_sint (SchroUnpack *unpack);
 int schro_unpack_decode_sint_slow (SchroUnpack *unpack);
 void schro_unpack_decode_sint_s16 (int16_t *dest, SchroUnpack *unpack, int n);
+
+#endif
 
 SCHRO_END_DECLS
 

@@ -7,10 +7,16 @@
 
 SCHRO_BEGIN_DECLS
 
+typedef struct _SchroUpsampledFrame SchroUpsampledFrame;
+struct _SchroUpsampledFrame {
+  SchroFrame *frames[4];
+};
+
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 typedef struct _SchroObmc SchroObmc;
 typedef struct _SchroObmcRegion SchroObmcRegion;
 typedef struct _SchroMotion SchroMotion;
-typedef struct _SchroUpsampledFrame SchroUpsampledFrame;
 
 struct _SchroObmcRegion {
   int16_t *weights;
@@ -32,10 +38,6 @@ struct _SchroObmc {
   int x_sep;
   int y_sep;
   uint8_t *tmpdata;
-};
-
-struct _SchroUpsampledFrame {
-  SchroFrame *frames[4];
 };
 
 struct _SchroMotion {
@@ -72,6 +74,8 @@ void schro_obmc_cleanup (SchroObmc *obmc);
 void schro_upsampled_frame_upsample (SchroUpsampledFrame *df);
 SchroUpsampledFrame * schro_upsampled_frame_new (SchroFrame *frame);
 void schro_upsampled_frame_free (SchroUpsampledFrame *df);
+
+#endif
 
 SCHRO_END_DECLS
 

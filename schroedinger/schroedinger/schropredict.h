@@ -6,6 +6,8 @@
 
 SCHRO_BEGIN_DECLS
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 #define SCHRO_PREDICTION_LIST_LENGTH 10
 
 #define SCHRO_PREDICTION_METRIC_INVALID (-1)
@@ -46,6 +48,8 @@ void schro_motion_field_copy (SchroMotionField *field, SchroMotionField *parent)
 void schro_motion_field_global_prediction (SchroMotionField *mf,
     SchroGlobalMotion *gm, int mv_precision);
 void schro_motion_field_calculate_stats (SchroMotionField *mf, SchroEncoderFrame *frame);
+
+#endif
 
 SCHRO_END_DECLS
 

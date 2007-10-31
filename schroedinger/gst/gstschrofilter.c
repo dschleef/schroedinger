@@ -25,6 +25,8 @@
  * $Id: make_filter,v 1.8 2004/04/19 22:51:57 ds Exp $
  */
 
+#undef SCHRO_DISABLE_UNSTABLE_API
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

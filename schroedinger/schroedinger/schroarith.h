@@ -9,6 +9,8 @@
 
 SCHRO_BEGIN_DECLS
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 enum {
   SCHRO_CTX_ZERO_CODEBLOCK = 0,
   SCHRO_CTX_QUANTISER_CONT,
@@ -152,6 +154,8 @@ void schro_arith_estimate_uint (SchroArith *arith, int cont_context,
     int value_context, int value);
 void schro_arith_estimate_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value);
+
+#endif
 
 SCHRO_END_DECLS
 

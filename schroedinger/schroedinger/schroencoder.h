@@ -292,6 +292,18 @@ void schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_frame_insert_buffer (SchroEncoderFrame *frame, SchroBuffer *buffer);
 void schro_encoder_start (SchroEncoder *encoder);
 
+int schro_encoder_preference_get_range (SchroEncoder *encoder,
+    SchroPrefEnum pref, int *min, int *max);
+int schro_encoder_preference_get (SchroEncoder *encoder, SchroPrefEnum pref);
+int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
+    int value);
+
+SchroStateEnum schro_encoder_wait (SchroEncoder *encoder);
+SchroBuffer * schro_encoder_pull (SchroEncoder *encoder,
+    int *n_decodable_frames);
+
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 void schro_encoder_set_default_subband_weights (SchroEncoder *encoder);
 void schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
         double (*perceptual_weight)(double));
@@ -300,16 +312,6 @@ void schro_encoder_use_perceptual_weighting (SchroEncoder *encoder,
 double schro_encoder_perceptual_weight_constant (double ppd);
 double schro_encoder_perceptual_weight_ccir959 (double ppd);
 double schro_encoder_perceptual_weight_moo (double ppd);
-
-SchroStateEnum schro_encoder_wait (SchroEncoder *encoder);
-SchroBuffer * schro_encoder_pull (SchroEncoder *encoder,
-    int *n_decodable_frames);
-
-int schro_encoder_preference_get_range (SchroEncoder *encoder,
-    SchroPrefEnum pref, int *min, int *max);
-int schro_encoder_preference_get (SchroEncoder *encoder, SchroPrefEnum pref);
-int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
-    int value);
 
 void schro_encoder_init_subbands (SchroEncoderFrame *frame);
 void schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index);
@@ -349,6 +351,7 @@ void schro_encoder_recalculate_allocations (SchroEncoder *encoder);
 
 void schro_encoder_calculate_test_info (SchroEncoderFrame *frame);
 
+#endif
 
 SCHRO_END_DECLS
 

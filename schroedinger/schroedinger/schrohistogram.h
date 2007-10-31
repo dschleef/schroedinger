@@ -14,13 +14,17 @@ typedef struct _SchroHistogram SchroHistogram;
 typedef struct _SchroHistogramTable SchroHistogramTable;
 
 struct _SchroHistogram {
+  /*< private >*/
   int n;
   double bins[SCHRO_HISTOGRAM_SIZE];
 };
 
 struct _SchroHistogramTable {
+  /*< private >*/
   double weights[SCHRO_HISTOGRAM_SIZE];
 };
+
+#ifndef SCHRO_DISABLE_UNSTABLE_API
 
 double schro_histogram_get_range (SchroHistogram *hist, int start, int end);
 void schro_histogram_init (SchroHistogram *hist);
@@ -39,6 +43,8 @@ double schro_histogram_estimate_slope (SchroHistogram *hist);
 
 double schro_histogram_estimate_entropy (SchroHistogram *hist, int quant_index,
     int noarith);
+
+#endif
 
 SCHRO_END_DECLS
 

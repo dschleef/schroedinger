@@ -56,6 +56,8 @@ struct _SchroVideoFormat {
   int chroma_height;
 };  
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 struct _SchroProfile {
   int max_pixels_per_second;
   int max_blocks_per_second;
@@ -67,6 +69,8 @@ struct _SchroProfile {
   int allow_spatial_partition;
   int allow_inter;
 };
+
+#endif
 
 struct _SchroGlobalMotion {
   int shift;
@@ -83,6 +87,7 @@ struct _SchroGlobalMotion {
 };
 
 struct _SchroParams {
+  /*< private >*/
   SchroVideoFormat *video_format;
   int is_noarith;
 
@@ -133,6 +138,8 @@ struct _SchroParams {
   int y_num_blocks;
 };
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 #define SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position) (((position)&3) == 2)
 #define SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position) (((position)&3) == 1)
 #define SCHRO_SUBBAND_SHIFT(position) ((position)>>2)
@@ -178,6 +185,8 @@ void schro_params_calculate_mc_sizes (SchroParams *params);
 
 int schro_params_validate (SchroVideoFormat *format);
 
+#endif
+
 void schro_params_set_video_format (SchroVideoFormat *format, SchroVideoFormatEnum index);
 SchroVideoFormatEnum schro_params_get_video_format (SchroVideoFormat *format);
 void schro_params_set_frame_rate (SchroVideoFormat *format, int index);
@@ -188,6 +197,9 @@ void schro_params_set_signal_range (SchroVideoFormat *format, int index);
 int schro_params_get_signal_range (SchroVideoFormat *format);
 void schro_params_set_colour_spec (SchroVideoFormat *format, int index);
 int schro_params_get_colour_spec (SchroVideoFormat *format);
+
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 void schro_params_set_block_params (SchroParams *params, int index);
 int schro_params_get_block_params (SchroParams *params);
 
@@ -209,6 +221,8 @@ void schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
 void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp);
 void schro_params_init_lowdelay_quantisers (SchroParams *params);
+
+#endif
 
 SCHRO_END_DECLS
 

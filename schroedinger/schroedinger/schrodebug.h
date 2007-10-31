@@ -7,6 +7,8 @@
 
 SCHRO_BEGIN_DECLS
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 enum
 {
   SCHRO_LEVEL_NONE = 0,
@@ -64,6 +66,8 @@ void schro_debug_set_level (int level);
 int schro_debug_get_level (void);
 
 void schro_dump (int type, const char *format, ...);
+
+#endif
 
 SCHRO_END_DECLS
 

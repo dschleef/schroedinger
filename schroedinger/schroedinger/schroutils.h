@@ -11,6 +11,8 @@
 
 typedef unsigned int schro_bool;
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 #define DIVIDE_ROUND_UP(a,b) (((a) + (b) - 1)/(b))
 #ifndef MIN
@@ -31,6 +33,8 @@ typedef unsigned int schro_bool;
 #define SCHRO_GET(ptr, offset, type) (*(type *)((uint8_t *)(ptr) + (offset)) )
 
 #define schro_divide(a,b) (((a)<0)?(((a) - (b) + 1)/(b)):((a)/(b)))
+
+#endif
 
 #if defined(__GNUC__) && defined(__GNUC_MINOR__)
 #define SCHRO_GNUC_PREREQ(maj, min) \
@@ -53,7 +57,10 @@ typedef unsigned int schro_bool;
 #define SCHRO_END_DECLS
 #endif
 
+
 SCHRO_BEGIN_DECLS
+
+#ifndef SCHRO_DISABLE_UNSTABLE_API
 
 int muldiv64 (int a, int b, int c);
 int schro_utils_multiplier_to_quant_index (double x);
@@ -62,6 +69,8 @@ int schro_quantise (int value, int quant_factor, int quant_offset);
 double schro_utils_probability_to_entropy (double x);
 double schro_utils_entropy (double a, double total);
 void schro_utils_reduce_fraction (int *n, int *d);
+
+#endif
 
 SCHRO_END_DECLS
 

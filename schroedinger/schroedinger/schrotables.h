@@ -8,6 +8,8 @@
 
 SCHRO_BEGIN_DECLS
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 extern const uint32_t schro_table_offset_3_8[61];
 extern const uint32_t schro_table_offset_1_2[61];
 extern const uint32_t schro_table_quant[61];
@@ -21,6 +23,8 @@ extern const float schro_tables_wavelet_noise_curve[SCHRO_N_WAVELETS][8][128];
 extern const double schro_tables_wavelet_gain[SCHRO_N_WAVELETS][2];
 
 extern const int schro_table_unpack_sint[256][17];
+
+#endif
 
 SCHRO_END_DECLS
 

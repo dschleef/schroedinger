@@ -7,6 +7,8 @@
 
 SCHRO_BEGIN_DECLS
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 void oil_splat_s16_ns (int16_t *dest, const int16_t *src, int n);
 void oil_lift_haar_split (int16_t *i1, int16_t *i2, int n);
 void oil_lift_haar_synth (int16_t *i1, int16_t *i2, int n);
@@ -35,6 +37,8 @@ void oil_fir_8tap_s16 (int16_t *d, const int16_t *s1_np3, const int32_t *s2_4,
     const int32_t *s3_2, int n);
 void oil_fir_10tap_s16 (int16_t *d, const int16_t *s1_np3, const int32_t *s2_4,
     const int32_t *s3_2, int n);
+
+#endif
 
 SCHRO_END_DECLS
 

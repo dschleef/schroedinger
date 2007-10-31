@@ -7,6 +7,8 @@
 
 SCHRO_BEGIN_DECLS
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 void schro_wavelet_transform_2d (int type, int16_t *i_n, int stride, int width, int height, int16_t *tmp);
 void schro_wavelet_inverse_transform_2d (int type, int16_t *i_n, int stride, int width, int height, int16_t *tmp);
 
@@ -56,6 +58,8 @@ void schro_iiwt_fidelity (int16_t *data, int stride, int width, int height,
     int16_t *tmp);
 void schro_iiwt_daub_9_7 (int16_t *data, int stride, int width, int height,
     int16_t *tmp);
+
+#endif
 
 SCHRO_END_DECLS
 

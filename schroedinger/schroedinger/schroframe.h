@@ -84,13 +84,12 @@ void schro_frame_set_free_callback (SchroFrame *frame,
 void schro_frame_unref (SchroFrame *frame);
 SchroFrame *schro_frame_ref (SchroFrame *frame);
 SchroFrame *schro_frame_dup (SchroFrame *frame);
+
 void schro_frame_convert (SchroFrame *dest, SchroFrame *src);
 void schro_frame_add (SchroFrame *dest, SchroFrame *src);
 void schro_frame_subtract (SchroFrame *dest, SchroFrame *src);
 void schro_frame_shift_left (SchroFrame *frame, int shift);
 void schro_frame_shift_right (SchroFrame *frame, int shift);
-void schro_frame_edge_extend (SchroFrame *frame, int width, int height);
-void schro_frame_zero_extend (SchroFrame *frame, int width, int height);
 
 void schro_frame_downsample (SchroFrame *dest, SchroFrame *src);
 void schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src);
@@ -99,8 +98,14 @@ double schro_frame_calculate_average_luma (SchroFrame *frame);
 
 SchroFrame * schro_frame_convert_to_444 (SchroFrame *frame);
 void schro_frame_md5 (SchroFrame *frame, uint32_t *state);
+
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
+void schro_frame_edge_extend (SchroFrame *frame, int width, int height);
+void schro_frame_zero_extend (SchroFrame *frame, int width, int height);
 void schro_frame_mark (SchroFrame *frame, int value);
 
+#endif
 
 SCHRO_END_DECLS
 

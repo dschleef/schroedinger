@@ -9,7 +9,6 @@
 
   default block sizes are wrong for some video formats
 
-
 schroarith.c:
 
   demote schro_arith_new()
@@ -23,10 +22,6 @@ schrobits.c:
   figure out how to push disjoint buffers if possible
 
   rename to schropack.c
-
-schrobitstream.h:
-
-  limits of the codec should be moved elsewhere
 
 schrodecoder.c:
 
@@ -53,6 +48,10 @@ schromotion.c:
   handle bi-ref blocks
 
   rename copy_with_motion to schro_motion_render
+
+schroparams.h:
+
+  move schromotion stuff out.
 
 schroparams.c:
 

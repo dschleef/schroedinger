@@ -7,10 +7,13 @@
 
 SCHRO_BEGIN_DECLS
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+
 void schro_encoder_frame_analyse (SchroEncoderFrame *frame);
 void schro_encoder_frame_downsample (SchroEncoderFrame *frame);
 double schro_frame_mean_squared_error (SchroFrame *a, SchroFrame *b);
 
+#endif
 
 SCHRO_END_DECLS
 

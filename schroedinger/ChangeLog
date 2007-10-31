@@ -1,5 +1,38 @@
 2007-10-30  David Schleef  <ds@schleef.org>
 
+	* TODO:
+	* gst/Makefile.am:
+	* gst/gstschrofilter.c:
+	* gst/gstschrotoy.c:
+	* schroedinger/schroanalysis.h:
+	* schroedinger/schroarith.h:
+	* schroedinger/schroasync.h:
+	* schroedinger/schrobits.h:
+	* schroedinger/schrobuffer.h:
+	* schroedinger/schrodebug.h:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.h:
+	* schroedinger/schrofft.h:
+	* schroedinger/schrofilter.h:
+	* schroedinger/schroframe.h:
+	* schroedinger/schrohistogram.h:
+	* schroedinger/schrometric.h:
+	* schroedinger/schromotion.h:
+	* schroedinger/schrooil.h:
+	* schroedinger/schroparams.h:
+	* schroedinger/schrophasecorrelation.h:
+	* schroedinger/schropredict.h:
+	* schroedinger/schroqueue.h:
+	* schroedinger/schrossim.h:
+	* schroedinger/schrotables.h:
+	* schroedinger/schrounpack.h:
+	* schroedinger/schroutils.h:
+	* schroedinger/schrowavelet.h:
+	  Add ifndef SCHRO_DISABLE_UNSTABLE_API as appropriate.
+
+2007-10-30  David Schleef  <ds@schleef.org>
+
 	* doc/schroedinger-0.1-sections.txt:
 	* schroedinger/schro.h:
 	* schroedinger/schrobitstream.h:

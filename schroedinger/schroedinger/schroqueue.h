@@ -26,6 +26,7 @@ struct _SchroQueue {
   SchroQueueFreeFunc free;
 };
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
 
 SchroQueue *schro_queue_new (int size, SchroQueueFreeFunc func);
 void schro_queue_free (SchroQueue *queue);
@@ -40,6 +41,8 @@ void schro_queue_pop (SchroQueue *queue);
 void * schro_queue_pull (SchroQueue *queue);
 int schro_queue_is_full (SchroQueue *queue);
 int schro_queue_is_empty (SchroQueue *queue);
+
+#endif
 
 SCHRO_END_DECLS
 
