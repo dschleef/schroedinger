@@ -58,7 +58,7 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
   encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_5_3;
   encoder->prefs[SCHRO_PREF_LAMBDA] = 1;
-  encoder->prefs[SCHRO_PREF_PSNR] = 20;
+  encoder->prefs[SCHRO_PREF_PSNR] = 25;
   encoder->prefs[SCHRO_PREF_BITRATE] = 13824000;
   encoder->prefs[SCHRO_PREF_NOARITH] = 0;
   encoder->prefs[SCHRO_PREF_MD5] = 0;
@@ -706,7 +706,7 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
       motion->motion_vectors = frame->motion_field->motion_vectors;
       motion->params = &frame->params;
       schro_motion_verify (motion);
-      schro_frame_copy_with_motion (frame->prediction_frame, motion);
+      schro_motion_render (motion, frame->prediction_frame);
 
       free(motion);
     }

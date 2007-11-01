@@ -1,6 +1,11 @@
 2007-11-01  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.c:
+	  Bump up noise threshold to 25.
+
+2007-11-01  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
 	  Use backref as the default engine.  This should be reasonable
 	  defaults for non-sucky encoding.
 
