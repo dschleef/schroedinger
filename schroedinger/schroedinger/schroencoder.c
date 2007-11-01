@@ -68,8 +68,6 @@ schro_encoder_new (void)
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_SD576);
 
-  schro_encoder_encode_codec_comment (encoder);
-
   /* FIXME this should be a parameter */
   encoder->queue_depth = 20;
 
@@ -81,12 +79,17 @@ schro_encoder_new (void)
 
   schro_encoder_set_default_subband_weights (encoder);
 
+  encoder->inserted_buffers =
+    schro_list_new_full ((SchroListFreeFunc)schro_buffer_unref, NULL);
+
   return encoder;
 }
 
 void
 schro_encoder_start (SchroEncoder *encoder)
 {
+  schro_encoder_encode_codec_comment (encoder);
+
   encoder->async = schro_async_new (0, (int (*)(void *))schro_encoder_iterate,
       encoder);
   schro_encoder_engine_init (encoder);
@@ -113,9 +116,7 @@ schro_encoder_free (SchroEncoder *encoder)
   schro_queue_free (encoder->reference_queue);
   schro_queue_free (encoder->frame_queue);
 
-  if (encoder->inserted_buffer) {
-    schro_buffer_unref (encoder->inserted_buffer);
-  }
+  schro_list_free (encoder->inserted_buffers);
 
   free (encoder);
 }
@@ -226,7 +227,7 @@ schro_encoder_pull_is_ready_locked (SchroEncoder *encoder)
 {
   int i;
 
-  if (encoder->inserted_buffer) {
+  if (schro_list_get_size(encoder->inserted_buffers)>0) {
     return TRUE;
   }
 
@@ -265,9 +266,8 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
 
   SCHRO_DEBUG("pulling slot %d", encoder->output_slot);
 
-  if (encoder->inserted_buffer) {
-    buffer = encoder->inserted_buffer;
-    encoder->inserted_buffer = NULL;
+  if (schro_list_get_size(encoder->inserted_buffers)>0) {
+    buffer = schro_list_remove (encoder->inserted_buffers, 0);
     if (presentation_frame) {
       *presentation_frame = -1;
     }
@@ -289,9 +289,8 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
       if (frame->access_unit_buffer) {
         buffer = frame->access_unit_buffer;
         frame->access_unit_buffer = NULL;
-      } else if (frame->inserted_buffer) {
-        buffer = frame->inserted_buffer;
-        frame->inserted_buffer = NULL;
+      } else if (schro_list_get_size(encoder->inserted_buffers)>0) {
+        buffer = schro_list_remove (frame->inserted_buffers, 0);
       } else {
         buffer = frame->output_buffer;
         frame->output_buffer = NULL;
@@ -430,22 +429,14 @@ schro_encoder_encode_md5_checksum (SchroEncoderFrame *frame)
 void
 schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer)
 {
-  if (encoder->inserted_buffer) {
-    SCHRO_ERROR("dropping previously inserted buffer");
-    schro_buffer_unref (encoder->inserted_buffer);
-  }
-  encoder->inserted_buffer = buffer;
+  schro_list_append (encoder->inserted_buffers, buffer);
 }
 
 void
 schro_encoder_frame_insert_buffer (SchroEncoderFrame *frame,
     SchroBuffer *buffer)
 {
-  if (frame->inserted_buffer) {
-    SCHRO_ERROR("dropping previously inserted buffer");
-    schro_buffer_unref (frame->inserted_buffer);
-  }
-  frame->inserted_buffer = buffer;
+  schro_list_append (frame->inserted_buffers, buffer);
 }
 
 SchroBuffer *
@@ -2115,6 +2106,9 @@ schro_encoder_frame_new (SchroEncoder *encoder)
   encoder_frame->prediction_frame = schro_frame_new_and_alloc (frame_format,
       frame_width, frame_height);
 
+  encoder_frame->inserted_buffers =
+    schro_list_new_full ((SchroListFreeFunc)schro_buffer_unref, NULL);
+
   return encoder_frame;
 }
 
@@ -2157,9 +2151,8 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
 
     if (frame->tmpbuf) free (frame->tmpbuf);
     if (frame->tmpbuf2) free (frame->tmpbuf2);
-    if (frame->inserted_buffer) {
-      schro_buffer_unref (frame->inserted_buffer);
-    }
+    schro_list_free (frame->inserted_buffers);
+
     free (frame);
   }
 }

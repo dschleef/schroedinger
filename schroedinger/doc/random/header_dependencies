@@ -1,0 +1,55 @@
+
+Header dependencies, from low-level to high-level:
+
+
+  Everything depends on:
+
+    schro-stdint.h
+    schroutils.h
+
+  The independent low-level subsystems depend on the above:
+
+    schroframe.h
+    schrofft.h
+    schrohistogram.h
+    schrobuffer.h
+    schrolimit.h
+    schroasync.h
+    schrobitstream.h
+    schrometric.h
+    schrodebug.h
+    schroqueue.h
+    schroarray.h
+    schrooil.h
+
+  Depending on schrobitstream.h:
+
+    schrotables.h
+    schrovideoformat.h
+
+  Depending on schroframe.h:
+
+    schrofilter.h
+    schrossim.h
+    schrowavelet.h
+
+  Depending on schrobuffer.h:
+
+    schroarith.h
+    schropack.h
+    schrounpack.h
+
+  These depend on a bunch of subsystems listed above:
+
+    schroparams.h
+    schrodecoder.h
+    schroencoder.h
+    schromotion.h
+
+  These depend on schroencoder.h:
+
+    schroengine.h
+    schrophasecorrelation.h
+    schropredict.h
+
+

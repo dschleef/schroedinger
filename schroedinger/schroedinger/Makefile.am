@@ -24,6 +24,7 @@ pkginclude_HEADERS = \
 	schrofft.h \
 	schrohistogram.h \
 	schrolimits.h \
+	schrolist.h \
 	schrometric.h \
 	schromotion.h \
 	schropack.h \
@@ -57,6 +58,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schroframe.c \
 	schrohistogram.c \
 	schrobuffer.c \
+	schrolist.c \
 	schrolowdelay.c \
 	schrometric.c \
 	schromotion.c \

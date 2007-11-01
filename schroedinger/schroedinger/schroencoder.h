@@ -11,6 +11,7 @@
 #include <schroedinger/schroqueue.h>
 #include <schroedinger/schromotion.h>
 #include <schroedinger/schrohistogram.h>
+#include <schroedinger/schrolist.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -98,7 +99,7 @@ struct _SchroEncoderFrame {
   SchroUpsampledFrame *reconstructed_frame;
 
   SchroBuffer *access_unit_buffer;
-  SchroBuffer *inserted_buffer;
+  SchroList *inserted_buffers;
   int output_buffer_size;
   SchroBuffer *output_buffer;
   int presentation_frame;
@@ -200,7 +201,7 @@ struct _SchroEncoder {
 
   int output_slot;
 
-  SchroBuffer *inserted_buffer;
+  SchroList *inserted_buffers;
   int queue_depth;
   int queue_changed;
 

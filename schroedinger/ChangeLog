@@ -1,5 +1,19 @@
 2007-10-31  David Schleef  <ds@schleef.org>
 
+	* doc/random:
+	* doc/random/header_dependencies:
+	  random document
+	* doc/schroedinger-0.1-docs.sgml:
+	* doc/schroedinger-0.1-sections.txt:
+	* schroedinger/Makefile.am:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schrolist.c:
+	* schroedinger/schrolist.h:
+	  Add a list datatype and use it in a few places.
+
+2007-10-31  David Schleef  <ds@schleef.org>
+
 	* schroedinger/Makefile.am:
 	* schroedinger/schroanalysis.h:
 	* schroedinger/schroarith.h:
