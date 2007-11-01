@@ -2,10 +2,10 @@
 #ifndef __SCHRO_PARAMS_H__
 #define __SCHRO_PARAMS_H__
 
+#include <schroedinger/schroutils.h>
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schrolimits.h>
-#include <schroedinger/schro-stdint.h>
 #include <schroedinger/schrovideoformat.h>
 
 SCHRO_BEGIN_DECLS

@@ -2,7 +2,7 @@
 #ifndef _SCHRO_PACK_H_
 #define _SCHRO_PACK_H_
 
-#include <schroedinger/schro-stdint.h>
+#include <schroedinger/schroutils.h>
 #include <schroedinger/schrobuffer.h>
 
 SCHRO_BEGIN_DECLS

@@ -2,6 +2,8 @@
 #ifndef __SCHRO_UTILS_H__
 #define __SCHRO_UTILS_H__
 
+#include <schroedinger/schro-stdint.h>
+
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -9,6 +11,7 @@
 #define FALSE 0
 #endif
 
+typedef uint32_t SchroPictureNumber;
 typedef unsigned int schro_bool;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API

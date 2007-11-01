@@ -2,7 +2,6 @@
 #ifndef __SCHRO_FRAME_H__
 #define __SCHRO_FRAME_H__
 
-#include <schroedinger/schro-stdint.h>
 #include <schroedinger/schroutils.h>
 
 SCHRO_BEGIN_DECLS

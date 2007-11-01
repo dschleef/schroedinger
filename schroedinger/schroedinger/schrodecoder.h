@@ -8,6 +8,7 @@
 #include <schroedinger/schromotion.h>
 #include <schroedinger/schrounpack.h>
 #include <schroedinger/schrobitstream.h>
+#include <schroedinger/schroqueue.h>
 
 SCHRO_BEGIN_DECLS
 

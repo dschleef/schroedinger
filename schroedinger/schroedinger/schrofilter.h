@@ -2,7 +2,6 @@
 #ifndef __SCHRO_FILTER_H__
 #define __SCHRO_FILTER_H__
 
-#include <schroedinger/schroutils.h>
 #include <schroedinger/schroframe.h>
 
 SCHRO_BEGIN_DECLS

@@ -12,7 +12,7 @@ CC=gcc
 pkg=schroedinger-0.1
 includedir=$(pkg-config --variable=includedir ${pkg})
 
-CFLAGS="-Wall -Werror $(pkg-config --cflags ${pkg})"
+CFLAGS="-Wall -Werror $(pkg-config --cflags ${pkg}) -DSCHRO_ENABLE_UNSTABLE_API"
 
 headers="$(cd ${includedir} && find . -type f -name '*.h')"
 

@@ -2,7 +2,6 @@
 #ifndef __SCHRO_ANALYSIS_H__
 #define __SCHRO_ANALYSIS_H__
 
-
 #include <schroedinger/schroencoder.h>
 
 SCHRO_BEGIN_DECLS

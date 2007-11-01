@@ -2,9 +2,8 @@
 #ifndef _SCHRO_WAVELET_H_
 #define _SCHRO_WAVELET_H_
 
-#include <schroedinger/schro-stdint.h>
-#include <schroedinger/schroframe.h>
 #include <schroedinger/schroutils.h>
+#include <schroedinger/schroframe.h>
 
 SCHRO_BEGIN_DECLS
 

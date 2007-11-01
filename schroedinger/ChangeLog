@@ -1,5 +1,30 @@
 2007-10-31  David Schleef  <ds@schleef.org>
 
+	* schroedinger/Makefile.am:
+	* schroedinger/schroanalysis.h:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schrofft.h:
+	* schroedinger/schrofilter.h:
+	* schroedinger/schroframe.h:
+	* schroedinger/schrohistogram.h:
+	* schroedinger/schrometric.h:
+	* schroedinger/schrooffsets.h:
+	* schroedinger/schrooil.h:
+	* schroedinger/schropack.h:
+	* schroedinger/schroparams.h:
+	* schroedinger/schrophasecorrelation.h:
+	* schroedinger/schroqueue.h:
+	* schroedinger/schrotables.h:
+	* schroedinger/schrounpack.h:
+	* schroedinger/schroutils.h:
+	* schroedinger/schrovideoformat.h:
+	* schroedinger/schrowavelet.h:
+	* testsuite/installation/header_test:
+	  Fix headers to work with header_test.
+
+2007-10-31  David Schleef  <ds@schleef.org>
+
 	* gst/Makefile.am:
 	* gst/gstschrofilter.c:
 	* gst/gstschrotoy.c:

@@ -2,14 +2,10 @@
 #ifndef __SCHRO_VIDEO_FORMAT_H__
 #define __SCHRO_VIDEO_FORMAT_H__
 
+#include <schroedinger/schroutils.h>
 #include <schroedinger/schrobitstream.h>
-#include <schroedinger/schroframe.h>
-#include <schroedinger/schrolimits.h>
-#include <schroedinger/schro-stdint.h>
 
 SCHRO_BEGIN_DECLS
-
-typedef uint32_t SchroPictureNumber;
 
 typedef struct _SchroVideoFormat SchroVideoFormat;
 

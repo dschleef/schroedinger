@@ -2,10 +2,8 @@
 #ifndef _SCHRO_ARITH_H_
 #define _SCHRO_ARITH_H_
 
-#include <schroedinger/schro-stdint.h>
-#include <schroedinger/schropack.h>
-#include <schroedinger/schrobuffer.h>
 #include <schroedinger/schroutils.h>
+#include <schroedinger/schrobuffer.h>
 
 SCHRO_BEGIN_DECLS
 

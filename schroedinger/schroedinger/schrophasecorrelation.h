@@ -2,8 +2,7 @@
 #ifndef __SCHRO_PHASECORRELATION_H__
 #define __SCHRO_PHASECORRELATION_H__
 
-#include <schroedinger/schroframe.h>
-#include <schroedinger/schroparams.h>
+#include <schroedinger/schroencoder.h>
 
 SCHRO_BEGIN_DECLS
 

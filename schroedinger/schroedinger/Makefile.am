@@ -23,6 +23,7 @@ pkginclude_HEADERS = \
 	schrodebug.h \
 	schrofft.h \
 	schrohistogram.h \
+	schrolimits.h \
 	schrometric.h \
 	schromotion.h \
 	schropack.h \
@@ -40,7 +41,6 @@ pkginclude_HEADERS = \
 	schromotion.h
 
 noinst_HEADERS = \
-	schrooffsets.h \
 	schrooil.h
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \

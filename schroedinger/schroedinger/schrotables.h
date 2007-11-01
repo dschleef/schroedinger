@@ -2,7 +2,6 @@
 #ifndef __SCHRO_SCHRO_TABLES_H__
 #define __SCHRO_SCHRO_TABLES_H__
 
-#include <schroedinger/schro-stdint.h>
 #include <schroedinger/schroutils.h>
 #include <schroedinger/schrobitstream.h>
 

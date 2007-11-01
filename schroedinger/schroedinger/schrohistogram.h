@@ -2,7 +2,6 @@
 #ifndef __SCHRO_SCHRO_HISTOGRAM_H__
 #define __SCHRO_SCHRO_HISTOGRAM_H__
 
-#include <schroedinger/schro-stdint.h>
 #include <schroedinger/schroutils.h>
 
 SCHRO_BEGIN_DECLS

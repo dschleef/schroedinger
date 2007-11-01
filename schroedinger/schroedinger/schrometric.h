@@ -3,7 +3,6 @@
 #define SCHRO_METRIC_H
 
 #include <schroedinger/schroutils.h>
-#include <schroedinger/schro-stdint.h>
 
 SCHRO_BEGIN_DECLS
 

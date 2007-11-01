@@ -2,9 +2,7 @@
 #ifndef __SCHRO_QUEUE_H__
 #define __SCHRO_QUEUE_H__
 
-#include <schroedinger/schroparams.h>
 #include <schroedinger/schroutils.h>
-#include <schroedinger/schro-stdint.h>
 
 SCHRO_BEGIN_DECLS
 
