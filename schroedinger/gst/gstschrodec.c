@@ -781,10 +781,7 @@ gst_schrodec_send_tags (GstSchroDec *schro_dec)
   GstTagList *list;
 
   list = gst_tag_list_new ();
-  /* FIXME: Is there API for getting the encoder version number from the 
-   * decoder? */
   gst_tag_list_add (list, GST_TAG_MERGE_REPLACE,
-     GST_TAG_ENCODER_VERSION, schro_dec->decoder->major_version,
      GST_TAG_VIDEO_CODEC, "Dirac", NULL);
 
   gst_element_found_tags_for_pad (GST_ELEMENT_CAST (schro_dec), 

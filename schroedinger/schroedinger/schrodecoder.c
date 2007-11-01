@@ -580,43 +580,6 @@ schro_decoder_init (SchroDecoder *decoder)
       video_format->width, video_format->height);
 }
 
-#if 0
-void
-schro_decoder_iwt_transform (SchroDecoder *decoder, int component)
-{
-  SchroParams *params = &decoder->params;
-  int16_t *frame_data;
-  int height;
-  int width;
-  int level;
-  int stride;
-
-  if (component == 0) {
-    width = params->iwt_luma_width;
-    height = params->iwt_luma_height;
-  } else {
-    width = params->iwt_chroma_width;
-    height = params->iwt_chroma_height;
-  }
-
-  frame_data = (int16_t *)decoder->frame->components[component].data;
-  stride = decoder->frame->components[component].stride;
-  for(level=params->transform_depth-1;level>=0;level--) {
-    int w;
-    int h;
-    int s;
-
-    w = width >> level;
-    h = height >> level;
-    s = stride << level;
-
-    schro_wavelet_inverse_transform_2d (params->wavelet_filter_index,
-        frame_data, s, w, h, decoder->tmpbuf);
-  }
-
-}
-#endif
-
 void
 schro_decoder_decode_parse_header (SchroDecoder *decoder)
 {
@@ -676,7 +639,7 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
   /* sequence parameters */
   /* format default */
   index = schro_unpack_decode_uint (&decoder->unpack);
-  schro_params_set_video_format (format, index);
+  schro_video_format_set_std_video_format (format, index);
 
   /* image dimensions */
   bit = schro_unpack_decode_bit (&decoder->unpack);
@@ -728,7 +691,7 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
       format->frame_rate_numerator = schro_unpack_decode_uint (&decoder->unpack);
       format->frame_rate_denominator = schro_unpack_decode_uint (&decoder->unpack);
     } else {
-      schro_params_set_frame_rate (format, index);
+      schro_video_format_set_std_frame_rate (format, index);
     }
   }
   SCHRO_DEBUG("frame rate %d/%d", format->frame_rate_numerator,
@@ -745,7 +708,7 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
       format->aspect_ratio_denominator =
         schro_unpack_decode_uint (&decoder->unpack);
     } else {
-      schro_params_set_aspect_ratio (format, index);
+      schro_video_format_set_std_aspect_ratio (format, index);
     }
   }
   SCHRO_DEBUG("aspect ratio %d/%d", format->aspect_ratio_numerator,
@@ -777,7 +740,7 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
         schro_unpack_decode_uint (&decoder->unpack);
     } else {
       if (index <= SCHRO_PARAMS_MAX_SIGNAL_RANGE) {
-        schro_params_set_signal_range (format, index);
+        schro_video_format_set_std_signal_range (format, index);
       } else {
         schro_decoder_error (decoder, "signal range index out of range");
       }
@@ -811,14 +774,14 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
       }
     } else {
       if (index <= SCHRO_PARAMS_MAX_COLOUR_SPEC) {
-        schro_params_set_colour_spec (format, index);
+        schro_video_format_set_std_colour_spec (format, index);
       } else {
         schro_decoder_error (decoder, "colour spec index out of range");
       }
     }
   }
 
-  schro_params_validate (format);
+  schro_video_format_validate (format);
 }
 
 void
@@ -1381,17 +1344,6 @@ codeblock_line_decode_generic (SchroDecoderSubbandContext *ctx,
   }
 }
 
-static int
-dequantise (int q, int quant_factor, int quant_offset)
-{
-  if (q == 0) return 0;
-  if (q < 0) {
-    return -((-q * quant_factor + quant_offset + 2)>>2);
-  } else {
-    return (q * quant_factor + quant_offset + 2)>>2;
-  }
-}
-
 static void
 codeblock_line_decode_noarith (SchroDecoderSubbandContext *ctx,
     int16_t *line, SchroDecoder *decoder)
@@ -1399,7 +1351,7 @@ codeblock_line_decode_noarith (SchroDecoderSubbandContext *ctx,
   int i;
 
   for(i=ctx->xmin;i<ctx->xmax;i++){
-    line[i] = dequantise (schro_unpack_decode_sint (&ctx->unpack),
+    line[i] = schro_dequantise (schro_unpack_decode_sint (&ctx->unpack),
         ctx->quant_factor, ctx->quant_offset);
   }
 }

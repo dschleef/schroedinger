@@ -9,6 +9,7 @@ SCHRO_BEGIN_DECLS
 
 typedef struct _SchroFrame SchroFrame;
 typedef struct _SchroFrameData SchroFrameData;
+typedef struct _SchroUpsampledFrame SchroUpsampledFrame;
 
 typedef void (*SchroFrameFreeFunc)(SchroFrame *frame, void *priv);
 
@@ -74,6 +75,10 @@ struct _SchroFrame {
   uint32_t frame_number;
 };
 
+struct _SchroUpsampledFrame {
+  SchroFrame *frames[4];
+};
+
 #define SCHRO_FRAME_DATA_GET_LINE(fd,i) (OFFSET((fd)->data,(fd)->stride*(i)))
 
 SchroFrame * schro_frame_new (void);
@@ -107,6 +112,10 @@ void schro_frame_md5 (SchroFrame *frame, uint32_t *state);
 void schro_frame_edge_extend (SchroFrame *frame, int width, int height);
 void schro_frame_zero_extend (SchroFrame *frame, int width, int height);
 void schro_frame_mark (SchroFrame *frame, int value);
+
+void schro_upsampled_frame_upsample (SchroUpsampledFrame *df);
+SchroUpsampledFrame * schro_upsampled_frame_new (SchroFrame *frame);
+void schro_upsampled_frame_free (SchroUpsampledFrame *df);
 
 #endif
 

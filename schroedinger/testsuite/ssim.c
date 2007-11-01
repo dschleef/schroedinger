@@ -56,7 +56,7 @@ test (void)
 
   distort (frame2);
 
-  schro_ssim (frame1, frame2);
+  schro_frame_ssim (frame1, frame2);
 
   schro_frame_unref (frame1);
   schro_frame_unref (frame2);

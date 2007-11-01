@@ -15,6 +15,8 @@ general:
 
   default block sizes are wrong for some video formats
 
+  use SchroFrameData everywhere
+
 schroarith.c:
 
   move next_list to elsewhere
@@ -37,9 +39,9 @@ schroencoder.c:
 
   don't use metric in SchroMotionVector
 
-schroframe.c:
+schrohistogram.c:
 
-  add SchroFrameData and use it thoughout codec
+  rename ilogx/iexpx to something sane
 
 schrometric.c:
 
@@ -50,10 +52,6 @@ schromotion.c:
   handle bi-ref blocks
 
   rename copy_with_motion to schro_motion_render
-
-schroparams.h:
-
-  move schromotion stuff out.
 
 schroparams.c:
 

@@ -1,5 +1,34 @@
 2007-10-31  David Schleef  <ds@schleef.org>
 
+	* TODO:
+	* doc/schroedinger-0.1-sections.txt:
+	* gst/gstschrodec.c:
+	* gst/gstschrodownsample.c:
+	* gst/gstschroenc.c:
+	* gst/gstschrofilter.c:
+	* gst/gstschrotoy.c:
+	* schroedinger/Makefile.am:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroframe.h:
+	* schroedinger/schrolowdelay.c:
+	* schroedinger/schromotion.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schrossim.c:
+	* schroedinger/schrossim.h:
+	* schroedinger/schrovideoformat.c:
+	* schroedinger/schrovideoformat.h:
+	* testsuite/motion.c:
+	* testsuite/motion2.c:
+	* testsuite/ssim.c:
+	* testsuite/wavelet_noise_2d.c:
+	  API cleanup.
+
+2007-10-31  David Schleef  <ds@schleef.org>
+
 	* doc/schroedinger-0.1-sections.txt:
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schrodecoder.h:

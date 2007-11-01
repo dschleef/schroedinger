@@ -67,6 +67,7 @@ struct _SchroEncoderParams {
   int ignore;
 };
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
 struct _SchroEncoderFrame {
   /*< private >*/
   int refcount;
@@ -240,6 +241,7 @@ struct _SchroEncoder {
   int mid1_ref;
   int mid2_ref;
 };
+#endif
 
 struct _SchroEncoderSettings {
   int transform_depth;

@@ -61,7 +61,7 @@ schro_frame_multiply (SchroFrame *a, SchroFrame *b)
 #define SSIM_SIGMA 5.0
 
 double
-schro_ssim (SchroFrame *a, SchroFrame *b)
+schro_frame_ssim (SchroFrame *a, SchroFrame *b)
 {
   SchroFrame *a_lowpass;
   SchroFrame *b_lowpass;

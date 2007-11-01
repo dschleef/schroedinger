@@ -105,7 +105,7 @@ main (int argc, char *argv[])
   filter = 6;
   transform_depth = 4;
 
-  schro_params_set_video_format (&video_format, 0);
+  schro_video_format_set_std_video_format (&video_format, 0);
   video_format.width = SIZE;
   video_format.height = SIZE;
   video_format.chroma_width = SIZE;

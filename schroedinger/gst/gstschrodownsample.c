@@ -60,7 +60,6 @@ struct _GstSchrodownsample
   int level;
 
   SchroVideoFormat format;
-  SchroParams params;
 
   SchroFrame *tmp_frame;
   int16_t *tmpbuf;

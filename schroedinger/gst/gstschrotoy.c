@@ -367,7 +367,7 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
   params = &compress->params;
 
   if (compress->format.width == 0) {
-    schro_params_set_video_format (&compress->format,
+    schro_video_format_set_std_video_format (&compress->format,
         SCHRO_VIDEO_FORMAT_SD480);
 
     gst_structure_get_int (gst_caps_get_structure(buf->caps,0),

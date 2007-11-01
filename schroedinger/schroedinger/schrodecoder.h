@@ -13,6 +13,7 @@ SCHRO_BEGIN_DECLS
 
 typedef struct _SchroDecoder SchroDecoder;
 
+#ifndef SCHRO_DISABLE_UNSTABLE_API
 struct _SchroDecoder {
   /*< private >*/
   SchroFrame *frame;
@@ -74,6 +75,7 @@ struct _SchroDecoder {
   int has_md5;
   uint8_t md5_checksum[32];
 };
+#endif
 
 enum {
   SCHRO_DECODER_OK,

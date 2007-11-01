@@ -99,17 +99,6 @@ schro_lowdelay_get_chroma_slice_run (SchroFrame *frame,
 
 
 static int
-dequantize (int q, int quant_factor, int quant_offset)
-{
-  if (q == 0) return 0;
-  if (q < 0) {
-    return -((-q * quant_factor + quant_offset + 2)>>2);
-  } else {
-    return (q * quant_factor + quant_offset + 2)>>2;
-  }
-}
-
-static int
 ilog2up (unsigned int x)
 {
   int i;
@@ -170,7 +159,7 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
     line = OFFSET(run->data1, run->y_stride * slice_y + run->x_stride * slice_x);
     for(y=0;y<run->height;y++){
       for (x=0; x<run->width; x++){
-        line[x] = dequantize (tmp[j++], quant_factor, quant_offset);
+        line[x] = schro_dequantise (tmp[j++], quant_factor, quant_offset);
       }
       line = OFFSET(line, run->stride);
     }
@@ -204,8 +193,8 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
 
     for(y=0;y<run->height;y++){
       for (x=0; x<run->width; x++){
-        line1[x] = dequantize (tmp[j++], quant_factor1, quant_offset1);
-        line2[x] = dequantize (tmp[j++], quant_factor2, quant_offset2);
+        line1[x] = schro_dequantise (tmp[j++], quant_factor1, quant_offset1);
+        line2[x] = schro_dequantise (tmp[j++], quant_factor2, quant_offset2);
       }
       line1 = OFFSET(line1, run->stride);
       line2 = OFFSET(line2, run->stride);
@@ -273,32 +262,8 @@ schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder)
   }
 }
 
-
-#if 0
 static int
-schro_dc_predict (int16_t *data, int stride, int x, int y)
-{
-  int16_t *line = OFFSET(data, stride * y);
-  int16_t *prev_line = OFFSET(data, stride * (y-1));
-
-  if (y > 0) {
-    if (x > 0) {
-      return schro_divide(line[x-1] + prev_line[x] + prev_line[x-1] + 1,3);
-    } else {
-      return prev_line[x];
-    }
-  } else {
-    if (x > 0) {
-      return line[x-1];
-    } else {
-      return 0;
-    }
-  }
-}
-#endif
-
-static int
-schro_dc_predict_2 (int16_t *line, int stride, int x, int y)
+schro_dc_predict (int16_t *line, int stride, int x, int y)
 {
   int16_t *prev_line = OFFSET(line, -stride);
 
@@ -315,24 +280,6 @@ schro_dc_predict_2 (int16_t *line, int stride, int x, int y)
       return 0;
     }
   }
-}
-
-static int
-quantize (int value, int quant_factor, int quant_offset)
-{
-  unsigned int x;
-
-  if (value == 0) return 0;
-  if (value < 0) {
-    x = (-value)<<2;
-    x /= quant_factor;
-    value = -x;
-  } else {
-    x = value<<2;
-    x /= quant_factor;
-    value = x;
-  }
-  return value;
 }
 
 int
@@ -422,7 +369,7 @@ quantise_run (SchroSliceRun *run, int16_t *line, int16_t *quant_data,
 
   for(y=0;y<run->height;y++){
     for (x=0; x<run->width; x++){
-      quant_data[n] = quantize (line[x], quant_factor, quant_offset);
+      quant_data[n] = schro_quantise (line[x], quant_factor, quant_offset);
       n++;
     }
     line = OFFSET(line, run->stride);
@@ -444,10 +391,10 @@ quantise_dc_run (SchroSliceRun *run, int16_t *line, int16_t *quant_data,
 
   for(y=0;y<run->height;y++){
     for (x=0; x<run->width; x++){
-      pred_value = schro_dc_predict_2 (line + x, run->stride,
+      pred_value = schro_dc_predict (line + x, run->stride,
           run->width * slice_x + x, run->height * slice_y + y);
-      quant_data[n] = quantize (line[x] - pred_value, quant_factor, quant_offset);
-      line[x] = pred_value + dequantize (quant_data[n], quant_factor, quant_offset);
+      quant_data[n] = schro_quantise (line[x] - pred_value, quant_factor, quant_offset);
+      line[x] = pred_value + schro_dequantise (quant_data[n], quant_factor, quant_offset);
       n++;
     }
     line = OFFSET(line, run->stride);
@@ -468,7 +415,7 @@ dequantise_run (SchroSliceRun *run, int16_t *line, int16_t *quant_data,
 
   for(y=0;y<run->height;y++){
     for (x=0; x<run->width; x++){
-      line[x] = dequantize (quant_data[n], quant_factor, quant_offset);
+      line[x] = schro_dequantise (quant_data[n], quant_factor, quant_offset);
       n++;
     }
     line = OFFSET(line, run->stride);

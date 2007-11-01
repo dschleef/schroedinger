@@ -6,71 +6,14 @@
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schrolimits.h>
 #include <schroedinger/schro-stdint.h>
+#include <schroedinger/schrovideoformat.h>
 
 SCHRO_BEGIN_DECLS
 
-typedef uint32_t SchroPictureNumber;
-
-typedef struct _SchroVideoFormat SchroVideoFormat;
 typedef struct _SchroParams SchroParams;
-typedef struct _SchroMotionVector SchroMotionVector;
-typedef struct _SchroMotionVectorDC SchroMotionVectorDC;
-typedef struct _SchroMotionField SchroMotionField;
 typedef struct _SchroGlobalMotion SchroGlobalMotion;
 
-struct _SchroVideoFormat {
-  int index;
-  int width;
-  int height;
-  int chroma_format;
-  int video_depth;
-    
-  int interlaced;
-  int top_field_first;
-  int sequential_fields;
-  
-  int frame_rate_numerator;
-  int frame_rate_denominator;
-  int aspect_ratio_numerator;
-  int aspect_ratio_denominator;
-    
-  int clean_width;
-  int clean_height;
-  int left_offset;
-  int top_offset;
-    
-  int luma_offset;
-  int luma_excursion;
-  int chroma_offset;
-  int chroma_excursion;
-    
-  int colour_primaries;
-  int colour_matrix;
-  int transfer_function;
-
-  /* calculated values */
-
-  int chroma_h_shift;
-  int chroma_v_shift;
-  int chroma_width;
-  int chroma_height;
-};  
-
 #ifndef SCHRO_DISABLE_UNSTABLE_API
-
-struct _SchroProfile {
-  int max_pixels_per_second;
-  int max_blocks_per_second;
-  int max_arith_ops_per_second;
-
-  int max_transform_depth;
-
-  int allow_global_motion;
-  int allow_spatial_partition;
-  int allow_inter;
-};
-
-#endif
 
 struct _SchroGlobalMotion {
   int shift;
@@ -138,42 +81,9 @@ struct _SchroParams {
   int y_num_blocks;
 };
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
-
 #define SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position) (((position)&3) == 2)
 #define SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position) (((position)&3) == 1)
 #define SCHRO_SUBBAND_SHIFT(position) ((position)>>2)
-
-struct _SchroMotionVector {
-  unsigned int pred_mode : 2;
-  unsigned int using_global : 1;
-  unsigned int split : 2;
-  unsigned int unused : 3;
-  unsigned int scan : 8;
-  unsigned int metric : 16;
-  int16_t x1;
-  int16_t y1;
-  int16_t x2;
-  int16_t y2;
-};
-
-struct _SchroMotionVectorDC {
-  unsigned int pred_mode : 2;
-  unsigned int using_global : 1;
-  unsigned int split : 2;
-  unsigned int unused : 3;
-  unsigned int scan : 8;
-  unsigned int metric : 16;
-  uint8_t dc[3];
-  uint8_t _padding1;
-  uint32_t _padding2;
-};
-
-struct _SchroMotionField {
-  int x_num_blocks;
-  int y_num_blocks;
-  SchroMotionVector *motion_vectors;
-};
 
 extern const int16_t schro_zero[];
 extern const int schro_tables_lowdelay_quants[7][4][9];
@@ -182,23 +92,6 @@ void schro_params_init (SchroParams *params, int video_format);
 
 void schro_params_calculate_iwt_sizes (SchroParams *params);
 void schro_params_calculate_mc_sizes (SchroParams *params);
-
-int schro_params_validate (SchroVideoFormat *format);
-
-#endif
-
-void schro_params_set_video_format (SchroVideoFormat *format, SchroVideoFormatEnum index);
-SchroVideoFormatEnum schro_params_get_video_format (SchroVideoFormat *format);
-void schro_params_set_frame_rate (SchroVideoFormat *format, int index);
-int schro_params_get_frame_rate (SchroVideoFormat *format);
-void schro_params_set_aspect_ratio (SchroVideoFormat *format, int index);
-int schro_params_get_aspect_ratio (SchroVideoFormat *format);
-void schro_params_set_signal_range (SchroVideoFormat *format, int index);
-int schro_params_get_signal_range (SchroVideoFormat *format);
-void schro_params_set_colour_spec (SchroVideoFormat *format, int index);
-int schro_params_get_colour_spec (SchroVideoFormat *format);
-
-#ifndef SCHRO_DISABLE_UNSTABLE_API
 
 void schro_params_set_block_params (SchroParams *params, int index);
 int schro_params_get_block_params (SchroParams *params);

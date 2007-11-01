@@ -7,16 +7,44 @@
 
 SCHRO_BEGIN_DECLS
 
-typedef struct _SchroUpsampledFrame SchroUpsampledFrame;
-struct _SchroUpsampledFrame {
-  SchroFrame *frames[4];
-};
-
-#ifndef SCHRO_DISABLE_UNSTABLE_API
-
 typedef struct _SchroObmc SchroObmc;
 typedef struct _SchroObmcRegion SchroObmcRegion;
+typedef struct _SchroMotionVector SchroMotionVector;
+typedef struct _SchroMotionVectorDC SchroMotionVectorDC;
+typedef struct _SchroMotionField SchroMotionField;
 typedef struct _SchroMotion SchroMotion;
+
+#ifndef SCHRO_DISABLE_UNSTABLE_API
+struct _SchroMotionVector {
+  unsigned int pred_mode : 2;
+  unsigned int using_global : 1;
+  unsigned int split : 2;
+  unsigned int unused : 3;
+  unsigned int scan : 8;
+  unsigned int metric : 16;
+  int16_t x1;
+  int16_t y1;
+  int16_t x2;
+  int16_t y2;
+};
+
+struct _SchroMotionVectorDC {
+  unsigned int pred_mode : 2;
+  unsigned int using_global : 1;
+  unsigned int split : 2;
+  unsigned int unused : 3;
+  unsigned int scan : 8;
+  unsigned int metric : 16;
+  uint8_t dc[3];
+  uint8_t _padding1;
+  uint32_t _padding2;
+};
+
+struct _SchroMotionField {
+  int x_num_blocks;
+  int y_num_blocks;
+  SchroMotionVector *motion_vectors;
+};
 
 struct _SchroObmcRegion {
   int16_t *weights;
@@ -70,10 +98,6 @@ int schro_motion_verify (SchroMotion *mf);
 void schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep,
     int y_sep);
 void schro_obmc_cleanup (SchroObmc *obmc);
-
-void schro_upsampled_frame_upsample (SchroUpsampledFrame *df);
-SchroUpsampledFrame * schro_upsampled_frame_new (SchroFrame *frame);
-void schro_upsampled_frame_free (SchroUpsampledFrame *df);
 
 #endif
 
