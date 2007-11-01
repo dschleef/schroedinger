@@ -1,3 +1,9 @@
+2007-11-01  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	  Use backref as the default engine.  This should be reasonable
+	  defaults for non-sucky encoding.
+
 2007-10-31  David Schleef  <ds@schleef.org>
 
 	* doc/random:
