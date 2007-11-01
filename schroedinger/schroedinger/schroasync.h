@@ -10,7 +10,7 @@ typedef struct _SchroAsync SchroAsync;
 typedef struct _SchroThread SchroThread;
 typedef struct _SchroAsyncTask SchroAsyncTask;
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 SchroAsync * schro_async_new(int n_threads, int (*schedule)(void *),
     void *closure);

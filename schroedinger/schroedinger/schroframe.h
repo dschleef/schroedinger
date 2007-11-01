@@ -107,7 +107,7 @@ double schro_frame_calculate_average_luma (SchroFrame *frame);
 SchroFrame * schro_frame_convert_to_444 (SchroFrame *frame);
 void schro_frame_md5 (SchroFrame *frame, uint32_t *state);
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 void schro_frame_edge_extend (SchroFrame *frame, int width, int height);
 void schro_frame_zero_extend (SchroFrame *frame, int width, int height);

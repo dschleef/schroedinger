@@ -7,7 +7,7 @@
 
 SCHRO_BEGIN_DECLS
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 void schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame);
 

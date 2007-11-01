@@ -76,7 +76,9 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrowavelet.c \
 	schrowavelettables.c
 
-libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ERROR_CFLAGS)
+libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = \
+	$(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ERROR_CFLAGS) \
+	-DSCHRO_ENABLE_UNSTABLE_API
 libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-no-undefined \

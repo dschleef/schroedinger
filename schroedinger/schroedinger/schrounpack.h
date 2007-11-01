@@ -30,7 +30,7 @@ struct _SchroUnpack {
   int overrun;
 };
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 void schro_unpack_init_with_data (SchroUnpack *unpack, uint8_t *data,
     int n_bytes, unsigned int guard_bit);

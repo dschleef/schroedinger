@@ -8,7 +8,7 @@
 
 SCHRO_BEGIN_DECLS
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 extern const uint32_t schro_table_offset_3_8[61];
 extern const uint32_t schro_table_offset_1_2[61];

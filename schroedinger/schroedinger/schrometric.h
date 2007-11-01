@@ -7,7 +7,7 @@
 
 SCHRO_BEGIN_DECLS
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 int schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b,
     int b_stride, int width, int height);

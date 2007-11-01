@@ -13,7 +13,7 @@ SCHRO_BEGIN_DECLS
 
 typedef struct _SchroDecoder SchroDecoder;
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 struct _SchroDecoder {
   /*< private >*/
   SchroFrame *frame;
@@ -102,7 +102,7 @@ int schro_decoder_iterate (SchroDecoder *decoder);
 void schro_decoder_set_earliest_frame (SchroDecoder *decoder, SchroPictureNumber earliest_frame);
 void schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio);
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 void schro_decoder_decode_parse_header (SchroDecoder *decoder);
 void schro_decoder_decode_access_unit (SchroDecoder *decoder);

@@ -67,7 +67,7 @@ struct _SchroEncoderParams {
   int ignore;
 };
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 struct _SchroEncoderFrame {
   /*< private >*/
   int refcount;
@@ -304,7 +304,7 @@ SchroStateEnum schro_encoder_wait (SchroEncoder *encoder);
 SchroBuffer * schro_encoder_pull (SchroEncoder *encoder,
     int *n_decodable_frames);
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 void schro_encoder_set_default_subband_weights (SchroEncoder *encoder);
 void schro_encoder_calculate_subband_weights (SchroEncoder *encoder,

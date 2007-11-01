@@ -1,0 +1,134 @@
+#!/bin/sh
+
+mediadir=/home/ds/media
+
+function encode_engine3 {
+  # engine3
+  schroopts="engine=3"
+  output=$file.engine3.drc
+  gst-launch-0.10 filesrc location=$input blocksize=$size ! \
+    video/x-raw-yuv,format=\(fourcc\)"UYVY",width=$width,height=$height,framerate=$framerate,pixel-aspect-ratio=$par ! \
+    ffmpegcolorspace ! \
+    schroenc $schroopts ! \
+    filesink location=$output
+}
+
+function encode_intra_only {
+  # intra-only
+  #schroopts="engine=0 quant_engine=1 transform_depth=3"
+  schroopts="engine=0 quant_engine=1 transform_depth=3 bitrate=2000000"
+  output=$file.intra-only.drc
+  gst-launch-0.10 filesrc location=$input blocksize=$size ! \
+    video/x-raw-yuv,format=\(fourcc\)"UYVY",width=$width,height=$height,framerate=$framerate,pixel-aspect-ratio=$par ! \
+    ffmpegcolorspace ! \
+    schroenc $schroopts ! \
+    filesink location=$output
+}
+
+function encode_lowdelay {
+  # low delay
+  # uncompressed bitrate is 720*480*2*30*8 = 165.888 Mb/s
+  schroopts="engine=7 intra_wavelet=1 transform_depth=3 bitrate=41472000"
+  output=$file.lowdelay.drc
+  gst-launch-0.10 filesrc location=$input blocksize=$size ! \
+    video/x-raw-yuv,format=\(fourcc\)"UYVY",width=$width,height=$height,framerate=$framerate,pixel-aspect-ratio=$par ! \
+    ffmpegcolorspace ! \
+    schroenc $schroopts ! \
+    filesink location=$output
+}
+
+function encode_lossless {
+  # lossless
+  schroopts="engine=5 noarith=1"
+  output=$file.lossless.drc
+  gst-launch-0.10 filesrc location=$input blocksize=$size ! \
+    video/x-raw-yuv,format=\(fourcc\)"UYVY",width=$width,height=$height,framerate=$framerate,pixel-aspect-ratio=$par ! \
+    ffmpegcolorspace ! \
+    schroenc $schroopts ! \
+    filesink location=$output
+}
+
+function encode_backref {
+  # backref
+  schroopts="engine=1 quant_engine=1 transform_depth=3 bitrate=2000000"
+  output=$file.backref.drc
+  gst-launch-0.10 filesrc location=$input blocksize=$size ! \
+    video/x-raw-yuv,format=\(fourcc\)"UYVY",width=$width,height=$height,framerate=$framerate,pixel-aspect-ratio=$par ! \
+    ffmpegcolorspace ! \
+    schroenc $schroopts ! \
+    filesink location=$output
+}
+
+function encode {
+  input=$mediadir/$subdir/$file.yuv
+  size=$(($height*$width*2))
+
+  encode_engine3
+  encode_intra_only
+  encode_lowdelay
+  encode_lossless
+  encode_backref
+}
+
+
+
+subdir=VQEG/SDTV/ANSI_T1_801_01
+height=486
+width=720
+par=10/11
+framerate=30000/1001
+
+file=washdc
+#encode
+file=ysmite
+#encode
+
+subdir=VQEG/SDTV/VQEG_Phase1/TestSequences/Reference
+height=486
+width=720
+par=10/11
+framerate=30000/1001
+
+file=src20_ref__525
+encode
+
+height=576
+width=720
+par=12/11
+framerate=25/1
+file=src1_ref__625
+#encode
+file=src2_ref__625
+#encode
+file=src3_ref__625
+#encode
+file=src4_ref__625
+#encode
+file=src5_ref__625
+#encode
+file=src6_ref__625
+#encode
+file=src7_ref__625
+#encode
+file=src8_ref__625
+#encode
+file=src9_ref__625
+#encode
+file=src10_ref__625
+#encode
+
+height=486
+width=720
+par=10/11
+framerate=30000/1001
+file=src13_ref__525
+#encode
+file=src14_ref__525
+#encode
+file=src15_ref__525
+#encode
+file=src16_ref__525
+#encode
+file=src17_ref__525
+#encode
+

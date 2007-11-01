@@ -8,7 +8,7 @@
 
 SCHRO_BEGIN_DECLS
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 void schro_wavelet_transform_2d (SchroFrameData *fd, int type, int16_t *tmp);
 void schro_wavelet_inverse_transform_2d (SchroFrameData *fd, int type, int16_t *tmp);

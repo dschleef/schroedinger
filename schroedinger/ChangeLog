@@ -1,5 +1,43 @@
 2007-10-31  David Schleef  <ds@schleef.org>
 
+	* gst/Makefile.am:
+	* gst/gstschrofilter.c:
+	* gst/gstschrotoy.c:
+	* misc/encode_vqeg_streams:
+	* schroedinger/Makefile.am:
+	* schroedinger/schroanalysis.h:
+	* schroedinger/schroarith.h:
+	* schroedinger/schroasync.h:
+	* schroedinger/schrodebug.h:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.h:
+	* schroedinger/schrofft.h:
+	* schroedinger/schrofilter.h:
+	* schroedinger/schroframe.h:
+	* schroedinger/schrohistogram.h:
+	* schroedinger/schrometric.h:
+	* schroedinger/schromotion.h:
+	* schroedinger/schrooil.h:
+	* schroedinger/schropack.h:
+	* schroedinger/schroparams.h:
+	* schroedinger/schrophasecorrelation.h:
+	* schroedinger/schropredict.h:
+	* schroedinger/schroqueue.h:
+	* schroedinger/schrossim.h:
+	* schroedinger/schrotables.h:
+	* schroedinger/schrounpack.h:
+	* schroedinger/schroutils.h:
+	* schroedinger/schrowavelet.h:
+	* testsuite/Makefile.am:
+	* testsuite/perf/Makefile.am:
+	* testsuite/prototype/Makefile.am:
+	* testsuite/tables2/Makefile.am:
+	* tools/Makefile.am:
+	  Change SCHRO_DISABLE_UNSTABLE_API to SCHRO_ENABLE_UNSTABLE_API
+
+2007-10-31  David Schleef  <ds@schleef.org>
+
 	* TODO:
 	* doc/schroedinger-0.1-sections.txt:
 	* gst/gstschrodec.c:

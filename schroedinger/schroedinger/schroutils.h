@@ -11,7 +11,7 @@
 
 typedef unsigned int schro_bool;
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 #define DIVIDE_ROUND_UP(a,b) (((a) + (b) - 1)/(b))
@@ -60,7 +60,7 @@ typedef unsigned int schro_bool;
 
 SCHRO_BEGIN_DECLS
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 int muldiv64 (int a, int b, int c);
 int schro_utils_multiplier_to_quant_index (double x);

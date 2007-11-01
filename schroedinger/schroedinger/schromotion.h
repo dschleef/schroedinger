@@ -14,7 +14,7 @@ typedef struct _SchroMotionVectorDC SchroMotionVectorDC;
 typedef struct _SchroMotionField SchroMotionField;
 typedef struct _SchroMotion SchroMotion;
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 struct _SchroMotionVector {
   unsigned int pred_mode : 2;
   unsigned int using_global : 1;

@@ -13,7 +13,7 @@ SCHRO_BEGIN_DECLS
 typedef struct _SchroParams SchroParams;
 typedef struct _SchroGlobalMotion SchroGlobalMotion;
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 struct _SchroGlobalMotion {
   int shift;

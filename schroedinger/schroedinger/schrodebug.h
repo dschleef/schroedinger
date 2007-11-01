@@ -7,8 +7,6 @@
 
 SCHRO_BEGIN_DECLS
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
-
 enum
 {
   SCHRO_LEVEL_NONE = 0,
@@ -19,6 +17,7 @@ enum
   SCHRO_LEVEL_LOG
 };
 
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 enum
 {
   SCHRO_DUMP_SUBBAND_CURVE,
@@ -31,6 +30,7 @@ enum
   SCHRO_DUMP_SCENE_CHANGE,
   SCHRO_DUMP_LAST
 };
+#endif
 
 #define SCHRO_ERROR(...) \
   SCHRO_DEBUG_LEVEL(SCHRO_LEVEL_ERROR, __VA_ARGS__)
@@ -64,6 +64,8 @@ void schro_debug_log (int level, const char *file, const char *function,
     int line, const char *format, ...);
 void schro_debug_set_level (int level);
 int schro_debug_get_level (void);
+
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 void schro_dump (int type, const char *format, ...);
 

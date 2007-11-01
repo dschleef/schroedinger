@@ -7,7 +7,7 @@
 
 SCHRO_BEGIN_DECLS
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 void oil_splat_s16_ns (int16_t *dest, const int16_t *src, int n);
 void oil_lift_haar_split (int16_t *i1, int16_t *i2, int n);

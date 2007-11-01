@@ -24,7 +24,7 @@ struct _SchroHistogramTable {
   double weights[SCHRO_HISTOGRAM_SIZE];
 };
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 double schro_histogram_get_range (SchroHistogram *hist, int start, int end);
 void schro_histogram_init (SchroHistogram *hist);

@@ -7,7 +7,7 @@
 
 SCHRO_BEGIN_DECLS
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 void schro_fft_generate_tables_f32 (float *costable, float *sintable, int shift);
 

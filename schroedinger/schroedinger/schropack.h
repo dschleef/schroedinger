@@ -21,7 +21,7 @@ struct _SchroPack {
   int error;
 };
 
-#ifndef SCHRO_DISABLE_UNSTABLE_API
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 
 SchroPack * schro_pack_new (void);
 void schro_pack_free (SchroPack *pack);
