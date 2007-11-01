@@ -432,7 +432,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
       motion.motion_vectors = decoder->motion_field->motion_vectors;
       motion.params = &decoder->params;
-      schro_frame_copy_with_motion (decoder->mc_tmp_frame, &motion);
+      schro_motion_render (&motion, decoder->mc_tmp_frame);
     }
   }
 

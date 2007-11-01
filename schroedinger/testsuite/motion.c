@@ -84,7 +84,7 @@ main (int argc, char *argv[])
       motion.motion_vectors = motion_vectors;
       motion.params = &params;
       oil_profile_start(&prof);
-      schro_frame_copy_with_motion (dest, &motion);
+      schro_motion_render (&motion, dest);
       oil_profile_stop(&prof);
     }
     oil_profile_get_ave_std (&prof, &ave, &std);

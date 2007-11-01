@@ -70,12 +70,16 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
   }
 
   obmc->stride = sizeof(int16_t) * x_len;
-  obmc->region_data = malloc(obmc->stride * y_len * 9);
+  obmc->region_data = malloc(obmc->stride * y_len * 9 * 3);
   obmc->tmpdata = malloc(x_len * y_len);
 
   for(i=0;i<9;i++){
     obmc->regions[i].weights = OFFSET(obmc->region_data,
         obmc->stride * y_len * i);
+    obmc->regions[i].weights_ref1 = OFFSET(obmc->region_data,
+        obmc->stride * y_len * (i+9));
+    obmc->regions[i].weights_ref2 = OFFSET(obmc->region_data,
+        obmc->stride * y_len * (i+18));
     obmc->regions[i].end_x = x_len;
     obmc->regions[i].end_y = y_len;
   }
@@ -764,7 +768,7 @@ shift_rows (SchroFrame *frame, int y, int n, int shift_luma, int shift_chroma)
 }
 
 void
-schro_frame_copy_with_motion (SchroFrame *dest, SchroMotion *motion)
+schro_motion_render (SchroMotion *motion, SchroFrame *dest)
 {
   int i, j;
   int x, y;

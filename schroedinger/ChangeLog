@@ -1,5 +1,14 @@
 2007-11-01  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	* testsuite/motion.c:
+	* testsuite/motion2.c:
+	  Change schro_frame_copy_with_motion() to schro_motion_render()
+
+2007-11-01  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	  Bump up noise threshold to 25.
 

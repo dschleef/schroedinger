@@ -163,7 +163,7 @@ main (int argc, char *argv[])
     motion.src2 = NULL;
     motion.motion_vectors = motion_vectors;
     motion.params = &params;
-    schro_frame_copy_with_motion (dest, &motion);
+    schro_motion_render (&motion, dest);
   }
 
   schro_frame_convert (dest_u8, dest);
