@@ -1,5 +1,16 @@
 2007-11-01  David Schleef  <ds@schleef.org>
 
+	* configure.ac:
+	* doc/schroedinger-0.1-docs.sgml:
+	* doc/schroedinger-0.1-sections.txt:
+	* doc/schroedinger-0.9-docs.sgml:
+	* doc/schroedinger-0.9-sections.txt:
+	  Update the API versioning to 0.9.  The API and ABI are frozen
+	  until 1.0.  At that time, there might be a few modifications
+	  transitioning to the real 1.0 ABI.
+
+2007-11-01  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schromotion.c:
 	* schroedinger/schromotion.h:
