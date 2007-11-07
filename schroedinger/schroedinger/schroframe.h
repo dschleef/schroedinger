@@ -112,6 +112,9 @@ void schro_frame_edge_extend (SchroFrame *frame, int width, int height);
 void schro_frame_zero_extend (SchroFrame *frame, int width, int height);
 void schro_frame_mark (SchroFrame *frame, int value);
 
+void schro_frame_data_get_codeblock (SchroFrameData *dest, SchroFrameData *src,
+        int x, int y, int horiz_codeblocks, int vert_codeblocks);
+
 void schro_upsampled_frame_upsample (SchroUpsampledFrame *df);
 SchroUpsampledFrame * schro_upsampled_frame_new (SchroFrame *frame);
 void schro_upsampled_frame_free (SchroUpsampledFrame *df);

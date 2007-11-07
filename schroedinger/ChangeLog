@@ -1,5 +1,14 @@
 2007-11-06  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	  Add schro_frame_data_get_codeblock().
+	* schroedinger/schrolowdelay.c:
+	  Create SchroLowDelay structure to hold lowdelay parameters
+	  and encoding/decoding state.
+
+2007-11-06  David Schleef  <ds@schleef.org>
+
 	* gst/gstschroenc.c:
 	* gst/gstschrotoy.c:
 	* schroedinger/schrobitstream.h:

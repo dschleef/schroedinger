@@ -1536,4 +1536,24 @@ schro_frame_mark (SchroFrame *frame, int value)
 
 }
 
+void
+schro_frame_data_get_codeblock (SchroFrameData *dest, SchroFrameData *src,
+    int x, int y, int horiz_codeblocks, int vert_codeblocks)
+{
+  int xmin = (src->width*x)/horiz_codeblocks;
+  int xmax = (src->width*(x+1))/horiz_codeblocks;
+  int ymin = (src->height*y)/vert_codeblocks;
+  int ymax = (src->height*(y+1))/vert_codeblocks;
+
+  dest->format = src->format;
+  dest->data = OFFSET(src->data,
+      src->stride * ymin + sizeof(int16_t) * xmin);
+  dest->stride = src->stride;
+  dest->width = xmax - xmin;
+  dest->height = ymax - ymin;
+  dest->length = 0;
+  dest->h_shift = src->h_shift;
+  dest->v_shift = src->v_shift;
+}
+
 

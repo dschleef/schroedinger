@@ -16,6 +16,7 @@
 
 
 typedef struct _SchroSliceRun SchroSliceRun;
+typedef struct _SchroLowDelay SchroLowDelay;
 
 struct _SchroSliceRun {
   int16_t *data1;
@@ -29,7 +30,40 @@ struct _SchroSliceRun {
   int stride;
 };
 
+struct _SchroLowDelay {
+  SchroFrame *frame;
 
+  SchroParams *params;
+
+  SchroFrameData luma_subbands[SCHRO_LIMIT_SUBBANDS];
+  SchroFrameData chroma1_subbands[SCHRO_LIMIT_SUBBANDS];
+  SchroFrameData chroma2_subbands[SCHRO_LIMIT_SUBBANDS];
+
+  SchroSliceRun luma_runs[SCHRO_LIMIT_SUBBANDS];
+  SchroSliceRun chroma_runs[SCHRO_LIMIT_SUBBANDS];
+};
+
+
+
+
+void
+schro_encoder_init_subbands (SchroEncoderFrame *frame)
+{
+  int i;
+  int pos;
+  SchroParams *params = &frame->params;
+
+  for(i=0;i<1+3*params->transform_depth;i++) {
+    pos = schro_subband_get_position (i);
+
+    schro_subband_get_frame_data (frame->luma_subbands + i,
+        frame->iwt_frame, 0, pos, params);
+    schro_subband_get_frame_data (frame->chroma1_subbands + i,
+        frame->iwt_frame, 0, pos, params);
+    schro_subband_get_frame_data (frame->chroma2_subbands + i,
+        frame->iwt_frame, 0, pos, params);
+  }
+}
 
 void
 schro_lowdelay_get_luma_slice_run (SchroFrame *frame,
@@ -112,8 +146,8 @@ ilog2up (unsigned int x)
 
 
 void
-schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
-    SchroSliceRun *chroma_runs,
+schro_decoder_decode_slice (SchroDecoder *decoder,
+    SchroLowDelay *lowdelay,
     int slice_x, int slice_y, int slice_bytes)
 {
   SchroParams *params = &decoder->params;
@@ -149,7 +183,7 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
     int quant_offset;
     int16_t *line;
 
-    run = luma_runs + i;
+    run = lowdelay->luma_runs + i;
 
     quant_index = base_index - params->quant_matrix[i] + params->luma_quant_offset;
 
@@ -178,7 +212,7 @@ schro_decoder_decode_slice (SchroDecoder *decoder, SchroSliceRun *luma_runs,
     int16_t *line1;
     int16_t *line2;
 
-    run = chroma_runs + i;
+    run = lowdelay->chroma_runs + i;
 
     quant_index = base_index - params->quant_matrix[i] + params->chroma1_quant_offset;
     quant_factor1 = schro_table_quant[CLAMP(quant_index,0,60)];
@@ -208,8 +242,7 @@ void
 schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder)
 {
   SchroParams *params = &decoder->params;
-  SchroSliceRun luma_runs[SCHRO_LIMIT_SUBBANDS];
-  SchroSliceRun chroma_runs[SCHRO_LIMIT_SUBBANDS];
+  SchroLowDelay lowdelay;
   int x,y;
   int n_horiz_slices;
   int n_vert_slices;
@@ -223,9 +256,9 @@ schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder)
     int position = schro_subband_get_position(i);
     
     schro_lowdelay_get_luma_slice_run (decoder->frame, position, params,
-        luma_runs + i);
+        lowdelay.luma_runs + i);
     schro_lowdelay_get_chroma_slice_run (decoder->frame, position, params,
-        chroma_runs + i);
+        lowdelay.chroma_runs + i);
   }
 
   n_horiz_slices = params->iwt_luma_width>>params->slice_width_exp;
@@ -246,7 +279,7 @@ schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder)
         extra = 0;
       }
 
-      schro_decoder_decode_slice (decoder, luma_runs, chroma_runs,
+      schro_decoder_decode_slice (decoder, &lowdelay,
           x, y, n_bytes + extra);
     }
   }
@@ -283,8 +316,8 @@ schro_dc_predict (int16_t *line, int stride, int x, int y)
 }
 
 int
-schro_encoder_encode_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs,
-    SchroSliceRun *chroma_runs,
+schro_encoder_encode_slice (SchroEncoderFrame *frame,
+    SchroLowDelay *lowdelay,
     int slice_x, int slice_y, int slice_bytes, int base_index)
 {
   SchroParams *params = &frame->params;
@@ -455,8 +488,8 @@ copy_slice_run_in (int16_t *line, int16_t *src, SchroSliceRun *run)
 }
 
 int
-schro_encoder_estimate_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs,
-    SchroSliceRun *chroma_runs,
+schro_encoder_estimate_slice (SchroEncoderFrame *frame,
+    SchroLowDelay *lowdelay,
     int slice_x, int slice_y, int slice_bytes, int base_index)
 {
   SchroParams *params = &frame->params;
@@ -479,7 +512,7 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs
     int quant_index;
     int16_t *line;
 
-    run = luma_runs + i;
+    run = lowdelay->luma_runs + i;
 
     quant_index = base_index - params->quant_matrix[i] + params->luma_quant_offset;
 
@@ -513,7 +546,7 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs
     int16_t *line1;
     int16_t *line2;
 
-    run = chroma_runs + i;
+    run = lowdelay->chroma_runs + i;
 
     quant_index1 = base_index - params->quant_matrix[i] + params->chroma1_quant_offset;
     quant_index2 = base_index - params->quant_matrix[i] + params->chroma2_quant_offset;
@@ -554,7 +587,7 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame, SchroSliceRun *luma_runs
 
 void
 schro_encoder_dequantise_slice (SchroEncoderFrame *frame,
-    SchroSliceRun *luma_runs, SchroSliceRun *chroma_runs,
+    SchroLowDelay *lowdelay,
     int slice_x, int slice_y, int slice_bytes, int base_index)
 {
   SchroParams *params = &frame->params;
@@ -574,7 +607,7 @@ schro_encoder_dequantise_slice (SchroEncoderFrame *frame,
     int quant_index;
     int16_t *line;
 
-    run = luma_runs + i;
+    run = lowdelay->luma_runs + i;
 
     quant_index = base_index - params->quant_matrix[i] + params->luma_quant_offset;
 
@@ -595,7 +628,7 @@ schro_encoder_dequantise_slice (SchroEncoderFrame *frame,
     int16_t *line1;
     int16_t *line2;
 
-    run = chroma_runs + i;
+    run = lowdelay->chroma_runs + i;
 
     quant_index1 = base_index - params->quant_matrix[i] + params->chroma1_quant_offset;
     quant_index2 = base_index - params->quant_matrix[i] + params->chroma2_quant_offset;
@@ -615,18 +648,18 @@ schro_encoder_dequantise_slice (SchroEncoderFrame *frame,
 
 static void
 save_dc_values (SchroEncoderFrame *frame, int16_t *dc_values,
-    SchroSliceRun *luma_runs, SchroSliceRun *chroma_runs,
+    SchroLowDelay *lowdelay,
     int slice_x, int slice_y)
 {
   int16_t *line;
   SchroSliceRun *run;
 
-  run = luma_runs + 0;
+  run = lowdelay->luma_runs + 0;
   line = OFFSET(run->data1, run->y_stride * slice_y + run->x_stride * slice_x);
   copy_slice_run_out (dc_values, line, run);
   dc_values += run->width * run->height;
 
-  run = chroma_runs + 0;
+  run = lowdelay->chroma_runs + 0;
   line = OFFSET(run->data1, run->y_stride * slice_y + run->x_stride * slice_x);
   copy_slice_run_out (dc_values, line, run);
   dc_values += run->width * run->height;
@@ -637,18 +670,18 @@ save_dc_values (SchroEncoderFrame *frame, int16_t *dc_values,
 
 static void
 restore_dc_values (SchroEncoderFrame *frame, int16_t *dc_values,
-    SchroSliceRun *luma_runs, SchroSliceRun *chroma_runs,
+    SchroLowDelay *lowdelay,
     int slice_x, int slice_y)
 {
   int16_t *line;
   SchroSliceRun *run;
 
-  run = luma_runs + 0;
+  run = lowdelay->luma_runs + 0;
   line = OFFSET(run->data1, run->y_stride * slice_y + run->x_stride * slice_x);
   copy_slice_run_in (line, dc_values, run);
   dc_values += run->width * run->height;
 
-  run = chroma_runs + 0;
+  run = lowdelay->chroma_runs + 0;
   line = OFFSET(run->data1, run->y_stride * slice_y + run->x_stride * slice_x);
   copy_slice_run_in (line, dc_values, run);
   dc_values += run->width * run->height;
@@ -659,7 +692,7 @@ restore_dc_values (SchroEncoderFrame *frame, int16_t *dc_values,
 
 int
 schro_encoder_pick_slice_index (SchroEncoderFrame *frame,
-    SchroSliceRun *luma_runs, SchroSliceRun *chroma_runs,
+    SchroLowDelay *lowdelay,
     int slice_x, int slice_y, int slice_bytes)
 {
   int i;
@@ -667,21 +700,21 @@ schro_encoder_pick_slice_index (SchroEncoderFrame *frame,
   int size;
   int16_t tmp_dc_values[100];
 
-  save_dc_values (frame, tmp_dc_values, luma_runs, chroma_runs,
+  save_dc_values (frame, tmp_dc_values, lowdelay,
       slice_x, slice_y);
 
   i = 0;
-  n = schro_encoder_estimate_slice (frame, luma_runs, chroma_runs,
+  n = schro_encoder_estimate_slice (frame, lowdelay,
       slice_x, slice_y, slice_bytes, i);
-  restore_dc_values (frame, tmp_dc_values, luma_runs, chroma_runs,
+  restore_dc_values (frame, tmp_dc_values, lowdelay,
       slice_x, slice_y);
   if (n <= slice_bytes*8) return i;
 
   size = 32;
   while (size >= 1) {
-    n = schro_encoder_estimate_slice (frame, luma_runs, chroma_runs,
+    n = schro_encoder_estimate_slice (frame, lowdelay,
         slice_x, slice_y, slice_bytes, i + size);
-    restore_dc_values (frame, tmp_dc_values, luma_runs, chroma_runs,
+    restore_dc_values (frame, tmp_dc_values, lowdelay,
         slice_x, slice_y);
     if (n >= slice_bytes*8) {
       i += size;
@@ -689,9 +722,9 @@ schro_encoder_pick_slice_index (SchroEncoderFrame *frame,
     size >>= 1;
   }
 
-  schro_encoder_estimate_slice (frame, luma_runs, chroma_runs,
+  schro_encoder_estimate_slice (frame, lowdelay,
       slice_x, slice_y, slice_bytes, i + 1);
-  schro_encoder_dequantise_slice (frame, luma_runs, chroma_runs,
+  schro_encoder_dequantise_slice (frame, lowdelay,
       slice_x, slice_y, slice_bytes, i + 1);
   return i+1;
 }
@@ -700,8 +733,7 @@ void
 schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
-  SchroSliceRun luma_runs[SCHRO_LIMIT_SUBBANDS];
-  SchroSliceRun chroma_runs[SCHRO_LIMIT_SUBBANDS];
+  SchroLowDelay lowdelay;
   int x,y;
   int n_horiz_slices;
   int n_vert_slices;
@@ -717,9 +749,9 @@ schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame)
     int position = schro_subband_get_position(i);
     
     schro_lowdelay_get_luma_slice_run (frame->iwt_frame, position, params,
-        luma_runs + i);
+        lowdelay.luma_runs + i);
     schro_lowdelay_get_chroma_slice_run (frame->iwt_frame, position, params,
-        chroma_runs + i);
+        lowdelay.chroma_runs + i);
   }
 
   n_horiz_slices = params->iwt_luma_width>>params->slice_width_exp;
@@ -741,9 +773,9 @@ schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame)
         extra = 0;
       }
 
-      base_index = schro_encoder_pick_slice_index (frame, luma_runs,
-          chroma_runs, x, y, n_bytes + extra);
-      total_bits += schro_encoder_encode_slice (frame, luma_runs, chroma_runs,
+      base_index = schro_encoder_pick_slice_index (frame, &lowdelay,
+          x, y, n_bytes + extra);
+      total_bits += schro_encoder_encode_slice (frame, &lowdelay,
           x, y, n_bytes + extra, base_index);
     }
   }
