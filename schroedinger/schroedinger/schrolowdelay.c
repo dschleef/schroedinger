@@ -604,7 +604,7 @@ save_dc_values (SchroEncoderFrame *frame, int16_t *dc_values,
   copy_block_out (dc_values, &block);
   dc_values += block.width * block.height;
 
-  schro_frame_data_get_codeblock (&block, lowdelay->chroma1_subbands + 0,
+  schro_frame_data_get_codeblock (&block, lowdelay->chroma2_subbands + 0,
       slice_x, slice_y,
       lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
   copy_block_out (dc_values, &block);
@@ -629,7 +629,7 @@ restore_dc_values (SchroEncoderFrame *frame, int16_t *dc_values,
   copy_block_in (&block, dc_values);
   dc_values += block.width * block.height;
 
-  schro_frame_data_get_codeblock (&block, lowdelay->chroma1_subbands + 0,
+  schro_frame_data_get_codeblock (&block, lowdelay->chroma2_subbands + 0,
       slice_x, slice_y,
       lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
   copy_block_in (&block, dc_values);

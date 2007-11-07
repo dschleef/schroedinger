@@ -1,8 +1,14 @@
 2007-11-06  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrolowdelay.c: Fix saving/restoring chroma
+	  DC values.
+
+2007-11-06  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrolowdelay.c:
 	  Remove SchroSliceRun in favor of SchroFrameData.  The new code
 	  is quite a bit slower, but handles the new variable slice sizes.
+	  And it's a bit buggy encoding (what looks like) DC chroma values.
 
 2007-11-06  David Schleef  <ds@schleef.org>
 
