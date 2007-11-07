@@ -67,7 +67,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/schroedinger-0.1/schroedinger/schroanalysis.h
 %{_includedir}/schroedinger-0.1/schroedinger/schroarith.h
 %{_includedir}/schroedinger-0.1/schroedinger/schroasync.h
-%{_includedir}/schroedinger-0.1/schroedinger/schrobits.h
 %{_includedir}/schroedinger-0.1/schroedinger/schrobitstream.h
 %{_includedir}/schroedinger-0.1/schroedinger/schrobuffer.h
 %{_includedir}/schroedinger-0.1/schroedinger/schrodebug.h
@@ -92,7 +91,16 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/schroedinger-0.1/schroedinger/schroutils.h
 %{_includedir}/schroedinger-0.1/schroedinger/schrowavelet.h
 
-# %{_datadir}/gtk-doc/html/schroedinger-0.1
+%{_includedir}/schroedinger-0.1/schroedinger/schrossim.h
+%{_includedir}/schroedinger-0.1/schroedinger/schrofft.h
+%{_includedir}/schroedinger-0.1/schroedinger/schrohistogram.h
+%{_includedir}/schroedinger-0.1/schroedinger/schrophasecorrelation.h
+%{_includedir}/schroedinger-0.1/schroedinger/schrounpack.h
+%{_includedir}/schroedinger-0.1/schroedinger/schrolimits.h
+%{_includedir}/schroedinger-0.1/schroedinger/schrolist.h
+%{_includedir}/schroedinger-0.1/schroedinger/schropack.h
+%{_includedir}/schroedinger-0.1/schroedinger/schrovideoformat.h
+%{_datadir}/gtk-doc/html/schroedinger-0.1
 
 %changelog
 * Thu Apr 05 2007 Thomas Vander Stichele <thomas at apestaart dot org>

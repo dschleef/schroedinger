@@ -1,5 +1,10 @@
 2007-11-07  David Schleef  <ds@schleef.org>
 
+	* schroedinger.spec.in:
+	  Update spec file for recent header changes.
+
+2007-11-07  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schromotion.c:
 	* schroedinger/schromotion.h:
 	* testsuite/obmc.c:
