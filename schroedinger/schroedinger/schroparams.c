@@ -437,9 +437,5 @@ schro_params_init_lowdelay_quantisers (SchroParams *params)
     params->quant_matrix[1+3*i+1] = table[1 + 2*i + 0];
     params->quant_matrix[1+3*i+2] = table[1 + 2*i + 1];
   }
-
-  params->luma_quant_offset = 0;
-  params->chroma1_quant_offset = 0;
-  params->chroma2_quant_offset = 0;
 }
 

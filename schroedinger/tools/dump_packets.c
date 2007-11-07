@@ -529,8 +529,8 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         slice_bytes_numerator = schro_unpack_decode_uint(&unpack);
         slice_bytes_denominator = schro_unpack_decode_uint(&unpack);
 
-        g_print("  slice_x: %d\n", slice_x);
-        g_print("  slice_y: %d\n", slice_y);
+        g_print("  n_horiz_slices: %d\n", slice_x);
+        g_print("  n_horiz_slices: %d\n", slice_y);
         g_print("  slice_bytes_numerator: %d\n", slice_bytes_numerator);
         g_print("  slice_bytes_denominator: %d\n", slice_bytes_denominator);
 

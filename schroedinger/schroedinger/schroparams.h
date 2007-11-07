@@ -59,19 +59,11 @@ struct _SchroParams {
 
   /* DiracPro parameters */
   int is_lowdelay;
-#if 1 /* FIXME */
-  int slice_width_exp;
-  int slice_height_exp;
-#else
-  int slice_x;
-  int slice_y;
-#endif
+  int n_horiz_slices;
+  int n_vert_slices;
   int slice_bytes_num;
   int slice_bytes_denom;
   int quant_matrix[3*SCHRO_LIMIT_TRANSFORM_DEPTH+1];
-  int luma_quant_offset;
-  int chroma1_quant_offset;
-  int chroma2_quant_offset;
 
   /* calculated sizes */
   int iwt_chroma_width;

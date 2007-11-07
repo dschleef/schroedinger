@@ -1523,21 +1523,14 @@ schro_encoder_encode_transform_parameters (SchroEncoderFrame *frame)
     }
   } else {
     int encode_quant_matrix;
-    int encode_quant_offsets;
 
-#if 0
-    schro_pack_encode_uint (pack, params->slice_x);
-    schro_pack_encode_uint (pack, params->slice_y);
-#else
-    schro_pack_encode_uint (pack, params->slice_width_exp);
-    schro_pack_encode_uint (pack, params->slice_height_exp);
-#endif
+    schro_pack_encode_uint (pack, params->n_horiz_slices);
+    schro_pack_encode_uint (pack, params->n_vert_slices);
     schro_pack_encode_uint (pack, params->slice_bytes_num);
     schro_pack_encode_uint (pack, params->slice_bytes_denom);
 
     /* FIXME */
     encode_quant_matrix = TRUE;
-    encode_quant_offsets = TRUE;
 
     schro_pack_encode_bit (pack, encode_quant_matrix);
     if (encode_quant_matrix) {

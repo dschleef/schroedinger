@@ -1,5 +1,17 @@
 2007-11-06  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroengine.c:
+	* schroedinger/schrolowdelay.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* tools/dump_packets.c:
+	  Update for variable size slices spec change.  Changes BITSTREAM,
+	  but only for low-delay syntax.
+
+2007-11-06  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrolowdelay.c: Fix saving/restoring chroma
 	  DC values.
 

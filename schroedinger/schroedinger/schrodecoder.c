@@ -1228,13 +1228,8 @@ schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
     }
   } else {
     /* slice parameters */
-#if 0
-    params->slice_x = schro_unpack_decode_uint(&decoder->unpack);
-    params->slice_y = schro_unpack_decode_uint(&decoder->unpack);
-#else
-    params->slice_width_exp = schro_unpack_decode_uint(&decoder->unpack);
-    params->slice_height_exp = schro_unpack_decode_uint(&decoder->unpack);
-#endif
+    params->n_horiz_slices = schro_unpack_decode_uint(&decoder->unpack);
+    params->n_vert_slices = schro_unpack_decode_uint(&decoder->unpack);
 
     params->slice_bytes_num = schro_unpack_decode_uint(&decoder->unpack);
     params->slice_bytes_denom = schro_unpack_decode_uint(&decoder->unpack);
@@ -1251,16 +1246,6 @@ schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
     } else {
       /* FIXME set default quant matrix */
       SCHRO_ASSERT(0);
-    }
-    bit = schro_unpack_decode_bit (&decoder->unpack);
-    if (bit) {
-      params->luma_quant_offset = schro_unpack_decode_sint (&decoder->unpack);
-      params->chroma1_quant_offset = schro_unpack_decode_sint (&decoder->unpack);
-      params->chroma2_quant_offset = schro_unpack_decode_sint (&decoder->unpack);
-    } else {
-      params->luma_quant_offset = 0;
-      params->chroma1_quant_offset = 0;
-      params->chroma2_quant_offset = 0;
     }
   }
 }

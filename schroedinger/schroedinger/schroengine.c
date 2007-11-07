@@ -1138,26 +1138,15 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
         params->is_lowdelay = TRUE;
 
         /* FIXME should be parameters */
-#if 0
-        params->slice_x = 16;
-        params->slice_y = 16;
-#else
-        params->slice_width_exp = 4;
-        params->slice_height_exp = 4;
-#endif
+        params->n_horiz_slices = 16;
+        params->n_vert_slices = 16;
         init_params (frame);
         //schro_params_init_lowdelay_quantisers(params);
 
         num = muldiv64(encoder->prefs[SCHRO_PREF_BITRATE],
             encoder->video_format.frame_rate_denominator,
             encoder->video_format.frame_rate_numerator * 8);
-#if 0
-        denom = (params->iwt_luma_width/params->slice_x) *
-          (params->iwt_luma_height/params->slice_y);
-#else
-        denom = (params->iwt_luma_width>>params->slice_width_exp) *
-          (params->iwt_luma_height>>params->slice_height_exp);
-#endif
+        denom = params->n_horiz_slices * params->n_vert_slices;
         SCHRO_ASSERT(denom != 0);
         schro_utils_reduce_fraction (&num, &denom);
         params->slice_bytes_num = num;
