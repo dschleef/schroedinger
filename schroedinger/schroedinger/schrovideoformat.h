@@ -10,15 +10,13 @@ SCHRO_BEGIN_DECLS
 typedef struct _SchroVideoFormat SchroVideoFormat;
 
 struct _SchroVideoFormat {
-  int index;
+  SchroVideoFormatEnum index;
   int width;
   int height;
-  int chroma_format;
-  int video_depth;
-    
-  int interlaced;
-  int top_field_first;
-  int sequential_fields;
+  SchroChromaFormat chroma_format;
+  
+  schro_bool interlaced;
+  schro_bool top_field_first;
   
   int frame_rate_numerator;
   int frame_rate_denominator;
@@ -35,9 +33,9 @@ struct _SchroVideoFormat {
   int chroma_offset;
   int chroma_excursion;
     
-  int colour_primaries;
-  int colour_matrix;
-  int transfer_function;
+  SchroColourPrimaries colour_primaries;
+  SchroColourMatrix colour_matrix;
+  SchroTransferFunction transfer_function;
 
   /* calculated values */
 
@@ -56,10 +54,12 @@ void schro_video_format_set_std_frame_rate (SchroVideoFormat *format, int index)
 int schro_video_format_get_std_frame_rate (SchroVideoFormat *format);
 void schro_video_format_set_std_aspect_ratio (SchroVideoFormat *format, int index);
 int schro_video_format_get_std_aspect_ratio (SchroVideoFormat *format);
-void schro_video_format_set_std_signal_range (SchroVideoFormat *format, int index);
-int schro_video_format_get_std_signal_range (SchroVideoFormat *format);
-void schro_video_format_set_std_colour_spec (SchroVideoFormat *format, int index);
-int schro_video_format_get_std_colour_spec (SchroVideoFormat *format);
+void schro_video_format_set_std_signal_range (SchroVideoFormat *format,
+    SchroSignalRange index);
+SchroSignalRange schro_video_format_get_std_signal_range (SchroVideoFormat *format);
+void schro_video_format_set_std_colour_spec (SchroVideoFormat *format,
+    SchroColourSpec index);
+SchroColourSpec schro_video_format_get_std_colour_spec (SchroVideoFormat *format);
 
 SCHRO_END_DECLS
 

@@ -50,6 +50,7 @@ struct _SchroDecoder {
   int minor_version;
   int profile;
   int level;
+  schro_bool interlaced_coding;
   SchroVideoFormat video_format;
   SchroParams params;
 

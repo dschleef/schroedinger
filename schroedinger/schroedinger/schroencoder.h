@@ -122,6 +122,9 @@ struct _SchroEncoderFrame {
   int slice_uv_bits;
   int slice_y_trailing_zeros;
   int slice_uv_trailing_zeros;
+  SchroFrameData luma_subbands[SCHRO_LIMIT_SUBBANDS];
+  SchroFrameData chroma1_subbands[SCHRO_LIMIT_SUBBANDS];
+  SchroFrameData chroma2_subbands[SCHRO_LIMIT_SUBBANDS];
 
   /* from the old SchroEncoderTask */
 
@@ -185,6 +188,7 @@ struct _SchroEncoder {
   int version_minor;
   int profile;
   int level;
+  schro_bool interlaced_coding;
 
   SchroVideoFormat video_format;
   SchroEncoderParams encoder_params;

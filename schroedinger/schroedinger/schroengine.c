@@ -740,15 +740,15 @@ static struct {
   int depth;
 } test_wavelet_types[] = {
   /* These are the main wavelet/levels that get used */
-  { SCHRO_WAVELET_DESL_9_3, 2 },
-  { SCHRO_WAVELET_DESL_9_3, 3 },
-  { SCHRO_WAVELET_DESL_9_3, 4 },
-  { SCHRO_WAVELET_5_3, 2 },
-  { SCHRO_WAVELET_5_3, 3 },
-  { SCHRO_WAVELET_5_3, 4 },
-  { SCHRO_WAVELET_13_5, 2 },
-  { SCHRO_WAVELET_13_5, 3 },
-  { SCHRO_WAVELET_13_5, 4 },
+  { SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 2 },
+  { SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 3 },
+  { SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 4 },
+  { SCHRO_WAVELET_LE_GALL_5_3, 2 },
+  { SCHRO_WAVELET_LE_GALL_5_3, 3 },
+  { SCHRO_WAVELET_LE_GALL_5_3, 4 },
+  { SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 2 },
+  { SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 3 },
+  { SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 4 },
   { SCHRO_WAVELET_HAAR_0, 2 },
   { SCHRO_WAVELET_HAAR_0, 3 },
   { SCHRO_WAVELET_HAAR_0, 4 },
@@ -757,37 +757,37 @@ static struct {
   { SCHRO_WAVELET_HAAR_1, 4 },
   { SCHRO_WAVELET_FIDELITY, 2 },
   { SCHRO_WAVELET_FIDELITY, 3 },
-  { SCHRO_WAVELET_DAUB_9_7, 2 },
-  { SCHRO_WAVELET_DAUB_9_7, 3 },
+  { SCHRO_WAVELET_DAUBECHIES_9_7, 2 },
+  { SCHRO_WAVELET_DAUBECHIES_9_7, 3 },
 
   /* 1-level transforms look crappy */
-  { SCHRO_WAVELET_DESL_9_3, 1 },
-  { SCHRO_WAVELET_5_3, 1 },
-  { SCHRO_WAVELET_13_5, 1 },
+  { SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 1 },
+  { SCHRO_WAVELET_LE_GALL_5_3, 1 },
+  { SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 1 },
   { SCHRO_WAVELET_HAAR_0, 1 },
   { SCHRO_WAVELET_HAAR_1, 1 },
   { SCHRO_WAVELET_FIDELITY, 1 },
-  { SCHRO_WAVELET_DAUB_9_7, 1 },
+  { SCHRO_WAVELET_DAUBECHIES_9_7, 1 },
 
 #ifdef SCHRO_HAVE_DEEP_WAVELETS
   { SCHRO_WAVELET_FIDELITY, 4 },
-  { SCHRO_WAVELET_DAUB_9_7, 4 }
+  { SCHRO_WAVELET_DAUBECHIES_9_7, 4 }
 #endif
 
 #ifdef USE_TRANSFORM_LEVEL_5
   /* 5-level transforms don't decrease bitrate */
-  { SCHRO_WAVELET_DESL_9_3, 5 },
-  { SCHRO_WAVELET_5_3, 5 },
-  { SCHRO_WAVELET_13_5, 5 },
+  { SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 5 },
+  { SCHRO_WAVELET_LE_GALL_5_3, 5 },
+  { SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 5 },
   { SCHRO_WAVELET_HAAR_0, 5 },
   { SCHRO_WAVELET_HAAR_1, 5 },
 #endif
 
 #ifdef USE_TRANSFORM_LEVEL_6
   /* 6-level transforms don't decrease bitrate */
-  { SCHRO_WAVELET_DESL_9_3, 6 },
-  { SCHRO_WAVELET_5_3, 6 },
-  { SCHRO_WAVELET_13_5, 6 },
+  { SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 6 },
+  { SCHRO_WAVELET_LE_GALL_5_3, 6 },
+  { SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 6 },
   { SCHRO_WAVELET_HAAR_0, 6 },
   { SCHRO_WAVELET_HAAR_1, 6 },
 #endif
@@ -1138,16 +1138,26 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
         params->is_lowdelay = TRUE;
 
         /* FIXME should be parameters */
+#if 0
+        params->slice_x = 16;
+        params->slice_y = 16;
+#else
         params->slice_width_exp = 4;
         params->slice_height_exp = 4;
+#endif
         init_params (frame);
         //schro_params_init_lowdelay_quantisers(params);
 
         num = muldiv64(encoder->prefs[SCHRO_PREF_BITRATE],
             encoder->video_format.frame_rate_denominator,
             encoder->video_format.frame_rate_numerator * 8);
+#if 0
+        denom = (params->iwt_luma_width/params->slice_x) *
+          (params->iwt_luma_height/params->slice_y);
+#else
         denom = (params->iwt_luma_width>>params->slice_width_exp) *
           (params->iwt_luma_height>>params->slice_height_exp);
+#endif
         SCHRO_ASSERT(denom != 0);
         schro_utils_reduce_fraction (&num, &denom);
         params->slice_bytes_num = num;

@@ -56,95 +56,123 @@ schro_video_format_validate (SchroVideoFormat *format)
 static SchroVideoFormat
 schro_video_formats[] = {
   { 0, /* custom */
-    640, 480, SCHRO_CHROMA_420, 8,
-    FALSE, TRUE, FALSE,
-    30, 1, 1, 1,
+    640, 480, SCHRO_CHROMA_420,
+    FALSE, FALSE,
+    24000, 1001, 1, 1,
     640, 480, 0, 0,
     0, 255, 128, 254,
     0, 0, 0 },
-  { 1, /* QSIF */
-    176, 120, SCHRO_CHROMA_420, 8,
-    FALSE, TRUE, FALSE,
+  { 1, /* QSIF525 */
+    176, 120, SCHRO_CHROMA_420,
+    FALSE, FALSE,
     15000, 1001, 10, 11,
     176, 120, 0, 0,
     0, 255, 128, 254,
     1, 1, 0 },
   { 2, /* QCIF */
-    176, 144, SCHRO_CHROMA_420, 8,
-    FALSE, TRUE, FALSE,
+    176, 144, SCHRO_CHROMA_420,
+    FALSE, TRUE,
     25, 2, 12, 11,
     176, 144, 0, 0,
     0, 255, 128, 254,
     2, 1, 0 },
-  { 3, /* SIF */
-    352, 240, SCHRO_CHROMA_420, 8,
-    FALSE, TRUE, FALSE,
+  { 3, /* SIF525 */
+    352, 240, SCHRO_CHROMA_420,
+    FALSE, FALSE,
     15000, 1001, 10, 11,
     352, 240, 0, 0,
     0, 255, 128, 254,
     1, 1, 0 },
   { 4, /* CIF */
-    352, 288, SCHRO_CHROMA_420, 8,
-    FALSE, TRUE, FALSE,
+    352, 288, SCHRO_CHROMA_420,
+    FALSE, TRUE,
     25, 2, 12, 11,
     352, 288, 0, 0,
     0, 255, 128, 254,
     2, 1, 0 },
-  { 5, /* 4SIF */
-    704, 480, SCHRO_CHROMA_420, 8,
-    FALSE, TRUE, FALSE,
+  { 5, /* 4SIF525 */
+    704, 480, SCHRO_CHROMA_420,
+    FALSE, FALSE,
     15000, 1001, 10, 11,
     704, 480, 0, 0,
     0, 255, 128, 254,
     1, 1, 0 },
   { 6, /* 4CIF */
-    704, 576, SCHRO_CHROMA_420, 8,
-    FALSE, TRUE, FALSE,
+    704, 576, SCHRO_CHROMA_420,
+    FALSE, TRUE,
     25, 2, 12, 11,
     704, 576, 0, 0,
     0, 255, 128, 254,
     2, 1, 0 },
-  { 7, /* SD480 */
-    720, 480, SCHRO_CHROMA_420, 8,
-    FALSE, TRUE, FALSE,
-    24000, 1001, 10, 11,
-    720, 480, 0, 0,
-    16, 235, 128, 244,
+  { 7, /* SD480I-60 */
+    720, 480, SCHRO_CHROMA_422,
+    TRUE, FALSE,
+    30000, 1001, 10, 11,
+    704, 480, 8, 0,
+    64, 876, 512, 896,
     1, 1, 0 },
-  { 8, /* SD576 */
-    720, 576, SCHRO_CHROMA_420, 8,
-    FALSE, TRUE, FALSE,
+  { 8, /* SD576I-50 */
+    720, 576, SCHRO_CHROMA_422,
+    TRUE, TRUE,
     25, 1, 12, 11,
-    720, 576, 0, 0,
-    16, 235, 128, 244,
+    704, 576, 8, 0,
+    64, 876, 512, 896,
     2, 1, 0 },
-  { 9, /* HD720 */
-    1280, 720, SCHRO_CHROMA_420, 8,
-    FALSE, TRUE, FALSE,
-    24, 1, 1, 1,
+  { 9, /* HD720P-60 */
+    1280, 720, SCHRO_CHROMA_422,
+    FALSE, TRUE,
+    60000, 1001, 1, 1,
     1280, 720, 0, 0,
-    16, 235, 128, 244,
+    64, 876, 512, 896,
     0, 0, 0 },
-  { 10, /* HD1080 */
-    1920, 1080, SCHRO_CHROMA_420, 8,
-    FALSE, TRUE, FALSE,
-    24, 1, 1, 1,
+  { 10, /* HD720P-50 */
+    1280, 720, SCHRO_CHROMA_422,
+    FALSE, TRUE,
+    50, 1, 1, 1,
+    1280, 720, 0, 0,
+    64, 876, 512, 896,
+    0, 0, 0 },
+  { 11, /* HD1080I-60 */
+    1920, 1080, SCHRO_CHROMA_422,
+    TRUE, TRUE,
+    30000, 1001, 1, 1,
     1920, 1080, 0, 0,
-    16, 235, 128, 244,
+    64, 876, 512, 896,
     0, 0, 0 },
-  { 11, /* 2KCinema */
-    2048, 1556, SCHRO_CHROMA_444, 16,
-    FALSE, TRUE, FALSE,
+  { 12, /* HD1080I-50 */
+    1920, 1080, SCHRO_CHROMA_422,
+    TRUE, TRUE,
+    25, 1, 1, 1,
+    1920, 1080, 0, 0,
+    64, 876, 512, 896,
+    0, 0, 0 },
+  { 13, /* HD1080P-60 */
+    1920, 1080, SCHRO_CHROMA_422,
+    FALSE, TRUE,
+    60000, 1001, 1, 1,
+    1920, 1080, 0, 0,
+    64, 876, 512, 896,
+    0, 0, 0 },
+  { 14, /* HD1080P-50 */
+    1920, 1080, SCHRO_CHROMA_422,
+    FALSE, TRUE,
+    50, 1, 1, 1,
+    1920, 1080, 0, 0,
+    64, 876, 512, 896,
+    0, 0, 0 },
+  { 15, /* DC2K */
+    2048, 1080, SCHRO_CHROMA_444,
+    FALSE, TRUE,
     24, 1, 1, 1,
-    2048, 1536, 
-    0, 65535, 32768, 65534,
+    2048, 1080, 0, 0,
+    256, 3504, 2048, 3584,
     3, 2, 3 },
-  { 12, /* 4KCinema */
-    4096, 3072, SCHRO_CHROMA_444, 16,
-    FALSE, TRUE, FALSE,
+  { 16, /* DC4K */
+    4096, 2160, SCHRO_CHROMA_444,
+    FALSE, TRUE,
     24, 1, 1, 1,
-    2048, 1536, 
-    0, 65535, 32768, 65534,
+    2048, 1536, 0, 0,
+    256, 3504, 2048, 3584,
     3, 2, 3 },
 };
 
@@ -267,9 +295,6 @@ struct _SchroFrameRate {
 static SchroFrameRate
 schro_frame_rates[] = {
   { 0, 0 },
-  { 12, 1 },
-  { 25, 2 },
-  { 15, 1 },
   { 24000, 1001 },
   { 24, 1 },
   { 25, 1 },
@@ -339,7 +364,10 @@ schro_aspect_ratios[] = {
   { 0, 0 },
   { 1, 1 },
   { 10, 11 },
-  { 59, 54 }
+  { 12, 11 },
+  { 40, 33 },
+  { 16, 11 },
+  { 4, 3 }
 };
 
 /*
@@ -393,19 +421,20 @@ int schro_video_format_get_std_aspect_ratio (SchroVideoFormat *format)
   return 0;
 }
 
-typedef struct _SchroSignalRange SchroSignalRange;
-struct _SchroSignalRange {
+typedef struct _SchroSignalRangeStruct SchroSignalRangeStruct;
+struct _SchroSignalRangeStruct {
   int luma_offset;
   int luma_excursion;
   int chroma_offset;
   int chroma_excursion;
 };
 
-static const SchroSignalRange schro_signal_ranges[] = {
+static const SchroSignalRangeStruct schro_signal_ranges[] = {
   { 0, 0, 0, 0 },
   { 0, 255, 128, 255 },
-  { 16, 235, 128, 224 },
-  { 64, 876, 512, 896 }
+  { 16, 219, 128, 224 },
+  { 64, 876, 512, 896 },
+  { 256, 3504, 2048, 3584 }
 };
 
 /**
@@ -416,7 +445,8 @@ static const SchroSignalRange schro_signal_ranges[] = {
  * Sets the signal range of the video format structure to one of the
  * standard values indicated by @index.
  */
-void schro_video_format_set_std_signal_range (SchroVideoFormat *format, int i)
+void schro_video_format_set_std_signal_range (SchroVideoFormat *format,
+    SchroSignalRange i)
 {
   if (i < 1 || i >= ARRAY_SIZE(schro_signal_ranges)) {
     SCHRO_ERROR("illegal signal range index");
@@ -444,7 +474,8 @@ void schro_video_format_set_std_signal_range (SchroVideoFormat *format, int i)
  * Returns: index to standard signal range, or 0 if there is no
  * corresponding standard signal range.
  */
-int schro_video_format_get_std_signal_range (SchroVideoFormat *format)
+SchroSignalRange
+schro_video_format_get_std_signal_range (SchroVideoFormat *format)
 {
   int i;
 
@@ -461,18 +492,39 @@ int schro_video_format_get_std_signal_range (SchroVideoFormat *format)
 
 }
 
-typedef struct _SchroColourSpec SchroColourSpec;
-struct _SchroColourSpec {
+typedef struct _SchroColourSpecStruct SchroColourSpecStruct;
+struct _SchroColourSpecStruct {
   int colour_primaries;
   int colour_matrix;
   int transfer_function;
 };
 
-static const SchroColourSpec schro_colour_specs[] = {
-  { 0, 0, 0 },
-  { 1, 1, 0 },
-  { 2, 1, 0 },
-  { 3, 2, 3 }
+static const SchroColourSpecStruct schro_colour_specs[] = {
+  { /* Custom */
+    SCHRO_COLOUR_PRIMARY_HDTV,
+    SCHRO_COLOUR_MATRIX_HDTV,
+    SCHRO_TRANSFER_CHAR_TV_GAMMA
+  },
+  { /* SDTV 525 */
+    SCHRO_COLOUR_PRIMARY_SDTV_525,
+    SCHRO_COLOUR_MATRIX_SDTV,
+    SCHRO_TRANSFER_CHAR_TV_GAMMA
+  },
+  { /* SDTV 625 */
+    SCHRO_COLOUR_PRIMARY_SDTV_625,
+    SCHRO_COLOUR_MATRIX_SDTV,
+    SCHRO_TRANSFER_CHAR_TV_GAMMA
+  },
+  { /* HDTV */
+    SCHRO_COLOUR_PRIMARY_HDTV,
+    SCHRO_COLOUR_MATRIX_HDTV,
+    SCHRO_TRANSFER_CHAR_TV_GAMMA
+  },
+  { /* Cinema */
+    SCHRO_COLOUR_PRIMARY_CINEMA,
+    SCHRO_COLOUR_MATRIX_HDTV,
+    SCHRO_TRANSFER_CHAR_DCI_GAMMA
+  }
 };
 
 /**
@@ -483,9 +535,10 @@ static const SchroColourSpec schro_colour_specs[] = {
  * Sets the colour specification of the video format structure to one of the
  * standard values indicated by @index.
  */
-void schro_video_format_set_std_colour_spec (SchroVideoFormat *format, int i)
+void schro_video_format_set_std_colour_spec (SchroVideoFormat *format,
+    SchroColourSpec i)
 {
-  if (i < 1 || i >= ARRAY_SIZE(schro_colour_specs)) {
+  if (i < 0 || i >= ARRAY_SIZE(schro_colour_specs)) {
     SCHRO_ERROR("illegal signal range index");
     return;
   }
@@ -510,7 +563,8 @@ void schro_video_format_set_std_colour_spec (SchroVideoFormat *format, int i)
  * Returns: index to standard colour specification, or 0 if there is no
  * corresponding standard colour specification.
  */
-int schro_video_format_get_std_colour_spec (SchroVideoFormat *format)
+SchroColourSpec
+schro_video_format_get_std_colour_spec (SchroVideoFormat *format)
 {
   int i;
 

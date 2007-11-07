@@ -228,9 +228,8 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
   gst_structure_get_fraction (structure, "pixel-aspect-ratio",
       &schro_enc->par_n, &schro_enc->par_d);
 
-  /* SD480 has most of the defaults that GStreamer assumes */
   schro_video_format_set_std_video_format (schro_enc->video_format,
-      SCHRO_VIDEO_FORMAT_SD480);
+      SCHRO_VIDEO_FORMAT_CUSTOM);
 
   switch (schro_enc->fourcc) {
     case GST_MAKE_FOURCC('I','4','2','0'):

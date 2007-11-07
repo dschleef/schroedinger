@@ -12,6 +12,15 @@
 
 #define DIRAC_COMPAT 1
 
+#if 0
+/* Used for checking bitstream bugs */
+#define MARKER() \
+do { \
+  g_print("  marker: %d\n", schro_unpack_decode_uint(&unpack)); \
+}while(0)
+#else
+#define MARKER()
+#endif
 
 static void fakesink_handoff (GstElement *fakesink, GstBuffer *buffer,
     GstPad *pad, gpointer p_pipeline);
@@ -210,32 +219,17 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     }
 
     bit = schro_unpack_decode_bit(&unpack);
-    g_print("  video depth flag: %s\n", bit ? "yes" : "no");
+    g_print("  custom_scan_format_flag: %s\n", bit ? "yes" : "no");
     if (bit) {
-      g_print("    video depth: %d\n", schro_unpack_decode_uint(&unpack));
-    }
-
-    bit = schro_unpack_decode_bit(&unpack);
-    g_print("  scan format flag: %s\n", bit ? "yes" : "no");
-    if (bit) {
-      bit = schro_unpack_decode_bit(&unpack);
-      g_print("    interlaced source: %s\n", bit ? "yes" : "no");
+      g_print("  interlaced source: %s\n", bit ? "yes" : "no");
       if (bit) {
         bit = schro_unpack_decode_bit(&unpack);
-        g_print("      field dominance flag: %s\n", bit ? "yes" : "no");
-        if (bit) {
-          bit = schro_unpack_decode_bit(&unpack);
-          g_print("      top field first: %s\n", bit ? "yes" : "no");
-        }
-        bit = schro_unpack_decode_bit(&unpack);
-        g_print("      field interleaving flag: %s\n", bit ? "yes" : "no");
-        if (bit) {
-          bit = schro_unpack_decode_bit(&unpack);
-          g_print("      sequential fields: %s\n", bit ? "yes" : "no");
-        }
+        g_print("    top field first: %s\n", bit ? "yes" : "no");
       }
     }
     
+    MARKER();
+
     bit = schro_unpack_decode_bit(&unpack);
     g_print("  frame rate flag: %s\n", bit ? "yes" : "no");
     if (bit) {
@@ -248,6 +242,8 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
             schro_unpack_decode_uint(&unpack));
       }
     }
+
+    MARKER();
 
     bit = schro_unpack_decode_bit(&unpack);
     g_print("  aspect ratio flag: %s\n", bit ? "yes" : "no");
@@ -262,6 +258,8 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       }
     }
 
+    MARKER();
+
     bit = schro_unpack_decode_bit(&unpack);
     g_print("  clean area flag: %s\n", bit ? "yes" : "no");
     if (bit) {
@@ -270,6 +268,8 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       g_print("    left offset: %d\n", schro_unpack_decode_uint(&unpack));
       g_print("    top offset: %d\n", schro_unpack_decode_uint(&unpack));
     }
+
+    MARKER();
 
     bit = schro_unpack_decode_bit(&unpack);
     g_print("  signal range flag: %s\n", bit ? "yes" : "no");
@@ -283,6 +283,8 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         g_print("      chroma excursion: %d\n", schro_unpack_decode_uint(&unpack));
       }
     }
+
+    MARKER();
 
     bit = schro_unpack_decode_bit(&unpack);
     g_print("  colour spec flag: %s\n", bit ? "yes" : "no");
@@ -309,6 +311,12 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         }
       }
     }
+
+    bit = schro_unpack_decode_bit(&unpack);
+    g_print("  interlaced_coding: %s\n", bit ? "yes" : "no");
+
+    MARKER();
+
   } else if (SCHRO_PARSE_CODE_IS_PICTURE(data[4])) {
     int num_refs = SCHRO_PARSE_CODE_NUM_REFS(data[4]);
     int bit;
@@ -326,7 +334,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     if (num_refs > 1) {
       g_print("  ref2_offset: %d\n", schro_unpack_decode_sint(&unpack));
     }
-    if (!lowdelay) {
+    if (SCHRO_PARSE_CODE_IS_REFERENCE(data[4])) {
       n = schro_unpack_decode_uint(&unpack);
       g_print("  n retire: %d\n", n);
       for(i=0;i<n;i++){
@@ -335,30 +343,27 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     }
 
     if (num_refs > 0) {
-      schro_unpack_byte_sync(&unpack);
-      bit = schro_unpack_decode_bit(&unpack);
-      g_print("  block parameters flag: %s\n", bit ? "yes" : "no");
-      if (bit) {
-        int index = schro_unpack_decode_uint(&unpack);
-        g_print("    block parameters index: %d\n", index);
-        if (index == 0) {
-          g_print("    luma block width: %d\n", schro_unpack_decode_uint(&unpack));
-          g_print("    luma block height: %d\n", schro_unpack_decode_uint(&unpack));
-          g_print("    horiz luma block sep: %d\n", schro_unpack_decode_uint(&unpack));
-          g_print("    vert luma block sep: %d\n", schro_unpack_decode_uint(&unpack));
-        }
-      }
+      int index;
 
-      bit = schro_unpack_decode_bit(&unpack);
-      g_print("  motion vector precision flag: %s\n", bit ? "yes" : "no");
-      if (bit) {
-        g_print("  motion vector precision bits: %d\n",
-            schro_unpack_decode_uint(&unpack));
+      schro_unpack_byte_sync(&unpack);
+      index = schro_unpack_decode_uint(&unpack);
+      
+      g_print("    block parameters index: %d\n", index);
+      if (index == 0) {
+        g_print("    luma block width: %d\n", schro_unpack_decode_uint(&unpack));
+        g_print("    luma block height: %d\n", schro_unpack_decode_uint(&unpack));
+        g_print("    horiz luma block sep: %d\n", schro_unpack_decode_uint(&unpack));
+        g_print("    vert luma block sep: %d\n", schro_unpack_decode_uint(&unpack));
       }
       
+      MARKER();
+
+      g_print("  motion vector precision bits: %d\n", schro_unpack_decode_uint(&unpack));
+      
+      MARKER();
+
       bit = schro_unpack_decode_bit(&unpack);
       g_print("  using global motion flag: %s\n", bit ? "yes" : "no");
-
       if (bit) {
         for(i=0;i<num_refs;i++){
           g_print("    global motion ref%d:\n", i+1);
@@ -387,12 +392,10 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         }
       }
 
-      bit = schro_unpack_decode_bit(&unpack);
-      g_print("  picture prediction mode flag: %s\n", bit ? "yes" : "no");
-      if (bit) {
-        g_print("  picture prediction mode: %d\n",
-            schro_unpack_decode_uint(&unpack));
-      }
+      MARKER();
+
+      g_print("  picture prediction mode: %d\n", schro_unpack_decode_uint(&unpack));
+
       bit = schro_unpack_decode_bit(&unpack);
       g_print("  non-default weights flag: %s\n", bit ? "yes" : "no");
       if (bit) {
@@ -404,7 +407,10 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         }
       }
 
+      MARKER();
+
       schro_unpack_byte_sync(&unpack);
+
       n = schro_unpack_decode_uint(&unpack);
       g_print("  superblock split data length: %d\n", n);
       schro_unpack_byte_sync (&unpack);
@@ -465,21 +471,10 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       int depth;
       int j;
 
-      bit = schro_unpack_decode_bit (&unpack);
-      g_print("  non-default wavelet flag: %s\n", bit ? "yes" : "no");
-      if (bit) {
-        g_print("    wavelet index: %d\n", schro_unpack_decode_uint(&unpack));
-      }
+      g_print("  wavelet index: %d\n", schro_unpack_decode_uint(&unpack));
 
-      bit = schro_unpack_decode_bit (&unpack);
-      g_print("  wavelet depth flag: %s\n", bit ? "yes" : "no");
-      if (bit) {
-        depth = schro_unpack_decode_uint(&unpack);
-        g_print("    transform depth: %d\n", depth);
-      } else {
-        /* FIXME */
-        depth = 4;
-      }
+      depth = schro_unpack_decode_uint(&unpack);
+      g_print("  transform depth: %d\n", depth);
 
       if (!lowdelay) {
         bit = schro_unpack_decode_bit (&unpack);
@@ -524,18 +519,18 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
           }
         }
       } else {
-        int slice_width_exp;
-        int slice_height_exp;
+        int slice_x;
+        int slice_y;
         int slice_bytes_numerator;
         int slice_bytes_denominator;
 
-        slice_width_exp = schro_unpack_decode_uint(&unpack);
-        slice_height_exp = schro_unpack_decode_uint(&unpack);
+        slice_x = schro_unpack_decode_uint(&unpack);
+        slice_y = schro_unpack_decode_uint(&unpack);
         slice_bytes_numerator = schro_unpack_decode_uint(&unpack);
         slice_bytes_denominator = schro_unpack_decode_uint(&unpack);
 
-        g_print("  slice_width_exp: %d\n", slice_width_exp);
-        g_print("  slice_height_exp: %d\n", slice_height_exp);
+        g_print("  slice_x: %d\n", slice_x);
+        g_print("  slice_y: %d\n", slice_y);
         g_print("  slice_bytes_numerator: %d\n", slice_bytes_numerator);
         g_print("  slice_bytes_denominator: %d\n", slice_bytes_denominator);
 
@@ -545,14 +540,6 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
           for(i=0;i<1+depth*3;i++){
             g_print("    %2d: %d\n", i, schro_unpack_decode_uint(&unpack));
           }
-        }
-
-        bit = schro_unpack_decode_bit (&unpack);
-        g_print("  encode_quant_offsets: %s\n", bit ? "yes" : "no");
-        if (bit) {
-          g_print("    luma_offset: %d\n", schro_unpack_decode_sint(&unpack));
-          g_print("    chroma1_offset: %d\n", schro_unpack_decode_sint(&unpack));
-          g_print("    chroma2_offset: %d\n", schro_unpack_decode_sint(&unpack));
         }
 
         schro_unpack_byte_sync (&unpack);

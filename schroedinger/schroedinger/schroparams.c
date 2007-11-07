@@ -19,15 +19,15 @@ schro_params_init (SchroParams *params, int video_format)
 
   if (params->num_refs == 0) {
     if (video_format < 11) {
-      params->wavelet_filter_index = SCHRO_WAVELET_DESL_9_3;
+      params->wavelet_filter_index = SCHRO_WAVELET_DESLAURIES_DUBUC_9_7;
     } else {
       params->wavelet_filter_index = SCHRO_WAVELET_FIDELITY;
     }
   } else {
     if (video_format < 11) {
-      params->wavelet_filter_index = SCHRO_WAVELET_5_3;
+      params->wavelet_filter_index = SCHRO_WAVELET_LE_GALL_5_3;
     } else {
-      params->wavelet_filter_index = SCHRO_WAVELET_DESL_9_3;
+      params->wavelet_filter_index = SCHRO_WAVELET_DESLAURIES_DUBUC_9_7;
     }
   }
 
@@ -110,6 +110,7 @@ schro_params_init (SchroParams *params, int video_format)
  * The structure fields changed are: iwt_chroma_width, iwt_chroma_height,
  * iwt_luma_width, iwt_luma_height.
  */
+#define SLICE_EXP 4
 void
 schro_params_calculate_iwt_sizes (SchroParams *params)
 {
@@ -117,14 +118,14 @@ schro_params_calculate_iwt_sizes (SchroParams *params)
 
   if (params->is_lowdelay) {
     params->iwt_chroma_width = ROUND_UP_POW2(video_format->chroma_width,
-          params->slice_width_exp);
+          SLICE_EXP);
     params->iwt_chroma_height = ROUND_UP_POW2(video_format->chroma_height,
-          params->slice_height_exp);
+          SLICE_EXP);
 
     params->iwt_luma_width = ROUND_UP_POW2(video_format->width,
-          params->slice_width_exp + video_format->chroma_h_shift);
+          SLICE_EXP + video_format->chroma_h_shift);
     params->iwt_luma_height = ROUND_UP_POW2(video_format->height,
-          params->slice_height_exp + video_format->chroma_v_shift);
+          SLICE_EXP + video_format->chroma_v_shift);
   } else {
     params->iwt_chroma_width =
       ROUND_UP_POW2(video_format->chroma_width,params->transform_depth);
@@ -279,10 +280,30 @@ schro_subband_get_frame_data (SchroFrameData *fd,
     SchroFrame *frame, int component, int position,
     SchroParams *params)
 {
-  int16_t *data;
-  schro_subband_get (frame, component, position, params,
-      &data, &fd->stride, &fd->width, &fd->height);
-  fd->data = data;
+  int shift;
+  SchroFrameData *comp = &frame->components[component];
+  
+  shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
+  
+  fd->format = frame->format;
+  fd->h_shift = comp->h_shift + shift;
+  fd->v_shift = comp->v_shift + shift;
+  fd->stride = comp->stride << shift;
+  if (component == 0) {
+    fd->width = params->iwt_luma_width >> shift;
+    fd->height = params->iwt_luma_height >> shift;
+  } else {
+    fd->width = params->iwt_chroma_width >> shift;
+    fd->height = params->iwt_chroma_height >> shift;
+  } 
+  
+  fd->data = comp->data;
+  if (position & 2) {
+    fd->data = OFFSET(fd->data, fd->stride>>1);
+  } 
+  if (position & 1) {
+    fd->data = OFFSET(fd->data, fd->width*sizeof(int16_t));
+  } 
 }
 
 void

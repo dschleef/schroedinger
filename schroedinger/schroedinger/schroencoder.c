@@ -8,6 +8,13 @@
 #include <string.h>
 #include <math.h>
 
+#if 0
+/* Used for testing bitstream */
+#define MARKER(pack) schro_pack_encode_uint (pack, 1234567)
+#else
+#define MARKER(pack)
+#endif
+
 static void schro_encoder_engine_init (SchroEncoder *encoder);
 static void schro_encoder_encode_picture_prediction (SchroEncoderFrame *frame);
 static void schro_encoder_encode_superblock_split (SchroEncoderFrame *frame);
@@ -39,9 +46,10 @@ schro_encoder_new (void)
   memset (encoder, 0, sizeof(SchroEncoder));
 
   encoder->version_major = 0;
-  encoder->version_minor = 109;
+  encoder->version_minor = 110;
   encoder->profile = 0;
   encoder->level = 0;
+  encoder->interlaced_coding = FALSE;
 
   encoder->au_frame = -1;
   encoder->au_distance = 24;
@@ -55,8 +63,8 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_QUANT_ENGINE] = 0;
   encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
   encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
-  encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESL_9_3;
-  encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_5_3;
+  encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESLAURIES_DUBUC_9_7;
+  encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_LE_GALL_5_3;
   encoder->prefs[SCHRO_PREF_LAMBDA] = 1;
   encoder->prefs[SCHRO_PREF_PSNR] = 25;
   encoder->prefs[SCHRO_PREF_BITRATE] = 13824000;
@@ -66,7 +74,7 @@ schro_encoder_new (void)
   //encoder->enable_filtering = TRUE;
 
   schro_video_format_set_std_video_format (&encoder->video_format,
-      SCHRO_VIDEO_FORMAT_SD576);
+      SCHRO_VIDEO_FORMAT_CUSTOM);
 
   /* FIXME this should be a parameter */
   encoder->queue_depth = 20;
@@ -899,38 +907,24 @@ static void
 schro_encoder_encode_picture_prediction (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
-  SchroParams def;
+  int index;
 
-  memset(&def, 0, sizeof(def));
-  def.num_refs = params->num_refs;
-  schro_params_init (&def, frame->encoder->video_format.index);
-
-  /* block params flag */
-  if (def.xblen_luma == params->xblen_luma &&
-      def.xbsep_luma == params->xbsep_luma &&
-      def.yblen_luma == params->yblen_luma &&
-      def.ybsep_luma == params->ybsep_luma) {
-    schro_pack_encode_bit (frame->pack, FALSE);
-  } else {
-    int index;
-    schro_pack_encode_bit (frame->pack, TRUE);
-    index = schro_params_get_block_params (params);
-    schro_pack_encode_uint (frame->pack, index);
-    if (index == 0) {
-      schro_pack_encode_uint (frame->pack, params->xblen_luma);
-      schro_pack_encode_uint (frame->pack, params->yblen_luma);
-      schro_pack_encode_uint (frame->pack, params->xbsep_luma);
-      schro_pack_encode_uint (frame->pack, params->xbsep_luma);
-    }
+  /* block params */
+  index = schro_params_get_block_params (params);
+  schro_pack_encode_uint (frame->pack, index);
+  if (index == 0) {
+    schro_pack_encode_uint (frame->pack, params->xblen_luma);
+    schro_pack_encode_uint (frame->pack, params->yblen_luma);
+    schro_pack_encode_uint (frame->pack, params->xbsep_luma);
+    schro_pack_encode_uint (frame->pack, params->xbsep_luma);
   }
+
+  MARKER(frame->pack);
 
   /* mv precision flag */
-  if (params->mv_precision == def.mv_precision) {
-    schro_pack_encode_bit (frame->pack, FALSE);
-  } else {
-    schro_pack_encode_bit (frame->pack, TRUE);
-    schro_pack_encode_uint (frame->pack, params->mv_precision);
-  }
+  schro_pack_encode_uint (frame->pack, params->mv_precision);
+
+  MARKER(frame->pack);
 
   /* global motion flag */
   schro_pack_encode_bit (frame->pack, params->have_global_motion);
@@ -970,19 +964,15 @@ schro_encoder_encode_picture_prediction (SchroEncoderFrame *frame)
     }
   }
 
+  MARKER(frame->pack);
+
   /* picture prediction mode flag */
-  if (params->picture_pred_mode == 0) {
-    schro_pack_encode_bit (frame->pack, FALSE);
-  } else {
-    schro_pack_encode_bit (frame->pack, TRUE);
-    schro_pack_encode_uint (frame->pack, params->picture_pred_mode);
-  }
+  schro_pack_encode_uint (frame->pack, params->picture_pred_mode);
 
   /* non-default weights flag */
-  if (params->picture_weight_bits == def.picture_weight_bits &&
-      params->picture_weight_1 == def.picture_weight_1 &&
-      (params->picture_weight_2 == def.picture_weight_2 ||
-       params->num_refs < 2)) {
+  if (params->picture_weight_bits == 1 &&
+      params->picture_weight_1 == 1 &&
+      (params->picture_weight_2 == 1 || params->num_refs < 2)) {
     schro_pack_encode_bit (frame->pack, FALSE);
   } else {
     schro_pack_encode_bit (frame->pack, TRUE);
@@ -992,6 +982,8 @@ schro_encoder_encode_picture_prediction (SchroEncoderFrame *frame)
       schro_pack_encode_sint (frame->pack, params->picture_weight_2);
     }
   }
+
+  MARKER(frame->pack);
 
 }
 
@@ -1341,23 +1333,20 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
     schro_pack_encode_uint (pack, format->chroma_format);
   }
 
-  if (std_format->video_depth == format->video_depth) {
+  /* scan format */
+  if (std_format->interlaced == format->interlaced &&
+      (!format->interlaced ||
+       (std_format->top_field_first == format->top_field_first))) {
     schro_pack_encode_bit (pack, FALSE);
   } else {
     schro_pack_encode_bit (pack, TRUE);
-    schro_pack_encode_uint (pack, format->video_depth);
+    schro_pack_encode_bit (pack, format->interlaced);
+    if (format->interlaced) {
+      schro_pack_encode_bit (pack, format->top_field_first);
+    }
   }
 
-  /* source parameters */
-  /* rather than figure out all the logic to encode this optimally, punt. */
-  schro_pack_encode_bit (pack, TRUE);
-  schro_pack_encode_bit (pack, format->interlaced);
-  if(format->interlaced) {
-    schro_pack_encode_bit (pack, TRUE);
-    schro_pack_encode_bit (pack, format->top_field_first);
-    schro_pack_encode_bit (pack, TRUE);
-    schro_pack_encode_bit (pack, format->sequential_fields);
-  }
+  MARKER(pack);
 
   /* frame rate */
   if (std_format->frame_rate_numerator == format->frame_rate_numerator &&
@@ -1373,6 +1362,8 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
     }
   }
 
+  MARKER(pack);
+
   /* pixel aspect ratio */
   if (std_format->aspect_ratio_numerator == format->aspect_ratio_numerator &&
       std_format->aspect_ratio_denominator == format->aspect_ratio_denominator) {
@@ -1387,6 +1378,8 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
     }
   }
 
+  MARKER(pack);
+
   /* clean area */
   if (std_format->clean_width == format->clean_width &&
       std_format->clean_height == format->clean_height &&
@@ -1400,6 +1393,8 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
     schro_pack_encode_uint (pack, format->left_offset);
     schro_pack_encode_uint (pack, format->top_offset);
   }
+
+  MARKER(pack);
 
   /* signal range */
   if (std_format->luma_offset == format->luma_offset &&
@@ -1419,6 +1414,8 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
     }
   }
 
+  MARKER(pack);
+
   /* colour spec */
   if (std_format->colour_primaries == format->colour_primaries &&
       std_format->colour_matrix == format->colour_matrix &&
@@ -1437,6 +1434,11 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
       schro_pack_encode_uint (pack, format->transfer_function);
     }
   }
+
+  /* interlaced coding */
+  schro_pack_encode_bit (pack, encoder->interlaced_coding);
+
+  MARKER(pack);
 
   schro_pack_sync (pack);
 }
@@ -1474,14 +1476,15 @@ schro_encoder_encode_picture_header (SchroEncoderFrame *frame)
   }
 
   /* retire list */
-  if (!frame->params.is_lowdelay) {
+  if (frame->is_ref) {
     schro_pack_encode_uint (frame->pack, frame->n_retire);
     for(i=0;i<frame->n_retire;i++){
       schro_pack_encode_sint (frame->pack,
           (int32_t)(frame->retire[i] - frame->frame_number));
     }
   } else {
-    SCHRO_ASSERT(frame->n_retire == 0);
+    //SCHRO_ASSERT(frame->n_retire == 0);
+    if(frame->n_retire != 0) SCHRO_ERROR("frame->n_retire != 0");
   }
 }
 
@@ -1498,20 +1501,10 @@ schro_encoder_encode_transform_parameters (SchroEncoderFrame *frame)
   }
 
   /* transform */
-  if (params->wavelet_filter_index == SCHRO_WAVELET_DESL_9_3) {
-    schro_pack_encode_bit (pack, 0);
-  } else {
-    schro_pack_encode_bit (pack, 1);
-    schro_pack_encode_uint (pack, params->wavelet_filter_index);
-  }
+  schro_pack_encode_uint (pack, params->wavelet_filter_index);
 
   /* transform depth */
-  if (params->transform_depth == 4) {
-    schro_pack_encode_bit (pack, 0);
-  } else {
-    schro_pack_encode_bit (pack, 1);
-    schro_pack_encode_uint (pack, params->transform_depth);
-  }
+  schro_pack_encode_uint (pack, params->transform_depth);
 
   /* spatial partitioning */
   if (!params->is_lowdelay) {
@@ -1532,8 +1525,13 @@ schro_encoder_encode_transform_parameters (SchroEncoderFrame *frame)
     int encode_quant_matrix;
     int encode_quant_offsets;
 
+#if 0
+    schro_pack_encode_uint (pack, params->slice_x);
+    schro_pack_encode_uint (pack, params->slice_y);
+#else
     schro_pack_encode_uint (pack, params->slice_width_exp);
     schro_pack_encode_uint (pack, params->slice_height_exp);
+#endif
     schro_pack_encode_uint (pack, params->slice_bytes_num);
     schro_pack_encode_uint (pack, params->slice_bytes_denom);
 
@@ -1550,12 +1548,6 @@ schro_encoder_encode_transform_parameters (SchroEncoderFrame *frame)
         schro_pack_encode_uint (pack, params->quant_matrix[2+3*i]);
         schro_pack_encode_uint (pack, params->quant_matrix[3+3*i]);
       }
-    }
-    schro_pack_encode_bit (pack, encode_quant_offsets);
-    if (encode_quant_offsets) {
-      schro_pack_encode_sint (pack, params->luma_quant_offset);
-      schro_pack_encode_sint (pack, params->chroma1_quant_offset);
-      schro_pack_encode_sint (pack, params->chroma2_quant_offset);
     }
   }
 }

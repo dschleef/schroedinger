@@ -368,7 +368,7 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
 
   if (compress->format.width == 0) {
     schro_video_format_set_std_video_format (&compress->format,
-        SCHRO_VIDEO_FORMAT_SD480);
+        SCHRO_VIDEO_FORMAT_CUSTOM);
 
     gst_structure_get_int (gst_caps_get_structure(buf->caps,0),
         "width", &compress->format.width);
@@ -377,7 +377,7 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
 
     params->video_format = &compress->format;
     params->transform_depth = 4;
-    params->wavelet_filter_index = SCHRO_WAVELET_5_3;
+    params->wavelet_filter_index = SCHRO_WAVELET_LE_GALL_5_3;
 
     schro_params_calculate_iwt_sizes (params);
 

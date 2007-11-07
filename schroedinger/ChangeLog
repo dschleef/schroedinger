@@ -1,3 +1,31 @@
+2007-11-06  David Schleef  <ds@schleef.org>
+
+	* gst/gstschroenc.c:
+	* gst/gstschrotoy.c:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schrofilter.c:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schrovideoformat.c:
+	* schroedinger/schrovideoformat.h:
+	* schroedinger/schrowavelet.c:
+	* testsuite/tables2/lowdelay_tables.c:
+	* testsuite/tables2/wavelet_tables.c:
+	* testsuite/wavelet.c:
+	* testsuite/wavelet2.c:
+	* testsuite/wavelet_2d.c:
+	* testsuite/wavelet_gain.c:
+	* testsuite/wavelet_gain_curve.c:
+	* testsuite/wavelet_noise_gain.c:
+	* tools/dump_packets.c:
+	  Update to recent spec changes.  Mostly API changes to match
+	  names with names in the spec.  Changes BITSTREAM.
+
 2007-11-01  David Schleef  <ds@schleef.org>
 
 	* configure.ac:

@@ -292,7 +292,7 @@ synth(int16_t *a, int n, int filter)
   int i;
 
   switch (filter) {
-    case SCHRO_WAVELET_DESL_9_3:
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
       extend(a,n);
       for(i=0;i<n;i+=2){
         a[i] -= (a[i-1] + a[i+1] + 2)>>2;
@@ -302,7 +302,7 @@ synth(int16_t *a, int n, int filter)
         a[i + 1] += (-a[i-2] + 9 * a[i] + 9 * a[i+2] - a[i+4] + 8)>>4;
       }
       break;
-    case SCHRO_WAVELET_5_3:
+    case SCHRO_WAVELET_LE_GALL_5_3:
       extend(a,n);
       for(i=0;i<n;i+=2){
         a[i] -= (a[i-1] + a[i+1] + 2)>>2;
@@ -312,7 +312,7 @@ synth(int16_t *a, int n, int filter)
         a[i + 1] += (a[i] + a[i+2] + 1)>>1;
       }
       break;
-    case SCHRO_WAVELET_13_5:
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
       extend(a,n);
       for(i=0;i<n;i+=2){
         a[i] -= (-a[i-3] + 9 * a[i-1] + 9 * a[i+1] - a[i+3] + 16)>>5;
@@ -343,7 +343,7 @@ synth(int16_t *a, int n, int filter)
             161*a[i+1] - 46*a[i+3] + 21*a[i+5] - 8*a[i+7] + 128) >> 8;
       }
       break;
-    case SCHRO_WAVELET_DAUB_9_7:
+    case SCHRO_WAVELET_DAUBECHIES_9_7:
       extend(a,n);
       for(i=0;i<n;i+=2){
         a[i] -= (1817*a[i-1] + 1817 * a[i+1] + 2048)>>12;
@@ -370,7 +370,7 @@ split (int16_t *a, int n, int filter)
   int i;
 
   switch (filter) {
-    case SCHRO_WAVELET_DESL_9_3:
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
       extend(a,n);
       for(i=0;i<n;i+=2){
         a[i + 1] -= (-a[i-2] + 9 * a[i] + 9 * a[i+2] - a[i+4] + 8)>>4;
@@ -380,7 +380,7 @@ split (int16_t *a, int n, int filter)
         a[i] += (a[i-1] + a[i+1] + 2)>>2;
       }
       break;
-    case SCHRO_WAVELET_5_3:
+    case SCHRO_WAVELET_LE_GALL_5_3:
       extend(a,n);
       for(i=0;i<n;i+=2){
         a[i + 1] -= (a[i] + a[i+2] + 1)>>1;
@@ -390,7 +390,7 @@ split (int16_t *a, int n, int filter)
         a[i] += (a[i-1] + a[i+1] + 2)>>2;
       }
       break;
-    case SCHRO_WAVELET_13_5:
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
       extend(a,n);
       for(i=0;i<n;i+=2){
         a[i+1] -= (-a[i-2] + 9 * a[i] + 9 * a[i+2] - a[i+4] + 8)>>4;
@@ -421,7 +421,7 @@ split (int16_t *a, int n, int filter)
             81*a[i+2] - 25*a[i+4] + 10*a[i+6] - 2*a[i+8] + 128) >> 8;
       }
       break;
-    case SCHRO_WAVELET_DAUB_9_7:
+    case SCHRO_WAVELET_DAUBECHIES_9_7:
       extend(a,n);
       for(i=0;i<n;i+=2){
         a[i+1] -= (6497*a[i] + 6497 * a[i+2] + 2048)>>12;
@@ -454,13 +454,13 @@ split_schro_ext (int16_t *a, int n, int filter)
   oil_deinterleave2_s16 (hi, lo, a, n/2);
 
   switch (filter) {
-    case SCHRO_WAVELET_DESL_9_3:
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
       schro_split_ext_desl93 (hi, lo, n/2);
       break;
-    case SCHRO_WAVELET_5_3:
+    case SCHRO_WAVELET_LE_GALL_5_3:
       schro_split_ext_53 (hi, lo, n/2);
       break;
-    case SCHRO_WAVELET_13_5:
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
       schro_split_ext_135 (hi, lo, n/2);
       break;
     case SCHRO_WAVELET_HAAR_0:
@@ -470,7 +470,7 @@ split_schro_ext (int16_t *a, int n, int filter)
     case SCHRO_WAVELET_FIDELITY:
       schro_split_ext_fidelity (hi, lo, n/2);
       break;
-    case SCHRO_WAVELET_DAUB_9_7:
+    case SCHRO_WAVELET_DAUBECHIES_9_7:
       schro_split_ext_daub97(hi, lo, n/2);
       break;
   }
@@ -490,13 +490,13 @@ synth_schro_ext (int16_t *a, int n, int filter)
   oil_deinterleave2_s16 (hi, lo, a, n/2);
 
   switch (filter) {
-    case SCHRO_WAVELET_DESL_9_3:
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
       schro_synth_ext_desl93 (hi, lo, n/2);
       break;
-    case SCHRO_WAVELET_5_3:
+    case SCHRO_WAVELET_LE_GALL_5_3:
       schro_synth_ext_53 (hi, lo, n/2);
       break;
-    case SCHRO_WAVELET_13_5:
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
       schro_synth_ext_135 (hi, lo, n/2);
       break;
     case SCHRO_WAVELET_HAAR_0:
@@ -506,7 +506,7 @@ synth_schro_ext (int16_t *a, int n, int filter)
     case SCHRO_WAVELET_FIDELITY:
       schro_synth_ext_fidelity (hi, lo, n/2);
       break;
-    case SCHRO_WAVELET_DAUB_9_7:
+    case SCHRO_WAVELET_DAUBECHIES_9_7:
       schro_synth_ext_daub97(hi, lo, n/2);
       break;
   }
@@ -727,13 +727,13 @@ split_schro (int16_t *a, int n, int filter)
   oil_deinterleave2_s16 (hi, lo, a, n/2);
 
   switch (filter) {
-    case SCHRO_WAVELET_DESL_9_3:
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
       schro_split_desl93 (hi, lo, n/2);
       break;
-    case SCHRO_WAVELET_5_3:
+    case SCHRO_WAVELET_LE_GALL_5_3:
       schro_split_53 (hi, lo, n/2);
       break;
-    case SCHRO_WAVELET_13_5:
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
       schro_split_135 (hi, lo, n/2);
       break;
     case SCHRO_WAVELET_HAAR_0:
@@ -743,7 +743,7 @@ split_schro (int16_t *a, int n, int filter)
     case SCHRO_WAVELET_FIDELITY:
       schro_split_fidelity (hi, lo, n/2);
       break;
-    case SCHRO_WAVELET_DAUB_9_7:
+    case SCHRO_WAVELET_DAUBECHIES_9_7:
       schro_split_daub97(hi, lo, n/2);
       break;
   }
@@ -972,13 +972,13 @@ synth_schro (int16_t *a, int n, int filter)
   oil_deinterleave2_s16 (hi, lo, a, n/2);
 
   switch (filter) {
-    case SCHRO_WAVELET_DESL_9_3:
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
       schro_synth_desl93 (hi, lo, n/2);
       break;
-    case SCHRO_WAVELET_5_3:
+    case SCHRO_WAVELET_LE_GALL_5_3:
       schro_synth_53 (hi, lo, n/2);
       break;
-    case SCHRO_WAVELET_13_5:
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
       schro_synth_135 (hi, lo, n/2);
       break;
     case SCHRO_WAVELET_HAAR_0:
@@ -988,7 +988,7 @@ synth_schro (int16_t *a, int n, int filter)
     case SCHRO_WAVELET_FIDELITY:
       schro_synth_fidelity (hi, lo, n/2);
       break;
-    case SCHRO_WAVELET_DAUB_9_7:
+    case SCHRO_WAVELET_DAUBECHIES_9_7:
       schro_synth_daub97(hi, lo, n/2);
       break;
   }

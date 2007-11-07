@@ -59,8 +59,13 @@ struct _SchroParams {
 
   /* DiracPro parameters */
   int is_lowdelay;
+#if 1 /* FIXME */
   int slice_width_exp;
   int slice_height_exp;
+#else
+  int slice_x;
+  int slice_y;
+#endif
   int slice_bytes_num;
   int slice_bytes_denom;
   int quant_matrix[3*SCHRO_LIMIT_TRANSFORM_DEPTH+1];
