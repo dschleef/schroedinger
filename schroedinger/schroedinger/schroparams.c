@@ -110,33 +110,21 @@ schro_params_init (SchroParams *params, int video_format)
  * The structure fields changed are: iwt_chroma_width, iwt_chroma_height,
  * iwt_luma_width, iwt_luma_height.
  */
-#define SLICE_EXP 4
 void
 schro_params_calculate_iwt_sizes (SchroParams *params)
 {
   SchroVideoFormat *video_format = params->video_format;
 
-  if (params->is_lowdelay) {
-    params->iwt_chroma_width = ROUND_UP_POW2(video_format->chroma_width,
-          SLICE_EXP);
-    params->iwt_chroma_height = ROUND_UP_POW2(video_format->chroma_height,
-          SLICE_EXP);
+  params->iwt_chroma_width =
+    ROUND_UP_POW2(video_format->chroma_width,params->transform_depth);
+  params->iwt_chroma_height =
+    ROUND_UP_POW2(video_format->chroma_height, params->transform_depth);
 
-    params->iwt_luma_width = ROUND_UP_POW2(video_format->width,
-          SLICE_EXP + video_format->chroma_h_shift);
-    params->iwt_luma_height = ROUND_UP_POW2(video_format->height,
-          SLICE_EXP + video_format->chroma_v_shift);
-  } else {
-    params->iwt_chroma_width =
-      ROUND_UP_POW2(video_format->chroma_width,params->transform_depth);
-    params->iwt_chroma_height =
-      ROUND_UP_POW2(video_format->chroma_height, params->transform_depth);
+  params->iwt_luma_width =
+    ROUND_UP_POW2(video_format->width,params->transform_depth);
+  params->iwt_luma_height =
+    ROUND_UP_POW2(video_format->height,params->transform_depth);
 
-    params->iwt_luma_width =
-      ROUND_UP_POW2(video_format->width,params->transform_depth);
-    params->iwt_luma_height =
-      ROUND_UP_POW2(video_format->height,params->transform_depth);
-  }
   SCHRO_DEBUG ("iwt chroma size %d x %d", params->iwt_chroma_width,
       params->iwt_chroma_height);
   SCHRO_DEBUG ("iwt luma size %d x %d", params->iwt_luma_width,

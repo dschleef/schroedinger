@@ -1,5 +1,11 @@
 2007-11-06  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schroparams.c:
+	  Fix bug in calculating size of iwt frame for lowdelay.  Changes
+	  BITSTREAM only for low-delay syntax.
+
+2007-11-06  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroengine.c:
