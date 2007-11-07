@@ -1,5 +1,11 @@
 2007-11-06  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrolowdelay.c:
+	  Remove SchroSliceRun in favor of SchroFrameData.  The new code
+	  is quite a bit slower, but handles the new variable slice sizes.
+
+2007-11-06  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroframe.c:
 	* schroedinger/schroframe.h:
 	  Add schro_frame_data_get_codeblock().
