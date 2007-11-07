@@ -59,7 +59,8 @@ struct _SchroObmcRegion {
 struct _SchroObmc {
   SchroObmcRegion regions[9];
   int16_t *region_data;
-  int stride;
+  int16_t *horiz_ramp;
+  int16_t *vert_ramp;
   int shift;
   int x_ramp;
   int y_ramp;
@@ -67,7 +68,6 @@ struct _SchroObmc {
   int y_len;
   int x_sep;
   int y_sep;
-  uint8_t *tmpdata;
 };
 
 struct _SchroMotion {
@@ -97,7 +97,8 @@ void schro_motion_field_get_global_prediction (SchroMotionField *mf,
 int schro_motion_get_mode_prediction (SchroMotionField *mf, int x, int y);
 int schro_motion_verify (SchroMotion *mf);
 
-void schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep);
+void schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep,
+    int ref1_weight, int ref2_weight, int ref_shift);
 void schro_obmc_cleanup (SchroObmc *obmc);
 
 #endif

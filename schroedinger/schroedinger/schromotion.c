@@ -40,14 +40,124 @@ ramp_shift (int ramp)
   }
 }
 
-void
-schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
+static void
+obmc_calc (int16_t *data, int x_len, int y_len, int x_ramp,
+    int y_ramp)
 {
   int i;
   int j;
+
+  if (x_ramp > 0) {
+    for(i=0;i<x_len;i++){
+      int w;
+      if (i < x_ramp) {
+        w = 1 + 2*i;
+      } else if (i >= x_len - x_ramp) {
+        w = 1 + 2*(x_len - 1 - i);
+      } else {
+        w = x_ramp*2;
+      }
+      data[i] = w;
+    }
+  } else {
+    for(i=0;i<x_len;i++){
+      data[i] = 1;
+    }
+  }
+
+  if (y_ramp > 0) {
+    for(j=0;j<y_len;j++){
+      int w;
+      if (j < y_ramp) {
+        w = 1 + 2*j;
+      } else if (j >= y_len - y_ramp) {
+        w = 1 + 2*(y_len - 1 - j);
+      } else {
+        w = y_ramp*2;
+      }
+      data[x_len * j + 0] = w;
+    }
+  } else {
+    for(j=0;j<y_len;j++){
+      data[x_len * j + 0] = 1;
+    }
+  }
+
+  for(j=1;j<y_len;j++){
+    for(i=1;i<x_len;i++){
+      data[x_len * j + i] = data[x_len * j + 0] * data[i];
+    }
+  }
+}
+
+void
+fixup_region (SchroObmc *obmc, int k)
+{
+  int i,j;
+  int16_t *weights = obmc->regions[k].weights;
+  int x_len = obmc->x_len;
+
+  /* fix up top */
+  if (k<3) {
+    for(j=0;j<obmc->y_ramp;j++){
+      for(i=0;i<obmc->x_len;i++){
+        weights[x_len * j + i] +=
+          weights[x_len * (obmc->y_len - obmc->y_ramp + j) + i];
+      }
+    }
+    obmc->regions[k].start_y = obmc->y_ramp/2;
+  }
+  /* fix up bottom */
+  if (k >= 6) {
+    for(j=0;j<obmc->y_ramp;j++){
+      for(i=0;i<obmc->x_len;i++){
+        weights[x_len * (obmc->y_len - obmc->y_ramp + j) + i] +=
+          weights[x_len * j + i];
+      }
+    }
+    obmc->regions[k].end_y = obmc->y_len - obmc->y_ramp/2;
+  }
+  /* fix up left */
+  if (k % 3 == 0) {
+    for(j=0;j<obmc->y_len;j++){
+      for(i=0;i<obmc->x_ramp;i++){
+        weights[x_len * j + i] +=
+          weights[x_len * j + (obmc->x_len - obmc->x_ramp + i)];
+      }
+    }
+    obmc->regions[k].start_x = obmc->x_ramp/2;
+  }
+  /* fix up right */
+  if (k % 3 == 2) {
+    for(j=0;j<obmc->y_len;j++){
+      for(i=0;i<obmc->x_ramp;i++){
+        weights[x_len * j + (obmc->x_len - obmc->x_ramp + i)] +=
+          weights[x_len * j + i];
+      }
+    }
+    obmc->regions[k].end_x = obmc->x_len - obmc->x_ramp/2;
+  }
+}
+
+static void
+scale_region (int16_t *dest, int16_t *src, int n, int weight)
+{
+  int i;
+  for(i=0;i<n;i++) {
+    dest[i] = weight * src[i];
+  }
+}
+
+void
+schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep,
+    int ref1_weight, int ref2_weight, int ref_shift)
+{
+  int i;
   int k;
   int x_ramp;
   int y_ramp;
+  int16_t *region;
+  int size;
 
   SCHRO_DEBUG("obmc init len %d %d sep %d %d", x_len, y_len, x_sep, y_sep);
 
@@ -69,22 +179,19 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
     SCHRO_ERROR ("y_ramp too large %d", y_ramp);
   }
 
-  obmc->stride = sizeof(int16_t) * x_len;
-  obmc->region_data = malloc(obmc->stride * y_len * 9 * 3);
-  obmc->tmpdata = malloc(x_len * y_len);
+  size = sizeof(int16_t) * x_len * y_len;
+  obmc->region_data = malloc(size * 9 * 3);
+  region = malloc(size);
 
   for(i=0;i<9;i++){
-    obmc->regions[i].weights = OFFSET(obmc->region_data,
-        obmc->stride * y_len * i);
-    obmc->regions[i].weights_ref1 = OFFSET(obmc->region_data,
-        obmc->stride * y_len * (i+9));
-    obmc->regions[i].weights_ref2 = OFFSET(obmc->region_data,
-        obmc->stride * y_len * (i+18));
+    obmc->regions[i].weights = OFFSET(obmc->region_data, size * i);
+    obmc->regions[i].weights_ref1 = OFFSET(obmc->region_data, size * (i+9));
+    obmc->regions[i].weights_ref2 = OFFSET(obmc->region_data, size * (i+18));
     obmc->regions[i].end_x = x_len;
     obmc->regions[i].end_y = y_len;
   }
 
-  obmc->shift = ramp_shift(x_ramp) + ramp_shift(y_ramp);
+  obmc->shift = ramp_shift(x_ramp) + ramp_shift(y_ramp) + ref_shift;
   if (obmc->shift > 8) {
     SCHRO_ERROR("obmc shift too large (%d > 8)", obmc->shift);
   }
@@ -96,112 +203,28 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep)
   obmc->x_sep = x_sep;
   obmc->y_sep = y_sep;
 
-  if (x_ramp > 0) {
-    for(i=0;i<x_len;i++){
-      int w;
-      if (i < x_ramp) {
-        w = 1 + 2*i;
-      } else if (i >= x_len - x_ramp) {
-        w = 1 + 2*(x_len - 1 - i);
-      } else {
-        w = x_ramp*2;
-      }
-      obmc->regions[0].weights[i] = w;
-    }
-  } else {
-    for(i=0;i<x_len;i++){
-      obmc->regions[0].weights[i] = 1;
-    }
-  }
+  obmc_calc (region, x_len, y_len, x_ramp, y_ramp);
 
-  if (y_ramp > 0) {
-    for(j=0;j<y_len;j++){
-      int w;
-      if (j < y_ramp) {
-        w = 1 + 2*j;
-      } else if (j >= y_len - y_ramp) {
-        w = 1 + 2*(y_len - 1 - j);
-      } else {
-        w = y_ramp*2;
-      }
-      SCHRO_GET(obmc->regions[0].weights, obmc->stride * j, int16_t) = w;
-    }
-  } else {
-    for(j=0;j<y_len;j++){
-      SCHRO_GET(obmc->regions[0].weights, obmc->stride * j, int16_t) = 1;
-    }
-  }
-
-  for(j=1;j<y_len;j++){
-    for(i=1;i<x_len;i++){
-      SCHRO_GET(obmc->regions[0].weights, obmc->stride*j + 2*i, int16_t) =
-        SCHRO_GET(obmc->regions[0].weights, obmc->stride*j, int16_t) *
-        obmc->regions[0].weights[i];
-    }
-  }
-  for(i=1;i<9;i++){
-    memcpy(obmc->regions[i].weights, obmc->regions[0].weights,
-        obmc->stride*y_len);
-  }
-
-  /* fix up top */
-  for(k=0;k<3;k++){
-    for(j=0;j<y_ramp;j++){
-      for(i=0;i<x_len;i++){
-        SCHRO_GET(obmc->regions[k].weights, obmc->stride*j + 2*i, int16_t) +=
-          SCHRO_GET(obmc->regions[k].weights,
-              obmc->stride*(y_len - y_ramp + j) + 2*i, int16_t);
-      }
-    }
-    obmc->regions[k].start_y = y_ramp/2;
-  }
-  /* fix up bottom */
-  for(k=6;k<9;k++){
-    for(j=0;j<y_ramp;j++){
-      for(i=0;i<x_len;i++){
-        SCHRO_GET(obmc->regions[k].weights,
-            obmc->stride*(y_len - y_ramp + j) + 2*i, int16_t) += 
-          SCHRO_GET(obmc->regions[k].weights, obmc->stride*j + 2*i, int16_t);
-      }
-    }
-    obmc->regions[k].end_y = y_len - y_ramp/2;
-  }
-  /* fix up left */
-  for(k=0;k<9;k+=3){
-    for(j=0;j<y_len;j++){
-      for(i=0;i<x_ramp;i++){
-        SCHRO_GET(obmc->regions[k].weights, obmc->stride*j + 2*i, int16_t) +=
-          SCHRO_GET(obmc->regions[k].weights, obmc->stride*j + 2*(x_len - x_ramp + i),
-              int16_t);
-      }
-    }
-    obmc->regions[k].start_x = x_ramp/2;
-  }
-  /* fix up right */
-  for(k=2;k<9;k+=3){
-    for(j=0;j<y_len;j++){
-      for(i=0;i<x_ramp;i++){
-        SCHRO_GET(obmc->regions[k].weights,
-            obmc->stride*j + 2*(x_len - x_ramp + i), int16_t) += 
-          SCHRO_GET(obmc->regions[k].weights, obmc->stride*j + 2*i, int16_t);
-      }
-    }
-    obmc->regions[k].end_x = x_len - x_ramp/2;
-  }
-
-  /* fix up pointers */
   for(k=0;k<9;k++){
-    obmc->regions[k].weights = OFFSET(obmc->regions[k].weights,
-        obmc->stride * obmc->regions[k].start_y +
-        sizeof(int16_t) * obmc->regions[k].start_x);
+    memcpy(obmc->regions[k].weights, region, size);
+
+    fixup_region (obmc, k);
+
+    scale_region (obmc->regions[k].weights_ref1, obmc->regions[k].weights,
+        x_len * y_len, ref1_weight);
+    scale_region (obmc->regions[k].weights_ref2, obmc->regions[k].weights,
+        x_len * y_len, ref2_weight);
+    scale_region (obmc->regions[k].weights, obmc->regions[k].weights,
+        x_len * y_len, ref1_weight+ref2_weight);
   }
+
+  free(region);
 }
 
 void
 schro_obmc_cleanup (SchroObmc *obmc)
 {
   free(obmc->region_data);
-  free(obmc->tmpdata);
 }
 
 
@@ -692,27 +715,32 @@ copy_block (SchroFrame *dest, SchroMotion *motion, int x, int y, int reg)
       obmc = motion->obmc_chroma;
     }
     region = obmc->regions + reg;
-    x0 = (x>>comp->h_shift) + region->start_x;
-    y0 = (y>>comp->v_shift) + region->start_y;
+    x0 = (x>>comp->h_shift);
+    y0 = (y>>comp->v_shift);
     
     if (region->end_x - region->start_x == 12) {
-      int16_t *d1 = OFFSET(comp->data, comp->stride*y0 + 2*x0);
-      int16_t *s1 = region->weights;
+      int16_t *d1;
+      int16_t *w1;
+      uint8_t *s1;
 
-      oil_multiply_and_acc_12xn_s16_u8 (d1, comp->stride, s1, obmc->stride,
-          motion->blocks[k] +
-            motion->strides[k]*region->start_y + region->start_x,
-          motion->strides[k],
+      d1 = OFFSET(comp->data, comp->stride*(y0 + region->start_y) +
+          2*(x0 + region->start_x));
+      w1 = region->weights + obmc->x_len * region->start_y + region->start_x;
+      s1 = OFFSET(motion->blocks[k],
+          motion->strides[k]*region->start_y + region->start_x);
+
+      oil_multiply_and_acc_12xn_s16_u8 (d1, comp->stride,
+          w1, obmc->x_len * sizeof(int16_t),
+          s1, motion->strides[k],
           region->end_y - region->start_y);
     } else {
       int j;
-      for(j=0;j<region->end_y - region->start_y;j++){
+      for(j=region->start_y;j<region->end_y;j++){
         oil_multiply_and_add_s16_u8 (
-            OFFSET(comp->data, comp->stride*(y0+j) + 2*x0),
-            OFFSET(comp->data, comp->stride*(y0+j) + 2*x0),
-            OFFSET(region->weights, obmc->stride*j),
-            OFFSET(motion->blocks[k], motion->strides[k]*(j+region->start_y) +
-              region->start_x),
+            OFFSET(comp->data, comp->stride*(y0+j) + 2*(x0 + region->start_x)),
+            OFFSET(comp->data, comp->stride*(y0+j) + 2*(x0 + region->start_x)),
+            OFFSET(region->weights, sizeof(int16_t) * (obmc->x_len*j + region->start_x)),
+            OFFSET(motion->blocks[k], motion->strides[k]*j + region->start_x),
             region->end_x - region->start_x);
       }
     }
@@ -780,13 +808,17 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
   obmc_luma = malloc(sizeof(*obmc_luma));
   schro_obmc_init (obmc_luma,
       params->xblen_luma, params->yblen_luma,
-      params->xbsep_luma, params->ybsep_luma);
+      params->xbsep_luma, params->ybsep_luma,
+      params->picture_weight_1, params->picture_weight_2,
+      params->picture_weight_bits);
   obmc_chroma = malloc(sizeof(*obmc_chroma));
   schro_obmc_init (obmc_chroma,
       params->xblen_luma>>motion->params->video_format->chroma_h_shift,
       params->yblen_luma>>motion->params->video_format->chroma_v_shift,
       params->xbsep_luma>>motion->params->video_format->chroma_h_shift,
-      params->ybsep_luma>>motion->params->video_format->chroma_v_shift);
+      params->ybsep_luma>>motion->params->video_format->chroma_v_shift,
+      params->picture_weight_1, params->picture_weight_2,
+      params->picture_weight_bits);
   motion->obmc_luma = obmc_luma;
   motion->obmc_chroma = obmc_chroma;
   motion->tmpdata = malloc (64*64*3);

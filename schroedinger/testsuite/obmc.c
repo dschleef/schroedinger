@@ -16,16 +16,18 @@ main (int argc, char *argv[])
 
   schro_init();
 
-  //schro_obmc_init(&obmc, 12, 12, 8, 8);
-  //schro_obmc_init(&obmc, 8, 8, 8, 8);
-  schro_obmc_init(&obmc, 16, 16, 8, 8);
+  schro_obmc_init(&obmc, 12, 12, 8, 8, 1, 1, 1);
+  //schro_obmc_init(&obmc, 8, 8, 8, 8, 1, 1);
+  //schro_obmc_init(&obmc, 16, 16, 8, 8, 1, 1);
 
   printf("shift %d\n\n", obmc.shift);
+
+  printf("single ref:\n");
   for(k=0;k<9;k++){
     region = obmc.regions + k;
     printf("%d:\n", k);
-    for(j=0;j<region->end_y-region->start_y;j++){
-      for(i=0;i<region->end_x-region->start_x;i++){
+    for(j=region->start_y;j<region->end_y;j++){
+      for(i=region->start_x;i<region->end_x;i++){
         printf(" %3d", region->weights[j*obmc.x_len+i]);
       }
       printf("\n");
@@ -33,21 +35,31 @@ main (int argc, char *argv[])
     printf("\n");
   }
 
-#if 0
-  schro_obmc_init(&obmc, 6, 6, 4, 4);
-
+  printf("ref1:\n");
   for(k=0;k<9;k++){
     region = obmc.regions + k;
     printf("%d:\n", k);
-    for(j=0;j<region->end_y-region->start_y;j++){
-      for(i=0;i<region->end_x-region->start_x;i++){
-        printf(" %2d", region->weights[j*6+i]);
+    for(j=region->start_y;j<region->end_y;j++){
+      for(i=region->start_x;i<region->end_x;i++){
+        printf(" %3d", region->weights_ref1[j*obmc.x_len+i]);
       }
       printf("\n");
     }
     printf("\n");
   }
-#endif
+
+  printf("ref2:\n");
+  for(k=0;k<9;k++){
+    region = obmc.regions + k;
+    printf("%d:\n", k);
+    for(j=region->start_y;j<region->end_y;j++){
+      for(i=region->start_x;i<region->end_x;i++){
+        printf(" %3d", region->weights_ref2[j*obmc.x_len+i]);
+      }
+      printf("\n");
+    }
+    printf("\n");
+  }
 
   return 0;
 

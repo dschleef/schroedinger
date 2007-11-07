@@ -1,3 +1,10 @@
+2007-11-07  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	* testsuite/obmc.c:
+	  Rework the OBMC initialization code.
+
 2007-11-06  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroparams.c:
