@@ -34,6 +34,7 @@ typedef unsigned int schro_bool;
 #define ROUND_UP_8(x) ROUND_UP_POW2(x,3)
 #define OFFSET(ptr,offset) ((void *)(((uint8_t *)(ptr)) + (offset)))
 #define SCHRO_GET(ptr, offset, type) (*(type *)((uint8_t *)(ptr) + (offset)) )
+#define ROUND_SHIFT(x,y) (((x) + (1<<((y)-1)))>>(y))
 
 #define schro_divide(a,b) (((a)<0)?(((a) - (b) + 1)/(b)):((a)/(b)))
 

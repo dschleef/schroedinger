@@ -47,9 +47,7 @@ struct _SchroMotionField {
 };
 
 struct _SchroObmcRegion {
-  int16_t *weights;
-  int16_t *weights_ref1;
-  int16_t *weights_ref2;
+  int16_t *weights[3];
   int start_x;
   int start_y;
   int end_x;
@@ -83,6 +81,19 @@ struct _SchroMotion {
   SchroObmc *obmc_chroma;
   uint8_t *blocks[3];
   int strides[3];
+
+  int dc_weight;
+  int ref_weight;
+  int biref1_weight;
+  int biref2_weight;
+  int mv_precision;
+  int xoffset;
+  int yoffset;
+  int xbsep;
+  int ybsep;
+  int xblen;
+  int yblen;
+  int shift;
 };
 
 void schro_motion_render (SchroMotion *motion, SchroFrame *dest);
@@ -100,6 +111,8 @@ int schro_motion_verify (SchroMotion *mf);
 void schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep,
     int ref1_weight, int ref2_weight, int ref_shift);
 void schro_obmc_cleanup (SchroObmc *obmc);
+
+void schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest);
 
 #endif
 

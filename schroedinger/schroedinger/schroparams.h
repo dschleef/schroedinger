@@ -16,7 +16,6 @@ typedef struct _SchroGlobalMotion SchroGlobalMotion;
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
 struct _SchroGlobalMotion {
-  int shift;
   int b0;
   int b1;
   int a_exp;

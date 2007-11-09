@@ -426,12 +426,20 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
     {
       SchroMotion motion;
 
+#if 0
+      /* Would be nice if the spec allowed this */
       if (params->mv_precision > 0) {
         schro_upsampled_frame_upsample (decoder->ref0);
         if (decoder->ref1) {
           schro_upsampled_frame_upsample (decoder->ref1);
         }
       }
+#else
+      schro_upsampled_frame_upsample (decoder->ref0);
+      if (decoder->ref1) {
+        schro_upsampled_frame_upsample (decoder->ref1);
+      }
+#endif
 
       motion.src1 = decoder->ref0;
       if (decoder->ref1) {
@@ -441,6 +449,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
       motion.motion_vectors = decoder->motion_field->motion_vectors;
       motion.params = &decoder->params;
       schro_motion_render (&motion, decoder->mc_tmp_frame);
+      //schro_motion_render_ref (&motion, decoder->mc_tmp_frame);
     }
   }
 
