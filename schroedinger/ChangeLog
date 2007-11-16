@@ -1,5 +1,11 @@
 2007-11-15  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrofilter.c:
+	  This should be included with the previous checkin.  Moving
+	  functions to liboil.
+
+2007-11-15  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrooil.c:
 	* schroedinger/schrooil.h:
 	* schroedinger/schroframe.c:

@@ -335,7 +335,7 @@ lowpass_u8 (uint8_t *d, uint8_t *s, int n)
     }
     d[i] = (x + 128)>>8;
   }
-  oil_fir_10tap_u8 (d+4, s, taps, offsetshift, n - 9);
+  oil_mas10_u8 (d+4, s, taps, offsetshift, n - 9);
   for(i=n-6;i<n;i++){
     x = 0;
     for(j=0;j<9;j++) {
@@ -422,7 +422,7 @@ lowpass_s16 (int16_t *d, int16_t *s, int n)
     }
     d[i] = (x + 128)>>8;
   }
-  oil_fir_10tap_s16 (d+4, s, taps, offsetshift, n - 9);
+  oil_mas10_s16 (d+4, s, taps, offsetshift, n - 9);
   for(i=n-6;i<n;i++){
     x = 0;
     for(j=0;j<9;j++) {
@@ -493,41 +493,6 @@ schro_frame_filter_lowpass_16 (SchroFrame *frame)
 }
 
 
-
-/* FIXME move to schrooil */
-static void
-iir3_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    double x;
-
-    x = s2_4[0]*s[i] + s2_4[1]*i_3[0] + s2_4[2]*i_3[1] + s2_4[3]*i_3[2];
-    i_3[2] = i_3[1];
-    i_3[1] = i_3[0];
-    i_3[0] = x;
-    d[i] = rint(x);
-  }
-}
-
-/* FIXME move to schrooil */
-static void
-iir3_rev_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
-{
-  int i;
-
-  for(i=n-1;i>=0;i--){
-    double x;
-
-    x = s2_4[0]*s[i] + s2_4[1]*i_3[0] + s2_4[2]*i_3[1] + s2_4[3]*i_3[2];
-    i_3[2] = i_3[1];
-    i_3[1] = i_3[0];
-    i_3[0] = x;
-    d[i] = rint(x);
-  }
-}
-
 static void
 lowpass2_u8 (uint8_t *d, uint8_t *s, double *coeff, int n)
 {
@@ -536,74 +501,12 @@ lowpass2_u8 (uint8_t *d, uint8_t *s, double *coeff, int n)
   state[0] = s[0];
   state[1] = s[0];
   state[2] = s[0];
-  iir3_u8_f64 (d, s, state, coeff, n);
+  oil_iir3_u8_f64 (d, s, state, coeff, n);
 
   state[0] = d[n-1];
   state[1] = d[n-1];
   state[2] = d[n-1];
-  iir3_rev_u8_f64 (d, s, state, coeff, n);
-}
-
-static void
-iir3_across_u8_f64 (uint8_t *d, uint8_t *s, double *i1, double *i2, double *i3,
-    double *s2_4, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    double x;
-
-    x = s2_4[0]*s[i] + s2_4[1]*i1[i] + s2_4[2]*i2[i] + s2_4[3]*i3[i];
-    i3[i] = i2[i];
-    i2[i] = i1[i];
-    i1[i] = x;
-    d[i] = rint(x);
-  }
-}
-
-/* FIXME move to schrooil */
-static void
-notoil_convert_f64_u8 (double *dest, uint8_t *src, int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    dest[i] = src[i];
-  }
-}
-
-
-/* FIXME move to schrooil */
-static void
-iir3_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    double x;
-
-    x = s2_4[0]*s[i] + s2_4[1]*i_3[0] + s2_4[2]*i_3[1] + s2_4[3]*i_3[2];
-    i_3[2] = i_3[1];
-    i_3[1] = i_3[0];
-    i_3[0] = x;
-    d[i] = rint(x);
-  }
-}
-
-/* FIXME move to schrooil */
-static void
-iir3_rev_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
-{
-  int i;
-
-  for(i=n-1;i>=0;i--){
-    double x;
-
-    x = s2_4[0]*s[i] + s2_4[1]*i_3[0] + s2_4[2]*i_3[1] + s2_4[3]*i_3[2];
-    i_3[2] = i_3[1];
-    i_3[1] = i_3[0];
-    i_3[0] = x;
-    d[i] = rint(x);
-  }
+  oil_iir3_rev_u8_f64 (d, s, state, coeff, n);
 }
 
 static void
@@ -614,42 +517,13 @@ lowpass2_s16 (int16_t *d, int16_t *s, double *coeff, int n)
   state[0] = s[0];
   state[1] = s[0];
   state[2] = s[0];
-  iir3_s16_f64 (d, s, state, coeff, n);
+  oil_iir3_s16_f64 (d, s, state, coeff, n);
 
   state[0] = d[n-1];
   state[1] = d[n-1];
   state[2] = d[n-1];
-  iir3_rev_s16_f64 (d, s, state, coeff, n);
+  oil_iir3_rev_s16_f64 (d, s, state, coeff, n);
 }
-
-/* FIXME move to schrooil */
-static void
-iir3_across_s16_f64 (int16_t *d, int16_t *s, double *i1, double *i2, double *i3,
-    double *s2_4, int n)
-{
-  int i;
-
-  for(i=0;i<n;i++){
-    double x;
-
-    x = s2_4[0]*s[i] + s2_4[1]*i1[i] + s2_4[2]*i2[i] + s2_4[3]*i3[i];
-    i3[i] = i2[i];
-    i2[i] = i1[i];
-    i1[i] = x;
-    d[i] = rint(x);
-  }
-}
-
-/* FIXME move to schrooil */
-static void
-notoil_convert_f64_s16 (double *dest, int16_t *src, int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    dest[i] = src[i];
-  }
-}
-
 
 static void
 generate_coeff (double *coeff, double sigma)
@@ -697,22 +571,22 @@ schro_frame_component_filter_lowpass2_u8 (SchroFrameData *comp,
         OFFSET(comp->data, comp->stride * i), h_coeff, comp->width);
   }
 
-  notoil_convert_f64_u8 (i1, OFFSET(comp->data, comp->stride * 0), comp->width);
+  oil_convert_f64_u8 (i1, OFFSET(comp->data, comp->stride * 0), comp->width);
   memcpy (i2, i1, sizeof(double)*comp->width);
   memcpy (i3, i1, sizeof(double)*comp->width);
   for(i=0;i<comp->height;i++){
-    iir3_across_u8_f64 (
+    oil_iir3_across_u8_f64 (
         OFFSET(comp->data, comp->stride * i),
         OFFSET(comp->data, comp->stride * i),
         i1, i2, i3, v_coeff, comp->width);
   }
 
-  notoil_convert_f64_u8 (i1,OFFSET(comp->data, comp->stride * (comp->height-1)),
+  oil_convert_f64_u8 (i1,OFFSET(comp->data, comp->stride * (comp->height-1)),
       comp->width);
   memcpy (i2, i1, sizeof(double)*comp->width);
   memcpy (i3, i1, sizeof(double)*comp->width);
   for(i=comp->height-1;i>=0;i--){
-    iir3_across_u8_f64 (
+    oil_iir3_across_u8_f64 (
         OFFSET(comp->data, comp->stride * i),
         OFFSET(comp->data, comp->stride * i),
         i1, i2, i3, v_coeff, comp->width);
@@ -744,22 +618,22 @@ schro_frame_component_filter_lowpass2_s16 (SchroFrameData *comp,
         OFFSET(comp->data, comp->stride * i), h_coeff, comp->width);
   }
 
-  notoil_convert_f64_s16 (i1, OFFSET(comp->data, comp->stride * 0), comp->width);
+  oil_convert_f64_s16 (i1, OFFSET(comp->data, comp->stride * 0), comp->width);
   memcpy (i2, i1, sizeof(double)*comp->width);
   memcpy (i3, i1, sizeof(double)*comp->width);
   for(i=0;i<comp->height;i++){
-    iir3_across_s16_f64 (
+    oil_iir3_across_s16_f64 (
         OFFSET(comp->data, comp->stride * i),
         OFFSET(comp->data, comp->stride * i),
         i1, i2, i3, v_coeff, comp->width);
   }
 
-  notoil_convert_f64_s16 (i1,OFFSET(comp->data, comp->stride * (comp->height-1)),
+  oil_convert_f64_s16 (i1,OFFSET(comp->data, comp->stride * (comp->height-1)),
       comp->width);
   memcpy (i2, i1, sizeof(double)*comp->width);
   memcpy (i3, i1, sizeof(double)*comp->width);
   for(i=comp->height-1;i>=0;i--){
-    iir3_across_s16_f64 (
+    oil_iir3_across_s16_f64 (
         OFFSET(comp->data, comp->stride * i),
         OFFSET(comp->data, comp->stride * i),
         i1, i2, i3, v_coeff, comp->width);
