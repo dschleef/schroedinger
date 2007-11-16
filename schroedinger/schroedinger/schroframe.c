@@ -6,6 +6,7 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schroframe.h>
+#include <schroedinger/schrocog.h>
 #include <schroedinger/schrooil.h>
 #include <liboil/liboil.h>
 
@@ -361,15 +362,6 @@ schro_frame_subtract (SchroFrame *dest, SchroFrame *src)
   SCHRO_ASSERT("subtract function unimplemented");
 }
 
-void
-offsetconvert_u8_s16 (uint8_t *dest, int16_t *src, int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    dest[i] = CLAMP(src[i] + 128,0,255);
-  }
-}
-
 static void
 schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
 {
@@ -380,10 +372,13 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
   int i;
   int y;
   int width, height;
+  int16_t *tmp;
+  int16_t c = 128;
 
   SCHRO_ASSERT(SCHRO_FRAME_FORMAT_DEPTH(dest->format) == SCHRO_FRAME_FORMAT_DEPTH_U8);
   SCHRO_ASSERT(SCHRO_FRAME_FORMAT_DEPTH(src->format) == SCHRO_FRAME_FORMAT_DEPTH_S16);
 
+  tmp = malloc(dest->width*sizeof(int16_t));
   for(i=0;i<3;i++){
     dcomp = &dest->components[i];
     scomp = &src->components[i];
@@ -394,11 +389,13 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
     height = MIN(dcomp->height, scomp->height);
 
     for(y=0;y<height;y++){
-      offsetconvert_u8_s16(ddata, sdata, width);
+      oil_addc_s16 (tmp, sdata, &c, width);
+      oil_convert_u8_s16 (ddata, tmp, width);
       ddata = OFFSET(ddata, dcomp->stride);
       sdata = OFFSET(sdata, scomp->stride);
     }
   }
+  free(tmp);
 
   schro_frame_edge_extend (dest, src->width, src->height);
 }
@@ -463,15 +460,6 @@ schro_frame_convert_s16_s16 (SchroFrame *dest, SchroFrame *src)
   schro_frame_edge_extend (dest, src->width, src->height);
 }
 
-void
-offsetconvert_s16_u8 (int16_t *dest, uint8_t *src, int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    dest[i] = src[i] - 128;
-  }
-}
-
 static void
 schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
 {
@@ -482,6 +470,7 @@ schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
   int i;
   int y;
   int width, height;
+  int16_t c = -128;
 
   for(i=0;i<3;i++){
     dcomp = &dest->components[i];
@@ -493,8 +482,8 @@ schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src)
     height = MIN(dcomp->height, scomp->height);
 
     for(y=0;y<height;y++){
-      //oil_convert_s16_u8(ddata, sdata, width);
-      offsetconvert_s16_u8(ddata, sdata, width);
+      oil_convert_s16_u8(ddata, sdata, width);
+      oil_addc_s16(ddata, ddata, &c, width);
       ddata = OFFSET(ddata, dcomp->stride);
       sdata = OFFSET(sdata, scomp->stride);
     }
@@ -1113,82 +1102,53 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
   }
 }
 
-void
-downsample_one_horiz_u8 (uint8_t *dest, uint8_t *src, int n, int i)
+static void
+mas12_edgeextend_u8 (uint8_t *dest, uint8_t *src, const int16_t *taps,
+    const int16_t *offsetshift, int n, int i)
 {
-  static const int taps[12] = { 4, -4, -8, 4, 46, 86, 86, 46, 4, -8, -4, 4 };
   int j;
   int x;
 
   x = 0;
   for(j=0;j<12;j++){
-    x += taps[j]*src[CLAMP(i*2 + j - 5, 0, n-1)];
+    //x += taps[j]*src[CLAMP(i*2 + j - 5, 0, n-1)];
+    x += taps[j]*src[CLAMP(i + j, 0, n-1)];
   }
   dest[0] = CLAMP((x + 128) >> 8,0,255);
 }
 
 void
-notoil_downsample_horiz_u8 (uint8_t *dest, uint8_t *src, int n)
-{
-  static const int taps[12] = { 4, -4, -8, 4, 46, 86, 86, 46, 4, -8, -4, 4 };
-  int i;
-  int j;
-  int x;
-
-  for(i=0;i<n;i++){
-    x = 0;
-    for(j=0;j<12;j++){
-      x += taps[j]*src[i*2 + j];
-    }
-    dest[i] = CLAMP((x + 128) >> 8,0,255);
-  }
-}
-
-void
-downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src)
+downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src,
+    const int16_t *taps, const int16_t *offsetshift)
 {
   int i;
 
   if (n_dest < 7) {
     for(i=0;i<n_dest;i++){
-      downsample_one_horiz_u8 (dest + i, src, n_src, i);
+      mas12_edgeextend_u8 (dest + i, src, taps, offsetshift, n_src, 2*i - 5);
     }
   } else {
-    downsample_one_horiz_u8 (dest + 0, src, n_src, 0);
-    downsample_one_horiz_u8 (dest + 1, src, n_src, 1);
-    downsample_one_horiz_u8 (dest + 2, src, n_src, 2);
+    mas12_edgeextend_u8 (dest + 0, src, taps, offsetshift, n_src, -5);
+    mas12_edgeextend_u8 (dest + 1, src, taps, offsetshift, n_src, -3);
+    mas12_edgeextend_u8 (dest + 2, src, taps, offsetshift, n_src, -1);
 
-    notoil_downsample_horiz_u8 (dest + 3, src + 1, n_dest - 7);
+    oil_mas12_addc_rshift_decim2_u8 (dest + 3, src + 1, taps, offsetshift,
+        n_dest - 7);
 
-    downsample_one_horiz_u8 (dest + n_dest - 4, src, n_src, n_dest-4);
-    downsample_one_horiz_u8 (dest + n_dest - 3, src, n_src, n_dest-3);
-    downsample_one_horiz_u8 (dest + n_dest - 2, src, n_src, n_dest-2);
-    downsample_one_horiz_u8 (dest + n_dest - 1, src, n_src, n_dest-1);
+    mas12_edgeextend_u8 (dest + n_dest - 4, src, taps, offsetshift, n_src, 2*n_dest - 13);
+    mas12_edgeextend_u8 (dest + n_dest - 3, src, taps, offsetshift, n_src, 2*n_dest - 11);
+    mas12_edgeextend_u8 (dest + n_dest - 2, src, taps, offsetshift, n_src, 2*n_dest - 9);
+    mas12_edgeextend_u8 (dest + n_dest - 1, src, taps, offsetshift, n_src, 2*n_dest - 7);
   }
 
-}
-
-void
-notoil_downsample_vert_u8 (uint8_t *dest, uint8_t *src[], int n)
-{
-  static const int taps[12] = { 4, -4, -8, 4, 46, 86, 86, 46, 4, -8, -4, 4 };
-  int i;
-  int j;
-  int x;
-
-  for(i=0;i<n;i++){
-    x = 0;
-    for(j=0;j<12;j++){
-      x += taps[j]*src[j][i];
-    }
-    dest[i] = CLAMP((x + 128) >> 8,0,255);
-  }
 }
 
 void
 schro_frame_component_downsample (SchroFrameData *dest,
     SchroFrameData *src)
 {
+  const int16_t taps[12] = { 4, -4, -8, 4, 46, 86, 86, 46, 4, -8, -4, 4 };
+  const int16_t offsetshift[2] = { 128, 8 };
   int i,j;
   uint8_t *tmp, *tmp0, *tmp1;
   uint8_t *tmplist[12];
@@ -1200,13 +1160,14 @@ schro_frame_component_downsample (SchroFrameData *dest,
 
   for(i=0;i<7;i++){
     downsample_horiz_u8 (tmplist[i+5], dest->width,
-        src->data + src->stride * CLAMP(i, 0, src->height - 1), src->width);
+        src->data + src->stride * CLAMP(i, 0, src->height - 1), src->width,
+        taps, offsetshift);
   }
   for(i=0;i<5;i++){
     memcpy (tmplist[i], tmplist[5], dest->width);
   }
-  notoil_downsample_vert_u8 (dest->data + dest->stride * 0, tmplist,
-      dest->width);
+  oil_mas12across_addc_rshift_u8 (dest->data + dest->stride * 0, tmplist,
+      taps, offsetshift, dest->width);
 
   for (j=1;j<dest->height;j++){
     tmp0 = tmplist[0];
@@ -1218,12 +1179,14 @@ schro_frame_component_downsample (SchroFrameData *dest,
     tmplist[11] = tmp1;
 
     downsample_horiz_u8 (tmplist[10], dest->width,
-        src->data + src->stride * CLAMP(j*2+5,0,src->height-1), src->width);
+        src->data + src->stride * CLAMP(j*2+5,0,src->height-1), src->width,
+        taps, offsetshift);
     downsample_horiz_u8 (tmplist[11], dest->width,
-        src->data + src->stride * CLAMP(j*2+6,0,src->height-1), src->width);
+        src->data + src->stride * CLAMP(j*2+6,0,src->height-1), src->width,
+        taps, offsetshift);
     
-    notoil_downsample_vert_u8 (dest->data + dest->stride * j, tmplist,
-        dest->width);
+    oil_mas12across_addc_rshift_u8 (dest->data + dest->stride * j, tmplist,
+        taps, offsetshift, dest->width);
   }
 
   free (tmp);
@@ -1243,7 +1206,7 @@ schro_frame_downsample (SchroFrame *dest, SchroFrame *src)
 void
 schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src)
 {
-  int i, j, k, l;
+  int j, k;
   SchroFrameData *dcomp;
   SchroFrameData *scomp;
 
@@ -1255,44 +1218,16 @@ schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src)
   }
 
   for(k=0;k<3;k++){
-    static const int taps[10] = { 3, -11, 25, -56, 167, 167, -56, 25, -11, 3 };
-    uint8_t *sdata;
-    uint8_t *ddata;
-    int x;
+    static const int16_t taps[8] = { -1, 3, -7, 21, 21, -7, 3, -1 };
 
     dcomp = &dest->components[k];
     scomp = &src->components[k];
 
-    sdata = scomp->data;
-    ddata = dcomp->data;
-
     for(j=0;j<dcomp->height;j++){
-      for(i=0;i<4;i++){
-        x = 128;
-        for(l=0;l<10;l++){
-          x += taps[l] * sdata[scomp->stride * j +
-            CLAMP(i - 4 + l,0,scomp->width-1)];
-        }
-        x >>= 8;
-        ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
-      }
-      for(i=4;i<dcomp->width-5;i++){
-        x = 128;
-        for(l=0;l<10;l++){
-          x += taps[l] * sdata[scomp->stride * j + i - 4 + l];
-        }
-        x >>= 8;
-        ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
-      }
-      for(;i<dcomp->width;i++){
-        x = 128;
-        for(l=0;l<10;l++){
-          x += taps[l] * sdata[scomp->stride * j +
-            CLAMP(i - 4 + l,0,scomp->width-1)];
-        }
-        x >>= 8;
-        ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
-      }
+      schro_cog_mas8_u8_edgeextend (
+          OFFSET(dcomp->data, dcomp->stride * j),
+          OFFSET(scomp->data, scomp->stride * j),
+          taps, 32, 6, 4, scomp->width);
     }
   }
 }
@@ -1300,7 +1235,7 @@ schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src)
 void
 schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
 {
-  int i, j, k, l;
+  int i, j, k;
   SchroFrameData *dcomp;
   SchroFrameData *scomp;
 
@@ -1312,48 +1247,20 @@ schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
   }
 
   for(k=0;k<3;k++){
-    static const int taps[10] = { 3, -11, 25, -56, 167, 167, -56, 25, -11, 3 };
-    uint8_t *sdata;
-    uint8_t *ddata;
-    int x;
+    static const int16_t taps[8] = { -1, 3, -7, 21, 21, -7, 3, -1 };
+    uint8_t *list[8];
+    const int16_t offsetshift[2] = { 32, 6 };
 
     dcomp = &dest->components[k];
     scomp = &src->components[k];
 
-    sdata = scomp->data;
-    ddata = dcomp->data;
-
-    for(j=0;j<4;j++){
-      for(i=0;i<dcomp->width;i++){
-        x = 128;
-        for(l=0;l<10;l++){
-          x += taps[l] * sdata[scomp->stride * CLAMP(j - 4 + l,
-              0, scomp->height-1) + i];
-        }
-        x >>= 8;
-        ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
+    for(j=0;j<dcomp->height;j++){
+      for(i=0;i<8;i++){
+        list[i] = SCHRO_FRAME_DATA_GET_LINE(scomp,
+            CLAMP(i+j-4,0,scomp->height-1));
       }
-    }
-    for(j=4;j<dcomp->height-5;j++){
-      for(i=0;i<dcomp->width;i++){
-        x = 128;
-        for(l=0;l<10;l++){
-          x += taps[l] * sdata[scomp->stride * (j - 4 + l) + i];
-        }
-        x >>= 8;
-        ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
-      }
-    }
-    for(j=dcomp->height-5;j<dcomp->height;j++){
-      for(i=0;i<dcomp->width;i++){
-        x = 128;
-        for(l=0;l<10;l++){
-          x += taps[l] * sdata[scomp->stride * CLAMP(j - 4 + l,
-              0, dcomp->height-1) + i];
-        }
-        x >>= 8;
-        ddata[dcomp->stride * j + i] = CLAMP(x,0,255);
-      }
+      oil_mas8_across_u8 (SCHRO_FRAME_DATA_GET_LINE(dcomp, j), list,
+          taps, offsetshift, scomp->width);
     }
   }
 }

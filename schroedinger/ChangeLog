@@ -1,3 +1,21 @@
+2007-11-15  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrooil.c:
+	* schroedinger/schrooil.h:
+	* schroedinger/schroframe.c:
+	* schroedinger/schrocog.c:
+	* schroedinger/schrocog.h:
+	* schroedinger/Makefile.am:
+	  Moving functions to liboil.  Schro will require up-to-date
+	  liboil from git for a while.  Note that liboil has moved to
+	  git://people.freedesktop.org/~ds/liboil/
+	* schroedinger/schroutils.c:
+	* schroedinger/schroutils.h:
+	  Add a function to quantise an array of values.
+	* configure.ac:
+	  Add (disabled, for now) a list of compiler warning flags
+	  that are used for swfdec.  I can haz pane?
+
 2007-11-08  David Schleef  <ds@schleef.org>
 
 	* configure.ac: version -> 0.9.0.1

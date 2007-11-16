@@ -10,6 +10,7 @@ EXTRA_DIST = schroarith-i386.c
 pkginclude_HEADERS = \
 	schro.h \
 	schrobuffer.h \
+	schrocog.h \
 	schrodecoder.h \
 	schroencoder.h \
 	schroengine.h \
@@ -49,6 +50,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schroanalysis.c \
 	schroarith.c \
 	schroasync-pthread.c \
+	schrocog.c \
 	schrodecoder.c \
 	schrodebug.c \
 	schroencoder.c \

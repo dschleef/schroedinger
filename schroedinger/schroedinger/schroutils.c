@@ -54,18 +54,37 @@ schro_quantise (int value, int quant_factor, int quant_offset)
 {
   unsigned int x;
 
-  if (value == 0) return 0;
   if (value < 0) {
     x = (-value)<<2;
-    x /= quant_factor;
+    if (x < quant_factor) {
+      x = 0;
+    } else {
+      x /= quant_factor;
+    }
     value = -x;
   } else {
     x = value<<2;
-    x /= quant_factor;
+    if (x < quant_factor) {
+      x = 0;
+    } else {
+      x /= quant_factor;
+    }
     value = x;
   }
   return value;
 }
+
+void
+schro_quantise_s16 (int16_t *dest, int16_t *src, int quant_factor,
+    int quant_offset, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    dest[i] = schro_quantise (src[i], quant_factor, quant_offset);
+    src[i] = schro_dequantise (dest[i], quant_factor, quant_offset);
+  }
+}
+
 
 /* log(2.0) */
 #define LOG_2 0.69314718055994528623
@@ -110,6 +129,7 @@ schro_utils_reduce_fraction (int *n, int *d)
   }
   SCHRO_DEBUG("to %d/%d", *n, *d);
 }
+
 
 
 

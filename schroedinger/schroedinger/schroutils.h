@@ -70,6 +70,8 @@ int muldiv64 (int a, int b, int c);
 int schro_utils_multiplier_to_quant_index (double x);
 int schro_dequantise (int q, int quant_factor, int quant_offset);
 int schro_quantise (int value, int quant_factor, int quant_offset);
+void schro_quantise_s16 (int16_t *dest, int16_t *src, int quant_factor,
+    int quant_offset, int n);
 double schro_utils_probability_to_entropy (double x);
 double schro_utils_entropy (double a, double total);
 void schro_utils_reduce_fraction (int *n, int *d);
