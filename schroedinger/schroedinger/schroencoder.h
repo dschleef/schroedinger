@@ -220,6 +220,7 @@ struct _SchroEncoder {
   schro_bool calculate_psnr;
   schro_bool calculate_ssim;
   schro_bool enable_filtering;
+  schro_bool enable_fullscan;
 
   double pixels_per_degree_horiz;
   double pixels_per_degree_vert;
@@ -278,6 +279,8 @@ enum {
   SCHRO_MOTION_FIELD_GLOBAL_REF1,
   SCHRO_MOTION_FIELD_ZERO_REF0,
   SCHRO_MOTION_FIELD_ZERO_REF1,
+  SCHRO_MOTION_FIELD_FULLSCAN_REF0,
+  SCHRO_MOTION_FIELD_FULLSCAN_REF1,
   SCHRO_MOTION_FIELD_LAST
 };
 
@@ -341,9 +344,7 @@ SchroEncoderFrame * schro_encoder_reference_get (SchroEncoder *encoder,
 void schro_encoder_encode_picture_header (SchroEncoderFrame *frame);
 SchroBuffer * schro_encoder_encode_end_of_stream (SchroEncoder *encoder);
 void schro_encoder_clean_up_transform (SchroEncoderFrame *frame);
-void schro_encoder_init_subbands (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers (SchroEncoderFrame *frame);
-void schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index);
 SchroBuffer * schro_encoder_encode_access_unit (SchroEncoder *encoder);
 void schro_encoder_output_push (SchroEncoder *encoder,
     SchroBuffer *buffer, int slot, int presentation_frame);

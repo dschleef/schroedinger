@@ -365,19 +365,24 @@ schro_motion_get_block (SchroMotion *motion, SchroMotionVector *mv,
   int i,j;
   SchroFrame *srcframe;
   SchroFrameData *comp;
+  int mx, my;
   int sx, sy;
   int w, h;
   int upsample_index;
 
   if (refmask & 1) {
-    sx = x + (mv->x1>>3);
-    sy = y + (mv->y1>>3);
-    upsample_index = (mv->x1&4)>>2 | (mv->y1&4)>>1;
+    mx = mv->x1<<(3-motion->mv_precision);
+    my = mv->y1<<(3-motion->mv_precision);
+    sx = x + (mx>>3);
+    sy = y + (my>>3);
+    upsample_index = (mx&4)>>2 | (my&4)>>1;
     srcframe = motion->src1->frames[upsample_index];
   } else {
-    sx = x + (mv->x2>>3);
-    sy = y + (mv->y2>>3);
-    upsample_index = (mv->x2&4)>>2 | (mv->y2&4)>>1;
+    mx = mv->x1<<(3-motion->mv_precision);
+    my = mv->y1<<(3-motion->mv_precision);
+    sx = x + (mx>>3);
+    sy = y + (my>>3);
+    upsample_index = (mx&4)>>2 | (my&4)>>1;
     srcframe = motion->src2->frames[upsample_index];
   }
   w = motion->obmc_luma->x_len;
@@ -793,7 +798,7 @@ shift_rows (SchroFrame *frame, int y, int n, int shift_luma, int shift_chroma)
     ymin = MAX (y>>comp->v_shift, 0);
     for(j=ymin;j<ymax;j++){
       data = OFFSET(comp->data, j * comp->stride);
-      oil_add_const_rshift_u16(data, data, s, comp->width);
+      oil_addc_rshift_u16(data, data, s, comp->width);
     }
   }
 }
@@ -1061,10 +1066,8 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
       break;
     case 2:
       {
-        int mask = ~(7 >> params->mv_precision);
-        int ack = 8 >> params->mv_precision;
-        *pred_x = ((vx[0] + vx[1] + ack)>>1)&mask;
-        *pred_y = ((vy[0] + vy[1] + ack)>>1)&mask;
+        *pred_x = (vx[0] + vx[1] + 1)>>1;
+        *pred_y = (vy[0] + vy[1] + 1)>>1;
       }
       break;
     case 3:
@@ -1137,11 +1140,8 @@ int
 schro_motion_verify (SchroMotion *motion)
 {
   int x,y;
-  unsigned int precision_mask;
   SchroMotionVector *mv, *sbmv, *bmv;
   SchroParams *params = motion->params;
-
-  precision_mask = 0x7 >> params->mv_precision;
 
   for(y=0;y<params->y_num_blocks;y++){
     for(x=0;x<params->x_num_blocks;x++){
@@ -1174,16 +1174,6 @@ schro_motion_verify (SchroMotion *motion)
       } else {
         if ((mv->pred_mode & 2) && motion->src2->frames[0] == NULL) {
           SCHRO_ERROR("mv(%d,%d) uses non-existent src2", x, y);
-          return 0;
-        }
-        if (!mv->using_global && (mv->x1 & precision_mask || mv->y1 & precision_mask)) {
-          SCHRO_ERROR("mv1 (%d,%d) has subpixel components not allowed by precision",
-              x,y);
-          return 0;
-        }
-        if (!mv->using_global && (mv->x2 & precision_mask || mv->y2 & precision_mask)) {
-          SCHRO_ERROR("mv2 (%d,%d) has subpixel components not allowed by precision",
-              x,y);
           return 0;
         }
       }
@@ -1438,9 +1428,6 @@ get_ref1_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
   } else {
     dx = mv->x1;
     dy = mv->y1;
-/* FIXME */
-dx >>= (3-motion->mv_precision);
-dy >>= (3-motion->mv_precision);
   }
   value = get_pixel (motion, k, motion->src1, x, y, dx, dy);
 
@@ -1461,9 +1448,6 @@ get_ref2_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
   } else {
     dx = mv->x2;
     dy = mv->y2;
-/* FIXME */
-dx >>= (3-motion->mv_precision);
-dy >>= (3-motion->mv_precision);
   }
   value = get_pixel (motion, k, motion->src1, x, y, dx, dy);
 
@@ -1488,11 +1472,6 @@ get_biref_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
     dy1 = mv->y1;
     dx2 = mv->x2;
     dy2 = mv->y2;
-/* FIXME */
-dx1 >>= (3-motion->mv_precision);
-dy1 >>= (3-motion->mv_precision);
-dx2 >>= (3-motion->mv_precision);
-dy2 >>= (3-motion->mv_precision);
   }
   value1 = get_pixel (motion, k, motion->src1, x, y, dx1, dy1);
   value2 = get_pixel (motion, k, motion->src2, x, y, dx2, dy2);

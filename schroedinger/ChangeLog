@@ -1,5 +1,17 @@
 2007-11-15  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schromotion.c:
+	* schroedinger/schropredict.c:
+	  Add full scanning as an encoder option.  It's really slow
+	  and sometimes worse than heirarchical.  Change vector values
+	  in SchroMotionFields so that they are the same as in the
+	  bitstream, not shifted by (3-mv_precision).
+
+2007-11-15  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrofilter.c:
 	  This should be included with the previous checkin.  Moving
 	  functions to liboil.

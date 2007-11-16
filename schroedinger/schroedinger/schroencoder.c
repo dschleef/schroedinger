@@ -72,6 +72,7 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_MD5] = 0;
 
   //encoder->enable_filtering = TRUE;
+  //encoder->enable_fullscan = TRUE;
 
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
@@ -1176,20 +1177,16 @@ schro_encoder_encode_vector_data (SchroEncoderFrame *frame, int ref, int xy)
             if (!params->is_noarith) {
               if (xy == 0) {
                 _schro_arith_encode_sint(arith,
-                    cont, value, sign,
-                    (mv->x1 - pred_x)>>(3-params->mv_precision));
+                    cont, value, sign, mv->x1 - pred_x);
               } else {
                 _schro_arith_encode_sint(arith,
-                    cont, value, sign,
-                    (mv->y1 - pred_y)>>(3-params->mv_precision));
+                    cont, value, sign, mv->y1 - pred_y);
               }
             } else {
               if (xy == 0) {
-                schro_pack_encode_sint(pack,
-                    (mv->x1 - pred_x)>>(3-params->mv_precision));
+                schro_pack_encode_sint(pack, mv->x1 - pred_x);
               } else {
-                schro_pack_encode_sint(pack,
-                    (mv->y1 - pred_y)>>(3-params->mv_precision));
+                schro_pack_encode_sint(pack, mv->y1 - pred_y);
               }
             }
           }
@@ -1484,7 +1481,7 @@ schro_encoder_encode_picture_header (SchroEncoderFrame *frame)
     }
   } else {
     //SCHRO_ASSERT(frame->n_retire == 0);
-    if(frame->n_retire != 0) SCHRO_ERROR("frame->n_retire != 0");
+    if(frame->n_retire != 0) SCHRO_WARNING("frame->n_retire != 0");
   }
 }
 
@@ -1704,12 +1701,11 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component, int ind
     for(j=0;j<height;j++){
       line = OFFSET(data, j*stride);
 
-      for(i=0;i<width;i++){
-        int q;
+      schro_quantise_s16 (quant_data + j*width, line, quant_factor,
+          quant_offset, width);
 
-        q = schro_quantise(line[i], quant_factor, quant_offset);
-        line[i] = schro_dequantise(q, quant_factor, quant_offset);
-        quant_data[j*width + i] = q;
+      /* FIXME do this in a better way */
+      for(i=0;i<width;i++){
         if (line[i] != 0) {
           subband_zero_flag = 0;
         }
