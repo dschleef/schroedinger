@@ -1,5 +1,16 @@
 2007-11-15  David Schleef  <ds@schleef.org>
 
+	* testsuite/Makefile.am:
+	* testsuite/common.c:
+	* testsuite/common.h:
+	* testsuite/downsample.c:
+	* testsuite/obmc.c:
+	* testsuite/upsample.c:
+	* testsuite/taps.c:
+	  Update testsuite for recent changes.
+
+2007-11-15  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:

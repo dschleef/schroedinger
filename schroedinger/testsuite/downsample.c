@@ -16,11 +16,15 @@
 #include <liboil/liboilrandom.h>
 #include <liboil/liboil.h>
 
+#include "common.h"
+
 void ref_frame_downsample (SchroFrame *dest, SchroFrame *src);
 
 int frame_compare (SchroFrame *dest, SchroFrame *src);
 void frame_dump (SchroFrame *dest, SchroFrame *src);
 void frame_create_test_pattern(SchroFrame *frame, int type);
+
+int failed = FALSE;
 
 void
 test (int width, int height)
@@ -28,9 +32,10 @@ test (int width, int height)
   SchroFrame *frame;
   SchroFrame *frame_ref;
   SchroFrame *frame_test;
-  int ok;
+  char name[TEST_PATTERN_NAME_SIZE];
+  int i;
 
-  SCHRO_WARNING("size %dx%d", width, height);
+  printf("size %dx%d\n", width, height);
 
   frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420, width, height);
   frame_ref = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420,
@@ -38,17 +43,20 @@ test (int width, int height)
   frame_test = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420,
       ROUND_UP_SHIFT(width, 1), ROUND_UP_SHIFT(height, 1));
 
-  frame_create_test_pattern (frame, 0);
+  for(i=0;i<test_pattern_get_n_generators();i++){
+    test_pattern_generate (frame->components + 0, name, i);
 
-  ref_frame_downsample (frame_ref, frame);
-  schro_frame_downsample (frame_test, frame);
+    ref_frame_downsample (frame_ref, frame);
+    schro_frame_downsample (frame_test, frame);
 
-  ok = frame_compare (frame_ref, frame_test);
-  if (!ok) {
-    SCHRO_ERROR("compare failed (size=%dx%d)", width, height);
-    frame_dump (frame_test, frame_ref);
-    frame_dump (frame_ref, frame_test);
-    exit(1);
+    if (frame_compare (frame_ref, frame_test)) {
+      printf("  pattern %s: OK\n", name);
+    } else {
+      printf("  pattern %s: broken\n", name);
+      frame_data_dump_full (frame_test->components + 0,
+          frame_ref->components + 0, frame->components + 0);
+      failed = TRUE;
+    }
   }
 
   schro_frame_unref (frame_ref);
@@ -59,22 +67,24 @@ test (int width, int height)
 int
 main (int argc, char *argv[])
 {
-  int i;
   int width;
   int height;
 
   schro_init();
 
-  for(i=0;i<1;i++){
-    for(width=1;width<40;width++){
-      for(height=1;height<40;height++){
-        test (width, height);
-      }
+  for(width=1;width<40;width++){
+    for(height=1;height<40;height++){
+      test (width, height);
     }
   }
 
-  printf("PASS\n");
-  return 0;
+  if (failed) {
+    printf("FAILED\n");
+  } else {
+    printf("SUCCESS\n");
+  }
+
+  return failed;
 }
 
 

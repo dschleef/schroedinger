@@ -2,7 +2,8 @@
 SUBDIRS = . check perf coder installation prototype streams tables2 dirac \
 	  manual
 
-noinst_LTLIBRARIES = libschrotest.la
+buildnoinstdir = $(libdir)
+buildnoinst_LTLIBRARIES = libschrotest.la
 
 noinst_PROGRAMS = arith arith_encode \
 	 encode wavelet wavelet_2d \
@@ -14,7 +15,7 @@ noinst_PROGRAMS = arith arith_encode \
 	 wavelet_gain_curve \
 	 perceptual_weight perceptual_curves \
 	 struct_offsets wavelet_noise_2d \
-	 unpack downsample hist_noise_level
+	 unpack downsample hist_noise_level taps
 
 noinst_HEADERS = common.h
 
@@ -29,6 +30,8 @@ AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS) \
 LDADD = $(SCHRO_LIBS) libschrotest.la
 
 libschrotest_la_SOURCES = common.c
+
+install-buildnoinstLTLIBRARIES:
 
 #arith_CFLAGS = $(SCHRO_CFLAGS)
 #arith_LDADD = $(SCHRO_LIBS)

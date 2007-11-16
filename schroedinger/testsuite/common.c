@@ -8,6 +8,7 @@
 #include <schroedinger/schrofft.h>
 #include <schroedinger/schrooil.h>
 #include <liboil/liboil.h>
+#include <liboil/liboilrandom.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -79,4 +80,347 @@ multsum_f64 (double *a, double *b, int n)
   return sum;
 }
 
+
+
+/* Test patterns */
+
+static void
+gen_random (SchroFrameData *fd, int type)
+{
+  int i,j;
+  uint8_t *data;
+
+  for(j=0;j<fd->height;j++){
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    for(i=0;i<fd->width;i++) {
+      data[i] = oil_rand_u8();
+    }
+  }
+}
+
+static int gen_const_array[] = { 0, 1, 127, 128, 129, 254, 255 };
+
+static void
+gen_const (SchroFrameData *fd, int type)
+{
+  int i,j;
+  uint8_t *data;
+  int value = gen_const_array[type];
+
+  for(j=0;j<fd->height;j++){
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    for(i=0;i<fd->width;i++) {
+      data[i] = value;
+    }
+  }
+}
+
+static void
+gen_vert_lines (SchroFrameData *fd, int type)
+{
+  int i,j;
+  uint8_t *data;
+  int pitch;
+
+  pitch = type + 2;
+  for(j=0;j<fd->height;j++){
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    for(i=0;i<fd->width;i++) {
+      data[i] = 100*((i%pitch)==0);
+    }
+  }
+}
+
+static void
+gen_horiz_lines (SchroFrameData *fd, int type)
+{
+  int i,j;
+  uint8_t *data;
+  int pitch;
+
+  pitch = type + 2;
+  for(j=0;j<fd->height;j++){
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    for(i=0;i<fd->width;i++) {
+      data[i] = 100*((j%pitch)==0);
+    }
+  }
+}
+
+static void
+gen_vert_bands (SchroFrameData *fd, int type)
+{
+  int i,j;
+  uint8_t *data;
+  int pitch;
+
+  pitch = type + 1;
+  for(j=0;j<fd->height;j++){
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    for(i=0;i<fd->width;i++) {
+      data[i] = 100*((i/pitch)&1);
+    }
+  }
+}
+
+static void
+gen_horiz_bands (SchroFrameData *fd, int type)
+{
+  int i,j;
+  uint8_t *data;
+  int pitch;
+
+  pitch = type + 1;
+  for(j=0;j<fd->height;j++){
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    for(i=0;i<fd->width;i++) {
+      data[i] = 100*((j/pitch)&1);
+    }
+  }
+}
+
+static void
+gen_vert_edge (SchroFrameData *fd, int type)
+{
+  int i,j;
+  uint8_t *data;
+
+  for(j=0;j<fd->height;j++){
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    for(i=0;i<fd->width;i++) {
+      data[i] = 100*(i*2 < fd->width);
+    }
+  }
+}
+
+static void
+gen_horiz_edge (SchroFrameData *fd, int type)
+{
+  int i,j;
+  uint8_t *data;
+
+  for(j=0;j<fd->height;j++){
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    for(i=0;i<fd->width;i++) {
+      data[i] = 100*(j*2 < fd->height);
+    }
+  }
+}
+
+static void
+gen_vert_ramp (SchroFrameData *fd, int type)
+{
+  int i,j;
+  uint8_t *data;
+
+  for(j=0;j<fd->height;j++){
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    for(i=0;i<fd->width;i++) {
+      data[i] = ((i<<4)>>type)&0xff;
+    }
+  }
+}
+
+static void
+gen_horiz_ramp (SchroFrameData *fd, int type)
+{
+  int i,j;
+  uint8_t *data;
+
+  for(j=0;j<fd->height;j++){
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    for(i=0;i<fd->width;i++) {
+      data[i] = ((j<<4)>>type)&0xff;
+    }
+  }
+}
+
+
+typedef struct _Generator Generator;
+struct _Generator {
+  char *name;
+  void (*generate)(SchroFrameData *fd, int i);
+  int n;
+};
+
+Generator generators_u8[] = {
+  { "random", gen_random, 1 },
+  { "const", gen_const, ARRAY_SIZE(gen_const_array) },
+  { "vert_lines", gen_vert_lines, 8 },
+  { "horiz_lines", gen_horiz_lines, 8 },
+  { "vert_bands", gen_vert_bands, 8 },
+  { "horiz_bands", gen_horiz_bands, 8 },
+  { "vert_edge", gen_vert_edge, 1 },
+  { "horiz_edge", gen_horiz_edge, 1 },
+  { "vert_ramp", gen_vert_ramp, 8 },
+  { "horiz_ramp", gen_horiz_ramp, 8 },
+};
+
+int
+test_pattern_get_n_generators (void)
+{
+  int i;
+  int n;
+
+  n = 0;
+  for(i=0;i<ARRAY_SIZE(generators_u8);i++) {
+    n += generators_u8[i].n;
+  }
+  return n;
+}
+
+void
+test_pattern_generate (SchroFrameData *fd, char *name, int n)
+{
+  int i;
+
+  for(i=0;i<ARRAY_SIZE(generators_u8);i++) {
+    if (n < generators_u8[i].n) {
+      generators_u8[i].generate (fd, n);
+      if (name) sprintf(name, "%s %d", generators_u8[i].name, n);
+      return;
+    }
+    n -= generators_u8[i].n;
+  }
+}
+
+int
+frame_data_compare (SchroFrameData *dest, SchroFrameData *src)
+{
+  int i,j;
+
+  if (SCHRO_FRAME_FORMAT_DEPTH(dest->format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
+    uint8_t *d;
+    uint8_t *s;
+
+    for(j=0;j<dest->height;j++){
+      d = SCHRO_FRAME_DATA_GET_LINE(dest, j);
+      s = SCHRO_FRAME_DATA_GET_LINE(src, j);
+      for(i=0;i<dest->width;i++){
+        if (d[i] != s[i]) return FALSE;
+      }
+    }
+  } else {
+    int16_t *d;
+    int16_t *s;
+
+    for(j=0;j<dest->height;j++){
+      d = SCHRO_FRAME_DATA_GET_LINE(dest, j);
+      s = SCHRO_FRAME_DATA_GET_LINE(src, j);
+      for(i=0;i<dest->width;i++){
+        if (d[i] != s[i]) return FALSE;
+      }
+    }
+  }
+  return TRUE;
+}
+
+void
+frame_data_dump (SchroFrameData *test, SchroFrameData *ref)
+{
+  int i;
+  int j;
+
+  printf("=====\n");
+  if (SCHRO_FRAME_FORMAT_DEPTH(test->format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
+    for(j=0;j<test->height;j++){
+      uint8_t *tline;
+      uint8_t *rline;
+
+      tline = SCHRO_FRAME_DATA_GET_LINE(test, j);
+      rline = SCHRO_FRAME_DATA_GET_LINE(ref, j);
+      for(i=0;i<test->width;i++){
+        if (tline[i] == rline[i]) {
+          printf("%3d ", tline[i]);
+        } else {
+          printf("\033[00;01;37;41m%3d\033[00m ", tline[i]);
+        }
+      }
+      printf("\n");
+    }
+  } else {
+    for(j=0;j<test->height;j++){
+      int16_t *tline;
+      int16_t *rline;
+
+      tline = SCHRO_FRAME_DATA_GET_LINE(test, j);
+      rline = SCHRO_FRAME_DATA_GET_LINE(ref, j);
+      for(i=0;i<test->width;i++){
+        if (tline[i] == rline[i]) {
+          printf("%3d ", tline[i]);
+        } else {
+          printf("\033[00;01;37;41m%3d\033[00m ", tline[i]);
+        }
+      }
+      printf("\n");
+    }
+  }
+  printf("=====\n");
+}
+
+void
+frame_data_dump_full (SchroFrameData *test, SchroFrameData *ref, SchroFrameData *orig)
+{
+  int i;
+  int j;
+
+  printf("=====\n");
+  if (SCHRO_FRAME_FORMAT_DEPTH(test->format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
+    for(j=0;j<test->height;j++){
+      uint8_t *tline;
+      uint8_t *rline;
+      uint8_t *oline;
+
+      tline = SCHRO_FRAME_DATA_GET_LINE(test, j);
+      rline = SCHRO_FRAME_DATA_GET_LINE(ref, j);
+      oline = SCHRO_FRAME_DATA_GET_LINE(orig, j);
+      for(i=0;i<test->width;i++){
+        printf("\033[00;35m%3d\033[00m ", oline[i]);
+      }
+      printf("\n");
+      for(i=0;i<test->width;i++){
+        if (tline[i] == rline[i]) {
+          printf("%3d ", tline[i]);
+        } else {
+          printf("\033[00;01;37;41m%3d\033[00m ", tline[i]);
+        }
+      }
+      printf("\n");
+      for(i=0;i<test->width;i++){
+        printf("\033[00;32m%3d\033[00m ", rline[i]);
+      }
+      printf("\n");
+    }
+  } else {
+    for(j=0;j<test->height;j++){
+      int16_t *tline;
+      int16_t *rline;
+
+      tline = SCHRO_FRAME_DATA_GET_LINE(test, j);
+      rline = SCHRO_FRAME_DATA_GET_LINE(ref, j);
+      for(i=0;i<test->width;i++){
+        if (tline[i] == rline[i]) {
+          printf("%3d ", tline[i]);
+        } else {
+          printf("\033[00;01;37;41m%3d\033[00m ", tline[i]);
+        }
+      }
+      printf("\n");
+    }
+  }
+  printf("=====\n");
+}
+
+
+int
+frame_compare (SchroFrame *dest, SchroFrame *src)
+{
+  return frame_data_compare (dest->components + 0, src->components + 0);
+}
+
+void
+frame_dump (SchroFrame *test, SchroFrame *ref)
+{
+  return frame_data_dump (test->components + 0, ref->components + 0);
+}
 
