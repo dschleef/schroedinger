@@ -35,9 +35,8 @@ struct _SchroMotionVectorDC {
   unsigned int unused : 3;
   unsigned int scan : 8;
   unsigned int metric : 16;
-  uint8_t dc[3];
-  uint8_t _padding1;
-  uint32_t _padding2;
+  uint16_t dc[3];
+  uint16_t _padding1;
 };
 
 struct _SchroMotionField {
@@ -96,23 +95,32 @@ struct _SchroMotion {
   int shift;
 };
 
-void schro_motion_render (SchroMotion *motion, SchroFrame *dest);
-void schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
-    SchroParams *params, int x, int y, int *pred);
-void schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
-    SchroParams *params, int x, int y, int *pred_x, int *pred_y, int mode);
-int schro_motion_split_prediction (SchroMotionVector *motion_vectors,
-    SchroParams *params, int x, int y);
-void schro_motion_field_get_global_prediction (SchroMotionField *mf,
-    int x, int y, int *pred);
-int schro_motion_get_mode_prediction (SchroMotionField *mf, int x, int y);
-int schro_motion_verify (SchroMotion *mf);
+#define SCHRO_MOTION_GET_BLOCK(motion,x,y) \
+  ((motion)->motion_vectors+(y)*(motion)->params->x_num_blocks + (x))
+#define SCHRO_MOTION_GET_DC_BLOCK(motion,x,y) \
+  ((SchroMotionVectorDC *)SCHRO_MOTION_GET_BLOCK(motion,x,y))
 
-void schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep,
-    int ref1_weight, int ref2_weight, int ref_shift);
+SchroMotion * schro_motion_new (SchroParams *params,
+    SchroUpsampledFrame *ref1, SchroUpsampledFrame *ref2);
+void schro_motion_free (SchroMotion *motion);
+
+int schro_motion_verify (SchroMotion *mf);
+void schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest);
+void schro_motion_render (SchroMotion *motion, SchroFrame *dest);
+
+void schro_motion_vector_prediction (SchroMotion *motion,
+    int x, int y, int *pred_x, int *pred_y, int mode);
+int schro_motion_split_prediction (SchroMotion *motion, int x, int y);
+int schro_motion_get_mode_prediction (SchroMotion *motion, int x, int y);
+void schro_motion_dc_prediction (SchroMotion *motion,
+    int x, int y, int *pred);
+int schro_motion_get_global_prediction (SchroMotion *motion,
+    int x, int y);
+
+void schro_obmc_init (SchroObmc *obmc, int x_len, int y_len,
+    int x_sep, int y_sep, int ref1_weight, int ref2_weight, int ref_shift);
 void schro_obmc_cleanup (SchroObmc *obmc);
 
-void schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest);
 
 #endif
 

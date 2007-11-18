@@ -1,5 +1,30 @@
 2007-11-18  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schro.c:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	* schroedinger/schropredict.c:
+	* schroedinger/schropredict.h:
+	* schroedinger/schroqueue.c:
+	  Make SchroMotion a real object.  Changed many uses of
+	  SchroMotionField to SchroMotion.  Hope that I didn't cause
+	  any regressions.  Added env var (SCHRO_MOTION_REF) to use
+	  the reference motion rendering code, which is written to be
+	  easily verified.
+	* schroedinger/schroengine.c:
+	  Retire reference frames at the correct time.  This fixes the
+	  error message printed out constantly in the last release.
+	* schroedinger/schrodebug.h:
+	* schroedinger/schrodebug.c:
+	* schroedinger/schrophasecorrelation.c:
+	  Add dumping of phase correlation info.
+
+2007-11-18  David Schleef  <ds@schleef.org>
+
 	* testsuite/Makefile.am:
 	* testsuite/coder/arith.h:
 	* testsuite/coder/arith_dirac.c:

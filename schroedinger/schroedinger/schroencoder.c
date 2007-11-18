@@ -71,8 +71,11 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_NOARITH] = 0;
   encoder->prefs[SCHRO_PREF_MD5] = 0;
 
-  //encoder->enable_filtering = TRUE;
-  //encoder->enable_fullscan = TRUE;
+  encoder->enable_filtering = FALSE;
+  encoder->enable_fullscan_prediction = FALSE;
+  encoder->enable_hierarchical_prediction = TRUE;
+  encoder->enable_zero_prediction = FALSE;
+  encoder->enable_phasecorr_prediction = FALSE;
 
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
@@ -298,8 +301,9 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
       if (frame->access_unit_buffer) {
         buffer = frame->access_unit_buffer;
         frame->access_unit_buffer = NULL;
-      } else if (schro_list_get_size(encoder->inserted_buffers)>0) {
+      } else if (schro_list_get_size(frame->inserted_buffers)>0) {
         buffer = schro_list_remove (frame->inserted_buffers, 0);
+        *presentation_frame = -1;
       } else {
         buffer = frame->output_buffer;
         frame->output_buffer = NULL;
@@ -701,24 +705,8 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
 
     schro_frame_convert (frame->iwt_frame, frame->filtered_frame);
 
-    {
-      SchroMotion *motion;
-
-      motion = malloc(sizeof(*motion));
-      memset(motion, 0, sizeof(*motion));
-
-      motion->src1 = frame->ref_frame0->reconstructed_frame;
-      
-      if (frame->params.num_refs == 2) {
-        motion->src2 = frame->ref_frame1->reconstructed_frame;
-      }
-      motion->motion_vectors = frame->motion_field->motion_vectors;
-      motion->params = &frame->params;
-      schro_motion_verify (motion);
-      schro_motion_render (motion, frame->prediction_frame);
-
-      free(motion);
-    }
+    schro_motion_verify (frame->motion);
+    schro_motion_render (frame->motion, frame->prediction_frame);
 
     schro_frame_subtract (frame->iwt_frame, frame->prediction_frame);
 
@@ -1008,12 +996,11 @@ schro_encoder_encode_superblock_split (SchroEncoderFrame *frame)
       int split_prediction;
       int split_residual;
       SchroMotionVector *mv =
-        &frame->motion_field->motion_vectors[j*params->x_num_blocks + i];
+        &frame->motion->motion_vectors[j*params->x_num_blocks + i];
 
       SCHRO_ASSERT(mv->split < 3);
 
-      split_prediction = schro_motion_split_prediction (
-          frame->motion_field->motion_vectors, params, i, j);
+      split_prediction = schro_motion_split_prediction (frame->motion, i, j);
       split_residual = (mv->split - split_prediction + 3)%3;
       if (params->is_noarith) {
         schro_pack_encode_uint (pack, split_residual);
@@ -1059,16 +1046,16 @@ schro_encoder_encode_prediction_modes (SchroEncoderFrame *frame)
     for(i=0;i<params->x_num_blocks;i+=4){
       int k,l;
       SchroMotionVector *mv =
-        &frame->motion_field->motion_vectors[j*params->x_num_blocks + i];
+        &frame->motion->motion_vectors[j*params->x_num_blocks + i];
 
       for(l=0;l<4;l+=(4>>mv->split)) {
         for(k=0;k<4;k+=(4>>mv->split)) {
           SchroMotionVector *mv =
-            &frame->motion_field->motion_vectors[(j+l)*params->x_num_blocks + i + k];
+            &frame->motion->motion_vectors[(j+l)*params->x_num_blocks + i + k];
           int pred_mode;
 
-          pred_mode = schro_motion_get_mode_prediction(frame->motion_field,
-              i+k,j+l) ^ mv->pred_mode;
+          pred_mode = mv->pred_mode ^ 
+            schro_motion_get_mode_prediction(frame->motion, i+k,j+l);
 
           if (params->is_noarith) {
             schro_pack_encode_bit (pack, pred_mode & 1);
@@ -1087,8 +1074,8 @@ schro_encoder_encode_prediction_modes (SchroEncoderFrame *frame)
           if (mv->pred_mode != 0) {
             if (params->have_global_motion) {
               int pred;
-              schro_motion_field_get_global_prediction (frame->motion_field,
-                  i+k, j+l, &pred);
+              pred = schro_motion_get_global_prediction (frame->motion,
+                  i+k, j+l);
               if (params->is_noarith) {
                 schro_pack_encode_bit (pack, mv->using_global ^ pred);
               } else {
@@ -1162,17 +1149,17 @@ schro_encoder_encode_vector_data (SchroEncoderFrame *frame, int ref, int xy)
     for(i=0;i<params->x_num_blocks;i+=4){
       int k,l;
       SchroMotionVector *mv =
-        &frame->motion_field->motion_vectors[j*params->x_num_blocks + i];
+        &frame->motion->motion_vectors[j*params->x_num_blocks + i];
 
       for(l=0;l<4;l+=(4>>mv->split)) {
         for(k=0;k<4;k+=(4>>mv->split)) {
           int pred_x, pred_y;
           SchroMotionVector *mv =
-            &frame->motion_field->motion_vectors[(j+l)*params->x_num_blocks + i + k];
+            &frame->motion->motion_vectors[(j+l)*params->x_num_blocks + i + k];
 
           if ((mv->pred_mode>>ref) & 1 && !mv->using_global) {
-            schro_motion_vector_prediction (frame->motion_field->motion_vectors,
-                params, i+k, j+l, &pred_x, &pred_y, 1<<ref);
+            schro_motion_vector_prediction (frame->motion,
+                i+k, j+l, &pred_x, &pred_y, 1<<ref);
 
             if (!params->is_noarith) {
               if (xy == 0) {
@@ -1230,19 +1217,18 @@ schro_encoder_encode_dc_data (SchroEncoderFrame *frame, int comp)
     for(i=0;i<params->x_num_blocks;i+=4){
       int k,l;
       SchroMotionVector *mv =
-        &frame->motion_field->motion_vectors[j*params->x_num_blocks + i];
+        &frame->motion->motion_vectors[j*params->x_num_blocks + i];
 
       for(l=0;l<4;l+=(4>>mv->split)) {
         for(k=0;k<4;k+=(4>>mv->split)) {
           SchroMotionVector *mv =
-            &frame->motion_field->motion_vectors[(j+l)*params->x_num_blocks + i + k];
+            &frame->motion->motion_vectors[(j+l)*params->x_num_blocks + i + k];
 
           if (mv->pred_mode == 0) {
             int pred[3];
             SchroMotionVectorDC *mvdc = (SchroMotionVectorDC *)mv;
 
-            schro_motion_dc_prediction (frame->motion_field->motion_vectors,
-                params, i+k, j+l, pred);
+            schro_motion_dc_prediction (frame->motion, i+k, j+l, pred);
 
             if (!params->is_noarith) {
               switch (comp) {
@@ -1481,7 +1467,7 @@ schro_encoder_encode_picture_header (SchroEncoderFrame *frame)
     }
   } else {
     //SCHRO_ASSERT(frame->n_retire == 0);
-    if(frame->n_retire != 0) SCHRO_WARNING("frame->n_retire != 0");
+    if(frame->n_retire != 0) SCHRO_ERROR("frame->n_retire != 0");
   }
 }
 
@@ -2126,8 +2112,8 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
     if (frame->prediction_frame) {
       schro_frame_unref (frame->prediction_frame);
     }
-    if (frame->motion_field) {
-      schro_motion_field_free (frame->motion_field);
+    if (frame->motion) {
+      schro_motion_free (frame->motion);
     }
 
     if (frame->tmpbuf) free (frame->tmpbuf);

@@ -54,7 +54,7 @@ struct _SchroDecoder {
   SchroVideoFormat video_format;
   SchroParams params;
 
-  SchroMotionField *motion_field;
+  SchroMotion *motion;
 
   int zero_residual;
   int n_retire;

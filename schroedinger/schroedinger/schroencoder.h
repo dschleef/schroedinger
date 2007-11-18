@@ -155,7 +155,7 @@ struct _SchroEncoderFrame {
   SchroEncoderFrame *ref_frame0;
   SchroEncoderFrame *ref_frame1;
 
-  SchroMotionField *motion_field;
+  SchroMotion *motion;
   SchroMotionField *motion_fields[32];
 
   SchroHistogram subband_hists[3][SCHRO_LIMIT_SUBBANDS];
@@ -220,7 +220,10 @@ struct _SchroEncoder {
   schro_bool calculate_psnr;
   schro_bool calculate_ssim;
   schro_bool enable_filtering;
-  schro_bool enable_fullscan;
+  schro_bool enable_fullscan_prediction;
+  schro_bool enable_hierarchical_prediction;
+  schro_bool enable_zero_prediction;
+  schro_bool enable_phasecorr_prediction;
 
   double pixels_per_degree_horiz;
   double pixels_per_degree_vert;

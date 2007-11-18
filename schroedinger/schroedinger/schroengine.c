@@ -165,6 +165,11 @@ handle_gop_backref (SchroEncoder *encoder, int i)
   frame->slot = encoder->next_slot++;
   frame->presentation_frame = frame->frame_number;
   frame->allocation_modifier = 1 + (gop_length - 1) * 0.6;
+  if (encoder->last_ref != -1) {
+    frame->n_retire = 1;
+    frame->retire[0] = encoder->last_ref;
+  }
+  encoder->last_ref = frame->frame_number;
 
   for (j = 1; j < gop_length; j++) {
     f = encoder->frame_queue->elements[i+j].data;
@@ -176,10 +181,6 @@ handle_gop_backref (SchroEncoder *encoder, int i)
         f->picture_number_ref0);
     f->slot = encoder->next_slot++;
     f->presentation_frame = f->frame_number;
-    if (j == gop_length - 1) {
-      f->n_retire = 1;
-      f->retire[0] = frame->frame_number;
-    }
     f->allocation_modifier = 0.4;
   }
 

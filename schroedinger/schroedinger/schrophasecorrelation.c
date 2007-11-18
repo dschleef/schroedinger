@@ -266,8 +266,8 @@ schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
 
         find_peak (resr, hshift, vshift, &dx, &dy);
 
-        SCHRO_ERROR("%d x,y %d,%d dx,dy %g,%g", frame->frame_number,
-            x, y, dx, dy);
+        schro_dump(SCHRO_DUMP_PHASE_CORR,"%d %d %d %g %g\n",
+            frame->frame_number, x, y, dx, dy);
 
 #if 1
         {
@@ -280,10 +280,8 @@ schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
                   (x + width/4)*(1<<SHIFT)/8 + k,
                   (y + height/4)*(1<<SHIFT)/8 + l);
               mv->pred_mode = 1<<i;
-              mv->x1 = rint(-dx * (1<<SHIFT) * 8);
-              mv->x1 = (mv->x1 + 4)&(~0x07);
-              mv->y1 = rint(-dy * (1<<SHIFT) * 8);
-              mv->y1 = (mv->y1 + 4)&(~0x07);
+              mv->x1 = rint(-dx * (1<<SHIFT));
+              mv->y1 = rint(-dy * (1<<SHIFT));
               mv->metric = 0;
             }
           }

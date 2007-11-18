@@ -8,8 +8,36 @@
 #include <schroedinger/schrooil.h>
 
 
-void schro_decoder_predict (SchroDecoder *decoder);
+int _schro_motion_ref = FALSE;
 
+
+SchroMotion *
+schro_motion_new (SchroParams *params, SchroUpsampledFrame *ref1,
+    SchroUpsampledFrame *ref2)
+{
+  SchroMotion *motion;
+
+  motion = malloc(sizeof(SchroMotion));
+  memset (motion, 0, sizeof(SchroMotion));
+
+  motion->params = params;
+  motion->src1 = ref1;
+  motion->src2 = ref2;
+
+  motion->motion_vectors = malloc(sizeof(SchroMotionVector)*
+      params->x_num_blocks*params->y_num_blocks);
+  memset (motion->motion_vectors, 0, sizeof(SchroMotionVector)*
+      params->x_num_blocks*params->y_num_blocks);
+
+  return motion;
+}
+
+void
+schro_motion_free (SchroMotion *motion)
+{
+  free (motion->motion_vectors);
+  free (motion);
+}
 
 static int
 ilog2 (unsigned int x)
@@ -813,6 +841,10 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
   SchroMotionVector *motion_vectors = motion->motion_vectors;
   SchroParams *params = motion->params;
 
+  if (_schro_motion_ref) {
+    return schro_motion_render_ref (motion, dest);
+  }
+
   obmc_luma = malloc(sizeof(*obmc_luma));
   schro_obmc_init (obmc_luma,
       params->xblen_luma, params->yblen_luma,
@@ -920,8 +952,7 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
 }
 
 void
-schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
-    SchroParams *params, int x, int y, int *pred)
+schro_motion_dc_prediction (SchroMotion *motion, int x, int y, int *pred)
 {
   SchroMotionVectorDC *mvdc;
   int i;
@@ -931,21 +962,21 @@ schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
     int n = 0;
 
     if (x>0) {
-      mvdc = (SchroMotionVectorDC *)&motion_vectors[y*params->x_num_blocks + (x-1)];
+      mvdc = SCHRO_MOTION_GET_DC_BLOCK(motion,x-1,y);
       if (mvdc->pred_mode == 0) {
         sum += mvdc->dc[i];
         n++;
       }
     }
     if (y>0) {
-      mvdc = (SchroMotionVectorDC *)&motion_vectors[(y-1)*params->x_num_blocks + x];
+      mvdc = SCHRO_MOTION_GET_DC_BLOCK(motion,x,y-1);
       if (mvdc->pred_mode == 0) {
         sum += mvdc->dc[i];
         n++;
       }
     }
     if (x>0 && y>0) {
-      mvdc = (SchroMotionVectorDC *)&motion_vectors[(y-1)*params->x_num_blocks + (x-1)];
+      mvdc = SCHRO_MOTION_GET_DC_BLOCK(motion,x-1,y-1);
       if (mvdc->pred_mode == 0) {
         sum += mvdc->dc[i];
         n++;
@@ -970,26 +1001,34 @@ schro_motion_dc_prediction (SchroMotionVector *motion_vectors,
   }
 }
 
-void
-schro_motion_field_get_global_prediction (SchroMotionField *mf,
-    int x, int y, int *pred)
+int
+schro_motion_get_global_prediction (SchroMotion *motion,
+    int x, int y)
 {
+  SchroMotionVector *mv;
+  int sum;
+
   if (x == 0 && y == 0) {
-    *pred = 0;
-    return;
+    return 0;
   }
   if (y == 0) {
-    *pred = mf->motion_vectors[x-1].using_global;
-    return;
+    mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,0);
+    return mv->using_global;
   }
   if (x == 0) {
-    *pred = mf->motion_vectors[(y-1)*mf->x_num_blocks].using_global;
-    return;
+    mv = SCHRO_MOTION_GET_BLOCK(motion,0,y-1);
+    return mv->using_global;
   }
 
-  *pred = (mf->motion_vectors[(y-1)*mf->x_num_blocks + (x-1)].using_global +
-      mf->motion_vectors[(y-1)*mf->x_num_blocks + x].using_global +
-      mf->motion_vectors[y*mf->x_num_blocks + (x-1)].using_global) >= 2;
+  sum = 0;
+  mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,y);
+  sum += mv->using_global;
+  mv = SCHRO_MOTION_GET_BLOCK(motion,x,y-1);
+  sum += mv->using_global;
+  mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,y-1);
+  sum += mv->using_global;
+
+  return (sum >= 2);
 }
 
 static int
@@ -1007,17 +1046,17 @@ median3(int a, int b, int c)
 }
 
 void
-schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
-    SchroParams *params, int x, int y, int *pred_x, int *pred_y, int mode)
+schro_motion_vector_prediction (SchroMotion *motion,
+    int x, int y, int *pred_x, int *pred_y, int mode)
 {
-  SchroMotionVector *mv = &motion_vectors[y*params->x_num_blocks + x];
+  SchroMotionVector *mv;
   int vx[3];
   int vy[3];
   int n = 0;
 
   SCHRO_ASSERT(mode == 1 || mode == 2);
   if (x>0) {
-    mv = &motion_vectors[y*params->x_num_blocks + (x-1)];
+    mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,y);
     if (mv->using_global == FALSE && (mv->pred_mode & mode)) {
       if (mode == 1) {
         vx[n] = mv->x1;
@@ -1030,7 +1069,7 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
     }
   }
   if (y>0) {
-    mv = &motion_vectors[(y-1)*params->x_num_blocks + x];
+    mv = SCHRO_MOTION_GET_BLOCK(motion,x,y-1);
     if (mv->using_global == FALSE && (mv->pred_mode & mode)) {
       if (mode == 1) {
         vx[n] = mv->x1;
@@ -1043,7 +1082,7 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
     }
   }
   if (x>0 && y>0) {
-    mv = &motion_vectors[(y-1)*params->x_num_blocks + (x-1)];
+    mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,y-1);
     if (mv->using_global == FALSE && (mv->pred_mode & mode)) {
       if (mode == 1) {
         vx[n] = mv->x1;
@@ -1065,10 +1104,8 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
       *pred_y = vy[0];
       break;
     case 2:
-      {
-        *pred_x = (vx[0] + vx[1] + 1)>>1;
-        *pred_y = (vy[0] + vy[1] + 1)>>1;
-      }
+      *pred_x = (vx[0] + vx[1] + 1)>>1;
+      *pred_y = (vy[0] + vy[1] + 1)>>1;
       break;
     case 3:
       *pred_x = median3(vx[0], vx[1], vx[2]);
@@ -1080,51 +1117,63 @@ schro_motion_vector_prediction (SchroMotionVector *motion_vectors,
 }
 
 int
-schro_motion_split_prediction (SchroMotionVector *motion_vectors,
-    SchroParams *params, int x, int y)
+schro_motion_split_prediction (SchroMotion *motion, int x, int y)
 {
+  SchroMotionVector *mv;
+
   if (y == 0) {
     if (x == 0) {
       return 0;
     } else {
-      return motion_vectors[x-4].split;
+      mv = SCHRO_MOTION_GET_BLOCK(motion,x-4,0);
+      return mv->split;
     }
   } else {
     if (x == 0) {
-      return motion_vectors[(y-4)*params->x_num_blocks].split;
+      mv = SCHRO_MOTION_GET_BLOCK(motion,x,y-4);
+      return mv->split;
     } else {
-      int value;
-      value = (motion_vectors[(y-4)*params->x_num_blocks + (x-4)].split +
-          motion_vectors[(y-4)*params->x_num_blocks + x].split +
-          motion_vectors[y*params->x_num_blocks + (x-4)].split + 1) / 3;
-      return value;
+      int sum;
+
+      mv = SCHRO_MOTION_GET_BLOCK(motion,x,y-4);
+      sum = mv->split;
+      mv = SCHRO_MOTION_GET_BLOCK(motion,x-4,y);
+      sum += mv->split;
+      mv = SCHRO_MOTION_GET_BLOCK(motion,x-4,y-4);
+      sum += mv->split;
+
+      return (sum + 1)/3;
     }
   }
 }
 
 int
-schro_motion_get_mode_prediction (SchroMotionField *mf, int x, int y)
+schro_motion_get_mode_prediction (SchroMotion *motion, int x, int y)
 {
-  SchroMotionVector *mv = &mf->motion_vectors[y*mf->x_num_blocks + x];
+  SchroMotionVector *mv;
 
   if (y == 0) {
     if (x == 0) {
       return 0;
     } else {
-      return mv[-1].pred_mode;
+      mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,0);
+      return mv->pred_mode;
     }
   } else {
     if (x == 0) {
-      return mv[-mf->x_num_blocks].pred_mode;
+      mv = SCHRO_MOTION_GET_BLOCK(motion,0,y-1);
+      return mv->pred_mode;
     } else {
-      int ref0, ref1;
-      ref0 = ((mv[-mf->x_num_blocks-1].pred_mode & 1) +
-          (mv[-mf->x_num_blocks].pred_mode & 1) +
-          (mv[-1].pred_mode & 1)) >= 2;
-      ref1 = ((mv[-mf->x_num_blocks-1].pred_mode & 2) +
-          (mv[-mf->x_num_blocks].pred_mode & 2) +
-          (mv[-1].pred_mode & 2)) >= 4;
-      return (ref1<<1) | (ref0);
+      int a, b, c;
+
+      mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,y);
+      a = mv->pred_mode;
+      mv = SCHRO_MOTION_GET_BLOCK(motion,x,y-1);
+      b = mv->pred_mode;
+      mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,y-1);
+      c = mv->pred_mode;
+
+      return (a&b)|(b&c)|(c&a);
     }
   }
 }

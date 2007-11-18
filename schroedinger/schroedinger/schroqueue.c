@@ -69,7 +69,9 @@ schro_queue_delete (SchroQueue *queue, SchroPictureNumber picture_number)
 
   for(i=0;i<queue->n;i++){
     if (queue->elements[i].picture_number == picture_number) {
-      queue->free(queue->elements[i].data, queue->elements[i].picture_number);
+      if (queue->free) {
+        queue->free(queue->elements[i].data, queue->elements[i].picture_number);
+      }
       memmove (queue->elements + i, queue->elements + i + 1,
           sizeof(SchroQueueElement)*(queue->n - i - 1));
       queue->n--;
@@ -103,7 +105,9 @@ schro_queue_clear (SchroQueue *queue)
   int i;
 
   for(i=0;i<queue->n;i++){
-    queue->free (queue->elements[i].data, queue->elements[i].picture_number);
+    if (queue->free) {
+      queue->free (queue->elements[i].data, queue->elements[i].picture_number);
+    }
   }
   queue->n = 0;
 }
@@ -113,7 +117,9 @@ schro_queue_pop (SchroQueue *queue)
 {
   if (queue->n == 0) return;
 
-  queue->free(queue->elements[0].data, queue->elements[0].picture_number);
+  if (queue->free) {
+    queue->free(queue->elements[0].data, queue->elements[0].picture_number);
+  }
   memmove (queue->elements, queue->elements + 1,
       sizeof(SchroQueueElement)*(queue->n - 1));
   queue->n--;
