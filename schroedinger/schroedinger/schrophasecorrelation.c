@@ -37,6 +37,15 @@ complex_normalize_f32 (float *i1, float *i2, int n)
   }
 }
 
+static void
+negate_f32 (float *i1, int n)
+{
+  int j;
+  for(j=0;j<n;j++){
+    i1[j] = -i1[j];
+  }
+}
+
 int
 get_max_f32 (float *src, int n)
 {
@@ -153,10 +162,63 @@ find_peak (float *ccorr, int hshift, int vshift, double *dx, double *dy)
   } else {
     *dy = idy - 0.5*b/peak;
   }
+
+  get_ccorr_value (idx-1, idy-1) = 0;
+  get_ccorr_value (idx, idy-1) = 0;
+  get_ccorr_value (idx+1, idy-1) = 0;
+  get_ccorr_value (idx-1, idy) = 0;
+  get_ccorr_value (idx, idy) = 0;
+  get_ccorr_value (idx+1, idy) = 0;
+  get_ccorr_value (idx-1, idy+1) = 0;
+  get_ccorr_value (idx, idy+1) = 0;
+  get_ccorr_value (idx+1, idy+1) = 0;
 }
 
 #define motion_field_get(mf,x,y) \
   ((mf)->motion_vectors + (y)*(mf)->x_num_blocks + (x))
+
+static SchroFrame *
+get_downsampled(SchroEncoderFrame *frame, int i)
+{
+  SCHRO_ASSERT(frame->have_downsampling);
+
+  if (i==0) {
+    return frame->filtered_frame;
+  }
+  return frame->downsampled_frames[i-1];
+}
+
+typedef struct _SchroMVComp SchroMVComp;
+struct _SchroMVComp {
+  int metric;
+  SchroFrame *frame;
+  SchroFrame *ref;
+  int dx, dy;
+};
+
+void
+schro_mvcomp_init (SchroMVComp *mvcomp, SchroFrame *frame, SchroFrame *ref)
+{
+  memset (mvcomp, 0, sizeof(*mvcomp));
+
+  mvcomp->metric = 32000;
+  mvcomp->frame = frame;
+  mvcomp->ref = ref;
+}
+
+void
+schro_mvcomp_add (SchroMVComp *mvcomp, int i, int j, int dx, int dy)
+{
+  int metric;
+
+  metric = schro_frame_get_metric (mvcomp->frame,
+      i*8, j*8, mvcomp->ref, i*8 + dx, j*8 + dy);
+  if (metric < mvcomp->metric) {
+    mvcomp->metric = metric;
+    mvcomp->dx = dx;
+    mvcomp->dy = dy;
+  }
+}
 
 void
 schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
@@ -169,7 +231,7 @@ schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
   int n;
   float *image1;
   float *image2;
-  int i, j;
+  int i;
   float *s, *c;
   float *zero;
   float *ft1r;
@@ -184,9 +246,17 @@ schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
   int hshift;
   int vshift;
   int x,y;
+  int num_x;
+  int num_y;
+  int *vecs_dx;
+  int *vecs_dy;
+  int *vecs2_dx;
+  int *vecs2_dy;
+  int ix, iy;
+  int k,l;
 
-  hshift = 6;
-  vshift = 5;
+  hshift = 5;
+  vshift = 4;
   width = 1<<hshift;
   height = 1<<vshift;
   shift = hshift+vshift;
@@ -213,51 +283,46 @@ schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
 
 #define SHIFT 2
 
-  src = frame->downsampled_frames[SHIFT-1];
-  SCHRO_ASSERT(src);
-
   generate_weights(weight, width, height);
 
   for(i=0;i<params->num_refs;i++){
     mf = schro_motion_field_new (params->x_num_blocks, params->y_num_blocks);
-    {
-      int l,k;
-      SchroMotionVector *mv;
-      for(l=0;l<params->y_num_blocks;l++){
-        for(k=0;k<params->x_num_blocks;k++){
-          mv = motion_field_get (mf, k, l);
-          mv->split = 2;
-          mv->pred_mode = 1;
-          mv->x1 = 0;
-          mv->y1 = 0;
-          mv->metric = 32000;
-        }
-      }
-    }
+
+    src = get_downsampled(frame, SHIFT);
+    SCHRO_ASSERT(src);
+
     if (i == 0) {
-      ref = frame->ref_frame0->downsampled_frames[SHIFT-1];
+      ref = get_downsampled(frame->ref_frame0, SHIFT);
       frame->motion_fields[SCHRO_MOTION_FIELD_PHASECORR_REF0] = mf;
     } else {
-      ref = frame->ref_frame1->downsampled_frames[SHIFT-1];
+      ref = get_downsampled(frame->ref_frame1, SHIFT);
       frame->motion_fields[SCHRO_MOTION_FIELD_PHASECORR_REF1] = mf;
     }
     SCHRO_ASSERT(ref);
 
-    for(y=0;y<=(src->height-height);y+=height/2){
-      for(x=0;x<=(src->width-width);x+=width/2){
+    schro_fft_generate_tables_f32 (c, s, shift);
+
+    num_x = (src->width - width)/(width/2);
+    num_y = (src->height - height)/(height/2);
+    vecs_dx = malloc(sizeof(int)*num_x*num_y);
+    vecs_dy = malloc(sizeof(int)*num_x*num_y);
+    vecs2_dx = malloc(sizeof(int)*num_x*num_y);
+    vecs2_dy = malloc(sizeof(int)*num_x*num_y);
+
+    for(iy=0;iy<num_y;iy++){
+      for(ix=0;ix<num_x;ix++){
         double dx, dy;
+
+        x = ((src->width - width) * ix) / (num_x - 1);
+        y = ((src->height - height) * iy) / (num_y - 1);
 
         get_image (image1, src, x, y, width, height, weight);
         get_image (image2, ref, x, y, width, height, weight);
 
-        schro_fft_generate_tables_f32 (c, s, shift);
-
         schro_fft_fwd_f32 (ft1r, ft1i, image1, zero, c, s, shift);
         schro_fft_fwd_f32 (ft2r, ft2i, image2, zero, c, s, shift);
 
-        for(j=0;j<n;j++){
-          ft2i[j] = -ft2i[j];
-        }
+        negate_f32 (ft2i, n);
 
         complex_mult_f32 (conv_r, conv_i, ft1r, ft1i, ft2r, ft2i, n);
         complex_normalize_f32 (conv_r, conv_i, n);
@@ -269,35 +334,68 @@ schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
         schro_dump(SCHRO_DUMP_PHASE_CORR,"%d %d %d %g %g\n",
             frame->frame_number, x, y, dx, dy);
 
-#if 1
-        {
-          int k,l;
-          SchroMotionVector *mv;
+        vecs_dx[iy*num_x + ix] = rint(-dx * (1<<SHIFT));
+        vecs_dy[iy*num_x + ix] = rint(-dy * (1<<SHIFT));
 
-          for(l=0;l<height>>(4-SHIFT);l++){
-            for(k=0;k<width>>(4-SHIFT);k++){
-              mv = motion_field_get (mf,
-                  (x + width/4)*(1<<SHIFT)/8 + k,
-                  (y + height/4)*(1<<SHIFT)/8 + l);
-              mv->pred_mode = 1<<i;
-              mv->x1 = rint(-dx * (1<<SHIFT));
-              mv->y1 = rint(-dy * (1<<SHIFT));
-              mv->metric = 0;
-            }
-          }
-        }
-#endif
-#if 0
-        if (frame->frame_number == 87) {
-        for(i=0;i<N;i++){
-        SCHRO_ERROR("ACK: %d %d %d %g %g %g %g %g %g", i, (i>>6), (i&0x3f),
-            image1[i], image2[i], ft1r[i], ft1i[i], resr[i], resi[i]);
-        }
-        exit(0);
-        }
-#endif
+        find_peak (resr, hshift, vshift, &dx, &dy);
+
+        vecs2_dx[iy*num_x + ix] = rint(-dx * (1<<SHIFT));
+        vecs2_dy[iy*num_x + ix] = rint(-dy * (1<<SHIFT));
       }
     }
+
+    src = get_downsampled(frame, 0);
+    if (i == 0) {
+      ref = get_downsampled(frame->ref_frame0, 0);
+    } else {
+      ref = get_downsampled(frame->ref_frame1, 0);
+    }
+    for(l=0;l<params->y_num_blocks;l++){
+      for(k=0;k<params->x_num_blocks;k++){
+        SchroMotionVector *mv;
+        int ymin, ymax;
+        int xmin, xmax;
+        SchroMVComp mvcomp;
+
+        /* FIXME real block params */
+        xmin = k*8 - 2;
+        xmax = k*8 + 10;
+        ymin = l*8 - 2;
+        ymax = l*8 + 10;
+
+        schro_mvcomp_init (&mvcomp, src, ref);
+
+        for(iy=0;iy<num_y;iy++){
+          for(ix=0;ix<num_x;ix++){
+            x = ((src->width - (width<<SHIFT)) * ix) / (num_x - 1);
+            y = ((src->height - (height<<SHIFT)) * iy) / (num_y - 1);
+
+            if (xmax < x || ymax < y ||
+                xmin >= x + (width<<SHIFT) || ymin >= y + (height<<SHIFT)) {
+              continue;
+            }
+
+            SCHRO_DEBUG("%d %d trying %d %d (%d %d)", k, l, ix, iy,
+                vecs_dx[iy*num_x + ix], vecs_dy[iy*num_x + ix]);
+            schro_mvcomp_add (&mvcomp, k, l,
+                vecs_dx[iy*num_x + ix], vecs_dy[iy*num_x + ix]);
+            schro_mvcomp_add (&mvcomp, k, l,
+                vecs2_dx[iy*num_x + ix], vecs2_dy[iy*num_x + ix]);
+          }
+        }
+
+        mv = motion_field_get (mf, k, l);
+        mv->split = 2;
+        mv->pred_mode = 1;
+        mv->x1 = mvcomp.dx;
+        mv->y1 = mvcomp.dy;
+        mv->metric = mvcomp.metric;
+      }
+    }
+    free(vecs_dx);
+    free(vecs_dy);
+    free(vecs2_dx);
+    free(vecs2_dy);
   }
 
   free(s);

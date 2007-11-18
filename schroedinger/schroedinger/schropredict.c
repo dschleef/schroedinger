@@ -816,12 +816,13 @@ schro_encoder_dc_prediction (SchroEncoderFrame *encoder_frame)
 #define motion_field_get(mf,x,y) \
   ((mf)->motion_vectors + (y)*(mf)->x_num_blocks + (x))
 
-static int
+int
 schro_frame_get_metric (SchroFrame *frame1, int x1, int y1,
     SchroFrame *frame2, int x2, int y2)
 {
   int metric;
 
+  /* FIXME handle out-of-frame vectors */
   if (x1 < 0 || y1 < 0 || x1+8 > frame1->width ||
       y1+8 > frame1->height) return 64*255;
   if (x2 < 0 || y2 < 0 || x2+8 > frame2->width ||

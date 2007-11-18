@@ -48,6 +48,9 @@ void schro_motion_field_copy (SchroMotionField *field, SchroMotionField *parent)
 void schro_motion_field_global_prediction (SchroMotionField *mf,
     SchroGlobalMotion *gm, int mv_precision);
 
+int schro_frame_get_metric (SchroFrame *frame1, int x1, int y1,
+    SchroFrame *frame2, int x2, int y2);
+
 #endif
 
 SCHRO_END_DECLS

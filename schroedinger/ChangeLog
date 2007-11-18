@@ -1,5 +1,12 @@
 2007-11-18  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrophasecorrelation.c:
+	* schroedinger/schropredict.c:
+	* schroedinger/schropredict.h:
+	  Phase correlation hacking.
+
+2007-11-18  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schro.c:
 	* schroedinger/schrodecoder.c:
 	* schroedinger/schrodecoder.h:
