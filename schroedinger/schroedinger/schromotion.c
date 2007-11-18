@@ -1232,6 +1232,8 @@ schro_upsampled_frame_free (SchroUpsampledFrame *df)
 }
 
 
+//#define EXP_16NOV07
+
 static int get_dc_pixel (SchroMotion *motion, int i, int j, int k, int x, int y);
 static int get_ref1_pixel (SchroMotion *motion, int i, int j, int k, int x, int y);
 static int get_ref2_pixel (SchroMotion *motion, int i, int j, int k, int x, int y);
@@ -1281,8 +1283,13 @@ schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest)
     }
     motion->xoffset = (motion->xblen - motion->xbsep)/2;
     motion->yoffset = (motion->yblen - motion->ybsep)/2;
+#ifdef EXP_16NOV07
+    motion->shift = params->picture_weight_bits + 6;
+    get_shift(0);
+#else
     motion->shift = params->picture_weight_bits +
       get_shift (motion->xoffset) + get_shift(motion->yoffset);
+#endif
 
     for(y=0;y<comp->height;y++){
       line = OFFSET(comp->data, y*comp->stride);
@@ -1355,6 +1362,31 @@ pixel_predict_block (SchroMotion *motion, int x, int y, int k, int i, int j)
 
   if (x < xmin || y < ymin || x >= xmax || y >= ymax) return 0;
 
+#ifdef EXP_16NOV07
+  if (motion->xoffset == 0) {
+    wx = 8;
+  } else if (x < motion->xoffset || x >= width - motion->xoffset) {
+    wx = 8;
+  } else if (x - xmin < 2*motion->xoffset) {
+    wx = 1 + (6*(x-xmin) + motion->xoffset - 1)/(2*motion->xoffset - 1);
+  } else if (xmax - 1 - x < 2*motion->xoffset) {
+    wx = 7 - (6*(x-xmax+2*motion->xoffset) + motion->xoffset - 1)/(2*motion->xoffset - 1);
+  } else {
+    wx = 8;
+  }
+
+  if (motion->yoffset == 0) {
+    wy = 8;
+  } else if (y < motion->yoffset || y >= width - motion->yoffset) {
+    wy = 8;
+  } else if (y - ymin < 2*motion->yoffset) {
+    wy = 1 + (6*(y-ymin) + motion->yoffset - 1)/(2*motion->yoffset - 1);
+  } else if (ymax - 1 - y < 2*motion->yoffset) {
+    wy = 7 - (6*(y-ymax+2*motion->yoffset) + motion->yoffset - 1)/(2*motion->yoffset - 1);
+  } else {
+    wy = 8;
+  }
+#else
   if (motion->xoffset == 0) {
     wx = 1;
   } else if (x < motion->xoffset || x >= width - motion->xoffset) {
@@ -1378,6 +1410,7 @@ pixel_predict_block (SchroMotion *motion, int x, int y, int k, int i, int j)
   } else {
     wy = motion->yoffset * 4;
   }
+#endif
 
   mv = &motion->motion_vectors[j*params->x_num_blocks + i];
 
@@ -1399,7 +1432,7 @@ pixel_predict_block (SchroMotion *motion, int x, int y, int k, int i, int j)
       break;
   }
 
-  return wx * wy * value;
+  return value * wx * wy;
 }
 
 static int
@@ -1429,8 +1462,8 @@ get_ref1_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
     dx = mv->x1;
     dy = mv->y1;
   }
-  value = get_pixel (motion, k, motion->src1, x, y, dx, dy);
 
+  value = get_pixel (motion, k, motion->src1, x, y, dx, dy);
   return value * motion->ref_weight;
 }
 
@@ -1449,7 +1482,7 @@ get_ref2_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
     dx = mv->x2;
     dy = mv->y2;
   }
-  value = get_pixel (motion, k, motion->src1, x, y, dx, dy);
+  value = get_pixel (motion, k, motion->src2, x, y, dx, dy);
 
   return value * motion->ref_weight;
 }
