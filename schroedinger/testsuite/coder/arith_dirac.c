@@ -7,6 +7,8 @@
 #include <schroedinger/schroarith.h>
 #include <schroedinger/schrodebug.h>
 
+#define OIL_ENABLE_UNSTABLE_API
+
 #include "arith.h"
 
 static uint16_t division_factor[257] = {

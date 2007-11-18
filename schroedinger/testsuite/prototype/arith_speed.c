@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#define OIL_ENABLE_UNSTABLE_API
 #include <liboil/liboilprofile.h>
 #include <liboil/liboilrandom.h>
 

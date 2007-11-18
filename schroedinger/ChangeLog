@@ -1,3 +1,22 @@
+2007-11-18  David Schleef  <ds@schleef.org>
+
+	* testsuite/Makefile.am:
+	* testsuite/coder/arith.h:
+	* testsuite/coder/arith_dirac.c:
+	* testsuite/coder/arith_exp.c:
+	* testsuite/coder/arith_qm.c:
+	* testsuite/coder/decode.c:
+	* testsuite/common.c:
+	* testsuite/downsample.c:
+	* testsuite/gaussian.c:
+	* testsuite/global_motion.c:
+	* testsuite/motion.c:
+	* testsuite/motion2.c:
+	* testsuite/perf/wavelet_speed.c:
+	* testsuite/prototype/arith_speed.c:
+	* testsuite/wavelet_2d.c:
+	  Add define to safely use unstable liboil API.
+
 2007-11-17  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schromotion.c:

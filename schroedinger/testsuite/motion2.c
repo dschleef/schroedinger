@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define OIL_ENABLE_UNSTABLE_API
 #include <liboil/liboilrandom.h>
 
 void

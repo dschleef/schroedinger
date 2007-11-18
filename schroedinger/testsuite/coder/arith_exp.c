@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+
+#define OIL_ENABLE_UNSTABLE_API
 #include <schroedinger/schroarith.h>
 #include <schroedinger/schrotables.h>
 

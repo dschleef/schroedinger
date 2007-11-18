@@ -2,6 +2,7 @@
 #ifndef _ARITH_H_
 #define _ARITH_H_
 
+#define OIL_ENABLE_UNSTABLE_API
 #include <liboil/liboilrandom.h>
 #include <liboil/liboilprofile.h>
 

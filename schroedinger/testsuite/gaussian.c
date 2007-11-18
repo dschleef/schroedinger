@@ -9,8 +9,10 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schroutils.h>
-#include <liboil/liboilprofile.h>
 #include <math.h>
+
+#define OIL_ENABLE_UNSTABLE_API
+#include <liboil/liboilprofile.h>
 
 #define N 2000
 #define INT 1

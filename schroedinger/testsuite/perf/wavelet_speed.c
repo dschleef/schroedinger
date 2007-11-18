@@ -6,6 +6,8 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schrowavelet.h>
 #include <schroedinger/schrooil.h>
+
+#define OIL_ENABLE_UNSTABLE_API
 #include <liboil/liboil.h>
 #include <liboil/liboilprofile.h>
 
