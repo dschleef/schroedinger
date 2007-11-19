@@ -1,6 +1,11 @@
 2007-11-18  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrophasecorrelation.c:
+	  Move phase correlation parameters into a structure.
+
+2007-11-18  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrophasecorrelation.c:
 	* schroedinger/schropredict.c:
 	* schroedinger/schropredict.h:
 	  Phase correlation hacking.

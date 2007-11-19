@@ -220,31 +220,103 @@ schro_mvcomp_add (SchroMVComp *mvcomp, int i, int j, int dx, int dy)
   }
 }
 
-void
-schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
-{
-  SchroParams *params = &frame->params;
-  SchroFrame *ref;
-  SchroFrame *src;
-  SchroMotionField *mf;
+typedef struct _SchroPhaseCorr SchroPhaseCorr;
+struct _SchroPhaseCorr {
+
+  int hshift;
+  int vshift;
+  int width;
+  int height;
   int shift;
   int n;
-  float *image1;
-  float *image2;
-  int i;
+
+  /* static tables */
   float *s, *c;
   float *zero;
+  float *weight;
+
+  float *image1;
+  float *image2;
   float *ft1r;
   float *ft1i;
   float *ft2r;
   float *ft2i;
   float *conv_r, *conv_i;
   float *resr, *resi;
-  float *weight;
-  int width;
-  int height;
-  int hshift;
-  int vshift;
+};
+
+SchroPhaseCorr *
+schro_phasecorr_new (void)
+{
+  SchroPhaseCorr *pc;
+
+  pc = malloc(sizeof(SchroPhaseCorr));
+  memset (pc, 0, sizeof(SchroPhaseCorr));
+
+  pc->hshift = 5;
+  pc->vshift = 4;
+  pc->width = 1<<pc->hshift;
+  pc->height = 1<<pc->vshift;
+  pc->shift = pc->hshift+pc->vshift;
+  pc->n = 1<<pc->shift;
+
+  pc->s = malloc(pc->n*sizeof(float));
+  pc->c = malloc(pc->n*sizeof(float));
+  pc->weight = malloc(pc->n*sizeof(float));
+  pc->zero = malloc(pc->n*sizeof(float));
+  memset (pc->zero, 0, pc->n*sizeof(float));
+
+  pc->image1 = malloc(pc->n*sizeof(float));
+  pc->image2 = malloc(pc->n*sizeof(float));
+
+  pc->ft1r = malloc(pc->n*sizeof(float));
+  pc->ft1i = malloc(pc->n*sizeof(float));
+  pc->ft2r = malloc(pc->n*sizeof(float));
+  pc->ft2i = malloc(pc->n*sizeof(float));
+  pc->conv_r = malloc(pc->n*sizeof(float));
+  pc->conv_i = malloc(pc->n*sizeof(float));
+  pc->resr = malloc(pc->n*sizeof(float));
+  pc->resi = malloc(pc->n*sizeof(float));
+
+  generate_weights(pc->weight, pc->width, pc->height);
+  schro_fft_generate_tables_f32 (pc->c, pc->s, pc->shift);
+
+  return pc;
+}
+
+void
+schro_phasecorr_free (SchroPhaseCorr *pc)
+{
+  free(pc->s);
+  free(pc->c);
+  free(pc->weight);
+  free(pc->zero);
+
+  free(pc->image1);
+  free(pc->image2);
+
+  free(pc->ft1r);
+  free(pc->ft1i);
+  free(pc->ft2r);
+  free(pc->ft2i);
+  free(pc->conv_r);
+  free(pc->conv_i);
+  free(pc->resr);
+  free(pc->resi);
+
+  free(pc);
+}
+
+
+void
+schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
+{
+  SchroPhaseCorr *pc;
+  SchroParams *params = &frame->params;
+  SchroFrame *ref;
+  SchroFrame *src;
+  SchroMotionField *mf;
+  int i;
   int x,y;
   int num_x;
   int num_y;
@@ -255,35 +327,9 @@ schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
   int ix, iy;
   int k,l;
 
-  hshift = 5;
-  vshift = 4;
-  width = 1<<hshift;
-  height = 1<<vshift;
-  shift = hshift+vshift;
-  n = 1<<shift;
-
-  /* tables */
-  s = malloc(n*sizeof(float));
-  c = malloc(n*sizeof(float));
-  weight = malloc(n*sizeof(float));
-  zero = malloc(n*sizeof(float));
-  memset (zero, 0, n*sizeof(float));
-
-  image1 = malloc(n*sizeof(float));
-  image2 = malloc(n*sizeof(float));
-
-  ft1r = malloc(n*sizeof(float));
-  ft1i = malloc(n*sizeof(float));
-  ft2r = malloc(n*sizeof(float));
-  ft2i = malloc(n*sizeof(float));
-  conv_r = malloc(n*sizeof(float));
-  conv_i = malloc(n*sizeof(float));
-  resr = malloc(n*sizeof(float));
-  resi = malloc(n*sizeof(float));
+  pc = schro_phasecorr_new ();
 
 #define SHIFT 2
-
-  generate_weights(weight, width, height);
 
   for(i=0;i<params->num_refs;i++){
     mf = schro_motion_field_new (params->x_num_blocks, params->y_num_blocks);
@@ -300,10 +346,8 @@ schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
     }
     SCHRO_ASSERT(ref);
 
-    schro_fft_generate_tables_f32 (c, s, shift);
-
-    num_x = (src->width - width)/(width/2);
-    num_y = (src->height - height)/(height/2);
+    num_x = (src->width - pc->width)/(pc->width/2);
+    num_y = (src->height - pc->height)/(pc->height/2);
     vecs_dx = malloc(sizeof(int)*num_x*num_y);
     vecs_dy = malloc(sizeof(int)*num_x*num_y);
     vecs2_dx = malloc(sizeof(int)*num_x*num_y);
@@ -313,23 +357,23 @@ schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
       for(ix=0;ix<num_x;ix++){
         double dx, dy;
 
-        x = ((src->width - width) * ix) / (num_x - 1);
-        y = ((src->height - height) * iy) / (num_y - 1);
+        x = ((src->width - pc->width) * ix) / (num_x - 1);
+        y = ((src->height - pc->height) * iy) / (num_y - 1);
 
-        get_image (image1, src, x, y, width, height, weight);
-        get_image (image2, ref, x, y, width, height, weight);
+        get_image (pc->image1, src, x, y, pc->width, pc->height, pc->weight);
+        get_image (pc->image2, ref, x, y, pc->width, pc->height, pc->weight);
 
-        schro_fft_fwd_f32 (ft1r, ft1i, image1, zero, c, s, shift);
-        schro_fft_fwd_f32 (ft2r, ft2i, image2, zero, c, s, shift);
+        schro_fft_fwd_f32 (pc->ft1r, pc->ft1i, pc->image1, pc->zero, pc->c, pc->s, pc->shift);
+        schro_fft_fwd_f32 (pc->ft2r, pc->ft2i, pc->image2, pc->zero, pc->c, pc->s, pc->shift);
 
-        negate_f32 (ft2i, n);
+        negate_f32 (pc->ft2i, pc->n);
 
-        complex_mult_f32 (conv_r, conv_i, ft1r, ft1i, ft2r, ft2i, n);
-        complex_normalize_f32 (conv_r, conv_i, n);
+        complex_mult_f32 (pc->conv_r, pc->conv_i, pc->ft1r, pc->ft1i, pc->ft2r, pc->ft2i, pc->n);
+        complex_normalize_f32 (pc->conv_r, pc->conv_i, pc->n);
 
-        schro_fft_rev_f32 (resr, resi, conv_r, conv_i, c, s, shift);
+        schro_fft_rev_f32 (pc->resr, pc->resi, pc->conv_r, pc->conv_i, pc->c, pc->s, pc->shift);
 
-        find_peak (resr, hshift, vshift, &dx, &dy);
+        find_peak (pc->resr, pc->hshift, pc->vshift, &dx, &dy);
 
         schro_dump(SCHRO_DUMP_PHASE_CORR,"%d %d %d %g %g\n",
             frame->frame_number, x, y, dx, dy);
@@ -337,7 +381,7 @@ schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
         vecs_dx[iy*num_x + ix] = rint(-dx * (1<<SHIFT));
         vecs_dy[iy*num_x + ix] = rint(-dy * (1<<SHIFT));
 
-        find_peak (resr, hshift, vshift, &dx, &dy);
+        find_peak (pc->resr, pc->hshift, pc->vshift, &dx, &dy);
 
         vecs2_dx[iy*num_x + ix] = rint(-dx * (1<<SHIFT));
         vecs2_dy[iy*num_x + ix] = rint(-dy * (1<<SHIFT));
@@ -367,11 +411,12 @@ schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
 
         for(iy=0;iy<num_y;iy++){
           for(ix=0;ix<num_x;ix++){
-            x = ((src->width - (width<<SHIFT)) * ix) / (num_x - 1);
-            y = ((src->height - (height<<SHIFT)) * iy) / (num_y - 1);
+            x = ((src->width - (pc->width<<SHIFT)) * ix) / (num_x - 1);
+            y = ((src->height - (pc->height<<SHIFT)) * iy) / (num_y - 1);
 
             if (xmax < x || ymax < y ||
-                xmin >= x + (width<<SHIFT) || ymin >= y + (height<<SHIFT)) {
+                xmin >= x + (pc->width<<SHIFT) ||
+                ymin >= y + (pc->height<<SHIFT)) {
               continue;
             }
 
@@ -398,21 +443,6 @@ schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
     free(vecs2_dy);
   }
 
-  free(s);
-  free(c);
-  free(weight);
-  free(zero);
-
-  free(image1);
-  free(image2);
-
-  free(ft1r);
-  free(ft1i);
-  free(ft2r);
-  free(ft2i);
-  free(conv_r);
-  free(conv_i);
-  free(resr);
-  free(resi);
+  schro_phasecorr_free (pc);
 }
 
