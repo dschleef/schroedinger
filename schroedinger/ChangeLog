@@ -1,3 +1,11 @@
+2007-11-19  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.h:
+	* schroedinger/schropredict.c:
+	  Use SchroList to hold motion fields.
+	* schroedinger/schrophasecorrelation.c:
+	  More phasecorr hacking.  Handle multiple sizes.
+
 2007-11-18  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrophasecorrelation.c:

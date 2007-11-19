@@ -156,7 +156,7 @@ struct _SchroEncoderFrame {
   SchroEncoderFrame *ref_frame1;
 
   SchroMotion *motion;
-  SchroMotionField *motion_fields[32];
+  SchroList *motion_field_list;
 
   SchroHistogram subband_hists[3][SCHRO_LIMIT_SUBBANDS];
   SchroHistogram hist_test;
