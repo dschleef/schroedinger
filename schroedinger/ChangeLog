@@ -1,3 +1,20 @@
+2007-12-05  David Schleef  <ds@schleef.org>
+
+	* gst/gstschroenc.c:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schroquantiser.c:
+	  Complete rearrangement of encoder parameters.  Should make more
+	  sense now.
+	* schroedinger/schrophasecorrelation.c:
+	* schroedinger/schropredict.c:
+	* schroedinger/schropredict.h:
+	  Random hacking on prediction.
+	* schroedinger/schromotion.c: Fix mv_precision bugs
+	* schroedinger/schrobitstream.h: Fix low delay parse codes
+	* schroedinger/schrovideoformat.c: Fix default video format values.
+
 2007-11-19  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroencoder.h:

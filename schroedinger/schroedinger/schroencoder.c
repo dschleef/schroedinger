@@ -15,7 +15,6 @@
 #define MARKER(pack)
 #endif
 
-static void schro_encoder_engine_init (SchroEncoder *encoder);
 static void schro_encoder_encode_picture_prediction (SchroEncoderFrame *frame);
 static void schro_encoder_encode_superblock_split (SchroEncoderFrame *frame);
 static void schro_encoder_encode_prediction_modes (SchroEncoderFrame *frame);
@@ -32,10 +31,7 @@ static void schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame,
 static void schro_encoder_fixup_offsets (SchroEncoder *encoder,
     SchroBuffer *buffer);
 static int schro_encoder_iterate (SchroEncoder *encoder);
-void schro_encoder_encode_slice (SchroEncoderFrame *frame, int x, int y,
-    int slice_bytes, int qindex);
-int schro_encoder_estimate_slice (SchroEncoderFrame *frame, int x, int y,
-    int slice_bytes, int qindex);
+static void schro_encoder_init_perceptual_weighting (SchroEncoder *encoder);
 
 SchroEncoder *
 schro_encoder_new (void)
@@ -47,18 +43,16 @@ schro_encoder_new (void)
 
   encoder->version_major = 0;
   encoder->version_minor = 110;
-  encoder->profile = 0;
-  encoder->level = 0;
-  encoder->interlaced_coding = FALSE;
 
   encoder->au_frame = -1;
-  encoder->au_distance = 24;
 
   encoder->last_ref = -1;
+  encoder->last_ref2 = -1;
   encoder->next_ref = -1;
   encoder->mid1_ref = -1;
   encoder->mid2_ref = -1;
 
+#if 0
   encoder->prefs[SCHRO_PREF_ENGINE] = 1;
   encoder->prefs[SCHRO_PREF_QUANT_ENGINE] = 0;
   encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
@@ -70,12 +64,36 @@ schro_encoder_new (void)
   encoder->prefs[SCHRO_PREF_BITRATE] = 13824000;
   encoder->prefs[SCHRO_PREF_NOARITH] = 0;
   encoder->prefs[SCHRO_PREF_MD5] = 0;
+#endif
+  encoder->rate_control = 0;
+  encoder->bitrate = 13824000;
+  encoder->max_bitrate = 13824000;
+  encoder->min_bitrate = 13824000;
+  encoder->noise_threshold = 25.0;
+  encoder->gop_structure = 0;
+  encoder->perceptual_weighting = 0;
+  encoder->filtering = 0;
+  encoder->filter_value = 5.0;
+  encoder->profile = 0;
+  encoder->level = 0;
+  encoder->au_distance = 30;
+  encoder->enable_psnr = FALSE;
+  encoder->enable_ssim = FALSE;
+  encoder->enable_md5 = FALSE;
 
-  encoder->enable_filtering = FALSE;
+  encoder->ref_distance = 4;
+  encoder->transform_depth = 4;
+  encoder->intra_wavelet = SCHRO_WAVELET_DESLAURIES_DUBUC_9_7;
+  encoder->inter_wavelet = SCHRO_WAVELET_LE_GALL_5_3;
+  encoder->interlaced_coding = FALSE;
+  encoder->enable_internal_testing = FALSE;
+  encoder->enable_noarith = FALSE;
   encoder->enable_fullscan_prediction = FALSE;
   encoder->enable_hierarchical_prediction = TRUE;
   encoder->enable_zero_prediction = FALSE;
   encoder->enable_phasecorr_prediction = FALSE;
+
+  encoder->magic_dc_metric_offset = 1.0;
 
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
@@ -97,19 +115,69 @@ schro_encoder_new (void)
   return encoder;
 }
 
+static void
+handle_gop_enum (SchroEncoder *encoder)
+{
+  switch (encoder->gop_structure) {
+    case SCHRO_ENCODER_GOP_ADAPTIVE:
+    case SCHRO_ENCODER_GOP_BACKREF:
+    case SCHRO_ENCODER_GOP_CHAINED_BACKREF:
+      encoder->engine_iterate = schro_encoder_engine_backref;
+      break;
+    case SCHRO_ENCODER_GOP_INTRA_ONLY:
+      encoder->engine_iterate = schro_encoder_engine_intra_only;
+      break;
+    case SCHRO_ENCODER_GOP_BIREF:
+    case SCHRO_ENCODER_GOP_CHAINED_BIREF:
+      encoder->engine_iterate = schro_encoder_engine_tworef;
+      break;
+  }
+}
+
 void
 schro_encoder_start (SchroEncoder *encoder)
 {
+  encoder->engine_init = 1;
+
   schro_encoder_encode_codec_comment (encoder);
+
+  schro_encoder_init_perceptual_weighting (encoder);
 
   encoder->async = schro_async_new (0, (int (*)(void *))schro_encoder_iterate,
       encoder);
-  schro_encoder_engine_init (encoder);
 
-  if (encoder->prefs[SCHRO_PREF_ENGINE] == 7) {
-  schro_encoder_encode_bitrate_comment (encoder,
-      encoder->prefs[SCHRO_PREF_BITRATE]);
+  switch (encoder->rate_control) {
+    case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_NOISE_THRESHOLD:
+      handle_gop_enum (encoder);
+      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_SIMPLE;
+      break;
+    case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE:
+      handle_gop_enum (encoder);
+      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RATE_DISTORTION;
+
+      encoder->buffer_size = encoder->bitrate;
+      encoder->buffer_level = 0;
+      encoder->bits_per_picture = muldiv64 (encoder->bitrate,
+            encoder->video_format.frame_rate_denominator,
+            encoder->video_format.frame_rate_numerator);
+
+      schro_encoder_recalculate_allocations (encoder);
+
+      schro_encoder_encode_bitrate_comment (encoder, encoder->bitrate);
+      break;
+    case SCHRO_ENCODER_RATE_CONTROL_LOW_DELAY:
+      encoder->engine_iterate = schro_encoder_engine_lowdelay;
+      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
+
+      schro_encoder_encode_bitrate_comment (encoder, encoder->bitrate);
+      break;
+    case SCHRO_ENCODER_RATE_CONTROL_LOSSLESS:
+      encoder->engine_iterate = schro_encoder_engine_lossless;
+      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOSSLESS;
+      break;
   }
+
+
 }
 
 void
@@ -133,13 +201,12 @@ schro_encoder_free (SchroEncoder *encoder)
   free (encoder);
 }
 
-void
-schro_encoder_use_perceptual_weighting (SchroEncoder *encoder,
-    SchroEncoderPerceptualEnum type, double viewing_distance)
+static void
+schro_encoder_init_perceptual_weighting (SchroEncoder *encoder)
 {
-
   encoder->pixels_per_degree_horiz =
-    encoder->video_format.width/(2.0*atan(0.5/3.0)*180/M_PI);
+    encoder->video_format.width/
+    (2.0*atan(0.5/encoder->perceptual_distance)*180/M_PI);
   encoder->pixels_per_degree_vert =
     encoder->video_format.aspect_ratio_numerator * 
     (encoder->pixels_per_degree_horiz / encoder->video_format.aspect_ratio_denominator);
@@ -147,7 +214,7 @@ schro_encoder_use_perceptual_weighting (SchroEncoder *encoder,
   SCHRO_DEBUG("pixels per degree horiz=%g vert=%g",
       encoder->pixels_per_degree_horiz, encoder->pixels_per_degree_vert);
 
-  switch(type) {
+  switch(encoder->perceptual_weighting) {
     default:
     case SCHRO_ENCODER_PERCEPTUAL_CONSTANT:
       schro_encoder_calculate_subband_weights (encoder,
@@ -580,8 +647,6 @@ schro_encoder_frame_complete (SchroEncoderFrame *frame)
 static int
 schro_encoder_iterate (SchroEncoder *encoder)
 {
-  int ret = FALSE;
-
   SCHRO_DEBUG("iterate");
 
   while (schro_async_get_num_completed (encoder->async) > 0) {
@@ -606,6 +671,8 @@ schro_encoder_iterate (SchroEncoder *encoder)
   }
 #endif
 
+  return encoder->engine_iterate (encoder);
+#if 0
   if (1) {
     switch (encoder->engine) {
       case 0:
@@ -639,25 +706,7 @@ schro_encoder_iterate (SchroEncoder *encoder)
   }
 
   return ret;
-}
-
-static void
-schro_encoder_engine_init (SchroEncoder *encoder)
-{
-  encoder->engine_init = 1;
-
-  encoder->engine = encoder->prefs[SCHRO_PREF_ENGINE];
-  encoder->ref_distance = encoder->prefs[SCHRO_PREF_REF_DISTANCE];
-
-  encoder->quantiser_engine = encoder->prefs[SCHRO_PREF_QUANT_ENGINE];
-
-  encoder->buffer_size = encoder->prefs[SCHRO_PREF_BITRATE];
-  encoder->buffer_level = 0;
-  encoder->bits_per_picture = muldiv64 (encoder->prefs[SCHRO_PREF_BITRATE],
-        encoder->video_format.frame_rate_denominator,
-        encoder->video_format.frame_rate_numerator);
-
-  schro_encoder_recalculate_allocations (encoder);
+#endif
 }
 
 void
@@ -852,7 +901,7 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
   encoder_frame->reconstructed_frame =
     schro_upsampled_frame_new (frame);
 
-  if (encoder_frame->encoder->prefs[SCHRO_PREF_MD5]) {
+  if (encoder_frame->encoder->enable_md5) {
     schro_encoder_encode_md5_checksum (encoder_frame);
   }
 
@@ -864,7 +913,7 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
 void
 schro_encoder_postanalyse_picture (SchroEncoderFrame *frame)
 {
-  if (frame->encoder->calculate_psnr) {
+  if (frame->encoder->enable_psnr) {
     double mse;
     double psnr;
 
@@ -883,7 +932,7 @@ schro_encoder_postanalyse_picture (SchroEncoderFrame *frame)
         frame->frame_number, mse, psnr, frame->encoder->average_psnr);
   }
 
-  if (frame->encoder->calculate_ssim) {
+  if (frame->encoder->enable_ssim) {
     double mssim;
 
     mssim = schro_frame_ssim (frame->filtered_frame,
@@ -1154,26 +1203,34 @@ schro_encoder_encode_vector_data (SchroEncoderFrame *frame, int ref, int xy)
       for(l=0;l<4;l+=(4>>mv->split)) {
         for(k=0;k<4;k+=(4>>mv->split)) {
           int pred_x, pred_y;
+          int x, y;
           SchroMotionVector *mv =
             &frame->motion->motion_vectors[(j+l)*params->x_num_blocks + i + k];
 
-          if ((mv->pred_mode>>ref) & 1 && !mv->using_global) {
+          if ((mv->pred_mode&(1<<ref)) && !mv->using_global) {
             schro_motion_vector_prediction (frame->motion,
                 i+k, j+l, &pred_x, &pred_y, 1<<ref);
+            if (ref == 0) {
+              x = mv->x1;
+              y = mv->y1;
+            } else {
+              x = mv->x2;
+              y = mv->y2;
+            }
 
             if (!params->is_noarith) {
               if (xy == 0) {
                 _schro_arith_encode_sint(arith,
-                    cont, value, sign, mv->x1 - pred_x);
+                    cont, value, sign, x - pred_x);
               } else {
                 _schro_arith_encode_sint(arith,
-                    cont, value, sign, mv->y1 - pred_y);
+                    cont, value, sign, y - pred_y);
               }
             } else {
               if (xy == 0) {
-                schro_pack_encode_sint(pack, mv->x1 - pred_x);
+                schro_pack_encode_sint(pack, x - pred_x);
               } else {
-                schro_pack_encode_sint(pack, mv->y1 - pred_y);
+                schro_pack_encode_sint(pack, y - pred_y);
               }
             }
           }
@@ -2146,6 +2203,7 @@ schro_encoder_reference_get (SchroEncoder *encoder,
   return schro_queue_find (encoder->reference_queue, frame_number);
 }
 
+#if 0
 static const int pref_range[][2] = {
   { 0, 7 }, /* engine */
   { 0, 4 }, /* quant engine */
@@ -2203,5 +2261,185 @@ int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
 
   return value;
 }
+#endif
 
+/* settings */
+
+#define ENUM(name,list,def) \
+  { name , SCHRO_ENCODER_SETTING_TYPE_ENUM, 0, ARRAY_SIZE(list), def, list }
+#define INT(name,min,max,def) \
+  { name , SCHRO_ENCODER_SETTING_TYPE_INT, min, max, def }
+#define BOOL(name,def) \
+  { name , SCHRO_ENCODER_SETTING_TYPE_BOOLEAN, 0, 1, def }
+#define DOUB(name,min,max,def) \
+  { name , SCHRO_ENCODER_SETTING_TYPE_DOUBLE, min, max, def }
+
+static char *rate_control_list[] = {
+  "constant_noise_threshold",
+  "constant_bitrate",
+  "low_delay",
+  "lossless"
+};
+static char *gop_structure_list[] = {
+  "adaptive",
+  "intra_only",
+  "backref",
+  "chained_backref",
+  "biref",
+  "chained_biref"
+};
+static char *perceptual_weighting_list[] = {
+  "none",
+  "ccir959",
+  "moo"
+};
+static char *filtering_list[] = {
+  "none",
+  "center_weighted_median",
+  "gaussian",
+  "add_noise",
+  "adaptive_gaussian"
+};
+static char *wavelet_list[] = {
+  "desl_debuc_9_7",
+  "le_gall_5_3",
+  "desl_debuc_13_7",
+  "haar_0",
+  "haar_1",
+  "fidelity",
+  "daub_9_7"
+};
+
+#ifndef INT_MAX
+#define INT_MAX 2147483647
+#endif
+
+static SchroEncoderSetting encoder_settings[] = {
+  ENUM("rate_control", rate_control_list, 0),
+  INT ("bitrate", 0, INT_MAX, 13824000),
+  INT ("max_bitrate", 0, INT_MAX, 13824000),
+  INT ("min_bitrate", 0, INT_MAX, 13824000),
+  DOUB("noise_threshold", 0, 100.0, 25.0),
+  ENUM("gop_structure", gop_structure_list, 0),
+  ENUM("perceptual_weighting", perceptual_weighting_list, 0),
+  DOUB("perceptual_distance", 0, 100.0, 3.0),
+  ENUM("filtering", filtering_list, 0),
+  DOUB("filter_value", 0, 100.0, 5.0),
+  INT ("profile", 0, 0, 0),
+  INT ("level", 0, 0, 0),
+  INT ("au_distance", 1, INT_MAX, 30),
+  BOOL("enable_psnr", FALSE),
+  BOOL("enable_ssim", FALSE),
+
+  INT ("ref_distance", 2, 20, 4),
+  INT ("transform_depth", 1, SCHRO_LIMIT_ENCODER_TRANSFORM_DEPTH, 4),
+  ENUM("intra_wavelet", wavelet_list, SCHRO_WAVELET_DESLAURIES_DUBUC_9_7),
+  ENUM("inter_wavelet", wavelet_list, SCHRO_WAVELET_LE_GALL_5_3),
+  INT ("mv_precision", 0, 3, 0),
+  BOOL("interlaced_coding", FALSE),
+  BOOL("enable_internal_testing", FALSE),
+  BOOL("enable_noarith", FALSE),
+  BOOL("enable_md5", FALSE),
+  BOOL("enable_fullscan_prediction", FALSE),
+  BOOL("enable_hierarchical_prediction", TRUE),
+  BOOL("enable_zero_prediction", FALSE),
+  BOOL("enable_phasecorr_prediction", FALSE),
+  INT ("magic_dc_metric_offset", 0, 255, 1.0),
+};
+
+int
+schro_encoder_get_n_settings (void)
+{
+  return ARRAY_SIZE(encoder_settings);
+}
+
+const SchroEncoderSetting *
+schro_encoder_get_setting_info (int i)
+{
+  if (i>=0 && i < ARRAY_SIZE(encoder_settings)) {
+    return encoder_settings+i;
+  }
+  return NULL;
+}
+
+#define VAR_SET(x) if (strcmp (name, #x) == 0) { \
+  encoder->x = value; \
+  return; \
+}
+#define VAR_GET(x) if (strcmp (name, #x) == 0) { \
+  return encoder->x; \
+}
+
+void
+schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
+    double value)
+{
+  VAR_SET(rate_control);
+  VAR_SET(bitrate);
+  VAR_SET(max_bitrate);
+  VAR_SET(min_bitrate);
+  VAR_SET(noise_threshold);
+  VAR_SET(gop_structure);
+  VAR_SET(perceptual_weighting);
+  VAR_SET(perceptual_distance);
+  VAR_SET(filtering);
+  VAR_SET(filter_value);
+  VAR_SET(interlaced_coding);
+  VAR_SET(profile);
+  VAR_SET(level);
+  VAR_SET(au_distance);
+  VAR_SET(ref_distance);
+  VAR_SET(transform_depth);
+  VAR_SET(intra_wavelet);
+  VAR_SET(inter_wavelet);
+  VAR_SET(mv_precision);
+  VAR_SET(enable_psnr);
+  VAR_SET(enable_ssim);
+  VAR_SET(enable_internal_testing);
+  VAR_SET(enable_noarith);
+  VAR_SET(enable_md5);
+  VAR_SET(enable_fullscan_prediction);
+  VAR_SET(enable_hierarchical_prediction);
+  VAR_SET(enable_zero_prediction);
+  VAR_SET(enable_phasecorr_prediction);
+  VAR_SET(magic_dc_metric_offset);
+  //VAR_SET();
+}
+
+double
+schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
+{
+  VAR_GET(rate_control);
+  VAR_GET(bitrate);
+  VAR_GET(max_bitrate);
+  VAR_GET(min_bitrate);
+  VAR_GET(noise_threshold);
+  VAR_GET(gop_structure);
+  VAR_GET(perceptual_weighting);
+  VAR_GET(perceptual_distance);
+  VAR_GET(filtering);
+  VAR_GET(filter_value);
+  VAR_GET(interlaced_coding);
+  VAR_GET(profile);
+  VAR_GET(level);
+  VAR_GET(au_distance);
+  VAR_GET(ref_distance);
+  VAR_GET(transform_depth);
+  VAR_GET(intra_wavelet);
+  VAR_GET(inter_wavelet);
+  VAR_GET(mv_precision);
+  VAR_GET(enable_psnr);
+  VAR_GET(enable_ssim);
+  VAR_GET(enable_internal_testing);
+  VAR_GET(enable_noarith);
+  VAR_GET(enable_md5);
+  VAR_GET(enable_fullscan_prediction);
+  VAR_GET(enable_hierarchical_prediction);
+  VAR_GET(enable_zero_prediction);
+  VAR_GET(enable_phasecorr_prediction);
+  VAR_GET(magic_dc_metric_offset);
+  //VAR_GET();
+
+  return 0;
+}
 

@@ -16,13 +16,14 @@
 SCHRO_BEGIN_DECLS
 
 typedef struct _SchroEncoder SchroEncoder;
-typedef struct _SchroEncoderParams SchroEncoderParams;
 typedef struct _SchroEncoderFrame SchroEncoderFrame;
+typedef struct _SchroEncoderSetting SchroEncoderSetting;
 
 /* forward reference */
 typedef struct _SchroPredictionVector SchroPredictionVector;
 typedef struct _SchroPredictionList SchroPredictionList;
 
+#if 0
 typedef enum {
   SCHRO_PREF_ENGINE,
   SCHRO_PREF_QUANT_ENGINE,
@@ -37,6 +38,7 @@ typedef enum {
   SCHRO_PREF_MD5,
   SCHRO_PREF_LAST
 } SchroPrefEnum;
+#endif
 
 typedef enum {
   SCHRO_STATE_NEED_FRAME,
@@ -64,11 +66,25 @@ typedef enum {
   SCHRO_ENCODER_PERCEPTUAL_MOO
 } SchroEncoderPerceptualEnum;
 
-struct _SchroEncoderParams {
-  int ignore;
-};
+typedef enum {
+  SCHRO_ENCODER_RATE_CONTROL_CONSTANT_NOISE_THRESHOLD,
+  SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE,
+  SCHRO_ENCODER_RATE_CONTROL_LOW_DELAY,
+  SCHRO_ENCODER_RATE_CONTROL_LOSSLESS
+} SchroEncoderRateControlEnum;
+
+typedef enum {
+  SCHRO_ENCODER_GOP_ADAPTIVE,
+  SCHRO_ENCODER_GOP_INTRA_ONLY,
+  SCHRO_ENCODER_GOP_BACKREF,
+  SCHRO_ENCODER_GOP_CHAINED_BACKREF,
+  SCHRO_ENCODER_GOP_BIREF,
+  SCHRO_ENCODER_GOP_CHAINED_BIREF,
+} SchroEncoderGOPEnum;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
+typedef int (*SchroEngineIterateFunc) (SchroEncoder *encoder);
+
 struct _SchroEncoderFrame {
   /*< private >*/
   int refcount;
@@ -184,14 +200,43 @@ struct _SchroEncoder {
 
   int need_rap;
 
+  SchroVideoFormat video_format;
   int version_major;
   int version_minor;
+
+  /* configuration */
+  int rate_control;
+  int bitrate;
+  int max_bitrate;
+  int min_bitrate;
+  double noise_threshold;
+  int gop_structure;
+  int perceptual_weighting;
+  double perceptual_distance;
+  int filtering;
+  double filter_value;
   int profile;
   int level;
-  schro_bool interlaced_coding;
+  int au_distance;
+  schro_bool enable_psnr;
+  schro_bool enable_ssim;
+  schro_bool enable_md5;
 
-  SchroVideoFormat video_format;
-  SchroEncoderParams encoder_params;
+  int ref_distance;
+  int transform_depth;
+  int intra_wavelet;
+  int inter_wavelet;
+  int mv_precision;
+  schro_bool interlaced_coding;
+  schro_bool enable_internal_testing;
+  schro_bool enable_noarith;
+  schro_bool enable_fullscan_prediction;
+  schro_bool enable_hierarchical_prediction;
+  schro_bool enable_zero_prediction;
+  schro_bool enable_phasecorr_prediction;
+  double magic_dc_metric_offset;
+
+  /* other */
 
   int end_of_stream;
   int end_of_stream_handled;
@@ -200,7 +245,6 @@ struct _SchroEncoder {
   int prev_offset;
 
   SchroPictureNumber au_frame;
-  int au_distance;
   int next_slot;
 
   int output_slot;
@@ -210,20 +254,14 @@ struct _SchroEncoder {
   int queue_changed;
 
   int engine_init;
-  int engine;
+  SchroEngineIterateFunc engine_iterate;
   int quantiser_engine;
 
+#if 0
   int prefs[SCHRO_PREF_LAST];
+#endif
 
-  /* configuration flags */
-  schro_bool internal_testing;
-  schro_bool calculate_psnr;
-  schro_bool calculate_ssim;
-  schro_bool enable_filtering;
-  schro_bool enable_fullscan_prediction;
-  schro_bool enable_hierarchical_prediction;
-  schro_bool enable_zero_prediction;
-  schro_bool enable_phasecorr_prediction;
+  /* internal stuff */
 
   double pixels_per_degree_horiz;
   double pixels_per_degree_vert;
@@ -245,13 +283,33 @@ struct _SchroEncoder {
   int gop_picture;
 
   int last_ref;
-  int ref_distance;
+  int last_ref2;
   int next_ref;
   int mid1_ref;
   int mid2_ref;
 };
 #endif
 
+typedef enum {
+  SCHRO_ENCODER_SETTING_TYPE_BOOLEAN,
+  SCHRO_ENCODER_SETTING_TYPE_INT,
+  SCHRO_ENCODER_SETTING_TYPE_ENUM,
+  SCHRO_ENCODER_SETTING_TYPE_DOUBLE,
+  SCHRO_ENCODER_SETTING_TYPE_LAST
+} SchroEncoderSettingTypeEnum;
+
+struct _SchroEncoderSetting {
+  char *name;
+  SchroEncoderSettingTypeEnum type;
+
+  double min;
+  double max;
+  double default_value;
+
+  char **enum_list;
+};
+
+#if 0
 struct _SchroEncoderSettings {
   int transform_depth;
   int wavelet_filter_index;
@@ -265,6 +323,7 @@ struct _SchroEncoderSettings {
   int xblen_luma;
   int yblen_luma;
 };
+#endif
 
 enum {
   SCHRO_MOTION_FIELD_HIER_REF0,
@@ -305,23 +364,29 @@ void schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_frame_insert_buffer (SchroEncoderFrame *frame, SchroBuffer *buffer);
 void schro_encoder_start (SchroEncoder *encoder);
 
+#if 0
 int schro_encoder_preference_get_range (SchroEncoder *encoder,
     SchroPrefEnum pref, int *min, int *max);
 int schro_encoder_preference_get (SchroEncoder *encoder, SchroPrefEnum pref);
 int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
     int value);
+#endif
 
 SchroStateEnum schro_encoder_wait (SchroEncoder *encoder);
 SchroBuffer * schro_encoder_pull (SchroEncoder *encoder,
     int *n_decodable_frames);
+
+int schro_encoder_get_n_settings (void);
+const SchroEncoderSetting *schro_encoder_get_setting_info (int i);
+void schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
+    double d);
+double schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name);
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
 void schro_encoder_set_default_subband_weights (SchroEncoder *encoder);
 void schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
         double (*perceptual_weight)(double));
-void schro_encoder_use_perceptual_weighting (SchroEncoder *encoder,
-    SchroEncoderPerceptualEnum type, double dist);
 double schro_encoder_perceptual_weight_constant (double ppd);
 double schro_encoder_perceptual_weight_ccir959 (double ppd);
 double schro_encoder_perceptual_weight_moo (double ppd);

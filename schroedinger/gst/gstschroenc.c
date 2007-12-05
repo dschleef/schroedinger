@@ -91,18 +91,7 @@ enum
 
 enum
 {
-  ARG_0,
-  ARG_ENGINE,
-  ARG_QUANT_ENGINE,
-  ARG_REF_DISTANCE,
-  ARG_TRANSFORM_DEPTH,
-  ARG_INTRA_WAVELET,
-  ARG_INTER_WAVELET,
-  ARG_LAMBDA,
-  ARG_PSNR,
-  ARG_BITRATE,
-  ARG_NOARITH,
-  ARG_MD5
+  ARG_0
 };
 
 static void gst_schro_enc_finalize (GObject *object);
@@ -159,12 +148,7 @@ gst_schro_enc_class_init (GstSchroEncClass * klass)
 {
   GObjectClass *gobject_class;
   GstElementClass *gstelement_class;
-  static const char *arg_names[] = {
-    "engine", "quant_engine", "ref_distance", "transform_depth",
-    "intra_wavelet", "inter_wavelet", "lambda", "psnr", "bitrate",
-    "noarith", "md5" };
   int i;
-  SchroEncoder *enc;
 
   gobject_class = G_OBJECT_CLASS (klass);
   gstelement_class = GST_ELEMENT_CLASS (klass);
@@ -173,17 +157,39 @@ gst_schro_enc_class_init (GstSchroEncClass * klass)
   gobject_class->get_property = gst_schro_enc_get_property;
   gobject_class->finalize = gst_schro_enc_finalize;
 
-  enc = schro_encoder_new ();
-  for(i=0;i<sizeof(arg_names)/sizeof(arg_names[0]);i++){
-    int min, max, val;
-    schro_encoder_preference_get_range (enc, i, &min, &max);
-    val = schro_encoder_preference_get (enc, i);
-    g_object_class_install_property (gobject_class, ARG_ENGINE + i,
-        g_param_spec_int (arg_names[i], arg_names[i], arg_names[i],
-          min, max, val, G_PARAM_READWRITE));
-  }
+  for(i=0;i<schro_encoder_get_n_settings();i++){
+    const SchroEncoderSetting *setting;
 
-  schro_encoder_free (enc);
+    setting = schro_encoder_get_setting_info (i);
+
+    switch (setting->type) {
+      case SCHRO_ENCODER_SETTING_TYPE_BOOLEAN:
+        g_object_class_install_property (gobject_class, i + 1,
+            g_param_spec_boolean (setting->name, setting->name, setting->name,
+              setting->default_value, G_PARAM_READWRITE));
+        break;
+      case SCHRO_ENCODER_SETTING_TYPE_INT:
+        g_object_class_install_property (gobject_class, i + 1,
+            g_param_spec_int (setting->name, setting->name, setting->name,
+              setting->min, setting->max, setting->default_value,
+              G_PARAM_READWRITE));
+        break;
+      case SCHRO_ENCODER_SETTING_TYPE_ENUM:
+        g_object_class_install_property (gobject_class, i + 1,
+            g_param_spec_int (setting->name, setting->name, setting->name,
+              setting->min, setting->max, setting->default_value,
+              G_PARAM_READWRITE));
+        break;
+      case SCHRO_ENCODER_SETTING_TYPE_DOUBLE:
+        g_object_class_install_property (gobject_class, i + 1,
+            g_param_spec_double (setting->name, setting->name, setting->name,
+              setting->min, setting->max, setting->default_value,
+              G_PARAM_READWRITE));
+        break;
+      default:
+        break;
+    }
+  }
 
   gstelement_class->change_state = gst_schro_enc_change_state;
 }
@@ -297,23 +303,24 @@ gst_schro_enc_set_property (GObject * object, guint prop_id,
   src = GST_SCHRO_ENC (object);
 
   GST_DEBUG ("gst_schro_enc_set_property");
-  switch (prop_id) {
-    case ARG_ENGINE:
-    case ARG_QUANT_ENGINE:
-    case ARG_REF_DISTANCE:
-    case ARG_TRANSFORM_DEPTH:
-    case ARG_INTRA_WAVELET:
-    case ARG_INTER_WAVELET:
-    case ARG_LAMBDA:
-    case ARG_PSNR:
-    case ARG_BITRATE:
-    case ARG_NOARITH:
-    case ARG_MD5:
-      schro_encoder_preference_set (src->encoder, prop_id - ARG_ENGINE,
-          g_value_get_int(value));
-      break;
-    default:
-      break;
+
+  if (prop_id >= 1) {
+    const SchroEncoderSetting *setting;
+    setting = schro_encoder_get_setting_info (prop_id - 1);
+    switch(G_VALUE_TYPE(value)) {
+      case G_TYPE_DOUBLE:
+        schro_encoder_setting_set_double (src->encoder, setting->name,
+            g_value_get_double(value));
+        break;
+      case G_TYPE_INT:
+        schro_encoder_setting_set_double (src->encoder, setting->name,
+            g_value_get_int(value));
+        break;
+      case G_TYPE_BOOLEAN:
+        schro_encoder_setting_set_double (src->encoder, setting->name,
+            g_value_get_boolean(value));
+        break;
+    }
   }
 }
 
@@ -326,24 +333,23 @@ gst_schro_enc_get_property (GObject * object, guint prop_id, GValue * value,
   g_return_if_fail (GST_IS_SCHRO_ENC (object));
   src = GST_SCHRO_ENC (object);
 
-  switch (prop_id) {
-    case ARG_ENGINE:
-    case ARG_QUANT_ENGINE:
-    case ARG_REF_DISTANCE:
-    case ARG_TRANSFORM_DEPTH:
-    case ARG_INTRA_WAVELET:
-    case ARG_INTER_WAVELET:
-    case ARG_LAMBDA:
-    case ARG_PSNR:
-    case ARG_BITRATE:
-    case ARG_NOARITH:
-    case ARG_MD5:
-      g_value_set_int (value,
-          schro_encoder_preference_get (src->encoder, prop_id - ARG_ENGINE));
-      break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-      break;
+  if (prop_id >= 1) {
+    const SchroEncoderSetting *setting;
+    setting = schro_encoder_get_setting_info (prop_id - 1);
+    switch(G_VALUE_TYPE(value)) {
+      case G_TYPE_DOUBLE:
+        g_value_set_double (value,
+            schro_encoder_setting_get_double (src->encoder, setting->name));
+        break;
+      case G_TYPE_INT:
+        g_value_set_int (value,
+            schro_encoder_setting_get_double (src->encoder, setting->name));
+        break;
+      case G_TYPE_BOOLEAN:
+        g_value_set_boolean (value,
+            schro_encoder_setting_get_double (src->encoder, setting->name));
+        break;
+    }
   }
 }
 

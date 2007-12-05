@@ -29,8 +29,8 @@ typedef enum _SchroParseCode {
   SCHRO_PARSE_CODE_INTER_NON_REF_2 = 0x0a,
   SCHRO_PARSE_CODE_INTER_NON_REF_2_NOARITH = 0x4a,
 
-  SCHRO_PARSE_CODE_LD_INTRA_REF = 0x8c,
-  SCHRO_PARSE_CODE_LD_INTRA_NON_REF = 0x88
+  SCHRO_PARSE_CODE_LD_INTRA_REF = 0xcc,
+  SCHRO_PARSE_CODE_LD_INTRA_NON_REF = 0xc8
 } SchroParseCode;
 
 #define SCHRO_PARSE_CODE_PICTURE(is_ref,n_refs,is_lowdelay,is_noarith) \

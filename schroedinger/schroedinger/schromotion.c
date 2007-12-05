@@ -406,8 +406,8 @@ schro_motion_get_block (SchroMotion *motion, SchroMotionVector *mv,
     upsample_index = (mx&4)>>2 | (my&4)>>1;
     srcframe = motion->src1->frames[upsample_index];
   } else {
-    mx = mv->x1<<(3-motion->mv_precision);
-    my = mv->y1<<(3-motion->mv_precision);
+    mx = mv->x2<<(3-motion->mv_precision);
+    my = mv->y2<<(3-motion->mv_precision);
     sx = x + (mx>>3);
     sy = y + (my>>3);
     upsample_index = (mx&4)>>2 | (my&4)>>1;
@@ -844,6 +844,8 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
   if (_schro_motion_ref) {
     return schro_motion_render_ref (motion, dest);
   }
+
+  motion->mv_precision = params->mv_precision;
 
   obmc_luma = malloc(sizeof(*obmc_luma));
   schro_obmc_init (obmc_luma,

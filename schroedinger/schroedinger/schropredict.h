@@ -50,6 +50,7 @@ void schro_motion_field_global_prediction (SchroMotionField *mf,
 
 int schro_frame_get_metric (SchroFrame *frame1, int x1, int y1,
     SchroFrame *frame2, int x2, int y2);
+void schro_motion_field_lshift (SchroMotionField *mf, int n);
 
 #endif
 

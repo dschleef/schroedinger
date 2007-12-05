@@ -296,7 +296,7 @@ schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame)
   double max;
   double *table;
 
-  psnr = frame->encoder->prefs[SCHRO_PREF_PSNR];
+  psnr = frame->encoder->noise_threshold;
 
   noise_amplitude = 255.0 * pow(0.1, psnr*0.05);
   SCHRO_DEBUG("noise %g", noise_amplitude);
@@ -335,7 +335,7 @@ schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame)
   int base;
   const int *table;
 
-  psnr = frame->encoder->prefs[SCHRO_PREF_PSNR];
+  psnr = frame->encoder->noise_threshold;
   /* completely made up */
   base = 12 + (30 - psnr)/2;
 
@@ -562,7 +562,7 @@ schro_encoder_dump_subband_curves (SchroEncoderFrame *frame)
   int component;
   int pos;
 
-  if (!frame->encoder->internal_testing) {
+  if (!frame->encoder->enable_internal_testing) {
     return;
   }
 

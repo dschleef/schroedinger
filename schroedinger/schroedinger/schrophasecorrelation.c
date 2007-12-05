@@ -452,6 +452,10 @@ do_motion_field (SchroPhaseCorr *pc, int i)
       }
     }
 
+    schro_motion_field_scan (mf, params, src, ref, 2);
+
+    schro_motion_field_lshift (mf, params->mv_precision);
+
     schro_list_append (pc->frame->motion_field_list, mf);
   }
 

@@ -11,6 +11,11 @@
 #define SCHRO_METRIC_INVALID (1<<24)
 
 #define DC_BIAS 50
+#define DC_METRIC 50
+#define BIDIR_LIMIT (10*8*8)
+
+#define motion_field_get(mf,x,y) \
+  ((mf)->motion_vectors + (y)*(mf)->x_num_blocks + (x))
 
 void schro_encoder_hierarchical_prediction (SchroEncoderFrame *frame);
 void schro_encoder_hierarchical_prediction_2 (SchroEncoderFrame *frame);
@@ -24,7 +29,7 @@ void schro_motion_global_metric (SchroMotionField *mf, SchroFrame *frame,
 static void schro_motion_merge (SchroMotion *motion, SchroList *_list);
 static void schro_motion_cleanup (SchroMotion *motion, int x, int y);
 static void schro_motion_combine (SchroMotion *motion);
-static void schro_motion_subpixel (SchroMotion *motion);
+//static void schro_motion_subpixel (SchroMotion *motion);
 void schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame);
 
 
@@ -76,7 +81,7 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
 
   schro_motion_combine (frame->motion);
 
-  schro_motion_subpixel (frame->motion);
+  //schro_motion_subpixel (frame->motion);
 
   schro_motion_calculate_stats (frame->motion, frame);
 
@@ -202,6 +207,30 @@ next_mb:
   }
 }
 
+void
+schro_motion_field_lshift (SchroMotionField *mf, int n)
+{
+  int i,j;
+  SchroMotionVector *mv;
+
+  for(j=0;j<mf->y_num_blocks;j++){
+    for(i=0;i<mf->x_num_blocks;i++){
+      mv = motion_field_get(mf,i,j);
+
+      if (mv->using_global || mv->pred_mode == 0) continue;
+      if (mv->pred_mode & 1) {
+        mv->x1 <<= n;
+        mv->y1 <<= n;
+      }
+      if (mv->pred_mode & 2) {
+        mv->x2 <<= n;
+        mv->y2 <<= n;
+      }
+    }
+  }
+}
+
+#if 0
 static void
 schro_motion_subpixel (SchroMotion *motion)
 {
@@ -224,6 +253,7 @@ schro_motion_subpixel (SchroMotion *motion)
     }
   }
 }
+#endif
 
 void
 schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame)
@@ -258,7 +288,7 @@ schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame)
       }
     }
   }
-  SCHRO_INFO("dc %d global %d motion %d ref1 %d ref2 %d bidir %d",
+  SCHRO_ERROR("dc %d global %d motion %d ref1 %d ref2 %d bidir %d",
       frame->stats_dc, frame->stats_global, frame->stats_motion,
       ref1, ref2, bidir);
 }
@@ -725,19 +755,20 @@ schro_encoder_dc_prediction (SchroEncoderFrame *encoder_frame)
 
       x = i*params->xbsep_luma;
       y = j*params->ybsep_luma;
+#if 0
       mvdc->metric = schro_metric_absdiff_u8 (
           orig_frame->components[0].data + x + y*orig_frame->components[0].stride,
           orig_frame->components[0].stride,
           const_data, 0, 8, 8);
       mvdc->metric += DC_BIAS;
+#else
+      mvdc->metric = DC_METRIC*8*8;
+#endif
     }
   }
 
   schro_list_append (encoder_frame->motion_field_list, motion_field);
 }
-
-#define motion_field_get(mf,x,y) \
-  ((mf)->motion_vectors + (y)*(mf)->x_num_blocks + (x))
 
 int
 schro_frame_get_metric (SchroFrame *frame1, int x1, int y1,
@@ -773,6 +804,8 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderFrame *frame)
   int shift;
   SchroMotionField *mf;
   SchroMotionField *parent_mf = NULL;
+  SchroMotionField *mf1 = NULL;
+  SchroMotionField *mf2 = NULL;
 
   for(ref=0;ref<params->num_refs;ref++){
 
@@ -889,9 +922,42 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderFrame *frame)
       parent_mf = mf;
     }
 
+    schro_motion_field_lshift (parent_mf, params->mv_precision);
     schro_list_append (frame->motion_field_list, parent_mf);
+    
+    if (ref == 0) {
+      mf1 = parent_mf;
+    } else {
+      mf2 = parent_mf;
+    }
   }
 
+  if (params->num_refs == 2) {
+    int i,j;
+    SchroMotionVector *mv;
+    SchroMotionVector *mv1;
+    SchroMotionVector *mv2;
+
+    mf = schro_motion_field_new (params->x_num_blocks, params->y_num_blocks);
+    for(j=0;j<mf->y_num_blocks;j++){
+      for(i=0;i<mf->x_num_blocks;i++){
+        mv = motion_field_get (mf, i, j);
+        mv1 = motion_field_get (mf1, i, j);
+        mv2 = motion_field_get (mf2, i, j);
+
+        *mv = *mv1;
+        mv->pred_mode = 3;
+        mv->x2 = mv2->x1;
+        mv->y2 = mv2->y1;
+        if (mv1->metric < BIDIR_LIMIT && mv2->metric < BIDIR_LIMIT) {
+          mv->metric = MIN(mv1->metric, mv2->metric) - 1;
+        } else {
+          mv->metric = 32000;
+        }
+      }
+    }
+    schro_list_append (frame->motion_field_list, mf);
+  }
 }
 
 void
@@ -938,6 +1004,7 @@ schro_encoder_zero_prediction (SchroEncoderFrame *frame)
       }
     }
 
+    schro_motion_field_lshift (mf, params->mv_precision);
     schro_list_append (frame->motion_field_list, mf);
   }
 }
@@ -965,6 +1032,7 @@ schro_encoder_fullscan_prediction (SchroEncoderFrame *frame)
     schro_motion_field_scan (mf, params, downsampled_frame,
         downsampled_ref, 20);
 
+    schro_motion_field_lshift (mf, params->mv_precision);
     schro_list_append (frame->motion_field_list, mf);
   }
 }
