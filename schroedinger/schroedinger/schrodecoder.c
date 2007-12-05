@@ -395,6 +395,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
       SCHRO_ERROR("Could not find reference picture %d", decoder->reference1);
       skip = 1;
     }
+    decoder->ref1 = NULL;
 
     if (decoder->n_refs > 1) {
       decoder->ref1 = schro_decoder_reference_get (decoder, decoder->reference2);

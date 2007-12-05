@@ -1,5 +1,10 @@
 2007-12-05  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	  Initialize decoder->ref1 to NULL, since it's used later.
+
+2007-12-05  David Schleef  <ds@schleef.org>
+
 	* gst/gstschroenc.c:
 	* schroedinger/schroencoder.c:
 	* schroedinger/schroencoder.h:
