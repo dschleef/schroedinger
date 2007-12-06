@@ -1,5 +1,10 @@
 2007-12-05  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrovideoformat.c:
+	  Fix some spec compliance issues.  (Bug #1)
+
+2007-12-05  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrodecoder.c:
 	  Initialize decoder->ref1 to NULL, since it's used later.
 
