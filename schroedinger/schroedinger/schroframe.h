@@ -115,9 +115,17 @@ void schro_frame_mark (SchroFrame *frame, int value);
 void schro_frame_data_get_codeblock (SchroFrameData *dest, SchroFrameData *src,
         int x, int y, int horiz_codeblocks, int vert_codeblocks);
 
-void schro_upsampled_frame_upsample (SchroUpsampledFrame *df);
 SchroUpsampledFrame * schro_upsampled_frame_new (SchroFrame *frame);
 void schro_upsampled_frame_free (SchroUpsampledFrame *df);
+void schro_upsampled_frame_upsample (SchroUpsampledFrame *df);
+int schro_upsampled_frame_get_pixel_prec0 (SchroUpsampledFrame *upframe, int k,
+    int x, int y);
+int schro_upsampled_frame_get_pixel_prec1 (SchroUpsampledFrame *upframe, int k,
+    int x, int y);
+int schro_upsampled_frame_get_pixel_prec3 (SchroUpsampledFrame *upframe, int k,
+    int x, int y);
+int schro_upsampled_frame_get_pixel_precN (SchroUpsampledFrame *upframe, int k,
+    int x, int y, int mv_precision);
 
 #endif
 

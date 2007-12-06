@@ -1464,3 +1464,130 @@ schro_frame_data_get_codeblock (SchroFrameData *dest, SchroFrameData *src,
 }
 
 
+/* upsampled frame */
+
+SchroUpsampledFrame *
+schro_upsampled_frame_new (SchroFrame *frame)
+{
+  SchroUpsampledFrame *df;
+
+  df = malloc(sizeof(SchroUpsampledFrame));
+  memset (df, 0, sizeof(*df));
+
+  df->frames[0] = frame;
+
+  return df;
+}
+
+void
+schro_upsampled_frame_free (SchroUpsampledFrame *df)
+{
+  int i;
+  for(i=0;i<4;i++){
+    if (df->frames[i]) {
+      schro_frame_unref (df->frames[i]);
+    }
+  }
+  free(df);
+}
+
+void
+schro_upsampled_frame_upsample (SchroUpsampledFrame *df)
+{
+  if (df->frames[1]) return;
+
+  df->frames[1] = schro_frame_new_and_alloc (df->frames[0]->format,
+      df->frames[0]->width, df->frames[0]->height);
+  df->frames[2] = schro_frame_new_and_alloc (df->frames[0]->format,
+      df->frames[0]->width, df->frames[0]->height);
+  df->frames[3] = schro_frame_new_and_alloc (df->frames[0]->format,
+      df->frames[0]->width, df->frames[0]->height);
+  schro_frame_upsample_horiz (df->frames[1], df->frames[0]);
+  schro_frame_upsample_vert (df->frames[2], df->frames[0]);
+  schro_frame_upsample_horiz (df->frames[3], df->frames[2]);
+}
+
+int
+schro_upsampled_frame_get_pixel_prec0 (SchroUpsampledFrame *upframe, int k,
+    int x, int y)
+{
+  SchroFrameData *comp;
+  uint8_t *line;
+
+  comp = upframe->frames[0]->components + k;
+  x = CLAMP(x, 0, comp->width - 1);
+  y = CLAMP(y, 0, comp->height - 1);
+
+  line = OFFSET(comp->data, y*comp->stride);
+
+  return line[x];
+}
+
+int
+schro_upsampled_frame_get_pixel_prec1 (SchroUpsampledFrame *upframe, int k,
+    int x, int y)
+{
+  SchroFrameData *comp;
+  uint8_t *line;
+  int i;
+
+  comp = upframe->frames[0]->components + k;
+  x = CLAMP(x, 0, comp->width * 2 - 1);
+  y = CLAMP(y, 0, comp->height * 2 - 1);
+
+  i = ((y&1)<<1) | (x&1);
+  x >>= 1;
+  y >>= 1;
+
+  comp = upframe->frames[i]->components + k;
+  line = OFFSET(comp->data, y*comp->stride);
+
+  return line[x];
+}
+
+int
+schro_upsampled_frame_get_pixel_prec3 (SchroUpsampledFrame *upframe, int k,
+    int x, int y)
+{
+  int hx, hy;
+  int rx, ry;
+  int w00, w01, w10, w11;
+  int value;
+
+  hx = x >> 2;
+  hy = y >> 2;
+
+  rx = x & 0x3;
+  ry = y & 0x3;
+
+  w00 = (4 - ry) * (4 - rx);
+  w01 = (4 - ry) * rx;
+  w10 = ry * (4 - rx);
+  w11 = ry * rx;
+
+  value = w00 * schro_upsampled_frame_get_pixel_prec1 (upframe, k, hx, hy);
+  value += w01 * schro_upsampled_frame_get_pixel_prec1 (upframe, k, hx + 1, hy);
+  value += w10 * schro_upsampled_frame_get_pixel_prec1 (upframe, k, hx, hy + 1);
+  value += w11 * schro_upsampled_frame_get_pixel_prec1 (upframe, k, hx + 1, hy + 1);
+
+  return ROUND_SHIFT(value, 4);
+}
+
+int
+schro_upsampled_frame_get_pixel_precN (SchroUpsampledFrame *upframe, int k,
+    int x, int y, int prec)
+{
+  switch (prec) {
+    case 0:
+      return schro_upsampled_frame_get_pixel_prec0 (upframe, k, x, y);
+    case 1:
+      return schro_upsampled_frame_get_pixel_prec1 (upframe, k, x, y);
+    case 2:
+      return schro_upsampled_frame_get_pixel_prec3 (upframe, k, x<<1, y<<1);
+    case 3:
+      return schro_upsampled_frame_get_pixel_prec3 (upframe, k, x, y);
+  }
+
+  SCHRO_ASSERT(0);
+}
+

@@ -10,6 +10,14 @@
 
 int _schro_motion_ref = FALSE;
 
+static int
+get_pixel (SchroMotion *motion, int k, SchroUpsampledFrame *upframe,
+    int x, int y, int dx, int dy);
+
+int
+schro_motion_pixel_predict_block (SchroMotion *motion, int x, int y, int k,
+    int i, int j);
+
 
 SchroMotion *
 schro_motion_new (SchroParams *params, SchroUpsampledFrame *ref1,
@@ -29,15 +37,253 @@ schro_motion_new (SchroParams *params, SchroUpsampledFrame *ref1,
   memset (motion->motion_vectors, 0, sizeof(SchroMotionVector)*
       params->x_num_blocks*params->y_num_blocks);
 
+  motion->tmpdata = malloc (64*64*3);
+
   return motion;
 }
 
 void
 schro_motion_free (SchroMotion *motion)
 {
+  free (motion->tmpdata);
   free (motion->motion_vectors);
   free (motion);
 }
+
+void
+schro_motion_get_global_vector (SchroMotion *motion, int ref, int x, int y,
+    int *dx, int *dy)
+{
+  SchroParams *params = motion->params;
+  SchroGlobalMotion *gm = params->global_motion + ref;
+  int alpha, beta;
+  int scale;
+
+  alpha = gm->a_exp;
+  beta = gm->c_exp;
+
+  scale = (1<<beta) - (gm->c0 * x + gm->c1 * y);
+
+  *dx = scale * (gm->a00 * x + gm->a01 * y + (1<<alpha) * gm->b0);
+  *dy = scale * (gm->a10 * x + gm->a11 * y + (1<<alpha) * gm->b1);
+
+  *dx >>= (alpha+beta);
+  *dy >>= (alpha+beta);
+}
+
+
+int
+schro_motion_pixel_predict (SchroMotion *motion, int x, int y, int k)
+{
+  int i,j;
+  int value;
+
+  i = (x + motion->xbsep/2) / motion->xbsep - 1;
+  j = (y + motion->ybsep/2) / motion->ybsep - 1;
+
+  value = schro_motion_pixel_predict_block (motion, x, y, k, i, j);
+  value += schro_motion_pixel_predict_block (motion, x, y, k, i + 1, j);
+  value += schro_motion_pixel_predict_block (motion, x, y, k, i, j + 1);
+  value += schro_motion_pixel_predict_block (motion, x, y, k, i + 1, j + 1);
+
+  return ROUND_SHIFT(value, motion->shift);
+}
+
+static int
+get_dc_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
+{
+  SchroParams *params = motion->params;
+  SchroMotionVectorDC *mvdc;
+
+  mvdc = (SchroMotionVectorDC *)
+    &motion->motion_vectors[j*params->x_num_blocks + i];
+
+  return mvdc->dc[k] * motion->dc_weight;
+}
+
+static int
+get_ref1_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
+{
+  SchroParams *params = motion->params;
+  SchroMotionVector *mv;
+  int value;
+  int dx, dy;
+
+  mv = &motion->motion_vectors[j*params->x_num_blocks + i];
+  if (mv->using_global) {
+    schro_motion_get_global_vector (motion, 0, x, y, &dx, &dy);
+  } else {
+    dx = mv->x1;
+    dy = mv->y1;
+  }
+
+  value = get_pixel (motion, k, motion->src1, x, y, dx, dy);
+  return value * motion->ref_weight;
+}
+
+static int
+get_ref2_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
+{
+  SchroParams *params = motion->params;
+  SchroMotionVector *mv;
+  int value;
+  int dx, dy;
+
+  mv = &motion->motion_vectors[j*params->x_num_blocks + i];
+  if (mv->using_global) {
+    schro_motion_get_global_vector (motion, 1, x, y, &dx, &dy);
+  } else {
+    dx = mv->x2;
+    dy = mv->y2;
+  }
+  value = get_pixel (motion, k, motion->src2, x, y, dx, dy);
+
+  return value * motion->ref_weight;
+}
+
+static int
+get_biref_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
+{
+  SchroParams *params = motion->params;
+  SchroMotionVector *mv;
+  int value1;
+  int value2;
+  int dx1, dx2, dy1, dy2;
+
+  mv = &motion->motion_vectors[j*params->x_num_blocks + i];
+  if (mv->using_global) {
+    schro_motion_get_global_vector (motion, 0, x, y, &dx1, &dy1);
+    schro_motion_get_global_vector (motion, 1, x, y, &dx2, &dy2);
+  } else {
+    dx1 = mv->x1;
+    dy1 = mv->y1;
+    dx2 = mv->x2;
+    dy2 = mv->y2;
+  }
+  value1 = get_pixel (motion, k, motion->src1, x, y, dx1, dy1);
+  value2 = get_pixel (motion, k, motion->src2, x, y, dx2, dy2);
+
+  return value1 * motion->biref1_weight + value2 * motion->biref2_weight;
+}
+
+
+static int
+get_pixel (SchroMotion *motion, int k, SchroUpsampledFrame *upframe,
+    int x, int y, int dx, int dy)
+{
+  int px, py;
+
+  if (k > 0) {
+    dx >>= motion->params->video_format->chroma_h_shift;
+    dy >>= motion->params->video_format->chroma_v_shift;
+  }
+
+  px = (x << motion->mv_precision) + dx;
+  py = (y << motion->mv_precision) + dy;
+
+  return schro_upsampled_frame_get_pixel_precN (upframe, k, px, py,
+      motion->mv_precision);
+}
+
+
+
+int
+schro_motion_pixel_predict_block (SchroMotion *motion, int x, int y, int k,
+    int i, int j)
+{
+  SchroParams *params = motion->params;
+  SchroMotionVector *mv;
+  int xmin, xmax, ymin, ymax;
+  int wx, wy;
+  int value;
+  int width, height;
+
+  if (i < 0 || j < 0) return 0;
+  if (i >= params->x_num_blocks || j >= params->y_num_blocks) return 0;
+
+  width = motion->xbsep * params->x_num_blocks;
+  height = motion->ybsep * params->y_num_blocks;
+
+  xmin = i * motion->xbsep - motion->xoffset;
+  ymin = j * motion->ybsep - motion->yoffset;
+  xmax = (i+1) * motion->xbsep + motion->xoffset;
+  ymax = (j+1) * motion->ybsep + motion->yoffset;
+
+  if (x < xmin || y < ymin || x >= xmax || y >= ymax) return 0;
+
+#ifdef EXP_16NOV07
+  if (motion->xoffset == 0) {
+    wx = 8;
+  } else if (x < motion->xoffset || x >= width - motion->xoffset) {
+    wx = 8;
+  } else if (x - xmin < 2*motion->xoffset) {
+    wx = 1 + (6*(x-xmin) + motion->xoffset - 1)/(2*motion->xoffset - 1);
+  } else if (xmax - 1 - x < 2*motion->xoffset) {
+    wx = 7 - (6*(x-xmax+2*motion->xoffset) + motion->xoffset - 1)/(2*motion->xoffset - 1);
+  } else {
+    wx = 8;
+  }
+
+  if (motion->yoffset == 0) {
+    wy = 8;
+  } else if (y < motion->yoffset || y >= width - motion->yoffset) {
+    wy = 8;
+  } else if (y - ymin < 2*motion->yoffset) {
+    wy = 1 + (6*(y-ymin) + motion->yoffset - 1)/(2*motion->yoffset - 1);
+  } else if (ymax - 1 - y < 2*motion->yoffset) {
+    wy = 7 - (6*(y-ymax+2*motion->yoffset) + motion->yoffset - 1)/(2*motion->yoffset - 1);
+  } else {
+    wy = 8;
+  }
+#else
+  if (motion->xoffset == 0) {
+    wx = 1;
+  } else if (x < motion->xoffset || x >= width - motion->xoffset) {
+    wx = motion->xoffset * 4;
+  } else if (x - xmin < 2*motion->xoffset) {
+    wx = (x - xmin) * 2 + 1;
+  } else if (xmax - 1 - x < 2*motion->xoffset) {
+    wx = (xmax - 1 - x) * 2 + 1;
+  } else {
+    wx = motion->xoffset * 4;
+  }
+
+  if (motion->yoffset == 0) {
+    wy = 1;
+  } else if (y < motion->yoffset || y >= height - motion->yoffset) {
+    wy = motion->yoffset * 4;
+  } else if (y - ymin < 2*motion->yoffset) {
+    wy = (y - ymin) * 2 + 1;
+  } else if (ymax - 1 - y < 2*motion->yoffset) {
+    wy = (ymax - 1 - y) * 2 + 1;
+  } else {
+    wy = motion->yoffset * 4;
+  }
+#endif
+
+  mv = &motion->motion_vectors[j*params->x_num_blocks + i];
+
+  switch (mv->pred_mode) {
+    case 0:
+      value = get_dc_pixel (motion, i, j, k, x, y);
+      break;
+    case 1:
+      value = get_ref1_pixel (motion, i, j, k, x, y);
+      break;
+    case 2:
+      value = get_ref2_pixel (motion, i, j, k, x, y);
+      break;
+    case 3:
+      value = get_biref_pixel (motion, i, j, k, x, y);
+      break;
+    default:
+      value = 0;
+      break;
+  }
+
+  return value * wx * wy;
+}
+
 
 static int
 ilog2 (unsigned int x)
@@ -863,7 +1109,6 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
       params->picture_weight_bits);
   motion->obmc_luma = obmc_luma;
   motion->obmc_chroma = obmc_chroma;
-  motion->tmpdata = malloc (64*64*3);
 
   clear_rows (dest, 0, obmc_luma->y_ramp/2);
 
@@ -950,7 +1195,6 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
   free(obmc_luma);
   schro_obmc_cleanup (obmc_chroma);
   free(obmc_chroma);
-  free(motion->tmpdata);
 }
 
 void
@@ -1241,61 +1485,18 @@ schro_motion_verify (SchroMotion *motion)
   return 1;
 }
 
-void
-schro_upsampled_frame_upsample (SchroUpsampledFrame *df)
-{
-  if (df->frames[1]) return;
-
-  df->frames[1] = schro_frame_new_and_alloc (df->frames[0]->format,
-      df->frames[0]->width, df->frames[0]->height);
-  df->frames[2] = schro_frame_new_and_alloc (df->frames[0]->format,
-      df->frames[0]->width, df->frames[0]->height);
-  df->frames[3] = schro_frame_new_and_alloc (df->frames[0]->format,
-      df->frames[0]->width, df->frames[0]->height);
-  schro_frame_upsample_horiz (df->frames[1], df->frames[0]);
-  schro_frame_upsample_vert (df->frames[2], df->frames[0]);
-  schro_frame_upsample_horiz (df->frames[3], df->frames[2]);
-}
-
-SchroUpsampledFrame *
-schro_upsampled_frame_new (SchroFrame *frame)
-{
-  SchroUpsampledFrame *df;
-
-  df = malloc(sizeof(SchroUpsampledFrame));
-  memset (df, 0, sizeof(*df));
-
-  df->frames[0] = frame;
-
-  return df;
-}
-
-void
-schro_upsampled_frame_free (SchroUpsampledFrame *df)
-{
-  int i;
-  for(i=0;i<4;i++){
-    if (df->frames[i]) {
-      schro_frame_unref (df->frames[i]);
-    }
-  }
-  free(df);
-}
-
-
 //#define EXP_16NOV07
 
+#if 0
 static int get_dc_pixel (SchroMotion *motion, int i, int j, int k, int x, int y);
 static int get_ref1_pixel (SchroMotion *motion, int i, int j, int k, int x, int y);
 static int get_ref2_pixel (SchroMotion *motion, int i, int j, int k, int x, int y);
 static int get_biref_pixel (SchroMotion *motion, int i, int j, int k, int x, int y);
 static int get_pixel (SchroMotion *motion, int k, SchroUpsampledFrame *upframe,
     int x, int y, int dx, int dy);
-static void get_global_mv (SchroMotion *motion, int ref, int x, int y, int *dx,
-    int *dy);
-static int up2by2 (SchroUpsampledFrame *upframe, int k, int x, int y);
 static int pixel_predict (SchroMotion *motion, int x, int y, int k);
 static int pixel_predict_block (SchroMotion *motion, int x, int y, int k, int i, int j);
+#endif
 static int get_shift (int offset);
 
 void
@@ -1345,7 +1546,7 @@ schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest)
     for(y=0;y<comp->height;y++){
       line = OFFSET(comp->data, y*comp->stride);
       for(x=0;x<comp->width;x++){
-        line[x] = CLAMP(pixel_predict (motion, x, y, k), 0, 255);
+        line[x] = CLAMP(schro_motion_pixel_predict (motion, x, y, k), 0, 255);
 
         /* FIXME */
         line[x] -= 128;
@@ -1373,280 +1574,4 @@ get_shift (int offset)
   SCHRO_ASSERT(0);
   return 0;
 }
-
-static int pixel_predict (SchroMotion *motion, int x, int y, int k)
-{
-  int i,j;
-  int value;
-
-  i = (x + motion->xbsep/2) / motion->xbsep - 1;
-  j = (y + motion->ybsep/2) / motion->ybsep - 1;
-
-  value = pixel_predict_block (motion, x, y, k, i, j);
-  value += pixel_predict_block (motion, x, y, k, i + 1, j);
-  value += pixel_predict_block (motion, x, y, k, i, j + 1);
-  value += pixel_predict_block (motion, x, y, k, i + 1, j + 1);
-
-  return ROUND_SHIFT(value, motion->shift);
-}
-
-static int
-pixel_predict_block (SchroMotion *motion, int x, int y, int k, int i, int j)
-{
-  SchroParams *params = motion->params;
-  SchroMotionVector *mv;
-  int xmin, xmax, ymin, ymax;
-  int wx, wy;
-  int value;
-  int width, height;
-
-  if (i < 0 || j < 0) return 0;
-  if (i >= params->x_num_blocks || j >= params->y_num_blocks) return 0;
-
-  width = motion->xbsep * params->x_num_blocks;
-  height = motion->ybsep * params->y_num_blocks;
-
-  xmin = i * motion->xbsep - motion->xoffset;
-  ymin = j * motion->ybsep - motion->yoffset;
-  xmax = (i+1) * motion->xbsep + motion->xoffset;
-  ymax = (j+1) * motion->ybsep + motion->yoffset;
-
-  if (x < xmin || y < ymin || x >= xmax || y >= ymax) return 0;
-
-#ifdef EXP_16NOV07
-  if (motion->xoffset == 0) {
-    wx = 8;
-  } else if (x < motion->xoffset || x >= width - motion->xoffset) {
-    wx = 8;
-  } else if (x - xmin < 2*motion->xoffset) {
-    wx = 1 + (6*(x-xmin) + motion->xoffset - 1)/(2*motion->xoffset - 1);
-  } else if (xmax - 1 - x < 2*motion->xoffset) {
-    wx = 7 - (6*(x-xmax+2*motion->xoffset) + motion->xoffset - 1)/(2*motion->xoffset - 1);
-  } else {
-    wx = 8;
-  }
-
-  if (motion->yoffset == 0) {
-    wy = 8;
-  } else if (y < motion->yoffset || y >= width - motion->yoffset) {
-    wy = 8;
-  } else if (y - ymin < 2*motion->yoffset) {
-    wy = 1 + (6*(y-ymin) + motion->yoffset - 1)/(2*motion->yoffset - 1);
-  } else if (ymax - 1 - y < 2*motion->yoffset) {
-    wy = 7 - (6*(y-ymax+2*motion->yoffset) + motion->yoffset - 1)/(2*motion->yoffset - 1);
-  } else {
-    wy = 8;
-  }
-#else
-  if (motion->xoffset == 0) {
-    wx = 1;
-  } else if (x < motion->xoffset || x >= width - motion->xoffset) {
-    wx = motion->xoffset * 4;
-  } else if (x - xmin < 2*motion->xoffset) {
-    wx = (x - xmin) * 2 + 1;
-  } else if (xmax - 1 - x < 2*motion->xoffset) {
-    wx = (xmax - 1 - x) * 2 + 1;
-  } else {
-    wx = motion->xoffset * 4;
-  }
-
-  if (motion->yoffset == 0) {
-    wy = 1;
-  } else if (y < motion->yoffset || y >= height - motion->yoffset) {
-    wy = motion->yoffset * 4;
-  } else if (y - ymin < 2*motion->yoffset) {
-    wy = (y - ymin) * 2 + 1;
-  } else if (ymax - 1 - y < 2*motion->yoffset) {
-    wy = (ymax - 1 - y) * 2 + 1;
-  } else {
-    wy = motion->yoffset * 4;
-  }
-#endif
-
-  mv = &motion->motion_vectors[j*params->x_num_blocks + i];
-
-  switch (mv->pred_mode) {
-    case 0:
-      value = get_dc_pixel (motion, i, j, k, x, y);
-      break;
-    case 1:
-      value = get_ref1_pixel (motion, i, j, k, x, y);
-      break;
-    case 2:
-      value = get_ref2_pixel (motion, i, j, k, x, y);
-      break;
-    case 3:
-      value = get_biref_pixel (motion, i, j, k, x, y);
-      break;
-    default:
-      value = 0;
-      break;
-  }
-
-  return value * wx * wy;
-}
-
-static int
-get_dc_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
-{
-  SchroParams *params = motion->params;
-  SchroMotionVectorDC *mvdc;
-
-  mvdc = (SchroMotionVectorDC *)
-    &motion->motion_vectors[j*params->x_num_blocks + i];
-
-  return mvdc->dc[k] * motion->dc_weight;
-}
-
-static int
-get_ref1_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
-{
-  SchroParams *params = motion->params;
-  SchroMotionVector *mv;
-  int value;
-  int dx, dy;
-
-  mv = &motion->motion_vectors[j*params->x_num_blocks + i];
-  if (mv->using_global) {
-    get_global_mv (motion, 0, x, y, &dx, &dy);
-  } else {
-    dx = mv->x1;
-    dy = mv->y1;
-  }
-
-  value = get_pixel (motion, k, motion->src1, x, y, dx, dy);
-  return value * motion->ref_weight;
-}
-
-static int
-get_ref2_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
-{
-  SchroParams *params = motion->params;
-  SchroMotionVector *mv;
-  int value;
-  int dx, dy;
-
-  mv = &motion->motion_vectors[j*params->x_num_blocks + i];
-  if (mv->using_global) {
-    get_global_mv (motion, 1, x, y, &dx, &dy);
-  } else {
-    dx = mv->x2;
-    dy = mv->y2;
-  }
-  value = get_pixel (motion, k, motion->src2, x, y, dx, dy);
-
-  return value * motion->ref_weight;
-}
-
-static int
-get_biref_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
-{
-  SchroParams *params = motion->params;
-  SchroMotionVector *mv;
-  int value1;
-  int value2;
-  int dx1, dx2, dy1, dy2;
-
-  mv = &motion->motion_vectors[j*params->x_num_blocks + i];
-  if (mv->using_global) {
-    get_global_mv (motion, 0, x, y, &dx1, &dy1);
-    get_global_mv (motion, 1, x, y, &dx2, &dy2);
-  } else {
-    dx1 = mv->x1;
-    dy1 = mv->y1;
-    dx2 = mv->x2;
-    dy2 = mv->y2;
-  }
-  value1 = get_pixel (motion, k, motion->src1, x, y, dx1, dy1);
-  value2 = get_pixel (motion, k, motion->src2, x, y, dx2, dy2);
-
-  return value1 * motion->biref1_weight + value2 * motion->biref2_weight;
-}
-
-static void
-get_global_mv (SchroMotion *motion, int ref, int x, int y, int *dx,
-    int *dy)
-{
-  SchroParams *params = motion->params;
-  SchroGlobalMotion *gm = params->global_motion + ref;
-  int alpha, beta;
-  int scale;
-
-  alpha = gm->a_exp;
-  beta = gm->c_exp;
-
-  scale = (1<<beta) - (gm->c0 * x + gm->c1 * y);
-
-  *dx = scale * (gm->a00 * x + gm->a01 * y + (1<<alpha) * gm->b0);
-  *dy = scale * (gm->a10 * x + gm->a11 * y + (1<<alpha) * gm->b1);
-
-  *dx >>= (alpha+beta);
-  *dy >>= (alpha+beta);
-}
-
-static int
-get_pixel (SchroMotion *motion, int k, SchroUpsampledFrame *upframe,
-    int x, int y, int dx, int dy)
-{
-  int px, py;
-  int hx, hy;
-  int rx, ry;
-  int w00, w01, w10, w11;
-  int shift;
-  int value;
-
-  if (motion->mv_precision > 0) {
-    px = (x << motion->mv_precision) + dx;
-    py = (y << motion->mv_precision) + dy;
-  } else {
-    px = (x + dx) << 1;
-    py = (y + dy) << 1;
-  }
-
-  if (motion->mv_precision < 2) {
-    return up2by2(upframe, k, px, py);
-  }
-
-  shift = motion->mv_precision - 1;
-  hx = px >> shift;
-  hy = py >> shift;
-
-  rx = px - (hx << shift);
-  ry = py - (hy << shift);
-
-  w00 = ((1<<shift) - ry) * ((1<<shift) - rx);
-  w01 = ((1<<shift) - ry) * rx;
-  w10 = ry * ((1<<shift) - rx);
-  w11 = ry * rx;
-
-  value = w00 * up2by2 (upframe, k, hx, hy);
-  value += w01 * up2by2 (upframe, k, hx + 1, hy);
-  value += w10 * up2by2 (upframe, k, hx, hy + 1);
-  value += w11 * up2by2 (upframe, k, hx + 1, hy + 1);
-
-  return ROUND_SHIFT(value, shift-1);
-}
-
-static int
-up2by2 (SchroUpsampledFrame *upframe, int k, int x, int y)
-{
-  SchroFrameData *comp;
-  uint8_t *line;
-  int i;
-  
-  comp = upframe->frames[0]->components + k;
-  x = CLAMP(x, 0, comp->width * 2 - 1);
-  y = CLAMP(y, 0, comp->height * 2 - 1);
-
-  i = ((y&1)<<1) | (x&1);
-  x >>= 1;
-  y >>= 1;
-
-  comp = upframe->frames[i]->components + k;
-  line = OFFSET(comp->data, y*comp->stride);
-
-  return line[x];
-}
-
-
 

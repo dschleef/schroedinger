@@ -104,6 +104,9 @@ SchroMotion * schro_motion_new (SchroParams *params,
     SchroUpsampledFrame *ref1, SchroUpsampledFrame *ref2);
 void schro_motion_free (SchroMotion *motion);
 
+void schro_motion_x_get_block (SchroMotion *motion, int k,
+    SchroUpsampledFrame *uf, int x, int y, int dx, int dy);
+
 int schro_motion_verify (SchroMotion *mf);
 void schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest);
 void schro_motion_render (SchroMotion *motion, SchroFrame *dest);

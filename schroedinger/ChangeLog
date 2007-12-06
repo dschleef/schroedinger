@@ -1,3 +1,14 @@
+2007-12-06  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	  Move upsampled frame code to schroframe.c.  Rearrange remaining
+	  reference code so that it's more useful externally.
+	* schroedinger/schrodecoder.c: fix typo
+	* schroedinger/schrovideoformat.c: compile fix
+
 2007-12-05  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrovideoformat.c:

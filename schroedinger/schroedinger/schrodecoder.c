@@ -628,7 +628,7 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
     //SCHRO_MILD_ASSERT(0);
   }
   if (decoder->profile != 0 || decoder->level != 0) {
-    SCHRO_ERROR("Expecting profile/level 0.0, got %d.%d",
+    SCHRO_ERROR("Expecting profile/level 0,0, got %d,%d",
         decoder->profile, decoder->level);
     SCHRO_MILD_ASSERT(0);
   }
