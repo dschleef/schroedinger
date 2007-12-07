@@ -111,14 +111,14 @@ static GstStaticPadTemplate gst_schrodownsample_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YV12, YUY2, UYVY, AYUV }"))
     );
 
 static GstStaticPadTemplate gst_schrodownsample_src_template =
     GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("I420"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YV12, YUY2, UYVY, AYUV }"))
     );
 
 GType
@@ -324,13 +324,30 @@ gst_schrodownsample_get_unit_size (GstBaseTransform * base_transform,
     GstCaps *caps, guint *size)
 {
   int width, height;
+  uint32_t format;
 
+  gst_structure_get_fourcc (gst_caps_get_structure(caps, 0),
+      "format", &format);
   gst_structure_get_int (gst_caps_get_structure(caps, 0),
       "width", &width);
   gst_structure_get_int (gst_caps_get_structure(caps, 0),
       "height", &height);
 
-  *size = width * height * 3 / 2;
+  switch (format) {
+    case GST_MAKE_FOURCC('I','4','2','0'):
+    case GST_MAKE_FOURCC('Y','V','1','2'):
+      *size = width * height * 3 / 2;
+      break;
+    case GST_MAKE_FOURCC('Y','U','Y','2'):
+    case GST_MAKE_FOURCC('U','Y','V','Y'):
+      *size = width * height * 2;
+      break;
+    case GST_MAKE_FOURCC('A','Y','U','V'):
+      *size = width * height * 4;
+      break;
+    default:
+      g_assert_not_reached();
+  }
 
   return TRUE;
 }
@@ -341,20 +358,88 @@ gst_schrodownsample_transform (GstBaseTransform * base_transform,
 {
   GstSchrodownsample *compress;
   SchroFrame *frame;
+  SchroFrame *planarframe1;
+  SchroFrame *planarframe2;
   SchroFrame *outframe;
   int width, height;
+  uint32_t format;
   
   g_return_val_if_fail (GST_IS_SCHRODOWNSAMPLE (base_transform), GST_FLOW_ERROR);
   compress = GST_SCHRODOWNSAMPLE (base_transform);
 
+  gst_structure_get_fourcc (gst_caps_get_structure(inbuf->caps, 0),
+      "format", &format);
   gst_structure_get_int (gst_caps_get_structure(inbuf->caps, 0),
       "width", &width);
   gst_structure_get_int (gst_caps_get_structure(inbuf->caps, 0),
       "height", &height);
 
-  frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA(inbuf), width, height);
-  outframe = schro_frame_new_from_data_I420 (GST_BUFFER_DATA(outbuf), width/2, height/2);
-  schro_frame_downsample (outframe, frame);
+  switch (format) {
+    case GST_MAKE_FOURCC('I','4','2','0'):
+      frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA(inbuf),
+          width, height);
+      outframe = schro_frame_new_from_data_I420 (GST_BUFFER_DATA(outbuf),
+          width/2, height/2);
+      schro_frame_downsample (outframe, frame);
+      break;
+    case GST_MAKE_FOURCC('Y','V','1','2'):
+      frame = schro_frame_new_from_data_YV12 (GST_BUFFER_DATA(inbuf),
+          width, height);
+      outframe = schro_frame_new_from_data_YV12 (GST_BUFFER_DATA(outbuf),
+          width/2, height/2);
+      schro_frame_downsample (outframe, frame);
+      break;
+    case GST_MAKE_FOURCC('Y','U','Y','2'):
+      frame = schro_frame_new_from_data_YUY2 (GST_BUFFER_DATA(inbuf),
+          width, height);
+      planarframe1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_422,
+          width, height);
+      planarframe2 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_422,
+          width/2, height/2);
+      outframe = schro_frame_new_from_data_YUY2 (GST_BUFFER_DATA(outbuf),
+          width/2, height/2);
+      schro_frame_convert (planarframe1, frame);
+      schro_frame_downsample (planarframe2, planarframe1);
+      schro_frame_convert (outframe, planarframe2);
+      schro_frame_unref (planarframe1);
+      schro_frame_unref (planarframe2);
+      break;
+    case GST_MAKE_FOURCC('U','Y','V','Y'):
+      frame = schro_frame_new_from_data_UYVY (GST_BUFFER_DATA(inbuf),
+          width, height);
+      planarframe1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_422,
+          width, height);
+      planarframe2 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_422,
+          width/2, height/2);
+      outframe = schro_frame_new_from_data_UYVY (GST_BUFFER_DATA(outbuf),
+          width/2, height/2);
+      schro_frame_convert (planarframe1, frame);
+      schro_frame_downsample (planarframe2, planarframe1);
+      schro_frame_convert (outframe, planarframe2);
+      schro_frame_unref (planarframe1);
+      schro_frame_unref (planarframe2);
+      break;
+    case GST_MAKE_FOURCC('A','Y','U','V'):
+      frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA(inbuf),
+          width, height);
+      planarframe1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_444,
+          width, height);
+      planarframe2 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_444,
+          width/2, height/2);
+      outframe = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA(outbuf),
+          width/2, height/2);
+      schro_frame_convert (planarframe1, frame);
+      schro_frame_downsample (planarframe2, planarframe1);
+      schro_frame_convert (outframe, planarframe2);
+      schro_frame_unref (planarframe1);
+      schro_frame_unref (planarframe2);
+      break;
+    default:
+      g_assert_not_reached();
+  }
+
+  schro_frame_unref (frame);
+  schro_frame_unref (outframe);
 
   return GST_FLOW_OK;
 }

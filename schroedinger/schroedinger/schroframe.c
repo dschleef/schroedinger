@@ -120,6 +120,27 @@ schro_frame_new_from_data_YUY2 (void *data, int width, int height)
 }
 
 SchroFrame *
+schro_frame_new_from_data_UYVY (void *data, int width, int height)
+{
+  SchroFrame *frame = schro_frame_new();
+
+  frame->format = SCHRO_FRAME_FORMAT_UYVY;
+
+  frame->width = width;
+  frame->height = height;
+
+  frame->components[0].width = width;
+  frame->components[0].height = height;
+  frame->components[0].stride = ROUND_UP_POW2(width,1) * 2;
+  frame->components[0].data = data;
+  frame->components[0].length = frame->components[0].stride * height;
+  frame->components[0].v_shift = 0;
+  frame->components[0].h_shift = 0;
+
+  return frame;
+}
+
+SchroFrame *
 schro_frame_new_from_data_AYUV (void *data, int width, int height)
 {
   SchroFrame *frame = schro_frame_new();
@@ -178,6 +199,48 @@ schro_frame_new_from_data_I420 (void *data, int width, int height)
     frame->components[1].data + frame->components[1].length; 
   frame->components[2].v_shift = 1;
   frame->components[2].h_shift = 1;
+
+  return frame;
+}
+
+SchroFrame *
+schro_frame_new_from_data_YV12 (void *data, int width, int height)
+{
+  SchroFrame *frame = schro_frame_new();
+
+  frame->format = SCHRO_FRAME_FORMAT_U8_420;
+
+  frame->width = width;
+  frame->height = height;
+
+  frame->components[0].width = width;
+  frame->components[0].height = height;
+  frame->components[0].stride = ROUND_UP_POW2(width,2);
+  frame->components[0].data = data;
+  frame->components[0].length = frame->components[0].stride *
+    ROUND_UP_POW2(frame->components[0].height,1);
+  frame->components[0].v_shift = 0;
+  frame->components[0].h_shift = 0;
+
+  frame->components[2].width = ROUND_UP_SHIFT(width,1);
+  frame->components[2].height = ROUND_UP_SHIFT(height,1);
+  frame->components[2].stride = ROUND_UP_POW2(frame->components[2].width,2);
+  frame->components[2].length =
+    frame->components[2].stride * frame->components[2].height;
+  frame->components[2].data =
+    frame->components[0].data + frame->components[0].length; 
+  frame->components[2].v_shift = 1;
+  frame->components[2].h_shift = 1;
+
+  frame->components[1].width = ROUND_UP_SHIFT(width,1);
+  frame->components[1].height = ROUND_UP_SHIFT(height,1);
+  frame->components[1].stride = ROUND_UP_POW2(frame->components[1].width,2);
+  frame->components[1].length =
+    frame->components[1].stride * frame->components[1].height;
+  frame->components[1].data =
+    frame->components[2].data + frame->components[2].length; 
+  frame->components[1].v_shift = 1;
+  frame->components[1].h_shift = 1;
 
   return frame;
 }

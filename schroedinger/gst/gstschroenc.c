@@ -113,7 +113,7 @@ static GstStaticPadTemplate gst_schro_enc_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YUY2, AYUV }"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YV12, YUY2, UYVY, AYUV }"))
     );
 
 static GstStaticPadTemplate gst_schro_enc_src_template =
@@ -239,9 +239,11 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
 
   switch (schro_enc->fourcc) {
     case GST_MAKE_FOURCC('I','4','2','0'):
+    case GST_MAKE_FOURCC('Y','V','1','2'):
       schro_enc->video_format->chroma_format = SCHRO_CHROMA_420;
       break;
     case GST_MAKE_FOURCC('Y','U','Y','2'):
+    case GST_MAKE_FOURCC('U','Y','V','Y'):
       schro_enc->video_format->chroma_format = SCHRO_CHROMA_422;
       break;
     case GST_MAKE_FOURCC('A','Y','U','V'):
@@ -411,8 +413,14 @@ gst_schro_buffer_wrap (GstSchroEnc *schro_enc, GstBuffer *buf,
     case GST_MAKE_FOURCC('I','4','2','0'):
       frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA (buf), width, height);
       break;
+    case GST_MAKE_FOURCC('Y','V','1','2'):
+      frame = schro_frame_new_from_data_YV12 (GST_BUFFER_DATA (buf), width, height);
+      break;
     case GST_MAKE_FOURCC('Y','U','Y','2'):
       frame = schro_frame_new_from_data_YUY2 (GST_BUFFER_DATA (buf), width, height);
+      break;
+    case GST_MAKE_FOURCC('U','Y','V','Y'):
+      frame = schro_frame_new_from_data_UYVY (GST_BUFFER_DATA (buf), width, height);
       break;
     case GST_MAKE_FOURCC('A','Y','U','V'):
       frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA (buf), width, height);

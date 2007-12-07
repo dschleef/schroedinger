@@ -1,5 +1,13 @@
 2007-12-07  David Schleef  <ds@schleef.org>
 
+	* gst/gstschrodownsample.c:
+	* gst/gstschroenc.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schroframe.h:
+	  Handle common formats in schrodownsample.
+
+2007-12-07  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schrolist.c:
 	* schroedinger/schropredict.c:
 	  Fix some memleaks.
