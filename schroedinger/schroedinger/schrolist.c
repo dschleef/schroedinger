@@ -40,6 +40,9 @@ schro_list_free (SchroList *list)
       list->free (list->members[i], list->priv);
     }
   }
+  if (list->members) {
+    free(list->members);
+  }
   free(list);
 }
 

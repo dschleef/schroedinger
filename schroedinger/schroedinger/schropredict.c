@@ -49,7 +49,7 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
       frame->ref_frame0->reconstructed_frame,
       (params->num_refs > 1) ? frame->ref_frame1->reconstructed_frame : NULL);
 
-  frame->motion_field_list = schro_list_new ();
+  frame->motion_field_list = schro_list_new_full ((SchroListFreeFunc)schro_motion_field_free, NULL);
   n = 0;
 
   schro_encoder_dc_prediction (frame);

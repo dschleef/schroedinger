@@ -1,5 +1,11 @@
 2007-12-07  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrolist.c:
+	* schroedinger/schropredict.c:
+	  Fix some memleaks.
+
+2007-12-07  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroengine.c:
 	  revert temporary code.
 	* testsuite/ramp.c:
