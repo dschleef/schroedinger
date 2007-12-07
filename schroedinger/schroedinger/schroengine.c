@@ -604,8 +604,8 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
     if (frame->frame_number == encoder->gop_picture) {
-      //handle_gop_backref (encoder, i);
-      handle_gop (encoder, i);
+      handle_gop_backref (encoder, i);
+      //handle_gop (encoder, i);
       break;
     }
   }
