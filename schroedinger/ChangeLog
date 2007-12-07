@@ -1,3 +1,13 @@
+2007-12-07  David Schleef  <ds@schleef.org>
+
+	* misc/encode_showreel:
+	* misc/encode_vqeg_streams:
+	  improvements
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	* schroedinger/schropredict.c:
+	  Updates for recent spec changes.  Changes BITSTREAM
+
 2007-12-06  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schroframe.c:

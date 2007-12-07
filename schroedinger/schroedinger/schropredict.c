@@ -18,7 +18,6 @@
   ((mf)->motion_vectors + (y)*(mf)->x_num_blocks + (x))
 
 void schro_encoder_hierarchical_prediction (SchroEncoderFrame *frame);
-void schro_encoder_hierarchical_prediction_2 (SchroEncoderFrame *frame);
 void schro_encoder_zero_prediction (SchroEncoderFrame *frame);
 static void schro_encoder_dc_prediction (SchroEncoderFrame *frame);
 static void schro_encoder_fullscan_prediction (SchroEncoderFrame *frame);
@@ -29,7 +28,10 @@ void schro_motion_global_metric (SchroMotionField *mf, SchroFrame *frame,
 static void schro_motion_merge (SchroMotion *motion, SchroList *_list);
 static void schro_motion_cleanup (SchroMotion *motion, int x, int y);
 static void schro_motion_combine (SchroMotion *motion);
-//static void schro_motion_subpixel (SchroMotion *motion);
+#if 0
+static void schro_motion_predict_subpixel (SchroMotion *motion, SchroFrame *frame,
+    SchroMotionField *mf);
+#endif
 void schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame);
 
 
@@ -43,11 +45,9 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
   SCHRO_ASSERT(params->y_num_blocks != 0);
   SCHRO_ASSERT(params->num_refs > 0);
 
-  if (frame->motion == NULL) {
-    frame->motion = schro_motion_new (params,
-        frame->ref_frame0->reconstructed_frame,
-        (params->num_refs > 1) ? frame->ref_frame1->reconstructed_frame : NULL);
-  }
+  frame->motion = schro_motion_new (params,
+      frame->ref_frame0->reconstructed_frame,
+      (params->num_refs > 1) ? frame->ref_frame1->reconstructed_frame : NULL);
 
   frame->motion_field_list = schro_list_new ();
   n = 0;
@@ -59,7 +59,7 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
   }
 
   if (frame->encoder->enable_hierarchical_prediction) {
-    schro_encoder_hierarchical_prediction_2 (frame);
+    schro_encoder_hierarchical_prediction (frame);
   }
 
   if (frame->encoder->enable_zero_prediction) {
@@ -80,8 +80,6 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
       (params->video_format->height + params->ybsep_luma - 1)/params->ybsep_luma);
 
   schro_motion_combine (frame->motion);
-
-  //schro_motion_subpixel (frame->motion);
 
   schro_motion_calculate_stats (frame->motion, frame);
 
@@ -232,24 +230,48 @@ schro_motion_field_lshift (SchroMotionField *mf, int n)
 
 #if 0
 static void
-schro_motion_subpixel (SchroMotion *motion)
+schro_motion_predict_subpixel (SchroMotion *motion, SchroFrame *frame,
+    SchroMotionField *mf)
 {
   int i,j;
   SchroMotionVector *mv;
+  int x,y;
+  SchroUpsampledFrame *uf;
 
   for(j=0;j<motion->params->y_num_blocks;j++){
     for(i=0;i<motion->params->x_num_blocks;i++){
-      mv = SCHRO_MOTION_GET_BLOCK(motion,i,j);
+      int metric;
+      int dx, dy;
 
-      if (mv->using_global || mv->pred_mode == 0) continue;
+      mv = motion_field_get(mf,i,j);
+
       if (mv->pred_mode & 1) {
-        mv->x1 <<= motion->params->mv_precision;
-        mv->y1 <<= motion->params->mv_precision;
+        uf = motion->src1;
+        dx = mv->x1;
+        dy = mv->y1;
+      } else {
+        uf = motion->src2;
+        dx = mv->x2;
+        dy = mv->y2;
       }
-      if (mv->pred_mode & 2) {
-        mv->x2 <<= motion->params->mv_precision;
-        mv->y2 <<= motion->params->mv_precision;
+
+      x = i * motion->params->xblen_luma;
+      y = j * motion->params->yblen_luma;
+
+      schro_motion_x_get_block (motion, 0, uf, x, y, dx, dy);
+      metric = schro_metric_absdiff_u8 (motion->blocks[0], motion->strides[0],
+          frame->components[0].data + x + y*frame->components[0].stride,
+          frame->components[0].stride, 8, 8);
+
+      SCHRO_ERROR("%d %d", metric, mv->metric);
+
+#if 0
+      for (l=-n;l<=n;l++){
+        for (k=-n;k<=n;k++){
+
+        }
       }
+#endif
     }
   }
 }
@@ -787,13 +809,13 @@ schro_frame_get_metric (SchroFrame *frame1, int x1, int y1,
       frame1->components[0].stride,
       frame2->components[0].data + x2 + y2*frame2->components[0].stride,
       frame2->components[0].stride, 8, 8);
-  metric += abs(x1 - x2) + abs(y1 - y2);
+  //metric += abs(x1 - x2) + abs(y1 - y2);
   
   return metric;
 }
 
 void
-schro_encoder_hierarchical_prediction_2 (SchroEncoderFrame *frame)
+schro_encoder_hierarchical_prediction (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
   int ref;
@@ -923,6 +945,10 @@ schro_encoder_hierarchical_prediction_2 (SchroEncoderFrame *frame)
     }
 
     schro_motion_field_lshift (parent_mf, params->mv_precision);
+#if 0
+    schro_motion_predict_subpixel (frame->motion, frame->filtered_frame,
+        parent_mf);
+#endif
     schro_list_append (frame->motion_field_list, parent_mf);
     
     if (ref == 0) {

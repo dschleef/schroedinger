@@ -8,9 +8,9 @@ all="SD-default SD-VBR-10dB SD-VBR-20dB SD-VBR-30dB SD-VBR-40dB \
 
 list="$all"
 
-list=SD-VBR-20dB
+list=SD-2Mb
 
-extraopts="enable-phasecorr-prediction=true enable-hierarchical-prediction=false"
+#extraopts="enable-phasecorr-prediction=true enable-hierarchical-prediction=false"
 
 trap exit INT
 
@@ -31,25 +31,24 @@ function get_profile {
     SD-lossless) schroopts="rate-control=3" ;;
     SD-intra-only) schroopts="gop-structure=1" ;;
   esac
-  schroopts="$schroopts enable-phasecorr-prediction=true enable-hierarchical-prediction=false"
 }
 
 function encode {
   # engine3
   get_profile $prof
   output=$file.$prof.drc
-  echo "encoding $name using $prof"
-  gst-launch-0.10 filesrc location=$input blocksize=$size ! \
-    video/x-raw-yuv,format=\(fourcc\)"UYVY",width=$width,height=$height,framerate=$framerate,pixel-aspect-ratio=$par ! \
+  echo "encoding $file using $prof"
+
+  gst-launch-0.10 multifilesrc location=$subdir/%05d.uyvy \
+    caps="video/x-raw-yuv,format=\(fourcc\)UYVY,width=1920,height=1080,framerate=$framerate,pixel-aspect-ratio=$par" ! \
+    videoscale ! \
+    video/x-raw-yuv,width=960,height=540 ! \
     ffmpegcolorspace ! \
     schroenc $schroopts $extraopts ! \
     filesink location=$output >/dev/null 2>/dev/null
 }
 
 function encode_all {
-  input=$mediadir/$subdir/$file.yuv
-  size=$(($height*$width*2))
-
   for each in $list
   do
     prof=$each
@@ -59,63 +58,13 @@ function encode_all {
 
 
 
-subdir=VQEG/SDTV/ANSI_T1_801_01
-height=486
-width=720
-par=10/11
-framerate=30000/1001
-
-file=washdc
-#encode_all
-file=ysmite
-#encode_all
-
-subdir=VQEG/SDTV/VQEG_Phase1/TestSequences/Reference
-height=486
-width=720
-par=10/11
-framerate=30000/1001
-
-file=src20_ref__525
-encode_all
-
-height=576
-width=720
-par=12/11
+#subdir=/media/bbc-diracreal/dirac-longgop-showreel-20071129
+subdir=/mnt/wallace/home/ds/bbc/dirac-longgop-showreel-20071129
+height=1920
+width=1080
+par=1/1
 framerate=25/1
-file=src1_ref__625
-#encode_all
-file=src2_ref__625
-#encode_all
-file=src3_ref__625
-#encode_all
-file=src4_ref__625
-#encode_all
-file=src5_ref__625
-#encode_all
-file=src6_ref__625
-#encode_all
-file=src7_ref__625
-#encode_all
-file=src8_ref__625
-#encode_all
-file=src9_ref__625
-#encode_all
-file=src10_ref__625
-#encode_all
 
-height=486
-width=720
-par=10/11
-framerate=30000/1001
-file=src13_ref__525
-#encode_all
-file=src14_ref__525
-#encode_all
-file=src15_ref__525
-#encode_all
-file=src16_ref__525
-#encode_all
-file=src17_ref__525
-#encode_all
+file=showreel
+encode_all
 

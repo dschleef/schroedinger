@@ -81,10 +81,9 @@ struct _SchroMotion {
   uint8_t *blocks[3];
   int strides[3];
 
-  int dc_weight;
-  int ref_weight;
-  int biref1_weight;
-  int biref2_weight;
+  int ref_weight_precision;
+  int ref1_weight;
+  int ref2_weight;
   int mv_precision;
   int xoffset;
   int yoffset;
@@ -92,7 +91,6 @@ struct _SchroMotion {
   int ybsep;
   int xblen;
   int yblen;
-  int shift;
 };
 
 #define SCHRO_MOTION_GET_BLOCK(motion,x,y) \
@@ -103,9 +101,6 @@ struct _SchroMotion {
 SchroMotion * schro_motion_new (SchroParams *params,
     SchroUpsampledFrame *ref1, SchroUpsampledFrame *ref2);
 void schro_motion_free (SchroMotion *motion);
-
-void schro_motion_x_get_block (SchroMotion *motion, int k,
-    SchroUpsampledFrame *uf, int x, int y, int dx, int dy);
 
 int schro_motion_verify (SchroMotion *mf);
 void schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest);
