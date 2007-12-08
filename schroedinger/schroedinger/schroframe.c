@@ -673,20 +673,6 @@ schro_frame_convert_u8_444_ayuv (SchroFrame *dest, SchroFrame *src)
 }
 
 static void
-mix_yuyv (uint32_t *dest, uint8_t *y, uint8_t *u, uint8_t *v, int n)
-{
-  int i;
-  uint8_t *d = (uint8_t *)dest;
-
-  for(i=0;i<n;i++){
-    d[i*4 + 0] = y[i*2+0];
-    d[i*4 + 2] = y[i*2+1];
-    d[i*4 + 1] = u[i];
-    d[i*4 + 3] = v[i];
-  }
-}
-
-static void
 schro_frame_convert_yuyv_u8_422 (SchroFrame *dest, SchroFrame *src)
 {
   uint32_t *ddata;
@@ -706,7 +692,7 @@ schro_frame_convert_yuyv_u8_422 (SchroFrame *dest, SchroFrame *src)
     udata = OFFSET(src->components[1].data, src->components[1].stride * y);
     vdata = OFFSET(src->components[2].data, src->components[2].stride * y);
 
-    mix_yuyv (ddata, ydata, udata, vdata, n);
+    oil_packyuyv (ddata, ydata, udata, vdata, n);
   }
 
   /* FIXME edge extend */

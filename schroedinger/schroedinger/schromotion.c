@@ -1034,7 +1034,7 @@ shift_rows (SchroFrame *frame, int y, int n, int shift_luma, int shift_chroma)
 {
   SchroFrameData *comp;
   int ymin, ymax;
-  uint16_t *data;
+  int16_t *data;
   int16_t s[2];
   int k;
   int j;
@@ -1052,7 +1052,7 @@ shift_rows (SchroFrame *frame, int y, int n, int shift_luma, int shift_chroma)
     ymin = MAX (y>>comp->v_shift, 0);
     for(j=ymin;j<ymax;j++){
       data = OFFSET(comp->data, j * comp->stride);
-      oil_addc_rshift_u16(data, data, s, comp->width);
+      oil_addc_rshift_s16(data, data, s, comp->width);
     }
   }
 }

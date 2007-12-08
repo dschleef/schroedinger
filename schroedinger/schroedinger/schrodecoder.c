@@ -2,6 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#define SCHRO_ARITH_DEFINE_INLINE
 #include <schroedinger/schro.h>
 #include <liboil/liboil.h>
 #include <schroedinger/schrooil.h>
@@ -417,20 +418,12 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
     schro_unpack_byte_sync (&decoder->unpack);
     schro_decoder_decode_prediction_data (decoder);
 
-#if 0
-    /* Would be nice if the spec allowed this */
     if (params->mv_precision > 0) {
       schro_upsampled_frame_upsample (decoder->ref0);
       if (decoder->ref1) {
         schro_upsampled_frame_upsample (decoder->ref1);
       }
     }
-#else
-    schro_upsampled_frame_upsample (decoder->ref0);
-    if (decoder->ref1) {
-      schro_upsampled_frame_upsample (decoder->ref1);
-    }
-#endif
 
     schro_motion_render (decoder->motion, decoder->mc_tmp_frame);
 

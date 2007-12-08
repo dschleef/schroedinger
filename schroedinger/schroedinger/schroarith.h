@@ -140,10 +140,6 @@ void _schro_arith_encode_uint (SchroArith *arith, int cont_context,
 void _schro_arith_encode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value) SCHRO_INTERNAL;
 
-int _schro_arith_decode_bit (SchroArith *arith, int context)
-  SCHRO_INTERNAL; 
-int _schro_arith_decode_uint (SchroArith *arith, int cont_context,
-    int value_context) SCHRO_INTERNAL;
 int _schro_arith_decode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context) SCHRO_INTERNAL;
 
@@ -152,6 +148,76 @@ void schro_arith_estimate_uint (SchroArith *arith, int cont_context,
     int value_context, int value);
 void schro_arith_estimate_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value);
+
+#ifdef SCHRO_ARITH_DEFINE_INLINE
+static int
+_schro_arith_decode_bit (SchroArith *arith, int i)
+{
+  unsigned int range_x_prob;
+  int value;
+  int lut_index;
+
+  range_x_prob = (arith->range[1] * arith->probabilities[i]) >> 16;
+  lut_index = arith->probabilities[i]>>8;
+
+  value = (arith->code - arith->range[0] >= range_x_prob);
+  arith->probabilities[i] += arith->lut[(value<<8) | lut_index];
+  if (value) {
+    arith->range[0] += range_x_prob;
+    arith->range[1] -= range_x_prob;
+  } else {
+    arith->range[1] = range_x_prob;
+  }
+
+  while (arith->range[1] <= 0x4000) {
+    arith->range[0] <<= 1;
+    arith->range[1] <<= 1;
+
+    arith->code <<= 1;
+    arith->code |= arith->shift >> (7-arith->cntr)&1;
+
+    arith->cntr++;
+
+    if (arith->cntr == 8) {
+      arith->offset++;
+      if (arith->offset < arith->buffer->length) {
+        arith->shift = arith->dataptr[arith->offset];
+      } else {
+        arith->shift = 0xff;
+      }
+      arith->range[0] &= 0xffff;
+      arith->code &= 0xffff;
+
+      if (arith->code < arith->range[0]) {
+        arith->code |= (1<<16);
+      }
+      arith->cntr = 0;
+    }
+  }
+
+  return value;
+}
+
+static int
+_schro_arith_decode_uint (SchroArith *arith, int cont_context,
+    int value_context)
+{
+  int bits;
+  int count=0;
+
+  bits = 0;
+  while(!_schro_arith_decode_bit (arith, cont_context)) {
+    bits <<= 1;
+    bits |= _schro_arith_decode_bit (arith, value_context);
+    cont_context = arith->contexts[cont_context].next;
+    count++;
+
+    /* FIXME being careful */
+    if (count == 30) break;
+  }
+  return (1<<count) - 1 + bits;
+}
+#endif
 
 #endif
 

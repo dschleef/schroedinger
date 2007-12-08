@@ -74,60 +74,6 @@ oil_multsumshift8_str_s16 (int16_t *d, const int16_t *s, int sstr,
   }
 }
 
-
-#if 0
-void
-oil_mas10_across_u8 (uint8_t *d, const uint8_t *s1, const int16_t *s2_10,
-    const int16_t *s3_2, int n)
-{
-  int i,j;
-  int x;
-
-  for(i=0;i<n;i++){
-    x = 0;
-    for(j=0;j<10;j++){
-      x += s1[i+j] * s2_10[j];
-    }
-    x += s3_2[0];
-    x >>= s3_2[1];
-    if (x < 0) x = 0;
-    if (x > 255) x = 255;
-    d[i] = x;
-  }
-}
-#endif
-
-#if 0
-void
-oil_mas10_u8 (uint8_t *d, const uint8_t *s1, int sstr, const int16_t *s2_10,
-    const int16_t *s3_2, int n)
-{
-  int i,j;
-  int x;
-
-  for(i=0;i<n;i++){
-    x = 0;
-    for(j=0;j<10;j++){
-      x += s1[i+j*sstr] * s2_10[j];
-    }
-    x += s3_2[0];
-    x >>= s3_2[1];
-    if (x < 0) x = 0;
-    if (x > 255) x = 255;
-    d[i] = x;
-  }
-}
-#endif
-
-void oil_addc_rshift_u16 (uint16_t *d1, const uint16_t *s1,
-    const int16_t *s2_2, int n)
-{
-  int i;
-  for(i=0;i<n;i++){
-    d1[i] = (s1[i] + s2_2[0])>>s2_2[1];
-  }
-}
-
 void
 oil_sum_s32_u8 (int32_t *d_1, uint8_t *src, int n)
 {
@@ -271,15 +217,6 @@ oil_mas10_across_u8 (uint8_t *d, uint8_t **s1_a10,
 }
 
 void
-oil_addc_s16 (int16_t *dest, const int16_t *src, const int16_t *s2, int n)
-{
-  int i;
-  for(i=0;i<n;i++) {
-    dest[i] = src[i] + s2[0];
-  }
-}
-
-void
 oil_addc_rshift_clipconv_u8_s16 (uint8_t *d1, const int16_t *s1,
     const int16_t *s2_2, int n)
 {
@@ -406,25 +343,6 @@ oil_iir3_rev_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
     d[i] = rint(x);
   }
 }
-
-#if 0
-void
-oil_mas12_addc_rshift_decim2_u8 (uint8_t *dest, const uint8_t *src,
-    const int16_t *taps, const int16_t *offsetshift, int n)
-{
-  int i;
-  int j;
-  int x;
-
-  for(i=0;i<n;i++){
-    x = 0;
-    for(j=0;j<12;j++){
-      x += taps[j]*src[i*2 + j];
-    }
-    dest[i] = CLAMP((x + offsetshift[0]) >> offsetshift[1],0,255);
-  }
-}
-#endif
 
 void
 oil_mas12across_addc_rshift_u8 (uint8_t *dest, uint8_t **src,

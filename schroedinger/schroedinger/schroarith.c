@@ -5,11 +5,11 @@
 
 #include <string.h>
 
+#define SCHRO_ARITH_DEFINE_INLINE
+
 #include <schroedinger/schroarith.h>
 #include <schroedinger/schrotables.h>
 #include <schroedinger/schrodebug.h>
-
-static int __schro_arith_decode_bit (SchroArith *arith, int i);
 
 static const int next_list[] = {
   0,
@@ -262,6 +262,7 @@ arith->range[0] |= ((1<<i)-1);
 }
 
   
+#if 0
 int
 _schro_arith_decode_bit (SchroArith *arith, int i)
 {
@@ -365,6 +366,7 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
 
   return value;
 }
+#endif
 #endif
 
 void
@@ -530,6 +532,7 @@ schro_arith_estimate_sint (SchroArith *arith, int cont_context,
   }
 }
 
+#if 0
 int
 _schro_arith_decode_uint (SchroArith *arith, int cont_context,
     int value_context)
@@ -549,6 +552,7 @@ _schro_arith_decode_uint (SchroArith *arith, int cont_context,
   }
   return (1<<count) - 1 + bits;
 }
+#endif
 
 int
 _schro_arith_decode_sint (SchroArith *arith, int cont_context,
@@ -559,9 +563,9 @@ _schro_arith_decode_sint (SchroArith *arith, int cont_context,
   int value;
 
   bits = 0;
-  while(!__schro_arith_decode_bit (arith, cont_context)) {
+  while(!_schro_arith_decode_bit (arith, cont_context)) {
     bits <<= 1;
-    bits |= __schro_arith_decode_bit (arith, value_context);
+    bits |= _schro_arith_decode_bit (arith, value_context);
     cont_context = arith->contexts[cont_context].next;
     count++;
 
@@ -571,7 +575,7 @@ _schro_arith_decode_sint (SchroArith *arith, int cont_context,
   value = (1<<count) - 1 + bits;
 
   if (value) {
-    if (__schro_arith_decode_bit (arith, sign_context)) {
+    if (_schro_arith_decode_bit (arith, sign_context)) {
       value = -value;
     }
   }
@@ -605,7 +609,7 @@ schro_arith_encode_sint (SchroArith *arith, int cont_context,
 int
 schro_arith_decode_bit (SchroArith *arith, int context)
 {
-  return __schro_arith_decode_bit (arith, context);
+  return _schro_arith_decode_bit (arith, context);
 }
 
 int

@@ -1,3 +1,17 @@
+2007-12-08  David Schleef  <ds@schleef.org>
+
+	* gst/gstschrodec.c:
+	  Reenable pad allocation.
+	* schroedinger/schroarith.c:
+	* schroedinger/schroarith.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schroframe.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schrooil.c:
+	* schroedinger/schrooil.h:
+	  Move arithmetic decoding into inline functions.  Move some
+	  functions to liboil.
+
 2007-12-07  David Schleef  <ds@schleef.org>
 
 	* gst/gstschrodownsample.c:

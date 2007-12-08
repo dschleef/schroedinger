@@ -910,16 +910,11 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
             break;
           case SCHRO_DECODER_NEED_FRAME:
             size = get_buffer_size (schro_dec);
-#if 0
             ret = gst_pad_alloc_buffer_and_set_caps (schro_dec->srcpad,
                 GST_BUFFER_OFFSET_NONE, size,
                 GST_PAD_CAPS (schro_dec->srcpad), &outbuf);
-#else
-            outbuf = gst_buffer_new_and_alloc (size);
-            gst_buffer_set_caps(outbuf, GST_PAD_CAPS(schro_dec->srcpad));
-#endif
             if (ret != GST_FLOW_OK) {
-              GST_ERROR("could not allocate buffer for pad");
+              GST_DEBUG("could not allocate buffer for pad");
               return ret;
             }
             frame = gst_schro_wrap_frame (schro_dec, outbuf);
