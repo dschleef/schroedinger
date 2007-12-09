@@ -8,7 +8,7 @@
 #include <string.h>
 #include <math.h>
 
-#if 1
+#if 0
 /* Used for testing bitstream */
 #define MARKER(pack) schro_pack_encode_uint (pack, 1234567)
 #else

@@ -1,3 +1,9 @@
+2007-12-09  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schroencoder.c:
+	  Yet again, I checked in code that was totally broken.  I really
+	  need a VCS that checks for broken commits.
+
 2007-12-08  David Schleef  <ds@schleef.org>
 
 	* misc/encode_vts_streams:
