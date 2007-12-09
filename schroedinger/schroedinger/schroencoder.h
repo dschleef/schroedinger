@@ -126,8 +126,7 @@ struct _SchroEncoderFrame {
   int num_refs;
   SchroPictureNumber picture_number_ref0;
   SchroPictureNumber picture_number_ref1;
-  int n_retire;
-  SchroPictureNumber retire[SCHRO_LIMIT_REFERENCE_FRAMES];
+  SchroPictureNumber retired_picture_number;
 
   int16_t slice_y_dc_values[100];
   int16_t slice_u_dc_values[100];

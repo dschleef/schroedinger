@@ -33,6 +33,7 @@ struct _SchroDecoder {
   int n_refs;
   SchroPictureNumber reference1;
   SchroPictureNumber reference2;
+  SchroPictureNumber retired_picture_number;
   SchroUpsampledFrame *ref0;
   SchroUpsampledFrame *ref1;
   SchroFrame *planar_output_frame;
@@ -57,8 +58,6 @@ struct _SchroDecoder {
   SchroMotion *motion;
 
   int zero_residual;
-  int n_retire;
-  int retire_list[SCHRO_LIMIT_REFERENCE_FRAMES];
 
   SchroQueue *frame_queue;
 
@@ -109,8 +108,8 @@ void schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio);
 void schro_decoder_decode_parse_header (SchroDecoder *decoder);
 void schro_decoder_decode_access_unit (SchroDecoder *decoder);
 void schro_decoder_decode_picture_header (SchroDecoder *decoder);
-void schro_decoder_decode_frame_prediction (SchroDecoder *decoder);
-void schro_decoder_decode_prediction_data (SchroDecoder *decoder);
+void schro_decoder_decode_picture_prediction_parameters (SchroDecoder *decoder);
+void schro_decoder_decode_block_data (SchroDecoder *decoder);
 void schro_decoder_decode_transform_parameters (SchroDecoder *decoder);
 void schro_decoder_decode_transform_data (SchroDecoder *decoder);
 void schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder);

@@ -8,30 +8,30 @@ all="SD-default SD-VBR-10dB SD-VBR-20dB SD-VBR-30dB SD-VBR-40dB \
 
 list="$all"
 
-list=SD-VBR-20dB
+list=SD-CBR-1Mb
 
-extraopts="enable-phasecorr-prediction=true enable-hierarchical-prediction=false"
+#extraopts="enable-phasecorr-prediction=true enable-hierarchical-prediction=false"
+#extraopts="perceptual-weighting=1"
 
 trap exit INT
 
 function get_profile {
   case $1 in
     SD-default) schroopts="" ;;
-    SD-10dB) schroopts="rate-control=0 noise-threshold=10" ;;
-    SD-20dB) schroopts="rate-control=0 noise-threshold=20" ;;
-    SD-30dB) schroopts="rate-control=0 noise-threshold=30" ;;
-    SD-40dB) schroopts="rate-control=0 noise-threshold=40" ;;
-    SD-250kb) schroopts="rate-control=1 bitrate=250000" ;;
-    SD-500kb) schroopts="rate-control=1 bitrate=500000" ;;
-    SD-1Mb) schroopts="rate-control=1 bitrate=1000000" ;;
-    SD-2Mb) schroopts="rate-control=1 bitrate=2000000" ;;
+    SD-VBR-10dB) schroopts="rate-control=0 noise-threshold=10" ;;
+    SD-VBR-20dB) schroopts="rate-control=0 noise-threshold=20" ;;
+    SD-VBR-30dB) schroopts="rate-control=0 noise-threshold=30" ;;
+    SD-VBR-40dB) schroopts="rate-control=0 noise-threshold=40" ;;
+    SD-CBR-250kb) schroopts="rate-control=1 bitrate=250000" ;;
+    SD-CBR-500kb) schroopts="rate-control=1 bitrate=500000" ;;
+    SD-CBR-1Mb) schroopts="rate-control=1 bitrate=1000000" ;;
+    SD-CBR-2Mb) schroopts="rate-control=1 bitrate=2000000" ;;
     SD-LD-40Mb) schroopts="rate-control=2 bitrate=41472000" ;;
     SD-LD-20Mb) schroopts="rate-control=2 bitrate=20736000" ;;
     SD-LD-10Mb) schroopts="rate-control=2 bitrate=10368000" ;;
     SD-lossless) schroopts="rate-control=3" ;;
     SD-intra-only) schroopts="gop-structure=1" ;;
   esac
-  schroopts="$schroopts enable-phasecorr-prediction=true enable-hierarchical-prediction=false"
 }
 
 function encode {
@@ -43,7 +43,7 @@ function encode {
     video/x-raw-yuv,format=\(fourcc\)"UYVY",width=$width,height=$height,framerate=$framerate,pixel-aspect-ratio=$par ! \
     ffmpegcolorspace ! \
     schroenc $schroopts $extraopts ! \
-    filesink location=$output >/dev/null 2>/dev/null
+    filesink location=$output
 }
 
 function encode_all {

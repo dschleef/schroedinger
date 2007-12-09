@@ -275,71 +275,39 @@ ilog2 (unsigned int x)
   return i;
 }
 
-static int
-ramp_shift (int ramp)
-{
-  switch (ramp) {
-    case 0:
-      return 0;
-    case 1:
-      return 1;
-    case 2:
-      return 2;
-    case 4:
-      return 3;
-    case 8:
-      return 4;
-    default:
-      SCHRO_ASSERT(0);
-  }
-}
-
 static void
 obmc_calc (int16_t *data, int x_len, int y_len, int x_ramp,
     int y_ramp)
 {
   int i;
   int j;
+  int wx, wy;
+  int xoffset = x_ramp/2;
+  int yoffset = y_ramp/2;
 
-  if (x_ramp > 0) {
+  for(j=0;j<y_len;j++){
     for(i=0;i<x_len;i++){
-      int w;
-      if (i < x_ramp) {
-        w = 1 + 2*i;
-      } else if (i >= x_len - x_ramp) {
-        w = 1 + 2*(x_len - 1 - i);
+      if (xoffset == 0) {
+        wx = 8;
+      } else if (i < 2*xoffset) {
+        wx = 1 + (6*i + xoffset - 1)/(2*xoffset - 1);
+      } else if (x_len - 1 - i < 2*xoffset) {
+        wx = 7 - (6*(i-x_len+2*xoffset) + xoffset - 1)/(2*xoffset - 1);
       } else {
-        w = x_ramp*2;
+        wx = 8;
       }
-      data[i] = w;
-    }
-  } else {
-    for(i=0;i<x_len;i++){
-      data[i] = 1;
-    }
-  }
 
-  if (y_ramp > 0) {
-    for(j=0;j<y_len;j++){
-      int w;
-      if (j < y_ramp) {
-        w = 1 + 2*j;
-      } else if (j >= y_len - y_ramp) {
-        w = 1 + 2*(y_len - 1 - j);
+      if (yoffset == 0) {
+        wy = 8;
+      } else if (j < 2*yoffset) {
+        wy = 1 + (6*j + yoffset - 1)/(2*yoffset - 1);
+      } else if (y_len - 1 - j < 2*yoffset) {
+        wy = 7 - (6*(j-y_len+2*yoffset) + yoffset - 1)/(2*yoffset - 1);
       } else {
-        w = y_ramp*2;
+        wy = 8;
       }
-      data[x_len * j + 0] = w;
-    }
-  } else {
-    for(j=0;j<y_len;j++){
-      data[x_len * j + 0] = 1;
-    }
-  }
 
-  for(j=1;j<y_len;j++){
-    for(i=1;i<x_len;i++){
-      data[x_len * j + i] = data[x_len * j + 0] * data[i];
+      data[x_len * j + i] = wx * wy;
     }
   }
 }
@@ -443,11 +411,6 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep,
     obmc->regions[i].weights[2] = OFFSET(obmc->region_data, size * (i+18));
     obmc->regions[i].end_x = x_len;
     obmc->regions[i].end_y = y_len;
-  }
-
-  obmc->shift = ramp_shift(x_ramp) + ramp_shift(y_ramp) + ref_shift;
-  if (obmc->shift > 8) {
-    SCHRO_ERROR("obmc shift too large (%d > 8)", obmc->shift);
   }
 
   obmc->x_ramp = x_ramp;
@@ -1164,12 +1127,12 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
     }
 
     shift_rows (dest, y - obmc_luma->y_ramp/2, obmc_luma->y_sep,
-        obmc_luma->shift, obmc_chroma->shift);
+        6 + params->picture_weight_bits, 6 + params->picture_weight_bits);
   }
 
   y = params->y_num_blocks*obmc_luma->y_sep - obmc_luma->y_ramp/2;
   shift_rows (dest, y - obmc_luma->y_ramp/2, obmc_luma->y_ramp,
-      obmc_luma->shift, obmc_chroma->shift);
+      6 + params->picture_weight_bits, 6 + params->picture_weight_bits);
 
   schro_obmc_cleanup (obmc_luma);
   free(obmc_luma);

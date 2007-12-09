@@ -1,5 +1,27 @@
 2007-12-08  David Schleef  <ds@schleef.org>
 
+	* misc/encode_showreel:
+	* misc/encode_vqeg_streams:
+	* schroedinger/schrobitstream.h:
+	* schroedinger/schrodecoder.c:
+	* schroedinger/schrodecoder.h:
+	* schroedinger/schroencoder.c:
+	* schroedinger/schroencoder.h:
+	* schroedinger/schroengine.c:
+	* schroedinger/schromotion.c:
+	* schroedinger/schromotion.h:
+	* schroedinger/schroparams.c:
+	* schroedinger/schroparams.h:
+	* schroedinger/schropredict.c:
+	* testsuite/obmc.c:
+	* tools/Makefile.am:
+	* tools/dump_packets.c:
+	* tools/dump_gop.c:
+	  Update for recent spec changes, and fix some other remaining
+	  differences.
+
+2007-12-08  David Schleef  <ds@schleef.org>
+
 	* gst/gstschrodec.c:
 	  Reenable pad allocation.
 	* schroedinger/schroarith.c:

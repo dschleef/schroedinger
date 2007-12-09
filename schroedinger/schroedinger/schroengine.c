@@ -42,9 +42,8 @@ handle_gop (SchroEncoder *encoder, int i)
     frame->slot = encoder->next_slot++;
     frame->presentation_frame = frame->frame_number;
     if (encoder->last_ref >= 0) {
-      frame->n_retire = 1;
       SCHRO_DEBUG("marking %d for retire", encoder->last_ref);
-      frame->retire[0] = encoder->last_ref;
+      frame->retired_picture_number = encoder->last_ref;
     }
     encoder->last_ref = frame->frame_number;
     encoder->gop_picture = frame->frame_number + 1;
@@ -87,8 +86,7 @@ handle_gop (SchroEncoder *encoder, int i)
       f->slot = encoder->next_slot++;
       f->presentation_frame = f->frame_number;
       if (j == gop_length - 2) {
-        f->n_retire = 1;
-        f->retire[0] = frame->frame_number - 1;
+        f->retired_picture_number = frame->frame_number - 1;
       }
     }
 
@@ -186,8 +184,7 @@ handle_gop (SchroEncoder *encoder, int i)
       frame->presentation_frame = frame->frame_number;
       frame->allocation_modifier = 1 + (gop_length - 1) * 0.6;
       if (encoder->last_ref != -1) {
-        frame->n_retire = 1;
-        frame->retire[0] = encoder->last_ref;
+        frame->retired_picture_number = encoder->last_ref;
       }
       encoder->last_ref = encoder->last_ref2;
       encoder->last_ref2 = frame->frame_number;
@@ -203,8 +200,7 @@ handle_gop (SchroEncoder *encoder, int i)
       f->presentation_frame = f->frame_number;
       f->allocation_modifier = 1.0;
       if (encoder->last_ref != -1) {
-        f->n_retire = 1;
-        f->retire[0] = encoder->last_ref;
+        f->retired_picture_number = encoder->last_ref;
       }
       encoder->last_ref = encoder->last_ref2;
       encoder->last_ref2 = f->frame_number;
@@ -236,8 +232,7 @@ handle_gop (SchroEncoder *encoder, int i)
       f->presentation_frame = f->frame_number;
       f->allocation_modifier = 1.0;
       if (encoder->last_ref != -1) {
-        f->n_retire = 1;
-        f->retire[0] = encoder->last_ref;
+        f->retired_picture_number = encoder->last_ref;
       }
       encoder->last_ref = encoder->last_ref2;
       encoder->last_ref2 = f->frame_number;
@@ -319,8 +314,7 @@ handle_gop_backref (SchroEncoder *encoder, int i)
   frame->presentation_frame = frame->frame_number;
   frame->allocation_modifier = 1 + (gop_length - 1) * 0.6;
   if (encoder->last_ref != -1) {
-    frame->n_retire = 1;
-    frame->retire[0] = encoder->last_ref;
+    frame->retired_picture_number = encoder->last_ref;
   }
   encoder->last_ref = frame->frame_number;
 
@@ -451,7 +445,6 @@ init_small_codeblocks (SchroParams *params)
   int i;
   int shift;
 
-  params->nondefault_partition_flag = TRUE;
   params->horiz_codeblocks[0] = 1;
   params->vert_codeblocks[0] = 1;
   for(i=1;i<params->transform_depth+1;i++){
@@ -718,10 +711,7 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
       frame->is_ref = TRUE;
       params->num_refs = 0;
       if (frame->frame_number > 0) {
-        frame->retire[0] = encoder->last_ref;
-        frame->n_retire = 1;
-      } else {
-        frame->n_retire = 0;
+        frame->retired_picture_number = encoder->last_ref;
       }
       encoder->last_ref = frame->frame_number;
       encoder->mid1_ref = frame->frame_number;
@@ -729,14 +719,12 @@ schro_encoder_engine_backref2 (SchroEncoder *encoder)
       frame->is_ref = TRUE;
       params->num_refs = 1;
       frame->picture_number_ref0 = encoder->last_ref;
-      frame->retire[0] = encoder->last_ref;
-      frame->n_retire = 1;
+      frame->retired_picture_number = encoder->last_ref;
       encoder->last_ref = frame->frame_number;
     } else {
       frame->is_ref = FALSE;
       params->num_refs = 1;
       frame->picture_number_ref0 = encoder->last_ref;
-      frame->n_retire = 0;
     }
 
     init_params (frame);
@@ -1187,16 +1175,12 @@ schro_encoder_engine_backtest (SchroEncoder *encoder)
         if (frame->is_ref) {
           params->num_refs = 0;
           if (frame->frame_number > 0) {
-            frame->retire[0] = encoder->last_ref;
-            frame->n_retire = 1;
-          } else {
-            frame->n_retire = 0;
+            frame->retired_picture_number = encoder->last_ref;
           }
           encoder->last_ref = frame->frame_number;
         } else {
           params->num_refs = 1;
           frame->picture_number_ref0 = encoder->last_ref;
-          frame->n_retire = 0;
         }
 
         init_params (frame);

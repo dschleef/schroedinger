@@ -36,15 +36,13 @@ struct _SchroParams {
   /* transform parameters */
   int wavelet_filter_index;
   int transform_depth;
-  int spatial_partition_flag;
-  int nondefault_partition_flag;
   int horiz_codeblocks[SCHRO_LIMIT_TRANSFORM_DEPTH + 1];
   int vert_codeblocks[SCHRO_LIMIT_TRANSFORM_DEPTH + 1];
   int codeblock_mode_index;
 
   /* motion prediction parameters */
   int num_refs;
-  int have_global_motion;
+  int have_global_motion; // using_global_motion
   int xblen_luma;
   int yblen_luma;
   int xbsep_luma;
@@ -58,8 +56,8 @@ struct _SchroParams {
 
   /* DiracPro parameters */
   int is_lowdelay;
-  int n_horiz_slices;
-  int n_vert_slices;
+  int n_horiz_slices; // slices_x
+  int n_vert_slices; // slices_y
   int slice_bytes_num;
   int slice_bytes_denom;
   int quant_matrix[3*SCHRO_LIMIT_TRANSFORM_DEPTH+1];
@@ -93,12 +91,15 @@ void schro_params_set_block_params (SchroParams *params, int index);
 int schro_params_get_block_params (SchroParams *params);
 
 void schro_params_set_default_codeblock (SchroParams *params);
+schro_bool schro_params_is_default_codeblock (SchroParams *params);
 
 void schro_subband_get_frame_data (SchroFrameData *dest,
     SchroFrame *frame, int component, int position, SchroParams *params);
 void schro_subband_get (SchroFrame *frame, int component, int position,
     SchroParams *params, int16_t **data, int *stride, int *width, int *height);
 int schro_subband_get_position (int index);
+void schro_params_set_default_quant_matrix (SchroParams *params);
+schro_bool schro_params_is_default_quant_matrix (SchroParams *params);
 
 /* FIXME should be SchroFrameFormat */
 int schro_params_get_frame_format (int depth,
@@ -109,7 +110,6 @@ void schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp);
 void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp);
-void schro_params_init_lowdelay_quantisers (SchroParams *params);
 
 #endif
 

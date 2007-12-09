@@ -58,7 +58,6 @@ struct _SchroObmc {
   int16_t *region_data;
   int16_t *horiz_ramp;
   int16_t *vert_ramp;
-  int shift;
   int x_ramp;
   int y_ramp;
   int x_len;

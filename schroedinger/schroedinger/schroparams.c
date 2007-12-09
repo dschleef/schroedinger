@@ -32,30 +32,47 @@ schro_params_init (SchroParams *params, int video_format)
   }
 
   switch(video_format) {
-    case 0: case 3: case 4: case 5: case 6: case 7: case 8:
-      params->xbsep_luma = 8;
-      params->xblen_luma = 12;
-      params->ybsep_luma = 8;
-      params->yblen_luma = 12;
-      break;
-    case 1: case 2:
-      params->xbsep_luma = 4;
-      params->xblen_luma = 8;
-      params->ybsep_luma = 4;
-      params->yblen_luma = 8;
-      break;
-    case 9:
-      params->xbsep_luma = 12;
-      params->xblen_luma = 16;
-      params->ybsep_luma = 12;
-      params->yblen_luma = 16;
-      break;
-    case 10: case 11: case 12:
-      params->xbsep_luma = 16;
-      params->xblen_luma = 24;
-      params->ybsep_luma = 16;
-      params->yblen_luma = 24;
-      break;
+    case SCHRO_VIDEO_FORMAT_QCIF:
+    case SCHRO_VIDEO_FORMAT_QSIF:
+        params->xblen_luma = 8;
+        params->yblen_luma = 8;
+        params->xbsep_luma = 4;
+        params->ybsep_luma = 4;
+        break;
+
+    case SCHRO_VIDEO_FORMAT_CUSTOM:
+    case SCHRO_VIDEO_FORMAT_SIF:
+    case SCHRO_VIDEO_FORMAT_CIF:
+    case SCHRO_VIDEO_FORMAT_4SIF:
+    case SCHRO_VIDEO_FORMAT_4CIF:
+    case SCHRO_VIDEO_FORMAT_SD480I_60:
+    case SCHRO_VIDEO_FORMAT_SD576I_50:
+        params->xblen_luma = 12;
+        params->yblen_luma = 12;
+        params->xbsep_luma = 8;
+        params->ybsep_luma = 8;
+        break;
+
+    case SCHRO_VIDEO_FORMAT_HD720P_60:
+    case SCHRO_VIDEO_FORMAT_HD720P_50:
+        params->xblen_luma = 16;
+        params->yblen_luma = 16;
+        params->xbsep_luma = 12;
+        params->ybsep_luma = 12;
+        break;
+
+    case SCHRO_VIDEO_FORMAT_HD1080I_60:
+    case SCHRO_VIDEO_FORMAT_HD1080I_50:
+    case SCHRO_VIDEO_FORMAT_HD1080P_60:
+    case SCHRO_VIDEO_FORMAT_HD1080P_50:
+    case SCHRO_VIDEO_FORMAT_DC2K_24:
+    case SCHRO_VIDEO_FORMAT_DC4K_24:
+        params->xblen_luma = 24;
+        params->yblen_luma = 24;
+        params->xbsep_luma = 16;
+        params->ybsep_luma = 16;
+        break;
+
     default:
       SCHRO_ERROR("schro_params_init called with video_format_index %d",
           video_format);
@@ -91,8 +108,6 @@ schro_params_init (SchroParams *params, int video_format)
 
   /* other initializations */
 
-  params->spatial_partition_flag = TRUE;
-  params->nondefault_partition_flag = FALSE;
   params->codeblock_mode_index = 1;
   params->have_global_motion = FALSE;
   params->picture_pred_mode = 0;
@@ -235,32 +250,32 @@ schro_params_set_default_codeblock (SchroParams *params)
 {
   int i;
 
-  params->spatial_partition_flag = TRUE;
-  params->nondefault_partition_flag = FALSE;
-
-  if (params->num_refs == 0) {
-    for(i=0;i<3;i++) {
-      params->horiz_codeblocks[i] = 1;
-      params->vert_codeblocks[i] = 1;
-    }
-    for(i=3;i<SCHRO_LIMIT_TRANSFORM_DEPTH+1;i++){
-      params->horiz_codeblocks[i] = 4;
-      params->vert_codeblocks[i] = 3;
-    }
-  } else {
-    for(i=0;i<2;i++) {
-      params->horiz_codeblocks[i] = 1;
-      params->vert_codeblocks[i] = 1;
-    }
-    params->horiz_codeblocks[2] = 8;
-    params->vert_codeblocks[2] = 6;
-    for(i=3;i<SCHRO_LIMIT_TRANSFORM_DEPTH+1;i++){
-      params->horiz_codeblocks[i] = 12;
-      params->vert_codeblocks[i] = 8;
-    }
+  for(i=0;i<SCHRO_LIMIT_TRANSFORM_DEPTH+1;i++){
+    params->horiz_codeblocks[i] = 1;
+    params->vert_codeblocks[i] = 1;
   }
   params->codeblock_mode_index = 1;
+}
 
+/**
+ * schro_params_is_default_codeblock:
+ * @params: pointer to SchroParams structure
+ *
+ * Returns: True if the codeblocks in @params are the default codeblocks.
+ */
+schro_bool
+schro_params_is_default_codeblock (SchroParams *params)
+{
+  int i;
+
+  for(i=0;i<params->transform_depth+1;i++){
+    if (params->horiz_codeblocks[i] != 1 || params->vert_codeblocks[i] != 1) {
+      return FALSE;
+    }
+  }
+  if (params->codeblock_mode_index != 0) return FALSE;
+
+  return TRUE;
 }
 
 void
@@ -411,7 +426,7 @@ schro_tables_lowdelay_quants[7][4][9] = {
 };
 
 void
-schro_params_init_lowdelay_quantisers (SchroParams *params)
+schro_params_set_default_quant_matrix (SchroParams *params)
 {
   int i;
   const int *table;
@@ -425,5 +440,27 @@ schro_params_init_lowdelay_quantisers (SchroParams *params)
     params->quant_matrix[1+3*i+1] = table[1 + 2*i + 0];
     params->quant_matrix[1+3*i+2] = table[1 + 2*i + 1];
   }
+}
+
+schro_bool
+schro_params_is_default_quant_matrix (SchroParams *params)
+{
+  int i;
+  const int *table;
+
+  if (params->transform_depth > 4) return FALSE;
+
+  table = schro_tables_lowdelay_quants[params->wavelet_filter_index]
+      [params->transform_depth-1];
+
+  if (params->quant_matrix[0] != table[0]) return FALSE;
+  for(i=0;i<params->transform_depth; i++) {
+    if (params->quant_matrix[1+3*i+0] != table[1 + 2*i + 0] ||
+        params->quant_matrix[1+3*i+1] != table[1 + 2*i + 0] ||
+        params->quant_matrix[1+3*i+2] != table[1 + 2*i + 1]) {
+      return FALSE;
+    }
+  }
+  return TRUE;
 }
 

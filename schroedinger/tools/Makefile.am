@@ -2,7 +2,7 @@
 EXTRA_DIST = drc-to-png
 
 if HAVE_GST
-noinst_PROGRAMS = dump_packets
+noinst_PROGRAMS = dump_packets dump_gop
 else
 noinst_PROGRAMS =
 endif

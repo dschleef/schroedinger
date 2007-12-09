@@ -128,7 +128,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
   }
 
   switch (data[4]) {
-    case SCHRO_PARSE_CODE_ACCESS_UNIT:
+    case SCHRO_PARSE_CODE_SEQUENCE_HEADER:
       parse_code = "access unit header";
       break;
     case SCHRO_PARSE_CODE_AUXILIARY_DATA:
@@ -152,7 +152,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     case SCHRO_PARSE_CODE_INTER_NON_REF_2:
       parse_code = "inter non-ref 2";
       break;
-    case SCHRO_PARSE_CODE_END_SEQUENCE:
+    case SCHRO_PARSE_CODE_END_OF_SEQUENCE:
       parse_code = "end of sequence";
       break;
     case SCHRO_PARSE_CODE_LD_INTRA_REF:
@@ -193,7 +193,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
   g_print("  offset to next: %d\n", next);
   g_print("  offset to prev: %d\n", prev);
 
-  if (data[4] == SCHRO_PARSE_CODE_ACCESS_UNIT) {
+  if (data[4] == SCHRO_PARSE_CODE_SEQUENCE_HEADER) {
     int bit;
 
     /* parse parameters */

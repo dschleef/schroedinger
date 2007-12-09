@@ -310,7 +310,7 @@ schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame)
       }
     }
   }
-  SCHRO_ERROR("dc %d global %d motion %d ref1 %d ref2 %d bidir %d",
+  SCHRO_DEBUG("dc %d global %d motion %d ref1 %d ref2 %d bidir %d",
       frame->stats_dc, frame->stats_global, frame->stats_motion,
       ref1, ref2, bidir);
 }

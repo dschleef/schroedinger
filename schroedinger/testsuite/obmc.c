@@ -16,11 +16,11 @@ main (int argc, char *argv[])
 
   schro_init();
 
-  schro_obmc_init(&obmc, 12, 6, 8, 4, 1, 1, 1);
-  //schro_obmc_init(&obmc, 8, 8, 8, 8, 1, 1);
+  //schro_obmc_init(&obmc, 12, 6, 8, 4, 1, 1, 1);
+  //schro_obmc_init(&obmc, 8, 8, 8, 8, 1, 1, 1);
   //schro_obmc_init(&obmc, 16, 16, 8, 8, 1, 1, 1);
-
-  printf("shift %d\n\n", obmc.shift);
+  //schro_obmc_init(&obmc, 12, 12, 8, 8, 1, 1, 1);
+  schro_obmc_init(&obmc, 6, 6, 4, 4, 1, 1, 1);
 
   printf("single ref:\n");
   for(k=0;k<9;k++){
@@ -54,7 +54,7 @@ main (int argc, char *argv[])
     printf("%d:\n", k);
     for(j=region->start_y;j<region->end_y;j++){
       for(i=region->start_x;i<region->end_x;i++){
-        printf(" %3d", region->weights[0][j*obmc.x_len+i]);
+        printf(" %3d", region->weights[2][j*obmc.x_len+i]);
       }
       printf("\n");
     }
