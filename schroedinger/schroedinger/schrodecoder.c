@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#if 1
+#if 0
 /* Used for testing bitstream */
 #define MARKER() do{ \
   SCHRO_ASSERT(schro_unpack_decode_uint(&decoder->unpack) == 1234567); \

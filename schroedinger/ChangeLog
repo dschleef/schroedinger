@@ -1,5 +1,11 @@
 2007-12-09  David Schleef  <ds@schleef.org>
 
+	* schroedinger/schrodecoder.c:
+	  Yet again, I checked in code that was totally broken, and then
+	  fixed it incompletely.  Disable markers in headers.
+
+2007-12-09  David Schleef  <ds@schleef.org>
+
 	* schroedinger/schroencoder.c:
 	  Yet again, I checked in code that was totally broken.  I really
 	  need a VCS that checks for broken commits.
