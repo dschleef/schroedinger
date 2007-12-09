@@ -1,5 +1,10 @@
 2007-12-08  David Schleef  <ds@schleef.org>
 
+	* misc/encode_vts_streams:
+	  Add script to create streams from videotestsrc.
+
+2007-12-08  David Schleef  <ds@schleef.org>
+
 	* misc/encode_showreel:
 	* misc/encode_vqeg_streams:
 	* schroedinger/schrobitstream.h:
