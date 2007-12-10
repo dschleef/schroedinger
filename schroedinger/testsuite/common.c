@@ -102,6 +102,8 @@ gen_random (SchroFrameData *fd, int type)
 
 static int gen_const_array[] = { 0, 1, 127, 128, 129, 254, 255 };
 
+#define CONST 255
+
 static void
 gen_const (SchroFrameData *fd, int type)
 {
@@ -128,7 +130,7 @@ gen_vert_lines (SchroFrameData *fd, int type)
   for(j=0;j<fd->height;j++){
     data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
     for(i=0;i<fd->width;i++) {
-      data[i] = 100*((i%pitch)==0);
+      data[i] = CONST*((i%pitch)==0);
     }
   }
 }
@@ -144,7 +146,7 @@ gen_horiz_lines (SchroFrameData *fd, int type)
   for(j=0;j<fd->height;j++){
     data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
     for(i=0;i<fd->width;i++) {
-      data[i] = 100*((j%pitch)==0);
+      data[i] = CONST*((j%pitch)==0);
     }
   }
 }
@@ -160,7 +162,7 @@ gen_vert_bands (SchroFrameData *fd, int type)
   for(j=0;j<fd->height;j++){
     data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
     for(i=0;i<fd->width;i++) {
-      data[i] = 100*((i/pitch)&1);
+      data[i] = CONST*((i/pitch)&1);
     }
   }
 }
@@ -176,7 +178,7 @@ gen_horiz_bands (SchroFrameData *fd, int type)
   for(j=0;j<fd->height;j++){
     data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
     for(i=0;i<fd->width;i++) {
-      data[i] = 100*((j/pitch)&1);
+      data[i] = CONST*((j/pitch)&1);
     }
   }
 }
@@ -190,7 +192,7 @@ gen_vert_edge (SchroFrameData *fd, int type)
   for(j=0;j<fd->height;j++){
     data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
     for(i=0;i<fd->width;i++) {
-      data[i] = 100*(i*2 < fd->width);
+      data[i] = CONST*(i*2 < fd->width);
     }
   }
 }
@@ -204,7 +206,7 @@ gen_horiz_edge (SchroFrameData *fd, int type)
   for(j=0;j<fd->height;j++){
     data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
     for(i=0;i<fd->width;i++) {
-      data[i] = 100*(j*2 < fd->height);
+      data[i] = CONST*(j*2 < fd->height);
     }
   }
 }
@@ -417,12 +419,18 @@ frame_data_dump_full (SchroFrameData *test, SchroFrameData *ref, SchroFrameData 
 int
 frame_compare (SchroFrame *dest, SchroFrame *src)
 {
-  return frame_data_compare (dest->components + 0, src->components + 0);
+  int ret;
+  ret = frame_data_compare (dest->components + 0, src->components + 0);
+  ret &= frame_data_compare (dest->components + 1, src->components + 1);
+  ret &= frame_data_compare (dest->components + 2, src->components + 2);
+  return ret;
 }
 
 void
 frame_dump (SchroFrame *test, SchroFrame *ref)
 {
-  return frame_data_dump (test->components + 0, ref->components + 0);
+  frame_data_dump (test->components + 0, ref->components + 0);
+  frame_data_dump (test->components + 1, ref->components + 1);
+  frame_data_dump (test->components + 2, ref->components + 2);
 }
 

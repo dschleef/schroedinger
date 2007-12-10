@@ -1276,7 +1276,7 @@ schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src)
       schro_cog_mas8_u8_edgeextend (
           OFFSET(dcomp->data, dcomp->stride * j),
           OFFSET(scomp->data, scomp->stride * j),
-          taps, 32, 6, 4, scomp->width);
+          taps, 16, 5, 3, scomp->width);
     }
   }
 }
@@ -1298,7 +1298,7 @@ schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
   for(k=0;k<3;k++){
     static const int16_t taps[8] = { -1, 3, -7, 21, 21, -7, 3, -1 };
     uint8_t *list[8];
-    const int16_t offsetshift[2] = { 32, 6 };
+    const int16_t offsetshift[2] = { 16, 5 };
 
     dcomp = &dest->components[k];
     scomp = &src->components[k];
@@ -1306,7 +1306,7 @@ schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
     for(j=0;j<dcomp->height;j++){
       for(i=0;i<8;i++){
         list[i] = SCHRO_FRAME_DATA_GET_LINE(scomp,
-            CLAMP(i+j-4,0,scomp->height-1));
+            CLAMP(i+j-3,0,scomp->height-1));
       }
       oil_mas8_across_u8 (SCHRO_FRAME_DATA_GET_LINE(dcomp, j), list,
           taps, offsetshift, scomp->width);

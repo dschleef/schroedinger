@@ -1,3 +1,13 @@
+2007-12-10  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schrocog.c:
+	* schroedinger/schroframe.c:
+	* testsuite/common.c:
+	* testsuite/upsample.c:
+	  The correct shift for the new upsampling filter is 5, not 6.
+	  Fixes #6.  Fix some other upsampling problems noticed by the
+	  new and improved test.
+
 2007-12-09  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrodecoder.c:

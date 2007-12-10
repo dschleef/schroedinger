@@ -16,7 +16,7 @@ schro_cog_mas8_u8_edgeextend (uint8_t *d, const uint8_t *s,
   int x;
   int16_t offsetshift[] = { offset, shift };
 
-  if (n < 8) {
+  if (n <= 8) {
     for(i=0;i<n;i++){
       x = 0;
       for(j=0;j<8;j++) {
@@ -32,7 +32,7 @@ schro_cog_mas8_u8_edgeextend (uint8_t *d, const uint8_t *s,
       }
       d[i] = CLAMP((x + offset)>>shift,0,255);
     }
-    oil_mas8_u8_sym_l15 (d+index_offset, s, taps, offsetshift, n - 10);
+    oil_mas8_u8_sym_l15 (d+index_offset, s, taps, offsetshift, n - 8);
     for(i=n-8+index_offset;i<n;i++){
       x = 0;
       for(j=0;j<8;j++) {

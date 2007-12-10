@@ -26,6 +26,8 @@ void test (int width, int height);
 
 int failed = 0;
 
+int dump_all = FALSE;
+
 int
 main (int argc, char *argv[])
 {
@@ -55,6 +57,7 @@ void test (int width, int height)
   SchroFrame *frame_test;
   char name[TEST_PATTERN_NAME_SIZE];
   int i;
+  int ok;
 
   frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420, width, height);
   frame_ref = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420, width, height);
@@ -63,14 +66,15 @@ void test (int width, int height)
   printf("HORIZONTAL %dx%d\n", width, height);
   for(i=0;i<test_pattern_get_n_generators();i++){
     test_pattern_generate (frame->components + 0, name, i);
+    test_pattern_generate (frame->components + 1, name, i);
+    test_pattern_generate (frame->components + 2, name, i);
 
     ref_h_upsample (frame_ref, frame);
     schro_frame_upsample_horiz (frame_test, frame);
 
-    if (frame_compare (frame_ref, frame_test)) {
-      printf("  pattern %s: OK\n", name);
-    } else {
-      printf("  pattern %s: broken\n", name);
+    ok = frame_compare (frame_ref, frame_test);
+    printf("  pattern %s: %s\n", name, ok ? "OK" : "broken");
+    if (dump_all || !ok) {
       frame_data_dump_full (frame_test->components + 0,
           frame_ref->components + 0, frame->components + 0);
       failed = TRUE;
@@ -80,19 +84,24 @@ void test (int width, int height)
   printf("VERTICAL %dx%d\n", width, height);
   for(i=0;i<test_pattern_get_n_generators();i++){
     test_pattern_generate (frame->components + 0, name, i);
+    test_pattern_generate (frame->components + 1, name, i);
+    test_pattern_generate (frame->components + 2, name, i);
 
     ref_v_upsample (frame_ref, frame);
     schro_frame_upsample_vert (frame_test, frame);
 
-    if (frame_compare (frame_ref, frame_test)) {
-      printf("  pattern %s: OK\n", name);
-    } else {
-      printf("  pattern %s: broken\n", name);
+    ok = frame_compare (frame_ref, frame_test);
+    printf("  pattern %s: %s\n", name, ok ? "OK" : "broken");
+    if (dump_all || !ok) {
       frame_data_dump_full (frame_test->components + 0,
           frame_ref->components + 0, frame->components + 0);
       failed = TRUE;
     }
   }
+
+  schro_frame_unref (frame);
+  schro_frame_unref (frame_ref);
+  schro_frame_unref (frame_test);
 }
 
 
@@ -102,15 +111,15 @@ upsample_line (uint8_t *dest, int dstr, uint8_t *src, int sstr, int n)
   int i;
   int j;
   int x;
-  int weights[10] = { 3, -11, 25, -56, 167, 167, -56, 25, -11, 3 };
+  int weights[8] = { -1, 3, -7, 21, 21, -7, 3, -1 };
 
   for(i=0;i<n;i++){
     x = 0;
-    for(j=0;j<10;j++){
-      x += weights[j] * SCHRO_GET(src, sstr * CLAMP(i+j-4,0,n-1), uint8_t);
+    for(j=0;j<8;j++){
+      x += weights[j] * SCHRO_GET(src, sstr * CLAMP(i+j-3,0,n-1), uint8_t);
     }
-    x += 128;
-    x >>= 8;
+    x += 16;
+    x >>= 5;
     SCHRO_GET(dest, dstr * i, uint8_t) = CLAMP(x, 0, 255);
   }
 }
