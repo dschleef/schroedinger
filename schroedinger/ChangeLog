@@ -1,3 +1,8 @@
+2007-12-11  David Schleef  <ds@schleef.org>
+
+	* schroedinger/schromotion.c:
+	  Fix prediction of DC blocks.
+
 2007-12-10  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schrocog.c:

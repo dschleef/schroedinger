@@ -1173,16 +1173,16 @@ schro_motion_dc_prediction (SchroMotion *motion, int x, int y, int *pred)
     }
     switch(n) {
       case 0:
-        pred[i] = 0;
+        pred[i] = 128;
         break;
       case 1:
         pred[i] = sum;
         break;
       case 2:
-        pred[i] = (sum+1)/2;
+        pred[i] = (sum+1)>>1;
         break;
       case 3:
-        pred[i] = (sum+1)/3;
+        pred[i] = schro_divide(sum + 1,3);
         break;
       default:
         SCHRO_ASSERT(0);
