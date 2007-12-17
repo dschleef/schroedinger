@@ -14,7 +14,7 @@ noinst_PROGRAMS = arith arith_encode \
 	 wavelet_gain wavelet_noise_gain \
 	 wavelet_gain_curve \
 	 perceptual_weight perceptual_curves \
-	 struct_offsets wavelet_noise_2d \
+	 wavelet_noise_2d \
 	 unpack downsample hist_noise_level taps ramp
 
 noinst_HEADERS = common.h
@@ -135,8 +135,6 @@ perceptual_weight_SOURCES = perceptual_weight.c
 #perceptual_curves_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 perceptual_curves_SOURCES = perceptual_curves.c
 
-
-struct_offsets_SOURCES = struct_offsets.c
 
 
 zzuf_test:

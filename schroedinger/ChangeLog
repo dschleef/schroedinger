@@ -1,3 +1,9 @@
+2007-12-17  David Schleef  <ds@schleef.org>
+
+	* testsuite/Makefile.am:
+	* testsuite/struct_offsets.c:
+	  Remove this, since it's broken, and is not useful.
+
 2007-12-11  David Schleef  <ds@schleef.org>
 
 	* schroedinger/schromotion.c:
