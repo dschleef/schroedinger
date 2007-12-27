@@ -1,33 +1,91 @@
-AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = schroedinger doc tools
+pkgincludedir = $(includedir)/schroedinger-@SCHRO_MAJORMINOR@/schroedinger
 
-DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc
+lib_LTLIBRARIES = libschroedinger-@SCHRO_MAJORMINOR@.la
 
-if HAVE_GST
-SUBDIRS += gst
-endif
+DISTCLEANFILES = schro-stdint.h
 
-if HAVE_CHECK
-SUBDIRS += testsuite
-endif
+EXTRA_DIST = schroarith-i386.c
 
-DIST_SUBDIRS = schroedinger doc tools gst testsuite
+pkginclude_HEADERS = \
+	schro.h \
+	schrobuffer.h \
+	schrocog.h \
+	schrodecoder.h \
+	schroencoder.h \
+	schroengine.h \
+	schrofilter.h \
+	schroframe.h \
+	schro-stdint.h \
+	schroarith.h \
+	schroanalysis.h \
+	schroasync.h \
+	schrobitstream.h \
+	schrodebug.h \
+	schrofft.h \
+	schrohistogram.h \
+	schrolimits.h \
+	schrolist.h \
+	schrometric.h \
+	schromotion.h \
+	schropack.h \
+	schroparams.h \
+	schrophasecorrelation.h \
+	schropredict.h \
+	schroqueue.h \
+	schrossim.h \
+	schrotables.h \
+	schrounpack.h \
+	schroutils.h \
+	schrovideoformat.h \
+	schrowavelet.h \
+	schrobitstream.h \
+	schromotion.h
 
-EXTRA_DIST = COPYING COPYING.GPL COPYING.LGPL COPYING.MIT COPYING.MPL \
-	     autogen.sh schroedinger.spec TODO NEWS
+noinst_HEADERS = \
+	schrooil.h
 
-pkgconfig_DATA = schroedinger-$(SCHRO_MAJORMINOR).pc
+libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
+	schro.c \
+	schroanalysis.c \
+	schroarith.c \
+	schroasync-pthread.c \
+	schrocog.c \
+	schrodecoder.c \
+	schrodebug.c \
+	schroencoder.c \
+	schroengine.c \
+	schrofft.c \
+	schrofilter.c \
+	schroframe.c \
+	schrohistogram.c \
+	schrobuffer.c \
+	schrolist.c \
+	schrolowdelay.c \
+	schrometric.c \
+	schromotion.c \
+	schrooil.c \
+	schropack.c \
+	schroparams.c \
+	schrophasecorrelation.c \
+	schropredict.c \
+	schroquantiser.c \
+	schroqueue.c \
+	schrossim.c \
+	schrotables.c \
+	schrounpack.c \
+	schrounpacktables.c \
+	schroutils.c \
+	schrovideoformat.c \
+	schrowavelet.c \
+	schrowavelettables.c
 
-schroedinger-$(SCHRO_MAJORMINOR).pc: schroedinger.pc
-	cp schroedinger.pc schroedinger-$(SCHRO_MAJORMINOR).pc
-
-schroedinger-$(SCHRO_MAJORMINOR)-uninstalled.pc: schroedinger-uninstalled.pc
-	cp schroedinger-uninstalled.pc schroedinger-$(SCHRO_MAJORMINOR)-uninstalled.pc
-
-BUILT_SOURCES=schroedinger-$(SCHRO_MAJORMINOR)-uninstalled.pc
-
-CLEANFILES = schroedinger-$(SCHRO_MAJORMINOR).pc schroedinger-$(SCHRO_MAJORMINOR)-uninstalled.pc
-
-ACLOCAL_FLAGS = -I m4
+libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = \
+	$(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ERROR_CFLAGS) \
+	-DSCHRO_ENABLE_UNSTABLE_API
+libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)
+libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
+	-no-undefined \
+	-version-info $(SCHRO_LIBVERSION) \
+	-export-symbols-regex '^(oil|schro)_'
 
