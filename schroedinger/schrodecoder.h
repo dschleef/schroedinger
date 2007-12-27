@@ -19,7 +19,6 @@ struct _SchroDecoder {
   /*< private >*/
   SchroFrame *frame;
   SchroFrame *mc_tmp_frame;
-  int n_reference_pictures;
 
   /* the list of reference pictures */
   SchroQueue *reference_queue;
