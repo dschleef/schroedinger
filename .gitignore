@@ -1,5 +1,6 @@
 *.lo
-*.in
+Makefile.in
+config.h.in
 Makefile
 .deps
 *.swp
