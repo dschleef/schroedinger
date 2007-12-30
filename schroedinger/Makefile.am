@@ -1,4 +1,8 @@
 
+if HAVE_CUDA
+SUBDIRS = cuda
+endif
+
 pkgincludedir = $(includedir)/schroedinger-@SCHRO_MAJORMINOR@/schroedinger
 
 lib_LTLIBRARIES = libschroedinger-@SCHRO_MAJORMINOR@.la
@@ -45,6 +49,14 @@ pkginclude_HEADERS = \
 noinst_HEADERS = \
 	schrooil.h
 
+if HAVE_CUDA
+cuda_sources = \
+	schrogpuframe.c \
+	schrogpusubbandstorage.c \
+	schrogpumotion.c 
+cuda_libs = cuda/libdcuda.la
+endif
+
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schro.c \
 	schroanalysis.c \
@@ -78,12 +90,15 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schroutils.c \
 	schrovideoformat.c \
 	schrowavelet.c \
-	schrowavelettables.c
+	schrowavelettables.c \
+	$(cuda_sources)
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = \
 	$(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ERROR_CFLAGS) \
-	-DSCHRO_ENABLE_UNSTABLE_API
-libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS)
+	-DSCHRO_ENABLE_UNSTABLE_API \
+	$(CUDA_CFLAGS) -I$(srcdir)/cuda
+
+libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = $(LIBOIL_LIBS) $(cuda_libs)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-no-undefined \
 	-version-info $(SCHRO_LIBVERSION) \
