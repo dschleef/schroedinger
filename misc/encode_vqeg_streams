@@ -3,12 +3,12 @@
 mediadir=/home/ds/media
 
 all="SD-default SD-VBR-10dB SD-VBR-20dB SD-VBR-30dB SD-VBR-40dB \
-    SD-CBR-250kb SD-CBR-500kb SD-CBR-1Mb SD-CBR-2Mb \
+    SD-CBR-250kb SD-CBR-500kb SD-CBR-1Mb SD-CBR-2Mb SD-CBR-3Mb \
     SD-LD-40Mb SD-LD-10Mb SD-lossless SD-intra-only"
 
 list="$all"
 
-list=SD-CBR-1Mb
+list=SD-CBR-3Mb
 
 #extraopts="enable-phasecorr-prediction=true enable-hierarchical-prediction=false"
 #extraopts="perceptual-weighting=1"
@@ -26,6 +26,7 @@ function get_profile {
     SD-CBR-500kb) schroopts="rate-control=1 bitrate=500000" ;;
     SD-CBR-1Mb) schroopts="rate-control=1 bitrate=1000000" ;;
     SD-CBR-2Mb) schroopts="rate-control=1 bitrate=2000000" ;;
+    SD-CBR-3Mb) schroopts="rate-control=1 bitrate=3000000" ;;
     SD-LD-40Mb) schroopts="rate-control=2 bitrate=41472000" ;;
     SD-LD-20Mb) schroopts="rate-control=2 bitrate=20736000" ;;
     SD-LD-10Mb) schroopts="rate-control=2 bitrate=10368000" ;;

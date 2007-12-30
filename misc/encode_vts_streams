@@ -2,11 +2,12 @@
 
 mediadir=/home/ds/media
 
-all="SD-default SD-10dB SD-20dB SD-30dB SD-40dB SD-250kb SD-500kb \
-    SD-1Mb SD-2Mb SD-LD-40Mb SD-LD-10Mb SD-lossless SD-intra-only"
+all="SD-default SD-VBR-10dB SD-VBR-20dB SD-VBR-30dB SD-VBR-40dB \
+    SD-CBR-250kb SD-CBR-500kb \
+    SD-CBR-1Mb SD-CBR-2Mb SD-LD-40Mb SD-LD-10Mb SD-lossless SD-intra-only"
 
-#list="$all"
-list=SD-default
+list="$all"
+#list=SD-default
 
 extraopts=""
 
