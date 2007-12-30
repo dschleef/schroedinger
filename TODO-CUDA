@@ -1,0 +1,22 @@
+- make playback less stuttery?
+   - might not be a problem in normal mode if frames are throttled
+   - frame skipping does not yet work for GPU
+
+- make gpu stuff completely asynchronous
+   - async mem transfers
+     - all done?
+   - use event api to check for frame readiness ?
+
+- fix schro_decoder_error in schro_decoder_decode_access_unit
+
+- Would it be possible to do SCHRO_DECODER_MOTION_DECODE/
+  SCHRO_DECODER_WAVELET_DECODE in parallel? (are the offsets known in advance?)
+
+- split up schrodecoderworker.c, it's one big ugly file
+
+- reintroduce Async overlap in serial subband copy, using GPU thread
+
+- various queue sizes
+  when are they large enough to be safe?
+#define SCHRO_RETIRE_QUEUE_SIZE 40
+#define UQUEUE_SIZE 40 /* Max number of stored ref frames (GPU) */
