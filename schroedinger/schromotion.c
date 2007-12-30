@@ -941,24 +941,57 @@ copy_block (SchroFrame *dest, SchroMotion *motion, int x, int y, int reg,
     x0 = (x>>comp->h_shift);
     y0 = (y>>comp->v_shift);
     
-    if (region->end_x - region->start_x == 12) {
+    if (reg == 4) {
       int16_t *d1;
-      int16_t *w1;
-      uint8_t *s1;
+      int j;
 
-      d1 = OFFSET(comp->data, comp->stride*(y0 + region->start_y) +
-          2*(x0 + region->start_x));
-      w1 = region->weights[weight_index] +
-        obmc->x_len * region->start_y + region->start_x;
-      s1 = OFFSET(motion->blocks[k],
-          motion->strides[k]*region->start_y + region->start_x);
+      d1 = SCHRO_FRAME_DATA_GET_PIXEL_S16(comp, x0, y0);
 
-      oil_multiply_and_acc_12xn_s16_u8 (d1, comp->stride,
-          w1, obmc->x_len * sizeof(int16_t),
-          s1, motion->strides[k],
-          region->end_y - region->start_y);
+      switch (region->end_x) {
+        case 6:
+          oil_multiply_and_acc_6xn_s16_u8 (d1, comp->stride,
+              region->weights[weight_index], obmc->x_len * sizeof(int16_t),
+              motion->blocks[k], motion->strides[k],
+              region->end_y);
+          break;
+        case 8:
+          oil_multiply_and_acc_8xn_s16_u8 (d1, comp->stride,
+              region->weights[weight_index], obmc->x_len * sizeof(int16_t),
+              motion->blocks[k], motion->strides[k],
+              region->end_y);
+          break;
+        case 12:
+          oil_multiply_and_acc_12xn_s16_u8 (d1, comp->stride,
+              region->weights[weight_index], obmc->x_len * sizeof(int16_t),
+              motion->blocks[k], motion->strides[k],
+              region->end_y);
+          break;
+        case 16:
+          oil_multiply_and_acc_16xn_s16_u8 (d1, comp->stride,
+              region->weights[weight_index], obmc->x_len * sizeof(int16_t),
+              motion->blocks[k], motion->strides[k],
+              region->end_y);
+          break;
+        case 24:
+          oil_multiply_and_acc_24xn_s16_u8 (d1, comp->stride,
+              region->weights[weight_index], obmc->x_len * sizeof(int16_t),
+              motion->blocks[k], motion->strides[k],
+              region->end_y);
+          break;
+        default:
+          for(j=0;j<region->end_y;j++){
+            oil_multiply_and_add_s16_u8 (
+                OFFSET(d1, comp->stride * j),
+                OFFSET(d1, comp->stride * j),
+                OFFSET(region->weights[weight_index], obmc->x_len * sizeof(int16_t) * j),
+                OFFSET(motion->blocks[k], motion->strides[k] * j),
+                region->end_x);
+          }
+          break;
+      }
     } else {
       int j;
+
       for(j=region->start_y;j<region->end_y;j++){
         oil_multiply_and_add_s16_u8 (
             OFFSET(comp->data, comp->stride*(y0+j) + 2*(x0 + region->start_x)),
