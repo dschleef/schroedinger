@@ -19,7 +19,7 @@
 
 #define THREADS 256
 
-#include "../common.h"
+#include "common.h"
 #include "convert_base_coalesce.h"
 //#include "convert_base.h"
 #include "convert_packed.h"
