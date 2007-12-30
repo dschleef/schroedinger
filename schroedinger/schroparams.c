@@ -78,6 +78,7 @@ schro_params_init (SchroParams *params, int video_format)
           video_format);
       SCHRO_ASSERT(0);
   }
+  SCHRO_ERROR("schro_params_init %i %i %i %i", params->xblen_luma, params->yblen_luma, params->xbsep_luma, params->ybsep_luma);
 
   params->mv_precision = 2;
   params->picture_weight_1 = 1;

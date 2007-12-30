@@ -122,13 +122,16 @@ handle_gop_enum (SchroEncoder *encoder)
     case SCHRO_ENCODER_GOP_ADAPTIVE:
     case SCHRO_ENCODER_GOP_BACKREF:
     case SCHRO_ENCODER_GOP_CHAINED_BACKREF:
+      SCHRO_ERROR("Setting backref\n");
       encoder->engine_iterate = schro_encoder_engine_backref;
       break;
     case SCHRO_ENCODER_GOP_INTRA_ONLY:
+      SCHRO_ERROR("Setting intra only\n");
       encoder->engine_iterate = schro_encoder_engine_intra_only;
       break;
     case SCHRO_ENCODER_GOP_BIREF:
     case SCHRO_ENCODER_GOP_CHAINED_BIREF:
+      SCHRO_ERROR("Setting tworef engine\n");
       encoder->engine_iterate = schro_encoder_engine_tworef;
       break;
   }
@@ -1507,6 +1510,8 @@ schro_encoder_encode_picture_header (SchroEncoderFrame *frame)
 {
   schro_pack_sync(frame->pack);
   schro_pack_encode_bits (frame->pack, 32, frame->frame_number);
+
+  SCHRO_ERROR("refs %i ref0 %i ref1 %i", frame->params.num_refs, frame->picture_number_ref0, frame->picture_number_ref1);
 
   if (frame->params.num_refs > 0) {
     schro_pack_encode_sint (frame->pack,

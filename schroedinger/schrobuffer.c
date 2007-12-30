@@ -4,6 +4,7 @@
 #endif
 
 #include <schroedinger/schrobuffer.h>
+#include <schroedinger/schrodebug.h>
 #include <string.h>
 #include <stdlib.h>
 #include <liboil/liboil.h>
@@ -35,6 +36,8 @@ schro_buffer_new_and_alloc (int size)
   buffer->data = g_malloc (size);
   buffer->length = size;
   buffer->free = schro_buffer_free_mem;
+  
+  SCHRO_DEBUG("%p %i", buffer, size);
 
   return buffer;
 }
@@ -81,6 +84,7 @@ schro_buffer_unref (SchroBuffer * buffer)
 {
   buffer->ref_count--;
   if (buffer->ref_count == 0) {
+    SCHRO_DEBUG("free %p", buffer);
     if (buffer->free)
       buffer->free (buffer, buffer->priv);
     g_free (buffer);

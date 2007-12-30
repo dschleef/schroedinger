@@ -30,8 +30,11 @@ schro_queue_free (SchroQueue *queue)
 {
   int i;
 
-  for(i=0;i<queue->n;i++){
-    queue->free (queue->elements[i].data, queue->elements[i].picture_number);
+  if(queue->free)
+  {
+    for(i=0;i<queue->n;i++){
+      queue->free (queue->elements[i].data, queue->elements[i].picture_number);
+    }
   }
 
   free(queue->elements);

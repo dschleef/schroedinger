@@ -1180,36 +1180,50 @@ schro_motion_dc_prediction (SchroMotion *motion, int x, int y, int *pred)
   int i;
 
   for(i=0;i<3;i++){
-    int sum = 0;
+    unsigned int sum = 0;
     int n = 0;
 
     if (x>0) {
       mvdc = SCHRO_MOTION_GET_DC_BLOCK(motion,x-1,y);
       if (mvdc->pred_mode == 0) {
-        sum += mvdc->dc[i];
+        sum += mvdc->dc[i] - 128;
         n++;
       }
     }
     if (y>0) {
       mvdc = SCHRO_MOTION_GET_DC_BLOCK(motion,x,y-1);
       if (mvdc->pred_mode == 0) {
-        sum += mvdc->dc[i];
+        sum += mvdc->dc[i] - 128;
         n++;
       }
     }
     if (x>0 && y>0) {
       mvdc = SCHRO_MOTION_GET_DC_BLOCK(motion,x-1,y-1);
       if (mvdc->pred_mode == 0) {
-        sum += mvdc->dc[i];
+        sum += mvdc->dc[i] - 128;
         n++;
       }
     }
     switch(n) {
+#if 0
+      case 0:
+        pred[i] = (short)128 + 128;
+        break;
+      case 1:
+        pred[i] = (short)sum + 128;
+        break;
+      case 2:
+        pred[i] = (short)((sum+1)/2) + 128;
+        break;
+      case 3:
+        pred[i] = (short)((sum+1)/3) + 128;
+        break;
+#else
       case 0:
         pred[i] = 128;
         break;
       case 1:
-        pred[i] = sum;
+        pred[i] = (short)sum + 128;
         break;
       case 2:
         pred[i] = (sum+1)>>1;
@@ -1217,6 +1231,7 @@ schro_motion_dc_prediction (SchroMotion *motion, int x, int y, int *pred)
       case 3:
         pred[i] = schro_divide(sum + 1,3);
         break;
+#endif
       default:
         SCHRO_ASSERT(0);
     }
