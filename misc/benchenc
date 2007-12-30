@@ -1,0 +1,56 @@
+#!/bin/sh
+
+#
+#  Creates a raw Dirac sequence from raw YUV pictures.
+#
+TESTPATH=$HOME/test
+GST=gst-launch-0.10 
+#input=$HOME/ed/elephantsdream-1920-hd-mpeg4-su-ac3.avi
+input=$HOME/intheshadowofthemoon_h1080p.avi
+#input=$TESTPATH/vic.avi
+#input=/tmp/bla.yuv
+#input=/dev/urandom
+#480, height=(int)360, framerate=(fraction)2997/100, format=(fourcc)I420
+#format=I420
+#width=480
+#height=360
+#framerate=30
+output=${TESTPATH}/intheshadowofthemoon_h1080p_new.drc
+
+# case 0: ret = schro_encoder_engine_intra_only (encoder);
+# case 1: ret = schro_encoder_engine_backref (encoder);
+# case 2: ret = schro_encoder_engine_backref2 (encoder);
+# case 3: ret = schro_encoder_engine_tworef (encoder);
+# case 4: ret = schro_encoder_engine_test_intra (encoder);
+# case 5: ret = schro_encoder_engine_lossless (encoder);
+echo $input
+taskset -c 0 ${GST} -v filesrc location=$input  \
+	! decodebin \
+	! schroenc rate-control=1 bitrate=3500000 gop_structure=4 ! filesink location=$output
+# rate-control=1 bitrate=2500000
+# gop_structure=4
+# 442048
+#! oggmux ! filesink location=$output
+	
+#	! xvimagesink
+#gst-launch filesrc location=$input  \
+#        ! video/x-raw-yuv,format=\(fourcc\)$format,width=$width,height=$height,framerate=$framerate/1 \
+#        ! xvideosink
+#	! identity \
+#	! schroenc ! oggmux ! filesink location=$output
+#
+#  xvideosink
+#  ! schroenc ! oggmux ! filesink location=$output
+
+#
+#  A set of YUV images in I420 format can be created using the command:
+#
+#    gst-launch videotestsrc num-buffers=100 ! multifilesink
+#
+#  Note also that you can decompress a raw Dirac sequence into YUV using:
+#
+#    gst-launch filesrc location=file.drc ! schrodec ! multifilesink
+#
+#  video/x-raw-yuv,format:fourcc=$format,width=$width,height=$height,framerate=$framerate/1 \
+
+#	! identity datarate=10000 single-segment=true\

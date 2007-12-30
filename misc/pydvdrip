@@ -11,12 +11,12 @@ file = '/home/ds/vob/x3_clip.mpg'
 #file = '/home/ds/vob/curb_your_enthusiasm.1.vob'
 seek_time = 0
 length = 28
-fps = 30
+fps = 24
 audiochan = 0
 engine = 1
 psnr = 30
 bitrate = 2000000
-quant_engine = 1
+quant_engine = 0
 intra_wavelet=0
 #transform_depth=4
 
@@ -89,7 +89,8 @@ import gst
 mainloop = gobject.MainLoop();
 
 class Moo:
-    def __init__(self):
+    def __init__(self,suffix):
+        self.suffix = suffix;
         self.audio_channel = 0;
         self.got_video = 0;
         self.bin = gst.parse_launch('filesrc name=source ! ' +
@@ -183,12 +184,16 @@ class Moo:
                 queue.get_pad("src").link (videorate.get_pad("sink"));
 
                 schroenc = gst.element_factory_make("schroenc");
-                schroenc.set_property ("engine", engine);
-                schroenc.set_property ("bitrate", bitrate);
+                #schroenc.set_property ("engine", engine);
+                #schroenc.set_property ("bitrate", bitrate);
                 #schroenc.set_property ("psnr", psnr);
-                schroenc.set_property ("quant-engine", quant_engine);
-                schroenc.set_property ("intra-wavelet", intra_wavelet);
+                #schroenc.set_property ("quant-engine", quant_engine);
+                #schroenc.set_property ("intra-wavelet", intra_wavelet);
                 #schroenc.set_property ("transform-depth", transform_depth);
+                #schroenc.set_property ("md5", 1);
+                #schroenc.set_property ("enable-phasecorr-prediction", 1);
+                #schroenc.set_property ("enable-hierarchical-prediction", 0);
+                #schroenc.set_property ("mv-precision", 1);
                 self.seeker = schroenc;
                 self.bin.add (schroenc);
                 schroenc.set_state (gst.STATE_PLAYING);
@@ -202,7 +207,9 @@ class Moo:
                 schroenc.get_pad("src").link(oggmux.get_pad("sink_%d"));
 
                 filesink = gst.element_factory_make("filesink");
-                filesink.set_property ("location", "output.ogg");
+                fn = "output" + self.suffix + ".ogg";
+                print fn;
+                filesink.set_property ("location", fn);
                 self.bin.add (filesink);
                 filesink.set_state (gst.STATE_PLAYING);
                 oggmux.get_pad("src").link(filesink.get_pad("sink"));
@@ -242,8 +249,13 @@ class Moo:
 
 
 def main(args):
+    if len(args) > 1:
+        suffix="-" + args[1];
+        print suffix
+    else:
+        suffix="";
 
-    moo = Moo();
+    moo = Moo(suffix);
 
     try:
         mainloop.run();

@@ -1,0 +1,20 @@
+#!/bin/sh
+# Unpack a drc file to yuv
+TESTPATH=$HOME/test
+GST=gst-launch-0.10 
+#input=${TESTPATH}/vic.drc
+#input=${HOME}/The_Living_Sea_1080.drc
+input=/home/wladimir/intheshadowofthemoon_h1080p.drc
+
+#output=/tmp/test2.yuv
+# faster, for benchmarks
+output=/dev/null
+
+#taskset -c 0 ${GST} ${GSTD} -v filesrc location=$input  \
+#	! decodebin \
+#	! filesink location=$output
+
+${GST} ${GSTD} -v filesrc location=$input  \
+	! decodebin \
+	! filesink location=$output
+

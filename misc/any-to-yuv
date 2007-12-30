@@ -1,0 +1,15 @@
+#!/bin/sh
+
+in=/tmp/vic.mov
+out=/tmp/vic.yuv
+
+gst-launch-0.10 -v \
+  filesrc location=$in ! \
+  decodebin name="decode" \
+    decode. ! \
+    ffmpegcolorspace ! \
+    avimux ! \
+    filesink location=$out
+    
+#    ffmpegcolorspace ! \
+#    schroenc ! \

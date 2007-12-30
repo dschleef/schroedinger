@@ -1,0 +1,16 @@
+#!/bin/sh
+
+#
+#  Creates a raw Dirac sequence from raw YUV pictures.
+#
+GST=gst-launch-0.10 
+input=$HOME/intheshadowofthemoon_h1080p.yuv
+output=$HOME/intheshadowofthemoon_h1080p.avi
+format=I420
+width=1440
+height=1080
+framerate=24
+
+${GST} filesrc location=$input  \
+        ! video/x-raw-yuv,format=\(fourcc\)$format,width=$width,height=$height,framerate=$framerate/1 \
+        ! avimux ! filesink location=$output
