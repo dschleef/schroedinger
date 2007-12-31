@@ -70,11 +70,10 @@ ilog2up (unsigned int x)
 
 
 void
-schro_decoder_decode_slice (SchroDecoder *decoder,
+schro_decoder_decode_slice (SchroPicture *picture,
     SchroLowDelay *lowdelay,
     int slice_x, int slice_y, int slice_bytes)
 {
-  SchroPicture *picture = decoder->picture;
   SchroParams *params = &picture->params;
   SchroUnpack y_unpack;
   SchroUnpack uv_unpack;
@@ -178,9 +177,8 @@ schro_lowdelay_init (SchroLowDelay *lowdelay, SchroFrame *frame,
 }
 
 void
-schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder)
+schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture)
 {
-  SchroPicture *picture = decoder->picture;
   SchroParams *params = &picture->params;
   SchroLowDelay lowdelay;
   int x,y;
@@ -209,7 +207,7 @@ schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder)
         extra = 0;
       }
 
-      schro_decoder_decode_slice (decoder, &lowdelay,
+      schro_decoder_decode_slice (picture, &lowdelay,
           x, y, n_bytes + extra);
     }
   }

@@ -58,9 +58,9 @@ struct _SchroDecoderSubbandContext {
 int _schro_decode_prediction_only;
 
 static int schro_decoder_decode_picture (SchroPicture *picture);
-static void schro_decoder_decode_macroblock(SchroDecoder *decoder,
+static void schro_decoder_decode_macroblock(SchroPicture *picture,
     SchroArith **arith, SchroUnpack *unpack, int i, int j);
-static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
+static void schro_decoder_decode_prediction_unit(SchroPicture *picture,
     SchroArith **arith, SchroUnpack *unpack, SchroMotionVector *motion_vectors, int x, int y);
 static void schro_decoder_init (SchroDecoder *decoder);
 
@@ -70,7 +70,7 @@ static SchroUpsampledFrame * schro_decoder_reference_get (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
 static void schro_decoder_reference_retire (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
-static void schro_decoder_decode_subband (SchroDecoder *decoder,
+static void schro_decoder_decode_subband (SchroPicture *picture,
     SchroDecoderSubbandContext *ctx);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
@@ -374,7 +374,7 @@ schro_decoder_iterate (SchroDecoder *decoder)
     return SCHRO_DECODER_NEED_FRAME;
   }
 
-  schro_decoder_decode_picture_header(decoder);
+  schro_decoder_decode_picture_header(decoder->picture);
 
   params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->picture->parse_code);
   params->is_lowdelay = SCHRO_PARSE_CODE_IS_LOW_DELAY(decoder->picture->parse_code);
@@ -443,7 +443,7 @@ schro_decoder_decode_picture (SchroPicture *picture)
     SCHRO_DEBUG("inter");
 
     schro_unpack_byte_sync (&picture->unpack);
-    schro_decoder_decode_picture_prediction_parameters (picture->decoder);
+    schro_decoder_decode_picture_prediction_parameters (picture);
     schro_params_calculate_mc_sizes (params);
 
     picture->ref0 = schro_decoder_reference_get (decoder, picture->reference1);
@@ -471,7 +471,7 @@ schro_decoder_decode_picture (SchroPicture *picture)
     }
 
     schro_unpack_byte_sync (&picture->unpack);
-    schro_decoder_decode_block_data (decoder);
+    schro_decoder_decode_block_data (picture);
 
     if (params->mv_precision > 0) {
       schro_upsampled_frame_upsample (picture->ref0);
@@ -494,14 +494,14 @@ schro_decoder_decode_picture (SchroPicture *picture)
   }
 
   if (!picture->zero_residual) {
-    schro_decoder_decode_transform_parameters (decoder);
+    schro_decoder_decode_transform_parameters (picture);
     schro_params_calculate_iwt_sizes (params);
 
     schro_unpack_byte_sync (&picture->unpack);
     if (params->is_lowdelay) {
-      schro_decoder_decode_lowdelay_transform_data (decoder);
+      schro_decoder_decode_lowdelay_transform_data (picture);
     } else {
-      schro_decoder_decode_transform_data (decoder);
+      schro_decoder_decode_transform_data (picture);
     }
 
     schro_frame_inverse_iwt_transform (picture->frame, &picture->params,
@@ -627,39 +627,39 @@ schro_decoder_init (SchroDecoder *decoder)
 void
 schro_decoder_decode_parse_header (SchroDecoder *decoder)
 {
+  SchroUnpack *unpack = &decoder->picture->unpack;
   SchroPicture *picture = decoder->picture;
   int v1, v2, v3, v4;
   
-  v1 = schro_unpack_decode_bits (&picture->unpack, 8);
-  v2 = schro_unpack_decode_bits (&picture->unpack, 8);
-  v3 = schro_unpack_decode_bits (&picture->unpack, 8);
-  v4 = schro_unpack_decode_bits (&picture->unpack, 8);
+  v1 = schro_unpack_decode_bits (unpack, 8);
+  v2 = schro_unpack_decode_bits (unpack, 8);
+  v3 = schro_unpack_decode_bits (unpack, 8);
+  v4 = schro_unpack_decode_bits (unpack, 8);
   SCHRO_DEBUG ("parse header %02x %02x %02x %02x", v1, v2, v3, v4);
   if (v1 != 'B' || v2 != 'B' || v3 != 'C' || v4 != 'D') {
     SCHRO_ERROR ("expected parse header");
     return;
   }
 
-  picture->parse_code = schro_unpack_decode_bits (&picture->unpack, 8);
+  picture->parse_code = schro_unpack_decode_bits (unpack, 8);
   SCHRO_DEBUG ("parse code %02x", picture->parse_code);
 
   picture->n_refs = SCHRO_PARSE_CODE_NUM_REFS(picture->parse_code);
   SCHRO_DEBUG("n_refs %d", picture->n_refs);
 
-  picture->next_parse_offset = schro_unpack_decode_bits (&picture->unpack, 32);
+  picture->next_parse_offset = schro_unpack_decode_bits (unpack, 32);
   SCHRO_DEBUG ("next_parse_offset %d", picture->next_parse_offset);
-  picture->prev_parse_offset = schro_unpack_decode_bits (&picture->unpack, 32);
+  picture->prev_parse_offset = schro_unpack_decode_bits (unpack, 32);
   SCHRO_DEBUG ("prev_parse_offset %d", picture->prev_parse_offset);
 }
 
 void
 schro_decoder_decode_access_unit (SchroDecoder *decoder)
 {
-  SchroPicture *picture = decoder->picture;
   int bit;
   int index;
   SchroVideoFormat *format = &decoder->video_format;
-  SchroUnpack *unpack = &picture->unpack;
+  SchroUnpack *unpack = &decoder->picture->unpack;
 
   SCHRO_DEBUG("decoding access unit");
 
@@ -831,9 +831,8 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
 }
 
 void
-schro_decoder_decode_picture_header (SchroDecoder *decoder)
+schro_decoder_decode_picture_header (SchroPicture *picture)
 {
-  SchroPicture *picture = decoder->picture;
   SchroUnpack *unpack = &picture->unpack;
 
   schro_unpack_byte_sync(unpack);
@@ -860,9 +859,8 @@ schro_decoder_decode_picture_header (SchroDecoder *decoder)
 }
 
 void
-schro_decoder_decode_picture_prediction_parameters (SchroDecoder *decoder)
+schro_decoder_decode_picture_prediction_parameters (SchroPicture *picture)
 {
-  SchroPicture *picture = decoder->picture;
   SchroParams *params = &picture->params;
   SchroUnpack *unpack = &picture->unpack;
   int bit;
@@ -947,7 +945,7 @@ schro_decoder_decode_picture_prediction_parameters (SchroDecoder *decoder)
   /* picture prediction mode */
   params->picture_pred_mode = schro_unpack_decode_uint (unpack);
   if (params->picture_pred_mode != 0) {
-    schro_decoder_error (decoder, "picture prediction mode != 0");
+    schro_decoder_error (picture->decoder, "picture prediction mode != 0");
   }
 
   /* reference picture weights */
@@ -979,9 +977,8 @@ enum {
 };
 
 void
-schro_decoder_decode_block_data (SchroDecoder *decoder)
+schro_decoder_decode_block_data (SchroPicture *picture)
 {
-  SchroPicture *picture = decoder->picture;
   SchroParams *params = &picture->params;
   SchroArith *arith[9];
   SchroUnpack unpack[9];
@@ -1018,7 +1015,7 @@ schro_decoder_decode_block_data (SchroDecoder *decoder)
 
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
-      schro_decoder_decode_macroblock(decoder, arith, unpack, i, j);
+      schro_decoder_decode_macroblock(picture, arith, unpack, i, j);
     }
   }
 
@@ -1043,10 +1040,9 @@ schro_decoder_decode_block_data (SchroDecoder *decoder)
 }
 
 static void
-schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith **arith,
+schro_decoder_decode_macroblock(SchroPicture *picture, SchroArith **arith,
     SchroUnpack *unpack, int i, int j)
 {
-  SchroPicture *picture = decoder->picture;
   SchroParams *params = &picture->params;
   SchroMotion *motion = picture->motion;
   SchroMotionVector *mv = &motion->motion_vectors[j*params->x_num_blocks + i];
@@ -1065,7 +1061,7 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith **arith,
 
   switch (mv->split) {
     case 0:
-      schro_decoder_decode_prediction_unit (decoder, arith, unpack,
+      schro_decoder_decode_prediction_unit (picture, arith, unpack,
           motion->motion_vectors, i, j);
       mv[1] = mv[0];
       mv[2] = mv[0];
@@ -1075,19 +1071,19 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith **arith,
       memcpy(mv + 3*params->x_num_blocks, mv, 4*sizeof(*mv));
       break;
     case 1:
-      schro_decoder_decode_prediction_unit (decoder, arith, unpack,
+      schro_decoder_decode_prediction_unit (picture, arith, unpack,
           motion->motion_vectors, i, j);
       mv[1] = mv[0];
-      schro_decoder_decode_prediction_unit (decoder, arith, unpack,
+      schro_decoder_decode_prediction_unit (picture, arith, unpack,
           motion->motion_vectors, i + 2, j);
       mv[3] = mv[2];
       memcpy(mv + params->x_num_blocks, mv, 4*sizeof(*mv));
 
       mv += 2*params->x_num_blocks;
-      schro_decoder_decode_prediction_unit (decoder, arith, unpack,
+      schro_decoder_decode_prediction_unit (picture, arith, unpack,
           motion->motion_vectors, i, j + 2);
       mv[1] = mv[0];
-      schro_decoder_decode_prediction_unit (decoder, arith, unpack,
+      schro_decoder_decode_prediction_unit (picture, arith, unpack,
           motion->motion_vectors, i + 2, j + 2);
       mv[3] = mv[2];
       memcpy(mv + params->x_num_blocks, mv, 4*sizeof(*mv));
@@ -1095,7 +1091,7 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith **arith,
     case 2:
       for (l=0;l<4;l++) {
         for (k=0;k<4;k++) {
-          schro_decoder_decode_prediction_unit (decoder, arith, unpack,
+          schro_decoder_decode_prediction_unit (picture, arith, unpack,
               motion->motion_vectors, i + k, j + l);
         }
       }
@@ -1107,10 +1103,9 @@ schro_decoder_decode_macroblock(SchroDecoder *decoder, SchroArith **arith,
 }
 
 static void
-schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith **arith,
+schro_decoder_decode_prediction_unit(SchroPicture *picture, SchroArith **arith,
     SchroUnpack *unpack, SchroMotionVector *motion_vectors, int x, int y)
 {
-  SchroPicture *picture = decoder->picture;
   SchroParams *params = &picture->params;
   SchroMotion *motion = picture->motion;
   SchroMotionVector *mv = &motion_vectors[y*params->x_num_blocks + x];
@@ -1230,9 +1225,8 @@ schro_decoder_decode_prediction_unit(SchroDecoder *decoder, SchroArith **arith,
 }
 
 void
-schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
+schro_decoder_decode_transform_parameters (SchroPicture *picture)
 {
-  SchroPicture *picture = decoder->picture;
   int bit;
   int i;
   SchroParams *params = &picture->params;
@@ -1287,9 +1281,8 @@ schro_decoder_decode_transform_parameters (SchroDecoder *decoder)
 }
 
 void
-schro_decoder_decode_transform_data (SchroDecoder *decoder)
+schro_decoder_decode_transform_data (SchroPicture *picture)
 {
-  SchroPicture *picture = decoder->picture;
   int i;
   int component;
   SchroParams *params = &picture->params;
@@ -1301,7 +1294,7 @@ schro_decoder_decode_transform_data (SchroDecoder *decoder)
       ctx->position = schro_subband_get_position(i);
 
       schro_unpack_byte_sync (&picture->unpack);
-      schro_decoder_decode_subband (decoder, ctx);
+      schro_decoder_decode_subband (picture, ctx);
     }
   }
 }
@@ -1374,7 +1367,7 @@ codeblock_line_decode_generic (SchroDecoderSubbandContext *ctx,
 
 static void
 codeblock_line_decode_noarith (SchroDecoderSubbandContext *ctx,
-    int16_t *line, SchroDecoder *decoder)
+    int16_t *line)
 {
   int i;
 
@@ -1581,10 +1574,9 @@ schro_decoder_subband_dc_predict (SchroFrameData *fd)
 }
 
 static void
-schro_decoder_setup_codeblocks (SchroDecoder *decoder,
+schro_decoder_setup_codeblocks (SchroPicture *picture,
     SchroDecoderSubbandContext *ctx)
 {
-  SchroPicture *picture = decoder->picture;
   SchroParams *params = &picture->params;
 
   if (ctx->position == 0) {
@@ -1625,10 +1617,9 @@ schro_decoder_zero_block (SchroDecoderSubbandContext *ctx,
 }
 
 static void
-schro_decoder_decode_codeblock (SchroDecoder *decoder,
+schro_decoder_decode_codeblock (SchroPicture *picture,
     SchroDecoderSubbandContext *ctx)
 {
-  SchroPicture *picture = decoder->picture;
   SchroParams *params = &picture->params;
   int j;
 
@@ -1684,7 +1675,7 @@ schro_decoder_decode_codeblock (SchroDecoder *decoder,
       prev_line = OFFSET(ctx->data, (j-1)*ctx->stride);
     }
     if (params->is_noarith) {
-      codeblock_line_decode_noarith (ctx, p, decoder);
+      codeblock_line_decode_noarith (ctx, p);
     } else if (ctx->position >= 4) {
       if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(ctx->position)) {
         codeblock_line_decode_p_horiz (ctx, p, j, parent_line, prev_line);
@@ -1700,10 +1691,9 @@ schro_decoder_decode_codeblock (SchroDecoder *decoder,
 }
 
 void
-schro_decoder_decode_subband (SchroDecoder *decoder,
+schro_decoder_decode_subband (SchroPicture *picture,
     SchroDecoderSubbandContext *ctx)
 {
-  SchroPicture *picture = decoder->picture;
   SchroParams *params = &picture->params;
   SchroUnpack *unpack = &picture->unpack;
   int x,y;
@@ -1754,7 +1744,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder,
     schro_unpack_limit_bits_remaining (&ctx->unpack, ctx->subband_length*8);
   }
 
-  schro_decoder_setup_codeblocks (decoder, ctx);
+  schro_decoder_setup_codeblocks (picture, ctx);
 
   for(y=0;y<ctx->vert_codeblocks;y++){
     ctx->ymin = (ctx->height*y)/ctx->vert_codeblocks;
@@ -1765,7 +1755,7 @@ schro_decoder_decode_subband (SchroDecoder *decoder,
       ctx->xmin = (ctx->width*x)/ctx->horiz_codeblocks;
       ctx->xmax = (ctx->width*(x+1))/ctx->horiz_codeblocks;
       
-      schro_decoder_decode_codeblock (decoder, ctx);
+      schro_decoder_decode_codeblock (picture, ctx);
     }
   }
   if (!params->is_noarith) {

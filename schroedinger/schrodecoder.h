@@ -117,18 +117,18 @@ void schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio);
 
 void schro_decoder_decode_parse_header (SchroDecoder *decoder);
 void schro_decoder_decode_access_unit (SchroDecoder *decoder);
-void schro_decoder_decode_picture_header (SchroDecoder *decoder);
-void schro_decoder_decode_picture_prediction_parameters (SchroDecoder *decoder);
-void schro_decoder_decode_block_data (SchroDecoder *decoder);
-void schro_decoder_decode_transform_parameters (SchroDecoder *decoder);
-void schro_decoder_decode_transform_data (SchroDecoder *decoder);
-void schro_decoder_decode_lowdelay_transform_data (SchroDecoder *decoder);
+void schro_decoder_decode_picture_header (SchroPicture *picture);
+void schro_decoder_decode_picture_prediction_parameters (SchroPicture *picture);
+void schro_decoder_decode_block_data (SchroPicture *picture);
+void schro_decoder_decode_transform_parameters (SchroPicture *picture);
+void schro_decoder_decode_transform_data (SchroPicture *picture);
+void schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture);
 void schro_decoder_iwt_transform (SchroDecoder *decoder, int component);
 void schro_decoder_copy_from_frame_buffer (SchroDecoder *decoder, SchroBuffer *buffer);
 
 void schro_decoder_subband_dc_predict (SchroFrameData *fd);
 
-void schro_decoder_decode_lowdelay_transform_data_2 (SchroDecoder *decoder);
+void schro_decoder_decode_lowdelay_transform_data_2 (SchroPicture *picture);
 
 SchroPicture * schro_picture_new (SchroDecoder *decoder);
 SchroPicture * schro_picture_ref (SchroPicture *picture);
