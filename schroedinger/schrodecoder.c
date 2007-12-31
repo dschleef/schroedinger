@@ -20,9 +20,9 @@
 
 #define SCHRO_SKIP_TIME_CONSTANT 0.1
 
-typedef struct _SchroDecoderSubbandContext SchroDecoderSubbandContext;
+typedef struct _SchroPictureSubbandContext SchroPictureSubbandContext;
 
-struct _SchroDecoderSubbandContext {
+struct _SchroPictureSubbandContext {
   int component;
   int position;
 
@@ -57,11 +57,6 @@ struct _SchroDecoderSubbandContext {
 
 int _schro_decode_prediction_only;
 
-static int schro_decoder_decode_picture (SchroPicture *picture);
-static void schro_decoder_decode_macroblock(SchroPicture *picture,
-    SchroArith **arith, SchroUnpack *unpack, int i, int j);
-static void schro_decoder_decode_prediction_unit(SchroPicture *picture,
-    SchroArith **arith, SchroUnpack *unpack, SchroMotionVector *motion_vectors, int x, int y);
 static void schro_decoder_init (SchroDecoder *decoder);
 
 static void schro_decoder_reference_add (SchroDecoder *decoder,
@@ -71,7 +66,7 @@ static SchroUpsampledFrame * schro_decoder_reference_get (SchroDecoder *decoder,
 static void schro_decoder_reference_retire (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
 static void schro_decoder_decode_subband (SchroPicture *picture,
-    SchroDecoderSubbandContext *ctx);
+    SchroPictureSubbandContext *ctx);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
@@ -431,7 +426,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
   return SCHRO_DECODER_OK;
 }
 
-static int
+int
 schro_decoder_decode_picture (SchroPicture *picture)
 {
   SchroParams *params = &picture->params;
@@ -1039,7 +1034,7 @@ schro_decoder_decode_block_data (SchroPicture *picture)
   }
 }
 
-static void
+void
 schro_decoder_decode_macroblock(SchroPicture *picture, SchroArith **arith,
     SchroUnpack *unpack, int i, int j)
 {
@@ -1102,7 +1097,7 @@ schro_decoder_decode_macroblock(SchroPicture *picture, SchroArith **arith,
   }
 }
 
-static void
+void
 schro_decoder_decode_prediction_unit(SchroPicture *picture, SchroArith **arith,
     SchroUnpack *unpack, SchroMotionVector *motion_vectors, int x, int y)
 {
@@ -1286,7 +1281,7 @@ schro_decoder_decode_transform_data (SchroPicture *picture)
   int i;
   int component;
   SchroParams *params = &picture->params;
-  SchroDecoderSubbandContext context = { 0 }, *ctx = &context;
+  SchroPictureSubbandContext context = { 0 }, *ctx = &context;
 
   for(component=0;component<3;component++){
     for(i=0;i<1+3*params->transform_depth;i++) {
@@ -1300,7 +1295,7 @@ schro_decoder_decode_transform_data (SchroPicture *picture)
 }
 
 static void
-codeblock_line_decode_generic (SchroDecoderSubbandContext *ctx,
+codeblock_line_decode_generic (SchroPictureSubbandContext *ctx,
     int16_t *line, int j, const int16_t *parent_data, const int16_t *prev)
 {
   int i;
@@ -1366,7 +1361,7 @@ codeblock_line_decode_generic (SchroDecoderSubbandContext *ctx,
 }
 
 static void
-codeblock_line_decode_noarith (SchroDecoderSubbandContext *ctx,
+codeblock_line_decode_noarith (SchroPictureSubbandContext *ctx,
     int16_t *line)
 {
   int i;
@@ -1379,7 +1374,7 @@ codeblock_line_decode_noarith (SchroDecoderSubbandContext *ctx,
 
 #if 0
 static void
-codeblock_line_decode_deep (SchroDecoderSubbandContext *ctx,
+codeblock_line_decode_deep (SchroPictureSubbandContext *ctx,
     int32_t *line, int j, const int32_t *parent_data, const int32_t *prev)
 {
   int i;
@@ -1413,7 +1408,7 @@ codeblock_line_decode_deep (SchroDecoderSubbandContext *ctx,
 }
 
 static void
-codeblock_line_decode_deep_parent (SchroDecoderSubbandContext *ctx,
+codeblock_line_decode_deep_parent (SchroPictureSubbandContext *ctx,
     int16_t *line, int j, const int32_t *parent_data, const int16_t *prev)
 {
   int i;
@@ -1449,7 +1444,7 @@ codeblock_line_decode_deep_parent (SchroDecoderSubbandContext *ctx,
 
 
 static void
-codeblock_line_decode_p_horiz (SchroDecoderSubbandContext *ctx,
+codeblock_line_decode_p_horiz (SchroPictureSubbandContext *ctx,
     int16_t *line, int j, const int16_t *parent_data, const int16_t *prev)
 {
   int i = ctx->xmin;
@@ -1480,7 +1475,7 @@ codeblock_line_decode_p_horiz (SchroDecoderSubbandContext *ctx,
 }
 
 static void
-codeblock_line_decode_p_vert (SchroDecoderSubbandContext *ctx,
+codeblock_line_decode_p_vert (SchroPictureSubbandContext *ctx,
     int16_t *line, int j, const int16_t *parent_data, const int16_t *prev)
 {
   int i = ctx->xmin;
@@ -1511,7 +1506,7 @@ codeblock_line_decode_p_vert (SchroDecoderSubbandContext *ctx,
 }
 
 static void
-codeblock_line_decode_p_diag (SchroDecoderSubbandContext *ctx,
+codeblock_line_decode_p_diag (SchroPictureSubbandContext *ctx,
     int16_t *line, int j,
     const int16_t *parent_data,
     const int16_t *prev)
@@ -1575,7 +1570,7 @@ schro_decoder_subband_dc_predict (SchroFrameData *fd)
 
 static void
 schro_decoder_setup_codeblocks (SchroPicture *picture,
-    SchroDecoderSubbandContext *ctx)
+    SchroPictureSubbandContext *ctx)
 {
   SchroParams *params = &picture->params;
 
@@ -1603,7 +1598,7 @@ schro_decoder_setup_codeblocks (SchroPicture *picture,
 }
 
 static void
-schro_decoder_zero_block (SchroDecoderSubbandContext *ctx,
+schro_decoder_zero_block (SchroPictureSubbandContext *ctx,
     int x1, int y1, int x2, int y2)
 {
   int j;
@@ -1618,7 +1613,7 @@ schro_decoder_zero_block (SchroDecoderSubbandContext *ctx,
 
 static void
 schro_decoder_decode_codeblock (SchroPicture *picture,
-    SchroDecoderSubbandContext *ctx)
+    SchroPictureSubbandContext *ctx)
 {
   SchroParams *params = &picture->params;
   int j;
@@ -1692,7 +1687,7 @@ schro_decoder_decode_codeblock (SchroPicture *picture,
 
 void
 schro_decoder_decode_subband (SchroPicture *picture,
-    SchroDecoderSubbandContext *ctx)
+    SchroPictureSubbandContext *ctx)
 {
   SchroParams *params = &picture->params;
   SchroUnpack *unpack = &picture->unpack;
