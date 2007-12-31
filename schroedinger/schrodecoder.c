@@ -57,6 +57,7 @@ struct _SchroDecoderSubbandContext {
 
 int _schro_decode_prediction_only;
 
+static int schro_decoder_decode_picture (SchroDecoder *decoder);
 static void schro_decoder_decode_macroblock(SchroDecoder *decoder,
     SchroArith **arith, SchroUnpack *unpack, int i, int j);
 static void schro_decoder_decode_prediction_unit(SchroDecoder *decoder,
@@ -305,8 +306,7 @@ int
 schro_decoder_iterate (SchroDecoder *decoder)
 {
   SchroParams *params = &decoder->params;
-  int i;
-  SchroFrame *output_picture;
+  int skip;
   
   if (decoder->input_buffer == NULL) {
     return SCHRO_DECODER_NEED_BITS;
@@ -402,11 +402,11 @@ schro_decoder_iterate (SchroDecoder *decoder)
     schro_buffer_unref (decoder->input_buffer);
     decoder->input_buffer = NULL;
 
-    output_picture = schro_frame_new ();
-    output_picture->frame_number = decoder->picture_number;
+    decoder->output_picture = schro_frame_new ();
+    decoder->output_picture->frame_number = decoder->picture_number;
 
-    SCHRO_DEBUG("adding %d to queue (skipped)", output_picture->frame_number);
-    schro_queue_add (decoder->frame_queue, output_picture,
+    SCHRO_DEBUG("adding %d to queue (skipped)", decoder->output_picture->frame_number);
+    schro_queue_add (decoder->frame_queue, decoder->output_picture,
         decoder->picture_number);
 
     return SCHRO_DECODER_OK;
@@ -416,7 +416,24 @@ schro_decoder_iterate (SchroDecoder *decoder)
     SCHRO_SKIP_TIME_CONSTANT;
 SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
-  output_picture = schro_queue_pull (decoder->output_queue);
+  decoder->output_picture = schro_queue_pull (decoder->output_queue);
+
+  skip = schro_decoder_decode_picture (decoder);
+  if (skip) {
+    return SCHRO_DECODER_OK;
+  }
+
+  SCHRO_DEBUG("adding %d to queue", decoder->output_picture->frame_number);
+  schro_queue_add (decoder->frame_queue, decoder->output_picture,
+      decoder->output_picture->frame_number);
+
+  return SCHRO_DECODER_OK;
+}
+
+static int
+schro_decoder_decode_picture (SchroDecoder *decoder)
+{
+  SchroParams *params = &decoder->params;
 
   if (SCHRO_PARSE_CODE_NUM_REFS(decoder->parse_code) > 0) {
     int skip = 0;
@@ -448,7 +465,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
       schro_buffer_unref (decoder->input_buffer);
       decoder->input_buffer = NULL;
 
-      return SCHRO_DECODER_OK;
+      return TRUE;
     }
 
     schro_unpack_byte_sync (&decoder->unpack);
@@ -490,22 +507,22 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
   }
 
   if (decoder->zero_residual) {
-    if (SCHRO_FRAME_IS_PACKED(output_picture->format)) {
+    if (SCHRO_FRAME_IS_PACKED(decoder->output_picture->format)) {
       schro_frame_convert (decoder->planar_output_frame, decoder->mc_tmp_frame);
-      schro_frame_convert (output_picture, decoder->planar_output_frame);
+      schro_frame_convert (decoder->output_picture, decoder->planar_output_frame);
     } else {
-      schro_frame_convert (output_picture, decoder->mc_tmp_frame);
+      schro_frame_convert (decoder->output_picture, decoder->mc_tmp_frame);
     }
   } else if (!_schro_decode_prediction_only) {
     if (SCHRO_PARSE_CODE_IS_INTER(decoder->parse_code)) {
       schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
     }
 
-    if (SCHRO_FRAME_IS_PACKED(output_picture->format)) {
+    if (SCHRO_FRAME_IS_PACKED(decoder->output_picture->format)) {
       schro_frame_convert (decoder->planar_output_frame, decoder->frame);
-      schro_frame_convert (output_picture, decoder->planar_output_frame);
+      schro_frame_convert (decoder->output_picture, decoder->planar_output_frame);
     } else {
-      schro_frame_convert (output_picture, decoder->frame);
+      schro_frame_convert (decoder->output_picture, decoder->frame);
     }
   } else {
     SchroFrame *frame;
@@ -514,18 +531,18 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
     } else {
       frame = decoder->frame;
     }
-    if (SCHRO_FRAME_IS_PACKED(output_picture->format)) {
+    if (SCHRO_FRAME_IS_PACKED(decoder->output_picture->format)) {
       schro_frame_convert (decoder->planar_output_frame, frame);
-      schro_frame_convert (output_picture, decoder->planar_output_frame);
+      schro_frame_convert (decoder->output_picture, decoder->planar_output_frame);
     } else {
-      schro_frame_convert (output_picture, frame);
+      schro_frame_convert (decoder->output_picture, frame);
     }
 
     if (SCHRO_PARSE_CODE_IS_INTER(decoder->parse_code)) {
       schro_frame_add (decoder->frame, decoder->mc_tmp_frame);
     }
   }
-  output_picture->frame_number = decoder->picture_number;
+  decoder->output_picture->frame_number = decoder->picture_number;
 
   if (SCHRO_PARSE_CODE_IS_REFERENCE(decoder->parse_code)) {
     SchroFrame *ref;
@@ -558,10 +575,12 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
   if (decoder->has_md5) {
     uint32_t state[4];
 
-    schro_frame_md5 (output_picture, state);
+    schro_frame_md5 (decoder->output_picture, state);
     if (memcmp (state, decoder->md5_checksum, 16) != 0) {
       char a[65];
       char b[65];
+      int i;
+
       for(i=0;i<16;i++){
         sprintf(a+2*i, "%02x", ((uint8_t *)state)[i]);
         sprintf(b+2*i, "%02x", decoder->md5_checksum[i]);
@@ -572,11 +591,7 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
     decoder->has_md5 = FALSE;
   }
 
-  SCHRO_DEBUG("adding %d to queue", output_picture->frame_number);
-  schro_queue_add (decoder->frame_queue, output_picture,
-      output_picture->frame_number);
-
-  return SCHRO_DECODER_OK;
+  return FALSE;
 }
 
 static void

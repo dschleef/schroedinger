@@ -30,6 +30,7 @@ struct _SchroDecoder {
   SchroPictureNumber next_frame_number;
 
   SchroPicture *picture;
+  SchroFrame *output_picture;
   SchroPictureNumber picture_number;
   int n_refs;
   SchroPictureNumber reference1;
