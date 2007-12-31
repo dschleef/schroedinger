@@ -18,8 +18,6 @@ typedef struct _SchroPicture SchroPicture;
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 struct _SchroDecoder {
   /*< private >*/
-  SchroFrame *frame;
-  SchroFrame *mc_tmp_frame;
 
   /* the list of reference pictures */
   SchroQueue *reference_queue;
@@ -30,24 +28,6 @@ struct _SchroDecoder {
   SchroPictureNumber next_frame_number;
 
   SchroPicture *picture;
-  SchroFrame *output_picture;
-  SchroPictureNumber picture_number;
-  int n_refs;
-  SchroPictureNumber reference1;
-  SchroPictureNumber reference2;
-  SchroPictureNumber retired_picture_number;
-  SchroUpsampledFrame *ref0;
-  SchroUpsampledFrame *ref1;
-  SchroFrame *planar_output_frame;
-
-  int16_t *tmpbuf;
-  int16_t *tmpbuf2;
-
-  int parse_code;
-  int next_parse_offset;
-  int prev_parse_offset;
-
-  SchroUnpack unpack;
 
   int major_version;
   int minor_version;
@@ -55,16 +35,10 @@ struct _SchroDecoder {
   int level;
   schro_bool interlaced_coding;
   SchroVideoFormat video_format;
-  SchroParams params;
-
-  SchroMotion *motion;
-
-  int zero_residual;
 
   SchroQueue *frame_queue;
 
   SchroPictureNumber earliest_frame;
-  SchroBuffer *input_buffer;
 
   int have_access_unit;
   int have_frame_number;
@@ -83,6 +57,34 @@ struct _SchroPicture {
   int refcount;
 
   SchroDecoder *decoder;
+
+  SchroBuffer *input_buffer;
+  SchroParams params;
+  SchroPictureNumber picture_number;
+  int n_refs;
+  SchroPictureNumber reference1;
+  SchroPictureNumber reference2;
+  SchroPictureNumber retired_picture_number;
+  SchroUpsampledFrame *ref0;
+  SchroUpsampledFrame *ref1;
+  SchroFrame *planar_output_frame;
+
+  int16_t *tmpbuf;
+  int16_t *tmpbuf2;
+
+  int parse_code;
+  int next_parse_offset;
+  int prev_parse_offset;
+
+  SchroUnpack unpack;
+
+  int zero_residual;
+
+  SchroFrame *frame;
+  SchroFrame *mc_tmp_frame;
+  SchroMotion *motion;
+  SchroFrame *output_picture;
+
 };
 #endif
 
