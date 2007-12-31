@@ -7,7 +7,7 @@ preamble = """
 """
 
 function_iwt = """
-void cuda_iwt_%s(int16_t *d_data, int lwidth, int lheight, int stride)
+void cuda_iwt_%s(int16_t *d_data, int lwidth, int lheight, int stride, cudaStream_t stream)
 {
     /** Invoke kernel */
     dim3 block_size;
@@ -22,7 +22,7 @@ void cuda_iwt_%s(int16_t *d_data, int lwidth, int lheight, int stride)
     grid_size.y = 1;
     grid_size.z = 1;
     shared_size = (lwidth+BLEFT*2+BRIGHT*2) * sizeof(DATATYPE); 
-    a_transform_h<<<grid_size, block_size, shared_size>>>(d_data, lwidth, stride);
+    a_transform_h<<<grid_size, block_size, shared_size, stream>>>(d_data, lwidth, stride);
 #endif
 #ifdef VERTICAL
     block_size.x = BSVX;
@@ -34,15 +34,15 @@ void cuda_iwt_%s(int16_t *d_data, int lwidth, int lheight, int stride)
     shared_size = BCOLS*(BROWS+RLEFT+RRIGHT)*2; 
 	
     if(lheight < PAD_ROWS)
-        a_transform_v_pad<<<grid_size, block_size, shared_size>>>(d_data, lwidth, lheight, stride);
+        a_transform_v_pad<<<grid_size, block_size, shared_size, stream>>>(d_data, lwidth, lheight, stride);
     else
-        a_transform_v<<<grid_size, block_size, shared_size>>>(d_data, lwidth, lheight, stride);
+        a_transform_v<<<grid_size, block_size, shared_size, stream>>>(d_data, lwidth, lheight, stride);
 #endif
 }
 """
 
 function_iiwt = """
-void cuda_iiwt_%s(int16_t *d_data, int lwidth, int lheight, int stride)
+void cuda_iiwt_%s(int16_t *d_data, int lwidth, int lheight, int stride, cudaStream_t stream)
 {
     /** Invoke kernel */
     dim3 block_size;
@@ -59,9 +59,9 @@ void cuda_iiwt_%s(int16_t *d_data, int lwidth, int lheight, int stride)
     shared_size = BCOLS*(BROWS+RLEFT+RRIGHT)*2; 
 	
     if(lheight < PAD_ROWS)
-        s_transform_v_pad<<<grid_size, block_size, shared_size>>>(d_data, lwidth, lheight, stride);
+        s_transform_v_pad<<<grid_size, block_size, shared_size, stream>>>(d_data, lwidth, lheight, stride);
     else
-        s_transform_v<<<grid_size, block_size, shared_size>>>(d_data, lwidth, lheight, stride);
+        s_transform_v<<<grid_size, block_size, shared_size, stream>>>(d_data, lwidth, lheight, stride);
 #endif
 #ifdef HORIZONTAL
     block_size.x = BSH;
@@ -71,7 +71,7 @@ void cuda_iiwt_%s(int16_t *d_data, int lwidth, int lheight, int stride)
     grid_size.y = 1;
     grid_size.z = 1;
     shared_size = (lwidth+BLEFT*2+BRIGHT*2) * sizeof(DATATYPE); 
-    s_transform_h<<<grid_size, block_size, shared_size>>>(d_data, lwidth, stride);
+    s_transform_h<<<grid_size, block_size, shared_size, stream>>>(d_data, lwidth, stride);
 #endif
 }
 """

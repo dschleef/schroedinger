@@ -7,7 +7,7 @@ extern "C" {
 
 typedef struct _CudaMotion CudaMotion;
 
-CudaMotion *cuda_motion_init();
+CudaMotion *cuda_motion_init(cudaStream_t stream);
 void cuda_motion_free(CudaMotion *rv);
 
 /** OBMC parameters */

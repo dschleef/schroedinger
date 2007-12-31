@@ -147,7 +147,7 @@ static __global__ void a_transform_v( DATATYPE* data, int width, int height, int
 }
 
 
-void cuda_iwt_haar(int shift, int16_t *d_data, int lwidth, int lheight, int stride)
+void cuda_iwt_haar(int shift, int16_t *d_data, int lwidth, int lheight, int stride, cudaStream_t stream)
 {
     /** Invoke kernel */
     dim3 block_size;
@@ -162,7 +162,7 @@ void cuda_iwt_haar(int shift, int16_t *d_data, int lwidth, int lheight, int stri
     grid_size.y = 1;
     grid_size.z = 1;
     shared_size = lwidth * sizeof(int16_t); 
-    a_transform_h<<<grid_size, block_size, shared_size>>>(d_data, lwidth, stride, shift);
+    a_transform_h<<<grid_size, block_size, shared_size, stream>>>(d_data, lwidth, stride, shift);
 #endif
 #ifdef VERTICAL
     block_size.x = BSVX;
@@ -173,6 +173,6 @@ void cuda_iwt_haar(int shift, int16_t *d_data, int lwidth, int lheight, int stri
     grid_size.z = 1;
     shared_size = BCOLS*BROWS*2; 
 	
-    a_transform_v<<<grid_size, block_size, shared_size>>>(d_data, lwidth, lheight, stride);
+    a_transform_v<<<grid_size, block_size, shared_size, stream>>>(d_data, lwidth, lheight, stride);
 #endif
 }

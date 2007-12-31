@@ -1205,7 +1205,7 @@ schro_motion_dc_prediction (SchroMotion *motion, int x, int y, int *pred)
       }
     }
     switch(n) {
-#if 0
+#if 1
       case 0:
         pred[i] = (short)128 + 128;
         break;

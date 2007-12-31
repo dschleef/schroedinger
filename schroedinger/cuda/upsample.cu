@@ -17,7 +17,7 @@
 
 extern "C" {
 
-void cuda_upsample_horizontal(uint8_t *output, int ostride, uint8_t *input, int istride, int width, int height)
+void cuda_upsample_horizontal(uint8_t *output, int ostride, uint8_t *input, int istride, int width, int height, cudaStream_t stream)
 {
     dim3 block_size, grid_size;
     int shared_size;
@@ -28,10 +28,10 @@ void cuda_upsample_horizontal(uint8_t *output, int ostride, uint8_t *input, int 
     grid_size.y = grid_size.z = 1;
     shared_size = ROUNDUP4(BLEFT+width+BRIGHT) + ROUNDUP4(width);
 
-    upsample_horizontal<<<grid_size, block_size, shared_size>>>(output, ostride, input, istride, width);
+    upsample_horizontal<<<grid_size, block_size, shared_size, stream>>>(output, ostride, input, istride, width);
 }
 
-void cuda_upsample_vertical(uint8_t *output, int ostride, uint8_t *input, int istride, int width, int height)
+void cuda_upsample_vertical(uint8_t *output, int ostride, uint8_t *input, int istride, int width, int height, cudaStream_t stream)
 {
     dim3 block_size, grid_size;
     int shared_size;
@@ -44,7 +44,7 @@ void cuda_upsample_vertical(uint8_t *output, int ostride, uint8_t *input, int is
     grid_size.z = 1;
     shared_size = COLUMN_TILE_W*(BLEFT+COLUMN_TILE_H+BRIGHT) + COLUMN_TILE_W*COLUMN_TILE_H;
 
-    upsample_vertical<<<grid_size, block_size, shared_size>>>(output, ostride, input, istride, width, height);
+    upsample_vertical<<<grid_size, block_size, shared_size, stream>>>(output, ostride, input, istride, width, height);
 }
 
 

@@ -1,12 +1,11 @@
 #!/bin/sh
 
 if [ $(whoami) = wladimir ]; then
-  export CFLAGS="-O3 -g"
-  autoreconf -i -f &&
-  ./configure --prefix=/home/wladimir --with-cuda=/usr/local/cuda \
-    --disable-gtk-doc $@
+  confflags="--prefix=/home/wladimir --with-cuda --disable-gtk-doc"
 else
-  autoreconf -i -f &&
-  ./configure --enable-maintainer-mode --disable-static --enable-gtk-doc $@
+  confflags="--enable-gtk-doc"
 fi
 
+autoreconf -i -f &&
+  gtkdocize --copy &&
+  ./configure --enable-maintainer-mode --disable-static $confflags $@

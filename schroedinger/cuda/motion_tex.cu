@@ -55,19 +55,21 @@ static inline int div_roundup(int x, int y)
 /// Private object
 struct _CudaMotion
 {
-    struct _MotionVector *vectors;
-    struct cudaArray *bdata;
+  cudaStream_t stream;
+  struct _MotionVector *vectors;
+  struct cudaArray *bdata;
 };
 
 extern "C" {
 
-CudaMotion *cuda_motion_init()
+CudaMotion *cuda_motion_init(cudaStream_t stream)
 {
     CudaMotion *rv;
 
     rv = new CudaMotion;
     rv->vectors = 0;
     rv->bdata = 0;
+    rv->stream = stream;
 
     return rv;
 }
@@ -97,7 +99,7 @@ void cuda_motion_begin(CudaMotion *self, CudaMotionData *d)
     cudaChannelFormatDesc bdesc = cudaCreateChannelDesc<short4>();
 
     cudaMemcpy2DToArrayAsync(self->bdata, 0, 0, self->vectors, d->obmc.blocksx*8,
-                     d->obmc.blocksx*8, d->obmc.blocksy, cudaMemcpyHostToDevice, 0);
+                     d->obmc.blocksx*8, d->obmc.blocksy, cudaMemcpyHostToDevice, self->stream);
 
     bt1.addressMode[0] = cudaAddressModeClamp;
     bt1.addressMode[1] = cudaAddressModeClamp;
@@ -201,7 +203,7 @@ void cuda_motion_copy(CudaMotion *self, CudaMotionData *d, uint16_t *output, int
     }
     delete [] test;
 #endif
-    motion_copy_2ref<<<grid_size, block_size, shared_size>>>(
+    motion_copy_2ref<<<grid_size, block_size, shared_size, self->stream>>>(
         output, ostride, width, height, xB, yB,
         component*8, sxscale, syscale, 
         d->obmc.x_ramp_log2 - xshift, d->obmc.y_ramp_log2 - yshift, 
