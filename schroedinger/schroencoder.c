@@ -122,16 +122,16 @@ handle_gop_enum (SchroEncoder *encoder)
     case SCHRO_ENCODER_GOP_ADAPTIVE:
     case SCHRO_ENCODER_GOP_BACKREF:
     case SCHRO_ENCODER_GOP_CHAINED_BACKREF:
-      SCHRO_ERROR("Setting backref\n");
+      SCHRO_DEBUG("Setting backref\n");
       encoder->engine_iterate = schro_encoder_engine_backref;
       break;
     case SCHRO_ENCODER_GOP_INTRA_ONLY:
-      SCHRO_ERROR("Setting intra only\n");
+      SCHRO_DEBUG("Setting intra only\n");
       encoder->engine_iterate = schro_encoder_engine_intra_only;
       break;
     case SCHRO_ENCODER_GOP_BIREF:
     case SCHRO_ENCODER_GOP_CHAINED_BIREF:
-      SCHRO_ERROR("Setting tworef engine\n");
+      SCHRO_DEBUG("Setting tworef engine\n");
       encoder->engine_iterate = schro_encoder_engine_tworef;
       break;
   }
@@ -317,7 +317,7 @@ schro_encoder_pull_is_ready_locked (SchroEncoder *encoder)
     SchroEncoderFrame *frame;
     frame = encoder->frame_queue->elements[i].data;
     if (frame->slot == encoder->output_slot &&
-        frame->state == SCHRO_ENCODER_FRAME_STATE_DONE) {
+        (frame->state & SCHRO_ENCODER_FRAME_STATE_DONE)) {
       return TRUE;
     }
   }
@@ -332,7 +332,7 @@ schro_encoder_shift_frame_queue (SchroEncoder *encoder)
 
   while (!schro_queue_is_empty(encoder->frame_queue)) {
     frame = encoder->frame_queue->elements[0].data;
-    if (frame->state != SCHRO_ENCODER_FRAME_STATE_FREE) {
+    if (!(frame->state & SCHRO_ENCODER_FRAME_STATE_FREE)) {
       break;
     }
 
@@ -364,7 +364,7 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
     SchroEncoderFrame *frame;
     frame = encoder->frame_queue->elements[i].data;
     if (frame->slot == encoder->output_slot &&
-        frame->state == SCHRO_ENCODER_FRAME_STATE_DONE) {
+        (frame->state & SCHRO_ENCODER_FRAME_STATE_DONE)) {
       if (presentation_frame) {
         *presentation_frame = frame->presentation_frame;
       }
@@ -378,7 +378,7 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         buffer = frame->output_buffer;
         frame->output_buffer = NULL;
 
-        frame->state = SCHRO_ENCODER_FRAME_STATE_FREE;
+        frame->state |= SCHRO_ENCODER_FRAME_STATE_FREE;
         encoder->output_slot++;
 
         encoder->buffer_level -= encoder->bits_per_picture;
@@ -625,8 +625,8 @@ schro_encoder_frame_complete (SchroEncoderFrame *frame)
 
   frame->busy = FALSE;
 
-  if (frame->state == SCHRO_ENCODER_FRAME_STATE_POSTANALYSE) {
-    frame->state = SCHRO_ENCODER_FRAME_STATE_DONE;
+  if ((frame->state & SCHRO_ENCODER_FRAME_STATE_POSTANALYSE)) {
+    frame->state |= SCHRO_ENCODER_FRAME_STATE_DONE;
 
     if (frame->ref_frame0) {
       schro_encoder_frame_unref (frame->ref_frame0);
