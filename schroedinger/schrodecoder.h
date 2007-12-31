@@ -13,6 +13,7 @@
 SCHRO_BEGIN_DECLS
 
 typedef struct _SchroDecoder SchroDecoder;
+typedef struct _SchroPicture SchroPicture;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 struct _SchroDecoder {
@@ -28,6 +29,7 @@ struct _SchroDecoder {
 
   SchroPictureNumber next_frame_number;
 
+  SchroPicture *picture;
   SchroPictureNumber picture_number;
   int n_refs;
   SchroPictureNumber reference1;
@@ -75,6 +77,12 @@ struct _SchroDecoder {
   int has_md5;
   uint8_t md5_checksum[32];
 };
+
+struct _SchroPicture {
+  int refcount;
+
+  SchroDecoder *decoder;
+};
 #endif
 
 enum {
@@ -118,6 +126,14 @@ void schro_decoder_copy_from_frame_buffer (SchroDecoder *decoder, SchroBuffer *b
 void schro_decoder_subband_dc_predict (SchroFrameData *fd);
 
 void schro_decoder_decode_lowdelay_transform_data_2 (SchroDecoder *decoder);
+
+SchroPicture * schro_picture_new (SchroDecoder *decoder);
+SchroPicture * schro_picture_ref (SchroPicture *picture);
+void schro_picture_unref (SchroPicture *picture);
+
+
+
+
 
 #endif
 

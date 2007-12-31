@@ -83,6 +83,8 @@ schro_decoder_new (void)
   decoder = malloc(sizeof(SchroDecoder));
   memset (decoder, 0, sizeof(SchroDecoder));
 
+  decoder->picture = schro_picture_new (decoder);
+
   decoder->tmpbuf = malloc(SCHRO_LIMIT_WIDTH * 2);
   decoder->tmpbuf2 = malloc(SCHRO_LIMIT_WIDTH * 2);
 
@@ -119,6 +121,35 @@ schro_decoder_free (SchroDecoder *decoder)
   if (decoder->error_message) free (decoder->error_message);
 
   free (decoder);
+}
+
+SchroPicture *
+schro_picture_new (SchroDecoder *decoder)
+{
+  SchroPicture *picture;
+
+  picture = malloc(sizeof(SchroPicture));
+  memset (picture, 0, sizeof(SchroPicture));
+
+  picture->decoder = decoder;
+
+  return picture;
+}
+
+SchroPicture *
+schro_picture_ref (SchroPicture *picture)
+{
+  picture->refcount++;
+  return picture;
+}
+
+void
+schro_picture_unref (SchroPicture *picture)
+{
+  picture->refcount--;
+  if (picture->refcount == 0) {
+    free (picture);
+  }
 }
 
 void
