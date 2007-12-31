@@ -1511,7 +1511,7 @@ schro_encoder_encode_picture_header (SchroEncoderFrame *frame)
   schro_pack_sync(frame->pack);
   schro_pack_encode_bits (frame->pack, 32, frame->frame_number);
 
-  SCHRO_ERROR("refs %i ref0 %i ref1 %i", frame->params.num_refs, frame->picture_number_ref0, frame->picture_number_ref1);
+  SCHRO_DEBUG("refs %i ref0 %i ref1 %i", frame->params.num_refs, frame->picture_number_ref0, frame->picture_number_ref1);
 
   if (frame->params.num_refs > 0) {
     schro_pack_encode_sint (frame->pack,
