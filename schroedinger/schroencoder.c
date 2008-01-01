@@ -675,41 +675,6 @@ schro_encoder_iterate (SchroEncoder *encoder)
 #endif
 
   return encoder->engine_iterate (encoder);
-#if 0
-  if (1) {
-    switch (encoder->engine) {
-      case 0:
-        ret = schro_encoder_engine_intra_only (encoder);
-        break;
-      case 1:
-        ret = schro_encoder_engine_backref (encoder);
-        break;
-      case 2:
-        ret = schro_encoder_engine_backref2 (encoder);
-        break;
-      case 3:
-        ret = schro_encoder_engine_tworef (encoder);
-        break;
-      case 4:
-        ret = schro_encoder_engine_test_intra (encoder);
-        break;
-      case 5:
-        ret = schro_encoder_engine_lossless (encoder);
-        break;
-      case 6:
-        ret = schro_encoder_engine_backtest (encoder);
-        break;
-      case 7:
-        ret = schro_encoder_engine_lowdelay (encoder);
-        break;
-      default:
-        ret = FALSE;
-        break;
-    }
-  }
-
-  return ret;
-#endif
 }
 
 void
