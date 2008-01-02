@@ -83,7 +83,7 @@ handle_gop (SchroEncoder *encoder, int i)
     frame->is_ref = FALSE;
     frame->num_refs = 0;
     SCHRO_DEBUG("preparing %d as intra non-ref", frame->frame_number);
-    frame->state = SCHRO_ENCODER_FRAME_STATE_ENGINE_1;
+    frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
     frame->slot = encoder->next_slot++;
     frame->presentation_frame = frame->frame_number;
     frame->allocation_modifier = 1;
@@ -93,7 +93,7 @@ handle_gop (SchroEncoder *encoder, int i)
       frame->is_ref = TRUE;
       frame->num_refs = 0;
       SCHRO_DEBUG("preparing %d as intra ref", frame->frame_number);
-      frame->state = SCHRO_ENCODER_FRAME_STATE_ENGINE_1;
+      frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
       frame->slot = encoder->next_slot++;
       frame->presentation_frame = frame->frame_number;
       frame->allocation_modifier = 1 + (gop_length - 1) * 0.6;
@@ -107,7 +107,7 @@ handle_gop (SchroEncoder *encoder, int i)
       f->is_ref = TRUE;
       f->num_refs = 1;
       f->picture_number_ref0 = frame->frame_number;
-      f->state = SCHRO_ENCODER_FRAME_STATE_ENGINE_1;
+      f->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
       SCHRO_DEBUG("preparing %d as inter ref (%d)", f->frame_number,
           f->picture_number_ref0);
       f->slot = encoder->next_slot++;
@@ -126,7 +126,7 @@ handle_gop (SchroEncoder *encoder, int i)
         f->num_refs = 2;
         f->picture_number_ref0 = frame->frame_number;
         f->picture_number_ref1 = ref2->frame_number;
-        f->state = SCHRO_ENCODER_FRAME_STATE_ENGINE_1;
+        f->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
         SCHRO_DEBUG("preparing %d as inter (%d)", f->frame_number,
             f->picture_number_ref0);
         f->slot = encoder->next_slot++;
@@ -139,7 +139,7 @@ handle_gop (SchroEncoder *encoder, int i)
       f->is_ref = TRUE;
       f->num_refs = 1;
       f->picture_number_ref0 = encoder->last_ref2;
-      f->state = SCHRO_ENCODER_FRAME_STATE_ENGINE_1;
+      f->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
       SCHRO_DEBUG("preparing %d as inter ref (%d)", f->frame_number,
           f->picture_number_ref0);
       f->slot = encoder->next_slot++;
@@ -157,7 +157,7 @@ handle_gop (SchroEncoder *encoder, int i)
         f->num_refs = 2;
         f->picture_number_ref0 = encoder->last_ref;
         f->picture_number_ref1 = encoder->last_ref2;
-        f->state = SCHRO_ENCODER_FRAME_STATE_ENGINE_1;
+        f->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
         SCHRO_DEBUG("preparing %d as inter (%d)", f->frame_number,
             f->picture_number_ref0);
         f->slot = encoder->next_slot++;
@@ -223,7 +223,7 @@ handle_gop_backref (SchroEncoder *encoder, int i)
   frame->is_ref = TRUE;
   frame->num_refs = 0;
   SCHRO_DEBUG("preparing %d as intra ref", frame->frame_number);
-  frame->state = SCHRO_ENCODER_FRAME_STATE_ENGINE_1;
+  frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
   frame->slot = encoder->next_slot++;
   frame->presentation_frame = frame->frame_number;
   frame->allocation_modifier = 1 + (gop_length - 1) * 0.6;
@@ -237,7 +237,7 @@ handle_gop_backref (SchroEncoder *encoder, int i)
     f->is_ref = FALSE;
     f->num_refs = 1;
     f->picture_number_ref0 = frame->frame_number;
-    f->state = SCHRO_ENCODER_FRAME_STATE_ENGINE_1;
+    f->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
     SCHRO_DEBUG("preparing %d as inter (%d)", f->frame_number,
         f->picture_number_ref0);
     f->slot = encoder->next_slot++;
@@ -430,6 +430,32 @@ run_stage (SchroEncoderFrame *frame, SchroEncoderFrameStateEnum state)
 }
 
 int
+init_frame (SchroEncoderFrame *frame)
+{
+  SchroEncoder *encoder = frame->encoder;
+
+  frame->need_filtering = (encoder->filtering != 0);
+  switch (encoder->gop_structure) {
+    case SCHRO_ENCODER_GOP_INTRA_ONLY:
+      frame->need_downsampling = FALSE;
+      frame->need_average_luma = FALSE;
+      break;
+    case SCHRO_ENCODER_GOP_ADAPTIVE:
+    case SCHRO_ENCODER_GOP_BACKREF:
+    case SCHRO_ENCODER_GOP_CHAINED_BACKREF:
+      frame->need_downsampling = TRUE;
+      frame->need_average_luma = FALSE;
+      break;
+    case SCHRO_ENCODER_GOP_BIREF:
+    case SCHRO_ENCODER_GOP_CHAINED_BIREF:
+      frame->need_downsampling = TRUE;
+      frame->need_average_luma = FALSE;
+      break;
+  }
+  return TRUE;
+}
+
+int
 schro_encoder_engine_intra_only (SchroEncoder *encoder)
 {
   SchroParams *params;
@@ -446,9 +472,7 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
 
     switch (frame->state) {
       case SCHRO_ENCODER_FRAME_STATE_NEW:
-        frame->need_downsampling = FALSE;
-        frame->need_filtering = (encoder->filtering != 0);
-        frame->need_average_luma = FALSE;
+        init_frame (frame);
 
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ANALYSE);
         return TRUE;
@@ -470,6 +494,9 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
           init_small_codeblocks (params);
         }
 
+        frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
+        break;
+      case SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS:
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
         return TRUE;
       case SCHRO_ENCODER_FRAME_STATE_PREDICT:
@@ -508,9 +535,7 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
 
     switch (frame->state) {
       case SCHRO_ENCODER_FRAME_STATE_NEW:
-        frame->need_downsampling = TRUE;
-        frame->need_filtering = (encoder->filtering != 0);
-        frame->need_average_luma = FALSE;
+        init_frame (frame);
 
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ANALYSE);
         return TRUE;
@@ -523,7 +548,6 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
     frame = encoder->frame_queue->elements[i].data;
     if (frame->frame_number == encoder->gop_picture) {
       handle_gop_backref (encoder, i);
-      //handle_gop (encoder, i);
       break;
     }
   }
@@ -535,7 +559,7 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
     if (frame->busy) continue;
 
     switch (frame->state) {
-      case SCHRO_ENCODER_FRAME_STATE_ENGINE_1:
+      case SCHRO_ENCODER_FRAME_STATE_HAVE_GOP:
         if (!check_refs (frame)) {
           continue;
         }
@@ -548,6 +572,9 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
         params->num_refs = frame->num_refs;
         init_params (frame);
 
+        frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
+        break;
+      case SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS:
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
         return TRUE;
       default:
@@ -623,7 +650,7 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
     if (frame->is_ref != ref) continue;
 
     switch (frame->state) {
-      case SCHRO_ENCODER_FRAME_STATE_ENGINE_1:
+      case SCHRO_ENCODER_FRAME_STATE_HAVE_GOP:
         if (frame->num_refs > 0 &&
             !schro_encoder_reference_get (encoder, frame->picture_number_ref0)) {
           SCHRO_DEBUG("ref0 (%d) not ready", frame->picture_number_ref0);
@@ -673,6 +700,9 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
           frame->ref_frame1 = NULL;
         }
 
+        frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
+        break;
+      case SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS:
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
         return TRUE;
       case SCHRO_ENCODER_FRAME_STATE_PREDICT:
@@ -793,6 +823,9 @@ schro_encoder_engine_test_intra (SchroEncoder *encoder)
         encoder->transform_depth = test_wavelet_types[j].depth;
         init_params (frame);
 
+        frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
+        break;
+      case SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS:
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
         return TRUE;
       case SCHRO_ENCODER_FRAME_STATE_PREDICT:
@@ -858,7 +891,7 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
     if (frame->busy) continue;
 
     switch (frame->state) {
-      case SCHRO_ENCODER_FRAME_STATE_ENGINE_1:
+      case SCHRO_ENCODER_FRAME_STATE_HAVE_GOP:
         if (!check_refs (frame)) {
           continue;
         }
@@ -881,6 +914,9 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
 
         SCHRO_DEBUG("queueing %d", frame->frame_number);
 
+        frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
+        break;
+      case SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS:
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
         return TRUE;
       case SCHRO_ENCODER_FRAME_STATE_PREDICT:
@@ -987,6 +1023,9 @@ schro_encoder_engine_backtest (SchroEncoder *encoder)
 
         SCHRO_DEBUG("queueing %d", frame->frame_number);
 
+        frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
+        break;
+      case SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS:
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
         return TRUE;
       case SCHRO_ENCODER_FRAME_STATE_PREDICT:
@@ -1059,6 +1098,9 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
         params->slice_bytes_num = num;
         params->slice_bytes_denom = denom;
 
+        frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
+        break;
+      case SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS:
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
         return TRUE;
       case SCHRO_ENCODER_FRAME_STATE_PREDICT:
