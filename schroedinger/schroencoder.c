@@ -628,6 +628,8 @@ schro_encoder_frame_complete (SchroEncoderFrame *frame)
   if ((frame->state & SCHRO_ENCODER_FRAME_STATE_POSTANALYSE)) {
     frame->state |= SCHRO_ENCODER_FRAME_STATE_DONE;
 
+    SCHRO_ASSERT(frame->output_buffer_size > 0);
+
     if (frame->ref_frame0) {
       schro_encoder_frame_unref (frame->ref_frame0);
     }
@@ -1488,8 +1490,12 @@ schro_encoder_encode_picture_header (SchroEncoderFrame *frame)
   }
 
   if (frame->is_ref) {
-    schro_pack_encode_sint (frame->pack,
-        (int32_t)(frame->retired_picture_number - frame->frame_number));
+    if (frame->retired_picture_number != -1) {
+      schro_pack_encode_sint (frame->pack,
+          (int32_t)(frame->retired_picture_number - frame->frame_number));
+    } else {
+      schro_pack_encode_sint (frame->pack, 0);
+    }
   }
 }
 
@@ -2083,6 +2089,8 @@ schro_encoder_frame_new (SchroEncoder *encoder)
 
   encoder_frame->inserted_buffers =
     schro_list_new_full ((SchroListFreeFunc)schro_buffer_unref, NULL);
+
+  encoder_frame->retired_picture_number = -1;
 
   return encoder_frame;
 }
