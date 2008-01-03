@@ -193,8 +193,6 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
   } else if (SCHRO_PARSE_CODE_IS_PICTURE(data[4])) {
     int num_refs = SCHRO_PARSE_CODE_NUM_REFS(data[4]);
     int pic_num;
-    int n;
-    int i;
 
     schro_unpack_byte_sync(&unpack);
     pic_num = schro_unpack_decode_bits(&unpack, 32);
@@ -216,14 +214,11 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         break;
     }
     if (SCHRO_PARSE_CODE_IS_REFERENCE(data[4])) {
-      n = schro_unpack_decode_uint(&unpack);
-      g_print(" retire:");
-      if (n == 0) {
-        g_print("      ");
-      }
-      for(i=0;i<n;i++){
-        g_print(" %5d",
-            pic_num + schro_unpack_decode_sint(&unpack));
+      int r = schro_unpack_decode_sint(&unpack);
+      if (r == 0) {
+        g_print(" retire:  none");
+      } else {
+        g_print("retire: %5d", pic_num + r);
       }
     } else {
       g_print("               ");

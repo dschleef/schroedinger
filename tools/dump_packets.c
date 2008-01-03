@@ -335,10 +335,11 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       g_print("  ref2_offset: %d\n", schro_unpack_decode_sint(&unpack));
     }
     if (SCHRO_PARSE_CODE_IS_REFERENCE(data[4])) {
-      n = schro_unpack_decode_uint(&unpack);
-      g_print("  n retire: %d\n", n);
-      for(i=0;i<n;i++){
-        g_print("    %d: %d\n", i, schro_unpack_decode_sint(&unpack));
+      int r = schro_unpack_decode_sint(&unpack);
+      if (r == 0) {
+        g_print("  retire: none\n");
+      } else {
+        g_print("  retire: %d\n", r);
       }
     }
 
