@@ -212,6 +212,7 @@ struct _SchroEncoder {
   int min_bitrate;
   double noise_threshold;
   int gop_structure;
+  int queue_depth;
   int perceptual_weighting;
   double perceptual_distance;
   int filtering;
@@ -251,7 +252,6 @@ struct _SchroEncoder {
   int output_slot;
 
   SchroList *inserted_buffers;
-  int queue_depth;
   int queue_changed;
 
   int engine_init;
