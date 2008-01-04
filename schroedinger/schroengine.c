@@ -339,6 +339,10 @@ init_params (SchroEncoderFrame *frame)
 
   schro_params_init (params, params->video_format->index);
 
+  if (encoder->enable_noarith && frame->num_refs == 0) {
+    params->is_noarith = TRUE;
+  }
+
   if (params->num_refs > 0) {
     params->wavelet_filter_index = encoder->inter_wavelet;
   } else {
