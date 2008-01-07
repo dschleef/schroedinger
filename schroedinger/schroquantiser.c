@@ -314,10 +314,14 @@ schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame)
     }
   }
 
+#if 0
   max = table[0];
   for(i=0;i<1 + 3*params->transform_depth; i++) {
     if (table[i] > max) max = table[i];
   }
+#else
+  max = 1.0;
+#endif
 
   for(i=0;i<1 + 3*params->transform_depth; i++) {
     params->quant_matrix[i] = schro_utils_multiplier_to_quant_index (max/table[i]);
