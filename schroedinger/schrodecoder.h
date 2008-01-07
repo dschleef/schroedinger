@@ -85,6 +85,11 @@ struct _SchroPicture {
   SchroMotion *motion;
   SchroFrame *output_picture;
 
+  int subband_length[3][SCHRO_LIMIT_SUBBANDS];
+  int subband_quant_index[3][SCHRO_LIMIT_SUBBANDS];
+  SchroBuffer *subband_buffer[3][SCHRO_LIMIT_SUBBANDS];
+  SchroFrameData subband_data[3][SCHRO_LIMIT_SUBBANDS];
+
 };
 #endif
 
@@ -130,6 +135,8 @@ void schro_decoder_decode_picture_header (SchroPicture *picture);
 void schro_decoder_decode_picture_prediction_parameters (SchroPicture *picture);
 void schro_decoder_decode_block_data (SchroPicture *picture);
 void schro_decoder_decode_transform_parameters (SchroPicture *picture);
+void schro_decoder_parse_transform_data (SchroPicture *picture);
+void schro_decoder_init_subband_frame_data_interleaved (SchroPicture *picture);
 void schro_decoder_decode_transform_data (SchroPicture *picture);
 void schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture);
 int schro_decoder_decode_picture (SchroPicture *picture);
