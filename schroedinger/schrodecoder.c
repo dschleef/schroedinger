@@ -27,17 +27,6 @@ struct _SchroPictureSubbandContext {
   int index;
   int position;
 
-#if 0
-  int16_t *data;
-  int height;
-  int width;
-  int stride;
-
-  int16_t *parent_data;
-  int parent_stride;
-  int parent_width;
-  int parent_height;
-#endif
   SchroFrameData *frame_data;
   SchroFrameData *parent_frame_data;
 
@@ -385,7 +374,7 @@ schro_decoder_iterate (SchroDecoder *decoder)
     return SCHRO_DECODER_NEED_FRAME;
   }
 
-  schro_decoder_decode_picture_header(decoder->picture);
+  schro_decoder_parse_picture_header(decoder->picture);
 
   params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->picture->parse_code);
   params->is_lowdelay = SCHRO_PARSE_CODE_IS_LOW_DELAY(decoder->picture->parse_code);
@@ -454,7 +443,7 @@ schro_decoder_decode_picture (SchroPicture *picture)
     SCHRO_DEBUG("inter");
 
     schro_unpack_byte_sync (&picture->unpack);
-    schro_decoder_decode_picture_prediction_parameters (picture);
+    schro_decoder_parse_picture_prediction_parameters (picture);
     schro_params_calculate_mc_sizes (params);
 
     picture->ref0 = schro_decoder_reference_get (decoder, picture->reference1);
@@ -505,11 +494,12 @@ schro_decoder_decode_picture (SchroPicture *picture)
   }
 
   if (!picture->zero_residual) {
-    schro_decoder_decode_transform_parameters (picture);
+    schro_decoder_parse_transform_parameters (picture);
     schro_params_calculate_iwt_sizes (params);
 
     schro_unpack_byte_sync (&picture->unpack);
     if (params->is_lowdelay) {
+      schro_decoder_parse_lowdelay_transform_data (picture);
       schro_decoder_decode_lowdelay_transform_data (picture);
     } else {
       schro_decoder_parse_transform_data (picture);
@@ -844,7 +834,7 @@ schro_decoder_decode_access_unit (SchroDecoder *decoder)
 }
 
 void
-schro_decoder_decode_picture_header (SchroPicture *picture)
+schro_decoder_parse_picture_header (SchroPicture *picture)
 {
   SchroUnpack *unpack = &picture->unpack;
 
@@ -872,7 +862,7 @@ schro_decoder_decode_picture_header (SchroPicture *picture)
 }
 
 void
-schro_decoder_decode_picture_prediction_parameters (SchroPicture *picture)
+schro_decoder_parse_picture_prediction_parameters (SchroPicture *picture)
 {
   SchroParams *params = &picture->params;
   SchroUnpack *unpack = &picture->unpack;
@@ -1238,7 +1228,7 @@ schro_decoder_decode_prediction_unit(SchroPicture *picture, SchroArith **arith,
 }
 
 void
-schro_decoder_decode_transform_parameters (SchroPicture *picture)
+schro_decoder_parse_transform_parameters (SchroPicture *picture)
 {
   int bit;
   int i;
@@ -1334,6 +1324,22 @@ schro_decoder_init_subband_frame_data_interleaved (SchroPicture *picture)
       }
     }
   }
+}
+
+void
+schro_decoder_parse_lowdelay_transform_data (SchroPicture *picture)
+{
+  SchroParams *params = &picture->params;
+  SchroUnpack *unpack = &picture->unpack;
+  int length;
+
+  length = (params->slice_bytes_num * params->n_horiz_slices *
+      params->n_vert_slices) / params->slice_bytes_denom;
+  picture->lowdelay_buffer = schro_buffer_new_subbuffer (
+      picture->input_buffer,
+      schro_unpack_get_bits_read (unpack)/8,
+      length);
+  schro_unpack_skip_bits (unpack, length*8);
 }
 
 void

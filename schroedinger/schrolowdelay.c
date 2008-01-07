@@ -72,7 +72,7 @@ ilog2up (unsigned int x)
 void
 schro_decoder_decode_slice (SchroPicture *picture,
     SchroLowDelay *lowdelay,
-    int slice_x, int slice_y, int slice_bytes)
+    int slice_x, int slice_y, int offset, int slice_bytes)
 {
   SchroParams *params = &picture->params;
   SchroUnpack y_unpack;
@@ -86,8 +86,8 @@ schro_decoder_decode_slice (SchroPicture *picture,
   int x,y;
   int value;
 
-  schro_unpack_copy (&y_unpack, &picture->unpack);
-  schro_unpack_limit_bits_remaining (&y_unpack, slice_bytes*8);
+  schro_unpack_init_with_data (&y_unpack,
+      OFFSET(picture->lowdelay_buffer->data, offset), slice_bytes, 1);
 
   base_index = schro_unpack_decode_bits (&y_unpack, 7);
   length_bits = ilog2up(8*slice_bytes);
@@ -186,6 +186,7 @@ schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture)
   int remainder;
   int accumulator;
   int extra;
+  int offset;
 
   schro_lowdelay_init (&lowdelay, picture->frame, params);
 
@@ -195,6 +196,7 @@ schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture)
   n_bytes = params->slice_bytes_num / params->slice_bytes_denom;
   remainder = params->slice_bytes_num % params->slice_bytes_denom;
 
+  offset = 0;
   accumulator = 0;
   for(y=0;y<lowdelay.n_vert_slices;y++) {
 
@@ -208,7 +210,8 @@ schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture)
       }
 
       schro_decoder_decode_slice (picture, &lowdelay,
-          x, y, n_bytes + extra);
+          x, y, offset, n_bytes + extra);
+      offset += n_bytes + extra;
     }
   }
 
