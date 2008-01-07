@@ -9,7 +9,7 @@
 
 #define OFFSET_S16(ptr,offset) ((int16_t *)(((uint8_t *)(ptr)) + (offset)))
 
-schro_subband_storage* schro_subband_storage_new(SchroParams *params, SchroStream stream)
+schro_subband_storage* schro_subband_storage_new(SchroParams *params, SchroCUDAStream stream)
 {
     schro_subband_storage *store;
     int zeroes_length;
@@ -62,13 +62,13 @@ void schro_subband_storage_free(schro_subband_storage *store)
     //cudaFree(store->gbuffer);
 }
 
-void schro_subband_storage_to_gpuframe_init(schro_subband_storage *store, SchroGPUFrame *frame)
+void schro_subband_storage_to_gpuframe_init(schro_subband_storage *store, SchroFrame *frame)
 {
     /** Zero the frame */
     schro_gpuframe_zero(frame);
 }
 #if 1
-void schro_subband_storage_to_gpuframe(schro_subband_storage *store, SchroGPUFrame *frame, int comp, int position, int offset)
+void schro_subband_storage_to_gpuframe(schro_subband_storage *store, SchroFrame *frame, int comp, int position, int offset)
 {
     int16_t *srcdata;
     int data_width, data_height, data_stride;
@@ -119,7 +119,7 @@ void schro_subband_storage_to_gpuframe(schro_subband_storage *store, SchroGPUFra
 #endif
 
 #if 0
-void schro_subband_storage_to_gpuframe(schro_subband_storage *store, SchroGPUFrame *frame)
+void schro_subband_storage_to_gpuframe(schro_subband_storage *store, SchroFrame *frame)
 {
     int16_t *data[3];
     int16_t *srcdata;

@@ -34,7 +34,7 @@ static inline int ilog2 (unsigned int x)
   return i;
 }
 
-SchroGPUMotion *schro_gpumotion_new(SchroStream stream)
+SchroGPUMotion *schro_gpumotion_new(SchroCUDAStream stream)
 {
   SchroGPUMotion *ret;
   ret = (SchroGPUMotion*)malloc(sizeof(SchroGPUMotion));
@@ -155,11 +155,11 @@ void schro_gpumotion_copy(SchroGPUMotion *self, SchroMotion *motion)
     //printf("%i blocks (%ix%i)\n", numv, md.obmc.blocksx, md.obmc.blocksy);
 }
 
-void schro_gpumotion_render(SchroGPUMotion *self, SchroMotion *motion, SchroGPUFrame *gdest)
+void schro_gpumotion_render(SchroGPUMotion *self, SchroMotion *motion, SchroFrame *gdest)
 {
     CudaMotion *cm = self->cm;
-    SchroUpsampledGPUFrame *ref1 = (SchroUpsampledGPUFrame*)motion->src1;
-    SchroUpsampledGPUFrame *ref2 = (SchroUpsampledGPUFrame*)motion->src2;
+    SchroUpsampledFrame *ref1 = (SchroUpsampledFrame*)motion->src1;
+    SchroUpsampledFrame *ref2 = (SchroUpsampledFrame*)motion->src2;
 
     cuda_motion_begin(cm, &md);
 
