@@ -154,8 +154,6 @@ schro_decoder_decode_slice (SchroPicture *picture,
       }
     }
   }
-
-  schro_unpack_skip_bits (&picture->unpack, slice_bytes*8);
 }
 
 void
