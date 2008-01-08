@@ -267,6 +267,7 @@ schro_frame_ref (SchroFrame *frame)
 void
 schro_frame_unref (SchroFrame *frame)
 {
+  SCHRO_ASSERT(frame->refcount > 0);
   frame->refcount--;
   if (frame->refcount == 0) {
     if (frame->free) {

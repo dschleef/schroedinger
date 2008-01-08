@@ -82,6 +82,7 @@ schro_buffer_ref (SchroBuffer * buffer)
 void
 schro_buffer_unref (SchroBuffer * buffer)
 {
+  SCHRO_ASSERT(buffer->ref_count > 0);
   buffer->ref_count--;
   if (buffer->ref_count == 0) {
     SCHRO_DEBUG("free %p", buffer);
