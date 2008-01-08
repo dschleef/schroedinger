@@ -51,7 +51,6 @@ struct _SchroPictureSubbandContext {
 
 int _schro_decode_prediction_only;
 
-static void schro_decoder_init (SchroPicture *picture);
 
 static void schro_decoder_reference_add (SchroDecoder *decoder,
     SchroUpsampledFrame *frame, SchroPictureNumber picture_number);
@@ -73,8 +72,6 @@ schro_decoder_new (void)
   decoder = malloc(sizeof(SchroDecoder));
   memset (decoder, 0, sizeof(SchroDecoder));
 
-  //decoder->picture = schro_picture_new (decoder);
-
   decoder->skip_value = 1.0;
   decoder->skip_ratio = 1.0;
 
@@ -85,6 +82,10 @@ schro_decoder_new (void)
   decoder->output_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_frame_unref);
 
+  decoder->picture_queue = schro_queue_new (SCHRO_LIMIT_FRAME_QUEUE_LENGTH,
+      (SchroQueueFreeFunc)schro_picture_unref);
+  decoder->queue_depth = 4;
+
   return decoder;
 }
 
@@ -94,6 +95,7 @@ schro_decoder_free (SchroDecoder *decoder)
   schro_queue_free (decoder->output_queue);
   schro_queue_free (decoder->reference_queue);
   schro_queue_free (decoder->frame_queue);
+  schro_queue_free (decoder->picture_queue);
 
   if (decoder->error_message) free (decoder->error_message);
 
@@ -104,6 +106,9 @@ SchroPicture *
 schro_picture_new (SchroDecoder *decoder)
 {
   SchroPicture *picture;
+  SchroFrameFormat frame_format;
+  SchroVideoFormat *video_format = &decoder->video_format;
+  int frame_width, frame_height;
 
   picture = malloc(sizeof(SchroPicture));
   memset (picture, 0, sizeof(SchroPicture));
@@ -114,7 +119,26 @@ schro_picture_new (SchroDecoder *decoder)
   picture->tmpbuf = malloc(SCHRO_LIMIT_WIDTH * 2);
   picture->tmpbuf2 = malloc(SCHRO_LIMIT_WIDTH * 2);
 
-  picture->params.video_format = &decoder->video_format;
+  picture->params.video_format = video_format;
+
+  frame_format = schro_params_get_frame_format (16,
+      video_format->chroma_format);
+  frame_width = ROUND_UP_POW2(video_format->width,
+      SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_h_shift);
+  frame_height = ROUND_UP_POW2(video_format->height,
+      SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_v_shift);
+
+  picture->mc_tmp_frame = schro_frame_new_and_alloc (frame_format,
+      frame_width, frame_height);
+  picture->frame = schro_frame_new_and_alloc (frame_format,
+      frame_width, frame_height);
+
+  frame_format = schro_params_get_frame_format (8,
+      video_format->chroma_format);
+  picture->planar_output_frame = schro_frame_new_and_alloc (frame_format,
+      video_format->width, video_format->height);
+  SCHRO_DEBUG("planar output frame %dx%d",
+      video_format->width, video_format->height);
 
   return picture;
 }
@@ -398,7 +422,6 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
 
   picture = schro_picture_new (decoder);
   decoder->picture = picture;
-  schro_decoder_init (picture);
   params = &picture->params;
 
   picture->parse_code = decoder->parse_code;
@@ -652,33 +675,6 @@ schro_decoder_decode_picture (SchroPicture *picture)
   return FALSE;
 }
 
-static void
-schro_decoder_init (SchroPicture *picture)
-{
-  SchroFrameFormat frame_format;
-  SchroVideoFormat *video_format = &picture->decoder->video_format;
-  int frame_width, frame_height;
-
-  frame_format = schro_params_get_frame_format (16,
-      video_format->chroma_format);
-  frame_width = ROUND_UP_POW2(video_format->width,
-      SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_h_shift);
-  frame_height = ROUND_UP_POW2(video_format->height,
-      SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_v_shift);
-
-  picture->mc_tmp_frame = schro_frame_new_and_alloc (frame_format,
-      frame_width, frame_height);
-  picture->frame = schro_frame_new_and_alloc (frame_format,
-      frame_width, frame_height);
-
-  frame_format = schro_params_get_frame_format (8,
-      video_format->chroma_format);
-  picture->planar_output_frame = schro_frame_new_and_alloc (frame_format,
-      video_format->width, video_format->height);
-  SCHRO_DEBUG("planar output frame %dx%d",
-      video_format->width, video_format->height);
-}
-
 void
 schro_decoder_decode_parse_header (SchroDecoder *decoder)
 {
@@ -727,12 +723,10 @@ schro_decoder_parse_access_unit (SchroDecoder *decoder)
   if (decoder->major_version != 0 || decoder->minor_version != 20071203) {
     SCHRO_ERROR("Expecting version number 0.20071203, got %d.%d",
         decoder->major_version, decoder->minor_version);
-    //SCHRO_MILD_ASSERT(0);
   }
   if (decoder->profile != 0 || decoder->level != 0) {
     SCHRO_ERROR("Expecting profile/level 0,0, got %d,%d",
         decoder->profile, decoder->level);
-    SCHRO_MILD_ASSERT(0);
   }
 
   /* base video format */
@@ -875,6 +869,9 @@ schro_decoder_parse_access_unit (SchroDecoder *decoder)
   }
 
   decoder->interlaced_coding = schro_unpack_decode_uint (unpack);
+  if (decoder->interlaced_coding != 0) {
+    SCHRO_ERROR("Decoder doesn't handle interlaced coding");
+  }
 
   MARKER();
 
