@@ -79,7 +79,7 @@ struct _SchroPicture {
   SchroUpsampledFrame *ref1;
   SchroFrame *planar_output_frame;
 
-  int parse_code;
+  int is_ref;
 
   int16_t *tmpbuf;
   int16_t *tmpbuf2;

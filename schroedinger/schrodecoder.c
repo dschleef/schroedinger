@@ -424,16 +424,15 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
   decoder->picture = picture;
   params = &picture->params;
 
-  picture->parse_code = decoder->parse_code;
-
-  schro_decoder_parse_picture_header(decoder->picture);
-
   picture->input_buffer = decoder->input_buffer;
   decoder->input_buffer = NULL;
 
-  params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(picture->parse_code);
-  params->is_lowdelay = SCHRO_PARSE_CODE_IS_LOW_DELAY(picture->parse_code);
-  params->is_noarith = !SCHRO_PARSE_CODE_USING_AC(picture->parse_code);
+  params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->parse_code);
+  params->is_lowdelay = SCHRO_PARSE_CODE_IS_LOW_DELAY(decoder->parse_code);
+  params->is_noarith = !SCHRO_PARSE_CODE_USING_AC(decoder->parse_code);
+  picture->is_ref = SCHRO_PARSE_CODE_IS_REFERENCE(decoder->parse_code);
+
+  schro_decoder_parse_picture_header(decoder->picture);
 
   if (!decoder->have_frame_number) {
     if (params->num_refs > 0) {
@@ -444,13 +443,14 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
     SCHRO_INFO("next frame number after seek %d", decoder->next_frame_number);
   }
 
-  if (SCHRO_PARSE_CODE_IS_REFERENCE (picture->parse_code)) {
+  schro_decoder_parse_picture (picture);
+
+  if (picture->is_ref) {
     schro_decoder_reference_retire (decoder,
         decoder->picture->retired_picture_number);
   }
 
-  if (SCHRO_PARSE_CODE_IS_NON_REFERENCE (picture->parse_code) &&
-       decoder->skip_value > decoder->skip_ratio) {
+  if (!picture->is_ref && decoder->skip_value > decoder->skip_ratio) {
 
     decoder->skip_value = (1-SCHRO_SKIP_TIME_CONSTANT) * decoder->skip_value;
     SCHRO_INFO("skipping frame %d", picture->picture_number);
@@ -475,7 +475,6 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
   picture->output_picture = schro_queue_pull (decoder->output_queue);
 
-  schro_decoder_parse_picture (picture);
   skip = schro_decoder_decode_picture (picture);
   if (skip) {
     schro_picture_unref (picture);
@@ -541,7 +540,7 @@ schro_decoder_decode_picture (SchroPicture *picture)
   SchroParams *params = &picture->params;
   SchroDecoder *decoder = picture->decoder;
 
-  if (SCHRO_PARSE_CODE_NUM_REFS(picture->parse_code) > 0) {
+  if (params->num_refs > 0) {
     int skip = 0;
 
     picture->ref0 = schro_decoder_reference_get (decoder, picture->reference1);
@@ -598,7 +597,7 @@ schro_decoder_decode_picture (SchroPicture *picture)
       schro_frame_convert (picture->output_picture, picture->mc_tmp_frame);
     }
   } else if (!_schro_decode_prediction_only) {
-    if (SCHRO_PARSE_CODE_IS_INTER(picture->parse_code)) {
+    if (!picture->is_ref) {
       schro_frame_add (picture->frame, picture->mc_tmp_frame);
     }
 
@@ -610,7 +609,7 @@ schro_decoder_decode_picture (SchroPicture *picture)
     }
   } else {
     SchroFrame *frame;
-    if (SCHRO_PARSE_CODE_IS_INTER(picture->parse_code)) {
+    if (!picture->is_ref) {
       frame = picture->mc_tmp_frame;
     } else {
       frame = picture->frame;
@@ -622,13 +621,13 @@ schro_decoder_decode_picture (SchroPicture *picture)
       schro_frame_convert (picture->output_picture, frame);
     }
 
-    if (SCHRO_PARSE_CODE_IS_INTER(picture->parse_code)) {
+    if (!picture->is_ref) {
       schro_frame_add (picture->frame, picture->mc_tmp_frame);
     }
   }
   picture->output_picture->frame_number = picture->picture_number;
 
-  if (SCHRO_PARSE_CODE_IS_REFERENCE(picture->parse_code)) {
+  if (picture->is_ref) {
     SchroFrame *ref;
     SchroFrameFormat frame_format;
 
@@ -882,25 +881,26 @@ void
 schro_decoder_parse_picture_header (SchroPicture *picture)
 {
   SchroUnpack *unpack = &picture->decoder->unpack;
+  SchroParams *params = &picture->params;
 
   schro_unpack_byte_sync(unpack);
 
   picture->picture_number = schro_unpack_decode_bits (unpack, 32);
   SCHRO_DEBUG("picture number %d", picture->picture_number);
 
-  if (SCHRO_PARSE_CODE_NUM_REFS(picture->parse_code) > 0) {
+  if (params->num_refs > 0) {
     picture->reference1 = picture->picture_number +
       schro_unpack_decode_sint (unpack);
     SCHRO_DEBUG("ref1 %d", picture->reference1);
   }
 
-  if (SCHRO_PARSE_CODE_NUM_REFS(picture->parse_code) > 1) {
+  if (params->num_refs > 1) {
     picture->reference2 = picture->picture_number +
       schro_unpack_decode_sint (unpack);
     SCHRO_DEBUG("ref2 %d", picture->reference2);
   }
 
-  if (SCHRO_PARSE_CODE_IS_REFERENCE(picture->parse_code)) {
+  if (picture->is_ref) {
     picture->retired_picture_number = picture->picture_number +
       schro_unpack_decode_sint (unpack);
   }
@@ -1303,7 +1303,7 @@ schro_decoder_parse_transform_parameters (SchroPicture *picture)
   params->transform_depth = schro_unpack_decode_uint (unpack);
   SCHRO_DEBUG ("transform depth %d", params->transform_depth);
 
-  if (!SCHRO_PARSE_CODE_IS_LOW_DELAY(picture->parse_code)) {
+  if (!params->is_lowdelay) {
     /* codeblock parameters */
     params->codeblock_mode_index = 0;
     for(i=0;i<params->transform_depth + 1;i++) {
