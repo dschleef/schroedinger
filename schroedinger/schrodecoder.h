@@ -99,6 +99,9 @@ struct _SchroPicture {
   SchroBuffer *motion_buffers[9];
 
   SchroBuffer *lowdelay_buffer;
+
+  int has_md5;
+  uint8_t md5_checksum[32];
 };
 #endif
 

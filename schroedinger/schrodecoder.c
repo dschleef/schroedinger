@@ -432,6 +432,12 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
   params->is_noarith = !SCHRO_PARSE_CODE_USING_AC(decoder->parse_code);
   picture->is_ref = SCHRO_PARSE_CODE_IS_REFERENCE(decoder->parse_code);
 
+  if (decoder->has_md5) {
+    picture->has_md5 = TRUE;
+    memcpy (picture->md5_checksum, decoder->md5_checksum, 16);
+    decoder->has_md5 = FALSE;
+  }
+
   schro_decoder_parse_picture_header(decoder->picture);
 
   if (!decoder->have_frame_number) {
@@ -631,19 +637,9 @@ schro_decoder_decode_picture (SchroPicture *picture)
     SchroFrame *ref;
     SchroFrameFormat frame_format;
 
-    switch (params->video_format->chroma_format) {
-      case SCHRO_CHROMA_420:
-        frame_format = SCHRO_FRAME_FORMAT_U8_420;
-        break;
-      case SCHRO_CHROMA_422:
-        frame_format = SCHRO_FRAME_FORMAT_U8_422;
-        break;
-      case SCHRO_CHROMA_444:
-        frame_format = SCHRO_FRAME_FORMAT_U8_444;
-        break;
-      default:
-        SCHRO_ASSERT(0);
-    }
+    frame_format = schro_params_get_frame_format (8,
+        params->video_format->chroma_format);
+    
     ref = schro_frame_new_and_alloc (frame_format,
         decoder->video_format.width, decoder->video_format.height);
     schro_frame_convert (ref, picture->frame);
@@ -652,23 +648,21 @@ schro_decoder_decode_picture (SchroPicture *picture)
         picture->picture_number);
   }
 
-  if (decoder->has_md5) {
+  if (picture->has_md5) {
     uint32_t state[4];
 
     schro_frame_md5 (picture->output_picture, state);
-    if (memcmp (state, decoder->md5_checksum, 16) != 0) {
+    if (memcmp (state, picture->md5_checksum, 16) != 0) {
       char a[65];
       char b[65];
       int i;
 
       for(i=0;i<16;i++){
         sprintf(a+2*i, "%02x", ((uint8_t *)state)[i]);
-        sprintf(b+2*i, "%02x", decoder->md5_checksum[i]);
+        sprintf(b+2*i, "%02x", picture->md5_checksum[i]);
       }
       SCHRO_ERROR("MD5 checksum mismatch (%s should be %s)", a, b);
     }
-
-    decoder->has_md5 = FALSE;
   }
 
   return FALSE;
