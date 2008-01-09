@@ -173,6 +173,7 @@ schro_picture_unref (SchroPicture *picture)
     if (picture->frame) schro_frame_unref (picture->frame);
     if (picture->mc_tmp_frame) schro_frame_unref (picture->mc_tmp_frame);
     if (picture->planar_output_frame) schro_frame_unref (picture->planar_output_frame);
+    if (picture->output_picture) schro_frame_unref (picture->output_picture);
     if (picture->tmpbuf) free (picture->tmpbuf);
     if (picture->tmpbuf2) free (picture->tmpbuf2);
     if (picture->motion) schro_motion_free (picture->motion);
@@ -469,7 +470,7 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
     picture->output_picture = schro_frame_new ();
     picture->output_picture->frame_number = decoder->picture->picture_number;
 
-    SCHRO_ERROR("adding %d to queue (skipped)", picture->picture_number);
+    SCHRO_DEBUG("adding %d to queue (skipped)", picture->picture_number);
     schro_queue_add (decoder->picture_queue, picture,
         picture->picture_number);
 
