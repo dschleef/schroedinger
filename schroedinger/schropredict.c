@@ -742,7 +742,6 @@ void
 schro_encoder_dc_prediction (SchroEncoderFrame *encoder_frame)
 {
   SchroParams *params = &encoder_frame->params;
-  uint8_t const_data[16];
   int i;
   int j;
   int luma_w, luma_h;
@@ -761,7 +760,10 @@ schro_encoder_dc_prediction (SchroEncoderFrame *encoder_frame)
   for(j=0;j<params->y_num_blocks;j++){
     for(i=0;i<params->x_num_blocks;i++){
       SchroMotionVectorDC *mvdc;
+#if 0
       int x,y;
+      uint8_t const_data[16];
+#endif
       
       mvdc = (SchroMotionVectorDC *)(motion_field->motion_vectors + j*motion_field->x_num_blocks + i);
 
@@ -773,11 +775,11 @@ schro_encoder_dc_prediction (SchroEncoderFrame *encoder_frame)
       schro_block_average (&mvdc->dc[1], orig_frame->components + 1, i*chroma_w, j*chroma_h, chroma_w, chroma_h);
       schro_block_average (&mvdc->dc[2], orig_frame->components + 2, i*chroma_w, j*chroma_h, chroma_w, chroma_h);
 
+#if 0
       memset (const_data, mvdc->dc[0] + 128, 16);
 
       x = i*params->xbsep_luma;
       y = j*params->ybsep_luma;
-#if 0
       mvdc->metric = schro_metric_absdiff_u8 (
           orig_frame->components[0].data + x + y*orig_frame->components[0].stride,
           orig_frame->components[0].stride,

@@ -1182,7 +1182,7 @@ schro_motion_dc_prediction (SchroMotion *motion, int x, int y, int *pred)
   int i;
 
   for(i=0;i<3;i++){
-    unsigned int sum = 0;
+    int sum = 0;
     int n = 0;
 
     if (x>0) {
