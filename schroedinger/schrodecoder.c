@@ -601,7 +601,7 @@ schro_decoder_decode_picture (SchroPicture *picture)
       schro_frame_convert (picture->output_picture, picture->mc_tmp_frame);
     }
   } else if (!_schro_decode_prediction_only) {
-    if (!picture->is_ref) {
+    if (params->num_refs > 0) {
       schro_frame_add (picture->frame, picture->mc_tmp_frame);
     }
 
