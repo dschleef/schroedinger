@@ -704,7 +704,7 @@ get_downsampled(SchroEncoderFrame *frame, int i)
 }
 
 static int
-schro_block_average (uint16_t *dest, SchroFrameData *comp,
+schro_block_average (int16_t *dest, SchroFrameData *comp,
     int x, int y, int w, int h)
 {
   int xmax = MIN(x + w, comp->width);
@@ -734,7 +734,7 @@ schro_block_average (uint16_t *dest, SchroFrameData *comp,
     }
   }
 
-  *dest = ave;
+  *dest = ave - 128;
   return sum;
 }
 
@@ -773,7 +773,7 @@ schro_encoder_dc_prediction (SchroEncoderFrame *encoder_frame)
       schro_block_average (&mvdc->dc[1], orig_frame->components + 1, i*chroma_w, j*chroma_h, chroma_w, chroma_h);
       schro_block_average (&mvdc->dc[2], orig_frame->components + 2, i*chroma_w, j*chroma_h, chroma_w, chroma_h);
 
-      memset (const_data, mvdc->dc[0], 16);
+      memset (const_data, mvdc->dc[0] + 128, 16);
 
       x = i*params->xbsep_luma;
       y = j*params->ybsep_luma;
