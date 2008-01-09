@@ -1,18 +1,7 @@
 #!/bin/sh
-# Unpack a drc file to yuv
-TESTPATH=$HOME/dirac/test
-GST=gst-launch-0.10 
-#input=${TESTPATH}/vic.ogg
-#input=${TESTPATH}/intheshadowofthemoon_h1080p_new.drc
-input=${TESTPATH}/ed_new.drc
-#input=${HOME}/intheshadowofthemoon_h1080p_new.drc #The_Living_Sea_1080.drc
-#GSTD="--gst-debug-no-color --gst-debug-level=5 --gst-plugin-spew"
 
-#taskset -c 0 ${GST} ${GSTD} -v filesrc location=$input  \
-#	! decodebin \
-#	! filesink location=$output
-
-${GST} ${GSTD} -v filesrc location=$input  \
+gdb -args \
+gst-launch-0.10 filesrc location=$1  \
 	! decodebin \
 	! xvimagesink sync=false
 

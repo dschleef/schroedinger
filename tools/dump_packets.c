@@ -349,7 +349,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       schro_unpack_byte_sync(&unpack);
       index = schro_unpack_decode_uint(&unpack);
       
-      g_print("    block parameters index: %d\n", index);
+      g_print("  block parameters index: %d\n", index);
       if (index == 0) {
         g_print("    luma block width: %d\n", schro_unpack_decode_uint(&unpack));
         g_print("    luma block height: %d\n", schro_unpack_decode_uint(&unpack));
@@ -479,18 +479,14 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
 
       if (!lowdelay) {
         bit = schro_unpack_decode_bit (&unpack);
-        g_print("  spatial partition flag: %s\n", bit ? "yes" : "no");
+        g_print("    non-default partition flag: %s\n", bit ? "yes" : "no");
         if (bit) {
-          bit = schro_unpack_decode_bit (&unpack);
-          g_print("    non-default partition flag: %s\n", bit ? "yes" : "no");
-          if (bit) {
-            for(i=0;i<depth+1;i++){
-              g_print("      number of codeblocks depth=%d\n", i);
-              g_print("        horizontal codeblocks: %d\n",
-                  schro_unpack_decode_uint(&unpack));
-              g_print("        vertical codeblocks: %d\n",
-                  schro_unpack_decode_uint(&unpack));
-            }
+          for(i=0;i<depth+1;i++){
+            g_print("      number of codeblocks depth=%d\n", i);
+            g_print("        horizontal codeblocks: %d\n",
+                schro_unpack_decode_uint(&unpack));
+            g_print("        vertical codeblocks: %d\n",
+                schro_unpack_decode_uint(&unpack));
           }
           g_print("    codeblock mode index: %d\n", schro_unpack_decode_uint(&unpack));
         }

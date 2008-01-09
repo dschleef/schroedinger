@@ -39,6 +39,9 @@ struct _Obmc {
     int weight1;
     int weight2;
     int weight_shift;
+    
+    /* number of precision bits */
+    int mv_precision;
 };
 
 
@@ -74,8 +77,6 @@ struct _MotionData
 {
     /// Parameters
     struct _Obmc obmc;
-    /// Motion vectors
-    // struct _MotionVector *vectors;
 };
 
 typedef struct _MotionData CudaMotionData;
@@ -84,8 +85,7 @@ typedef struct _MotionData CudaMotionData;
 struct _MotionVector *cuda_motion_reserve(CudaMotion *self, int width, int height);
 
 void cuda_motion_begin(CudaMotion *self, CudaMotionData *d);
-//void cuda_motion_copy(uint16_t *output, int ostride, int width, int height, int comp, int xshift, int yshift, struct cudaArray *ref1, struct cudaArray *ref2);
-void cuda_motion_copy(CudaMotion *self, CudaMotionData *d, uint16_t *output, int ostride, int width, int height, int component, int xshift, int yshift, struct cudaArray *aref1, struct cudaArray *aref2);
+void cuda_motion_copy(CudaMotion *self, CudaMotionData *d, int16_t *output, int ostride, int width, int height, int component, int xshift, int yshift, struct cudaArray *aref1, struct cudaArray *aref2);
 
 #ifdef __cplusplus
 }

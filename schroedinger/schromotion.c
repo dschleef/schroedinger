@@ -98,7 +98,7 @@ get_dc_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
   mvdc = (SchroMotionVectorDC *)
     &motion->motion_vectors[j*params->x_num_blocks + i];
 
-  return mvdc->dc[k];
+  return mvdc->dc[k] + 128;
 }
 
 static int
@@ -558,17 +558,17 @@ schro_motion_get_dc_block (SchroMotion *motion, SchroMotionVector *mv)
   SchroMotionVectorDC *mvdc = (SchroMotionVectorDC *)mv;
 
   offset = 0;
-  memset (motion->tmpdata + offset, mvdc->dc[0], motion->obmc_luma->x_len);
+  memset (motion->tmpdata + offset, mvdc->dc[0] + 128, motion->obmc_luma->x_len);
   motion->blocks[0] = motion->tmpdata + offset;
   motion->strides[0] = 0;
   offset += motion->obmc_luma->x_len;
 
-  memset (motion->tmpdata + offset, mvdc->dc[1], motion->obmc_chroma->x_len);
+  memset (motion->tmpdata + offset, mvdc->dc[1] + 128, motion->obmc_chroma->x_len);
   motion->blocks[1] = motion->tmpdata + offset;
   motion->strides[1] = 0;
   offset += motion->obmc_chroma->x_len;
 
-  memset (motion->tmpdata + offset, mvdc->dc[2], motion->obmc_chroma->x_len);
+  memset (motion->tmpdata + offset, mvdc->dc[2] + 128, motion->obmc_chroma->x_len);
   motion->blocks[2] = motion->tmpdata + offset;
   motion->strides[2] = 0;
 }
@@ -1042,6 +1042,8 @@ shift_rows (SchroFrame *frame, int y, int n, int shift_luma, int shift_chroma)
     } else {
       s[1] = shift_chroma;
     }
+    /* Note: the 128 offset converts the 0-255 range of the reference
+     * pictures into the bipolar range used for Dirac signal processing */
     s[0] = ((1<<s[1])>>1) - (128<<s[1]);
 
     ymax = MIN ((y + n)>>comp->v_shift, comp->height);
@@ -1180,50 +1182,36 @@ schro_motion_dc_prediction (SchroMotion *motion, int x, int y, int *pred)
   int i;
 
   for(i=0;i<3;i++){
-    unsigned int sum = 0;
+    int sum = 0;
     int n = 0;
 
     if (x>0) {
       mvdc = SCHRO_MOTION_GET_DC_BLOCK(motion,x-1,y);
       if (mvdc->pred_mode == 0) {
-        sum += mvdc->dc[i] - 128;
+        sum += mvdc->dc[i];
         n++;
       }
     }
     if (y>0) {
       mvdc = SCHRO_MOTION_GET_DC_BLOCK(motion,x,y-1);
       if (mvdc->pred_mode == 0) {
-        sum += mvdc->dc[i] - 128;
+        sum += mvdc->dc[i];
         n++;
       }
     }
     if (x>0 && y>0) {
       mvdc = SCHRO_MOTION_GET_DC_BLOCK(motion,x-1,y-1);
       if (mvdc->pred_mode == 0) {
-        sum += mvdc->dc[i] - 128;
+        sum += mvdc->dc[i];
         n++;
       }
     }
     switch(n) {
-#if 1
       case 0:
-        pred[i] = (short)128 + 128;
+        pred[i] = 0;
         break;
       case 1:
-        pred[i] = (short)sum + 128;
-        break;
-      case 2:
-        pred[i] = (short)((sum+1)/2) + 128;
-        break;
-      case 3:
-        pred[i] = (short)((sum+1)/3) + 128;
-        break;
-#else
-      case 0:
-        pred[i] = 128;
-        break;
-      case 1:
-        pred[i] = (short)sum + 128;
+        pred[i] = (short)sum;
         break;
       case 2:
         pred[i] = (sum+1)>>1;
@@ -1231,7 +1219,6 @@ schro_motion_dc_prediction (SchroMotion *motion, int x, int y, int *pred)
       case 3:
         pred[i] = schro_divide(sum + 1,3);
         break;
-#endif
       default:
         SCHRO_ASSERT(0);
     }
@@ -1520,7 +1507,8 @@ schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest)
       for(x=0;x<comp->width;x++){
         line[x] = CLAMP(schro_motion_pixel_predict (motion, x, y, k), 0, 255);
 
-        /* FIXME */
+        /* Note: the 128 offset converts the 0-255 range of the reference
+         * pictures into the bipolar range used for Dirac signal processing */
         line[x] -= 128;
       }
     }

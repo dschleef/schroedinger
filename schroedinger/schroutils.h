@@ -14,6 +14,11 @@
 typedef uint32_t SchroPictureNumber;
 typedef unsigned int schro_bool;
 
+/* This must match the CUDA stream type, as we don't want to include the CUDA
+   includes in any of the Schroedinger include files.
+ */
+typedef int SchroCUDAStream;
+
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))

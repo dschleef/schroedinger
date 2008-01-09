@@ -60,6 +60,24 @@ struct _CudaMotion
   struct cudaArray *bdata;
 };
 
+__global__ void tex_copy(
+    uint16_t* dest, int dstride, int dwidth, int dheight
+)
+{
+  worktype2 val;
+  int xofs = (blockIdx.x << WIDTHX_LOG2) + (threadIdx.x<<1);
+  int yofs = (blockIdx.y << WIDTHY_LOG2) + threadIdx.y;
+  dest = OFFSET_U16(dest, __mul24(dstride, yofs) + (xofs<<1));
+
+  val.x = (worktype)(tex2D(ref1, xofs*2.0f+0.5f, yofs*2.0f+0.5f)*256.0f);
+  val.y = (worktype)(tex2D(ref1, xofs*2.0f+3.5f, yofs*2.0f+0.5f)*256.0f);
+
+  int16_2 sval;
+  sval.x = val.x - 128;
+  sval.y = val.y - 128;
+  *((int16_2*)dest) = sval;
+}
+
 extern "C" {
 
 CudaMotion *cuda_motion_init(cudaStream_t stream)
@@ -120,7 +138,7 @@ void cuda_motion_begin(CudaMotion *self, CudaMotionData *d)
     cudaBindTextureToArray(bt1, self->bdata, bdesc);
 }
 
-void cuda_motion_copy(CudaMotion *self, CudaMotionData *d, uint16_t *output, int ostride, int width, int height, int component, int xshift, int yshift, struct cudaArray *aref1, struct cudaArray *aref2)
+void cuda_motion_copy(CudaMotion *self, CudaMotionData *d, int16_t *output, int ostride, int width, int height, int component, int xshift, int yshift, struct cudaArray *aref1, struct cudaArray *aref2)
 {
     /// Bind reference texture
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc(8, 0, 0, 0, cudaChannelFormatKindUnsigned);
@@ -150,17 +168,10 @@ void cuda_motion_copy(CudaMotion *self, CudaMotionData *d, uint16_t *output, int
                                   xB + xC, yB + yB);
 */
     grid_size.x = xB + xC;
-    grid_size.y = yB + yB;
-
-    //grid_size.x = div_roundup((max(d->obmc.x_mid, d->obmc.x_ramp)>>xshift)*div_roundup(width, d->obmc.x_sep>>xshift), WIDTHX);
-    //grid_size.y = div_roundup((max(d->obmc.y_mid, d->obmc.y_ramp)>>yshift)*div_roundup(height, d->obmc.y_sep>>yshift), WIDTHY);
+    grid_size.y = yB + yC;
     grid_size.z = 1;
     shared_size = 0;
 
-    /// Vector scaling constants for this component
-    float sxscale = exp2f(-xshift) * 0.25f;
-    float syscale = exp2f(-yshift) * 0.25f;
-    
 /*
     printf("%ix%i comp %i grid %ix%i scale %fx%f ramp %i %i sep %i %i mid %i %i\n", 
         width, height,
@@ -170,47 +181,37 @@ void cuda_motion_copy(CudaMotion *self, CudaMotionData *d, uint16_t *output, int
         d->obmc.x_mid_log2 - xshift,  d->obmc.y_mid_log2 - yshift
     );
 */
-#if 0
-    /// Test kernel
-    testK<<<dim3(1,1,1), dim3(1,1,1), 0>>>((int16_t*)output);
-    short *test = new short[d->obmc.blocksx*d->obmc.blocksy*4];
-    cudaMemcpy(test, output, d->obmc.blocksx*d->obmc.blocksy*8, cudaMemcpyDeviceToHost);
-    int errors=0;
-    for(int y=0; y<d->obmc.blocksy; ++y)
-        for(int x=0; x<d->obmc.blocksx; ++x)
-        {
-            if(d->vectors[y*obmc.blocksx+x].x1!=test[(y*obmc.blocksx + x)*4 + 0] ||
-              d->vectors[y*obmc.blocksx+x].x2!=test[(y*obmc.blocksx + x)*4 + 1] ||
-              d->vectors[y*obmc.blocksx+x].y1!=test[(y*obmc.blocksx + x)*4 + 2] ||
-              d->vectors[y*obmc.blocksx+x].y2!=test[(y*obmc.blocksx + x)*4 + 3])
-            {
-            printf("%i %i : %i %i %i %i : %i %i %i %i\n", y, x, 
-            d->vectors[y*obmc.blocksx+x].x1,
-            d->vectors[y*obmc.blocksx+x].x2,
-            d->vectors[y*obmc.blocksx+x].y1,
-            d->vectors[y*obmc.blocksx+x].y2,
-            test[(y*obmc.blocksx + x)*4 + 0],
-            test[(y*obmc.blocksx + x)*4 + 1],
-            test[(y*obmc.blocksx + x)*4 + 2],
-            test[(y*obmc.blocksx + x)*4 + 3]);
-            errors++;
-            }
-        }
-
-    if(!errors)
+#if 1
+    if((d->obmc.x_ramp_log2 - xshift - 1) == 0)
     {
-        printf("No errors\n");
+      /** Slower variant, use 2 byte writes */
+      motion_copy_2ref_2b<<<grid_size, block_size, shared_size, self->stream>>>(
+          output, ostride, width, height, xB, yB,
+          component*8,
+          d->obmc.x_ramp_log2 - xshift, d->obmc.y_ramp_log2 - yshift, 
+          d->obmc.x_sep_log2 - xshift,  d->obmc.y_sep_log2 - yshift, 
+          d->obmc.x_mid_log2 - xshift,  d->obmc.y_mid_log2 - yshift,
+          d->obmc.weight1, d->obmc.weight2, d->obmc.weight_shift,
+          xshift, yshift
+          );
     }
-    delete [] test;
+    else
+    {
+      /** Fast variant, use 4 byte writes */
+      motion_copy_2ref_4b<<<grid_size, block_size, shared_size, self->stream>>>(
+          output, ostride, width, height, xB, yB,
+          component*8,
+          d->obmc.x_ramp_log2 - xshift, d->obmc.y_ramp_log2 - yshift, 
+          d->obmc.x_sep_log2 - xshift,  d->obmc.y_sep_log2 - yshift, 
+          d->obmc.x_mid_log2 - xshift,  d->obmc.y_mid_log2 - yshift,
+          d->obmc.weight1, d->obmc.weight2, d->obmc.weight_shift,
+          xshift, yshift
+          );
+    }
+#else
+    tex_copy<<<dim3(div_roundup(width,WIDTHX),div_roundup(height,WIDTHY),1), block_size, 0>>>(
+        output, ostride, width, height);
 #endif
-    motion_copy_2ref<<<grid_size, block_size, shared_size, self->stream>>>(
-        output, ostride, width, height, xB, yB,
-        component*8, sxscale, syscale, 
-        d->obmc.x_ramp_log2 - xshift, d->obmc.y_ramp_log2 - yshift, 
-        d->obmc.x_sep_log2 - xshift,  d->obmc.y_sep_log2 - yshift, 
-        d->obmc.x_mid_log2 - xshift,  d->obmc.y_mid_log2 - yshift,
-        d->obmc.weight1, d->obmc.weight2, d->obmc.weight_shift
-        );
     /// XXX unbind textures?
 }
 

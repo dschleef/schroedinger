@@ -57,6 +57,9 @@ struct _SchroFrameData {
   int length;
   int h_shift;
   int v_shift;
+
+  /* for CUDA */
+  void *gdata;
 };
 
 struct _SchroFrame {
@@ -64,6 +67,12 @@ struct _SchroFrame {
   SchroFrameFreeFunc free;
   void *regions[3];
   void *priv;
+
+  /* for CUDA only */
+  void *gregions[3];
+  int is_cuda_frame;
+  int is_cuda_shared;
+  SchroCUDAStream stream;
 
   SchroFrameFormat format;
   int width;
@@ -76,6 +85,9 @@ struct _SchroFrame {
 
 struct _SchroUpsampledFrame {
   SchroFrame *frames[4];
+#ifdef HAVE_CUDA
+  struct cudaArray *components[3];
+#endif
 };
 
 #define SCHRO_FRAME_DATA_GET_LINE(fd,i) (OFFSET((fd)->data,(fd)->stride*(i)))

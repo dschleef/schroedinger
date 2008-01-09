@@ -267,6 +267,7 @@ schro_frame_ref (SchroFrame *frame)
 void
 schro_frame_unref (SchroFrame *frame)
 {
+  SCHRO_ASSERT(frame->refcount > 0);
   frame->refcount--;
   if (frame->refcount == 0) {
     if (frame->free) {
@@ -274,6 +275,13 @@ schro_frame_unref (SchroFrame *frame)
     }
     if (frame->regions[0]) {
       free(frame->regions[0]);
+    }
+    if (frame->is_cuda_frame) {
+#ifdef HAVE_CUDA
+      _schro_gpuframe_free (frame);
+#else
+      SCHRO_ASSERT(0);
+#endif
     }
 
     free(frame);

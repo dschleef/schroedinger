@@ -71,6 +71,7 @@ schro_encoder_new (void)
   encoder->min_bitrate = 13824000;
   encoder->noise_threshold = 25.0;
   encoder->gop_structure = 0;
+  encoder->queue_depth = 20;
   encoder->perceptual_weighting = 0;
   encoder->filtering = 0;
   encoder->filter_value = 5.0;
@@ -97,9 +98,6 @@ schro_encoder_new (void)
 
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
-
-  /* FIXME this should be a parameter */
-  encoder->queue_depth = 20;
 
   encoder->frame_queue = schro_queue_new (encoder->queue_depth,
       (SchroQueueFreeFunc)schro_encoder_frame_unref);
@@ -2280,6 +2278,7 @@ static SchroEncoderSetting encoder_settings[] = {
   INT ("min_bitrate", 0, INT_MAX, 13824000),
   DOUB("noise_threshold", 0, 100.0, 25.0),
   ENUM("gop_structure", gop_structure_list, 0),
+  INT("queue_depth", 1, SCHRO_LIMIT_FRAME_QUEUE_LENGTH, 20),
   ENUM("perceptual_weighting", perceptual_weighting_list, 0),
   DOUB("perceptual_distance", 0, 100.0, 3.0),
   ENUM("filtering", filtering_list, 0),
@@ -2340,6 +2339,7 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(min_bitrate);
   VAR_SET(noise_threshold);
   VAR_SET(gop_structure);
+  VAR_SET(queue_depth);
   VAR_SET(perceptual_weighting);
   VAR_SET(perceptual_distance);
   VAR_SET(filtering);
@@ -2375,6 +2375,7 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(min_bitrate);
   VAR_GET(noise_threshold);
   VAR_GET(gop_structure);
+  VAR_GET(queue_depth);
   VAR_GET(perceptual_weighting);
   VAR_GET(perceptual_distance);
   VAR_GET(filtering);

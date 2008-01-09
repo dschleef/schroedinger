@@ -266,11 +266,6 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
 
   schro_encoder_set_video_format (schro_enc->encoder, schro_enc->video_format);
 
-#if 0
-  schro_encoder_use_perceptual_weighting (schro_enc->encoder,
-      SCHRO_ENCODER_PERCEPTUAL_MOO, 3.0);
-#endif
-
   schro_enc->duration = gst_util_uint64_scale_int (GST_SECOND,
           schro_enc->fps_d, schro_enc->fps_n);
 
@@ -597,6 +592,22 @@ error:
   return res;
 }
 
+static gboolean
+gst_pad_is_negotiated (GstPad *pad)
+{
+  GstCaps *caps;
+
+  g_return_val_if_fail (pad != NULL, FALSE);
+
+  caps = gst_pad_get_negotiated_caps (pad);
+  if (caps) {
+    gst_caps_unref (caps);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
 static GstFlowReturn
 gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
 {
@@ -606,6 +617,9 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
 
   schro_enc = GST_SCHRO_ENC (gst_pad_get_parent (pad));
 
+  if (!gst_pad_is_negotiated (pad)) {
+    return GST_FLOW_NOT_NEGOTIATED;
+  }
   if (GST_BUFFER_TIMESTAMP (buf) < schro_enc->segment_start) {
     GST_DEBUG("dropping early buffer");
     return GST_FLOW_OK;
