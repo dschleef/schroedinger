@@ -1450,9 +1450,13 @@ schro_decoder_decode_transform_data (SchroPicture *picture)
   int component;
   SchroParams *params = &picture->params;
   SchroPictureSubbandContext context = { 0 }, *ctx = &context;
+  int skip_subbands;
+  
+  /* FIXME some day, hook this up into automatic degraded decoding */
+  skip_subbands = 0;
 
   for(component=0;component<3;component++){
-    for(i=0;i<1+3*params->transform_depth;i++) {
+    for(i=0;i<1+3*params->transform_depth - skip_subbands;i++) {
       ctx->component = component;
       ctx->index = i;
       ctx->position = schro_subband_get_position(i);
