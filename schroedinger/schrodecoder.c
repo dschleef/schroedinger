@@ -53,8 +53,8 @@ int _schro_decode_prediction_only;
 
 
 static void schro_decoder_reference_add (SchroDecoder *decoder,
-    SchroUpsampledFrame *frame, SchroPictureNumber picture_number);
-static SchroUpsampledFrame * schro_decoder_reference_get (SchroDecoder *decoder,
+    SchroPicture *picture);
+static SchroPicture * schro_decoder_reference_get (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
 static void schro_decoder_reference_retire (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
@@ -76,7 +76,7 @@ schro_decoder_new (void)
   decoder->skip_ratio = 1.0;
 
   decoder->reference_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
-      (SchroQueueFreeFunc)schro_upsampled_frame_free);
+      (SchroQueueFreeFunc)schro_picture_unref);
   decoder->output_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_frame_unref);
 
@@ -178,6 +178,7 @@ schro_picture_unref (SchroPicture *picture)
     if (picture->tmpbuf2) free (picture->tmpbuf2);
     if (picture->motion) schro_motion_free (picture->motion);
     if (picture->input_buffer) schro_buffer_unref (picture->input_buffer);
+    if (picture->upsampled_frame) schro_upsampled_frame_free (picture->upsampled_frame);
 
     free (picture);
   }
@@ -566,13 +567,14 @@ schro_decoder_decode_picture (SchroPicture *picture)
       return TRUE;
     }
 
-    picture->motion = schro_motion_new (params, picture->ref0, picture->ref1);
+    picture->motion = schro_motion_new (params, picture->ref0->upsampled_frame,
+        picture->ref1 ?  picture->ref1->upsampled_frame : NULL);
     schro_decoder_decode_block_data (picture);
 
     if (params->mv_precision > 0) {
-      schro_upsampled_frame_upsample (picture->ref0);
+      schro_upsampled_frame_upsample (picture->ref0->upsampled_frame);
       if (picture->ref1) {
-        schro_upsampled_frame_upsample (picture->ref1);
+        schro_upsampled_frame_upsample (picture->ref1->upsampled_frame);
       }
     }
 
@@ -642,8 +644,8 @@ schro_decoder_decode_picture (SchroPicture *picture)
         decoder->video_format.width, decoder->video_format.height);
     schro_frame_convert (ref, picture->frame);
     ref->frame_number = picture->picture_number;
-    schro_decoder_reference_add (decoder, schro_upsampled_frame_new(ref),
-        picture->picture_number);
+    picture->upsampled_frame = schro_upsampled_frame_new (ref);
+    schro_decoder_reference_add (decoder, picture);
   }
 
   if (picture->has_md5) {
@@ -1926,18 +1928,18 @@ schro_decoder_decode_subband (SchroPicture *picture,
 /* reference pool */
 
 static void
-schro_decoder_reference_add (SchroDecoder *decoder, SchroUpsampledFrame *frame,
-    SchroPictureNumber picture_number)
+schro_decoder_reference_add (SchroDecoder *decoder, SchroPicture *picture)
 {
-  SCHRO_DEBUG("adding %d", picture_number);
+  SCHRO_DEBUG("adding %d", picture->picture_number);
 
   if (schro_queue_is_full(decoder->reference_queue)) {
     schro_queue_pop (decoder->reference_queue);
   }
-  schro_queue_add (decoder->reference_queue, frame, picture_number);
+  schro_queue_add (decoder->reference_queue, schro_picture_ref(picture),
+      picture->picture_number);
 }
 
-static SchroUpsampledFrame *
+static SchroPicture *
 schro_decoder_reference_get (SchroDecoder *decoder,
     SchroPictureNumber picture_number)
 {

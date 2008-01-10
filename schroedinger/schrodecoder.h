@@ -75,8 +75,8 @@ struct _SchroPicture {
   SchroPictureNumber reference1;
   SchroPictureNumber reference2;
   SchroPictureNumber retired_picture_number;
-  SchroUpsampledFrame *ref0;
-  SchroUpsampledFrame *ref1;
+  SchroPicture *ref0;
+  SchroPicture *ref1;
   SchroFrame *planar_output_frame;
 
   int is_ref;
@@ -90,6 +90,7 @@ struct _SchroPicture {
   SchroFrame *mc_tmp_frame;
   SchroMotion *motion;
   SchroFrame *output_picture;
+  SchroUpsampledFrame *upsampled_frame;
 
   int subband_length[3][SCHRO_LIMIT_SUBBANDS];
   int subband_quant_index[3][SCHRO_LIMIT_SUBBANDS];
