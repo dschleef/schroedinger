@@ -2258,9 +2258,9 @@ static char *filtering_list[] = {
   "adaptive_gaussian"
 };
 static char *wavelet_list[] = {
-  "desl_debuc_9_7",
+  "desl_dubuc_9_7",
   "le_gall_5_3",
-  "desl_debuc_13_7",
+  "desl_dubuc_13_7",
   "haar_0",
   "haar_1",
   "fidelity",
