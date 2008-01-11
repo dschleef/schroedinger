@@ -32,6 +32,7 @@ typedef int SchroCUDAStream;
 #ifndef CLAMP
 #define CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
 #endif
+#define NEED_CLAMP(x,y,a,b) ((x) < (a) || (y) > (b))
 #define ROUND_UP_SHIFT(x,y) (((x) + (1<<(y)) - 1)>>(y))
 #define ROUND_UP_POW2(x,y) (((x) + (1<<(y)) - 1)&((~0)<<(y)))
 #define ROUND_UP_2(x) ROUND_UP_POW2(x,1)
