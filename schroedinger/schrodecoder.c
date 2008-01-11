@@ -49,6 +49,17 @@ struct _SchroPictureSubbandContext {
   int16_t *line;
 };
 
+enum {
+  SCHRO_DECODER_STATE_INIT = (1<<0),
+  SCHRO_DECODER_STATE_REFERENCES = (1<<1),
+  SCHRO_DECODER_STATE_MOTION_DECODE = (1<<2),
+  SCHRO_DECODER_STATE_MOTION_RENDER = (1<<3),
+  SCHRO_DECODER_STATE_RESIDUAL_DECODE = (1<<4),
+  SCHRO_DECODER_STATE_WAVELET_TRANSFORM = (1<<5),
+  SCHRO_DECODER_STATE_COMBINE = (1<<6),
+  SCHRO_DECODER_STATE_UPSAMPLE = (1<<7),
+};
+
 int _schro_decode_prediction_only;
 
 
@@ -424,7 +435,6 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
 {
   SchroPicture *picture;
   SchroParams *params;
-  int skip;
 
   picture = schro_picture_new (decoder);
   decoder->picture = picture;
@@ -484,13 +494,15 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
   picture->output_picture = schro_queue_pull (decoder->output_queue);
 
-  skip = schro_decoder_decode_picture (picture);
+  schro_decoder_decode_picture (picture);
+#if 0
   if (skip) {
     schro_picture_unref (picture);
     decoder->picture = NULL;
 
     return SCHRO_DECODER_OK;
   }
+#endif
 
   SCHRO_DEBUG("adding %d to queue", picture->picture_number);
   schro_queue_add (decoder->picture_queue, picture, picture->picture_number);
@@ -507,12 +519,32 @@ schro_decoder_parse_picture (SchroPicture *picture)
   if (params->num_refs > 0) {
     SCHRO_DEBUG("inter");
 
+    picture->ref0 = schro_decoder_reference_get (picture->decoder, picture->reference1);
+    if (picture->ref0 == NULL) {
+      SCHRO_ERROR("Could not find reference picture %d", picture->reference1);
+    }
+    picture->ref0->needed_state |= SCHRO_DECODER_STATE_UPSAMPLE;
+
+    picture->ref1 = NULL;
+    if (params->num_refs > 1) {
+      picture->ref1 = schro_decoder_reference_get (picture->decoder, picture->reference2);
+      if (picture->ref1 == NULL) {
+        SCHRO_ERROR("Could not find reference picture %d", picture->reference2);
+      }
+      picture->ref1->needed_state |= SCHRO_DECODER_STATE_UPSAMPLE;
+    }
+
     schro_unpack_byte_sync (unpack);
     schro_decoder_parse_picture_prediction_parameters (picture);
+
     schro_params_calculate_mc_sizes (params);
 
     schro_unpack_byte_sync (unpack);
     schro_decoder_parse_block_data (picture);
+
+    picture->needed_state |= SCHRO_DECODER_STATE_REFERENCES;
+    picture->needed_state |= SCHRO_DECODER_STATE_MOTION_DECODE;
+    picture->needed_state |= SCHRO_DECODER_STATE_MOTION_RENDER;
   }
 
   schro_unpack_byte_sync (unpack);
@@ -534,43 +566,54 @@ schro_decoder_parse_picture (SchroPicture *picture)
       schro_decoder_parse_transform_data (picture);
       schro_decoder_init_subband_frame_data_interleaved (picture);
     }
+
+    picture->needed_state |= SCHRO_DECODER_STATE_RESIDUAL_DECODE;
+    picture->needed_state |= SCHRO_DECODER_STATE_WAVELET_TRANSFORM;
   }
+
+  picture->needed_state |= SCHRO_DECODER_STATE_COMBINE;
 
   return TRUE;
 }
 
-int
+void
 schro_decoder_decode_picture (SchroPicture *picture)
 {
+  schro_decoder_x_check_references (picture);
+  schro_decoder_x_decode_motion (picture);
+  schro_decoder_x_render_motion (picture);
+  schro_decoder_x_decode_residual (picture);
+  schro_decoder_x_wavelet_transform (picture);
+  schro_decoder_x_combine (picture);
+  schro_decoder_x_upsample (picture);
+}
+
+void
+schro_decoder_x_check_references (SchroPicture *picture)
+{
+  //SchroParams *params = &picture->params;
+  //SchroDecoder *decoder = picture->decoder;
+
+}
+
+void
+schro_decoder_x_decode_motion (SchroPicture *picture)
+{
   SchroParams *params = &picture->params;
-  SchroDecoder *decoder = picture->decoder;
 
   if (params->num_refs > 0) {
-    int skip = 0;
-
-    picture->ref0 = schro_decoder_reference_get (decoder, picture->reference1);
-    if (picture->ref0 == NULL) {
-      SCHRO_ERROR("Could not find reference picture %d", picture->reference1);
-      skip = 1;
-    }
-    picture->ref1 = NULL;
-
-    if (params->num_refs > 1) {
-      picture->ref1 = schro_decoder_reference_get (decoder, picture->reference2);
-      if (picture->ref1 == NULL) {
-        SCHRO_ERROR("Could not find reference picture %d", picture->reference2);
-        skip = 1;
-      }
-    }
-
-    if (skip) {
-      return TRUE;
-    }
-
     picture->motion = schro_motion_new (params, picture->ref0->upsampled_frame,
         picture->ref1 ?  picture->ref1->upsampled_frame : NULL);
     schro_decoder_decode_block_data (picture);
+  }
+}
 
+void
+schro_decoder_x_render_motion (SchroPicture *picture)
+{
+  SchroParams *params = &picture->params;
+
+  if (params->num_refs > 0) {
     if (params->mv_precision > 0) {
       schro_upsampled_frame_upsample (picture->ref0->upsampled_frame);
       if (picture->ref1) {
@@ -579,8 +622,13 @@ schro_decoder_decode_picture (SchroPicture *picture)
     }
 
     schro_motion_render (picture->motion, picture->mc_tmp_frame);
-
   }
+}
+
+void
+schro_decoder_x_decode_residual (SchroPicture *picture)
+{
+  SchroParams *params = &picture->params;
 
   if (!picture->zero_residual) {
     if (params->is_lowdelay) {
@@ -589,11 +637,22 @@ schro_decoder_decode_picture (SchroPicture *picture)
       schro_decoder_decode_transform_data (picture);
     }
   }
+}
 
+void
+schro_decoder_x_wavelet_transform (SchroPicture *picture)
+{
   if (!picture->zero_residual) {
     schro_frame_inverse_iwt_transform (picture->frame, &picture->params,
         picture->tmpbuf);
   }
+}
+
+void
+schro_decoder_x_combine (SchroPicture *picture)
+{
+  SchroParams *params = &picture->params;
+  SchroDecoder *decoder = picture->decoder;
 
   if (picture->zero_residual) {
     if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
@@ -664,8 +723,12 @@ schro_decoder_decode_picture (SchroPicture *picture)
       SCHRO_ERROR("MD5 checksum mismatch (%s should be %s)", a, b);
     }
   }
+}
 
-  return FALSE;
+void
+schro_decoder_x_upsample (SchroPicture *picture)
+{
+  /* FIXME */
 }
 
 void

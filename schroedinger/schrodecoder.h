@@ -68,6 +68,9 @@ struct _SchroPicture {
 
   SchroDecoder *decoder;
 
+  unsigned int state;
+  unsigned int needed_state;
+
   SchroBuffer *input_buffer;
   SchroParams params;
   SchroPictureNumber picture_number;
@@ -144,6 +147,15 @@ SchroPicture * schro_picture_new (SchroDecoder *decoder);
 SchroPicture * schro_picture_ref (SchroPicture *picture);
 void schro_picture_unref (SchroPicture *picture);
 
+void schro_decoder_decode_picture (SchroPicture *picture);
+void schro_decoder_x_check_references (SchroPicture *picture);
+void schro_decoder_x_decode_motion (SchroPicture *picture);
+void schro_decoder_x_render_motion (SchroPicture *picture);
+void schro_decoder_x_decode_residual (SchroPicture *picture);
+void schro_decoder_x_wavelet_transform (SchroPicture *picture);
+void schro_decoder_x_combine (SchroPicture *picture);
+void schro_decoder_x_upsample (SchroPicture *picture);
+
 int schro_decoder_iterate_picture (SchroDecoder *decoder);
 int schro_decoder_parse_picture (SchroPicture *picture);
 void schro_decoder_parse_picture_header (SchroPicture *picture);
@@ -156,7 +168,6 @@ void schro_decoder_init_subband_frame_data_interleaved (SchroPicture *picture);
 void schro_decoder_decode_block_data (SchroPicture *picture);
 void schro_decoder_decode_transform_data (SchroPicture *picture);
 void schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture);
-int schro_decoder_decode_picture (SchroPicture *picture);
 void schro_decoder_decode_macroblock(SchroPicture *picture,
     SchroArith **arith, SchroUnpack *unpack, int i, int j);
 void schro_decoder_decode_prediction_unit(SchroPicture *picture,
