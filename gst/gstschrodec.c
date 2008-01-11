@@ -119,6 +119,7 @@ static GstStateChangeReturn gst_schro_dec_change_state (GstElement *element,
 static GstFlowReturn gst_schro_dec_chain (GstPad *pad, GstBuffer *buf);
 static GstFlowReturn gst_schro_dec_push_all (GstSchroDec *schro_dec, 
     gboolean at_eos);
+static GstFlowReturn gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer);
 
 static GstStaticPadTemplate gst_schro_dec_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
@@ -791,10 +792,9 @@ gst_schrodec_send_tags (GstSchroDec *schro_dec)
 static GstFlowReturn
 gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
 {
-  GstFlowReturn ret = GST_FLOW_OK;
   GstBuffer *parse_buf;
   SchroBuffer *input_buffer;
-  SchroFrame *frame;
+  GstFlowReturn ret = GST_FLOW_OK;
 
   while (TRUE) {
     gint size;
@@ -827,145 +827,164 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
     parse_buf = gst_adapter_take_buffer (schro_dec->adapter, size);
     input_buffer = gst_schro_wrap_gst_buffer (parse_buf);
   
-    {
-      int size;
-      int earliest_frame;
-      GstBuffer *outbuf;
-      int go = 1;
-  
-      schro_decoder_push (schro_dec->decoder, input_buffer);
-
-      if (schro_dec->have_access_unit) {
-        earliest_frame = gst_util_uint64_scale (
-            schro_dec->earliest_time - schro_dec->segment.start,
-            schro_dec->fps_n, schro_dec->fps_d * GST_SECOND);
-
-        GST_DEBUG("earliest frame %d", earliest_frame);
-        schro_decoder_set_earliest_frame (schro_dec->decoder, earliest_frame);
-
-        schro_decoder_set_skip_ratio (schro_dec->decoder,
-            1/schro_dec->proportion);
-      }
-
-      while (go) {
-        int it;
-        SchroVideoFormat *format;
-        GstCaps *caps;
-
-        it = schro_decoder_iterate (schro_dec->decoder);
-
-        switch (it) {
-          case SCHRO_DECODER_FIRST_ACCESS_UNIT:
-            format = schro_decoder_get_video_format (schro_dec->decoder);
-            schro_dec->width = format->width;
-            schro_dec->height = format->height;
-            switch(format->chroma_format) {
-              case 0:
-                schro_dec->fourcc = GST_MAKE_FOURCC('A','Y','U','V');
-                break;
-              case 1:
-                schro_dec->fourcc = GST_MAKE_FOURCC('Y','U','Y','2');
-                break;
-              case 2:
-                schro_dec->fourcc = GST_MAKE_FOURCC('I','4','2','0');
-                break;
-              default:
-                g_assert_not_reached();
-                break;
-            }
-        
-            caps = gst_caps_new_simple ("video/x-raw-yuv",
-                "format", GST_TYPE_FOURCC, schro_dec->fourcc,
-                "width", G_TYPE_INT, format->width,
-                "height", G_TYPE_INT, format->height,
-                "framerate", GST_TYPE_FRACTION,
-                format->frame_rate_numerator, format->frame_rate_denominator,
-                "pixel-aspect-ratio", GST_TYPE_FRACTION,
-                format->aspect_ratio_numerator, format->aspect_ratio_denominator,
-                NULL);
-        
-            GST_DEBUG("setting caps %" GST_PTR_FORMAT, caps);
-        
-            gst_pad_set_caps (schro_dec->srcpad, caps);
-        
-            schro_dec->fps_n = format->frame_rate_numerator;
-            schro_dec->fps_d = format->frame_rate_denominator;
-            schro_dec->bytes_per_picture = (format->width * format->height * 3) / 4;
-
-            if (!GST_CLOCK_TIME_IS_VALID(schro_dec->timestamp_offset)) {
-              schro_dec->timestamp_offset = gst_util_uint64_scale (
-                  granulepos_to_frame (schro_dec->granulepos_offset),
-                  schro_dec->fps_d * GST_SECOND, schro_dec->fps_n);
-            }
-        
-            gst_caps_unref (caps);
-            free (format);
-        
-            gst_schrodec_send_tags (schro_dec);
-
-            schro_dec->have_access_unit = TRUE;
-            break;
-          case SCHRO_DECODER_NEED_BITS:
-            go = 0;
-            break;
-          case SCHRO_DECODER_NEED_FRAME:
-            size = get_buffer_size (schro_dec);
-            ret = gst_pad_alloc_buffer_and_set_caps (schro_dec->srcpad,
-                GST_BUFFER_OFFSET_NONE, size,
-                GST_PAD_CAPS (schro_dec->srcpad), &outbuf);
-            if (ret != GST_FLOW_OK) {
-              GST_DEBUG("could not allocate buffer for pad");
-              return ret;
-            }
-            frame = gst_schro_wrap_frame (schro_dec, outbuf);
-            schro_decoder_add_output_picture (schro_dec->decoder, frame);
-            break;
-          case SCHRO_DECODER_OK:
-            frame = schro_decoder_pull (schro_dec->decoder);
-
-            if (frame) {
-              if (frame->priv) {
-                outbuf = frame->priv;
-          
-                if (schro_dec->discont) {
-                  GST_DEBUG("discont timestamp %" G_GINT64_FORMAT, 
-                      GST_BUFFER_TIMESTAMP(outbuf));
-                  GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_DISCONT);
-                  schro_dec->discont = FALSE;
-                }
-          
-                GST_BUFFER_TIMESTAMP(outbuf) = gst_util_uint64_scale (
-                    schro_dec->n_frames, schro_dec->fps_d * GST_SECOND,
-                    schro_dec->fps_n) +
-                  schro_dec->timestamp_offset;
-                GST_BUFFER_DURATION(outbuf) = gst_util_uint64_scale_int (GST_SECOND,
-                   schro_dec->fps_d, schro_dec->fps_n);
-
-                gst_buffer_ref(outbuf);
-                ret = gst_pad_push (schro_dec->srcpad, outbuf);
-                if (ret != GST_FLOW_OK)
-                  return ret;
-              } else {
-                GST_DEBUG("skipped frame %d", schro_dec->n_frames);
-              }
-        
-              schro_dec->n_frames++;
-              schro_frame_unref (frame);
-            }
-
-            break;
-          case SCHRO_DECODER_EOS:
-            break;
-          case SCHRO_DECODER_ERROR:
-            /* FIXME */
-            GST_ERROR ("codec error");
-            break;
-        }
-      }
+    ret = gst_schro_dec_process_buffer (schro_dec, input_buffer);
+    if (ret != GST_FLOW_OK) {
+      return ret;
     }
+
   }
 
   return GST_FLOW_OK;
 }
 
+static void
+handle_first_access_unit (GstSchroDec *schro_dec)
+{
+  SchroVideoFormat *format;
+  GstCaps *caps;
 
+  format = schro_decoder_get_video_format (schro_dec->decoder);
+  schro_dec->width = format->width;
+  schro_dec->height = format->height;
+  switch(format->chroma_format) {
+    case 0:
+      schro_dec->fourcc = GST_MAKE_FOURCC('A','Y','U','V');
+      break;
+    case 1:
+      schro_dec->fourcc = GST_MAKE_FOURCC('Y','U','Y','2');
+      break;
+    case 2:
+      schro_dec->fourcc = GST_MAKE_FOURCC('I','4','2','0');
+      break;
+    default:
+      g_assert_not_reached();
+      break;
+  }
+
+  caps = gst_caps_new_simple ("video/x-raw-yuv",
+      "format", GST_TYPE_FOURCC, schro_dec->fourcc,
+      "width", G_TYPE_INT, format->width,
+      "height", G_TYPE_INT, format->height,
+      "framerate", GST_TYPE_FRACTION,
+      format->frame_rate_numerator, format->frame_rate_denominator,
+      "pixel-aspect-ratio", GST_TYPE_FRACTION,
+      format->aspect_ratio_numerator, format->aspect_ratio_denominator,
+      NULL);
+
+  GST_DEBUG("setting caps %" GST_PTR_FORMAT, caps);
+
+  gst_pad_set_caps (schro_dec->srcpad, caps);
+
+  schro_dec->fps_n = format->frame_rate_numerator;
+  schro_dec->fps_d = format->frame_rate_denominator;
+  schro_dec->bytes_per_picture = (format->width * format->height * 3) / 4;
+
+  if (!GST_CLOCK_TIME_IS_VALID(schro_dec->timestamp_offset)) {
+    schro_dec->timestamp_offset = gst_util_uint64_scale (
+        granulepos_to_frame (schro_dec->granulepos_offset),
+        schro_dec->fps_d * GST_SECOND, schro_dec->fps_n);
+  }
+
+  gst_caps_unref (caps);
+  free (format);
+
+  gst_schrodec_send_tags (schro_dec);
+
+  schro_dec->have_access_unit = TRUE;
+}
+
+static GstFlowReturn
+gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer)
+{
+  GstFlowReturn ret = GST_FLOW_OK;
+  SchroFrame *frame;
+  int size;
+  int earliest_frame;
+  GstBuffer *outbuf;
+  int go = 1;
+
+  ret = schro_decoder_push (schro_dec->decoder, input_buffer);
+  if (ret == SCHRO_DECODER_FIRST_ACCESS_UNIT) {
+    handle_first_access_unit (schro_dec);
+  }
+
+  if (schro_dec->have_access_unit) {
+    earliest_frame = gst_util_uint64_scale (
+        schro_dec->earliest_time - schro_dec->segment.start,
+        schro_dec->fps_n, schro_dec->fps_d * GST_SECOND);
+
+    GST_DEBUG("earliest frame %d", earliest_frame);
+    schro_decoder_set_earliest_frame (schro_dec->decoder, earliest_frame);
+
+    schro_decoder_set_skip_ratio (schro_dec->decoder,
+        1/schro_dec->proportion);
+  }
+
+  while (go) {
+    int it;
+
+    it = schro_decoder_wait (schro_dec->decoder);
+
+    switch (it) {
+      case SCHRO_DECODER_FIRST_ACCESS_UNIT:
+        handle_first_access_unit (schro_dec);
+        break;
+      case SCHRO_DECODER_NEED_BITS:
+        go = 0;
+        break;
+      case SCHRO_DECODER_NEED_FRAME:
+        size = get_buffer_size (schro_dec);
+        ret = gst_pad_alloc_buffer_and_set_caps (schro_dec->srcpad,
+            GST_BUFFER_OFFSET_NONE, size,
+            GST_PAD_CAPS (schro_dec->srcpad), &outbuf);
+        if (ret != GST_FLOW_OK) {
+          GST_DEBUG("could not allocate buffer for pad");
+          return ret;
+        }
+        frame = gst_schro_wrap_frame (schro_dec, outbuf);
+        schro_decoder_add_output_picture (schro_dec->decoder, frame);
+        break;
+      case SCHRO_DECODER_OK:
+        frame = schro_decoder_pull (schro_dec->decoder);
+
+        if (frame) {
+          if (frame->priv) {
+            outbuf = frame->priv;
+      
+            if (schro_dec->discont) {
+              GST_DEBUG("discont timestamp %" G_GINT64_FORMAT, 
+                  GST_BUFFER_TIMESTAMP(outbuf));
+              GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_DISCONT);
+              schro_dec->discont = FALSE;
+            }
+      
+            GST_BUFFER_TIMESTAMP(outbuf) = gst_util_uint64_scale (
+                schro_dec->n_frames, schro_dec->fps_d * GST_SECOND,
+                schro_dec->fps_n) +
+              schro_dec->timestamp_offset;
+            GST_BUFFER_DURATION(outbuf) = gst_util_uint64_scale_int (GST_SECOND,
+               schro_dec->fps_d, schro_dec->fps_n);
+
+            gst_buffer_ref(outbuf);
+            ret = gst_pad_push (schro_dec->srcpad, outbuf);
+            if (ret != GST_FLOW_OK)
+              return ret;
+          } else {
+            GST_DEBUG("skipped frame %d", schro_dec->n_frames);
+          }
+    
+          schro_dec->n_frames++;
+          schro_frame_unref (frame);
+        }
+
+        break;
+      case SCHRO_DECODER_EOS:
+        break;
+      case SCHRO_DECODER_ERROR:
+        /* FIXME */
+        GST_ERROR ("codec error");
+        break;
+    }
+  }
+  return GST_FLOW_OK;
+}

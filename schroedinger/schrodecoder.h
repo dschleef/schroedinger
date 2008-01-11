@@ -25,6 +25,8 @@ struct _SchroDecoder {
   /* a list of frames provided by the app that we'll decode into */
   SchroQueue *output_queue;
 
+  SchroAsync *async;
+
   SchroBuffer *input_buffer;
 
   SchroPictureNumber next_frame_number;
@@ -70,6 +72,7 @@ struct _SchroPicture {
 
   unsigned int state;
   unsigned int needed_state;
+  int busy;
 
   SchroBuffer *input_buffer;
   SchroParams params;
@@ -115,7 +118,8 @@ enum {
   SCHRO_DECODER_EOS,
   SCHRO_DECODER_FIRST_ACCESS_UNIT,
   SCHRO_DECODER_NEED_BITS,
-  SCHRO_DECODER_NEED_FRAME
+  SCHRO_DECODER_NEED_FRAME,
+  SCHRO_DECODER_WAIT
 };
 
 SchroDecoder * schro_decoder_new (void);
@@ -123,13 +127,14 @@ void schro_decoder_free (SchroDecoder *decoder);
 void schro_decoder_reset (SchroDecoder *decoder);
 SchroVideoFormat * schro_decoder_get_video_format (SchroDecoder *decoder);
 void schro_decoder_add_output_picture (SchroDecoder *decoder, SchroFrame *frame);
-void schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer);
+int schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer);
 SchroFrame *schro_decoder_pull (SchroDecoder *decoder);
 int schro_decoder_is_parse_unit (SchroBuffer *buffer);
 int schro_decoder_is_access_unit (SchroBuffer *buffer);
 int schro_decoder_is_intra (SchroBuffer *buffer);
 int schro_decoder_is_picture (SchroBuffer *buffer);
 int schro_decoder_iterate (SchroDecoder *decoder);
+int schro_decoder_wait (SchroDecoder *decoder);
 
 void schro_decoder_set_earliest_frame (SchroDecoder *decoder, SchroPictureNumber earliest_frame);
 void schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio);

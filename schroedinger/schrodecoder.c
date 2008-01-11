@@ -58,6 +58,7 @@ enum {
   SCHRO_DECODER_STATE_WAVELET_TRANSFORM = (1<<5),
   SCHRO_DECODER_STATE_COMBINE = (1<<6),
   SCHRO_DECODER_STATE_UPSAMPLE = (1<<7),
+  SCHRO_DECODER_STATE_DONE = (1<<8),
 };
 
 int _schro_decode_prediction_only;
@@ -71,6 +72,7 @@ static void schro_decoder_reference_retire (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
 static void schro_decoder_decode_subband (SchroPicture *picture,
     SchroPictureSubbandContext *ctx);
+static int schro_decoder_async_schedule (SchroDecoder *decoder);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
@@ -94,6 +96,9 @@ schro_decoder_new (void)
   decoder->picture_queue = schro_queue_new (SCHRO_LIMIT_FRAME_QUEUE_LENGTH,
       (SchroQueueFreeFunc)schro_picture_unref);
   decoder->queue_depth = 4;
+
+  decoder->async = schro_async_new (0,
+      (SchroAsyncScheduleFunc)schro_decoder_async_schedule, decoder);
 
   return decoder;
 }
@@ -190,6 +195,8 @@ schro_picture_unref (SchroPicture *picture)
     if (picture->motion) schro_motion_free (picture->motion);
     if (picture->input_buffer) schro_buffer_unref (picture->input_buffer);
     if (picture->upsampled_frame) schro_upsampled_frame_free (picture->upsampled_frame);
+    if (picture->ref0) schro_picture_unref (picture->ref0);
+    if (picture->ref1) schro_picture_unref (picture->ref1);
 
     free (picture);
   }
@@ -323,6 +330,19 @@ schro_decoder_is_end_sequence (SchroBuffer *buffer)
   return 0;
 }
 
+int
+schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
+{
+  SchroPicture *picture;
+
+  picture = schro_queue_find (decoder->picture_queue,
+      decoder->next_frame_number);
+  if (picture && picture->state & SCHRO_DECODER_STATE_DONE) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
 SchroFrame *
 schro_decoder_pull (SchroDecoder *decoder)
 {
@@ -330,8 +350,19 @@ schro_decoder_pull (SchroDecoder *decoder)
   SchroFrame *frame;
 
   SCHRO_DEBUG("searching for frame %d", decoder->next_frame_number);
-  picture = schro_queue_remove (decoder->picture_queue, decoder->next_frame_number);
-  if (picture == NULL) {
+
+  schro_async_lock (decoder->async);
+  picture = schro_queue_find (decoder->picture_queue, decoder->next_frame_number);
+  if (picture) {
+    if (picture->state & SCHRO_DECODER_STATE_DONE) {
+      schro_queue_remove (decoder->picture_queue, decoder->next_frame_number);
+    } else {
+      picture = NULL;
+    }
+  }
+  schro_async_unlock (decoder->async);
+
+  if (!picture) {
     return NULL;
   }
 
@@ -343,22 +374,78 @@ schro_decoder_pull (SchroDecoder *decoder)
   return frame;
 }
 
-void
+int
+schro_decoder_push_ready (SchroDecoder *decoder)
+{
+  int ret;
+
+  schro_async_lock (decoder->async);
+  ret = schro_queue_is_full (decoder->picture_queue);
+  schro_async_unlock (decoder->async);
+
+  return (ret == FALSE);
+}
+
+static int
+schro_decoder_get_status_locked (SchroDecoder *decoder)
+{
+  if (schro_decoder_pull_is_ready_locked (decoder)) {
+    return SCHRO_DECODER_OK;
+  }
+  if (decoder->have_access_unit &&
+      schro_queue_is_empty (decoder->output_queue)) {
+    return SCHRO_DECODER_NEED_FRAME;
+  }
+  if (!schro_queue_is_full (decoder->picture_queue)) {
+    return SCHRO_DECODER_NEED_BITS;
+  }
+#if 0
+  if (schro_queue_is_empty (decoder->picture_queue) && decoder->end_of_stream) {
+    return SCHRO_DECODER_EOS;
+  }
+#endif
+
+  return SCHRO_DECODER_WAIT;
+}
+
+int
+schro_decoder_get_status (SchroDecoder *decoder)
+{
+  int ret;
+
+  schro_async_lock (decoder->async);
+  ret = schro_decoder_get_status_locked (decoder);
+  schro_async_unlock (decoder->async);
+
+  return ret;
+}
+
+int
+schro_decoder_wait (SchroDecoder *decoder)
+{
+  int ret;
+
+  schro_async_lock (decoder->async);
+  while (1) {
+    ret = schro_decoder_get_status_locked (decoder);
+    if (ret != SCHRO_DECODER_WAIT) {
+      break;
+    }
+
+    schro_async_wait_locked (decoder->async);
+  }
+  schro_async_unlock (decoder->async);
+
+  return ret;
+}
+
+
+int
 schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
 {
   SCHRO_ASSERT(decoder->input_buffer == NULL);
 
   decoder->input_buffer = buffer;
-}
-
-int
-schro_decoder_iterate (SchroDecoder *decoder)
-{
-  if (decoder->input_buffer == NULL) {
-    return SCHRO_DECODER_NEED_BITS;
-  }
-
-  /* handle buffer */
 
   schro_unpack_init_with_data (&decoder->unpack,
       decoder->input_buffer->data,
@@ -420,10 +507,6 @@ schro_decoder_iterate (SchroDecoder *decoder)
       return SCHRO_DECODER_OK;
     }
 
-    if (schro_queue_is_empty (decoder->output_queue)) {
-      return SCHRO_DECODER_NEED_FRAME;
-    }
-
     return schro_decoder_iterate_picture (decoder);
   }
 
@@ -465,12 +548,12 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
     SCHRO_INFO("next frame number after seek %d", decoder->next_frame_number);
   }
 
-  schro_decoder_parse_picture (picture);
-
   if (picture->is_ref) {
     schro_decoder_reference_retire (decoder,
         decoder->picture->retired_picture_number);
+    schro_decoder_reference_add (decoder, picture);
   }
+  schro_decoder_parse_picture (picture);
 
   if (!picture->is_ref && decoder->skip_value > decoder->skip_ratio) {
 
@@ -493,8 +576,11 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
 SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
   picture->output_picture = schro_queue_pull (decoder->output_queue);
+  SCHRO_ASSERT(picture->output_picture);
 
+#if 0
   schro_decoder_decode_picture (picture);
+#endif
 #if 0
   if (skip) {
     schro_picture_unref (picture);
@@ -504,8 +590,11 @@ SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
   }
 #endif
 
+  schro_async_lock (decoder->async);
   SCHRO_DEBUG("adding %d to queue", picture->picture_number);
   schro_queue_add (decoder->picture_queue, picture, picture->picture_number);
+  schro_async_signal_scheduler (decoder->async);
+  schro_async_unlock (decoder->async);
 
   return SCHRO_DECODER_OK;
 }
@@ -523,7 +612,8 @@ schro_decoder_parse_picture (SchroPicture *picture)
     if (picture->ref0 == NULL) {
       SCHRO_ERROR("Could not find reference picture %d", picture->reference1);
     }
-    picture->ref0->needed_state |= SCHRO_DECODER_STATE_UPSAMPLE;
+    schro_picture_ref (picture->ref0);
+    //picture->ref0->needed_state |= SCHRO_DECODER_STATE_UPSAMPLE;
 
     picture->ref1 = NULL;
     if (params->num_refs > 1) {
@@ -531,7 +621,8 @@ schro_decoder_parse_picture (SchroPicture *picture)
       if (picture->ref1 == NULL) {
         SCHRO_ERROR("Could not find reference picture %d", picture->reference2);
       }
-      picture->ref1->needed_state |= SCHRO_DECODER_STATE_UPSAMPLE;
+      schro_picture_ref (picture->ref1);
+      //picture->ref1->needed_state |= SCHRO_DECODER_STATE_UPSAMPLE;
     }
 
     schro_unpack_byte_sync (unpack);
@@ -541,10 +632,6 @@ schro_decoder_parse_picture (SchroPicture *picture)
 
     schro_unpack_byte_sync (unpack);
     schro_decoder_parse_block_data (picture);
-
-    picture->needed_state |= SCHRO_DECODER_STATE_REFERENCES;
-    picture->needed_state |= SCHRO_DECODER_STATE_MOTION_DECODE;
-    picture->needed_state |= SCHRO_DECODER_STATE_MOTION_RENDER;
   }
 
   schro_unpack_byte_sync (unpack);
@@ -566,14 +653,97 @@ schro_decoder_parse_picture (SchroPicture *picture)
       schro_decoder_parse_transform_data (picture);
       schro_decoder_init_subband_frame_data_interleaved (picture);
     }
-
-    picture->needed_state |= SCHRO_DECODER_STATE_RESIDUAL_DECODE;
-    picture->needed_state |= SCHRO_DECODER_STATE_WAVELET_TRANSFORM;
   }
 
+  picture->needed_state |= SCHRO_DECODER_STATE_REFERENCES;
+  picture->needed_state |= SCHRO_DECODER_STATE_MOTION_DECODE;
+  picture->needed_state |= SCHRO_DECODER_STATE_MOTION_RENDER;
+  picture->needed_state |= SCHRO_DECODER_STATE_RESIDUAL_DECODE;
+  picture->needed_state |= SCHRO_DECODER_STATE_WAVELET_TRANSFORM;
   picture->needed_state |= SCHRO_DECODER_STATE_COMBINE;
 
   return TRUE;
+}
+
+void
+schro_decoder_picture_complete (SchroPicture *picture)
+{
+  SCHRO_DEBUG ("picture complete");
+
+  if ((picture->needed_state & (~picture->state)) == 0) {
+    picture->state |= SCHRO_DECODER_STATE_DONE;
+  }
+  picture->busy = FALSE;
+
+}
+
+static int 
+schro_decoder_async_schedule (SchroDecoder *decoder)
+{
+  int i;
+
+  SCHRO_DEBUG("schedule");
+
+  while (schro_async_get_num_completed (decoder->async) > 0) {
+    SchroPicture *picture;
+
+    picture = schro_async_pull_locked (decoder->async);
+    SCHRO_ASSERT(picture != NULL);
+
+    schro_decoder_picture_complete (picture);
+  }
+
+  for(i=0;i<decoder->picture_queue->n;i++){
+    SchroPicture *picture = decoder->picture_queue->elements[i].data;
+    unsigned int todo;
+    void *func = NULL;
+    unsigned int bit = 0;
+
+    if (picture->busy) continue;
+
+    todo = picture->needed_state & (~picture->state);
+    SCHRO_DEBUG("picture %d todo %04x", picture->picture_number, todo);
+
+    if (todo & SCHRO_DECODER_STATE_REFERENCES) {
+      if ((picture->params.num_refs < 1 || picture->ref0->upsampled_frame) &&
+          (picture->params.num_refs < 2 || picture->ref1->upsampled_frame)) {
+        picture->state |= SCHRO_DECODER_STATE_REFERENCES;
+      }
+    }
+    if (todo & SCHRO_DECODER_STATE_MOTION_DECODE &&
+        picture->state & SCHRO_DECODER_STATE_REFERENCES) {
+      func = schro_decoder_x_decode_motion;
+      bit = SCHRO_DECODER_STATE_MOTION_DECODE;
+    } else if (todo & SCHRO_DECODER_STATE_MOTION_RENDER &&
+        picture->state & SCHRO_DECODER_STATE_MOTION_DECODE) {
+      func = schro_decoder_x_render_motion;
+      bit = SCHRO_DECODER_STATE_MOTION_RENDER;
+    } else if (todo & SCHRO_DECODER_STATE_RESIDUAL_DECODE) {
+      func = schro_decoder_x_decode_residual;
+      bit = SCHRO_DECODER_STATE_RESIDUAL_DECODE;
+    } else if (todo & SCHRO_DECODER_STATE_WAVELET_TRANSFORM &&
+        picture->state & SCHRO_DECODER_STATE_RESIDUAL_DECODE) {
+      func = schro_decoder_x_wavelet_transform;
+      bit = SCHRO_DECODER_STATE_WAVELET_TRANSFORM;
+    } else if (todo & SCHRO_DECODER_STATE_COMBINE &&
+        picture->state & SCHRO_DECODER_STATE_WAVELET_TRANSFORM &&
+        picture->state & SCHRO_DECODER_STATE_MOTION_RENDER) {
+      func = schro_decoder_x_combine;
+      bit = SCHRO_DECODER_STATE_COMBINE;
+    }
+
+    if (func) {
+      picture->state |= bit;
+      picture->busy = TRUE;
+
+      SCHRO_DEBUG("running bit %04x", bit);
+      schro_async_run_locked (decoder->async, func, picture);
+
+      return TRUE;
+    }
+  }
+
+  return FALSE;
 }
 
 void
@@ -704,7 +874,6 @@ schro_decoder_x_combine (SchroPicture *picture)
     schro_frame_convert (ref, picture->frame);
     ref->frame_number = picture->picture_number;
     picture->upsampled_frame = schro_upsampled_frame_new (ref);
-    schro_decoder_reference_add (decoder, picture);
   }
 
   if (picture->has_md5) {
