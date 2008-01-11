@@ -946,7 +946,7 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
                 if (ret != GST_FLOW_OK)
                   return ret;
               } else {
-                GST_DEBUG("skipped frame %d", frame->frame_number);
+                GST_DEBUG("skipped frame %d", schro_dec->n_frames);
               }
         
               schro_dec->n_frames++;
