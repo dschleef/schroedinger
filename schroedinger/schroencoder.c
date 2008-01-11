@@ -144,8 +144,8 @@ schro_encoder_start (SchroEncoder *encoder)
 
   schro_encoder_init_perceptual_weighting (encoder);
 
-  encoder->async = schro_async_new (0, (int (*)(void *))schro_encoder_iterate,
-      encoder);
+  encoder->async = schro_async_new (0,
+      (SchroAsyncScheduleFunc)schro_encoder_iterate, encoder);
 
   switch (encoder->rate_control) {
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_NOISE_THRESHOLD:
