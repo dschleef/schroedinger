@@ -44,6 +44,7 @@ struct _SchroDecoder {
   SchroQueue *picture_queue;
 
   int queue_depth;
+  int end_of_stream;
 
   SchroPictureNumber earliest_frame;
 
@@ -128,6 +129,7 @@ void schro_decoder_reset (SchroDecoder *decoder);
 SchroVideoFormat * schro_decoder_get_video_format (SchroDecoder *decoder);
 void schro_decoder_add_output_picture (SchroDecoder *decoder, SchroFrame *frame);
 int schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer);
+int schro_decoder_push_end_of_stream (SchroDecoder *decoder);
 SchroFrame *schro_decoder_pull (SchroDecoder *decoder);
 int schro_decoder_is_parse_unit (SchroBuffer *buffer);
 int schro_decoder_is_access_unit (SchroBuffer *buffer);

@@ -109,6 +109,7 @@ schro_decoder_free (SchroDecoder *decoder)
   schro_queue_free (decoder->output_queue);
   schro_queue_free (decoder->reference_queue);
   schro_queue_free (decoder->picture_queue);
+  schro_async_free (decoder->async);
 
   if (decoder->error_message) free (decoder->error_message);
 
@@ -396,14 +397,12 @@ schro_decoder_get_status_locked (SchroDecoder *decoder)
       schro_queue_is_empty (decoder->output_queue)) {
     return SCHRO_DECODER_NEED_FRAME;
   }
-  if (!schro_queue_is_full (decoder->picture_queue)) {
+  if (!schro_queue_is_full (decoder->picture_queue) && !decoder->end_of_stream) {
     return SCHRO_DECODER_NEED_BITS;
   }
-#if 0
   if (schro_queue_is_empty (decoder->picture_queue) && decoder->end_of_stream) {
     return SCHRO_DECODER_EOS;
   }
-#endif
 
   return SCHRO_DECODER_WAIT;
 }
@@ -439,6 +438,12 @@ schro_decoder_wait (SchroDecoder *decoder)
   return ret;
 }
 
+int
+schro_decoder_push_end_of_stream (SchroDecoder *decoder)
+{
+  decoder->end_of_stream = TRUE;
+  return SCHRO_DECODER_EOS;
+}
 
 int
 schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
@@ -492,9 +497,10 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
   }
 
   if (SCHRO_PARSE_CODE_IS_END_OF_SEQUENCE (decoder->parse_code)) {
-    SCHRO_INFO ("decoding end sequence");
+    SCHRO_ERROR ("decoding end sequence");
     schro_buffer_unref (decoder->input_buffer);
     decoder->input_buffer = NULL;
+    decoder->end_of_stream = TRUE;
     return SCHRO_DECODER_EOS;
   }
 

@@ -86,40 +86,49 @@ decode (unsigned char *data, int length)
   int packet_length;
   int go;
   int it;
+  int eos = FALSE;
 
   decoder = schro_decoder_new();
 
-  while(length > 0) {
-    if (length < 13) {
-      printf("offset=%d: frame too short\n", offset);
-      exit(0);
-    }
-    if (memcmp(data, "BBCD", 4) != 0) {
-      printf("offset=%d: failed to find BBCD marker\n", offset);
-      exit(0);
-    }
+  while(!eos) {
+    if (length > 0) {
+      if (length < 13) {
+        printf("offset=%d: frame too short\n", offset);
+        exit(0);
+      }
+      if (memcmp(data, "BBCD", 4) != 0) {
+        printf("offset=%d: failed to find BBCD marker\n", offset);
+        exit(0);
+      }
 
-    packet_length = (data[5]<<24) | (data[6]<<16) | (data[7]<<8) | (data[8]);
-    if (packet_length > 0x1000000) {
-      printf("offset=%d: large packet (%d > 0x1000000)\n", offset, packet_length);
-      exit(0);
-    }
-    if (packet_length > length) {
-      printf("offset=%d: packet past end (%d > %d)\n", offset, packet_length, length);
-      exit(0);
-    }
+      packet_length = (data[5]<<24) | (data[6]<<16) | (data[7]<<8) | (data[8]);
+      if (packet_length > 0x1000000) {
+        printf("offset=%d: large packet (%d > 0x1000000)\n", offset, packet_length);
+        exit(0);
+      }
+      if (packet_length > length) {
+        printf("offset=%d: packet past end (%d > %d)\n", offset, packet_length, length);
+        exit(0);
+      }
 
-    buffer = schro_buffer_new_with_data (data, packet_length);
-    schro_decoder_push (decoder, buffer);
+      buffer = schro_buffer_new_with_data (data, packet_length);
+      it = schro_decoder_push (decoder, buffer);
+      if (it == SCHRO_DECODER_FIRST_ACCESS_UNIT) {
+        format = schro_decoder_get_video_format (decoder);
+      }
+
+      offset += packet_length;
+      data += packet_length;
+      length -= packet_length;
+    } else {
+      schro_decoder_push_end_of_stream (decoder);
+    }
 
     go = 1;
     while (go) {
-      it = schro_decoder_iterate (decoder);
+      it = schro_decoder_wait (decoder);
 
       switch (it) {
-        case SCHRO_DECODER_FIRST_ACCESS_UNIT:
-          format = schro_decoder_get_video_format (decoder);
-          break;
         case SCHRO_DECODER_NEED_BITS:
           go = 0;
           break;
@@ -138,7 +147,11 @@ decode (unsigned char *data, int length)
 
             schro_frame_unref (frame);
           }
+          break;
         case SCHRO_DECODER_EOS:
+          printf("got eos\n");
+          eos = TRUE;
+          go = 0;
           break;
         case SCHRO_DECODER_ERROR:
           printf("offset=%d: decoder error\n", offset);
@@ -146,12 +159,9 @@ decode (unsigned char *data, int length)
           break;
       }
     }
-
-    offset += packet_length;
-    data += packet_length;
-    length -= packet_length;
   }
 
+  printf("freeing decoder\n");
   schro_decoder_free (decoder);
   free(format);
 }
