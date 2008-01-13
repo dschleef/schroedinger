@@ -561,6 +561,8 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
   }
   schro_decoder_parse_picture (picture);
 
+#if 0
+  /* FIXME bring back picture skipping! */
   if (!picture->is_ref && decoder->skip_value > decoder->skip_ratio) {
 
     decoder->skip_value = (1-SCHRO_SKIP_TIME_CONSTANT) * decoder->skip_value;
@@ -576,6 +578,7 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
 
     return SCHRO_DECODER_OK;
   }
+#endif
 
   decoder->skip_value = (1-SCHRO_SKIP_TIME_CONSTANT) * decoder->skip_value +
     SCHRO_SKIP_TIME_CONSTANT;
