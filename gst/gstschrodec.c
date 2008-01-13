@@ -575,6 +575,7 @@ gst_schro_dec_sink_event (GstPad *pad, GstEvent *event)
       ret = gst_pad_push_event (dec->srcpad, event);
       break;
     case GST_EVENT_EOS:
+      ret = gst_schro_dec_process_buffer (dec, NULL);
       ret = gst_pad_push_event (dec->srcpad, event);
       break;
     case GST_EVENT_NEWSEGMENT:
@@ -903,9 +904,13 @@ gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer)
   GstBuffer *outbuf;
   int go = 1;
 
-  ret = schro_decoder_push (schro_dec->decoder, input_buffer);
-  if (ret == SCHRO_DECODER_FIRST_ACCESS_UNIT) {
-    handle_first_access_unit (schro_dec);
+  if (input_buffer) {
+    ret = schro_decoder_push (schro_dec->decoder, input_buffer);
+    if (ret == SCHRO_DECODER_FIRST_ACCESS_UNIT) {
+      handle_first_access_unit (schro_dec);
+    }
+  } else {
+    ret = schro_decoder_push_end_of_stream (schro_dec->decoder);
   }
 
   if (schro_dec->have_access_unit) {
@@ -979,6 +984,7 @@ gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer)
 
         break;
       case SCHRO_DECODER_EOS:
+        go = FALSE;
         break;
       case SCHRO_DECODER_ERROR:
         /* FIXME */
@@ -988,3 +994,4 @@ gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer)
   }
   return GST_FLOW_OK;
 }
+
