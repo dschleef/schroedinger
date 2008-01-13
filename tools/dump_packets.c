@@ -503,7 +503,6 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
               continue;
             }
 
-            if (i!=0) schro_unpack_byte_sync(&unpack);
             length = schro_unpack_decode_uint(&unpack);
             if (length > 0) {
               g_print("    %4d %4d:   %6d    %3d\n", j, i, length,
@@ -512,6 +511,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
               schro_unpack_skip_bits (&unpack, length*8);
             } else {
               g_print("    %4d %4d:   %6d\n", j, i, length);
+              schro_unpack_byte_sync(&unpack);
             }
           }
         }
