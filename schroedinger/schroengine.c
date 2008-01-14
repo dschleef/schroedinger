@@ -7,7 +7,7 @@
 
 #include <math.h>
 
-#define SCENE_CHANGE_THRESHOLD 100
+#define SCENE_CHANGE_THRESHOLD 1000
 
 int schro_engine_get_scene_change_score (SchroEncoder *encoder, int i);
 
@@ -66,7 +66,7 @@ handle_gop (SchroEncoder *encoder, int i)
     schro_dump (SCHRO_DUMP_SCENE_CHANGE, "%d %g %g\n",
         f->frame_number, f->scene_change_score,
         f->average_luma);
-    SCHRO_DEBUG("frame change score %g", f->scene_change_score);
+    SCHRO_DEBUG("scene change score %g", f->scene_change_score);
 
     if (j==0 && f->scene_change_score > SCENE_CHANGE_THRESHOLD) {
       intra_start = TRUE;
@@ -210,7 +210,6 @@ handle_gop_backref (SchroEncoder *encoder, int i)
     schro_dump (SCHRO_DUMP_SCENE_CHANGE, "%d %g %g\n",
         f->frame_number, f->scene_change_score,
         f->average_luma);
-    SCHRO_DEBUG("frame change score %g", f->scene_change_score);
 
     if (j>=1 && f->scene_change_score > SCENE_CHANGE_THRESHOLD) {
       /* probably a scene change.  terminate gop */
@@ -276,6 +275,7 @@ schro_engine_get_scene_change_score (SchroEncoder *encoder, int i)
 {
   SchroEncoderFrame *frame1;
   SchroEncoderFrame *frame2;
+  double luma;
 
   frame1 = encoder->frame_queue->elements[i].data;
   if (frame1->have_scene_change_score) return TRUE;
@@ -295,9 +295,16 @@ schro_engine_get_scene_change_score (SchroEncoder *encoder, int i)
 
   SCHRO_DEBUG("%g %g", frame1->average_luma, frame2->average_luma);
 
-  frame1->scene_change_score =
-    schro_frame_mean_squared_error (frame1->downsampled_frames[3],
-      frame2->downsampled_frames[3]);
+  luma = (frame1->average_luma - 16.0) / 224.0;
+  if (luma > 0.01) {
+    frame1->scene_change_score =
+      schro_frame_mean_squared_error (frame1->downsampled_frames[3],
+        frame2->downsampled_frames[3]) / (luma * luma);
+  } else {
+    frame1->scene_change_score = 1e6;
+  }
+
+  SCHRO_DEBUG("scene change score %g", frame1->scene_change_score);
 
   frame1->have_scene_change_score = TRUE;
   return TRUE;
@@ -334,6 +341,7 @@ init_params (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
   SchroEncoder *encoder = frame->encoder;
+  SchroVideoFormat *video_format = params->video_format;
 
   params->video_format = &encoder->video_format;
 
@@ -349,6 +357,22 @@ init_params (SchroEncoderFrame *frame)
     params->wavelet_filter_index = encoder->intra_wavelet;
   }
   params->transform_depth = encoder->transform_depth;
+
+  //if (video_format->width * video_format->height >= 1920*1080) {
+  if (video_format->width * video_format->height >= 720 * 1280) {
+    params->xbsep_luma = 16;
+    params->ybsep_luma = 16;
+    params->xblen_luma = 24;
+    params->yblen_luma = 24;
+#if 0
+  /* FIXME 12x12,16x16 doesn't currently work */
+  } else if (video_format->width * video_format->height > 480 * 720) {
+    params->xbsep_luma = 12;
+    params->ybsep_luma = 12;
+    params->xblen_luma = 16;
+    params->yblen_luma = 16;
+#endif
+  }
 
   params->mv_precision = frame->encoder->mv_precision;
   //params->have_global_motion = TRUE;
@@ -384,6 +408,9 @@ schro_encoder_recalculate_allocations (SchroEncoder *encoder)
   int buffer_level;
 
   buffer_level = encoder->buffer_level;
+  if (buffer_level > encoder->buffer_size) {
+    SCHRO_ERROR("buffer empty");
+  }
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
@@ -393,9 +420,17 @@ schro_encoder_recalculate_allocations (SchroEncoder *encoder)
     } else if (frame->state == SCHRO_ENCODER_FRAME_STATE_NEW ||
         frame->state == SCHRO_ENCODER_FRAME_STATE_ANALYSE ||
         frame->state == SCHRO_ENCODER_FRAME_STATE_PREDICT) {
-      frame->allocated_bits = muldiv64 (encoder->buffer_size - buffer_level,
-          encoder->video_format.frame_rate_denominator * 2,
-          encoder->video_format.frame_rate_numerator);
+      /* FIXME gross, I don't like changing the algorithm based on the
+       * GOP structure */
+      if (encoder->gop_structure == SCHRO_ENCODER_GOP_BIREF) {
+        frame->allocated_bits = muldiv64 (encoder->buffer_size,
+            encoder->video_format.frame_rate_denominator * 1,
+            encoder->video_format.frame_rate_numerator);
+      } else {
+        frame->allocated_bits = muldiv64 (encoder->buffer_size - buffer_level,
+            encoder->video_format.frame_rate_denominator * 2,
+            encoder->video_format.frame_rate_numerator);
+      }
       buffer_level += frame->allocated_bits;
     } else {
       buffer_level += frame->allocated_bits;
@@ -450,12 +485,12 @@ init_frame (SchroEncoderFrame *frame)
     case SCHRO_ENCODER_GOP_BACKREF:
     case SCHRO_ENCODER_GOP_CHAINED_BACKREF:
       frame->need_downsampling = TRUE;
-      frame->need_average_luma = FALSE;
+      frame->need_average_luma = TRUE;
       break;
     case SCHRO_ENCODER_GOP_BIREF:
     case SCHRO_ENCODER_GOP_CHAINED_BIREF:
       frame->need_downsampling = TRUE;
-      frame->need_average_luma = FALSE;
+      frame->need_average_luma = TRUE;
       break;
   }
   return TRUE;

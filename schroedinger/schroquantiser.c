@@ -656,21 +656,29 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
   schro_encoder_calc_estimates (frame);
 
   SCHRO_ASSERT(frame->have_estimate_tables);
-  /* FIXME bad place to adjust for arith context ratio */
+
   if (frame->num_refs == 0) {
+    /* FIXME bad place to adjust for arith context ratio */
     base_lambda = schro_encoder_entropy_to_lambda (frame,
         frame->allocated_bits*frame->allocation_modifier);
   } else {
     if (frame->num_refs == 1) {
-      base_lambda = frame->ref_frame0->base_lambda;
+      if (frame->is_ref) {
+        base_lambda = schro_encoder_entropy_to_lambda (frame,
+             frame->allocated_bits*frame->allocation_modifier);
+      } else {
+        base_lambda = frame->ref_frame0->base_lambda;
+      }
     } else {
       base_lambda = 0.5 *
         (frame->ref_frame0->base_lambda + frame->ref_frame1->base_lambda);
     }
-    base_lambda *= 0.2;
+    if (!frame->is_ref) {
+      base_lambda *= 0.2;
+    }
   }
   frame->base_lambda = base_lambda;
-  SCHRO_DEBUG("LAMBDA: %g", base_lambda);
+  SCHRO_DEBUG("LAMBDA: %d %g", frame->frame_number, base_lambda);
 
   for(component=0;component<3;component++){
     for(i=0;i<1 + 3*params->transform_depth; i++) {
