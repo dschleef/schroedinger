@@ -106,10 +106,13 @@ schro_decoder_new (void)
 void
 schro_decoder_free (SchroDecoder *decoder)
 {
+  if (decoder->async) {
+    schro_async_free (decoder->async);
+  }
+
   schro_queue_free (decoder->output_queue);
   schro_queue_free (decoder->reference_queue);
   schro_queue_free (decoder->picture_queue);
-  schro_async_free (decoder->async);
 
   if (decoder->error_message) free (decoder->error_message);
 
