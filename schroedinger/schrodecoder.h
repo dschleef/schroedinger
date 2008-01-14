@@ -73,6 +73,7 @@ struct _SchroPicture {
 
   unsigned int state;
   unsigned int needed_state;
+  unsigned int working;
   int busy;
 
   SchroBuffer *input_buffer;

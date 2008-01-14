@@ -625,7 +625,6 @@ schro_decoder_parse_picture (SchroPicture *picture)
       SCHRO_ERROR("Could not find reference picture %d", picture->reference1);
     }
     schro_picture_ref (picture->ref0);
-    //picture->ref0->needed_state |= SCHRO_DECODER_STATE_UPSAMPLE;
 
     picture->ref1 = NULL;
     if (params->num_refs > 1) {
@@ -634,7 +633,6 @@ schro_decoder_parse_picture (SchroPicture *picture)
         SCHRO_ERROR("Could not find reference picture %d", picture->reference2);
       }
       schro_picture_ref (picture->ref1);
-      //picture->ref1->needed_state |= SCHRO_DECODER_STATE_UPSAMPLE;
     }
 
     schro_unpack_byte_sync (unpack);
@@ -682,6 +680,8 @@ schro_decoder_picture_complete (SchroPicture *picture)
 {
   SCHRO_DEBUG ("picture complete");
 
+  picture->state |= picture->working;
+  picture->working = 0;
   if ((picture->needed_state & (~picture->state)) == 0) {
     picture->state |= SCHRO_DECODER_STATE_DONE;
   }
@@ -709,7 +709,6 @@ schro_decoder_async_schedule (SchroDecoder *decoder)
     SchroPicture *picture = decoder->picture_queue->elements[i].data;
     unsigned int todo;
     void *func = NULL;
-    unsigned int bit = 0;
 
     if (picture->busy) continue;
 
@@ -717,38 +716,60 @@ schro_decoder_async_schedule (SchroDecoder *decoder)
     SCHRO_DEBUG("picture %d todo %04x", picture->picture_number, todo);
 
     if (todo & SCHRO_DECODER_STATE_REFERENCES) {
-      if ((picture->params.num_refs < 1 || picture->ref0->upsampled_frame) &&
-          (picture->params.num_refs < 2 || picture->ref1->upsampled_frame)) {
+      int j;
+      int refs_ready = TRUE;
+
+      for(j=0;j<picture->params.num_refs;j++){
+        SchroPicture *refpic;
+
+        refpic = (j==0) ? picture->ref0 : picture->ref1;
+
+        if (refpic->busy || !(refpic->state & SCHRO_DECODER_STATE_DONE)) {
+          refs_ready = FALSE;
+          continue;
+        }
+
+        if (picture->params.mv_precision > 0 &&
+            !(refpic->state & SCHRO_DECODER_STATE_UPSAMPLE)) {
+          refpic->working = SCHRO_DECODER_STATE_UPSAMPLE;
+          refpic->busy = TRUE;
+
+          func = schro_decoder_x_upsample;
+          schro_async_run_locked (decoder->async, func, refpic);
+
+          return TRUE;
+        }
+      }
+      if (refs_ready) {
         picture->state |= SCHRO_DECODER_STATE_REFERENCES;
       }
     }
+
     if (todo & SCHRO_DECODER_STATE_MOTION_DECODE &&
         picture->state & SCHRO_DECODER_STATE_REFERENCES) {
       func = schro_decoder_x_decode_motion;
-      bit = SCHRO_DECODER_STATE_MOTION_DECODE;
+      picture->working = SCHRO_DECODER_STATE_MOTION_DECODE;
     } else if (todo & SCHRO_DECODER_STATE_MOTION_RENDER &&
         picture->state & SCHRO_DECODER_STATE_MOTION_DECODE) {
       func = schro_decoder_x_render_motion;
-      bit = SCHRO_DECODER_STATE_MOTION_RENDER;
+      picture->working = SCHRO_DECODER_STATE_MOTION_RENDER;
     } else if (todo & SCHRO_DECODER_STATE_RESIDUAL_DECODE) {
       func = schro_decoder_x_decode_residual;
-      bit = SCHRO_DECODER_STATE_RESIDUAL_DECODE;
+      picture->working = SCHRO_DECODER_STATE_RESIDUAL_DECODE;
     } else if (todo & SCHRO_DECODER_STATE_WAVELET_TRANSFORM &&
         picture->state & SCHRO_DECODER_STATE_RESIDUAL_DECODE) {
       func = schro_decoder_x_wavelet_transform;
-      bit = SCHRO_DECODER_STATE_WAVELET_TRANSFORM;
+      picture->working = SCHRO_DECODER_STATE_WAVELET_TRANSFORM;
     } else if (todo & SCHRO_DECODER_STATE_COMBINE &&
         picture->state & SCHRO_DECODER_STATE_WAVELET_TRANSFORM &&
         picture->state & SCHRO_DECODER_STATE_MOTION_RENDER) {
       func = schro_decoder_x_combine;
-      bit = SCHRO_DECODER_STATE_COMBINE;
+      picture->working = SCHRO_DECODER_STATE_COMBINE;
     }
 
     if (func) {
-      picture->state |= bit;
       picture->busy = TRUE;
 
-      SCHRO_DEBUG("running bit %04x", bit);
       schro_async_run_locked (decoder->async, func, picture);
 
       return TRUE;
