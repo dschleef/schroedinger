@@ -312,8 +312,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       }
     }
 
-    bit = schro_unpack_decode_bit(&unpack);
-    g_print("  interlaced_coding: %s\n", bit ? "yes" : "no");
+    g_print("  interlaced_coding: %d\n", schro_unpack_decode_uint(&unpack));
 
     MARKER();
 
