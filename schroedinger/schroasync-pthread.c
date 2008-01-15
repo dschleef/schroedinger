@@ -279,6 +279,7 @@ schro_thread_main (void *ptr)
 
         pthread_mutex_lock (&async->mutex);
       
+        SCHRO_ASSERT(async->done_priv == NULL);
         async->done_priv = priv;
         async->n_completed++;
 
