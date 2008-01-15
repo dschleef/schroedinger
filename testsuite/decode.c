@@ -143,7 +143,8 @@ decode (unsigned char *data, int length)
           printf("got frame %p\n", frame);
 
           if (frame) {
-            printf("picture number %d\n", frame->frame_number);
+            printf("picture number %d\n",
+                schro_decoder_get_picture_number (decoder));
 
             schro_frame_unref (frame);
           }

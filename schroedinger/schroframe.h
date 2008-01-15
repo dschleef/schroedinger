@@ -79,8 +79,6 @@ struct _SchroFrame {
   int height;
 
   SchroFrameData components[3];
-
-  uint32_t frame_number;
 };
 
 struct _SchroUpsampledFrame {

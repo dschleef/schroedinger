@@ -141,6 +141,7 @@ int schro_decoder_wait (SchroDecoder *decoder);
 
 void schro_decoder_set_earliest_frame (SchroDecoder *decoder, SchroPictureNumber earliest_frame);
 void schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio);
+SchroPictureNumber schro_decoder_get_picture_number (SchroDecoder *decoder);
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 

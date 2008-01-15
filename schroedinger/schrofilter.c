@@ -828,7 +828,7 @@ schro_frame_filter_adaptive_lowpass (SchroFrame *frame)
   slope = schro_histogram_estimate_slope (&hist);
 
   for(i=0;i<SCHRO_HISTOGRAM_SIZE;i++) {
-    schro_dump (SCHRO_DUMP_HIST_TEST, "%d %d %g\n", frame->frame_number,
+    schro_dump (SCHRO_DUMP_HIST_TEST, "%d %g\n",
         iexpx(i), hist.bins[i]/ilogx_size(i));
   }
 

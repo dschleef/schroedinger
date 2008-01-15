@@ -348,8 +348,6 @@ schro_frame_convert (SchroFrame *dest, SchroFrame *src)
   SCHRO_ASSERT(dest != NULL);
   SCHRO_ASSERT(src != NULL);
 
-  dest->frame_number = src->frame_number;
-
   for(i=0;schro_frame_convert_func_list[i].func;i++){
     if (schro_frame_convert_func_list[i].from == src->format &&
         schro_frame_convert_func_list[i].to == dest->format) {

@@ -230,6 +230,12 @@ schro_decoder_get_video_format (SchroDecoder *decoder)
   return format;
 }
 
+SchroPictureNumber
+schro_decoder_get_picture_number (SchroDecoder *decoder)
+{
+  return decoder->next_frame_number;
+}
+
 void
 schro_decoder_add_output_picture (SchroDecoder *decoder, SchroFrame *frame)
 {
@@ -893,7 +899,6 @@ schro_decoder_x_combine (SchroPicture *picture)
       schro_frame_add (picture->frame, picture->mc_tmp_frame);
     }
   }
-  picture->output_picture->frame_number = picture->picture_number;
 
   if (picture->is_ref) {
     SchroFrame *ref;
@@ -905,7 +910,6 @@ schro_decoder_x_combine (SchroPicture *picture)
     ref = schro_frame_new_and_alloc (frame_format,
         decoder->video_format.width, decoder->video_format.height);
     schro_frame_convert (ref, picture->frame);
-    ref->frame_number = picture->picture_number;
     picture->upsampled_frame = schro_upsampled_frame_new (ref);
   }
 
