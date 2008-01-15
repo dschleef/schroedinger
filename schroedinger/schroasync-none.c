@@ -4,36 +4,121 @@
 #endif
 
 #include <schroedinger/schro.h>
-#include <pthread.h>
+#include <schroedinger/schroasync.h>
+#include <schroedinger/schrodebug.h>
 #include <string.h>
-
-
-typedef struct _SchroAsync SchroAsync;
-typedef struct _SchroThread SchroThread;
+#include <stdlib.h>
+#include <unistd.h>
 
 struct _SchroAsync {
-  int dummy;
+  int n_idle;
+
+  volatile int n_completed;
+
+  void *done_priv;
+
+  int (*schedule) (void *);
+  void *schedule_closure;
+};
+
+struct _SchroThread {
+  SchroAsync *async;
+  int state;
+  int index;
 };
 
 SchroAsync *
-schro_async_new(int n_threads)
+schro_async_new(int n_threads, int (*schedule)(void *), void *closure)
 {
   SchroAsync *async;
 
   async = malloc(sizeof(SchroAsync));
+  memset (async, 0, sizeof(SchroAsync));
+
+  async->schedule = schedule;
+  async->schedule_closure = closure;
 
   return async;
 }
 
 void
-schro_async_run (SchroAsync *async, void (*func)(void *), void *ptr)
+schro_async_free (SchroAsync *async)
 {
-  func(ptr);
+  free(async);
 }
 
 void
-schro_async_wait_for_ready (SchroAsync *async)
+schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 {
+  func (ptr);
 
+  async->done_priv = ptr;
+}
+
+int schro_async_get_num_completed (SchroAsync *async)
+{
+  if (async->done_priv) return 1;
+  return 0;
+}
+
+void *schro_async_pull (SchroAsync *async)
+{
+  void *ptr;
+
+  if (!async->done_priv) {
+    return NULL;
+  }
+
+  ptr = async->done_priv;
+  async->done_priv = NULL;
+  async->n_completed--;
+
+  return ptr;
+}
+
+void *
+schro_async_pull_locked (SchroAsync *async)
+{
+  void *ptr;
+
+  if (!async->done_priv) {
+    return NULL;
+  }
+
+  ptr = async->done_priv;
+  async->done_priv = NULL;
+  async->n_completed--;
+
+  return ptr;
+}
+
+void
+schro_async_wait_locked (SchroAsync *async)
+{
+  async->schedule (async->schedule_closure);
+}
+
+void
+schro_async_wait_one (SchroAsync *async)
+{
+  async->schedule (async->schedule_closure);
+}
+
+void
+schro_async_wait (SchroAsync *async, int min_waiting)
+{
+  async->schedule (async->schedule_closure);
+}
+
+void schro_async_lock (SchroAsync *async)
+{
+}
+
+void schro_async_unlock (SchroAsync *async)
+{
+}
+
+void schro_async_signal_scheduler (SchroAsync *async)
+{
 }
 
