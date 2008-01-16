@@ -176,6 +176,7 @@ schro_picture_unref (SchroPicture *picture)
     int i;
     int component;
 
+    SCHRO_WARNING("freeing picture %p", picture);
     for(component=0;component<3;component++){
       for(i=0;i<SCHRO_LIMIT_SUBBANDS;i++) {
         if (picture->subband_buffer[component][i]) {
@@ -823,14 +824,9 @@ schro_decoder_x_render_motion (SchroPicture *picture)
   SchroParams *params = &picture->params;
 
   if (params->num_refs > 0) {
-    if (params->mv_precision > 0) {
-      schro_upsampled_frame_upsample (picture->ref0->upsampled_frame);
-      if (picture->ref1) {
-        schro_upsampled_frame_upsample (picture->ref1->upsampled_frame);
-      }
-    }
-
+    SCHRO_WARNING("motion render with %p and %p", picture->ref0, picture->ref1);
     schro_motion_render (picture->motion, picture->mc_tmp_frame);
+    SCHRO_WARNING("render done with %p and %p", picture->ref0, picture->ref1);
   }
 }
 
