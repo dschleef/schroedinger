@@ -179,6 +179,9 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     case SCHRO_PARSE_CODE_INTER_NON_REF_2_NOARITH:
       parse_code = "inter non-ref 2 noarith";
       break;
+    case SCHRO_PARSE_CODE_PADDING:
+      parse_code = "padding";
+      break;
     default:
       parse_code = "unknown";
       break;
@@ -583,7 +586,10 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         break;
     }
 
-    schro_unpack_skip_bits (&unpack, (4 + 4 + length)*8);
+    schro_unpack_skip_bits (&unpack, (1 + length)*8);
+  } else if (data[4] == SCHRO_PARSE_CODE_PADDING) {
+    int length = next - 13;
+    schro_unpack_skip_bits (&unpack, length*8);
   }
 
   schro_unpack_byte_sync (&unpack);
