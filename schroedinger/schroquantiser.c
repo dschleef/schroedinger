@@ -651,21 +651,27 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
   int i;
   int component;
   double base_lambda;
+  int bits;
 
   schro_encoder_generate_subband_histograms (frame);
   schro_encoder_calc_estimates (frame);
 
   SCHRO_ASSERT(frame->have_estimate_tables);
 
+  {
+    double scale = 1/frame->encoder->average_arith_context_ratio;
+    if (scale < 0.8) scale = 0.8;
+    if (scale > 1.5) scale = 1.5;
+    bits = frame->allocated_bits * frame->allocation_modifier * scale;
+  }
+
   if (frame->num_refs == 0) {
     /* FIXME bad place to adjust for arith context ratio */
-    base_lambda = schro_encoder_entropy_to_lambda (frame,
-        frame->allocated_bits*frame->allocation_modifier);
+    base_lambda = schro_encoder_entropy_to_lambda (frame, bits);
   } else {
     if (frame->num_refs == 1) {
       if (frame->is_ref) {
-        base_lambda = schro_encoder_entropy_to_lambda (frame,
-             frame->allocated_bits*frame->allocation_modifier);
+        base_lambda = schro_encoder_entropy_to_lambda (frame, bits);
       } else {
         base_lambda = frame->ref_frame0->base_lambda;
       }

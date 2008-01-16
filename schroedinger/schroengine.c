@@ -376,6 +376,7 @@ init_params (SchroEncoderFrame *frame)
 
   params->mv_precision = frame->encoder->mv_precision;
   //params->have_global_motion = TRUE;
+  params->codeblock_mode_index = 0;
   
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
@@ -391,13 +392,29 @@ init_small_codeblocks (SchroParams *params)
   params->vert_codeblocks[0] = 1;
   for(i=1;i<params->transform_depth+1;i++){
     shift = params->transform_depth + 1 - i;
-    /* Size of codeblock is 32.  This value was pulled out of my anus of
-     * holding. */
-    params->horiz_codeblocks[i] = params->iwt_luma_width >> (shift + 3);
-    params->vert_codeblocks[i] = params->iwt_luma_height >> (shift + 2);
+    /* These values are empirically derived from fewer than 2 test results */
+    params->horiz_codeblocks[i] = (params->iwt_luma_width >> shift) / 5;
+    params->vert_codeblocks[i] = (params->iwt_luma_height >> shift) / 5;
     SCHRO_DEBUG("codeblocks %d %d %d", i, params->horiz_codeblocks[i],
         params->vert_codeblocks[i]);
   }
+}
+
+#define MAGIC 1.5
+
+static int
+get_alloc (SchroEncoder *encoder, int buffer_level)
+{
+  double x;
+  int bits;
+
+  x = (double)buffer_level/encoder->buffer_size;
+
+  bits = rint (x * encoder->bits_per_picture * MAGIC);
+
+  if (bits > buffer_level) bits = buffer_level;
+
+  return bits;
 }
 
 void
@@ -408,9 +425,6 @@ schro_encoder_recalculate_allocations (SchroEncoder *encoder)
   int buffer_level;
 
   buffer_level = encoder->buffer_level;
-  if (buffer_level > encoder->buffer_size) {
-    SCHRO_ERROR("buffer empty");
-  }
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
@@ -423,19 +437,23 @@ schro_encoder_recalculate_allocations (SchroEncoder *encoder)
       /* FIXME gross, I don't like changing the algorithm based on the
        * GOP structure */
       if (encoder->gop_structure == SCHRO_ENCODER_GOP_BIREF) {
-        frame->allocated_bits = muldiv64 (encoder->buffer_size,
-            encoder->video_format.frame_rate_denominator * 1,
-            encoder->video_format.frame_rate_numerator);
+        frame->allocated_bits = get_alloc (encoder, buffer_level);
+      } else if (encoder->gop_structure == SCHRO_ENCODER_GOP_INTRA_ONLY) {
+        frame->allocated_bits = get_alloc (encoder, buffer_level);
       } else {
-        frame->allocated_bits = muldiv64 (encoder->buffer_size - buffer_level,
+        frame->allocated_bits = get_alloc (encoder, buffer_level);
+#if 0
+        frame->allocated_bits = muldiv64 (buffer_level,
             encoder->video_format.frame_rate_denominator * 2,
             encoder->video_format.frame_rate_numerator);
+#endif
       }
-      buffer_level += frame->allocated_bits;
+      buffer_level -= frame->allocated_bits;
     } else {
-      buffer_level += frame->allocated_bits;
+      buffer_level -= frame->allocated_bits;
     }
-    buffer_level -= encoder->bits_per_picture;
+    //SCHRO_ERROR("%d: %d %d %d", i, frame->state, frame->actual_bits, frame->allocated_bits);
+    buffer_level += encoder->bits_per_picture;
   }
 }
 

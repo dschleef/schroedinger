@@ -26,6 +26,7 @@ static int schro_encoder_pull_is_ready_locked (SchroEncoder *encoder);
 static void schro_encoder_encode_codec_comment (SchroEncoder *encoder);
 static void schro_encoder_encode_bitrate_comment (SchroEncoder *encoder,
     unsigned int bitrate);
+static int schro_encoder_encode_padding (SchroEncoder *encoder, int n);
 static void schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame,
     int component, int index);
 static void schro_encoder_fixup_offsets (SchroEncoder *encoder,
@@ -157,7 +158,7 @@ schro_encoder_start (SchroEncoder *encoder)
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RATE_DISTORTION;
 
       encoder->buffer_size = encoder->bitrate;
-      encoder->buffer_level = 0;
+      encoder->buffer_level = encoder->buffer_size;
       encoder->bits_per_picture = muldiv64 (encoder->bitrate,
             encoder->video_format.frame_rate_denominator,
             encoder->video_format.frame_rate_numerator);
@@ -363,6 +364,8 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
     frame = encoder->frame_queue->elements[i].data;
     if (frame->slot == encoder->output_slot &&
         (frame->state & SCHRO_ENCODER_FRAME_STATE_DONE)) {
+      int is_picture = FALSE;
+
       if (presentation_frame) {
         *presentation_frame = frame->presentation_frame;
       }
@@ -376,10 +379,10 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         buffer = frame->output_buffer;
         frame->output_buffer = NULL;
 
+        is_picture = TRUE;
         frame->state |= SCHRO_ENCODER_FRAME_STATE_FREE;
         encoder->output_slot++;
 
-        encoder->buffer_level -= encoder->bits_per_picture;
         {
           /* FIXME move this */
           double x;
@@ -392,21 +395,33 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
             encoder->average_arith_context_ratio *= alpha;
             encoder->average_arith_context_ratio += (1.0-alpha) * x;
           }
+          SCHRO_WARNING("arith ratio %g", encoder->average_arith_context_ratio);
 
         }
 
         schro_encoder_shift_frame_queue (encoder);
       }
 
-      encoder->buffer_level += buffer->length * 8;
-      if (encoder->buffer_level < 0) {
-        SCHRO_DEBUG("buffer underrun");
-        encoder->buffer_level = 0;
+      encoder->buffer_level -= buffer->length * 8;
+      if (is_picture) {
+        encoder->buffer_level += encoder->bits_per_picture;
+        if (encoder->buffer_level < 0) {
+          SCHRO_ERROR("buffer underrun");
+          encoder->buffer_level = 0;
+        }
+        if (encoder->buffer_level > encoder->buffer_size) {
+          int n;
+
+          n = (encoder->buffer_level - encoder->buffer_size + 7)/8;
+          SCHRO_ERROR("buffer overrun, adding padding of %d bytes", n);
+          n = schro_encoder_encode_padding (encoder, n);
+          encoder->buffer_level -= n*8;
+        }
+        SCHRO_DEBUG("buffer level %d of %d bits", encoder->buffer_level,
+            encoder->buffer_size);
+        SCHRO_WARNING("buffer level %4.1f%%",
+            100.0*encoder->buffer_level/encoder->buffer_size);
       }
-      if (encoder->buffer_level < 0) {
-      }
-      SCHRO_DEBUG("buffer level %d (%d)", encoder->buffer_level,
-          encoder->buffer_size);
 
       schro_encoder_fixup_offsets (encoder, buffer);
 
@@ -463,6 +478,30 @@ schro_encoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer)
   data[12] = (encoder->prev_offset >> 0) & 0xff;
 
   encoder->prev_offset = buffer->length;
+}
+
+static int
+schro_encoder_encode_padding (SchroEncoder *encoder, int n)
+{
+  SchroBuffer *buffer;
+  SchroPack *pack;
+
+  if (n < SCHRO_PARSE_HEADER_SIZE) n = SCHRO_PARSE_HEADER_SIZE;
+
+  buffer = schro_buffer_new_and_alloc (n);
+
+  pack = schro_pack_new ();
+  schro_pack_encode_init (pack, buffer);
+
+  schro_encoder_encode_parse_info (pack, SCHRO_PARSE_CODE_PADDING);
+  
+  schro_pack_append_zero (pack, n - SCHRO_PARSE_HEADER_SIZE);
+
+  schro_pack_free (pack);
+
+  schro_encoder_insert_buffer (encoder, buffer);
+
+  return n;
 }
 
 static void
@@ -896,6 +935,8 @@ schro_encoder_postanalyse_picture (SchroEncoderFrame *frame)
       frame->encoder->average_psnr += (1.0-alpha) * psnr;
     }
 
+    SCHRO_WARNING("%d %g %g %g",
+        frame->frame_number, mse, psnr, frame->encoder->average_psnr);
     schro_dump(SCHRO_DUMP_PSNR, "%d %g %g %g\n",
         frame->frame_number, mse, psnr, frame->encoder->average_psnr);
   }
