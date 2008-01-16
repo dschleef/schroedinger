@@ -179,6 +179,9 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     case SCHRO_PARSE_CODE_INTER_NON_REF_2_NOARITH:
       parse_code = "inter non-ref 2 noarith";
       break;
+    case SCHRO_PARSE_CODE_PADDING:
+      parse_code = "padding";
+      break;
     default:
       parse_code = "unknown";
       break;
@@ -312,8 +315,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       }
     }
 
-    bit = schro_unpack_decode_bit(&unpack);
-    g_print("  interlaced_coding: %s\n", bit ? "yes" : "no");
+    g_print("  interlaced_coding: %d\n", schro_unpack_decode_uint(&unpack));
 
     MARKER();
 
@@ -503,7 +505,6 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
               continue;
             }
 
-            if (i!=0) schro_unpack_byte_sync(&unpack);
             length = schro_unpack_decode_uint(&unpack);
             if (length > 0) {
               g_print("    %4d %4d:   %6d    %3d\n", j, i, length,
@@ -512,6 +513,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
               schro_unpack_skip_bits (&unpack, length*8);
             } else {
               g_print("    %4d %4d:   %6d\n", j, i, length);
+              schro_unpack_byte_sync(&unpack);
             }
           }
         }
@@ -584,7 +586,10 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         break;
     }
 
-    schro_unpack_skip_bits (&unpack, (4 + 4 + length)*8);
+    schro_unpack_skip_bits (&unpack, (1 + length)*8);
+  } else if (data[4] == SCHRO_PARSE_CODE_PADDING) {
+    int length = next - 13;
+    schro_unpack_skip_bits (&unpack, length*8);
   }
 
   schro_unpack_byte_sync (&unpack);

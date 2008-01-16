@@ -101,6 +101,19 @@ schro_pack_append (SchroPack *pack, uint8_t *data, int len)
 }
 
 void
+schro_pack_append_zero (SchroPack *pack, int len)
+{
+  if (pack->shift != 7) {
+    SCHRO_ERROR ("appending to unsyncronized pack");
+  }
+
+  SCHRO_ASSERT(pack->n + len <= pack->buffer->length);
+
+  memset (pack->buffer->data + pack->n, 0, len);
+  pack->n += len;
+}
+
+void
 schro_pack_encode_bit (SchroPack *pack, int value)
 {
   value &= 1;

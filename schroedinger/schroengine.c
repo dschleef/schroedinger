@@ -7,7 +7,7 @@
 
 #include <math.h>
 
-#define SCENE_CHANGE_THRESHOLD 100
+#define SCENE_CHANGE_THRESHOLD 1000
 
 int schro_engine_get_scene_change_score (SchroEncoder *encoder, int i);
 
@@ -66,7 +66,7 @@ handle_gop (SchroEncoder *encoder, int i)
     schro_dump (SCHRO_DUMP_SCENE_CHANGE, "%d %g %g\n",
         f->frame_number, f->scene_change_score,
         f->average_luma);
-    SCHRO_DEBUG("frame change score %g", f->scene_change_score);
+    SCHRO_DEBUG("scene change score %g", f->scene_change_score);
 
     if (j==0 && f->scene_change_score > SCENE_CHANGE_THRESHOLD) {
       intra_start = TRUE;
@@ -210,7 +210,6 @@ handle_gop_backref (SchroEncoder *encoder, int i)
     schro_dump (SCHRO_DUMP_SCENE_CHANGE, "%d %g %g\n",
         f->frame_number, f->scene_change_score,
         f->average_luma);
-    SCHRO_DEBUG("frame change score %g", f->scene_change_score);
 
     if (j>=1 && f->scene_change_score > SCENE_CHANGE_THRESHOLD) {
       /* probably a scene change.  terminate gop */
@@ -276,6 +275,7 @@ schro_engine_get_scene_change_score (SchroEncoder *encoder, int i)
 {
   SchroEncoderFrame *frame1;
   SchroEncoderFrame *frame2;
+  double luma;
 
   frame1 = encoder->frame_queue->elements[i].data;
   if (frame1->have_scene_change_score) return TRUE;
@@ -295,9 +295,16 @@ schro_engine_get_scene_change_score (SchroEncoder *encoder, int i)
 
   SCHRO_DEBUG("%g %g", frame1->average_luma, frame2->average_luma);
 
-  frame1->scene_change_score =
-    schro_frame_mean_squared_error (frame1->downsampled_frames[3],
-      frame2->downsampled_frames[3]);
+  luma = (frame1->average_luma - 16.0) / 224.0;
+  if (luma > 0.01) {
+    frame1->scene_change_score =
+      schro_frame_mean_squared_error (frame1->downsampled_frames[3],
+        frame2->downsampled_frames[3]) / (luma * luma);
+  } else {
+    frame1->scene_change_score = 1e6;
+  }
+
+  SCHRO_DEBUG("scene change score %g", frame1->scene_change_score);
 
   frame1->have_scene_change_score = TRUE;
   return TRUE;
@@ -334,6 +341,7 @@ init_params (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
   SchroEncoder *encoder = frame->encoder;
+  SchroVideoFormat *video_format = params->video_format;
 
   params->video_format = &encoder->video_format;
 
@@ -350,8 +358,25 @@ init_params (SchroEncoderFrame *frame)
   }
   params->transform_depth = encoder->transform_depth;
 
+  //if (video_format->width * video_format->height >= 1920*1080) {
+  if (video_format->width * video_format->height >= 720 * 1280) {
+    params->xbsep_luma = 16;
+    params->ybsep_luma = 16;
+    params->xblen_luma = 24;
+    params->yblen_luma = 24;
+#if 0
+  /* FIXME 12x12,16x16 doesn't currently work */
+  } else if (video_format->width * video_format->height > 480 * 720) {
+    params->xbsep_luma = 12;
+    params->ybsep_luma = 12;
+    params->xblen_luma = 16;
+    params->yblen_luma = 16;
+#endif
+  }
+
   params->mv_precision = frame->encoder->mv_precision;
   //params->have_global_motion = TRUE;
+  params->codeblock_mode_index = 0;
   
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
@@ -367,13 +392,29 @@ init_small_codeblocks (SchroParams *params)
   params->vert_codeblocks[0] = 1;
   for(i=1;i<params->transform_depth+1;i++){
     shift = params->transform_depth + 1 - i;
-    /* Size of codeblock is 32.  This value was pulled out of my anus of
-     * holding. */
-    params->horiz_codeblocks[i] = params->iwt_luma_width >> (shift + 3);
-    params->vert_codeblocks[i] = params->iwt_luma_height >> (shift + 2);
+    /* These values are empirically derived from fewer than 2 test results */
+    params->horiz_codeblocks[i] = (params->iwt_luma_width >> shift) / 5;
+    params->vert_codeblocks[i] = (params->iwt_luma_height >> shift) / 5;
     SCHRO_DEBUG("codeblocks %d %d %d", i, params->horiz_codeblocks[i],
         params->vert_codeblocks[i]);
   }
+}
+
+#define MAGIC 1.5
+
+static int
+get_alloc (SchroEncoder *encoder, int buffer_level)
+{
+  double x;
+  int bits;
+
+  x = (double)buffer_level/encoder->buffer_size;
+
+  bits = rint (x * encoder->bits_per_picture * MAGIC);
+
+  if (bits > buffer_level) bits = buffer_level;
+
+  return bits;
 }
 
 void
@@ -393,14 +434,26 @@ schro_encoder_recalculate_allocations (SchroEncoder *encoder)
     } else if (frame->state == SCHRO_ENCODER_FRAME_STATE_NEW ||
         frame->state == SCHRO_ENCODER_FRAME_STATE_ANALYSE ||
         frame->state == SCHRO_ENCODER_FRAME_STATE_PREDICT) {
-      frame->allocated_bits = muldiv64 (encoder->buffer_size - buffer_level,
-          encoder->video_format.frame_rate_denominator * 2,
-          encoder->video_format.frame_rate_numerator);
-      buffer_level += frame->allocated_bits;
+      /* FIXME gross, I don't like changing the algorithm based on the
+       * GOP structure */
+      if (encoder->gop_structure == SCHRO_ENCODER_GOP_BIREF) {
+        frame->allocated_bits = get_alloc (encoder, buffer_level);
+      } else if (encoder->gop_structure == SCHRO_ENCODER_GOP_INTRA_ONLY) {
+        frame->allocated_bits = get_alloc (encoder, buffer_level);
+      } else {
+        frame->allocated_bits = get_alloc (encoder, buffer_level);
+#if 0
+        frame->allocated_bits = muldiv64 (buffer_level,
+            encoder->video_format.frame_rate_denominator * 2,
+            encoder->video_format.frame_rate_numerator);
+#endif
+      }
+      buffer_level -= frame->allocated_bits;
     } else {
-      buffer_level += frame->allocated_bits;
+      buffer_level -= frame->allocated_bits;
     }
-    buffer_level -= encoder->bits_per_picture;
+    //SCHRO_ERROR("%d: %d %d %d", i, frame->state, frame->actual_bits, frame->allocated_bits);
+    buffer_level += encoder->bits_per_picture;
   }
 }
 
@@ -450,12 +503,12 @@ init_frame (SchroEncoderFrame *frame)
     case SCHRO_ENCODER_GOP_BACKREF:
     case SCHRO_ENCODER_GOP_CHAINED_BACKREF:
       frame->need_downsampling = TRUE;
-      frame->need_average_luma = FALSE;
+      frame->need_average_luma = TRUE;
       break;
     case SCHRO_ENCODER_GOP_BIREF:
     case SCHRO_ENCODER_GOP_CHAINED_BIREF:
       frame->need_downsampling = TRUE;
-      frame->need_average_luma = FALSE;
+      frame->need_average_luma = TRUE;
       break;
   }
   return TRUE;
