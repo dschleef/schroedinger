@@ -629,14 +629,14 @@ schro_encoder_wait (SchroEncoder *encoder)
 
   schro_async_lock (encoder->async);
   while (1) {
-    if (!encoder->end_of_stream && !schro_queue_is_full (encoder->frame_queue)) {
-      SCHRO_DEBUG("need frame");
-      ret = SCHRO_STATE_NEED_FRAME;
-      break;
-    }
     if (schro_encoder_pull_is_ready_locked (encoder)) {
       SCHRO_DEBUG("have buffer");
       ret = SCHRO_STATE_HAVE_BUFFER;
+      break;
+    }
+    if (!encoder->end_of_stream && !schro_queue_is_full (encoder->frame_queue)) {
+      SCHRO_DEBUG("need frame");
+      ret = SCHRO_STATE_NEED_FRAME;
       break;
     }
     if (schro_queue_is_empty(encoder->frame_queue) && encoder->end_of_stream) {

@@ -452,8 +452,14 @@ schro_encoder_recalculate_allocations (SchroEncoder *encoder)
     } else {
       buffer_level -= frame->allocated_bits;
     }
-    //SCHRO_ERROR("%d: %d %d %d", i, frame->state, frame->actual_bits, frame->allocated_bits);
+    SCHRO_DEBUG("%d: %d %d %d", i, frame->state, frame->actual_bits, frame->allocated_bits);
     buffer_level += encoder->bits_per_picture;
+    if (buffer_level > encoder->buffer_size) {
+      buffer_level = encoder->buffer_size;
+    }
+    if (buffer_level < 0) {
+      buffer_level = 0;
+    }
   }
 }
 

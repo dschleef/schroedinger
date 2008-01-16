@@ -661,7 +661,7 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
   {
     double scale = 1/frame->encoder->average_arith_context_ratio;
     if (scale < 0.8) scale = 0.8;
-    if (scale > 1.5) scale = 1.5;
+    if (scale > 2.0) scale = 2.0;
     bits = frame->allocated_bits * frame->allocation_modifier * scale;
   }
 
@@ -874,14 +874,14 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
   /* FIXME this function would enjoy an implementation of Newton's
    * method */
 
-  log_lambda_hi = log(10);
+  log_lambda_hi = log(1000);
   log_lambda_lo = log(0.0001);
 
   entropy_hi = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_hi));
   entropy_lo = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_lo));
 
-  SCHRO_DEBUG("%g %g %g %g",
-        entropy_lo, entropy_hi, log_lambda_lo, log_lambda_hi);
+  SCHRO_DEBUG("%g %g %g %g target=%g",
+        entropy_lo, entropy_hi, log_lambda_lo, log_lambda_hi, entropy);
 
   for(j=0;j<14;j++){
     log_lambda_mid = 0.5*(log_lambda_hi + log_lambda_lo);
@@ -899,6 +899,7 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
   }
 
   log_lambda_mid = 0.5*(log_lambda_hi + log_lambda_lo);
+  SCHRO_DEBUG("done %g", exp(log_lambda_mid));
   return exp(log_lambda_mid);
 }
 
