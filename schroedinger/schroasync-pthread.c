@@ -76,13 +76,11 @@ schro_async_new(int n_threads, int (*schedule)(void *), void *closure)
       n_threads = 1;
     }
   }
-  async = malloc(sizeof(SchroAsync));
-  memset (async, 0, sizeof(SchroAsync));
+  async = schro_malloc0 (sizeof(SchroAsync));
 
   SCHRO_DEBUG("%d", n_threads);
   async->n_threads = n_threads;
-  async->threads = malloc(sizeof(SchroThread) * n_threads);
-  memset (async->threads, 0, sizeof(SchroThread) * n_threads);
+  async->threads = schro_malloc0 (sizeof(SchroThread) * n_threads);
 
   async->schedule = schedule;
   async->schedule_closure = closure;
@@ -135,8 +133,8 @@ schro_async_free (SchroAsync *async)
     pthread_join (async->threads[i].pthread, &ignore);
   }
 
-  free(async->threads);
-  free(async);
+  schro_free(async->threads);
+  schro_free(async);
 }
 
 void

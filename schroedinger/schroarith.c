@@ -125,8 +125,7 @@ schro_arith_new (void)
 {
   SchroArith *arith;
   
-  arith = malloc (sizeof(*arith));
-  memset (arith, 0, sizeof(*arith));
+  arith = schro_malloc0 (sizeof(*arith));
 
   return arith;
 }
@@ -134,7 +133,7 @@ schro_arith_new (void)
 void
 schro_arith_free (SchroArith *arith)
 {
-  free(arith);
+  schro_free(arith);
 }
 
 void

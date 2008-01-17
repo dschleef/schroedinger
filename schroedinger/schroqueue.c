@@ -3,6 +3,7 @@
 #include <config.h>
 #endif
 
+#include <schroedinger/schroutils.h>
 #include <schroedinger/schroqueue.h>
 #include <schroedinger/schrodebug.h>
 #include <stdlib.h>
@@ -13,14 +14,12 @@ schro_queue_new (int size, SchroQueueFreeFunc free_func)
 {
   SchroQueue *queue;
 
-  queue = malloc(sizeof(*queue));
-  memset (queue, 0, sizeof(*queue));
+  queue = schro_malloc0 (sizeof(*queue));
 
   queue->size = size;
   queue->free = free_func;
 
-  queue->elements = malloc(size * sizeof(SchroQueueElement));
-  memset (queue->elements, 0, size * sizeof(SchroQueueElement));
+  queue->elements = schro_malloc0 (size * sizeof(SchroQueueElement));
 
   return queue;
 }
@@ -37,8 +36,8 @@ schro_queue_free (SchroQueue *queue)
     }
   }
 
-  free(queue->elements);
-  free(queue);
+  schro_free(queue->elements);
+  schro_free(queue);
 }
 
 void schro_queue_add (SchroQueue *queue, void *data,

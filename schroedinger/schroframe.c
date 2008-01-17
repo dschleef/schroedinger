@@ -18,8 +18,7 @@ schro_frame_new (void)
 {
   SchroFrame *frame;
 
-  frame = malloc (sizeof(*frame));
-  memset (frame, 0, sizeof(*frame));
+  frame = schro_malloc0 (sizeof(*frame));
   frame->refcount = 1;
 
   return frame;
@@ -86,7 +85,8 @@ schro_frame_new_and_alloc (SchroFrameFormat format, int width, int height)
   frame->components[2].v_shift = v_shift;
   frame->components[2].h_shift = h_shift;
 
-  frame->regions[0] = malloc (frame->components[0].length +
+  frame->regions[0] = schro_memory_domain_alloc (NULL,
+      frame->components[0].length +
       frame->components[1].length + frame->components[2].length);
 
   frame->components[0].data = frame->regions[0];
@@ -274,7 +274,7 @@ schro_frame_unref (SchroFrame *frame)
       frame->free (frame, frame->priv);
     }
     if (frame->regions[0]) {
-      free(frame->regions[0]);
+      schro_memory_domain_memfree(NULL, frame->regions[0]);
     }
     if (frame->is_cuda_frame) {
 #ifdef HAVE_CUDA
@@ -284,7 +284,7 @@ schro_frame_unref (SchroFrame *frame)
 #endif
     }
 
-    free(frame);
+    schro_free(frame);
   }
 }
 
@@ -447,7 +447,7 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
   SCHRO_ASSERT(SCHRO_FRAME_FORMAT_DEPTH(dest->format) == SCHRO_FRAME_FORMAT_DEPTH_U8);
   SCHRO_ASSERT(SCHRO_FRAME_FORMAT_DEPTH(src->format) == SCHRO_FRAME_FORMAT_DEPTH_S16);
 
-  tmp = malloc(dest->width*sizeof(int16_t));
+  tmp = schro_malloc(dest->width*sizeof(int16_t));
   for(i=0;i<3;i++){
     dcomp = &dest->components[i];
     scomp = &src->components[i];
@@ -464,7 +464,7 @@ schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
       sdata = OFFSET(sdata, scomp->stride);
     }
   }
-  free(tmp);
+  schro_free(tmp);
 
   schro_frame_edge_extend (dest, src->width, src->height);
 }
@@ -1208,7 +1208,7 @@ schro_frame_component_downsample (SchroFrameData *dest,
   uint8_t *tmp, *tmp0, *tmp1;
   uint8_t *tmplist[12];
 
-  tmp = malloc(dest->width * 12);
+  tmp = schro_malloc(dest->width * 12);
   for(i=0;i<12;i++){
     tmplist[i] = tmp + dest->width * i;
   }
@@ -1244,7 +1244,7 @@ schro_frame_component_downsample (SchroFrameData *dest,
         taps, offsetshift, dest->width);
   }
 
-  free (tmp);
+  schro_free (tmp);
 }
 
 void
@@ -1400,7 +1400,7 @@ schro_frame_component_convert_420_to_444 (SchroFrameData *dest,
   SCHRO_ASSERT(dest->height <= src->height * 2);
   SCHRO_ASSERT(dest->width <= src->width * 2);
 
-  tmp = malloc (src->width);
+  tmp = schro_malloc (src->width);
   for(j=0;j<dest->height;j++) {
     if (j&1) {
       oil_merge_linear_u8 (tmp,
@@ -1415,7 +1415,7 @@ schro_frame_component_convert_420_to_444 (SchroFrameData *dest,
           src->data + src->stride * (j>>1), dest->width);
     }
   }
-  free(tmp);
+  schro_free(tmp);
 }
 
 SchroFrame *
@@ -1526,8 +1526,7 @@ schro_upsampled_frame_new (SchroFrame *frame)
 {
   SchroUpsampledFrame *df;
 
-  df = malloc(sizeof(SchroUpsampledFrame));
-  memset (df, 0, sizeof(*df));
+  df = schro_malloc0 (sizeof(SchroUpsampledFrame));
 
   df->frames[0] = frame;
 
@@ -1543,7 +1542,7 @@ schro_upsampled_frame_free (SchroUpsampledFrame *df)
       schro_frame_unref (df->frames[i]);
     }
   }
-  free(df);
+  schro_free(df);
 }
 
 void

@@ -130,8 +130,8 @@ schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
   double column[SCHRO_LIMIT_SUBBANDS];
   double *weight;
 
-  matrix = malloc (sizeof(double)*SCHRO_LIMIT_SUBBANDS*SCHRO_LIMIT_SUBBANDS);
-  weight = malloc (sizeof(double)*CURVE_SIZE*CURVE_SIZE);
+  matrix = schro_malloc (sizeof(double)*SCHRO_LIMIT_SUBBANDS*SCHRO_LIMIT_SUBBANDS);
+  weight = schro_malloc (sizeof(double)*CURVE_SIZE*CURVE_SIZE);
 
   for(j=0;j<CURVE_SIZE;j++){
     for(i=0;i<CURVE_SIZE;i++){
@@ -245,8 +245,8 @@ schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
   }
 #endif
 
-  free(weight);
-  free(matrix);
+  schro_free(weight);
+  schro_free(matrix);
 }
 
 void

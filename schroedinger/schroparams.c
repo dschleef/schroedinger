@@ -4,8 +4,6 @@
 #endif
 #include <schroedinger/schro.h>
 #include <liboil/liboil.h>
-#include <stdlib.h>
-#include <string.h>
 
 
 const int16_t schro_zero[SCHRO_LIMIT_WIDTH];

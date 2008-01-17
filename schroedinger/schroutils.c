@@ -6,9 +6,52 @@
 #include <schroedinger/schroutils.h>
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schro-stdint.h>
+#include <string.h>
 
 #include <math.h>
 
+
+void *
+schro_malloc (int size)
+{
+  void *ptr;
+
+#if 0
+  if (size >= 4096*4) {
+    SCHRO_ERROR("size %d", size);
+  }
+#endif
+  //SCHRO_ASSERT(size < 4096*4);
+  
+  ptr = malloc (size);
+  SCHRO_DEBUG("alloc %p %d", ptr, size);
+  return ptr;
+}
+
+void *
+schro_malloc0 (int size)
+{
+  void *ptr;
+
+#if 0
+  if (size >= 4096*4) {
+    SCHRO_ERROR("size %d", size);
+  }
+#endif
+  //SCHRO_ASSERT(size < 4096*4);
+
+  ptr = malloc (size);
+  memset (ptr, 0, size);
+  SCHRO_DEBUG("alloc %p %d", ptr, size);
+  return ptr;
+}
+
+void
+schro_free (void *ptr)
+{
+  SCHRO_DEBUG("free %p", ptr);
+  free (ptr);
+}
 
 int
 muldiv64 (int a, int b, int c)

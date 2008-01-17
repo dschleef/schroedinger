@@ -461,7 +461,7 @@ void schro_gpuframe_inverse_iwt_transform (SchroFrame *frame, SchroParams *param
   int16_t *c_data;
   int x;
     
-  c_data = malloc(frame->components[0].stride * params->iwt_luma_height);
+  c_data = schro_malloc(frame->components[0].stride * params->iwt_luma_height);
 #endif
 
   SCHRO_ASSERT(frame->is_cuda_frame == TRUE);
@@ -511,7 +511,7 @@ void schro_gpuframe_inverse_iwt_transform (SchroFrame *frame, SchroParams *param
 #endif
   }
 #ifdef TEST
-  free(c_data);
+  schro_free(c_data);
 #endif
 }
 
@@ -634,7 +634,7 @@ void schro_gpuframe_compare (SchroFrame *a, SchroFrame *b)
     int i, bpp;
     SCHRO_ASSERT(a->format == b->format);
     /// Temp buffer
-    temp = malloc(b->components[0].length);
+    temp = schro_malloc(b->components[0].length);
     bpp = schro_bpp(a->format);  
     
     SCHRO_ASSERT(b->is_cuda_frame == FALSE);
@@ -676,7 +676,7 @@ void schro_gpuframe_compare (SchroFrame *a, SchroFrame *b)
         }
     }
     
-    free(temp);
+    schro_free(temp);
 }
 
 void schro_gpuframe_zero (SchroFrame *dest)
@@ -733,8 +733,7 @@ SchroUpsampledFrame *schro_upsampled_gpuframe_new(SchroVideoFormat *fmt)
     SchroUpsampledFrame *rv;
 
     SCHRO_DEBUG("schro_upsampled_gpuframe_new");
-    rv = (SchroUpsampledFrame*)malloc(sizeof(SchroUpsampledFrame));
-    memset((void*)rv, 0, sizeof(SchroUpsampledFrame));
+    rv = schro_malloc0 (sizeof(SchroUpsampledFrame));
 
     /** Make an 8 bit texture for each component */
     cudaMallocArray(&rv->components[0], &channelDesc, fmt->width*2, fmt->height*2);
@@ -775,7 +774,7 @@ void schro_upsampled_gpuframe_free(SchroUpsampledFrame *x)
         cudaFreeArray(x->components[i]);
         
     //active --;
-    free(x);
+    schro_free(x);
     //SCHRO_DEBUG("active is now %i", active);
 }
 
@@ -847,7 +846,7 @@ schro_frame_new_and_alloc_locked (SchroFrameFormat format, int width, int height
   frame->components[2].h_shift = h_shift;
 
   cudaMallocHost((void**)&frame->regions[0], frame->components[0].length + frame->components[1].length + frame->components[2].length);
-  //frame->regions[0] = malloc (frame->components[0].length +
+  //frame->regions[0] = schro_malloc (frame->components[0].length +
   //    frame->components[1].length + frame->components[2].length);
 
   frame->components[0].data = frame->regions[0];

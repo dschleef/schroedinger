@@ -63,7 +63,7 @@ void schro_fft_fwd_f32 (float *d_real, float *d_imag, const float *s_real,
   float *tmp;
   float *tmp1_1, *tmp1_2, *tmp2_1, *tmp2_2;
     
-  tmp = malloc (4*sizeof(float)*n);
+  tmp = schro_malloc (4*sizeof(float)*n);
   tmp1_1 = tmp; 
   tmp1_2 = tmp + n;
   tmp2_1 = tmp + 2*n;
@@ -82,7 +82,7 @@ void schro_fft_fwd_f32 (float *d_real, float *d_imag, const float *s_real,
     fft_stage (d_real, d_imag, tmp1_1, tmp1_2, costable, sintable, i, shift);
   }
 
-  free(tmp);
+  schro_free(tmp);
 }
 
 void schro_fft_rev_f32 (float *d_real, float *d_imag, const float *s_real,

@@ -581,13 +581,10 @@ schro_motion_field_new (int x_num_blocks, int y_num_blocks)
 {
   SchroMotionField *mf;
 
-  mf = malloc(sizeof(SchroMotionField));
-  memset (mf, 0, sizeof(SchroMotionField));
+  mf = schro_malloc0 (sizeof(SchroMotionField));
   mf->x_num_blocks = x_num_blocks;
   mf->y_num_blocks = y_num_blocks;
-  mf->motion_vectors = malloc(sizeof(SchroMotionVector)*
-      x_num_blocks*y_num_blocks);
-  memset (mf->motion_vectors, 0, sizeof(SchroMotionVector)*
+  mf->motion_vectors = schro_malloc0 (sizeof(SchroMotionVector)*
       x_num_blocks*y_num_blocks);
 
   return mf;
@@ -596,8 +593,8 @@ schro_motion_field_new (int x_num_blocks, int y_num_blocks)
 void
 schro_motion_field_free (SchroMotionField *field)
 {
-  free (field->motion_vectors);
-  free (field);
+  schro_free (field->motion_vectors);
+  schro_free (field);
 }
 
 void

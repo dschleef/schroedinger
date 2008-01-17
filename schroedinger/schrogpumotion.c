@@ -37,7 +37,7 @@ static inline int ilog2 (unsigned int x)
 SchroGPUMotion *schro_gpumotion_new(SchroCUDAStream stream)
 {
   SchroGPUMotion *ret;
-  ret = (SchroGPUMotion*)malloc(sizeof(SchroGPUMotion));
+  ret = schro_malloc(sizeof(SchroGPUMotion));
   ret->cm = cuda_motion_init(stream);
   ret->vectors = NULL;
   return ret;
@@ -46,7 +46,7 @@ SchroGPUMotion *schro_gpumotion_new(SchroCUDAStream stream)
 void schro_gpumotion_free(SchroGPUMotion *rv)
 {
   cuda_motion_free(rv->cm);
-  free(rv);
+  schro_free(rv);
 }
 
 void schro_gpumotion_init(SchroGPUMotion *self, SchroMotion *motion)

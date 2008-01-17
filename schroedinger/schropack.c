@@ -15,8 +15,7 @@ schro_pack_new (void)
 {
   SchroPack *pack;
   
-  pack = malloc (sizeof(*pack));
-  memset (pack, 0, sizeof(*pack));
+  pack = schro_malloc0 (sizeof(*pack));
 
   return pack;
 }
@@ -24,7 +23,7 @@ schro_pack_new (void)
 void
 schro_pack_free (SchroPack *pack)
 {
-  free(pack);
+  schro_free(pack);
 }
 
 void

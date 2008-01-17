@@ -14,8 +14,7 @@ schro_subband_storage* schro_subband_storage_new(SchroParams *params, SchroCUDAS
     schro_subband_storage *store;
     int zeroes_length;
     
-    store = (schro_subband_storage*)malloc(sizeof(schro_subband_storage));
-    memset(store, 0, sizeof(schro_subband_storage));
+    store = schro_malloc0 (sizeof(schro_subband_storage));
     
     store->stream = stream;
     
@@ -32,7 +31,7 @@ schro_subband_storage* schro_subband_storage_new(SchroParams *params, SchroCUDAS
     store->used = 0;
     
     /** Make sure offset table is prefixed to buffer, so everything can be copied in one big transfer */
-    //store->buffer = malloc(store->data_offset + store->maxsize*2);
+    //store->buffer = schro_malloc(store->data_offset + store->maxsize*2);
     cudaMallocHost((void**)&store->buffer, store->maxsize*2);
     store->odata = (uint32_t*)store->buffer;
     store->data = (int16_t*)(store->buffer);
@@ -42,8 +41,7 @@ schro_subband_storage* schro_subband_storage_new(SchroParams *params, SchroCUDAS
     
     /** Size of largest subband for dummy subband */
     zeroes_length = (params->iwt_luma_width>>2)*(params->iwt_luma_height>>2);
-    store->zeroes = malloc(zeroes_length*2);
-    memset(store->zeroes, 0, zeroes_length*2);
+    store->zeroes = schro_malloc0 (zeroes_length*sizeof(int16_t));
     
     SCHRO_DEBUG("numbands=%i luma_width=%i luma_height=%i chroma_width=%i chroma_height=%i bufsize=%i zeroes_length=%i", 
         store->numbands,
@@ -55,10 +53,10 @@ schro_subband_storage* schro_subband_storage_new(SchroParams *params, SchroCUDAS
 
 void schro_subband_storage_free(schro_subband_storage *store)
 {
-    //free(store->buffer);
+    //schro_free(store->buffer);
     cudaFreeHost(store->buffer);
-    free(store->zeroes);
-    free(store);
+    schro_free(store->zeroes);
+    schro_free(store);
     //cudaFree(store->gbuffer);
 }
 

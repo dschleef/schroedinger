@@ -39,8 +39,7 @@ schro_encoder_new (void)
 {
   SchroEncoder *encoder;
 
-  encoder = malloc(sizeof(SchroEncoder));
-  memset (encoder, 0, sizeof(SchroEncoder));
+  encoder = schro_malloc0 (sizeof(SchroEncoder));
 
   encoder->version_major = 0;
   encoder->version_minor = 20071203;
@@ -200,7 +199,7 @@ schro_encoder_free (SchroEncoder *encoder)
 
   schro_list_free (encoder->inserted_buffers);
 
-  free (encoder);
+  schro_free (encoder);
 }
 
 static void
@@ -238,7 +237,7 @@ schro_encoder_get_video_format (SchroEncoder *encoder)
 {
   SchroVideoFormat *format;
 
-  format = malloc(sizeof(SchroVideoFormat));
+  format = schro_malloc (sizeof(SchroVideoFormat));
   memcpy (format, &encoder->video_format, sizeof(SchroVideoFormat));
 
   return format;
@@ -753,8 +752,8 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
 {
   SCHRO_INFO("predict picture %d", frame->frame_number);
 
-  frame->tmpbuf = malloc(SCHRO_LIMIT_WIDTH * 2);
-  frame->tmpbuf2 = malloc(SCHRO_LIMIT_WIDTH * 2);
+  frame->tmpbuf = schro_malloc(SCHRO_LIMIT_WIDTH * 2);
+  frame->tmpbuf2 = schro_malloc(SCHRO_LIMIT_WIDTH * 2);
 
   if (frame->params.num_refs > 0) {
     schro_encoder_motion_predict (frame);
@@ -812,7 +811,7 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
   frame_height = ROUND_UP_POW2(frame->encoder->video_format.height,
       SCHRO_LIMIT_TRANSFORM_DEPTH + frame->encoder->video_format.chroma_v_shift);
 
-  frame->quant_data = malloc (sizeof(int16_t) * frame_width * frame_height / 4);
+  frame->quant_data = schro_malloc (sizeof(int16_t) * frame_width * frame_height / 4);
 
   frame->pack = schro_pack_new ();
   schro_pack_encode_init (frame->pack, frame->output_buffer);
@@ -879,7 +878,7 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
     schro_buffer_unref (frame->subband_buffer);
   }
   if (frame->quant_data) {
-    free (frame->quant_data);
+    schro_free (frame->quant_data);
   }
   if (frame->pack) {
     schro_pack_free (frame->pack);
@@ -2100,8 +2099,7 @@ schro_encoder_frame_new (SchroEncoder *encoder)
   int frame_width;
   int frame_height;
 
-  encoder_frame = malloc(sizeof(SchroEncoderFrame));
-  memset (encoder_frame, 0, sizeof(SchroEncoderFrame));
+  encoder_frame = schro_malloc0 (sizeof(SchroEncoderFrame));
   encoder_frame->state = SCHRO_ENCODER_FRAME_STATE_NEW;
   encoder_frame->refcount = 1;
 
@@ -2171,11 +2169,11 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
       schro_motion_free (frame->motion);
     }
 
-    if (frame->tmpbuf) free (frame->tmpbuf);
-    if (frame->tmpbuf2) free (frame->tmpbuf2);
+    if (frame->tmpbuf) schro_free (frame->tmpbuf);
+    if (frame->tmpbuf2) schro_free (frame->tmpbuf2);
     schro_list_free (frame->inserted_buffers);
 
-    free (frame);
+    schro_free (frame);
   }
 }
 

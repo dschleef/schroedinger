@@ -13,8 +13,7 @@ schro_list_new()
 {
   SchroList *list;
 
-  list = malloc(sizeof(*list));
-  memset(list, 0, sizeof(*list));
+  list = schro_malloc0 (sizeof(*list));
 
   return list;
 }
@@ -41,9 +40,9 @@ schro_list_free (SchroList *list)
     }
   }
   if (list->members) {
-    free(list->members);
+    schro_free(list->members);
   }
-  free(list);
+  schro_free(list);
 }
 
 void *

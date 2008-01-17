@@ -9,6 +9,7 @@
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schrodecoder.h>
 #include <schroedinger/schrodebug.h>
+#include <schroedinger/schrodomain.h>
 #include <schroedinger/schroencoder.h>
 #include <schroedinger/schroengine.h>
 #include <schroedinger/schrofilter.h>

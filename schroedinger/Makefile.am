@@ -26,6 +26,7 @@ pkginclude_HEADERS = \
 	schroasync.h \
 	schrobitstream.h \
 	schrodebug.h \
+	schrodomain.h \
 	schrofft.h \
 	schrohistogram.h \
 	schrolimits.h \
@@ -65,6 +66,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrocog.c \
 	schrodecoder.c \
 	schrodebug.c \
+	schrodomain.c \
 	schroencoder.c \
 	schroengine.c \
 	schrofft.c \

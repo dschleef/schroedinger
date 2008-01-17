@@ -261,8 +261,7 @@ schro_phasecorr_new (int width, int height, int picture_shift,
 {
   SchroPhaseCorr *pc;
 
-  pc = malloc(sizeof(SchroPhaseCorr));
-  memset (pc, 0, sizeof(SchroPhaseCorr));
+  pc = schro_malloc0 (sizeof(SchroPhaseCorr));
 
   pc->picture_shift = picture_shift;
 
@@ -273,33 +272,33 @@ schro_phasecorr_new (int width, int height, int picture_shift,
   pc->shift = pc->hshift+pc->vshift;
   pc->n = 1<<pc->shift;
 
-  pc->s = malloc(pc->n*sizeof(float));
-  pc->c = malloc(pc->n*sizeof(float));
-  pc->weight = malloc(pc->n*sizeof(float));
-  pc->zero = malloc(pc->n*sizeof(float));
+  pc->s = schro_malloc(pc->n*sizeof(float));
+  pc->c = schro_malloc(pc->n*sizeof(float));
+  pc->weight = schro_malloc(pc->n*sizeof(float));
+  pc->zero = schro_malloc(pc->n*sizeof(float));
   memset (pc->zero, 0, pc->n*sizeof(float));
 
-  pc->image1 = malloc(pc->n*sizeof(float));
-  pc->image2 = malloc(pc->n*sizeof(float));
+  pc->image1 = schro_malloc(pc->n*sizeof(float));
+  pc->image2 = schro_malloc(pc->n*sizeof(float));
 
-  pc->ft1r = malloc(pc->n*sizeof(float));
-  pc->ft1i = malloc(pc->n*sizeof(float));
-  pc->ft2r = malloc(pc->n*sizeof(float));
-  pc->ft2i = malloc(pc->n*sizeof(float));
-  pc->conv_r = malloc(pc->n*sizeof(float));
-  pc->conv_i = malloc(pc->n*sizeof(float));
-  pc->resr = malloc(pc->n*sizeof(float));
-  pc->resi = malloc(pc->n*sizeof(float));
+  pc->ft1r = schro_malloc(pc->n*sizeof(float));
+  pc->ft1i = schro_malloc(pc->n*sizeof(float));
+  pc->ft2r = schro_malloc(pc->n*sizeof(float));
+  pc->ft2i = schro_malloc(pc->n*sizeof(float));
+  pc->conv_r = schro_malloc(pc->n*sizeof(float));
+  pc->conv_i = schro_malloc(pc->n*sizeof(float));
+  pc->resr = schro_malloc(pc->n*sizeof(float));
+  pc->resi = schro_malloc(pc->n*sizeof(float));
 
   generate_weights(pc->weight, pc->width, pc->height);
   schro_fft_generate_tables_f32 (pc->c, pc->s, pc->shift);
 
   pc->num_x = ((width>>picture_shift) - pc->width)/(pc->width/2) + 2;
   pc->num_y = ((height>>picture_shift) - pc->height)/(pc->height/2) + 2;
-  pc->vecs_dx = malloc(sizeof(int)*pc->num_x*pc->num_y);
-  pc->vecs_dy = malloc(sizeof(int)*pc->num_x*pc->num_y);
-  pc->vecs2_dx = malloc(sizeof(int)*pc->num_x*pc->num_y);
-  pc->vecs2_dy = malloc(sizeof(int)*pc->num_x*pc->num_y);
+  pc->vecs_dx = schro_malloc(sizeof(int)*pc->num_x*pc->num_y);
+  pc->vecs_dy = schro_malloc(sizeof(int)*pc->num_x*pc->num_y);
+  pc->vecs2_dx = schro_malloc(sizeof(int)*pc->num_x*pc->num_y);
+  pc->vecs2_dy = schro_malloc(sizeof(int)*pc->num_x*pc->num_y);
 
   return pc;
 }
@@ -307,29 +306,29 @@ schro_phasecorr_new (int width, int height, int picture_shift,
 void
 schro_phasecorr_free (SchroPhaseCorr *pc)
 {
-  free(pc->s);
-  free(pc->c);
-  free(pc->weight);
-  free(pc->zero);
+  schro_free(pc->s);
+  schro_free(pc->c);
+  schro_free(pc->weight);
+  schro_free(pc->zero);
 
-  free(pc->image1);
-  free(pc->image2);
+  schro_free(pc->image1);
+  schro_free(pc->image2);
 
-  free(pc->ft1r);
-  free(pc->ft1i);
-  free(pc->ft2r);
-  free(pc->ft2i);
-  free(pc->conv_r);
-  free(pc->conv_i);
-  free(pc->resr);
-  free(pc->resi);
+  schro_free(pc->ft1r);
+  schro_free(pc->ft1i);
+  schro_free(pc->ft2r);
+  schro_free(pc->ft2i);
+  schro_free(pc->conv_r);
+  schro_free(pc->conv_i);
+  schro_free(pc->resr);
+  schro_free(pc->resi);
 
-  free(pc->vecs_dx);
-  free(pc->vecs_dy);
-  free(pc->vecs2_dx);
-  free(pc->vecs2_dy);
+  schro_free(pc->vecs_dx);
+  schro_free(pc->vecs_dy);
+  schro_free(pc->vecs2_dx);
+  schro_free(pc->vecs2_dy);
 
-  free(pc);
+  schro_free(pc);
 }
 
 void

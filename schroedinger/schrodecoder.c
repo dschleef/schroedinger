@@ -82,8 +82,7 @@ schro_decoder_new (void)
 {
   SchroDecoder *decoder;
 
-  decoder = malloc(sizeof(SchroDecoder));
-  memset (decoder, 0, sizeof(SchroDecoder));
+  decoder = schro_malloc0 (sizeof(SchroDecoder));
 
   decoder->skip_value = 1.0;
   decoder->skip_ratio = 1.0;
@@ -93,7 +92,7 @@ schro_decoder_new (void)
   decoder->output_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_frame_unref);
 
-  decoder->picture_queue = schro_queue_new (SCHRO_LIMIT_FRAME_QUEUE_LENGTH,
+  decoder->picture_queue = schro_queue_new (4,
       (SchroQueueFreeFunc)schro_picture_unref);
   decoder->queue_depth = 4;
 
@@ -114,9 +113,9 @@ schro_decoder_free (SchroDecoder *decoder)
   schro_queue_free (decoder->reference_queue);
   schro_queue_free (decoder->picture_queue);
 
-  if (decoder->error_message) free (decoder->error_message);
+  if (decoder->error_message) schro_free (decoder->error_message);
 
-  free (decoder);
+  schro_free (decoder);
 }
 
 SchroPicture *
@@ -127,14 +126,13 @@ schro_picture_new (SchroDecoder *decoder)
   SchroVideoFormat *video_format = &decoder->video_format;
   int frame_width, frame_height;
 
-  picture = malloc(sizeof(SchroPicture));
-  memset (picture, 0, sizeof(SchroPicture));
+  picture = schro_malloc0 (sizeof(SchroPicture));
   picture->refcount = 1;
 
   picture->decoder = decoder;
 
-  picture->tmpbuf = malloc(SCHRO_LIMIT_WIDTH * 2);
-  picture->tmpbuf2 = malloc(SCHRO_LIMIT_WIDTH * 2);
+  picture->tmpbuf = schro_malloc(SCHRO_LIMIT_WIDTH * 2);
+  picture->tmpbuf2 = schro_malloc(SCHRO_LIMIT_WIDTH * 2);
 
   picture->params.video_format = video_format;
 
@@ -195,15 +193,15 @@ schro_picture_unref (SchroPicture *picture)
     if (picture->mc_tmp_frame) schro_frame_unref (picture->mc_tmp_frame);
     if (picture->planar_output_frame) schro_frame_unref (picture->planar_output_frame);
     if (picture->output_picture) schro_frame_unref (picture->output_picture);
-    if (picture->tmpbuf) free (picture->tmpbuf);
-    if (picture->tmpbuf2) free (picture->tmpbuf2);
+    if (picture->tmpbuf) schro_free (picture->tmpbuf);
+    if (picture->tmpbuf2) schro_free (picture->tmpbuf2);
     if (picture->motion) schro_motion_free (picture->motion);
     if (picture->input_buffer) schro_buffer_unref (picture->input_buffer);
     if (picture->upsampled_frame) schro_upsampled_frame_free (picture->upsampled_frame);
     if (picture->ref0) schro_picture_unref (picture->ref0);
     if (picture->ref1) schro_picture_unref (picture->ref1);
 
-    free (picture);
+    schro_free (picture);
   }
 }
 
@@ -225,7 +223,7 @@ schro_decoder_get_video_format (SchroDecoder *decoder)
 {
   SchroVideoFormat *format;
 
-  format = malloc(sizeof(SchroVideoFormat));
+  format = schro_malloc(sizeof(SchroVideoFormat));
   memcpy (format, &decoder->video_format, sizeof(SchroVideoFormat));
 
   return format;

@@ -13,10 +13,8 @@
 #include <schroedinger/schrooil.h>
 
 #include <liboil/liboil.h>
-#include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <stdio.h>
 
 void
 sort_u8 (uint8_t *d, int n)
@@ -121,8 +119,8 @@ schro_frame_component_filter_cwmN (SchroFrameData *comp, int weight)
   uint8_t *tmp1;
   uint8_t *tmp2;
 
-  tmp1 = malloc(comp->width);
-  tmp2 = malloc(comp->width);
+  tmp1 = schro_malloc(comp->width);
+  tmp2 = schro_malloc(comp->width);
 
   schro_filter_cwmN (tmp1,
       OFFSET(comp->data, comp->stride * 0),
@@ -148,8 +146,8 @@ schro_frame_component_filter_cwmN (SchroFrameData *comp, int weight)
   memcpy (OFFSET(comp->data, comp->stride * (i-1) + 1),
       tmp2, comp->width - 2);
 
-  free (tmp1);
-  free (tmp2);
+  schro_free (tmp1);
+  schro_free (tmp2);
 }
 
 void
@@ -169,8 +167,8 @@ schro_frame_component_filter_cwmN_ref (SchroFrameData *comp, int weight)
   uint8_t *tmp1;
   uint8_t *tmp2;
 
-  tmp1 = malloc(comp->width);
-  tmp2 = malloc(comp->width);
+  tmp1 = schro_malloc(comp->width);
+  tmp2 = schro_malloc(comp->width);
 
   schro_filter_cwmN_ref (tmp1,
       OFFSET(comp->data, comp->stride * 0),
@@ -196,8 +194,8 @@ schro_frame_component_filter_cwmN_ref (SchroFrameData *comp, int weight)
   memcpy (OFFSET(comp->data, comp->stride * (i-1) + 1),
       tmp2, comp->width - 2);
 
-  free (tmp1);
-  free (tmp2);
+  schro_free (tmp1);
+  schro_free (tmp2);
 }
 
 void
@@ -278,8 +276,8 @@ schro_frame_component_filter_cwm7 (SchroFrameData *comp)
   uint8_t *tmp1;
   uint8_t *tmp2;
 
-  tmp1 = malloc(comp->width);
-  tmp2 = malloc(comp->width);
+  tmp1 = schro_malloc(comp->width);
+  tmp2 = schro_malloc(comp->width);
 
   schro_filter_cwm7 (tmp1,
       OFFSET(comp->data, comp->stride * 0),
@@ -305,8 +303,8 @@ schro_frame_component_filter_cwm7 (SchroFrameData *comp)
   memcpy (OFFSET(comp->data, comp->stride * (i-1) + 1),
       tmp2, comp->width - 2);
 
-  free (tmp1);
-  free (tmp2);
+  schro_free (tmp1);
+  schro_free (tmp2);
 }
 
 void
@@ -370,7 +368,7 @@ schro_frame_component_filter_lowpass (SchroFrameData *comp)
   int i;
   uint8_t *tmp;
 
-  tmp = malloc(comp->width*9);
+  tmp = schro_malloc(comp->width*9);
 
   lowpass_u8 (tmp + 0*comp->width,
       OFFSET(comp->data, comp->stride * 0), comp->width);
@@ -393,7 +391,7 @@ schro_frame_component_filter_lowpass (SchroFrameData *comp)
     memmove (tmp, tmp + comp->width * 1, comp->width * 8);
   }
 
-  free (tmp);
+  schro_free (tmp);
 }
 
 void
@@ -457,7 +455,7 @@ schro_frame_component_filter_lowpass_16 (SchroFrameData *comp)
   int i;
   int16_t *tmp;
 
-  tmp = malloc(comp->width*9*sizeof(int16_t));
+  tmp = schro_malloc(comp->width*9*sizeof(int16_t));
 
   lowpass_s16 (tmp + 0*comp->width,
       OFFSET(comp->data, comp->stride * 0), comp->width);
@@ -481,7 +479,7 @@ schro_frame_component_filter_lowpass_16 (SchroFrameData *comp)
         comp->width * 8 * sizeof(int16_t));
   }
 
-  free (tmp);
+  schro_free (tmp);
 }
 
 void
@@ -562,9 +560,9 @@ schro_frame_component_filter_lowpass2_u8 (SchroFrameData *comp,
   generate_coeff (h_coeff, h_sigma);
   generate_coeff (v_coeff, v_sigma);
 
-  i1 = malloc (sizeof(double)*comp->width);
-  i2 = malloc (sizeof(double)*comp->width);
-  i3 = malloc (sizeof(double)*comp->width);
+  i1 = schro_malloc (sizeof(double)*comp->width);
+  i2 = schro_malloc (sizeof(double)*comp->width);
+  i3 = schro_malloc (sizeof(double)*comp->width);
 
   for(i=0;i<comp->height;i++){
     lowpass2_u8 (OFFSET(comp->data, comp->stride * i),
@@ -592,9 +590,9 @@ schro_frame_component_filter_lowpass2_u8 (SchroFrameData *comp,
         i1, i2, i3, v_coeff, comp->width);
   }
 
-  free (i1);
-  free (i2);
-  free (i3);
+  schro_free (i1);
+  schro_free (i2);
+  schro_free (i3);
 }
 
 void
@@ -609,9 +607,9 @@ schro_frame_component_filter_lowpass2_s16 (SchroFrameData *comp,
   generate_coeff (h_coeff, h_sigma);
   generate_coeff (v_coeff, v_sigma);
 
-  i1 = malloc (sizeof(double)*comp->width);
-  i2 = malloc (sizeof(double)*comp->width);
-  i3 = malloc (sizeof(double)*comp->width);
+  i1 = schro_malloc (sizeof(double)*comp->width);
+  i2 = schro_malloc (sizeof(double)*comp->width);
+  i3 = schro_malloc (sizeof(double)*comp->width);
 
   for(i=0;i<comp->height;i++){
     lowpass2_s16 (OFFSET(comp->data, comp->stride * i),
@@ -641,9 +639,9 @@ schro_frame_component_filter_lowpass2_s16 (SchroFrameData *comp,
 
 
 
-  free (i1);
-  free (i2);
-  free (i3);
+  schro_free (i1);
+  schro_free (i2);
+  schro_free (i3);
 }
 
 void
@@ -684,7 +682,7 @@ schro_frame_filter_wavelet (SchroFrame *frame)
   SchroParams params;
   int i;
 
-  tmp = malloc(2*frame->width*sizeof(int16_t));
+  tmp = schro_malloc(2*frame->width*sizeof(int16_t));
 
   tmpframe = schro_frame_new_and_alloc (
       SCHRO_FRAME_FORMAT_S16_444 | frame->format,

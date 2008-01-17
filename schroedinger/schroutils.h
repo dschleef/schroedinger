@@ -73,6 +73,10 @@ SCHRO_BEGIN_DECLS
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
+void * schro_malloc (int size);
+void * schro_malloc0 (int size);
+void schro_free (void *ptr);
+
 int muldiv64 (int a, int b, int c);
 int schro_utils_multiplier_to_quant_index (double x);
 int schro_dequantise (int q, int quant_factor, int quant_offset);

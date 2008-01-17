@@ -25,19 +25,18 @@ schro_motion_new (SchroParams *params, SchroUpsampledFrame *ref1,
 {
   SchroMotion *motion;
 
-  motion = malloc(sizeof(SchroMotion));
-  memset (motion, 0, sizeof(SchroMotion));
+  motion = schro_malloc0 (sizeof(SchroMotion));
 
   motion->params = params;
   motion->src1 = ref1;
   motion->src2 = ref2;
 
-  motion->motion_vectors = malloc(sizeof(SchroMotionVector)*
-      params->x_num_blocks*params->y_num_blocks);
-  memset (motion->motion_vectors, 0, sizeof(SchroMotionVector)*
-      params->x_num_blocks*params->y_num_blocks);
+  motion->motion_vectors = schro_memory_domain_alloc (NULL,
+      sizeof(SchroMotionVector)*params->x_num_blocks*params->y_num_blocks);
+  memset (motion->motion_vectors, 0,
+      sizeof(SchroMotionVector)*params->x_num_blocks*params->y_num_blocks);
 
-  motion->tmpdata = malloc (64*64*3);
+  motion->tmpdata = schro_malloc (64*64*3);
 
   return motion;
 }
@@ -45,9 +44,9 @@ schro_motion_new (SchroParams *params, SchroUpsampledFrame *ref1,
 void
 schro_motion_free (SchroMotion *motion)
 {
-  free (motion->tmpdata);
-  free (motion->motion_vectors);
-  free (motion);
+  schro_free (motion->tmpdata);
+  schro_memory_domain_memfree (NULL, motion->motion_vectors);
+  schro_free (motion);
 }
 
 void
@@ -402,8 +401,8 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep,
   }
 
   size = sizeof(int16_t) * x_len * y_len;
-  obmc->region_data = malloc(size * 9 * 3);
-  region = malloc(size);
+  obmc->region_data = schro_malloc(size * 9 * 3);
+  region = schro_malloc(size);
 
   for(i=0;i<9;i++){
     obmc->regions[i].weights[0] = OFFSET(obmc->region_data, size * i);
@@ -435,13 +434,13 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep,
         x_len * y_len, ref1_weight+ref2_weight);
   }
 
-  free(region);
+  schro_free(region);
 }
 
 void
 schro_obmc_cleanup (SchroObmc *obmc)
 {
-  free(obmc->region_data);
+  schro_free(obmc->region_data);
 }
 
 
@@ -1071,13 +1070,13 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
 
   motion->mv_precision = params->mv_precision;
 
-  obmc_luma = malloc(sizeof(*obmc_luma));
+  obmc_luma = schro_malloc(sizeof(*obmc_luma));
   schro_obmc_init (obmc_luma,
       params->xblen_luma, params->yblen_luma,
       params->xbsep_luma, params->ybsep_luma,
       params->picture_weight_1, params->picture_weight_2,
       params->picture_weight_bits);
-  obmc_chroma = malloc(sizeof(*obmc_chroma));
+  obmc_chroma = schro_malloc(sizeof(*obmc_chroma));
   schro_obmc_init (obmc_chroma,
       params->xblen_luma>>motion->params->video_format->chroma_h_shift,
       params->yblen_luma>>motion->params->video_format->chroma_v_shift,
@@ -1170,9 +1169,9 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
       6 + params->picture_weight_bits, 6 + params->picture_weight_bits);
 
   schro_obmc_cleanup (obmc_luma);
-  free(obmc_luma);
+  schro_free(obmc_luma);
   schro_obmc_cleanup (obmc_chroma);
-  free(obmc_chroma);
+  schro_free(obmc_chroma);
 }
 
 void
