@@ -117,7 +117,6 @@ static void
 handle_gop_enum (SchroEncoder *encoder)
 {
   switch (encoder->gop_structure) {
-    case SCHRO_ENCODER_GOP_ADAPTIVE:
     case SCHRO_ENCODER_GOP_BACKREF:
     case SCHRO_ENCODER_GOP_CHAINED_BACKREF:
       SCHRO_DEBUG("Setting backref\n");
@@ -127,6 +126,7 @@ handle_gop_enum (SchroEncoder *encoder)
       SCHRO_DEBUG("Setting intra only\n");
       encoder->engine_iterate = schro_encoder_engine_intra_only;
       break;
+    case SCHRO_ENCODER_GOP_ADAPTIVE:
     case SCHRO_ENCODER_GOP_BIREF:
     case SCHRO_ENCODER_GOP_CHAINED_BIREF:
       SCHRO_DEBUG("Setting tworef engine\n");
