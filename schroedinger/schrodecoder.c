@@ -856,42 +856,33 @@ schro_decoder_x_combine (SchroPicture *picture)
 {
   SchroParams *params = &picture->params;
   SchroDecoder *decoder = picture->decoder;
+  SchroFrame *combined_frame;
+  SchroFrame *output_frame;
 
   if (picture->zero_residual) {
-    if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
-      schro_frame_convert (picture->planar_output_frame, picture->mc_tmp_frame);
-      schro_frame_convert (picture->output_picture, picture->planar_output_frame);
-    } else {
-      schro_frame_convert (picture->output_picture, picture->mc_tmp_frame);
-    }
-  } else if (!_schro_decode_prediction_only) {
+    combined_frame = picture->mc_tmp_frame;
+  } else {
     if (params->num_refs > 0) {
       schro_frame_add (picture->frame, picture->mc_tmp_frame);
     }
+    combined_frame = picture->frame;
+  }
 
-    if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
-      schro_frame_convert (picture->planar_output_frame, picture->frame);
-      schro_frame_convert (picture->output_picture, picture->planar_output_frame);
+  if (_schro_decode_prediction_only) {
+    if (params->num_refs > 0 && !picture->is_ref) {
+      output_frame = picture->mc_tmp_frame;
     } else {
-      schro_frame_convert (picture->output_picture, picture->frame);
+      output_frame = combined_frame;
     }
   } else {
-    SchroFrame *frame;
-    if (!picture->is_ref) {
-      frame = picture->mc_tmp_frame;
-    } else {
-      frame = picture->frame;
-    }
-    if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
-      schro_frame_convert (picture->planar_output_frame, frame);
-      schro_frame_convert (picture->output_picture, picture->planar_output_frame);
-    } else {
-      schro_frame_convert (picture->output_picture, frame);
-    }
+    output_frame = combined_frame;
+  }
 
-    if (!picture->is_ref) {
-      schro_frame_add (picture->frame, picture->mc_tmp_frame);
-    }
+  if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
+    schro_frame_convert (picture->planar_output_frame, output_frame);
+    schro_frame_convert (picture->output_picture, picture->planar_output_frame);
+  } else {
+    schro_frame_convert (picture->output_picture, output_frame);
   }
 
   if (picture->is_ref) {
@@ -903,7 +894,7 @@ schro_decoder_x_combine (SchroPicture *picture)
     
     ref = schro_frame_new_and_alloc (frame_format,
         decoder->video_format.width, decoder->video_format.height);
-    schro_frame_convert (ref, picture->frame);
+    schro_frame_convert (ref, combined_frame);
     picture->upsampled_frame = schro_upsampled_frame_new (ref);
   }
 
