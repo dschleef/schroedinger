@@ -85,7 +85,7 @@ schro_encoder_new (void)
   encoder->magic_subband0_lambda_scale = 5.0;
   encoder->magic_chroma_lambda_scale = 1.0;
   encoder->magic_nonref_lambda_scale = 0.2;
-  encoder->magic_allocation_scale = 1.5;
+  encoder->magic_allocation_scale = 2.0;
   encoder->magic_keyframe_weight = 5.0;
   encoder->magic_scene_change_threshold = 1000.0;
 
@@ -869,7 +869,7 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
       frame->is_ref,
       frame->allocated_mc_bits,
       frame->allocated_residual_bits,
-      frame->allocation_modifier,
+      frame->picture_weight,
       frame->estimated_mc_bits,
       frame->estimated_residual_bits,
       frame->actual_mc_bits,

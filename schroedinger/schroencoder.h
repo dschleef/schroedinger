@@ -178,7 +178,7 @@ struct _SchroEncoderFrame {
 
   /* statistics */
 
-  double allocation_modifier;
+  double picture_weight;
   double scene_change_score;
   double average_luma;
 

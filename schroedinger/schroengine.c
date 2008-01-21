@@ -84,7 +84,7 @@ handle_gop (SchroEncoder *encoder, int i)
     frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
     frame->slot = encoder->next_slot++;
     frame->presentation_frame = frame->frame_number;
-    frame->allocation_modifier = 1;
+    frame->picture_weight = 1;
   } else {
     if (intra_start) {
       /* IBBBP */
@@ -94,8 +94,8 @@ handle_gop (SchroEncoder *encoder, int i)
       frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
       frame->slot = encoder->next_slot++;
       frame->presentation_frame = frame->frame_number;
-      //frame->allocation_modifier = 1 + (gop_length - 1) * 0.6;
-      frame->allocation_modifier = encoder->magic_keyframe_weight;
+      //frame->picture_weight = 1 + (gop_length - 1) * 0.6;
+      frame->picture_weight = encoder->magic_keyframe_weight;
       if (encoder->last_ref != -1) {
         frame->retired_picture_number = encoder->last_ref;
       }
@@ -111,7 +111,7 @@ handle_gop (SchroEncoder *encoder, int i)
           f->picture_number_ref0);
       f->slot = encoder->next_slot++;
       f->presentation_frame = f->frame_number;
-      f->allocation_modifier = 1 + (gop_length - 2) * 0.6;
+      f->picture_weight = 1 + (gop_length - 2) * 0.6;
       if (encoder->last_ref != -1) {
         f->retired_picture_number = encoder->last_ref;
       }
@@ -130,7 +130,7 @@ handle_gop (SchroEncoder *encoder, int i)
             f->picture_number_ref0);
         f->slot = encoder->next_slot++;
         f->presentation_frame = f->frame_number;
-        f->allocation_modifier = 0.4;
+        f->picture_weight = 0.4;
       }
     } else {
       /* BBBP */
@@ -143,7 +143,7 @@ handle_gop (SchroEncoder *encoder, int i)
           f->picture_number_ref0);
       f->slot = encoder->next_slot++;
       f->presentation_frame = f->frame_number;
-      f->allocation_modifier = 1 + (gop_length - 1) * 0.6;
+      f->picture_weight = 1 + (gop_length - 1) * 0.6;
       if (encoder->last_ref != -1) {
         f->retired_picture_number = encoder->last_ref;
       }
@@ -161,7 +161,7 @@ handle_gop (SchroEncoder *encoder, int i)
             f->picture_number_ref0);
         f->slot = encoder->next_slot++;
         f->presentation_frame = f->frame_number;
-        f->allocation_modifier = 0.4;
+        f->picture_weight = 0.4;
       }
     }
   }
@@ -224,7 +224,7 @@ handle_gop_backref (SchroEncoder *encoder, int i)
   frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
   frame->slot = encoder->next_slot++;
   frame->presentation_frame = frame->frame_number;
-  frame->allocation_modifier = 1 + (gop_length - 1) * 0.6;
+  frame->picture_weight = 1 + (gop_length - 1) * 0.6;
   if (encoder->last_ref != -1) {
     frame->retired_picture_number = encoder->last_ref;
   }
@@ -240,7 +240,7 @@ handle_gop_backref (SchroEncoder *encoder, int i)
         f->picture_number_ref0);
     f->slot = encoder->next_slot++;
     f->presentation_frame = f->frame_number;
-    f->allocation_modifier = 0.4;
+    f->picture_weight = 0.4;
   }
 
   encoder->gop_picture += gop_length;
@@ -400,14 +400,18 @@ init_small_codeblocks (SchroParams *params)
 }
 
 static int
-get_residual_alloc (SchroEncoder *encoder, int buffer_level)
+get_residual_alloc (SchroEncoder *encoder, int buffer_level, double picture_weight)
 {
   double x;
   int bits;
 
   x = (double)buffer_level/encoder->buffer_size;
 
-  bits = rint (x * encoder->bits_per_picture * encoder->magic_allocation_scale);
+  if (picture_weight == 0) {
+    picture_weight = 1.0;
+  }
+  bits = rint (x * encoder->bits_per_picture * picture_weight *
+      encoder->magic_allocation_scale);
 
   if (bits > buffer_level) bits = buffer_level;
 
@@ -417,8 +421,13 @@ get_residual_alloc (SchroEncoder *encoder, int buffer_level)
 int
 get_mc_alloc (SchroEncoderFrame *frame)
 {
-  return 10 * frame->params.x_num_blocks * frame->params.y_num_blocks *
-    frame->num_refs;
+  if (frame->encoder->enable_bigblock_prediction) {
+    return 10 * frame->params.x_num_blocks * frame->params.y_num_blocks *
+      frame->num_refs / 16;
+  } else {
+    return 10 * frame->params.x_num_blocks * frame->params.y_num_blocks *
+      frame->num_refs;
+  }
 }
 
 void
@@ -439,8 +448,12 @@ schro_encoder_recalculate_allocations (SchroEncoder *encoder)
         frame->state == SCHRO_ENCODER_FRAME_STATE_ANALYSE ||
         frame->state == SCHRO_ENCODER_FRAME_STATE_PREDICT) {
       frame->allocated_mc_bits = get_mc_alloc (frame);
-      frame->allocated_residual_bits = get_residual_alloc (encoder, buffer_level);
+      frame->allocated_residual_bits =
+        get_residual_alloc (encoder, buffer_level, frame->picture_weight);
       frame->allocated_residual_bits -= frame->allocated_mc_bits;
+      if (frame->allocated_residual_bits < 0) {
+        frame->allocated_residual_bits = 0;
+      }
       buffer_level -= frame->allocated_residual_bits + frame->allocated_mc_bits;
     } else {
       buffer_level -= frame->allocated_residual_bits + frame->allocated_mc_bits;
@@ -527,7 +540,7 @@ setup_params_intra_only (SchroEncoderFrame *frame)
 
   frame->output_buffer_size =
     schro_engine_pick_output_buffer_size (encoder, frame);
-  frame->allocation_modifier = 1.0;
+  frame->picture_weight = 1.0;
 
   /* set up params */
   init_params (frame);

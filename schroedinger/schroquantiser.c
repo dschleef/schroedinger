@@ -662,7 +662,7 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
     double scale = 1/frame->encoder->average_arith_context_ratio;
     if (scale < 0.8) scale = 0.8;
     if (scale > 2.0) scale = 2.0;
-    bits = frame->allocated_residual_bits * frame->allocation_modifier * scale;
+    bits = frame->allocated_residual_bits * scale;
   }
 
   if (frame->num_refs == 0) {
