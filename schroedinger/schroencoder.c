@@ -100,6 +100,7 @@ schro_encoder_new (void)
   encoder->enable_hierarchical_prediction = TRUE;
   encoder->enable_zero_prediction = FALSE;
   encoder->enable_phasecorr_prediction = FALSE;
+  encoder->enable_bigblock_prediction = FALSE;
 
   encoder->magic_dc_metric_offset = 1.0;
 
@@ -2347,6 +2348,7 @@ static SchroEncoderSetting encoder_settings[] = {
   BOOL("enable_hierarchical_prediction", TRUE),
   BOOL("enable_zero_prediction", FALSE),
   BOOL("enable_phasecorr_prediction", FALSE),
+  BOOL("enable_bigblock_prediction", FALSE),
   INT ("magic_dc_metric_offset", 0, 255, 1.0),
 };
 
@@ -2407,6 +2409,7 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(enable_hierarchical_prediction);
   VAR_SET(enable_zero_prediction);
   VAR_SET(enable_phasecorr_prediction);
+  VAR_SET(enable_bigblock_prediction);
   VAR_SET(magic_dc_metric_offset);
   //VAR_SET();
 }
@@ -2443,6 +2446,7 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(enable_hierarchical_prediction);
   VAR_GET(enable_zero_prediction);
   VAR_GET(enable_phasecorr_prediction);
+  VAR_GET(enable_bigblock_prediction);
   VAR_GET(magic_dc_metric_offset);
   //VAR_GET();
 

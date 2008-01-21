@@ -246,6 +246,7 @@ struct _SchroEncoder {
   schro_bool enable_hierarchical_prediction;
   schro_bool enable_zero_prediction;
   schro_bool enable_phasecorr_prediction;
+  schro_bool enable_bigblock_prediction;
   double magic_dc_metric_offset;
 
   /* other */
