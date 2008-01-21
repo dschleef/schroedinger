@@ -149,8 +149,6 @@ struct _SchroEncoderFrame {
   int stats_global;
   int stats_motion;
 
-  int estimated_entropy;
-
   int subband_size;
   SchroBuffer *subband_buffer;
 
@@ -178,15 +176,20 @@ struct _SchroEncoderFrame {
   SchroHistogram subband_hists[3][SCHRO_LIMIT_SUBBANDS];
   SchroHistogram hist_test;
 
-  int allocated_bits;
+  /* statistics */
+
   double allocation_modifier;
-  int actual_bits;
-  int actual_mc_bits;
+  double scene_change_score;
   double average_luma;
 
-  double scene_change_score;
-
+  int allocated_residual_bits;
+  int allocated_mc_bits;
   double base_lambda;
+  int estimated_residual_bits;
+  int estimated_mc_bits;
+
+  int actual_residual_bits;
+  int actual_mc_bits;
 };
 
 struct _SchroEncoder {
@@ -223,6 +226,13 @@ struct _SchroEncoder {
   schro_bool enable_psnr;
   schro_bool enable_ssim;
   schro_bool enable_md5;
+
+  double magic_subband0_lambda_scale;
+  double magic_chroma_lambda_scale;
+  double magic_nonref_lambda_scale;
+  double magic_allocation_scale;
+  double magic_keyframe_weight;
+  double magic_scene_change_threshold;
 
   int ref_distance;
   int transform_depth;

@@ -82,6 +82,13 @@ schro_encoder_new (void)
   encoder->enable_ssim = FALSE;
   encoder->enable_md5 = FALSE;
 
+  encoder->magic_subband0_lambda_scale = 5.0;
+  encoder->magic_chroma_lambda_scale = 1.0;
+  encoder->magic_nonref_lambda_scale = 0.2;
+  encoder->magic_allocation_scale = 1.5;
+  encoder->magic_keyframe_weight = 5.0;
+  encoder->magic_scene_change_threshold = 1000.0;
+
   encoder->ref_distance = 4;
   encoder->transform_depth = 4;
   encoder->intra_wavelet = SCHRO_WAVELET_DESLAURIES_DUBUC_9_7;
@@ -156,7 +163,7 @@ schro_encoder_start (SchroEncoder *encoder)
       handle_gop_enum (encoder);
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RATE_DISTORTION;
 
-      encoder->buffer_size = encoder->bitrate;
+      encoder->buffer_size = 3 * encoder->bitrate;
       encoder->buffer_level = encoder->buffer_size;
       encoder->bits_per_picture = muldiv64 (encoder->bitrate,
             encoder->video_format.frame_rate_denominator,
@@ -386,7 +393,7 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
           /* FIXME move this */
           double x;
 
-          x = (double)frame->actual_bits / frame->estimated_entropy;
+          x = (double)frame->actual_residual_bits / frame->estimated_residual_bits;
           if (encoder->average_arith_context_ratio == 0) {
             encoder->average_arith_context_ratio = x;
           } else {
@@ -794,7 +801,6 @@ schro_encoder_encode_picture_all (SchroEncoderFrame *frame)
 void
 schro_encoder_encode_picture (SchroEncoderFrame *frame)
 {
-  int residue_bits_start;
   SchroBuffer *subbuffer;
   int frame_width, frame_height;
 
@@ -844,7 +850,7 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
   schro_pack_sync(frame->pack);
   schro_encoder_encode_transform_parameters (frame);
 
-  residue_bits_start = schro_pack_get_offset(frame->pack) * 8;
+  frame->actual_residual_bits = -schro_pack_get_offset (frame->pack)*8;
 
   schro_pack_sync(frame->pack);
   if (frame->params.is_lowdelay) {
@@ -854,25 +860,25 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
   }
 
   schro_pack_flush (frame->pack);
-  frame->actual_bits = schro_pack_get_offset (frame->pack)*8;
+  frame->actual_residual_bits += schro_pack_get_offset (frame->pack)*8;
 
-  schro_dump (SCHRO_DUMP_PICTURE, "%d %d %g %d %d %g %d %d %d %d\n",
-      frame->frame_number, frame->num_refs,
-      frame->allocated_bits*frame->allocation_modifier,
-      frame->estimated_entropy, frame->actual_bits,
-      frame->scene_change_score, frame->actual_mc_bits,
-      frame->stats_dc, frame->stats_global, frame->stats_motion);
+  schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g\n",
+      frame->frame_number,
+      frame->num_refs,
+      frame->is_ref,
+      frame->allocated_mc_bits,
+      frame->allocated_residual_bits,
+      frame->allocation_modifier,
+      frame->estimated_mc_bits,
+      frame->estimated_residual_bits,
+      frame->actual_mc_bits,
+      frame->actual_residual_bits,
+      frame->scene_change_score);
 
   subbuffer = schro_buffer_new_subbuffer (frame->output_buffer, 0,
       schro_pack_get_offset (frame->pack));
   schro_buffer_unref (frame->output_buffer);
   frame->output_buffer = subbuffer;
-
-  if (frame->params.num_refs > 0) {
-    SCHRO_INFO("pred bits %d, residue bits %d, dc %d, global = %d, motion %d",
-        residue_bits_start, schro_pack_get_offset(frame->pack)*8 - residue_bits_start,
-        frame->stats_dc, frame->stats_global, frame->stats_motion);
-  }
 
   if (frame->subband_buffer) {
     schro_buffer_unref (frame->subband_buffer);
@@ -2075,7 +2081,7 @@ schro_encoder_encode_subband_noarith (SchroEncoderFrame *frame,
 
   schro_dump(SCHRO_DUMP_SUBBAND_EST, "%d %d %d %d %d\n",
       frame->frame_number, component, index,
-      frame->estimated_entropy, schro_pack_get_offset(pack)*8);
+      frame->estimated_residual_bits, schro_pack_get_offset(pack)*8);
 
   schro_pack_encode_uint (frame->pack, schro_pack_get_offset(pack));
   if (schro_pack_get_offset(pack) > 0) {

@@ -662,7 +662,7 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
     double scale = 1/frame->encoder->average_arith_context_ratio;
     if (scale < 0.8) scale = 0.8;
     if (scale > 2.0) scale = 2.0;
-    bits = frame->allocated_bits * frame->allocation_modifier * scale;
+    bits = frame->allocated_residual_bits * frame->allocation_modifier * scale;
   }
 
   if (frame->num_refs == 0) {
@@ -680,7 +680,7 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
         (frame->ref_frame0->base_lambda + frame->ref_frame1->base_lambda);
     }
     if (!frame->is_ref) {
-      base_lambda *= 0.2;
+      base_lambda *= frame->encoder->magic_nonref_lambda_scale;
     }
   }
   frame->base_lambda = base_lambda;
@@ -703,14 +703,11 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
 
       lambda = base_lambda;
       if (i == 0) {
-        /* FIXME lame, but needed */
-        lambda *= 5;
+        lambda *= frame->encoder->magic_subband0_lambda_scale;
       }
-#if 0
       if (component > 0) {
-        lambda *= 0.3;
+        lambda *= frame->encoder->magic_chroma_lambda_scale;
       }
-#endif
 
       weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
         [frame->params.transform_depth-1][i];
@@ -738,7 +735,9 @@ schro_encoder_estimate_entropy (SchroEncoderFrame *frame)
             frame->quant_index[component][i], params->is_noarith);
     }
   }
-  frame->estimated_entropy = n;
+  frame->estimated_residual_bits = n;
+
+  frame->estimated_mc_bits = frame->allocated_mc_bits;
 }
 
 static int

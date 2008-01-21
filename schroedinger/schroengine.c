@@ -7,8 +7,6 @@
 
 #include <math.h>
 
-#define SCENE_CHANGE_THRESHOLD 1000
-
 int schro_engine_get_scene_change_score (SchroEncoder *encoder, int i);
 
 void
@@ -68,10 +66,10 @@ handle_gop (SchroEncoder *encoder, int i)
         f->average_luma);
     SCHRO_DEBUG("scene change score %g", f->scene_change_score);
 
-    if (j==0 && f->scene_change_score > SCENE_CHANGE_THRESHOLD) {
+    if (j==0 && f->scene_change_score > encoder->magic_scene_change_threshold) {
       intra_start = TRUE;
     }
-    if (j>=1 && f->scene_change_score > SCENE_CHANGE_THRESHOLD) {
+    if (j>=1 && f->scene_change_score > encoder->magic_scene_change_threshold) {
       /* probably a scene change.  terminate gop */
       gop_length = j;
     }
@@ -96,7 +94,8 @@ handle_gop (SchroEncoder *encoder, int i)
       frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
       frame->slot = encoder->next_slot++;
       frame->presentation_frame = frame->frame_number;
-      frame->allocation_modifier = 1 + (gop_length - 1) * 0.6;
+      //frame->allocation_modifier = 1 + (gop_length - 1) * 0.6;
+      frame->allocation_modifier = encoder->magic_keyframe_weight;
       if (encoder->last_ref != -1) {
         frame->retired_picture_number = encoder->last_ref;
       }
@@ -112,7 +111,7 @@ handle_gop (SchroEncoder *encoder, int i)
           f->picture_number_ref0);
       f->slot = encoder->next_slot++;
       f->presentation_frame = f->frame_number;
-      f->allocation_modifier = 1.0;
+      f->allocation_modifier = 1 + (gop_length - 2) * 0.6;
       if (encoder->last_ref != -1) {
         f->retired_picture_number = encoder->last_ref;
       }
@@ -144,7 +143,7 @@ handle_gop (SchroEncoder *encoder, int i)
           f->picture_number_ref0);
       f->slot = encoder->next_slot++;
       f->presentation_frame = f->frame_number;
-      f->allocation_modifier = 1.0;
+      f->allocation_modifier = 1 + (gop_length - 1) * 0.6;
       if (encoder->last_ref != -1) {
         f->retired_picture_number = encoder->last_ref;
       }
@@ -211,7 +210,7 @@ handle_gop_backref (SchroEncoder *encoder, int i)
         f->frame_number, f->scene_change_score,
         f->average_luma);
 
-    if (j>=1 && f->scene_change_score > SCENE_CHANGE_THRESHOLD) {
+    if (j>=1 && f->scene_change_score > encoder->magic_scene_change_threshold) {
       /* probably a scene change.  terminate gop */
       gop_length = j;
     }
@@ -359,7 +358,7 @@ init_params (SchroEncoderFrame *frame)
   params->transform_depth = encoder->transform_depth;
 
   //if (video_format->width * video_format->height >= 1920*1080) {
-  if (video_format->width * video_format->height >= 720 * 1280) {
+  if (video_format->width * video_format->height >= 720 * 1280 + 1) {
     params->xbsep_luma = 16;
     params->ybsep_luma = 16;
     params->xblen_luma = 24;
@@ -400,21 +399,26 @@ init_small_codeblocks (SchroParams *params)
   }
 }
 
-#define MAGIC 1.5
-
 static int
-get_alloc (SchroEncoder *encoder, int buffer_level)
+get_residual_alloc (SchroEncoder *encoder, int buffer_level)
 {
   double x;
   int bits;
 
   x = (double)buffer_level/encoder->buffer_size;
 
-  bits = rint (x * encoder->bits_per_picture * MAGIC);
+  bits = rint (x * encoder->bits_per_picture * encoder->magic_allocation_scale);
 
   if (bits > buffer_level) bits = buffer_level;
 
   return bits;
+}
+
+int
+get_mc_alloc (SchroEncoderFrame *frame)
+{
+  return 10 * frame->params.x_num_blocks * frame->params.y_num_blocks *
+    frame->num_refs;
 }
 
 void
@@ -429,30 +433,20 @@ schro_encoder_recalculate_allocations (SchroEncoder *encoder)
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
 
-    if (frame->actual_bits) {
-      buffer_level += frame->actual_bits;
+    if (frame->actual_residual_bits) {
+      buffer_level += frame->actual_residual_bits + frame->actual_mc_bits;
     } else if (frame->state == SCHRO_ENCODER_FRAME_STATE_NEW ||
         frame->state == SCHRO_ENCODER_FRAME_STATE_ANALYSE ||
         frame->state == SCHRO_ENCODER_FRAME_STATE_PREDICT) {
-      /* FIXME gross, I don't like changing the algorithm based on the
-       * GOP structure */
-      if (encoder->gop_structure == SCHRO_ENCODER_GOP_BIREF) {
-        frame->allocated_bits = get_alloc (encoder, buffer_level);
-      } else if (encoder->gop_structure == SCHRO_ENCODER_GOP_INTRA_ONLY) {
-        frame->allocated_bits = get_alloc (encoder, buffer_level);
-      } else {
-        frame->allocated_bits = get_alloc (encoder, buffer_level);
-#if 0
-        frame->allocated_bits = muldiv64 (buffer_level,
-            encoder->video_format.frame_rate_denominator * 2,
-            encoder->video_format.frame_rate_numerator);
-#endif
-      }
-      buffer_level -= frame->allocated_bits;
+      frame->allocated_mc_bits = get_mc_alloc (frame);
+      frame->allocated_residual_bits = get_residual_alloc (encoder, buffer_level);
+      frame->allocated_residual_bits -= frame->allocated_mc_bits;
+      buffer_level -= frame->allocated_residual_bits + frame->allocated_mc_bits;
     } else {
-      buffer_level -= frame->allocated_bits;
+      buffer_level -= frame->allocated_residual_bits + frame->allocated_mc_bits;
     }
-    SCHRO_DEBUG("%d: %d %d %d", i, frame->state, frame->actual_bits, frame->allocated_bits);
+    SCHRO_DEBUG("%d: %d %d %d", i, frame->state,
+        frame->actual_residual_bits, frame->allocated_residual_bits);
     buffer_level += encoder->bits_per_picture;
     if (buffer_level > encoder->buffer_size) {
       buffer_level = encoder->buffer_size;
