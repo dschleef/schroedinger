@@ -6,7 +6,26 @@
 
 SCHRO_BEGIN_DECLS
 
+typedef struct _SchroMetricScan SchroMetricScan;
+
 #ifdef SCHRO_ENABLE_UNSTABLE_API
+
+struct _SchroMetricScan {
+  SchroFrame *frame;
+  SchroFrame *ref_frame;
+  int block_width;
+  int block_height;
+  int x, y;
+  int ref_x, ref_y;
+  int scan_width;
+  int scan_height;
+  int gravity_scale;
+  int gravity_x, gravity_y;
+  /* output */
+  uint32_t *metrics;
+};
+
+#define SCHRO_METRIC_INVALID 0x7fff
 
 int schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b,
     int b_stride, int width, int height);
@@ -16,6 +35,10 @@ int schro_metric_haar_const (uint8_t *data, int stride, int dc_value,
     int width, int height);
 int schro_metric_abssum_s16 (int16_t *data, int stride, int width, int height);
 int schro_metric_sum_u8 (uint8_t *data, int stride, int width, int height);
+
+void schro_metric_scan_do_scan (SchroMetricScan *scan);
+int schro_metric_scan_get_min (SchroMetricScan *scan, int *dx, int *dy);
+void schro_metric_scan_setup (SchroMetricScan *scan, int dx, int dy, int dist);
 
 #endif
 

@@ -13,6 +13,7 @@ typedef struct _SchroMotionVector SchroMotionVector;
 typedef struct _SchroMotionVectorDC SchroMotionVectorDC;
 typedef struct _SchroMotionField SchroMotionField;
 typedef struct _SchroMotion SchroMotion;
+typedef struct _SchroMotionScan SchroMotionScan;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 struct _SchroMotionVector {
