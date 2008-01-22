@@ -36,13 +36,13 @@ ramp(int n)
 
   printf("%d: ", n);
   for(i=0;i<n;i++){
-    printf("%d ", 1 + (6*i + xoff - 1)/(2*xoff - 1));
+    printf("%d ", 1 + (6*(i+1) + xoff)/(2*xoff + 1));
   }
   printf ("\n");
 
   printf("%d: ", n);
   for(i=0;i<n;i++){
-    printf("%g ", 1.0 + (6.0*i + xoff - 1)/(2.0*xoff - 1));
+    printf("%g ", 1.0 + (6.0*(i+1) + xoff)/(2.0*xoff + 1));
   }
   printf ("\n");
 
