@@ -111,7 +111,7 @@ handle_gop (SchroEncoder *encoder, int i)
           f->picture_number_ref0);
       f->slot = encoder->next_slot++;
       f->presentation_frame = f->frame_number;
-      f->picture_weight = 1 + (gop_length - 2) * 0.6;
+      f->picture_weight = 1 + (gop_length - 2) * (1 - encoder->magic_inter_b_weight);
       if (encoder->last_ref != -1) {
         f->retired_picture_number = encoder->last_ref;
       }
@@ -130,7 +130,7 @@ handle_gop (SchroEncoder *encoder, int i)
             f->picture_number_ref0);
         f->slot = encoder->next_slot++;
         f->presentation_frame = f->frame_number;
-        f->picture_weight = 0.4;
+        f->picture_weight = encoder->magic_inter_b_weight;
       }
     } else {
       /* BBBP */
@@ -143,7 +143,8 @@ handle_gop (SchroEncoder *encoder, int i)
           f->picture_number_ref0);
       f->slot = encoder->next_slot++;
       f->presentation_frame = f->frame_number;
-      f->picture_weight = 1 + (gop_length - 1) * 0.6;
+      f->picture_weight = 1 + (gop_length - 1) *
+        (1 - encoder->magic_inter_b_weight);
       if (encoder->last_ref != -1) {
         f->retired_picture_number = encoder->last_ref;
       }
@@ -161,7 +162,7 @@ handle_gop (SchroEncoder *encoder, int i)
             f->picture_number_ref0);
         f->slot = encoder->next_slot++;
         f->presentation_frame = f->frame_number;
-        f->picture_weight = 0.4;
+        f->picture_weight = encoder->magic_inter_b_weight;
       }
     }
   }
@@ -224,7 +225,7 @@ handle_gop_backref (SchroEncoder *encoder, int i)
   frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
   frame->slot = encoder->next_slot++;
   frame->presentation_frame = frame->frame_number;
-  frame->picture_weight = 1 + (gop_length - 1) * 0.6;
+  frame->picture_weight = 1 + (gop_length - 1) * (1 - encoder->magic_inter_b_weight);
   if (encoder->last_ref != -1) {
     frame->retired_picture_number = encoder->last_ref;
   }
@@ -240,7 +241,7 @@ handle_gop_backref (SchroEncoder *encoder, int i)
         f->picture_number_ref0);
     f->slot = encoder->next_slot++;
     f->presentation_frame = f->frame_number;
-    f->picture_weight = 0.4;
+    f->picture_weight = encoder->magic_inter_b_weight;
   }
 
   encoder->gop_picture += gop_length;

@@ -233,6 +233,8 @@ struct _SchroEncoder {
   double magic_allocation_scale;
   double magic_keyframe_weight;
   double magic_scene_change_threshold;
+  double magic_inter_p_weight;
+  double magic_inter_b_weight;
 
   int ref_distance;
   int transform_depth;

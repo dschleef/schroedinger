@@ -737,6 +737,14 @@ schro_encoder_estimate_entropy (SchroEncoderFrame *frame)
   }
   frame->estimated_residual_bits = n;
 
+  if (frame->estimated_residual_bits >
+      2 * frame->encoder->bits_per_picture + frame->allocated_residual_bits) {
+    SCHRO_ERROR("%d: estimated entropy too big (%d vs %d)",
+        frame->frame_number,
+        frame->estimated_residual_bits,
+        frame->allocated_residual_bits);
+  }
+
   frame->estimated_mc_bits = frame->allocated_mc_bits;
 }
 

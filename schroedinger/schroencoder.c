@@ -87,7 +87,9 @@ schro_encoder_new (void)
   encoder->magic_nonref_lambda_scale = 0.2;
   encoder->magic_allocation_scale = 2.0;
   encoder->magic_keyframe_weight = 5.0;
-  encoder->magic_scene_change_threshold = 1000.0;
+  encoder->magic_scene_change_threshold = 2000.0;
+  encoder->magic_inter_p_weight = 1.0;
+  encoder->magic_inter_b_weight = 0.4;
 
   encoder->ref_distance = 4;
   encoder->transform_depth = 4;
@@ -652,7 +654,11 @@ schro_encoder_wait (SchroEncoder *encoder)
     }
  
     SCHRO_DEBUG("encoder waiting");
-    schro_async_wait_locked (encoder->async);
+    ret = schro_async_wait_locked (encoder->async);
+    if (!ret) {
+      SCHRO_ERROR ("doh!");
+      SCHRO_ASSERT(0);
+    }
   }
   schro_async_unlock (encoder->async);
 
