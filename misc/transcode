@@ -1,0 +1,75 @@
+#!/bin/sh
+
+#infile=elephants_dream.SD-master.drc
+#infile=elephants_dream.HD540-master.drc
+#infile=elephants_dream.HD720-master.drc
+#file=elephants_dream
+
+infile=showreel.HD720-master.drc
+file=showreel
+
+mediadir=/home/ds/media/masters
+
+all="SD-default SD-VBR-10dB SD-VBR-20dB SD-VBR-30dB SD-VBR-40dB \
+    SD-CBR-250kb SD-CBR-500kb SD-CBR-1Mb SD-CBR-2Mb \
+    SD-LD-40Mb SD-LD-10Mb SD-lossless SD-intra-only"
+
+list="$all"
+
+#list=SD-CBR-3Mb
+list=HD720-CBR-5Mb
+
+extraopts="enable-bigblock-prediction=true enable-hierarchical-prediction=false"
+export SCHRO_DUMP=1
+
+trap exit INT
+
+function get_profile {
+  case $1 in
+    SD-default) schroopts="" ;;
+    SD-VBR-10dB) schroopts="rate-control=0 noise-threshold=10" ;;
+    SD-VBR-20dB) schroopts="rate-control=0 noise-threshold=20" ;;
+    SD-VBR-30dB) schroopts="rate-control=0 noise-threshold=30" ;;
+    SD-VBR-40dB) schroopts="rate-control=0 noise-threshold=40" ;;
+    SD-CBR-250kb) schroopts="rate-control=1 bitrate=250000" ;;
+    SD-CBR-500kb) schroopts="rate-control=1 bitrate=500000" ;;
+    SD-CBR-1Mb) schroopts="rate-control=1 bitrate=1000000" ;;
+    SD-CBR-2Mb) schroopts="rate-control=1 bitrate=2000000" ;;
+    SD-CBR-3Mb) schroopts="rate-control=1 bitrate=3000000" ;;
+    SD-LD-40Mb) schroopts="rate-control=2 bitrate=41472000" ;;
+    SD-LD-20Mb) schroopts="rate-control=2 bitrate=20736000" ;;
+    SD-LD-10Mb) schroopts="rate-control=2 bitrate=10368000" ;;
+    SD-lossless) schroopts="rate-control=3" ;;
+    SD-intra-only) schroopts="gop-structure=1" ;;
+    SD-tworef) schroopts="gop-structure=4" ;;
+    HD720-tworef) schroopts="gop-structure=4" ;;
+    HD720-CBR-4Mb) schroopts="rate-control=1 bitrate=4000000 gop-structure=4" ;;
+    HD720-CBR-5Mb) schroopts="rate-control=1 bitrate=5000000 gop-structure=4" ;;
+    SD-CBR-3Mb-tworef) schroopts="rate-control=1 bitrate=3000000 gop-structure=4" ;;
+    HD270-default) schroopts="" ;;
+  esac
+}
+
+function encode {
+  # engine3
+  get_profile $prof
+  output=$file.$prof.drc
+  echo "encoding $file using $prof"
+
+  gst-launch-0.10 filesrc location=$mediadir/$infile ! \
+    schrodec ! \
+    schroenc $schroopts $extraopts ! \
+    filesink location=$output
+  #>/dev/null 2>/dev/null
+}
+
+function encode_all {
+  for each in $list
+  do
+    prof=$each
+    encode
+  done
+}
+
+encode_all
+
