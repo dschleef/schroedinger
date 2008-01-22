@@ -10,10 +10,12 @@ all="SD-default SD-VBR-10dB SD-VBR-20dB SD-VBR-30dB SD-VBR-40dB \
 list="$all"
 
 #list=SD-tworef
-list=SD-intra-only
+list=SD-CBR-49Mb-intra
+list=SD-CBR-49Mb-intra-noarith
 
 #extraopts="enable-phasecorr-prediction=true enable-hierarchical-prediction=false"
 #extraopts="perceptual-weighting=1"
+extraopts="enable-psnr=true"
 
 trap exit INT
 
@@ -32,6 +34,12 @@ function get_profile {
     SD-LD-40Mb) schroopts="rate-control=2 bitrate=41472000" ;;
     SD-LD-20Mb) schroopts="rate-control=2 bitrate=20736000" ;;
     SD-LD-10Mb) schroopts="rate-control=2 bitrate=10368000" ;;
+    SD-CBR-25Mb-intra-noarith) schroopts="rate-control=1 gop-structure=1 bitrate=24883200 enable_noarith=1" ;;
+    SD-CBR-25Mb-intra) schroopts="rate-control=1 gop-structure=1 bitrate=24883200" ;;
+    SD-CBR-41Mb-intra-noarith) schroopts="rate-control=1 gop-structure=1 bitrate=41472000 enable_noarith=1" ;;
+    SD-CBR-41Mb-intra) schroopts="rate-control=1 gop-structure=1 bitrate=41472000" ;;
+    SD-CBR-49Mb-intra-noarith) schroopts="rate-control=1 gop-structure=1 bitrate=49766400 enable_noarith=1" ;;
+    SD-CBR-49Mb-intra) schroopts="rate-control=1 gop-structure=1 bitrate=49766400" ;;
     SD-lossless) schroopts="rate-control=3" ;;
     SD-intra-only) schroopts="gop-structure=1" ;;
     SD-intra-noarith) schroopts="gop-structure=1 enable_noarith=1" ;;
