@@ -190,6 +190,11 @@ get_pixel (SchroMotion *motion, int k, SchroUpsampledFrame *upframe,
       motion->mv_precision);
 }
 
+static int
+get_ramp (int x, int offset)
+{
+  return 1 + (6 * (x+1) + offset)/(2*offset + 1);
+}
 
 
 int
@@ -221,9 +226,9 @@ schro_motion_pixel_predict_block (SchroMotion *motion, int x, int y, int k,
   } else if (x < motion->xoffset || x >= width - motion->xoffset) {
     wx = 8;
   } else if (x - xmin < 2*motion->xoffset) {
-    wx = 1 + (6*(x-xmin) + motion->xoffset - 1)/(2*motion->xoffset - 1);
+    wx = get_ramp (x - xmin, motion->xoffset);
   } else if (xmax - 1 - x < 2*motion->xoffset) {
-    wx = 7 - (6*(x-xmax+2*motion->xoffset) + motion->xoffset - 1)/(2*motion->xoffset - 1);
+    wx = get_ramp (xmax - 1 - x, motion->xoffset);
   } else {
     wx = 8;
   }
@@ -233,9 +238,9 @@ schro_motion_pixel_predict_block (SchroMotion *motion, int x, int y, int k,
   } else if (y < motion->yoffset || y >= width - motion->yoffset) {
     wy = 8;
   } else if (y - ymin < 2*motion->yoffset) {
-    wy = 1 + (6*(y-ymin) + motion->yoffset - 1)/(2*motion->yoffset - 1);
+    wy = get_ramp (y - ymin, motion->yoffset);
   } else if (ymax - 1 - y < 2*motion->yoffset) {
-    wy = 7 - (6*(y-ymax+2*motion->yoffset) + motion->yoffset - 1)/(2*motion->yoffset - 1);
+    wy = get_ramp (ymax - 1 - y, motion->yoffset);
   } else {
     wy = 8;
   }
@@ -264,16 +269,6 @@ schro_motion_pixel_predict_block (SchroMotion *motion, int x, int y, int k,
 }
 
 
-static int
-ilog2 (unsigned int x)
-{
-  int i;
-  for(i=0;x > 1;i++){
-    x >>= 1;
-  }
-  return i;
-}
-
 static void
 obmc_calc (int16_t *data, int x_len, int y_len, int x_ramp,
     int y_ramp)
@@ -289,9 +284,9 @@ obmc_calc (int16_t *data, int x_len, int y_len, int x_ramp,
       if (xoffset == 0) {
         wx = 8;
       } else if (i < 2*xoffset) {
-        wx = 1 + (6*i + xoffset - 1)/(2*xoffset - 1);
+        wx = get_ramp (i, xoffset);
       } else if (x_len - 1 - i < 2*xoffset) {
-        wx = 7 - (6*(i-x_len+2*xoffset) + xoffset - 1)/(2*xoffset - 1);
+        wx = get_ramp (x_len - 1 - i, xoffset);
       } else {
         wx = 8;
       }
@@ -299,9 +294,9 @@ obmc_calc (int16_t *data, int x_len, int y_len, int x_ramp,
       if (yoffset == 0) {
         wy = 8;
       } else if (j < 2*yoffset) {
-        wy = 1 + (6*j + yoffset - 1)/(2*yoffset - 1);
+        wy = get_ramp (j, yoffset);
       } else if (y_len - 1 - j < 2*yoffset) {
-        wy = 7 - (6*(j-y_len+2*yoffset) + yoffset - 1)/(2*yoffset - 1);
+        wy = get_ramp (y_len - 1 - j, yoffset);
       } else {
         wy = 8;
       }
@@ -387,10 +382,10 @@ schro_obmc_init (SchroObmc *obmc, int x_len, int y_len, int x_sep, int y_sep,
   x_ramp = x_len - x_sep;
   y_ramp = y_len - y_sep;
 
-  if (!(x_ramp == 0 || (x_ramp >= 2 && x_ramp == (1<<(ilog2(x_ramp)))))) {
+  if ((x_ramp & 1) != 0) {
     SCHRO_ERROR ("x_ramp not valid %d", x_ramp);
   }
-  if (!(y_ramp == 0 || (y_ramp >= 2 && y_ramp == (1<<(ilog2(y_ramp)))))) {
+  if ((y_ramp & 1) != 0) {
     SCHRO_ERROR ("y_ramp not valid %d", y_ramp);
   }
   if (2*x_ramp > x_len) {

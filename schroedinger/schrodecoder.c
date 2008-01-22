@@ -947,6 +947,16 @@ schro_decoder_decode_parse_header (SchroDecoder *decoder)
   SCHRO_DEBUG ("prev_parse_offset %d", decoder->prev_parse_offset);
 }
 
+static int
+schro_decoder_check_version (int major, int minor)
+{
+  if (major == 0 && minor == 20071203) return TRUE;
+  if (major == 1 && minor == 0) return TRUE;
+  if (major == 2 && minor == 0) return TRUE;
+
+  return FALSE;
+}
+
 void
 schro_decoder_parse_access_unit (SchroDecoder *decoder)
 {
@@ -967,12 +977,12 @@ schro_decoder_parse_access_unit (SchroDecoder *decoder)
   decoder->level = schro_unpack_decode_uint (unpack);
   SCHRO_DEBUG("level = %d", decoder->level);
 
-  if (decoder->major_version != 0 || decoder->minor_version != 20071203) {
-    SCHRO_ERROR("Expecting version number 0.20071203, got %d.%d",
+  if (!schro_decoder_check_version (decoder->major_version, decoder->minor_version)) {
+    SCHRO_ERROR("Stream version number %d:%d not handled, expecting 0:20071203, 1:0, or 2:0",
         decoder->major_version, decoder->minor_version);
   }
   if (decoder->profile != 0 || decoder->level != 0) {
-    SCHRO_ERROR("Expecting profile/level 0,0, got %d,%d",
+    SCHRO_ERROR("Expecting profile/level 0:0, got %d:%d",
         decoder->profile, decoder->level);
   }
 

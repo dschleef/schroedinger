@@ -41,8 +41,8 @@ schro_encoder_new (void)
 
   encoder = schro_malloc0 (sizeof(SchroEncoder));
 
-  encoder->version_major = 0;
-  encoder->version_minor = 20071203;
+  encoder->version_major = 2;
+  encoder->version_minor = 0;
 
   encoder->au_frame = -1;
 
