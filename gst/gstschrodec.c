@@ -816,8 +816,7 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
     size = GST_READ_UINT32_BE(header + 5);
     if (size == 0) {
       /* FIXME: should handle this by resyncing. */
-      //return GST_FLOW_ERROR;
-      size = 13;
+      return GST_FLOW_ERROR;
     }
     if (gst_adapter_available (schro_dec->adapter) < size) {
       return GST_FLOW_OK;
@@ -987,6 +986,7 @@ gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer)
         go = FALSE;
         break;
       case SCHRO_DECODER_ERROR:
+        go = FALSE;
         /* FIXME */
         GST_ERROR ("codec error");
         break;

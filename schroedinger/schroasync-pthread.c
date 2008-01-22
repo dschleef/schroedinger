@@ -189,9 +189,32 @@ schro_async_pull_locked (SchroAsync *async)
 }
 
 void
+schro_async_dump (SchroAsync *async)
+{
+  int i;
+  for(i=0;i<async->n_threads;i++){
+    SchroThread *thread = async->threads + i;
+    const char *states[] = { "idle", "busy", "stopped" };
+
+    SCHRO_ERROR ("thread %d: %s", i, states[thread->state]);
+  }
+}
+
+int
 schro_async_wait_locked (SchroAsync *async)
 {
-  pthread_cond_wait (&async->app_cond, &async->mutex);
+  struct timespec ts;
+  int ret;
+
+  clock_gettime (CLOCK_REALTIME, &ts);
+  ts.tv_sec += 1;
+  ret = pthread_cond_timedwait (&async->app_cond, &async->mutex, &ts);
+  if (ret != 0) {
+    SCHRO_ERROR("timeout.  deadlock?");
+    schro_async_dump (async);
+    return FALSE;
+  }
+  return TRUE;
 }
 
 void

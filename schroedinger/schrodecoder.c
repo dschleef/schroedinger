@@ -408,7 +408,8 @@ schro_decoder_get_status_locked (SchroDecoder *decoder)
   if (!schro_queue_is_full (decoder->picture_queue) && !decoder->end_of_stream) {
     return SCHRO_DECODER_NEED_BITS;
   }
-  if (schro_queue_is_empty (decoder->picture_queue) && decoder->end_of_stream) {
+  if (decoder->end_of_stream &&
+      schro_queue_find (decoder->picture_queue, decoder->next_frame_number) == NULL) {
     return SCHRO_DECODER_EOS;
   }
 
@@ -427,6 +428,22 @@ schro_decoder_get_status (SchroDecoder *decoder)
   return ret;
 }
 
+void
+schro_decoder_dump (SchroDecoder *decoder)
+{
+  int i;
+  for(i=0;i<decoder->picture_queue->n;i++){
+    SchroPicture *picture = decoder->picture_queue->elements[i].data;
+
+    SCHRO_ERROR("%d: %d %d %04x %04x %04x",
+        i, picture->picture_number,
+        picture->busy,
+        picture->state,
+        picture->needed_state,
+        picture->working);
+  }
+}
+
 int
 schro_decoder_wait (SchroDecoder *decoder)
 {
@@ -439,7 +456,12 @@ schro_decoder_wait (SchroDecoder *decoder)
       break;
     }
 
-    schro_async_wait_locked (decoder->async);
+    ret = schro_async_wait_locked (decoder->async);
+    if (!ret) {
+      SCHRO_ERROR("doh!");
+      schro_decoder_dump (decoder);
+      SCHRO_ASSERT(0);
+    }
   }
   schro_async_unlock (decoder->async);
 
