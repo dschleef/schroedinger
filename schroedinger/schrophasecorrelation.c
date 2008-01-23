@@ -459,9 +459,9 @@ do_motion_field (SchroPhaseCorr *pc, int i)
   }
 
 void
-schro_encoder_phasecorr_estimation (SchroEncoderFrame *frame)
+schro_encoder_phasecorr_estimation (SchroMotionEst *me)
 {
-  SchroParams *params = &frame->params;
+  SchroParams *params = me->params;
   SchroPhaseCorr *pc;
   int ref;
   int i;
@@ -473,9 +473,9 @@ schro_encoder_phasecorr_estimation (SchroEncoderFrame *frame)
       continue;
     }
 
-    pc = schro_phasecorr_new (frame->filtered_frame->width,
-        frame->filtered_frame->height, 2, 5+i, 4+i);
-    schro_phasecorr_set_frame (pc, frame);
+    pc = schro_phasecorr_new (me->encoder_frame->filtered_frame->width,
+        me->encoder_frame->filtered_frame->height, 2, 5+i, 4+i);
+    schro_phasecorr_set_frame (pc, me->encoder_frame);
 
     for(ref=0;ref<params->num_refs;ref++){
       do_phase_corr (pc, ref);

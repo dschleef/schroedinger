@@ -101,7 +101,7 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
     schro_encoder_dc_estimation (me);
 
     if (frame->encoder->enable_phasecorr_estimation) {
-      schro_encoder_phasecorr_estimation (frame);
+      schro_encoder_phasecorr_estimation (me);
     }
 
     if (frame->encoder->enable_hierarchical_estimation) {
@@ -117,7 +117,7 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
     }
 
     if (params->have_global_motion) {
-      schro_encoder_global_estimation (frame);
+      schro_encoder_global_estimation (me);
     }
 
     schro_motion_merge (frame->motion, frame->motion_field_list);
@@ -365,30 +365,32 @@ schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame)
 }
 
 void
-schro_encoder_global_estimation (SchroEncoderFrame *frame)
+schro_encoder_global_estimation (SchroMotionEst *me)
 {
+  SchroParams *params = me->params;
   SchroMotionField *mf, *mf_orig;
   int i;
 
   SCHRO_ERROR("Global prediction is broken.  Please try again later");
 
-  for(i=0;i<frame->params.num_refs;i++) {
-    /* FIXME 0 is very wrong */
-    mf_orig = schro_list_get (frame->motion_field_list, 0);
+  for(i=0;i<params->num_refs;i++) {
+    mf_orig = me->downsampled_mf[i][0];
     mf = schro_motion_field_new (mf_orig->x_num_blocks, mf_orig->y_num_blocks);
 
     memcpy (mf->motion_vectors, mf_orig->motion_vectors,
         sizeof(SchroMotionVector)*mf->x_num_blocks*mf->y_num_blocks);
-    schro_motion_field_global_estimation (mf, &frame->params.global_motion[i],
-        frame->params.mv_precision);
+    schro_motion_field_global_estimation (mf,
+        &me->encoder_frame->params.global_motion[i],
+        params->mv_precision);
     if (i == 0) {
-      schro_motion_global_metric (mf, frame->filtered_frame,
-          frame->ref_frame0->filtered_frame);
+      schro_motion_global_metric (mf,
+          me->encoder_frame->filtered_frame,
+          me->encoder_frame->ref_frame0->filtered_frame);
     } else {
-      schro_motion_global_metric (mf, frame->filtered_frame,
-          frame->ref_frame1->filtered_frame);
+      schro_motion_global_metric (mf, me->encoder_frame->filtered_frame,
+          me->encoder_frame->ref_frame1->filtered_frame);
     }
-    schro_list_append (frame->motion_field_list, mf);
+    schro_list_append (me->encoder_frame->motion_field_list, mf);
   }
 }
 

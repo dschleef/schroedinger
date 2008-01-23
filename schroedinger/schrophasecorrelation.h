@@ -8,7 +8,7 @@ SCHRO_BEGIN_DECLS
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
-void schro_encoder_phasecorr_estimation (SchroEncoderFrame *frame);
+void schro_encoder_phasecorr_estimation (SchroMotionEst *me);
 
 #endif
 
