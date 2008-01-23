@@ -228,6 +228,8 @@ struct _SchroEncoder {
   int intra_wavelet;
   int inter_wavelet;
   int mv_precision;
+  int motion_block_size;
+  int motion_block_overlap;
   schro_bool interlaced_coding;
   schro_bool enable_internal_testing;
   schro_bool enable_noarith;

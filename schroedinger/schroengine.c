@@ -358,23 +358,49 @@ init_params (SchroEncoderFrame *frame)
   }
   params->transform_depth = encoder->transform_depth;
 
-  //if (video_format->width * video_format->height >= 1920*1080) {
-  if (video_format->width * video_format->height >= 720 * 1280 + 1) {
-    params->xbsep_luma = 16;
-    params->ybsep_luma = 16;
-    params->xblen_luma = 24;
-    params->yblen_luma = 24;
-#if 0
-  /* FIXME 12x12,16x16 doesn't currently work */
-  } else if (video_format->width * video_format->height > 480 * 720) {
-    params->xbsep_luma = 12;
-    params->ybsep_luma = 12;
-    params->xblen_luma = 16;
-    params->yblen_luma = 16;
-#endif
+  switch (encoder->motion_block_size) {
+    case 0:
+      if (video_format->width * video_format->height >= 1920*1080) {
+        params->xbsep_luma = 16;
+        params->ybsep_luma = 16;
+      } else if (video_format->width * video_format->height >= 960 * 540) {
+        params->xbsep_luma = 12;
+        params->ybsep_luma = 12;
+      } else {
+        params->xbsep_luma = 8;
+        params->ybsep_luma = 8;
+      }
+      break;
+    case 1:
+      params->xbsep_luma = 8;
+      params->ybsep_luma = 8;
+      break;
+    case 2:
+      params->xbsep_luma = 12;
+      params->ybsep_luma = 12;
+      break;
+    case 3:
+      params->xbsep_luma = 16;
+      params->ybsep_luma = 16;
+      break;
+  }
+  switch (encoder->motion_block_overlap) {
+    case 1:
+      params->xblen_luma = params->xblen_luma;
+      params->yblen_luma = params->yblen_luma;
+      break;
+    case 0:
+    case 2:
+      params->xblen_luma = (params->xblen_luma * 3 / 2) & (~3);
+      params->yblen_luma = (params->yblen_luma * 3 / 2) & (~3);
+      break;
+    case 3:
+      params->xblen_luma = 2 * params->xblen_luma;
+      params->yblen_luma = 2 * params->yblen_luma;
+      break;
   }
 
-  params->mv_precision = frame->encoder->mv_precision;
+  params->mv_precision = encoder->mv_precision;
   //params->have_global_motion = TRUE;
   params->codeblock_mode_index = 0;
   

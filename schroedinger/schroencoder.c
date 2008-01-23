@@ -96,6 +96,9 @@ schro_encoder_new (void)
   encoder->transform_depth = 4;
   encoder->intra_wavelet = SCHRO_WAVELET_DESLAURIES_DUBUC_9_7;
   encoder->inter_wavelet = SCHRO_WAVELET_LE_GALL_5_3;
+  encoder->mv_precision = 0;
+  encoder->motion_block_size = 0;
+  encoder->motion_block_overlap = 0;
   encoder->interlaced_coding = FALSE;
   encoder->enable_internal_testing = FALSE;
   encoder->enable_noarith = FALSE;
@@ -2325,6 +2328,18 @@ static char *wavelet_list[] = {
   "fidelity",
   "daub_9_7"
 };
+static char *block_size_list[] = {
+  "automatic",
+  "small",
+  "medium",
+  "large"
+};
+static char *block_overlap_list[] = {
+  "automatic",
+  "none",
+  "partial",
+  "full"
+};
 
 #ifndef INT_MAX
 #define INT_MAX 2147483647
@@ -2353,6 +2368,8 @@ static SchroEncoderSetting encoder_settings[] = {
   ENUM("intra_wavelet", wavelet_list, SCHRO_WAVELET_DESLAURIES_DUBUC_9_7),
   ENUM("inter_wavelet", wavelet_list, SCHRO_WAVELET_LE_GALL_5_3),
   INT ("mv_precision", 0, 3, 0),
+  ENUM("motion_block_size", block_size_list, 0),
+  ENUM("motion_block_overlap", block_overlap_list, 0),
   BOOL("interlaced_coding", FALSE),
   BOOL("enable_internal_testing", FALSE),
   BOOL("enable_noarith", FALSE),
@@ -2413,6 +2430,8 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(intra_wavelet);
   VAR_SET(inter_wavelet);
   VAR_SET(mv_precision);
+  VAR_SET(motion_block_size);
+  VAR_SET(motion_block_overlap);
   VAR_SET(enable_psnr);
   VAR_SET(enable_ssim);
   VAR_SET(enable_internal_testing);
@@ -2450,6 +2469,8 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(intra_wavelet);
   VAR_GET(inter_wavelet);
   VAR_GET(mv_precision);
+  VAR_GET(motion_block_size);
+  VAR_GET(motion_block_overlap);
   VAR_GET(enable_psnr);
   VAR_GET(enable_ssim);
   VAR_GET(enable_internal_testing);
