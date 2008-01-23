@@ -1424,7 +1424,7 @@ schro_motion_verify (SchroMotion *motion)
           break;
         case 1:
           bmv = &motion->motion_vectors[(y&~1)*params->x_num_blocks + (x&~1)];
-          if (!schro_motion_vector_is_equal (mv, sbmv)) {
+          if (!schro_motion_vector_is_equal (mv, bmv)) {
             SCHRO_ERROR("mv(%d,%d) not equal to 2-block mv", x, y);
             return 0;
           }
