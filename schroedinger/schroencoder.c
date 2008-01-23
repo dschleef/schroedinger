@@ -411,25 +411,27 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         schro_encoder_shift_frame_queue (encoder);
       }
 
-      encoder->buffer_level -= buffer->length * 8;
-      if (is_picture) {
-        encoder->buffer_level += encoder->bits_per_picture;
-        if (encoder->buffer_level < 0) {
-          SCHRO_ERROR("buffer underrun");
-          encoder->buffer_level = 0;
-        }
-        if (encoder->buffer_level > encoder->buffer_size) {
-          int n;
+      if (encoder->rate_control == SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE) {
+        encoder->buffer_level -= buffer->length * 8;
+        if (is_picture) {
+          encoder->buffer_level += encoder->bits_per_picture;
+          if (encoder->buffer_level < 0) {
+            SCHRO_ERROR("buffer underrun");
+            encoder->buffer_level = 0;
+          }
+          if (encoder->buffer_level > encoder->buffer_size) {
+            int n;
 
-          n = (encoder->buffer_level - encoder->buffer_size + 7)/8;
-          SCHRO_ERROR("buffer overrun, adding padding of %d bytes", n);
-          n = schro_encoder_encode_padding (encoder, n);
-          encoder->buffer_level -= n*8;
+            n = (encoder->buffer_level - encoder->buffer_size + 7)/8;
+            SCHRO_ERROR("buffer overrun, adding padding of %d bytes", n);
+            n = schro_encoder_encode_padding (encoder, n);
+            encoder->buffer_level -= n*8;
+          }
+          SCHRO_DEBUG("buffer level %d of %d bits", encoder->buffer_level,
+              encoder->buffer_size);
+          SCHRO_WARNING("buffer level %4.1f%%",
+              100.0*encoder->buffer_level/encoder->buffer_size);
         }
-        SCHRO_DEBUG("buffer level %d of %d bits", encoder->buffer_level,
-            encoder->buffer_size);
-        SCHRO_WARNING("buffer level %4.1f%%",
-            100.0*encoder->buffer_level/encoder->buffer_size);
       }
 
       schro_encoder_fixup_offsets (encoder, buffer);
@@ -656,8 +658,19 @@ schro_encoder_wait (SchroEncoder *encoder)
     SCHRO_DEBUG("encoder waiting");
     ret = schro_async_wait_locked (encoder->async);
     if (!ret) {
+#if 0
+      int i;
+
       SCHRO_ERROR ("doh!");
+      for(i=0;i<encoder->frame_queue->n;i++){
+        SchroEncoderFrame *frame = encoder->frame_queue->elements[i].data;
+        SCHRO_ERROR("%d: %d %04x", i, frame->frame_number, frame->state);
+      }
       SCHRO_ASSERT(0);
+#else
+      schro_async_signal_scheduler (encoder->async);
+      ret = SCHRO_STATE_AGAIN;
+#endif
     }
   }
   schro_async_unlock (encoder->async);
