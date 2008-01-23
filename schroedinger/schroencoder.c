@@ -2363,11 +2363,11 @@ static SchroEncoderSetting encoder_settings[] = {
   BOOL("enable_internal_testing", FALSE),
   BOOL("enable_noarith", FALSE),
   BOOL("enable_md5", FALSE),
-  BOOL("enable_fullscan_prediction", FALSE),
-  BOOL("enable_hierarchical_prediction", TRUE),
-  BOOL("enable_zero_prediction", FALSE),
-  BOOL("enable_phasecorr_prediction", FALSE),
-  BOOL("enable_bigblock_prediction", FALSE),
+  BOOL("enable_fullscan_estimation", FALSE),
+  BOOL("enable_hierarchical_estimation", TRUE),
+  BOOL("enable_zero_estimation", FALSE),
+  BOOL("enable_phasecorr_estimation", FALSE),
+  BOOL("enable_bigblock_estimation", FALSE),
   INT ("magic_dc_metric_offset", 0, 255, 1.0),
 };
 
