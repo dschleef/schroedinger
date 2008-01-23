@@ -33,10 +33,10 @@ pkginclude_HEADERS = \
 	schrolist.h \
 	schrometric.h \
 	schromotion.h \
+	schromotionest.h \
 	schropack.h \
 	schroparams.h \
 	schrophasecorrelation.h \
-	schropredict.h \
 	schroqueue.h \
 	schrossim.h \
 	schrotables.h \

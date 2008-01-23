@@ -5,7 +5,6 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schromotion.h>
-#include <schroedinger/schropredict.h>
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schroutils.h>
 #include <schroedinger/schrooil.h>

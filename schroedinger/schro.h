@@ -16,9 +16,9 @@
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schrolimits.h>
 #include <schroedinger/schromotion.h>
+#include <schroedinger/schromotionest.h>
 #include <schroedinger/schropack.h>
 #include <schroedinger/schroparams.h>
-#include <schroedinger/schropredict.h>
 #include <schroedinger/schroqueue.h>
 #include <schroedinger/schrossim.h>
 #include <schroedinger/schrotables.h>
