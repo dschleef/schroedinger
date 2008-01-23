@@ -56,7 +56,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%doc COPYING COPYING.MIT COPYING.GPL COPYING.LGPL COPYING.MPL ChangeLog
+%doc COPYING COPYING.MIT COPYING.GPL COPYING.LGPL COPYING.MPL
 %{_libdir}/libschroedinger-0.9.so.*
 %{_libdir}/gstreamer-0.10/libgstschro.so
 
@@ -90,12 +90,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/schroedinger-0.9/schroedinger/schrounpack.h
 %{_includedir}/schroedinger-0.9/schroedinger/schroutils.h
 %{_includedir}/schroedinger-0.9/schroedinger/schrowavelet.h
+%{_includedir}/schroedinger-0.9/schroedinger/schrocog.h
+%{_includedir}/schroedinger-0.9/schroedinger/schrodomain.h
 
-%{_includedir}/schroedinger-0.9/schroedinger/schrossim.h
-%{_includedir}/schroedinger-0.9/schroedinger/schrofft.h
-%{_includedir}/schroedinger-0.9/schroedinger/schrohistogram.h
-%{_includedir}/schroedinger-0.9/schroedinger/schrophasecorrelation.h
-%{_includedir}/schroedinger-0.9/schroedinger/schrounpack.h
 %{_includedir}/schroedinger-0.9/schroedinger/schrolimits.h
 %{_includedir}/schroedinger-0.9/schroedinger/schrolist.h
 %{_includedir}/schroedinger-0.9/schroedinger/schropack.h
@@ -103,6 +100,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/gtk-doc/html/schroedinger-0.9
 
 %changelog
+* Tue Jan 22 2008 Christian F.K. Schaller <christian.schaller@collabora.co.uk>
+- Update for latest changes
+
 * Thu Apr 05 2007 Thomas Vander Stichele <thomas at apestaart dot org>
 - Further updates.
 
