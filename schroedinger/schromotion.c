@@ -921,6 +921,10 @@ copy_block (SchroFrame *dest, SchroMotion *motion, int x, int y, int reg,
   SchroObmc *obmc;
   SchroObmcRegion *region;
   int k;
+  int width;
+  int height;
+
+  if (x >= dest->width || y >= dest->height) return;
 
   for (k = 0; k < 3; k++) {
     int x0, y0;
@@ -941,59 +945,66 @@ copy_block (SchroFrame *dest, SchroMotion *motion, int x, int y, int reg,
 
       d1 = SCHRO_FRAME_DATA_GET_PIXEL_S16(comp, x0, y0);
 
-      switch (region->end_x) {
+      width = MIN (region->end_x, comp->width - x0);
+      height = MIN (region->end_y, comp->height - y0);
+
+      switch (width) {
         case 6:
           oil_multiply_and_acc_6xn_s16_u8 (d1, comp->stride,
               region->weights[weight_index], obmc->x_len * sizeof(int16_t),
               motion->blocks[k], motion->strides[k],
-              region->end_y);
+              height);
           break;
         case 8:
           oil_multiply_and_acc_8xn_s16_u8 (d1, comp->stride,
               region->weights[weight_index], obmc->x_len * sizeof(int16_t),
               motion->blocks[k], motion->strides[k],
-              region->end_y);
+              height);
           break;
         case 12:
           oil_multiply_and_acc_12xn_s16_u8 (d1, comp->stride,
               region->weights[weight_index], obmc->x_len * sizeof(int16_t),
               motion->blocks[k], motion->strides[k],
-              region->end_y);
+              height);
           break;
         case 16:
           oil_multiply_and_acc_16xn_s16_u8 (d1, comp->stride,
               region->weights[weight_index], obmc->x_len * sizeof(int16_t),
               motion->blocks[k], motion->strides[k],
-              region->end_y);
+              height);
           break;
         case 24:
           oil_multiply_and_acc_24xn_s16_u8 (d1, comp->stride,
               region->weights[weight_index], obmc->x_len * sizeof(int16_t),
               motion->blocks[k], motion->strides[k],
-              region->end_y);
+              height);
           break;
         default:
-          for(j=0;j<region->end_y;j++){
+          for(j=0;j<height;j++){
             oil_multiply_and_add_s16_u8 (
                 OFFSET(d1, comp->stride * j),
                 OFFSET(d1, comp->stride * j),
-                OFFSET(region->weights[weight_index], obmc->x_len * sizeof(int16_t) * j),
+                OFFSET(region->weights[weight_index],
+                  obmc->x_len * sizeof(int16_t) * j),
                 OFFSET(motion->blocks[k], motion->strides[k] * j),
-                region->end_x);
+                width);
           }
           break;
       }
     } else {
       int j;
 
-      for(j=region->start_y;j<region->end_y;j++){
+      width = MIN (region->end_x, comp->width - x0);
+      height = MIN (region->end_y, comp->height - y0);
+
+      for(j=region->start_y;j<height;j++){
         oil_multiply_and_add_s16_u8 (
             OFFSET(comp->data, comp->stride*(y0+j) + 2*(x0 + region->start_x)),
             OFFSET(comp->data, comp->stride*(y0+j) + 2*(x0 + region->start_x)),
             OFFSET(region->weights[weight_index],
               sizeof(int16_t) * (obmc->x_len*j + region->start_x)),
             OFFSET(motion->blocks[k], motion->strides[k]*j + region->start_x),
-            region->end_x - region->start_x);
+            width - region->start_x);
       }
     }
   }
