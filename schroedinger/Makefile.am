@@ -78,11 +78,11 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrolowdelay.c \
 	schrometric.c \
 	schromotion.c \
+	schromotionest.c \
 	schrooil.c \
 	schropack.c \
 	schroparams.c \
 	schrophasecorrelation.c \
-	schropredict.c \
 	schroquantiser.c \
 	schroqueue.c \
 	schrossim.c \
