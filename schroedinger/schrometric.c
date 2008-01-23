@@ -38,8 +38,8 @@ schro_metric_scan_do_scan (SchroMetricScan *scan)
   SchroFrameData *fd_ref = scan->ref_frame->components + 0;
   int i,j;
 
-  SCHRO_ASSERT (scan->ref_x + scan->block_width + scan->scan_width <= scan->frame->width);
-  SCHRO_ASSERT (scan->ref_y + scan->block_height + scan->scan_height <= scan->frame->height);
+  SCHRO_ASSERT (scan->ref_x + scan->block_width + scan->scan_width - 1 <= scan->frame->width);
+  SCHRO_ASSERT (scan->ref_y + scan->block_height + scan->scan_height - 1 <= scan->frame->height);
   SCHRO_ASSERT (scan->ref_x >= 0);
   SCHRO_ASSERT (scan->ref_y >= 0);
   SCHRO_ASSERT (scan->scan_width > 0);
@@ -125,7 +125,7 @@ schro_metric_scan_setup (SchroMetricScan *scan, int dx, int dy, int dist)
 
   scan->ref_x = xmin;
   scan->ref_y = ymin;
-  scan->scan_width = xmax - xmin;
-  scan->scan_height = ymax - ymin;
+  scan->scan_width = xmax - xmin + 1;
+  scan->scan_height = ymax - ymin + 1;
 }
 
