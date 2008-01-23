@@ -33,10 +33,10 @@ struct _SchroAsync {
   void (*task_func)(void *);
   void *task_priv;
 
-  void *done_priv;
-
   int (*schedule) (void *);
   void *schedule_closure;
+
+  void (*complete) (void *);
 };
 
 struct _SchroThread {
@@ -49,7 +49,8 @@ struct _SchroThread {
 static void * schro_thread_main (void *ptr);
 
 SchroAsync *
-schro_async_new(int n_threads, int (*schedule)(void *), void *closure)
+schro_async_new(int n_threads, int (*schedule)(void *),
+    void (*complete)(void *), void *closure)
 {
   SchroAsync *async;
   pthread_attr_t attr;
@@ -84,6 +85,7 @@ schro_async_new(int n_threads, int (*schedule)(void *), void *closure)
 
   async->schedule = schedule;
   async->schedule_closure = closure;
+  async->complete = complete;
 
   pthread_mutexattr_init (&mutexattr);
   pthread_mutex_init (&async->mutex, &mutexattr);
@@ -153,41 +155,6 @@ int schro_async_get_num_completed (SchroAsync *async)
   return async->n_completed;
 }
 
-void *schro_async_pull (SchroAsync *async)
-{
-  void *ptr;
-
-  pthread_mutex_lock (&async->mutex);
-  if (!async->done_priv) {
-    pthread_mutex_unlock (&async->mutex);
-    return NULL;
-  }
-
-  ptr = async->done_priv;
-  async->done_priv = NULL;
-  async->n_completed--;
-
-  pthread_mutex_unlock (&async->mutex);
-
-  return ptr;
-}
-
-void *
-schro_async_pull_locked (SchroAsync *async)
-{
-  void *ptr;
-
-  if (!async->done_priv) {
-    return NULL;
-  }
-
-  ptr = async->done_priv;
-  async->done_priv = NULL;
-  async->n_completed--;
-
-  return ptr;
-}
-
 void
 schro_async_dump (SchroAsync *async)
 {
@@ -203,6 +170,7 @@ schro_async_dump (SchroAsync *async)
 int
 schro_async_wait_locked (SchroAsync *async)
 {
+#if 0
   struct timespec ts;
   int ret;
 
@@ -215,6 +183,10 @@ schro_async_wait_locked (SchroAsync *async)
     return FALSE;
   }
   return TRUE;
+#else
+  pthread_cond_wait (&async->app_cond, &async->mutex);
+  return TRUE;
+#endif
 }
 
 void
@@ -299,11 +271,9 @@ schro_thread_main (void *ptr)
         SCHRO_DEBUG("thread %d: done", thread->index);
 
         pthread_mutex_lock (&async->mutex);
-      
-        SCHRO_ASSERT(async->done_priv == NULL);
-        async->done_priv = priv;
-        async->n_completed++;
 
+        async->complete (priv);
+      
         pthread_cond_signal (&async->app_cond);
 
         break;

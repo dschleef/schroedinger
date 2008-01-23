@@ -13,8 +13,10 @@ typedef struct _SchroAsyncTask SchroAsyncTask;
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
 typedef int (*SchroAsyncScheduleFunc)(void *);
+typedef void (*SchroAsyncCompleteFunc)(void *);
 
 SchroAsync * schro_async_new(int n_threads, int (*schedule)(void *),
+    void (*complete)(void *),
     void *closure);
 void schro_async_free (SchroAsync *async);
 

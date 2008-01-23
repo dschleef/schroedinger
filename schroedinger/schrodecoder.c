@@ -73,6 +73,7 @@ static void schro_decoder_reference_retire (SchroDecoder *decoder,
 static void schro_decoder_decode_subband (SchroPicture *picture,
     SchroPictureSubbandContext *ctx);
 static int schro_decoder_async_schedule (SchroDecoder *decoder);
+static void schro_decoder_picture_complete (SchroPicture *picture);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
@@ -97,7 +98,9 @@ schro_decoder_new (void)
   decoder->queue_depth = 4;
 
   decoder->async = schro_async_new (0,
-      (SchroAsyncScheduleFunc)schro_decoder_async_schedule, decoder);
+      (SchroAsyncScheduleFunc)schro_decoder_async_schedule,
+      (SchroAsyncCompleteFunc)schro_decoder_picture_complete,
+      decoder);
 
   return decoder;
 }
@@ -722,15 +725,6 @@ schro_decoder_async_schedule (SchroDecoder *decoder)
   int i;
 
   SCHRO_DEBUG("schedule");
-
-  while (schro_async_get_num_completed (decoder->async) > 0) {
-    SchroPicture *picture;
-
-    picture = schro_async_pull_locked (decoder->async);
-    SCHRO_ASSERT(picture != NULL);
-
-    schro_decoder_picture_complete (picture);
-  }
 
   for(i=0;i<decoder->picture_queue->n;i++){
     SchroPicture *picture = decoder->picture_queue->elements[i].data;
