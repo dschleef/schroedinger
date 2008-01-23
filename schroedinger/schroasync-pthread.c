@@ -170,7 +170,7 @@ schro_async_dump (SchroAsync *async)
 int
 schro_async_wait_locked (SchroAsync *async)
 {
-#if 0
+#if 1
   struct timespec ts;
   int ret;
 
@@ -178,9 +178,15 @@ schro_async_wait_locked (SchroAsync *async)
   ts.tv_sec += 1;
   ret = pthread_cond_timedwait (&async->app_cond, &async->mutex, &ts);
   if (ret != 0) {
-    SCHRO_ERROR("timeout.  deadlock?");
-    schro_async_dump (async);
-    return FALSE;
+    int i;
+    for(i=0;i<async->n_threads;i++){
+      if (async->threads[i].state != 0) break;
+    }
+    if (i == async->n_threads) {
+      SCHRO_ERROR("timeout.  deadlock?");
+      schro_async_dump (async);
+      return FALSE;
+    }
   }
   return TRUE;
 #else
