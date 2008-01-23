@@ -227,15 +227,6 @@ struct _SchroEncoder {
   schro_bool enable_ssim;
   schro_bool enable_md5;
 
-  double magic_subband0_lambda_scale;
-  double magic_chroma_lambda_scale;
-  double magic_nonref_lambda_scale;
-  double magic_allocation_scale;
-  double magic_keyframe_weight;
-  double magic_scene_change_threshold;
-  double magic_inter_p_weight;
-  double magic_inter_b_weight;
-
   int ref_distance;
   int transform_depth;
   int intra_wavelet;
@@ -249,7 +240,17 @@ struct _SchroEncoder {
   schro_bool enable_zero_prediction;
   schro_bool enable_phasecorr_prediction;
   schro_bool enable_bigblock_prediction;
+
   double magic_dc_metric_offset;
+  double magic_subband0_lambda_scale;
+  double magic_chroma_lambda_scale;
+  double magic_nonref_lambda_scale;
+  double magic_allocation_scale;
+  double magic_keyframe_weight;
+  double magic_scene_change_threshold;
+  double magic_inter_p_weight;
+  double magic_inter_b_weight;
+
 
   /* other */
 
