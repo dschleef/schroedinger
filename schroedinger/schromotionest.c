@@ -15,11 +15,11 @@
 #define motion_field_get(mf,x,y) \
   ((mf)->motion_vectors + (y)*(mf)->x_num_blocks + (x))
 
-void schro_encoder_bigblock_prediction (SchroEncoderFrame *frame);
-void schro_encoder_hierarchical_prediction (SchroEncoderFrame *frame);
-void schro_encoder_zero_prediction (SchroEncoderFrame *frame);
-static void schro_encoder_dc_prediction (SchroEncoderFrame *frame);
-static void schro_encoder_fullscan_prediction (SchroEncoderFrame *frame);
+void schro_encoder_bigblock_estimation (SchroEncoderFrame *frame);
+void schro_encoder_hierarchical_estimation (SchroEncoderFrame *frame);
+void schro_encoder_zero_estimation (SchroEncoderFrame *frame);
+static void schro_encoder_dc_estimation (SchroEncoderFrame *frame);
+static void schro_encoder_fullscan_estimation (SchroEncoderFrame *frame);
 void schro_motion_field_set (SchroMotionField *field, int split, int pred_mode);
 void schro_motion_global_metric (SchroMotionField *mf, SchroFrame *frame,
     SchroFrame *ref);
@@ -51,29 +51,29 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
   frame->motion_field_list = schro_list_new_full ((SchroListFreeFunc)schro_motion_field_free, NULL);
   n = 0;
 
-  if (frame->encoder->enable_bigblock_prediction) {
-    schro_encoder_bigblock_prediction (frame);
+  if (frame->encoder->enable_bigblock_estimation) {
+    schro_encoder_bigblock_estimation (frame);
   } else {
-    schro_encoder_dc_prediction (frame);
+    schro_encoder_dc_estimation (frame);
 
-    if (frame->encoder->enable_phasecorr_prediction) {
-      schro_encoder_phasecorr_prediction (frame);
+    if (frame->encoder->enable_phasecorr_estimation) {
+      schro_encoder_phasecorr_estimation (frame);
     }
 
-    if (frame->encoder->enable_hierarchical_prediction) {
-      schro_encoder_hierarchical_prediction (frame);
+    if (frame->encoder->enable_hierarchical_estimation) {
+      schro_encoder_hierarchical_estimation (frame);
     }
 
-    if (frame->encoder->enable_zero_prediction) {
-      schro_encoder_zero_prediction (frame);
+    if (frame->encoder->enable_zero_estimation) {
+      schro_encoder_zero_estimation (frame);
     }
 
-    if (frame->encoder->enable_fullscan_prediction) {
-      schro_encoder_fullscan_prediction (frame);
+    if (frame->encoder->enable_fullscan_estimation) {
+      schro_encoder_fullscan_estimation (frame);
     }
 
     if (params->have_global_motion) {
-      schro_encoder_global_prediction (frame);
+      schro_encoder_global_estimation (frame);
     }
 
     schro_motion_merge (frame->motion, frame->motion_field_list);
@@ -319,7 +319,7 @@ schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame)
 }
 
 void
-schro_encoder_global_prediction (SchroEncoderFrame *frame)
+schro_encoder_global_estimation (SchroEncoderFrame *frame)
 {
   SchroMotionField *mf, *mf_orig;
   int i;
@@ -333,7 +333,7 @@ schro_encoder_global_prediction (SchroEncoderFrame *frame)
 
     memcpy (mf->motion_vectors, mf_orig->motion_vectors,
         sizeof(SchroMotionVector)*mf->x_num_blocks*mf->y_num_blocks);
-    schro_motion_field_global_prediction (mf, &frame->params.global_motion[i],
+    schro_motion_field_global_estimation (mf, &frame->params.global_motion[i],
         frame->params.mv_precision);
     if (i == 0) {
       schro_motion_global_metric (mf, frame->filtered_frame,
@@ -374,7 +374,7 @@ mv->metric = 0;
 }
 
 void
-schro_motion_field_global_prediction (SchroMotionField *mf,
+schro_motion_field_global_estimation (SchroMotionField *mf,
     SchroGlobalMotion *gm, int mv_precision)
 {
   int i;
@@ -740,7 +740,7 @@ schro_block_average (int16_t *dest, SchroFrameData *comp,
 }
 
 void
-schro_encoder_dc_prediction (SchroEncoderFrame *encoder_frame)
+schro_encoder_dc_estimation (SchroEncoderFrame *encoder_frame)
 {
   SchroParams *params = &encoder_frame->params;
   int i;
@@ -818,7 +818,7 @@ schro_frame_get_metric (SchroFrame *frame1, int x1, int y1,
 }
 
 void
-schro_encoder_hierarchical_prediction (SchroEncoderFrame *frame)
+schro_encoder_hierarchical_estimation (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
   int ref;
@@ -990,7 +990,7 @@ schro_encoder_hierarchical_prediction (SchroEncoderFrame *frame)
 }
 
 void
-schro_encoder_zero_prediction (SchroEncoderFrame *frame)
+schro_encoder_zero_estimation (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
   int ref;
@@ -1039,7 +1039,7 @@ schro_encoder_zero_prediction (SchroEncoderFrame *frame)
 }
 
 void
-schro_encoder_fullscan_prediction (SchroEncoderFrame *frame)
+schro_encoder_fullscan_estimation (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
   int ref;
@@ -1407,7 +1407,7 @@ schro_encoder_dc_predict (SchroEncoderFrame *frame, int i, int j)
 }
 
 void
-schro_encoder_bigblock_prediction (SchroEncoderFrame *frame)
+schro_encoder_bigblock_estimation (SchroEncoderFrame *frame)
 {
   SchroMotionField *mf1;
   SchroMotionField *mf2 = NULL;

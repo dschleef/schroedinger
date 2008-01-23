@@ -13,7 +13,7 @@ list="$all"
 list=SD-CBR-49Mb-intra
 list=SD-CBR-49Mb-intra-noarith
 
-#extraopts="enable-phasecorr-prediction=true enable-hierarchical-prediction=false"
+#extraopts="enable-phasecorr-estimation=true enable-hierarchical-estimation=false"
 #extraopts="perceptual-weighting=1"
 extraopts="enable-psnr=true"
 

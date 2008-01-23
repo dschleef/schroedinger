@@ -98,11 +98,11 @@ schro_encoder_new (void)
   encoder->interlaced_coding = FALSE;
   encoder->enable_internal_testing = FALSE;
   encoder->enable_noarith = FALSE;
-  encoder->enable_fullscan_prediction = FALSE;
-  encoder->enable_hierarchical_prediction = TRUE;
-  encoder->enable_zero_prediction = FALSE;
-  encoder->enable_phasecorr_prediction = FALSE;
-  encoder->enable_bigblock_prediction = FALSE;
+  encoder->enable_fullscan_estimation = FALSE;
+  encoder->enable_hierarchical_estimation = TRUE;
+  encoder->enable_zero_estimation = FALSE;
+  encoder->enable_phasecorr_estimation = FALSE;
+  encoder->enable_bigblock_estimation = FALSE;
 
   encoder->magic_dc_metric_offset = 1.0;
 
@@ -2424,11 +2424,11 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(enable_internal_testing);
   VAR_SET(enable_noarith);
   VAR_SET(enable_md5);
-  VAR_SET(enable_fullscan_prediction);
-  VAR_SET(enable_hierarchical_prediction);
-  VAR_SET(enable_zero_prediction);
-  VAR_SET(enable_phasecorr_prediction);
-  VAR_SET(enable_bigblock_prediction);
+  VAR_SET(enable_fullscan_estimation);
+  VAR_SET(enable_hierarchical_estimation);
+  VAR_SET(enable_zero_estimation);
+  VAR_SET(enable_phasecorr_estimation);
+  VAR_SET(enable_bigblock_estimation);
   VAR_SET(magic_dc_metric_offset);
   //VAR_SET();
 }
@@ -2461,11 +2461,11 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(enable_internal_testing);
   VAR_GET(enable_noarith);
   VAR_GET(enable_md5);
-  VAR_GET(enable_fullscan_prediction);
-  VAR_GET(enable_hierarchical_prediction);
-  VAR_GET(enable_zero_prediction);
-  VAR_GET(enable_phasecorr_prediction);
-  VAR_GET(enable_bigblock_prediction);
+  VAR_GET(enable_fullscan_estimation);
+  VAR_GET(enable_hierarchical_estimation);
+  VAR_GET(enable_zero_estimation);
+  VAR_GET(enable_phasecorr_estimation);
+  VAR_GET(enable_bigblock_estimation);
   VAR_GET(magic_dc_metric_offset);
   //VAR_GET();
 

@@ -10,7 +10,7 @@ list="$all"
 
 list=SD-2Mb
 
-#extraopts="enable-phasecorr-prediction=true enable-hierarchical-prediction=false"
+#extraopts="enable-phasecorr-estimation=true enable-hierarchical-estimation=false"
 
 trap exit INT
 

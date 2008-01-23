@@ -43,7 +43,7 @@ test_full_field (int width, int height, double *a, double *b, int r, int hole)
       }
     }
   }
-  schro_motion_field_global_prediction (mf, &gm, 0);
+  schro_motion_field_global_estimation (mf, &gm, 0);
 
   mult = (1<<gm.a_exp);
   printf("[%6.4f %6.4f %6.4f %6.4f] [%d %d]\n", gm.a00/mult, gm.a01/mult,

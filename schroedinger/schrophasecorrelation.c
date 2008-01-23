@@ -459,7 +459,7 @@ do_motion_field (SchroPhaseCorr *pc, int i)
   }
 
 void
-schro_encoder_phasecorr_prediction (SchroEncoderFrame *frame)
+schro_encoder_phasecorr_estimation (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
   SchroPhaseCorr *pc;

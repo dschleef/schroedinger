@@ -422,7 +422,7 @@ get_residual_alloc (SchroEncoder *encoder, int buffer_level, double picture_weig
 int
 get_mc_alloc (SchroEncoderFrame *frame)
 {
-  if (frame->encoder->enable_bigblock_prediction) {
+  if (frame->encoder->enable_bigblock_estimation) {
     return 10 * frame->params.x_num_blocks * frame->params.y_num_blocks *
       frame->num_refs / 16;
   } else {

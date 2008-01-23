@@ -19,10 +19,6 @@ typedef struct _SchroEncoder SchroEncoder;
 typedef struct _SchroEncoderFrame SchroEncoderFrame;
 typedef struct _SchroEncoderSetting SchroEncoderSetting;
 
-/* forward reference */
-typedef struct _SchroPredictionVector SchroPredictionVector;
-typedef struct _SchroPredictionList SchroPredictionList;
-
 #if 0
 typedef enum {
   SCHRO_PREF_ENGINE,
@@ -235,11 +231,11 @@ struct _SchroEncoder {
   schro_bool interlaced_coding;
   schro_bool enable_internal_testing;
   schro_bool enable_noarith;
-  schro_bool enable_fullscan_prediction;
-  schro_bool enable_hierarchical_prediction;
-  schro_bool enable_zero_prediction;
-  schro_bool enable_phasecorr_prediction;
-  schro_bool enable_bigblock_prediction;
+  schro_bool enable_fullscan_estimation;
+  schro_bool enable_hierarchical_estimation;
+  schro_bool enable_zero_estimation;
+  schro_bool enable_phasecorr_estimation;
+  schro_bool enable_bigblock_estimation;
 
   double magic_dc_metric_offset;
   double magic_subband0_lambda_scale;
