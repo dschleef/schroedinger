@@ -1,12 +1,35 @@
 
-#ifndef __SCHRO_PREDICT_H__
-#define __SCHRO_PREDICT_H__
+#ifndef __SCHRO_MOTIONEST_H__
+#define __SCHRO_MOTIONEST_H__
 
 #include <schroedinger/schroencoder.h>
 
 SCHRO_BEGIN_DECLS
 
+typedef struct _SchroMotionEst SchroMotionEst;
+
 #ifdef SCHRO_ENABLE_UNSTABLE_API
+
+struct _SchroMotionEst {
+  SchroEncoderFrame *encoder_frame;
+  SchroParams *params;
+
+  SchroUpsampledFrame *src0;
+  SchroFrame *downsampled_src0[5];
+  SchroUpsampledFrame *src1;
+  SchroFrame *downsampled_src1[5];
+
+  SchroMotionVector *motion_vectors;
+
+  SchroMotionField *downsampled_mf[2][5];
+
+
+};
+
+SchroMotionEst *schro_motionest_new (SchroEncoderFrame *frame);
+void schro_motionest_free (SchroMotionEst *me);
+
+
 
 void schro_encoder_motion_predict (SchroEncoderFrame *frame);
 
