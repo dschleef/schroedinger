@@ -28,6 +28,7 @@ struct _SchroDecoder {
   SchroMemoryDomain *cpu_domain;
   SchroMemoryDomain *cuda_domain;
   SchroAsync *async;
+  int use_cuda;
 
   SchroBuffer *input_buffer;
 

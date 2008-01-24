@@ -33,14 +33,15 @@ struct _SchroAsync {
   void (*task_func)(void *);
   void *task_priv;
 
-  int (*schedule) (void *);
+  SchroAsyncScheduleFunc schedule;
   void *schedule_closure;
 
-  void (*complete) (void *);
+  SchroAsyncCompleteFunc complete;
 };
 
 struct _SchroThread {
   pthread_t pthread;
+  SchroExecDomain exec_domain;
   SchroAsync *async;
   int state;
   int index;
@@ -49,8 +50,10 @@ struct _SchroThread {
 static void * schro_thread_main (void *ptr);
 
 SchroAsync *
-schro_async_new(int n_threads, int (*schedule)(void *),
-    void (*complete)(void *), void *closure)
+schro_async_new(int n_threads,
+    SchroAsyncScheduleFunc schedule,
+    SchroAsyncCompleteFunc complete,
+    void *closure)
 {
   SchroAsync *async;
   pthread_attr_t attr;
@@ -102,6 +105,7 @@ schro_async_new(int n_threads, int (*schedule)(void *),
 
     thread->async = async;
     thread->index = i;
+    thread->exec_domain = SCHRO_EXEC_DOMAIN_CPU;
     pthread_create (&async->threads[i].pthread, &attr,
         schro_thread_main, async->threads + i);
     pthread_mutex_lock (&async->mutex);
@@ -255,7 +259,7 @@ schro_thread_main (void *ptr)
         SCHRO_DEBUG("thread %d: stopping", thread->index);
         return NULL;
       case STATE_BUSY:
-        ret = async->schedule (async->schedule_closure);
+        ret = async->schedule (async->schedule_closure, thread->exec_domain);
         /* FIXME ignoring ret */
         if (!async->task_func) {
           thread->state = STATE_IDLE;

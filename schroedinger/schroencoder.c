@@ -32,7 +32,7 @@ static void schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame,
 static void schro_encoder_fixup_offsets (SchroEncoder *encoder,
     SchroBuffer *buffer);
 static void schro_encoder_frame_complete (SchroEncoderFrame *frame);
-static int schro_encoder_iterate (SchroEncoder *encoder);
+static int schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain);
 static void schro_encoder_init_perceptual_weighting (SchroEncoder *encoder);
 
 SchroEncoder *
@@ -159,7 +159,7 @@ schro_encoder_start (SchroEncoder *encoder)
   schro_encoder_init_perceptual_weighting (encoder);
 
   encoder->async = schro_async_new (0,
-      (SchroAsyncScheduleFunc)schro_encoder_iterate,
+      (SchroAsyncScheduleFunc)schro_encoder_async_schedule,
       (SchroAsyncCompleteFunc)schro_encoder_frame_complete,
       encoder);
 
@@ -719,7 +719,7 @@ schro_encoder_frame_complete (SchroEncoderFrame *frame)
 }
 
 static int
-schro_encoder_iterate (SchroEncoder *encoder)
+schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain)
 {
   SCHRO_DEBUG("iterate");
 

@@ -4,6 +4,8 @@
 
 #include <pthread.h>
 
+typedef int SchroExecDomain;
+
 typedef struct _SchroMemoryDomain SchroMemoryDomain;
 
 #define SCHRO_MEMORY_DOMAIN_SLOTS 1000
@@ -23,6 +25,9 @@ struct _SchroMemoryDomain {
     void *priv;
   } slots[SCHRO_MEMORY_DOMAIN_SLOTS];
 };
+
+#define SCHRO_EXEC_DOMAIN_CPU 0x0001
+#define SCHRO_EXEC_DOMAIN_CUDA 0x0002
 
 #define SCHRO_MEMORY_DOMAIN_CPU 0x0001
 #define SCHRO_MEMORY_DOMAIN_CUDA 0x0002

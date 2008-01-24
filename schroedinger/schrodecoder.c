@@ -73,7 +73,7 @@ static void schro_decoder_reference_retire (SchroDecoder *decoder,
     SchroPictureNumber frame_number);
 static void schro_decoder_decode_subband (SchroPicture *picture,
     SchroPictureSubbandContext *ctx);
-static int schro_decoder_async_schedule (SchroDecoder *decoder);
+static int schro_decoder_async_schedule (SchroDecoder *decoder, SchroExecDomain domain);
 static void schro_decoder_picture_complete (SchroPicture *picture);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
@@ -726,7 +726,8 @@ schro_decoder_picture_complete (SchroPicture *picture)
 }
 
 static int 
-schro_decoder_async_schedule (SchroDecoder *decoder)
+schro_decoder_async_schedule (SchroDecoder *decoder,
+    SchroExecDomain exec_domain)
 {
   int i;
 

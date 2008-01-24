@@ -12,11 +12,12 @@ typedef struct _SchroAsyncTask SchroAsyncTask;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
-typedef int (*SchroAsyncScheduleFunc)(void *);
+typedef int (*SchroAsyncScheduleFunc)(void *, SchroExecDomain exec_domain);
 typedef void (*SchroAsyncCompleteFunc)(void *);
 
-SchroAsync * schro_async_new(int n_threads, int (*schedule)(void *),
-    void (*complete)(void *),
+SchroAsync * schro_async_new(int n_threads,
+    SchroAsyncScheduleFunc schedule,
+    SchroAsyncCompleteFunc complete,
     void *closure);
 void schro_async_free (SchroAsync *async);
 
