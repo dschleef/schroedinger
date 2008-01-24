@@ -7,12 +7,7 @@
 
 SCHRO_BEGIN_DECLS
 
-void _schro_gpuframe_free (SchroFrame *frame);
-
-SchroFrame * schro_gpuframe_new_and_alloc (SchroFrameFormat format, int width, int height);
-SchroFrame * schro_gpuframe_new_clone (SchroFrame *src);
-
-void schro_gpuframe_setstream(SchroFrame *frame, SchroCUDAStream stream);
+#define SCHRO_FRAME_IS_CUDA(frame) ((frame)->domain && ((frame)->domain->flags & SCHRO_MEMORY_DOMAIN_CUDA))
 
 void schro_gpuframe_to_cpu (SchroFrame *dest, SchroFrame *src);
 void schro_frame_to_gpu (SchroFrame *dest, SchroFrame *src);

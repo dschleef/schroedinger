@@ -60,7 +60,7 @@ struct _SchroFrameData {
   int v_shift;
 
   /* for CUDA */
-  void *gdata;
+  //void *gdata;
 };
 
 struct _SchroFrame {
@@ -69,12 +69,6 @@ struct _SchroFrame {
   SchroMemoryDomain *domain;
   void *regions[3];
   void *priv;
-
-  /* for CUDA only */
-  void *gregions[3];
-  int is_cuda_frame;
-  int is_cuda_shared;
-  SchroCUDAStream stream;
 
   SchroFrameFormat format;
   int width;
