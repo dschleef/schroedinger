@@ -1633,7 +1633,7 @@ static void
 schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int component,
     int index)
 {
-  static const int wavelet_extent[8] = { 2, 1, 2, 0, 0, 0, 4, 2 };
+  static const int wavelet_extent[SCHRO_N_WAVELETS] = { 2, 1, 2, 0, 0, 4, 2 };
   SchroParams *params = &frame->params;
   int stride;
   int width;
