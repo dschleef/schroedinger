@@ -217,8 +217,6 @@ void schro_gpuframe_convert (SchroFrame *dest, SchroFrame *src)
   
   SCHRO_DEBUG("schro_gpuframe_convert %ix%i(format %i) <- %ix%i(format %i)", dest->width, dest->height, dest->format, src->width, src->height, src->format);
 
-  dest->frame_number = src->frame_number;
-  
   if((src->format==SCHRO_FRAME_FORMAT_S16_444 && dest->format==SCHRO_FRAME_FORMAT_U8_444) ||
      (src->format==SCHRO_FRAME_FORMAT_S16_422 && dest->format==SCHRO_FRAME_FORMAT_U8_422) ||
      (src->format==SCHRO_FRAME_FORMAT_S16_420 && dest->format==SCHRO_FRAME_FORMAT_U8_420))
@@ -518,13 +516,13 @@ void schro_gpuframe_inverse_iwt_transform (SchroFrame *frame, SchroParams *param
 void schro_gpuframe_to_cpu (SchroFrame *dest, SchroFrame *src)
 {
     int i;
+    int bpp;
     
     SCHRO_ASSERT(src->is_cuda_frame == TRUE);
     SCHRO_ASSERT(dest->is_cuda_frame == FALSE);
 
-    dest->frame_number = src->frame_number;
-    int bpp = schro_bpp(dest->format);    
-    SCHRO_DEBUG("schro_gpuframe_to_cpu %ix%i (%i)", dest->width, dest->height, dest->frame_number);
+    bpp = schro_bpp(dest->format);    
+    SCHRO_DEBUG("schro_gpuframe_to_cpu %ix%i (%d)", dest->width, dest->height);
     
     /** Format, components and dimensions must match exactly */
     SCHRO_ASSERT(src->format == dest->format);
@@ -575,13 +573,13 @@ void schro_gpuframe_to_cpu (SchroFrame *dest, SchroFrame *src)
 void schro_frame_to_gpu (SchroFrame *dest, SchroFrame *src)
 {
     int i;
+    int bpp;
     
     SCHRO_ASSERT(src->is_cuda_frame == FALSE);
     SCHRO_ASSERT(dest->is_cuda_frame == TRUE);
 
-    dest->frame_number = src->frame_number;
-    int bpp = schro_bpp(dest->format);
-    SCHRO_DEBUG("schro_frame_to_gpu %ix%i (%i)", dest->width, dest->height, dest->frame_number);
+    bpp = schro_bpp(dest->format);
+    SCHRO_DEBUG("schro_frame_to_gpu %ix%i (%d)", dest->width, dest->height);
 
     /** Format, components and dimensions must match exactly */
     SCHRO_ASSERT(src->format == dest->format);

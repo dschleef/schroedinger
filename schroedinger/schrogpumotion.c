@@ -59,8 +59,11 @@ void schro_gpumotion_init(SchroGPUMotion *self, SchroMotion *motion)
 #define vectors self->vectors
 void schro_gpumotion_copy(SchroGPUMotion *self, SchroMotion *motion)
 {
-    SCHRO_ASSERT(vectors);
     int i;
+    int numv;
+    int precision;
+
+    SCHRO_ASSERT(vectors);
     
     SCHRO_DEBUG("schro_gpuframe_copy_with_motion");
     
@@ -96,11 +99,11 @@ void schro_gpumotion_copy(SchroGPUMotion *self, SchroMotion *motion)
     md.obmc.y_mid_log2 = ilog2(md.obmc.y_mid);
     
     // Transfer vectors
-    int numv = md.obmc.blocksx*md.obmc.blocksy;
+    numv = md.obmc.blocksx*md.obmc.blocksy;
 //
     // make sure we always have 3 bits of precision
 #ifndef TESTMODE
-    int precision = (3-motion->params->mv_precision);
+    precision = (3-motion->params->mv_precision);
 #endif
     md.obmc.mv_precision = motion->params->mv_precision;
     for(i=0; i<numv; ++i)
@@ -160,13 +163,17 @@ void schro_gpumotion_render(SchroGPUMotion *self, SchroMotion *motion, SchroFram
     CudaMotion *cm = self->cm;
     SchroUpsampledFrame *ref1 = (SchroUpsampledFrame*)motion->src1;
     SchroUpsampledFrame *ref2 = (SchroUpsampledFrame*)motion->src2;
+    int fwidth;
+    int fheight;
+    int hshift;
+    int vshift;
 
     cuda_motion_begin(cm, &md);
 
-    int fwidth = motion->params->video_format->width;
-    int fheight = motion->params->video_format->height;
-    int hshift = motion->params->video_format->chroma_h_shift;
-    int vshift = motion->params->video_format->chroma_v_shift;
+    fwidth = motion->params->video_format->width;
+    fheight = motion->params->video_format->height;
+    hshift = motion->params->video_format->chroma_h_shift;
+    vshift = motion->params->video_format->chroma_v_shift;
 
     if(ref2)
     {
