@@ -77,19 +77,19 @@ void schro_subband_storage_to_gpuframe(schro_subband_storage *store, SchroFrame 
     switch(comp)
     {
     case 0:
-        dest = frame->components[0].gdata;
+        dest = frame->components[0].data;
         data_width = store->iwt_luma_width;
         data_height = store->iwt_luma_height;
         data_stride = frame->components[0].stride;
         break;
     case 1:
-        dest = frame->components[1].gdata;
+        dest = frame->components[1].data;
         data_width = store->iwt_chroma_width;
         data_height = store->iwt_chroma_height;
         data_stride = frame->components[1].stride;
         break;
     case 2:
-        dest = frame->components[2].gdata;
+        dest = frame->components[2].data;
         data_width = store->iwt_chroma_width;
         data_height = store->iwt_chroma_height;
         data_stride = frame->components[2].stride;
@@ -130,17 +130,17 @@ void schro_subband_storage_to_gpuframe(schro_subband_storage *store, SchroFrame 
     /** Zero the frame */
     schro_gpuframe_zero(frame);
     
-    data[0] = frame->components[0].gdata;
+    data[0] = frame->components[0].data;
     data_width[0] = store->iwt_luma_width;
     data_height[0] = store->iwt_luma_height;
     data_stride[0] = frame->components[0].stride;
     
-    data[1] = frame->components[1].gdata;
+    data[1] = frame->components[1].data;
     data_width[1] = store->iwt_chroma_width;
     data_height[1] = store->iwt_chroma_height;
     data_stride[1] = frame->components[1].stride;
     
-    data[2] = frame->components[2].gdata;
+    data[2] = frame->components[2].data;
     data_width[2] = store->iwt_chroma_width;
     data_height[2] = store->iwt_chroma_height;
     data_stride[2] = frame->components[2].stride;

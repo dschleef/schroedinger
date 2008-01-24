@@ -177,25 +177,25 @@ void schro_gpumotion_render(SchroGPUMotion *self, SchroMotion *motion, SchroFram
 
     if(ref2)
     {
-        cuda_motion_copy(cm, &md, (int16_t*)gdest->components[0].gdata, gdest->components[0].stride, fwidth, fheight, 0, 
+        cuda_motion_copy(cm, &md, (int16_t*)gdest->components[0].data, gdest->components[0].stride, fwidth, fheight, 0, 
             0, 0, 
             ref1->components[0], ref2->components[0]);
-        cuda_motion_copy(cm, &md, (int16_t*)gdest->components[1].gdata, gdest->components[1].stride, fwidth>>hshift, fheight>>vshift, 1, 
+        cuda_motion_copy(cm, &md, (int16_t*)gdest->components[1].data, gdest->components[1].stride, fwidth>>hshift, fheight>>vshift, 1, 
             hshift, vshift,
             ref1->components[1], ref2->components[1]);
-        cuda_motion_copy(cm, &md, (int16_t*)gdest->components[2].gdata, gdest->components[2].stride, fwidth>>hshift, fheight>>vshift, 2, 
+        cuda_motion_copy(cm, &md, (int16_t*)gdest->components[2].data, gdest->components[2].stride, fwidth>>hshift, fheight>>vshift, 2, 
             hshift, vshift,
             ref1->components[2], ref2->components[2]);
     }
     else
     {
-        cuda_motion_copy(cm, &md, (int16_t*)gdest->components[0].gdata, gdest->components[0].stride, fwidth, fheight, 0, 
+        cuda_motion_copy(cm, &md, (int16_t*)gdest->components[0].data, gdest->components[0].stride, fwidth, fheight, 0, 
             0, 0, 
             ref1->components[0], NULL);
-        cuda_motion_copy(cm, &md, (int16_t*)gdest->components[1].gdata, gdest->components[1].stride, fwidth>>hshift, fheight>>vshift,  1, 
+        cuda_motion_copy(cm, &md, (int16_t*)gdest->components[1].data, gdest->components[1].stride, fwidth>>hshift, fheight>>vshift,  1, 
             hshift, vshift,
             ref1->components[1], NULL);
-        cuda_motion_copy(cm, &md, (int16_t*)gdest->components[2].gdata, gdest->components[2].stride, fwidth>>hshift, fheight>>vshift,  2, 
+        cuda_motion_copy(cm, &md, (int16_t*)gdest->components[2].data, gdest->components[2].stride, fwidth>>hshift, fheight>>vshift,  2, 
             hshift, vshift,
             ref1->components[2], NULL);    
     }    

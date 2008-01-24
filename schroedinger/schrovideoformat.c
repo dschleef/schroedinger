@@ -457,7 +457,7 @@ void schro_video_format_set_std_signal_range (SchroVideoFormat *format,
 
   format->luma_offset = schro_signal_ranges[i].luma_offset;
   format->luma_excursion = schro_signal_ranges[i].luma_excursion;
-  format->chroma_excursion = schro_signal_ranges[i].chroma_excursion;
+  format->chroma_offset = schro_signal_ranges[i].chroma_offset;
   format->chroma_excursion = schro_signal_ranges[i].chroma_excursion;
 }
 
