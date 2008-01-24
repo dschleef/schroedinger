@@ -52,6 +52,8 @@ noinst_HEADERS = \
 
 if HAVE_CUDA
 cuda_sources = \
+	schrocuda.c \
+	schrocuda.h \
 	schrogpuframe.c \
 	schrogpusubbandstorage.c \
 	schrogpumotion.c 

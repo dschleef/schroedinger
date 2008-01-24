@@ -392,9 +392,9 @@ gst_schrodownsample_transform (GstBaseTransform * base_transform,
     case GST_MAKE_FOURCC('Y','U','Y','2'):
       frame = schro_frame_new_from_data_YUY2 (GST_BUFFER_DATA(inbuf),
           width, height);
-      planarframe1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_422,
+      planarframe1 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_422,
           width, height);
-      planarframe2 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_422,
+      planarframe2 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_422,
           width/2, height/2);
       outframe = schro_frame_new_from_data_YUY2 (GST_BUFFER_DATA(outbuf),
           width/2, height/2);
@@ -407,9 +407,9 @@ gst_schrodownsample_transform (GstBaseTransform * base_transform,
     case GST_MAKE_FOURCC('U','Y','V','Y'):
       frame = schro_frame_new_from_data_UYVY (GST_BUFFER_DATA(inbuf),
           width, height);
-      planarframe1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_422,
+      planarframe1 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_422,
           width, height);
-      planarframe2 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_422,
+      planarframe2 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_422,
           width/2, height/2);
       outframe = schro_frame_new_from_data_UYVY (GST_BUFFER_DATA(outbuf),
           width/2, height/2);
@@ -422,9 +422,9 @@ gst_schrodownsample_transform (GstBaseTransform * base_transform,
     case GST_MAKE_FOURCC('A','Y','U','V'):
       frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA(inbuf),
           width, height);
-      planarframe1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_444,
+      planarframe1 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_444,
           width, height);
-      planarframe2 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_444,
+      planarframe2 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_444,
           width/2, height/2);
       outframe = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA(outbuf),
           width/2, height/2);

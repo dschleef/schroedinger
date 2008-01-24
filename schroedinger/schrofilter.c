@@ -684,7 +684,7 @@ schro_frame_filter_wavelet (SchroFrame *frame)
 
   tmp = schro_malloc(2*frame->width*sizeof(int16_t));
 
-  tmpframe = schro_frame_new_and_alloc (
+  tmpframe = schro_frame_new_and_alloc (NULL,
       SCHRO_FRAME_FORMAT_S16_444 | frame->format,
       ROUND_UP_POW2(frame->width,5), ROUND_UP_POW2(frame->height,5));
   schro_frame_convert (tmpframe, frame);
@@ -807,7 +807,8 @@ schro_frame_filter_adaptive_lowpass (SchroFrame *frame)
   int j;
   int i;
 
-  tmp = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16_444 | frame->format,
+  tmp = schro_frame_new_and_alloc (NULL,
+      SCHRO_FRAME_FORMAT_S16_444 | frame->format,
       frame->width, frame->height);
   schro_frame_convert (tmp, frame);
 

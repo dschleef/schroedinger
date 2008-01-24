@@ -25,6 +25,8 @@ struct _SchroDecoder {
   /* a list of frames provided by the app that we'll decode into */
   SchroQueue *output_queue;
 
+  SchroMemoryDomain *cpu_domain;
+  SchroMemoryDomain *cuda_domain;
   SchroAsync *async;
 
   SchroBuffer *input_buffer;

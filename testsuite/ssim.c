@@ -48,8 +48,8 @@ test (void)
   SchroFrame *frame1;
   SchroFrame *frame2;
 
-  frame1 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420, 256, 256);
-  frame2 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420, 256, 256);
+  frame1 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420, 256, 256);
+  frame2 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420, 256, 256);
 
   create_pattern (frame1);
   create_pattern (frame2);

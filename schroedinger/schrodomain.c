@@ -11,17 +11,6 @@
 
 /* SchroMemoryDomain */
 
-/* hack so we don't have to fix the rest of the library right now */
-static SchroMemoryDomain *
-get_default_domain (void)
-{
-  static SchroMemoryDomain *default_domain;
-  if (default_domain == NULL) {
-    default_domain = schro_memory_domain_new();
-  }
-  return default_domain;
-}
-
 SchroMemoryDomain *
 schro_memory_domain_new (void)
 {
@@ -37,16 +26,30 @@ schro_memory_domain_new (void)
   return domain;
 }
 
+SchroMemoryDomain *
+schro_memory_domain_new_local (void)
+{
+  SchroMemoryDomain *domain;
+
+  domain = schro_memory_domain_new ();
+
+  domain->alloc = (void *)malloc;
+  domain->free = (void *)free;
+  domain->flags = SCHRO_MEMORY_DOMAIN_CPU;
+
+  return domain;
+}
+
 void
 schro_memory_domain_free (SchroMemoryDomain *domain)
 {
   int i;
 
-  if (domain == NULL) domain = get_default_domain();
+  SCHRO_ASSERT(domain != NULL);
 
   for(i=0;i<SCHRO_MEMORY_DOMAIN_SLOTS;i++){
     if (domain->slots[i].flags & SCHRO_MEMORY_DOMAIN_SLOT_ALLOCATED) {
-      free (domain->slots[i].ptr);
+      domain->free (domain->slots[i].ptr, domain->slots[i].size);
     }
   }
 
@@ -59,7 +62,7 @@ schro_memory_domain_alloc (SchroMemoryDomain *domain, int size)
   int i;
   void *ptr;
 
-  if (domain == NULL) domain = get_default_domain();
+  SCHRO_ASSERT(domain != NULL);
 
   SCHRO_DEBUG("alloc %d", size);
 
@@ -87,7 +90,7 @@ schro_memory_domain_alloc (SchroMemoryDomain *domain, int size)
     domain->slots[i].flags |= SCHRO_MEMORY_DOMAIN_SLOT_ALLOCATED;
     domain->slots[i].flags |= SCHRO_MEMORY_DOMAIN_SLOT_IN_USE;
     domain->slots[i].size = size;
-    domain->slots[i].ptr = malloc (size);
+    domain->slots[i].ptr = domain->alloc (size);
 
     SCHRO_DEBUG("created %p", domain->slots[i].ptr);
     ptr = domain->slots[i].ptr;
@@ -105,7 +108,7 @@ schro_memory_domain_memfree (SchroMemoryDomain *domain, void *ptr)
 {
   int i;
 
-  if (domain == NULL) domain = get_default_domain();
+  SCHRO_ASSERT(domain != NULL);
 
   SCHRO_DEBUG("free %p", ptr);
 

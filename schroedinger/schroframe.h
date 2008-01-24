@@ -3,6 +3,7 @@
 #define __SCHRO_FRAME_H__
 
 #include <schroedinger/schroutils.h>
+#include <schroedinger/schrodomain.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -65,6 +66,7 @@ struct _SchroFrameData {
 struct _SchroFrame {
   int refcount;
   SchroFrameFreeFunc free;
+  SchroMemoryDomain *domain;
   void *regions[3];
   void *priv;
 
@@ -93,8 +95,8 @@ struct _SchroUpsampledFrame {
 #define SCHRO_FRAME_DATA_GET_PIXEL_S16(fd,i,j) (OFFSET((fd)->data,(fd)->stride*(j)+(i)*sizeof(int16_t)))
 
 SchroFrame * schro_frame_new (void);
-SchroFrame * schro_frame_new_and_alloc (SchroFrameFormat format, int width,
-    int height);
+SchroFrame * schro_frame_new_and_alloc (SchroMemoryDomain *domain,
+    SchroFrameFormat format, int width, int height);
 SchroFrame * schro_frame_new_from_data_I420 (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_YV12 (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_YUY2 (void *data, int width, int height);

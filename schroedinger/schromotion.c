@@ -31,9 +31,7 @@ schro_motion_new (SchroParams *params, SchroUpsampledFrame *ref1,
   motion->src1 = ref1;
   motion->src2 = ref2;
 
-  motion->motion_vectors = schro_memory_domain_alloc (NULL,
-      sizeof(SchroMotionVector)*params->x_num_blocks*params->y_num_blocks);
-  memset (motion->motion_vectors, 0,
+  motion->motion_vectors = schro_malloc0 (
       sizeof(SchroMotionVector)*params->x_num_blocks*params->y_num_blocks);
 
   motion->tmpdata = schro_malloc (64*64*3);
@@ -45,7 +43,7 @@ void
 schro_motion_free (SchroMotion *motion)
 {
   schro_free (motion->tmpdata);
-  schro_memory_domain_memfree (NULL, motion->motion_vectors);
+  schro_free (motion->motion_vectors);
   schro_free (motion);
 }
 

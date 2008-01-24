@@ -14,7 +14,8 @@ schro_frame_dup16 (SchroFrame *frame)
   
   /* FIXME hack */
   format = SCHRO_FRAME_FORMAT_S16_444 | frame->format;
-  newframe = schro_frame_new_and_alloc (format, frame->width, frame->height);
+  newframe = schro_frame_new_and_alloc (NULL, format,
+      frame->width, frame->height);
   schro_frame_convert (newframe, frame);
 
   return newframe;

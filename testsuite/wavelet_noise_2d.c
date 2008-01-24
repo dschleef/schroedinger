@@ -98,7 +98,7 @@ main (int argc, char *argv[])
 
   encoder = schro_encoder_new ();
 
-  frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16_444, SIZE, SIZE);
+  frame = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444, SIZE, SIZE);
 
   schro_fft_generate_tables_f32 (costable, sintable, 2*SHIFT);
 

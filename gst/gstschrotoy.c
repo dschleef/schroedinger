@@ -382,7 +382,7 @@ gst_schrotoy_transform_ip (GstBaseTransform * base_transform,
     schro_params_calculate_iwt_sizes (params);
 
     compress->tmp_frame =
-      schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16_420,
+      schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_420,
           compress->params.iwt_luma_width,
           compress->params.iwt_luma_height);
     compress->tmpbuf = malloc (2*2048);

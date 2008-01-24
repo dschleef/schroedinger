@@ -299,7 +299,7 @@ schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
   if (format == frame->format) {
     encoder_frame->original_frame = frame;
   } else {
-    encoder_frame->original_frame = schro_frame_new_and_alloc (format,
+    encoder_frame->original_frame = schro_frame_new_and_alloc (NULL, format,
         encoder->video_format.width, encoder->video_format.height);
     schro_frame_convert (encoder_frame->original_frame, frame);
     schro_frame_unref (frame);
@@ -923,7 +923,7 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
 
   frame_format = schro_params_get_frame_format (8,
       encoder_frame->encoder->video_format.chroma_format);
-  frame = schro_frame_new_and_alloc (frame_format,
+  frame = schro_frame_new_and_alloc (NULL, frame_format,
       encoder_frame->encoder->video_format.width,
       encoder_frame->encoder->video_format.height);
   schro_frame_convert (frame, encoder_frame->iwt_frame);
@@ -2134,7 +2134,7 @@ schro_encoder_frame_new (SchroEncoder *encoder)
   frame_height = ROUND_UP_POW2(encoder->video_format.height,
       SCHRO_LIMIT_TRANSFORM_DEPTH + encoder->video_format.chroma_v_shift);
 
-  encoder_frame->iwt_frame = schro_frame_new_and_alloc (frame_format,
+  encoder_frame->iwt_frame = schro_frame_new_and_alloc (NULL, frame_format,
       frame_width, frame_height);
   
   frame_width = MAX(
@@ -2144,7 +2144,7 @@ schro_encoder_frame_new (SchroEncoder *encoder)
       4 * 12 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*12),
       4 * 16 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*16));
 
-  encoder_frame->prediction_frame = schro_frame_new_and_alloc (frame_format,
+  encoder_frame->prediction_frame = schro_frame_new_and_alloc (NULL, frame_format,
       frame_width, frame_height);
 
   encoder_frame->inserted_buffers =

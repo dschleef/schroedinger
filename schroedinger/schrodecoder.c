@@ -4,6 +4,7 @@
 #endif
 #define SCHRO_ARITH_DEFINE_INLINE
 #include <schroedinger/schro.h>
+#include <schroedinger/schrocuda.h>
 #include <liboil/liboil.h>
 #include <schroedinger/schrooil.h>
 #include <string.h>
@@ -97,6 +98,11 @@ schro_decoder_new (void)
       (SchroQueueFreeFunc)schro_picture_unref);
   decoder->queue_depth = 4;
 
+  decoder->cpu_domain = schro_memory_domain_new_local ();
+#ifdef HAVE_CUDA
+  decoder->cuda_domain = schro_memory_domain_new_cuda ();
+#endif
+
   decoder->async = schro_async_new (0,
       (SchroAsyncScheduleFunc)schro_decoder_async_schedule,
       (SchroAsyncCompleteFunc)schro_decoder_picture_complete,
@@ -146,15 +152,15 @@ schro_picture_new (SchroDecoder *decoder)
   frame_height = ROUND_UP_POW2(video_format->height,
       SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_v_shift);
 
-  picture->mc_tmp_frame = schro_frame_new_and_alloc (frame_format,
-      frame_width, frame_height);
-  picture->frame = schro_frame_new_and_alloc (frame_format,
-      frame_width, frame_height);
+  picture->mc_tmp_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
+      frame_format, frame_width, frame_height);
+  picture->frame = schro_frame_new_and_alloc (decoder->cpu_domain,
+      frame_format, frame_width, frame_height);
 
   frame_format = schro_params_get_frame_format (8,
       video_format->chroma_format);
-  picture->planar_output_frame = schro_frame_new_and_alloc (frame_format,
-      video_format->width, video_format->height);
+  picture->planar_output_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
+      frame_format, video_format->width, video_format->height);
   SCHRO_DEBUG("planar output frame %dx%d",
       video_format->width, video_format->height);
 
@@ -908,7 +914,7 @@ schro_decoder_x_combine (SchroPicture *picture)
     frame_format = schro_params_get_frame_format (8,
         params->video_format->chroma_format);
     
-    ref = schro_frame_new_and_alloc (frame_format,
+    ref = schro_frame_new_and_alloc (decoder->cpu_domain, frame_format,
         decoder->video_format.width, decoder->video_format.height);
     schro_frame_convert (ref, combined_frame);
     picture->upsampled_frame = schro_upsampled_frame_new (ref);

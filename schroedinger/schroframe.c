@@ -6,6 +6,7 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schroframe.h>
+#include <schroedinger/schrogpuframe.h>
 #include <schroedinger/schrocog.h>
 #include <schroedinger/schrooil.h>
 #include <liboil/liboil.h>
@@ -25,7 +26,8 @@ schro_frame_new (void)
 }
 
 SchroFrame *
-schro_frame_new_and_alloc (SchroFrameFormat format, int width, int height)
+schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
+    int width, int height)
 {
   SchroFrame *frame = schro_frame_new();
   int bytes_pp;
@@ -39,6 +41,7 @@ schro_frame_new_and_alloc (SchroFrameFormat format, int width, int height)
   frame->format = format;
   frame->width = width;
   frame->height = height;
+  frame->domain = domain;
 
   switch (SCHRO_FRAME_FORMAT_DEPTH(format)) {
     case SCHRO_FRAME_FORMAT_DEPTH_U8:
@@ -85,9 +88,14 @@ schro_frame_new_and_alloc (SchroFrameFormat format, int width, int height)
   frame->components[2].v_shift = v_shift;
   frame->components[2].h_shift = h_shift;
 
-  frame->regions[0] = schro_memory_domain_alloc (NULL,
-      frame->components[0].length +
-      frame->components[1].length + frame->components[2].length);
+  if (domain) {
+    frame->regions[0] = schro_memory_domain_alloc (domain,
+        frame->components[0].length +
+        frame->components[1].length + frame->components[2].length);
+  } else {
+    frame->regions[0] = schro_malloc (frame->components[0].length +
+        frame->components[1].length + frame->components[2].length);
+  }
 
   frame->components[0].data = frame->regions[0];
   frame->components[1].data = frame->components[0].data +
@@ -250,8 +258,8 @@ schro_frame_dup (SchroFrame *frame)
 {
   SchroFrame *dup_frame;
 
-  dup_frame = schro_frame_new_and_alloc (frame->format, frame->width,
-      frame->height);
+  dup_frame = schro_frame_new_and_alloc (frame->domain,
+      frame->format, frame->width, frame->height);
   schro_frame_convert (dup_frame, frame);
 
   return dup_frame;
@@ -274,14 +282,11 @@ schro_frame_unref (SchroFrame *frame)
       frame->free (frame, frame->priv);
     }
     if (frame->regions[0]) {
-      schro_memory_domain_memfree(NULL, frame->regions[0]);
-    }
-    if (frame->is_cuda_frame) {
-#ifdef HAVE_CUDA
-      _schro_gpuframe_free (frame);
-#else
-      SCHRO_ASSERT(0);
-#endif
+      if (frame->domain) {
+        schro_memory_domain_memfree(frame->domain, frame->regions[0]);
+      } else {
+        schro_free (frame->regions[0]);
+      }
     }
 
     schro_free(frame);
@@ -1425,7 +1430,7 @@ schro_frame_convert_to_444 (SchroFrame *frame)
 
   SCHRO_ASSERT (frame->format == SCHRO_FRAME_FORMAT_U8_420);
   
-  dest = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_444,
+  dest = schro_frame_new_and_alloc (frame->domain, SCHRO_FRAME_FORMAT_U8_444,
       frame->width, frame->height);
 
   schro_frame_component_planar_copy_u8 (&dest->components[0],
@@ -1550,12 +1555,12 @@ schro_upsampled_frame_upsample (SchroUpsampledFrame *df)
 {
   if (df->frames[1]) return;
 
-  df->frames[1] = schro_frame_new_and_alloc (df->frames[0]->format,
-      df->frames[0]->width, df->frames[0]->height);
-  df->frames[2] = schro_frame_new_and_alloc (df->frames[0]->format,
-      df->frames[0]->width, df->frames[0]->height);
-  df->frames[3] = schro_frame_new_and_alloc (df->frames[0]->format,
-      df->frames[0]->width, df->frames[0]->height);
+  df->frames[1] = schro_frame_new_and_alloc (df->frames[0]->domain,
+      df->frames[0]->format, df->frames[0]->width, df->frames[0]->height);
+  df->frames[2] = schro_frame_new_and_alloc (df->frames[0]->domain,
+      df->frames[0]->format, df->frames[0]->width, df->frames[0]->height);
+  df->frames[3] = schro_frame_new_and_alloc (df->frames[0]->domain,
+      df->frames[0]->format, df->frames[0]->width, df->frames[0]->height);
   schro_frame_upsample_horiz (df->frames[1], df->frames[0]);
   schro_frame_upsample_vert (df->frames[2], df->frames[0]);
   schro_frame_upsample_horiz (df->frames[3], df->frames[2]);

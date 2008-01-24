@@ -58,9 +58,9 @@ void test (int width, int height)
   int i;
   int ok;
 
-  frame = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420, width, height);
-  frame_ref = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420, width, height);
-  frame_test = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420, width, height);
+  frame = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420, width, height);
+  frame_ref = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420, width, height);
+  frame_test = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420, width, height);
 
   printf("HORIZONTAL %dx%d\n", width, height);
   for(i=0;i<test_pattern_get_n_generators();i++){

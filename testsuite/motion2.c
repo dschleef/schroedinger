@@ -115,11 +115,11 @@ main (int argc, char *argv[])
 
   schro_params_calculate_mc_sizes(&params);
 
-  dest = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_S16_420,
+  dest = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_420,
       params.mc_luma_width, params.mc_luma_height);
-  ref = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420,
+  ref = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420,
       video_format.width, video_format.height);
-  dest_u8 = schro_frame_new_and_alloc (SCHRO_FRAME_FORMAT_U8_420,
+  dest_u8 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420,
       video_format.width, video_format.height);
 
   schro_frame_clear(dest);
