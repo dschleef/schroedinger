@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 SchroList *
-schro_list_new()
+schro_list_new (void)
 {
   SchroList *list;
 
