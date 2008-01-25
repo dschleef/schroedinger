@@ -5,6 +5,7 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schrofft.h>
+#include <schroedinger/schrophasecorrelation.h>
 #include <math.h>
 #include <string.h>
 
@@ -80,7 +81,7 @@ negate_f32 (float *i1, int n)
   }
 }
 
-int
+static int
 get_max_f32 (float *src, int n)
 {
   int i;
@@ -231,7 +232,7 @@ struct _SchroMVComp {
   int dx, dy;
 };
 
-void
+static void
 schro_mvcomp_init (SchroMVComp *mvcomp, SchroFrame *frame, SchroFrame *ref)
 {
   memset (mvcomp, 0, sizeof(*mvcomp));
@@ -241,7 +242,7 @@ schro_mvcomp_init (SchroMVComp *mvcomp, SchroFrame *frame, SchroFrame *ref)
   mvcomp->ref = ref;
 }
 
-void
+static void
 schro_mvcomp_add (SchroMVComp *mvcomp, int i, int j, int dx, int dy)
 {
   int metric;
@@ -255,7 +256,7 @@ schro_mvcomp_add (SchroMVComp *mvcomp, int i, int j, int dx, int dy)
   }
 }
 
-SchroPhaseCorr *
+static SchroPhaseCorr *
 schro_phasecorr_new (int width, int height, int picture_shift,
     int hshift, int vshift)
 {
@@ -303,7 +304,7 @@ schro_phasecorr_new (int width, int height, int picture_shift,
   return pc;
 }
 
-void
+static void
 schro_phasecorr_free (SchroPhaseCorr *pc)
 {
   schro_free(pc->s);
@@ -331,13 +332,13 @@ schro_phasecorr_free (SchroPhaseCorr *pc)
   schro_free(pc);
 }
 
-void
+static void
 schro_phasecorr_set_frame (SchroPhaseCorr *pc, SchroEncoderFrame *src)
 {
   pc->frame = src;
 }
 
-void
+static void
 do_phase_corr (SchroPhaseCorr *pc, int ref)
 {
   int ix, iy;
@@ -391,7 +392,7 @@ do_phase_corr (SchroPhaseCorr *pc, int ref)
 
 }
 
-void
+static void
 do_motion_field (SchroPhaseCorr *pc, int i)
 {
   SchroParams *params = &pc->frame->params;

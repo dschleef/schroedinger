@@ -198,12 +198,6 @@ schro_encoder_start (SchroEncoder *encoder)
 }
 
 void
-schro_encoder_stop (SchroEncoder *encoder)
-{
-
-}
-
-void
 schro_encoder_free (SchroEncoder *encoder)
 {
   if (encoder->async) {

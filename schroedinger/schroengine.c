@@ -9,7 +9,7 @@
 
 int schro_engine_get_scene_change_score (SchroEncoder *encoder, int i);
 
-void
+static void
 schro_engine_check_new_access_unit(SchroEncoder *encoder,
     SchroEncoderFrame *frame)
 {
@@ -311,7 +311,7 @@ schro_engine_get_scene_change_score (SchroEncoder *encoder, int i)
 }
 
 
-int
+static int
 schro_engine_pick_output_buffer_size (SchroEncoder *encoder,
     SchroEncoderFrame *frame)
 {
@@ -445,7 +445,7 @@ get_residual_alloc (SchroEncoder *encoder, int buffer_level, double picture_weig
   return bits;
 }
 
-int
+static int
 get_mc_alloc (SchroEncoderFrame *frame)
 {
   if (frame->encoder->enable_bigblock_estimation) {
@@ -497,7 +497,7 @@ schro_encoder_recalculate_allocations (SchroEncoder *encoder)
   }
 }
 
-void
+static void
 run_stage (SchroEncoderFrame *frame, SchroEncoderFrameStateEnum state)
 {
   void *func;
@@ -526,7 +526,7 @@ run_stage (SchroEncoderFrame *frame, SchroEncoderFrameStateEnum state)
   schro_async_run_locked (frame->encoder->async, func, frame);
 }
 
-int
+static int
 init_frame (SchroEncoderFrame *frame)
 {
   SchroEncoder *encoder = frame->encoder;
@@ -554,7 +554,7 @@ init_frame (SchroEncoderFrame *frame)
   return TRUE;
 }
 
-void
+static void
 setup_params_intra_only (SchroEncoderFrame *frame)
 {
   SchroEncoder *encoder = frame->encoder;
@@ -620,7 +620,7 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
   return FALSE;
 }
 
-int
+static int
 setup_frame_backref (SchroEncoderFrame *frame)
 {
   SchroEncoder *encoder = frame->encoder;
@@ -718,7 +718,7 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
   return FALSE;
 }
 
-int
+static int
 setup_frame_tworef (SchroEncoderFrame *frame)
 {
   SchroEncoder *encoder = frame->encoder;

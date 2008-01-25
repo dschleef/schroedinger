@@ -21,7 +21,7 @@ struct _SchroList {
   void *priv;
 };
 
-SchroList *schro_list_new ();
+SchroList *schro_list_new (void);
 SchroList *schro_list_new_full (SchroListFreeFunc free, void *priv);
 void schro_list_free (SchroList *list);
 

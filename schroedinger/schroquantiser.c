@@ -79,7 +79,7 @@ dot_product (const float *h1, const float *v1, const float *h2,
   return sum;
 }
 
-void
+static void
 solve (double *matrix, double *column, int n)
 {
   int i;
@@ -359,11 +359,14 @@ schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame)
 }
 
 
+#ifdef unused
 static double pow2(double x)
 {
   return x*x;
 }
+#endif
 
+#ifdef unused
 static double
 measure_error_subband (SchroEncoderFrame *frame, int component, int index,
     int quant_index)
@@ -418,6 +421,7 @@ measure_error_subband (SchroEncoderFrame *frame, int component, int index,
 
   return error;
 }
+#endif
 
 static double
 schro_histogram_estimate_error (SchroHistogram *hist, int quant_index,
@@ -435,7 +439,8 @@ schro_histogram_estimate_error (SchroHistogram *hist, int quant_index,
   return schro_histogram_apply_table (hist, table);
 }
 
-double
+#ifdef unused
+static double
 schro_encoder_estimate_subband_arith (SchroEncoderFrame *frame, int component,
     int index, int quant_index)
 {
@@ -502,8 +507,9 @@ schro_encoder_estimate_subband_arith (SchroEncoderFrame *frame, int component,
 
   return estimated_entropy;
 }
+#endif
 
-void
+static void
 schro_encoder_generate_subband_histogram (SchroEncoderFrame *frame,
     int component, int index, SchroHistogram *hist, int skip)
 {
@@ -538,7 +544,7 @@ schro_encoder_generate_subband_histogram (SchroEncoderFrame *frame,
   }
 }
 
-void
+static void
 schro_encoder_generate_subband_histograms (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
@@ -558,7 +564,8 @@ schro_encoder_generate_subband_histograms (SchroEncoderFrame *frame)
   frame->have_histograms = TRUE;
 }
 
-void
+#ifdef unused
+static void
 schro_encoder_dump_subband_curves (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
@@ -607,8 +614,9 @@ schro_encoder_dump_subband_curves (SchroEncoderFrame *frame)
     }
   }
 }
+#endif
 
-void
+static void
 schro_encoder_calc_estimates (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
@@ -844,7 +852,7 @@ base_lambda = 0.1;
 }
 #endif
 
-double
+static double
 schro_encoder_lambda_to_entropy (SchroEncoderFrame *frame, double base_lambda)
 {
   SchroParams *params = &frame->params;

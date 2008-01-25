@@ -159,7 +159,7 @@ int schro_async_get_num_completed (SchroAsync *async)
   return async->n_completed;
 }
 
-void
+static void
 schro_async_dump (SchroAsync *async)
 {
   int i;

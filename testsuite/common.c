@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "common.h"
+
 
 double sgn(double x)
 {

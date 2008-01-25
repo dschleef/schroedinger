@@ -18,7 +18,7 @@ frame_free (SchroFrame *frame, void *priv)
   free (priv);
 }
 
-void
+static void
 test (int w, int h)
 {
   int size;

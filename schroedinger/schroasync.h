@@ -25,6 +25,7 @@ void schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 int schro_async_get_num_completed (SchroAsync *async);
 void schro_async_wait_one (SchroAsync *async);
 int schro_async_wait_locked (SchroAsync *async);
+void schro_async_wait (SchroAsync *async, int min_waiting);
 void *schro_async_pull (SchroAsync *async);
 void * schro_async_pull_locked (SchroAsync *async);
 void schro_async_signal_scheduler (SchroAsync *async);

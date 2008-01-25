@@ -74,6 +74,7 @@ struct _GstSchrodownsampleClass
 
 };
 
+GType gst_schrodownsample_get_type (void);
 
 /* GstSchrodownsample signals and args */
 enum

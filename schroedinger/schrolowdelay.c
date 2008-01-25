@@ -69,7 +69,7 @@ ilog2up (unsigned int x)
 }
 
 
-void
+static void
 schro_decoder_decode_slice (SchroPicture *picture,
     SchroLowDelay *lowdelay,
     int slice_x, int slice_y, int offset, int slice_bytes)
@@ -156,7 +156,7 @@ schro_decoder_decode_slice (SchroPicture *picture,
   }
 }
 
-void
+static void
 schro_lowdelay_init (SchroLowDelay *lowdelay, SchroFrame *frame,
     SchroParams *params)
 {
@@ -238,7 +238,7 @@ schro_dc_predict (int16_t *line, int stride, int x, int y)
   }
 }
 
-int
+static int
 schro_encoder_encode_slice (SchroEncoderFrame *frame,
     SchroLowDelay *lowdelay,
     int slice_x, int slice_y, int slice_bytes, int base_index)
@@ -304,7 +304,7 @@ estimate_array (int16_t *data, int n)
   return n_bits;
 }
 
-void
+static void
 quantise_block (SchroFrameData *block, int16_t *quant_data, int quant_index)
 {
   int quant_factor;
@@ -325,7 +325,7 @@ quantise_block (SchroFrameData *block, int16_t *quant_data, int quant_index)
   }
 }
 
-void
+static void
 quantise_dc_block (SchroFrameData *block, int16_t *quant_data,
     int quant_index, int slice_x, int slice_y)
 {
@@ -353,7 +353,7 @@ quantise_dc_block (SchroFrameData *block, int16_t *quant_data,
   }
 }
 
-void
+static void
 dequantise_block (SchroFrameData *block, int16_t *quant_data, int quant_index)
 {
   int quant_factor;
@@ -374,7 +374,7 @@ dequantise_block (SchroFrameData *block, int16_t *quant_data, int quant_index)
   }
 }
 
-void
+static void
 copy_block_out (int16_t *dest, SchroFrameData *block)
 {
   int i;
@@ -391,7 +391,7 @@ copy_block_out (int16_t *dest, SchroFrameData *block)
   }
 }
 
-void
+static void
 copy_block_in (SchroFrameData *block, int16_t *src)
 {
   int i;
@@ -408,7 +408,7 @@ copy_block_in (SchroFrameData *block, int16_t *src)
   }
 }
 
-int
+static int
 schro_encoder_estimate_slice (SchroEncoderFrame *frame,
     SchroLowDelay *lowdelay,
     int slice_x, int slice_y, int slice_bytes, int base_index)
@@ -519,7 +519,7 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame,
     frame->slice_y_trailing_zeros - frame->slice_uv_trailing_zeros;
 }
 
-void
+static void
 schro_encoder_dequantise_slice (SchroEncoderFrame *frame,
     SchroLowDelay *lowdelay,
     int slice_x, int slice_y, int slice_bytes, int base_index)
@@ -624,7 +624,7 @@ restore_dc_values (SchroEncoderFrame *frame, int16_t *dc_values,
   copy_block_in (&block, dc_values);
 }
 
-int
+static int
 schro_encoder_pick_slice_index (SchroEncoderFrame *frame,
     SchroLowDelay *lowdelay,
     int slice_x, int slice_y, int slice_bytes)

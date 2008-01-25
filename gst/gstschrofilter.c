@@ -92,6 +92,8 @@ enum
       /* FILL ME */
 };
 
+GType gst_schrofilter_get_type (void);
+
 static void gst_schrofilter_base_init (gpointer g_class);
 static void gst_schrofilter_class_init (gpointer g_class,
     gpointer class_data);

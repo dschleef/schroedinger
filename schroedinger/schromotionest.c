@@ -564,7 +564,7 @@ schro_motion_field_global_estimation (SchroMotionField *mf,
 }
 
 
-void
+static void
 schro_motion_vector_scan (SchroMotionVector *mv, SchroFrame *frame,
     SchroFrame *ref, int x, int y, int dist)
 {
@@ -1208,7 +1208,7 @@ schro_encoder_motion_field_scan_no_hint (SchroMotionEst *me,
   return mf;
 }
 
-void
+static void
 schro_motion_splat_4x4 (SchroMotion *motion, int i, int j)
 {
   SchroMotionVector *mv;
@@ -1222,7 +1222,8 @@ schro_motion_splat_4x4 (SchroMotion *motion, int i, int j)
   memcpy (SCHRO_MOTION_GET_BLOCK (motion, i, j+3), mv, 4*sizeof(*mv));
 }
 
-void
+#ifdef unused
+static void
 motion_field_splat_4x4 (SchroMotionField *mf, int i, int j)
 {
   SchroMotionVector *mv;
@@ -1235,8 +1236,10 @@ motion_field_splat_4x4 (SchroMotionField *mf, int i, int j)
   memcpy (motion_field_get (mf, i, j+2), mv, 4*sizeof(*mv));
   memcpy (motion_field_get (mf, i, j+3), mv, 4*sizeof(*mv));
 }
+#endif
 
-void
+#ifdef unused
+static void
 motion_field_splat_2x2 (SchroMotionField *mf, int i, int j)
 {
   SchroMotionVector *mv;
@@ -1245,8 +1248,9 @@ motion_field_splat_2x2 (SchroMotionField *mf, int i, int j)
   mv[1] = mv[0];
   memcpy (motion_field_get (mf, i, j+1), mv, 2*sizeof(*mv));
 }
+#endif
 
-SchroMotionField *
+static SchroMotionField *
 schro_motion_field_scan_block (SchroMotionEst *me,
     SchroMotionField *mf_mask, int ref)
 {
@@ -1315,7 +1319,7 @@ schro_motion_field_scan_block (SchroMotionEst *me,
   return mf;
 }
 
-void
+static void
 schro_encoder_dc_predict (SchroEncoderFrame *frame, int i, int j)
 {
   SchroParams *params = &frame->params;

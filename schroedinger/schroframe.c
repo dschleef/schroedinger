@@ -1177,7 +1177,7 @@ mas12_edgeextend_u8 (uint8_t *dest, uint8_t *src, const int16_t *taps,
   dest[0] = CLAMP((x + 128) >> 8,0,255);
 }
 
-void
+static void
 downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src,
     const int16_t *taps, const int16_t *offsetshift)
 {
@@ -1203,7 +1203,7 @@ downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src,
 
 }
 
-void
+static void
 schro_frame_component_downsample (SchroFrameData *dest,
     SchroFrameData *src)
 {

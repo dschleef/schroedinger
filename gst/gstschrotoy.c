@@ -101,6 +101,8 @@ enum
       /* FILL ME */
 };
 
+GType gst_schrotoy_get_type (void);
+
 static void gst_schrotoy_base_init (gpointer g_class);
 static void gst_schrotoy_class_init (gpointer g_class,
     gpointer class_data);

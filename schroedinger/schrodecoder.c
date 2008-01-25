@@ -265,90 +265,8 @@ schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio)
   decoder->skip_ratio = ratio;
 }
 
-int
-schro_decoder_is_intra (SchroBuffer *buffer)
-{
-  uint8_t *data;
 
-  if (buffer->length < 5) return 0;
-
-  data = buffer->data;
-  if (data[0] != 'B' || data[1] != 'B' || data[2] != 'C' || data[3] != 'D') {
-    return 0;
-  }
-
-  if (SCHRO_PARSE_CODE_NUM_REFS(data[4] == 0)) return 1;
-
-  return 1;
-}
-
-int
-schro_decoder_is_parse_header (SchroBuffer *buffer)
-{
-  uint8_t *data;
-
-  if (buffer->length < 5) return 0;
-
-  data = buffer->data;
-  if (data[0] != 'B' || data[1] != 'B' || data[2] != 'C' || data[3] != 'D') {
-    return 0;
-  }
-
-  return 1;
-}
-
-int
-schro_decoder_is_access_unit (SchroBuffer *buffer)
-{
-  uint8_t *data;
-
-  if (buffer->length < 5) return 0;
-
-  data = buffer->data;
-  if (data[0] != 'B' || data[1] != 'B' || data[2] != 'C' || data[3] != 'D') {
-    return 0;
-  }
-
-  if (data[4] == SCHRO_PARSE_CODE_SEQUENCE_HEADER) return 1;
-
-  return 0;
-}
-
-int
-schro_decoder_is_picture (SchroBuffer *buffer)
-{
-  uint8_t *data;
-
-  if (buffer->length < 5) return 0;
-
-  data = buffer->data;
-  if (data[0] != 'B' || data[1] != 'B' || data[2] != 'C' || data[3] != 'D') {
-    return 0;
-  }
-
-  if (SCHRO_PARSE_CODE_IS_PICTURE(data[4])) return 1;
-
-  return 0;
-}
-
-int
-schro_decoder_is_end_sequence (SchroBuffer *buffer)
-{
-  uint8_t *data;
-
-  if (buffer->length < 5) return 0;
-
-  data = buffer->data;
-  if (data[0] != 'B' || data[1] != 'B' || data[2] != 'C' || data[3] != 'D') {
-    return 0;
-  }
-
-  if (data[4] == SCHRO_PARSE_CODE_END_OF_SEQUENCE) return 1;
-
-  return 0;
-}
-
-int
+static int
 schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
 {
   SchroPicture *picture;
@@ -425,7 +343,8 @@ schro_decoder_get_status_locked (SchroDecoder *decoder)
   return SCHRO_DECODER_WAIT;
 }
 
-int
+#if 0
+static int
 schro_decoder_get_status (SchroDecoder *decoder)
 {
   int ret;
@@ -436,8 +355,9 @@ schro_decoder_get_status (SchroDecoder *decoder)
 
   return ret;
 }
+#endif
 
-void
+static void
 schro_decoder_dump (SchroDecoder *decoder)
 {
   int i;

@@ -16,7 +16,7 @@
 #include <string.h>
 #include <math.h>
 
-void
+static void
 sort_u8 (uint8_t *d, int n)
 {
   int start = 0;
@@ -111,7 +111,7 @@ schro_filter_cwmN (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n, int
   }
 }
 
-void
+static void
 schro_frame_component_filter_cwmN (SchroFrameData *comp, int weight)
 {
   int i;
@@ -159,7 +159,7 @@ schro_frame_filter_cwmN (SchroFrame *frame, int weight)
 }
 
 
-void
+static void
 schro_frame_component_filter_cwmN_ref (SchroFrameData *comp, int weight)
 {
   int i;
@@ -268,7 +268,7 @@ schro_filter_cwm7 (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n)
   }
 }
 
-void
+static void
 schro_frame_component_filter_cwm7 (SchroFrameData *comp)
 {
   int i;
@@ -362,7 +362,7 @@ lowpass_vert_u8 (uint8_t *d, uint8_t *s, int n)
 }
 
 
-void
+static void
 schro_frame_component_filter_lowpass (SchroFrameData *comp)
 {
   int i;
@@ -449,7 +449,7 @@ lowpass_vert_s16 (int16_t *d, int16_t *s, int n)
 }
 
 
-void
+static void
 schro_frame_component_filter_lowpass_16 (SchroFrameData *comp)
 {
   int i;
@@ -548,7 +548,7 @@ generate_coeff (double *coeff, double sigma)
   coeff[3] = b3 * b0inv;
 }
 
-void
+static void
 schro_frame_component_filter_lowpass2_u8 (SchroFrameData *comp,
     double h_sigma, double v_sigma)
 {
@@ -595,7 +595,7 @@ schro_frame_component_filter_lowpass2_u8 (SchroFrameData *comp,
   schro_free (i3);
 }
 
-void
+static void
 schro_frame_component_filter_lowpass2_s16 (SchroFrameData *comp,
     double h_sigma, double v_sigma)
 {
@@ -735,7 +735,7 @@ schro_frame_filter_wavelet (SchroFrame *frame)
 }
 
 
-double
+static double
 random_std (void)
 {
   double x;
@@ -749,7 +749,7 @@ random_std (void)
   }
 }
 
-void
+static void
 addnoise_u8 (uint8_t *dest, int n, double sigma)
 {
   int i;
@@ -761,7 +761,7 @@ addnoise_u8 (uint8_t *dest, int n, double sigma)
   }
 }
 
-void
+static void
 schro_frame_component_filter_addnoise (SchroFrameData *comp, double sigma)
 {
   int i;

@@ -47,7 +47,7 @@ schro_motion_free (SchroMotion *motion)
   schro_free (motion);
 }
 
-void
+static void
 schro_motion_get_global_vector (SchroMotion *motion, int ref, int x, int y,
     int *dx, int *dy)
 {
@@ -69,7 +69,7 @@ schro_motion_get_global_vector (SchroMotion *motion, int ref, int x, int y,
 }
 
 
-int
+static int
 schro_motion_pixel_predict (SchroMotion *motion, int x, int y, int k)
 {
   int i,j;
@@ -304,7 +304,7 @@ obmc_calc (int16_t *data, int x_len, int y_len, int x_ramp,
   }
 }
 
-void
+static void
 fixup_region (SchroObmc *obmc, int k)
 {
   int i,j;
@@ -439,7 +439,8 @@ schro_obmc_cleanup (SchroObmc *obmc)
 
 /* original */
 
-void
+#ifdef unused
+static void
 schro_motion_get_global_block (SchroMotion *motion, SchroMotionVector *mv,
     int x, int y, SchroGlobalMotion *gm, int refmask)
 {
@@ -542,8 +543,9 @@ schro_motion_get_global_block (SchroMotion *motion, SchroMotionVector *mv,
     }
   }
 }
+#endif
 
-void
+static void
 schro_motion_get_dc_block (SchroMotion *motion, SchroMotionVector *mv)
 {
   int offset;
@@ -565,7 +567,7 @@ schro_motion_get_dc_block (SchroMotion *motion, SchroMotionVector *mv)
   motion->strides[2] = 0;
 }
 
-void
+static void
 schro_motion_get_block (SchroMotion *motion, SchroMotionVector *mv,
     int x, int y, int refmask)
 {
@@ -721,7 +723,7 @@ static int weights[64] = {
    0,  3,  6,  9,
 };
 
-int
+static int
 get_pixel_generic (SchroUpsampledFrame *upframe, int x, int y, int comp_index)
 {
   int v = 0;
@@ -765,7 +767,7 @@ get_pixel_generic (SchroUpsampledFrame *upframe, int x, int y, int comp_index)
   return (v+8)>>4;
 }
 
-void
+static void
 schro_motion_get_global_block_generic (SchroMotion *motion, SchroMotionVector *mv,
     int x, int y, SchroGlobalMotion *gm, int refmask)
 {
@@ -850,7 +852,8 @@ schro_motion_get_global_block_generic (SchroMotion *motion, SchroMotionVector *m
   }
 }
 
-void
+#ifdef unused
+static void
 schro_motion_get_block_generic (SchroMotion *motion, SchroMotionVector *mv,
     int x, int y, int refmask)
 {
@@ -909,6 +912,7 @@ schro_motion_get_block_generic (SchroMotion *motion, SchroMotionVector *mv,
     }
   }
 }
+#endif
 
 
 static void
@@ -1405,7 +1409,7 @@ schro_motion_get_mode_prediction (SchroMotion *motion, int x, int y)
   }
 }
 
-int
+static int
 schro_motion_vector_is_equal (SchroMotionVector *a, SchroMotionVector *b)
 {
   if (a == b) return 1;

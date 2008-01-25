@@ -6,7 +6,7 @@
 #include <schroedinger/schro.h>
 
 
-SchroFrame *
+static SchroFrame *
 schro_frame_dup16 (SchroFrame *frame)
 {
   SchroFrame *newframe;
@@ -53,7 +53,7 @@ schro_frame_multiply_s16 (SchroFrame *dest, SchroFrame *src)
   }
 }
 
-void
+static void
 schro_frame_multiply (SchroFrame *a, SchroFrame *b)
 {
   schro_frame_multiply_s16 (a, b);

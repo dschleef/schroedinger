@@ -6,9 +6,10 @@
 #include <liboil/liboil.h>
 #include <string.h>
 #include <math.h>
-#include <schroedinger/schrohistogram.h>
+#include <schroedinger/schrofft.h>
 
-void schro_fft_generate_tables_f32 (float *costable, float *sintable,
+void
+schro_fft_generate_tables_f32 (float *costable, float *sintable,
     int shift)
 {
   int i;
@@ -54,7 +55,8 @@ fft_stage (float *d1, float *d2, const float *s1, const float *s2,
   }
 }
 
-void schro_fft_fwd_f32 (float *d_real, float *d_imag, const float *s_real,
+void
+schro_fft_fwd_f32 (float *d_real, float *d_imag, const float *s_real,
     const float *s_imag, const float *costable, const float *sintable,
     int shift)
 {
@@ -85,7 +87,8 @@ void schro_fft_fwd_f32 (float *d_real, float *d_imag, const float *s_real,
   schro_free(tmp);
 }
 
-void schro_fft_rev_f32 (float *d_real, float *d_imag, const float *s_real,
+void
+schro_fft_rev_f32 (float *d_real, float *d_imag, const float *s_real,
     const float *s_imag, const float *costable, const float *sintable,
     int shift)
 {

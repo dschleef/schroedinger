@@ -12,7 +12,7 @@
 int debug=1;
 int verbose = 0;
 
-void
+static void
 decode(SchroBuffer *dest, SchroBuffer *src)
 {
   SchroArith *a;
@@ -41,7 +41,7 @@ decode(SchroBuffer *dest, SchroBuffer *src)
   schro_arith_free(a);
 }
 
-void
+static void
 encode (SchroBuffer *dest, SchroBuffer *src)
 {
   SchroArith *a;
@@ -72,7 +72,7 @@ SchroBuffer *buffer1;
 SchroBuffer *buffer2;
 SchroBuffer *buffer3;
 
-int
+static int
 check (int n)
 {
   buffer1->length = n;

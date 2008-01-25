@@ -18,17 +18,17 @@ int16_t *frame_data;
 
 int filtershift[] = { 1, 1, 1, 0, 1, 0, 1 };
 
-void synth(int16_t *a, int filter, int n);
-void split (int16_t *a, int filter, int n);
-void synth_schro_ext (int16_t *a, int filter, int n);
-void split_schro_ext (int16_t *a, int n, int filter);
-void deinterleave (int16_t *a, int n);
-void interleave (int16_t *a, int n);
-void dump (int16_t *a, int n);
-void dump_cmp (int16_t *a, int16_t *b, int n);
+static void synth(int16_t *a, int filter, int n);
+static void split (int16_t *a, int filter, int n);
+static void synth_schro_ext (int16_t *a, int filter, int n);
+static void split_schro_ext (int16_t *a, int n, int filter);
+static void deinterleave (int16_t *a, int n);
+static void interleave (int16_t *a, int n);
+static void dump (int16_t *a, int n);
+static void dump_cmp (int16_t *a, int16_t *b, int n);
 
 
-void
+static void
 gen_const(int16_t *a, int n)
 {
   int i;
@@ -38,7 +38,7 @@ gen_const(int16_t *a, int n)
   }
 }
 
-void
+static void
 gen_ramp(int16_t *a, int n)
 {
   int i;
@@ -48,7 +48,7 @@ gen_ramp(int16_t *a, int n)
   }
 }
 
-void
+static void
 gen_alternating(int16_t *a, int n)
 {
   int i;
@@ -58,7 +58,7 @@ gen_alternating(int16_t *a, int n)
   }
 }
 
-void
+static void
 gen_spike(int16_t *a, int n)
 {
   int i;
@@ -68,7 +68,7 @@ gen_spike(int16_t *a, int n)
   }
 }
 
-void
+static void
 gen_edge(int16_t *a, int n)
 {
   int i;
@@ -78,7 +78,7 @@ gen_edge(int16_t *a, int n)
   }
 }
 
-void
+static void
 gen_random(int16_t *a, int n)
 {
   int i;
@@ -103,7 +103,7 @@ Generator generators[] = {
   { "random", gen_random }
 };
 
-void
+static void
 local_test(int filter)
 {
   int16_t *a = tmp + 10;
@@ -131,7 +131,7 @@ local_test(int filter)
   printf("\n");
 }
 
-void
+static void
 random_test(int filter)
 {
   int16_t *a = tmp + 10;
@@ -215,7 +215,7 @@ main (int argc, char *argv[])
   return 0;
 }
 
-void
+static void
 dump (int16_t *a, int n)
 {
   int i;
@@ -225,7 +225,7 @@ dump (int16_t *a, int n)
   printf("\n");
 }
 
-void
+static void
 dump_cmp (int16_t *a, int16_t *b, int n)
 {
   int i;
@@ -239,7 +239,7 @@ dump_cmp (int16_t *a, int16_t *b, int n)
   printf("\n");
 }
 
-void
+static void
 interleave (int16_t *a, int n)
 {
   int i;
@@ -252,7 +252,7 @@ interleave (int16_t *a, int n)
   }
 }
 
-void
+static void
 deinterleave (int16_t *a, int n)
 {
   int i;
@@ -265,7 +265,7 @@ deinterleave (int16_t *a, int n)
   }
 }
 
-void
+static void
 extend(int16_t *a, int n)
 {
   a[-8] = a[0];
@@ -286,7 +286,7 @@ extend(int16_t *a, int n)
   a[n+7] = a[n-1];
 }
 
-void
+static void
 synth(int16_t *a, int n, int filter)
 {
   int i;
@@ -364,7 +364,7 @@ synth(int16_t *a, int n, int filter)
   }
 }
 
-void
+static void
 split (int16_t *a, int n, int filter)
 {
   int i;
@@ -442,7 +442,7 @@ split (int16_t *a, int n, int filter)
   }
 }
 
-void
+static void
 split_schro_ext (int16_t *a, int n, int filter)
 {
   int16_t tmp1[100], *hi;
@@ -478,7 +478,7 @@ split_schro_ext (int16_t *a, int n, int filter)
 
 }
 
-void
+static void
 synth_schro_ext (int16_t *a, int n, int filter)
 {
   int16_t tmp1[100], *hi;
@@ -518,7 +518,8 @@ synth_schro_ext (int16_t *a, int n, int filter)
 
 
 
-void
+#ifdef unused
+static void
 schro_split_desl93 (int16_t *hi, int16_t *lo, int n)
 {
   static int16_t stage1_weights[] = { 1, -9, -9, 1 };
@@ -546,7 +547,7 @@ schro_split_desl93 (int16_t *hi, int16_t *lo, int n)
   oil_mas2_add_s16 (hi + 1, hi + 1, lo, stage2_weights, stage2_offset_shift, n - 1);
 }
 
-void
+static void
 schro_split_53 (int16_t *hi, int16_t *lo, int n)
 {
   static int16_t stage1_weights[] = { -1, -1 };
@@ -572,7 +573,7 @@ schro_split_53 (int16_t *hi, int16_t *lo, int n)
   oil_mas2_add_s16 (hi + 1, hi + 1, lo, stage2_weights, stage2_offset_shift, n - 1);
 }
 
-void
+static void
 schro_split_135 (int16_t *hi, int16_t *lo, int n)
 {
   static int16_t stage1_weights[] = { 1, -9, -9, 1 };
@@ -602,7 +603,7 @@ schro_split_135 (int16_t *hi, int16_t *lo, int n)
   oil_mas4_add_s16 (hi + 2, hi + 2, lo, stage2_weights, stage2_offset_shift, n - 3);
 }
 
-void
+static void
 schro_split_haar (int16_t *hi, int16_t *lo, int n)
 {
   int i;
@@ -615,7 +616,7 @@ schro_split_haar (int16_t *hi, int16_t *lo, int n)
   }
 }
 
-void
+static void
 schro_split_fidelity (int16_t *hi, int16_t *lo, int n)
 {
   static int16_t stage1_weights[] = { -8, 21, -46, 161, 161, -46, 21, -8 };
@@ -671,7 +672,7 @@ schro_split_fidelity (int16_t *hi, int16_t *lo, int n)
   oil_mas8_add_s16 (lo + 3, lo + 3, hi, stage2_weights, stage2_offset_shift, n - 7);
 }
 
-void
+static void
 schro_split_daub97 (int16_t *hi, int16_t *lo, int n)
 {
   static int16_t stage1_weights[] = { -6497, -6497 };
@@ -752,7 +753,7 @@ split_schro (int16_t *a, int n, int filter)
 }
 #endif
 
-void
+static void
 schro_synth_desl93 (int16_t *hi, int16_t *lo, int n)
 {
   static int16_t stage1_weights[] = { -1, -1 };
@@ -786,7 +787,7 @@ schro_synth_desl93 (int16_t *hi, int16_t *lo, int n)
   oil_mas4_add_s16 (lo, lo, hi - 1, stage2_weights, stage2_offset_shift, n);
 }
 
-void
+static void
 schro_synth_53 (int16_t *hi, int16_t *lo, int n)
 {
   static int16_t stage1_weights[] = { -1, -1 };
@@ -816,7 +817,7 @@ schro_synth_53 (int16_t *hi, int16_t *lo, int n)
   oil_mas2_add_s16 (lo, lo, hi, stage2_weights, stage2_offset_shift, n);
 }
 
-void
+static void
 schro_synth_135 (int16_t *hi, int16_t *lo, int n)
 {
   static int16_t stage1_weights[] = { 1, -9, -9, 1 };
@@ -846,7 +847,7 @@ schro_synth_135 (int16_t *hi, int16_t *lo, int n)
   oil_mas4_add_s16 (lo, lo, hi-1, stage2_weights, stage2_offset_shift, n);
 }
 
-void
+static void
 schro_synth_haar (int16_t *hi, int16_t *lo, int n)
 {
   int i;
@@ -868,7 +869,7 @@ schro_synth_haar (int16_t *hi, int16_t *lo, int n)
   }
 }
 
-void
+static void
 schro_synth_fidelity (int16_t *hi, int16_t *lo, int n)
 {
   static int16_t stage1_weights[] = { -2, 10, -25, 81, 81, -25, 10, -2 };
@@ -910,7 +911,7 @@ schro_synth_fidelity (int16_t *hi, int16_t *lo, int n)
   oil_mas8_add_s16 (hi, hi, lo - 4, stage2_weights, stage2_offset_shift, n);
 }
 
-void
+static void
 schro_synth_daub97 (int16_t *hi, int16_t *lo, int n)
 {
   static int16_t stage1_weights[] = { -1817, -1817 };
@@ -960,7 +961,7 @@ schro_synth_daub97 (int16_t *hi, int16_t *lo, int n)
   oil_mas2_add_s16 (lo, lo, hi, stage4_weights, stage34_offset_shift, n);
 }
 
-void
+static void
 synth_schro (int16_t *a, int n, int filter)
 {
   int16_t tmp1[100], *hi;
@@ -995,4 +996,5 @@ synth_schro (int16_t *a, int n, int filter)
 
   oil_interleave2_s16 (a, hi, lo, n/2);
 }
+#endif
 
