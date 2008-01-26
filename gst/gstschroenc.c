@@ -657,6 +657,7 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
   GstBuffer *outbuf;
   GstFlowReturn ret;
   int presentation_frame;
+  int parse_code;
 
   while (1) {
     switch (schro_encoder_wait (schro_enc->encoder)) {
@@ -671,8 +672,9 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
           /* FIXME This shouldn't happen */
           return GST_FLOW_ERROR;
         }
+        parse_code = encoded_buffer->data[5];
 
-        if (schro_decoder_is_access_unit (encoded_buffer)) {
+        if (SCHRO_PARSE_CODE_IS_SEQ_HEADER(parse_code)) {
           schro_enc->granulepos_hi = schro_enc->granulepos_offset +
             presentation_frame + 1;
         }
@@ -694,7 +696,8 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
         GST_BUFFER_TIMESTAMP (outbuf) = gst_util_uint64_scale (
             (schro_enc->granulepos_hi + schro_enc->granulepos_low),
             schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
-        if (schro_decoder_is_picture (encoded_buffer)) {
+
+        if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
           GST_BUFFER_DURATION (outbuf) = schro_enc->duration;
         } else {
           GST_BUFFER_DURATION (outbuf) = 0;
@@ -708,7 +711,7 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
             GST_BUFFER_TIMESTAMP (outbuf),
             GST_BUFFER_DURATION (outbuf));
 
-        if (schro_decoder_is_intra (encoded_buffer)) {
+        if (SCHRO_PARSE_CODE_IS_INTRA(parse_code)) {
           GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
         }
 
