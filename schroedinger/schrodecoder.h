@@ -97,6 +97,7 @@ struct _SchroPicture {
 
   int zero_residual;
 
+  SchroFrame *transform_frame;
   SchroFrame *frame;
   SchroFrame *mc_tmp_frame;
   SchroMotion *motion;

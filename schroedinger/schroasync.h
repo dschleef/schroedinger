@@ -31,6 +31,9 @@ void * schro_async_pull_locked (SchroAsync *async);
 void schro_async_signal_scheduler (SchroAsync *async);
 void schro_async_lock (SchroAsync *async);
 void schro_async_unlock (SchroAsync *async);
+SchroExecDomain schro_async_get_exec_domain (void);
+
+void schro_async_add_cuda (SchroAsync *async);
 
 #endif
 

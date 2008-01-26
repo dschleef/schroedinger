@@ -101,6 +101,7 @@ void schro_frame_set_free_callback (SchroFrame *frame,
 void schro_frame_unref (SchroFrame *frame);
 SchroFrame *schro_frame_ref (SchroFrame *frame);
 SchroFrame *schro_frame_dup (SchroFrame *frame);
+SchroFrame *schro_frame_clone (SchroMemoryDomain *domain, SchroFrame *frame);
 
 void schro_frame_convert (SchroFrame *dest, SchroFrame *src);
 void schro_frame_add (SchroFrame *dest, SchroFrame *src);

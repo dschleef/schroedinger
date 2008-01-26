@@ -5,6 +5,7 @@
 #define SCHRO_ARITH_DEFINE_INLINE
 #include <schroedinger/schro.h>
 #include <schroedinger/schrocuda.h>
+#include <schroedinger/schrogpuframe.h>
 #include <liboil/liboil.h>
 #include <schroedinger/schrooil.h>
 #include <string.h>
@@ -94,9 +95,9 @@ schro_decoder_new (void)
   decoder->output_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_frame_unref);
 
-  decoder->picture_queue = schro_queue_new (4,
-      (SchroQueueFreeFunc)schro_picture_unref);
   decoder->queue_depth = 4;
+  decoder->picture_queue = schro_queue_new (decoder->queue_depth,
+      (SchroQueueFreeFunc)schro_picture_unref);
 
   decoder->cpu_domain = schro_memory_domain_new_local ();
 #ifdef HAVE_CUDA
@@ -107,6 +108,11 @@ schro_decoder_new (void)
       (SchroAsyncScheduleFunc)schro_decoder_async_schedule,
       (SchroAsyncCompleteFunc)schro_decoder_picture_complete,
       decoder);
+
+#ifdef HAVE_CUDA
+  schro_async_add_cuda (decoder->async);
+  decoder->use_cuda = TRUE;
+#endif
 
   return decoder;
 }
@@ -152,15 +158,31 @@ schro_picture_new (SchroDecoder *decoder)
   frame_height = ROUND_UP_POW2(video_format->height,
       SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_v_shift);
 
-  picture->mc_tmp_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
-      frame_format, frame_width, frame_height);
-  picture->frame = schro_frame_new_and_alloc (decoder->cpu_domain,
-      frame_format, frame_width, frame_height);
-
   frame_format = schro_params_get_frame_format (8,
       video_format->chroma_format);
-  picture->planar_output_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
-      frame_format, video_format->width, video_format->height);
+
+  if (decoder->use_cuda) {
+    picture->transform_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
+        frame_format, frame_width, frame_height);
+#if 0
+    /* These get allocated later, while in the CUDA thread */
+    picture->mc_tmp_frame = schro_frame_new_and_alloc (decoder->cuda_domain,
+        frame_format, frame_width, frame_height);
+    picture->frame = schro_frame_new_and_alloc (decoder->cuda_domain,
+        frame_format, frame_width, frame_height);
+    picture->planar_output_frame = schro_frame_new_and_alloc (decoder->cuda_domain,
+        frame_format, video_format->width, video_format->height);
+#endif
+  } else {
+    picture->mc_tmp_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
+        frame_format, frame_width, frame_height);
+    picture->frame = schro_frame_new_and_alloc (decoder->cpu_domain,
+        frame_format, frame_width, frame_height);
+    picture->transform_frame = schro_frame_ref (picture->frame);
+    picture->planar_output_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
+        frame_format, video_format->width, video_format->height);
+  }
+
   SCHRO_DEBUG("planar output frame %dx%d",
       video_format->width, video_format->height);
 
@@ -198,6 +220,7 @@ schro_picture_unref (SchroPicture *picture)
     }
     if (picture->lowdelay_buffer) schro_buffer_unref (picture->lowdelay_buffer);
 
+    if (picture->transform_frame) schro_frame_unref (picture->transform_frame);
     if (picture->frame) schro_frame_unref (picture->frame);
     if (picture->mc_tmp_frame) schro_frame_unref (picture->mc_tmp_frame);
     if (picture->planar_output_frame) schro_frame_unref (picture->planar_output_frame);
@@ -361,6 +384,8 @@ static void
 schro_decoder_dump (SchroDecoder *decoder)
 {
   int i;
+
+  SCHRO_ERROR("index, picture_number, busy, state, needed_state, working");
   for(i=0;i<decoder->picture_queue->n;i++){
     SchroPicture *picture = decoder->picture_queue->elements[i].data;
 
@@ -389,7 +414,9 @@ schro_decoder_wait (SchroDecoder *decoder)
     if (!ret) {
       SCHRO_ERROR("doh!");
       schro_decoder_dump (decoder);
-      SCHRO_ASSERT(0);
+      /* hack */
+      schro_async_signal_scheduler (decoder->async);
+      //SCHRO_ASSERT(0);
     }
   }
   schro_async_unlock (decoder->async);
@@ -650,8 +677,23 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
     SchroExecDomain exec_domain)
 {
   int i;
+  int render_ok;
+  int decode_ok;
 
   SCHRO_DEBUG("schedule");
+
+  if (decoder->use_cuda) {
+    if (exec_domain == SCHRO_EXEC_DOMAIN_CUDA) {
+      decode_ok = FALSE;
+      render_ok = TRUE;
+    } else {
+      decode_ok = TRUE;
+      render_ok = FALSE;
+    }
+  } else {
+    decode_ok = TRUE;
+    render_ok = TRUE;
+  }
 
   for(i=0;i<decoder->picture_queue->n;i++){
     SchroPicture *picture = decoder->picture_queue->elements[i].data;
@@ -678,7 +720,8 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
         }
 
         if (picture->params.mv_precision > 0 &&
-            !(refpic->state & SCHRO_DECODER_STATE_UPSAMPLE)) {
+            !(refpic->state & SCHRO_DECODER_STATE_UPSAMPLE) &&
+            render_ok) {
           refpic->working = SCHRO_DECODER_STATE_UPSAMPLE;
           refpic->busy = TRUE;
 
@@ -694,23 +737,23 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
     }
 
     if (todo & SCHRO_DECODER_STATE_MOTION_DECODE &&
-        picture->state & SCHRO_DECODER_STATE_REFERENCES) {
+        picture->state & SCHRO_DECODER_STATE_REFERENCES && decode_ok) {
       func = schro_decoder_x_decode_motion;
       picture->working = SCHRO_DECODER_STATE_MOTION_DECODE;
     } else if (todo & SCHRO_DECODER_STATE_MOTION_RENDER &&
-        picture->state & SCHRO_DECODER_STATE_MOTION_DECODE) {
+        picture->state & SCHRO_DECODER_STATE_MOTION_DECODE && render_ok) {
       func = schro_decoder_x_render_motion;
       picture->working = SCHRO_DECODER_STATE_MOTION_RENDER;
-    } else if (todo & SCHRO_DECODER_STATE_RESIDUAL_DECODE) {
+    } else if (todo & SCHRO_DECODER_STATE_RESIDUAL_DECODE && decode_ok) {
       func = schro_decoder_x_decode_residual;
       picture->working = SCHRO_DECODER_STATE_RESIDUAL_DECODE;
     } else if (todo & SCHRO_DECODER_STATE_WAVELET_TRANSFORM &&
-        picture->state & SCHRO_DECODER_STATE_RESIDUAL_DECODE) {
+        picture->state & SCHRO_DECODER_STATE_RESIDUAL_DECODE && render_ok) {
       func = schro_decoder_x_wavelet_transform;
       picture->working = SCHRO_DECODER_STATE_WAVELET_TRANSFORM;
     } else if (todo & SCHRO_DECODER_STATE_COMBINE &&
         picture->state & SCHRO_DECODER_STATE_WAVELET_TRANSFORM &&
-        picture->state & SCHRO_DECODER_STATE_MOTION_RENDER) {
+        picture->state & SCHRO_DECODER_STATE_MOTION_RENDER && render_ok) {
       func = schro_decoder_x_combine;
       picture->working = SCHRO_DECODER_STATE_COMBINE;
     }
@@ -766,7 +809,11 @@ schro_decoder_x_render_motion (SchroPicture *picture)
 
   if (params->num_refs > 0) {
     SCHRO_WARNING("motion render with %p and %p", picture->ref0, picture->ref1);
-    schro_motion_render (picture->motion, picture->mc_tmp_frame);
+    if (picture->decoder->use_cuda) {
+      schro_motion_render_cuda (picture->motion, picture->mc_tmp_frame);
+    } else {
+      schro_motion_render (picture->motion, picture->mc_tmp_frame);
+    }
     SCHRO_WARNING("render done with %p and %p", picture->ref0, picture->ref1);
   }
 }
@@ -789,8 +836,15 @@ void
 schro_decoder_x_wavelet_transform (SchroPicture *picture)
 {
   if (!picture->zero_residual) {
-    schro_frame_inverse_iwt_transform (picture->frame, &picture->params,
-        picture->tmpbuf);
+    if (picture->decoder->use_cuda) {
+      picture->frame = schro_frame_clone (picture->decoder->cuda_domain,
+          picture->transform_frame);
+      schro_frame_inverse_iwt_transform_cuda (picture->frame,
+          picture->transform_frame, &picture->params);
+    } else {
+      schro_frame_inverse_iwt_transform (picture->frame, &picture->params,
+          picture->tmpbuf);
+    }
   }
 }
 
@@ -806,7 +860,11 @@ schro_decoder_x_combine (SchroPicture *picture)
     combined_frame = picture->mc_tmp_frame;
   } else {
     if (params->num_refs > 0) {
-      schro_frame_add (picture->frame, picture->mc_tmp_frame);
+      if (picture->decoder->use_cuda) {
+        schro_gpuframe_add (picture->frame, picture->mc_tmp_frame);
+      } else {
+        schro_frame_add (picture->frame, picture->mc_tmp_frame);
+      }
     }
     combined_frame = picture->frame;
   }
@@ -822,10 +880,29 @@ schro_decoder_x_combine (SchroPicture *picture)
   }
 
   if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
-    schro_frame_convert (picture->planar_output_frame, output_frame);
-    schro_frame_convert (picture->output_picture, picture->planar_output_frame);
+    if (picture->decoder->use_cuda) {
+      SchroFrame *cuda_output_frame;
+      cuda_output_frame = schro_frame_clone (decoder->cuda_domain,
+          picture->output_picture);
+      schro_gpuframe_convert (picture->planar_output_frame, output_frame);
+      schro_gpuframe_convert (cuda_output_frame, picture->planar_output_frame);
+      schro_gpuframe_to_cpu (picture->output_picture, cuda_output_frame);
+      schro_frame_unref (cuda_output_frame);
+    } else {
+      schro_frame_convert (picture->planar_output_frame, output_frame);
+      schro_frame_convert (picture->output_picture, picture->planar_output_frame);
+    }
   } else {
-    schro_frame_convert (picture->output_picture, output_frame);
+    if (picture->decoder->use_cuda) {
+      SchroFrame *cuda_output_frame;
+      cuda_output_frame = schro_frame_clone (decoder->cuda_domain,
+          picture->output_picture);
+      schro_gpuframe_convert (cuda_output_frame, output_frame);
+      schro_gpuframe_to_cpu (picture->output_picture, cuda_output_frame);
+      schro_frame_unref (cuda_output_frame);
+    } else {
+      schro_frame_convert (picture->output_picture, output_frame);
+    }
   }
 
   if (picture->is_ref) {
@@ -835,9 +912,15 @@ schro_decoder_x_combine (SchroPicture *picture)
     frame_format = schro_params_get_frame_format (8,
         params->video_format->chroma_format);
     
-    ref = schro_frame_new_and_alloc (decoder->cpu_domain, frame_format,
-        decoder->video_format.width, decoder->video_format.height);
-    schro_frame_convert (ref, combined_frame);
+    if (picture->decoder->use_cuda) {
+      ref = schro_frame_new_and_alloc (decoder->cuda_domain, frame_format,
+          decoder->video_format.width, decoder->video_format.height);
+      schro_gpuframe_convert (ref, combined_frame);
+    } else {
+      ref = schro_frame_new_and_alloc (decoder->cpu_domain, frame_format,
+          decoder->video_format.width, decoder->video_format.height);
+      schro_frame_convert (ref, combined_frame);
+    }
     picture->upsampled_frame = schro_upsampled_frame_new (ref);
   }
 
@@ -1556,7 +1639,7 @@ schro_decoder_init_subband_frame_data_interleaved (SchroPicture *picture)
   int position;
 
   for(component=0;component<3;component++){
-    comp = &picture->frame->components[component];
+    comp = &picture->transform_frame->components[component];
     for(i=0;i<1+3*params->transform_depth;i++) {
       position = schro_subband_get_position (i);
 
@@ -1564,7 +1647,7 @@ schro_decoder_init_subband_frame_data_interleaved (SchroPicture *picture)
 
       shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
 
-      fd->format = picture->frame->format;
+      fd->format = picture->transform_frame->format;
       fd->h_shift = comp->h_shift + shift;
       fd->v_shift = comp->v_shift + shift;
       fd->stride = comp->stride << shift;
@@ -1985,7 +2068,7 @@ schro_decoder_zero_block (SchroPictureSubbandContext *ctx,
   int j;
   int16_t *line;
 
-  SCHRO_DEBUG("subband is zero");
+  //SCHRO_DEBUG("subband is zero");
   for(j=y1;j<y2;j++){
     line = SCHRO_FRAME_DATA_GET_LINE (ctx->frame_data, j);
     oil_splat_s16_ns (line + x1, schro_zero, x2 - x1);

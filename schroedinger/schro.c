@@ -5,6 +5,7 @@
 #include <schroedinger/schro.h>
 #include <liboil/liboil.h>
 #include <stdlib.h>
+#include <schroedinger/schrocuda.h>
 
 extern int _schro_decode_prediction_only;
 extern int _schro_dump_enable;
@@ -20,6 +21,11 @@ void
 schro_init(void)
 {
   const char *s;
+  static int inited = FALSE;
+
+  if (inited) return;
+
+  inited = TRUE;
 
   oil_init();
 
@@ -48,5 +54,9 @@ schro_init(void)
   if (s && s[0]) {
     _schro_dump_enable = TRUE;
   }
+
+#ifdef HAVE_CUDA
+  schro_cuda_init ();
+#endif
 }
 

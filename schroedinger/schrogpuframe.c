@@ -355,6 +355,8 @@ void schro_gpuframe_inverse_iwt_transform (SchroFrame *frame, SchroParams *param
   int height;
   int level;
   int component;
+  int ret;
+
   SCHRO_DEBUG("schro_gpuframe_inverse_iwt_transform %ix%i, filter %i, %i levels", frame->width, frame->height, params->wavelet_filter_index, params->transform_depth);
 #ifdef TEST
   int16_t *c_data;
@@ -412,12 +414,19 @@ void schro_gpuframe_inverse_iwt_transform (SchroFrame *frame, SchroParams *param
 #ifdef TEST
   schro_free(c_data);
 #endif
+
+    ret = cudaThreadSynchronize();
+    if (ret != 0) {
+      SCHRO_ERROR("thread sync %d", ret);
+    }
+    SCHRO_ASSERT(ret == 0);
 }
 
 void schro_gpuframe_to_cpu (SchroFrame *dest, SchroFrame *src)
 {
     int i;
     int bpp;
+    int ret;
     
   SCHRO_ASSERT(SCHRO_FRAME_IS_CUDA(src));
   SCHRO_ASSERT(!SCHRO_FRAME_IS_CUDA(dest));
@@ -469,12 +478,19 @@ void schro_gpuframe_to_cpu (SchroFrame *dest, SchroFrame *src)
             }
         }
     }
+
+    ret = cudaThreadSynchronize();
+    if (ret != 0) {
+      SCHRO_ERROR("thread sync %d", ret);
+    }
+    SCHRO_ASSERT(ret == 0);
 }
 
 void schro_frame_to_gpu (SchroFrame *dest, SchroFrame *src)
 {
     int i;
     int bpp;
+    int ret;
     
   SCHRO_ASSERT(!SCHRO_FRAME_IS_CUDA(src));
   SCHRO_ASSERT(SCHRO_FRAME_IS_CUDA(dest));
@@ -525,6 +541,12 @@ void schro_frame_to_gpu (SchroFrame *dest, SchroFrame *src)
             }
         }
     }
+
+    ret = cudaThreadSynchronize();
+    if (ret != 0) {
+      SCHRO_ERROR("thread sync %d", ret);
+    }
+    SCHRO_ASSERT(ret == 0);
 }
 
 void schro_gpuframe_compare (SchroFrame *a, SchroFrame *b)

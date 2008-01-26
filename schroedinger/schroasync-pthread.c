@@ -47,6 +47,9 @@ struct _SchroThread {
   int index;
 };
 
+static int domain_key_inited;
+static pthread_key_t domain_key;
+
 static void * schro_thread_main (void *ptr);
 
 SchroAsync *
@@ -84,7 +87,7 @@ schro_async_new(int n_threads,
 
   SCHRO_DEBUG("%d", n_threads);
   async->n_threads = n_threads;
-  async->threads = schro_malloc0 (sizeof(SchroThread) * n_threads);
+  async->threads = schro_malloc0 (sizeof(SchroThread) * (n_threads + 1));
 
   async->schedule = schedule;
   async->schedule_closure = closure;
@@ -95,6 +98,11 @@ schro_async_new(int n_threads,
   pthread_condattr_init (&condattr);
   pthread_cond_init (&async->app_cond, &condattr);
   pthread_cond_init (&async->thread_cond, &condattr);
+
+  if (!domain_key_inited) {
+    pthread_key_create (&domain_key, NULL);
+    domain_key_inited = TRUE;
+  }
 
   pthread_attr_init (&attr);
   
@@ -238,6 +246,9 @@ schro_thread_main (void *ptr)
 
   /* thread starts with async->mutex locked */
 
+  SCHRO_ERROR("setting key to %d", thread->exec_domain);
+  pthread_setspecific (domain_key, (void *)(unsigned long)thread->exec_domain);
+
   async->n_threads_running++;
   thread->state = STATE_IDLE;
   while (1) {
@@ -285,8 +296,18 @@ schro_thread_main (void *ptr)
         async->complete (priv);
       
         pthread_cond_signal (&async->app_cond);
+#ifdef HAVE_CUDA
+        /* FIXME */
+        /* This is required because we don't have a better mechanism
+         * for indicating to threads in other exec domains that it is
+         * their turn to run.  It's mostly harmless, although causes
+         * a lot of unnecessary wakeups in some cases. */
+        pthread_cond_broadcast (&async->thread_cond);
+#endif
 
         break;
+      default:
+        SCHRO_ASSERT(0);
     }
   }
 }
@@ -303,6 +324,43 @@ void schro_async_unlock (SchroAsync *async)
 
 void schro_async_signal_scheduler (SchroAsync *async)
 {
-  pthread_cond_signal (&async->thread_cond);
+  pthread_cond_broadcast (&async->thread_cond);
+}
+
+void
+schro_async_add_cuda (SchroAsync *async)
+{
+  SchroThread *thread;
+  int i;
+  pthread_attr_t attr;
+
+  pthread_mutex_lock (&async->mutex);
+
+  /* We allocated a spare thread structure just for this case. */
+  async->n_threads++;
+  i = async->n_threads - 1;
+
+  thread = async->threads + i;
+  memset (thread, 0, sizeof(SchroThread));
+
+  pthread_attr_init (&attr);
+
+  thread->async = async;
+  thread->index = i;
+  thread->exec_domain = SCHRO_EXEC_DOMAIN_CUDA;
+  pthread_create (&async->threads[i].pthread, &attr,
+      schro_thread_main, async->threads + i);
+  pthread_mutex_lock (&async->mutex);
+  pthread_mutex_unlock (&async->mutex);
+
+  pthread_attr_destroy (&attr);
+}
+
+SchroExecDomain
+schro_async_get_exec_domain (void)
+{
+  void *domain;
+  domain = pthread_getspecific (domain_key);
+  return (int)(unsigned long)domain;
 }
 
