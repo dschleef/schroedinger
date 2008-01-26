@@ -55,7 +55,6 @@ cuda_sources = \
 	schrocuda.c \
 	schrocuda.h \
 	schrogpuframe.c \
-	schrogpusubbandstorage.c \
 	schrogpumotion.c 
 cuda_libs = cuda/libdcuda.la
 endif
