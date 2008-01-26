@@ -246,7 +246,6 @@ schro_thread_main (void *ptr)
 
   /* thread starts with async->mutex locked */
 
-  SCHRO_ERROR("setting key to %d", thread->exec_domain);
   pthread_setspecific (domain_key, (void *)(unsigned long)thread->exec_domain);
 
   async->n_threads_running++;
