@@ -46,6 +46,21 @@ schro_malloc0 (int size)
   return ptr;
 }
 
+void *
+schro_realloc (void *ptr, int size)
+{
+#if 0
+  if (size >= 4096*4) {
+    SCHRO_ERROR("size %d", size);
+  }
+#endif
+  //SCHRO_ASSERT(size < 4096*4);
+
+  ptr = realloc (ptr, size);
+  SCHRO_DEBUG("realloc %p %d", ptr, size);
+  return ptr;
+}
+
 void
 schro_free (void *ptr)
 {

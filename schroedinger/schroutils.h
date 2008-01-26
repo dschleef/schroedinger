@@ -75,6 +75,7 @@ SCHRO_BEGIN_DECLS
 
 void * schro_malloc (int size);
 void * schro_malloc0 (int size);
+void * schro_realloc (void *ptr, int size);
 void schro_free (void *ptr);
 
 int muldiv64 (int a, int b, int c);
