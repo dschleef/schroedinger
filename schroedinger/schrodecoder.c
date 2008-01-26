@@ -158,9 +158,6 @@ schro_picture_new (SchroDecoder *decoder)
   frame_height = ROUND_UP_POW2(video_format->height,
       SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_v_shift);
 
-  frame_format = schro_params_get_frame_format (8,
-      video_format->chroma_format);
-
   if (decoder->use_cuda) {
     picture->transform_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
         frame_format, frame_width, frame_height);
@@ -179,8 +176,10 @@ schro_picture_new (SchroDecoder *decoder)
     picture->frame = schro_frame_new_and_alloc (decoder->cpu_domain,
         frame_format, frame_width, frame_height);
     picture->transform_frame = schro_frame_ref (picture->frame);
+
     picture->planar_output_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
-        frame_format, video_format->width, video_format->height);
+        schro_params_get_frame_format (8, video_format->chroma_format),
+        video_format->width, video_format->height);
   }
 
   SCHRO_DEBUG("planar output frame %dx%d",
