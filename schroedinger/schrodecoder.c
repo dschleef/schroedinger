@@ -810,7 +810,11 @@ schro_decoder_x_render_motion (SchroPicture *picture)
   if (params->num_refs > 0) {
     SCHRO_WARNING("motion render with %p and %p", picture->ref0, picture->ref1);
     if (picture->decoder->use_cuda) {
+#ifdef HAVE_CUDA
       schro_motion_render_cuda (picture->motion, picture->mc_tmp_frame);
+#else
+      SCHRO_ASSERT(0);
+#endif
     } else {
       schro_motion_render (picture->motion, picture->mc_tmp_frame);
     }
@@ -839,8 +843,12 @@ schro_decoder_x_wavelet_transform (SchroPicture *picture)
     if (picture->decoder->use_cuda) {
       picture->frame = schro_frame_clone (picture->decoder->cuda_domain,
           picture->transform_frame);
+#ifdef HAVE_CUDA
       schro_frame_inverse_iwt_transform_cuda (picture->frame,
           picture->transform_frame, &picture->params);
+#else
+      SCHRO_ASSERT(0);
+#endif
     } else {
       schro_frame_inverse_iwt_transform (picture->frame, &picture->params,
           picture->tmpbuf);
@@ -861,7 +869,11 @@ schro_decoder_x_combine (SchroPicture *picture)
   } else {
     if (params->num_refs > 0) {
       if (picture->decoder->use_cuda) {
+#ifdef HAVE_CUDA
         schro_gpuframe_add (picture->frame, picture->mc_tmp_frame);
+#else
+        SCHRO_ASSERT(0);
+#endif
       } else {
         schro_frame_add (picture->frame, picture->mc_tmp_frame);
       }
@@ -881,6 +893,7 @@ schro_decoder_x_combine (SchroPicture *picture)
 
   if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
     if (picture->decoder->use_cuda) {
+#ifdef HAVE_CUDA
       SchroFrame *cuda_output_frame;
       cuda_output_frame = schro_frame_clone (decoder->cuda_domain,
           picture->output_picture);
@@ -888,18 +901,25 @@ schro_decoder_x_combine (SchroPicture *picture)
       schro_gpuframe_convert (cuda_output_frame, picture->planar_output_frame);
       schro_gpuframe_to_cpu (picture->output_picture, cuda_output_frame);
       schro_frame_unref (cuda_output_frame);
+#else
+      SCHRO_ASSERT(0);
+#endif
     } else {
       schro_frame_convert (picture->planar_output_frame, output_frame);
       schro_frame_convert (picture->output_picture, picture->planar_output_frame);
     }
   } else {
     if (picture->decoder->use_cuda) {
+#ifdef HAVE_CUDA
       SchroFrame *cuda_output_frame;
       cuda_output_frame = schro_frame_clone (decoder->cuda_domain,
           picture->output_picture);
       schro_gpuframe_convert (cuda_output_frame, output_frame);
       schro_gpuframe_to_cpu (picture->output_picture, cuda_output_frame);
       schro_frame_unref (cuda_output_frame);
+#else
+      SCHRO_ASSERT(0);
+#endif
     } else {
       schro_frame_convert (picture->output_picture, output_frame);
     }
@@ -913,9 +933,13 @@ schro_decoder_x_combine (SchroPicture *picture)
         params->video_format->chroma_format);
     
     if (picture->decoder->use_cuda) {
+#ifdef HAVE_CUDA
       ref = schro_frame_new_and_alloc (decoder->cuda_domain, frame_format,
           decoder->video_format.width, decoder->video_format.height);
       schro_gpuframe_convert (ref, combined_frame);
+#else
+      SCHRO_ASSERT(0);
+#endif
     } else {
       ref = schro_frame_new_and_alloc (decoder->cpu_domain, frame_format,
           decoder->video_format.width, decoder->video_format.height);
