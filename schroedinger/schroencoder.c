@@ -778,7 +778,8 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
 
     schro_frame_convert (frame->iwt_frame, frame->filtered_frame);
 
-    schro_motion_verify (frame->motion);
+    SCHRO_ASSERT(schro_motion_verify (frame->motion));
+
     schro_motion_render (frame->motion, frame->prediction_frame);
 
     schro_frame_subtract (frame->iwt_frame, frame->prediction_frame);

@@ -1413,6 +1413,11 @@ schro_motion_verify (SchroMotion *motion)
       mv = &motion->motion_vectors[y*params->x_num_blocks + x];
       sbmv = &motion->motion_vectors[(y&~3)*params->x_num_blocks + (x&~3)];
 
+      if (mv->split != sbmv->split) {
+        SCHRO_ERROR("mv(%d,%d) has the wrong split", x, y);
+        return 0;
+      }
+
       switch (sbmv->split) {
         case 0:
           if (!schro_motion_vector_is_equal (mv, sbmv)) {
@@ -1434,13 +1439,30 @@ schro_motion_verify (SchroMotion *motion)
           break;
       }
 
-      if (mv->pred_mode == 0) {
-        /* hard to screw this one up */
-      } else {
-        if ((mv->pred_mode & 2) && motion->src2->frames[0] == NULL) {
-          SCHRO_ERROR("mv(%d,%d) uses non-existent src2", x, y);
-          return 0;
-        }
+      switch (mv->pred_mode) {
+        case 0:
+          {
+            SchroMotionVectorDC *mvdc = (SchroMotionVectorDC *)mv;
+            int i;
+
+            for(i=0;i<3;i++){
+              /* FIXME 8bit */
+              if (mvdc->dc[0] < -128 || mvdc->dc[0] > 127) {
+                SCHRO_ERROR("mv(%d,%d) has bad DC values", x, y);
+                return 0;
+              }
+            }
+          }
+          break;
+        case 1:
+          break;
+        case 2:
+        case 3:
+          if (motion->src2->frames[0] == NULL) {
+            SCHRO_ERROR("mv(%d,%d) uses non-existent src2", x, y);
+            return 0;
+          }
+          break;
       }
 
       if (params->have_global_motion == FALSE) {
