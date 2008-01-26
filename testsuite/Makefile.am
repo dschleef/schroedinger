@@ -2,6 +2,10 @@
 SUBDIRS = . check perf coder installation prototype streams tables2 dirac \
 	  manual
 
+if HAVE_CUDA
+SUBDIRS += cuda
+endif
+
 buildnoinstdir = $(libdir)
 buildnoinst_LTLIBRARIES = libschrotest.la
 

@@ -165,6 +165,7 @@ schroedinger/cuda/Makefile
 gst/Makefile
 testsuite/Makefile
 testsuite/check/Makefile
+testsuite/cuda/Makefile
 testsuite/perf/Makefile
 testsuite/coder/Makefile
 testsuite/dirac/Makefile
