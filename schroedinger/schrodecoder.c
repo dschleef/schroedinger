@@ -1550,18 +1550,18 @@ schro_decoder_decode_prediction_unit(SchroPicture *picture, SchroArith **arith,
             &pred_x, &pred_y, 1);
 
         if (!params->is_noarith) {
-          mv->x1 = pred_x + _schro_arith_decode_sint (
+          mv->dx[0] = pred_x + _schro_arith_decode_sint (
                 arith[SCHRO_DECODER_ARITH_VECTOR_REF1_X],
                 SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,
                 SCHRO_CTX_MV_REF1_H_SIGN);
-          mv->y1 = pred_y + _schro_arith_decode_sint (
+          mv->dy[0] = pred_y + _schro_arith_decode_sint (
                 arith[SCHRO_DECODER_ARITH_VECTOR_REF1_Y],
                 SCHRO_CTX_MV_REF1_V_CONT_BIN1, SCHRO_CTX_MV_REF1_V_VALUE,
                 SCHRO_CTX_MV_REF1_V_SIGN);
         } else {
-          mv->x1 = pred_x + schro_unpack_decode_sint (
+          mv->dx[0] = pred_x + schro_unpack_decode_sint (
                 unpack + SCHRO_DECODER_ARITH_VECTOR_REF1_X);
-          mv->y1 = pred_y + schro_unpack_decode_sint (
+          mv->dy[0] = pred_y + schro_unpack_decode_sint (
                 unpack + SCHRO_DECODER_ARITH_VECTOR_REF1_Y);
         }
       }
@@ -1570,26 +1570,26 @@ schro_decoder_decode_prediction_unit(SchroPicture *picture, SchroArith **arith,
             &pred_x, &pred_y, 2);
 
         if (!params->is_noarith) {
-          mv->x2 = pred_x + _schro_arith_decode_sint (
+          mv->dx[1] = pred_x + _schro_arith_decode_sint (
                 arith[SCHRO_DECODER_ARITH_VECTOR_REF2_X],
                 SCHRO_CTX_MV_REF2_H_CONT_BIN1, SCHRO_CTX_MV_REF2_H_VALUE,
                 SCHRO_CTX_MV_REF2_H_SIGN);
-          mv->y2 = pred_y + _schro_arith_decode_sint (
+          mv->dy[1] = pred_y + _schro_arith_decode_sint (
                 arith[SCHRO_DECODER_ARITH_VECTOR_REF2_Y],
                 SCHRO_CTX_MV_REF2_V_CONT_BIN1, SCHRO_CTX_MV_REF2_V_VALUE,
                 SCHRO_CTX_MV_REF2_V_SIGN);
         } else {
-          mv->x2 = pred_x + schro_unpack_decode_sint (
+          mv->dx[1] = pred_x + schro_unpack_decode_sint (
                 unpack + SCHRO_DECODER_ARITH_VECTOR_REF2_X);
-          mv->y2 = pred_y + schro_unpack_decode_sint (
+          mv->dy[1] = pred_y + schro_unpack_decode_sint (
                 unpack + SCHRO_DECODER_ARITH_VECTOR_REF2_Y);
         }
       }
     } else {
-      mv->x1 = 0;
-      mv->y1 = 0;
-      mv->x2 = 0;
-      mv->y2 = 0;
+      mv->dx[0] = 0;
+      mv->dy[0] = 0;
+      mv->dx[1] = 0;
+      mv->dy[1] = 0;
     }
   }
 }

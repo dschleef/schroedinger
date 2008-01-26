@@ -110,8 +110,8 @@ get_ref1_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
   if (mv->using_global) {
     schro_motion_get_global_vector (motion, 0, x, y, &dx, &dy);
   } else {
-    dx = mv->x1;
-    dy = mv->y1;
+    dx = mv->dx[0];
+    dy = mv->dy[0];
   }
 
   value = (motion->ref1_weight + motion->ref2_weight) *
@@ -132,8 +132,8 @@ get_ref2_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
   if (mv->using_global) {
     schro_motion_get_global_vector (motion, 1, x, y, &dx, &dy);
   } else {
-    dx = mv->x2;
-    dy = mv->y2;
+    dx = mv->dx[1];
+    dy = mv->dy[1];
   }
 
   value = (motion->ref1_weight + motion->ref2_weight) *
@@ -148,23 +148,23 @@ get_biref_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
   SchroParams *params = motion->params;
   SchroMotionVector *mv;
   int value;
-  int dx1, dx2, dy1, dy2;
+  int dx0, dx1, dy0, dy1;
 
   mv = &motion->motion_vectors[j*params->x_num_blocks + i];
   if (mv->using_global) {
-    schro_motion_get_global_vector (motion, 0, x, y, &dx1, &dy1);
-    schro_motion_get_global_vector (motion, 1, x, y, &dx2, &dy2);
+    schro_motion_get_global_vector (motion, 0, x, y, &dx0, &dy0);
+    schro_motion_get_global_vector (motion, 1, x, y, &dx1, &dy1);
   } else {
-    dx1 = mv->x1;
-    dy1 = mv->y1;
-    dx2 = mv->x2;
-    dy2 = mv->y2;
+    dx0 = mv->dx[0];
+    dy0 = mv->dy[0];
+    dx1 = mv->dx[1];
+    dy1 = mv->dy[1];
   }
 
   value = motion->ref1_weight *
-    get_pixel (motion, k, motion->src1, x, y, dx1, dy1);
+    get_pixel (motion, k, motion->src1, x, y, dx0, dy0);
   value += motion->ref2_weight *
-    get_pixel (motion, k, motion->src2, x, y, dx2, dy2);
+    get_pixel (motion, k, motion->src2, x, y, dx1, dy1);
 
   return ROUND_SHIFT(value, motion->ref_weight_precision);
 }
@@ -582,15 +582,15 @@ schro_motion_get_block (SchroMotion *motion, SchroMotionVector *mv,
   int upsample_index;
 
   if (refmask & 1) {
-    mx = mv->x1<<(3-motion->mv_precision);
-    my = mv->y1<<(3-motion->mv_precision);
+    mx = mv->dx[0]<<(3-motion->mv_precision);
+    my = mv->dy[0]<<(3-motion->mv_precision);
     sx = x + (mx>>3);
     sy = y + (my>>3);
     upsample_index = (mx&4)>>2 | (my&4)>>1;
     srcframe = motion->src1->frames[upsample_index];
   } else {
-    mx = mv->x2<<(3-motion->mv_precision);
-    my = mv->y2<<(3-motion->mv_precision);
+    mx = mv->dx[1]<<(3-motion->mv_precision);
+    my = mv->dy[1]<<(3-motion->mv_precision);
     sx = x + (mx>>3);
     sy = y + (my>>3);
     upsample_index = (mx&4)>>2 | (my&4)>>1;
@@ -1289,39 +1289,24 @@ schro_motion_vector_prediction (SchroMotion *motion,
   if (x>0) {
     mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,y);
     if (mv->using_global == FALSE && (mv->pred_mode & mode)) {
-      if (mode == 1) {
-        vx[n] = mv->x1;
-        vy[n] = mv->y1;
-      } else {
-        vx[n] = mv->x2;
-        vy[n] = mv->y2;
-      }
+      vx[n] = mv->dx[mode-1];
+      vy[n] = mv->dy[mode-1];
       n++;
     }
   }
   if (y>0) {
     mv = SCHRO_MOTION_GET_BLOCK(motion,x,y-1);
     if (mv->using_global == FALSE && (mv->pred_mode & mode)) {
-      if (mode == 1) {
-        vx[n] = mv->x1;
-        vy[n] = mv->y1;
-      } else {
-        vx[n] = mv->x2;
-        vy[n] = mv->y2;
-      }
+      vx[n] = mv->dx[mode-1];
+      vy[n] = mv->dy[mode-1];
       n++;
     }
   }
   if (x>0 && y>0) {
     mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,y-1);
     if (mv->using_global == FALSE && (mv->pred_mode & mode)) {
-      if (mode == 1) {
-        vx[n] = mv->x1;
-        vy[n] = mv->y1;
-      } else {
-        vx[n] = mv->x2;
-        vy[n] = mv->y2;
-      }
+      vx[n] = mv->dx[mode-1];
+      vy[n] = mv->dy[mode-1];
       n++;
     }
   }

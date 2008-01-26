@@ -23,10 +23,8 @@ struct _SchroMotionVector {
   unsigned int unused : 3;
   unsigned int scan : 8;
   unsigned int metric : 16;
-  int16_t x1;
-  int16_t y1;
-  int16_t x2;
-  int16_t y2;
+  int16_t dx[2];
+  int16_t dy[2];
 };
 
 struct _SchroMotionVectorDC {

@@ -446,8 +446,8 @@ do_motion_field (SchroPhaseCorr *pc, int i)
         mv = motion_field_get (mf, k, l);
         mv->split = 2;
         mv->pred_mode = 1;
-        mv->x1 = mvcomp.dx;
-        mv->y1 = mvcomp.dy;
+        mv->dx[0] = mvcomp.dx;
+        mv->dy[0] = mvcomp.dy;
         mv->metric = mvcomp.metric;
       }
     }

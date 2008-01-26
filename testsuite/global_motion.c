@@ -34,12 +34,12 @@ test_full_field (int width, int height, double *a, double *b, int r, int hole)
     for(i=0;i<mf->x_num_blocks;i++){
       mv = mf->motion_vectors + j*mf->x_num_blocks + i;
 
-      mv->x1 = rint((a[0]-1)*8*i + a[1]*8*j + b[0] + r * oil_rand_f64());
-      mv->y1 = rint(a[2]*8*i + (a[3]-1)*8*j + b[1] + r * oil_rand_f64());
+      mv->dx[0] = rint((a[0]-1)*8*i + a[1]*8*j + b[0] + r * oil_rand_f64());
+      mv->dy[0] = rint(a[2]*8*i + (a[3]-1)*8*j + b[1] + r * oil_rand_f64());
       if (hole && abs(mf->y_num_blocks/2 - j) < 10 &&
           abs(mf->x_num_blocks/2 - i) < 10) {
-        mv->x1 = 0;
-        mv->y1 = 0;
+        mv->dx[0] = 0;
+        mv->dy[0] = 0;
       }
     }
   }

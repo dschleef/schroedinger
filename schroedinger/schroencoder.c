@@ -1239,13 +1239,8 @@ schro_encoder_encode_vector_data (SchroEncoderFrame *frame, int ref, int xy)
           if ((mv->pred_mode&(1<<ref)) && !mv->using_global) {
             schro_motion_vector_prediction (frame->motion,
                 i+k, j+l, &pred_x, &pred_y, 1<<ref);
-            if (ref == 0) {
-              x = mv->x1;
-              y = mv->y1;
-            } else {
-              x = mv->x2;
-              y = mv->y2;
-            }
+            x = mv->dx[ref];
+            y = mv->dy[ref];
 
             if (!params->is_noarith) {
               if (xy == 0) {
