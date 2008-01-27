@@ -124,6 +124,8 @@ schro_encoder_new (void)
   encoder->inserted_buffers =
     schro_list_new_full ((SchroListFreeFunc)schro_buffer_unref, NULL);
 
+  encoder->average_arith_context_ratio = 1.0;
+
   return encoder;
 }
 
