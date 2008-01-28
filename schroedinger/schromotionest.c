@@ -25,6 +25,8 @@ void schro_motion_global_metric (SchroMotionField *mf, SchroFrame *frame,
     SchroFrame *ref);
 void schro_motionest_rough_scan_nohint (SchroMotionEst *me,
     int shift, int ref, int distance);
+void schro_motionest_rough_scan_hint (SchroMotionEst *me,
+    int shift, int ref, int distance);
 
 void schro_motion_merge (SchroMotion *motion, SchroList *_list);
 void schro_motion_cleanup (SchroMotion *motion, int x, int y);
@@ -35,6 +37,10 @@ void schro_motion_predict_subpixel (SchroMotion *motion, SchroFrame *frame,
 #endif
 void schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame);
 
+static void motion_field_splat_4x4 (SchroMotionField *mf, int i, int j);
+#if 0
+static void motion_field_splat_2x2 (SchroMotionField *mf, int i, int j);
+#endif
 
 SchroMotionEst *
 schro_motionest_new (SchroEncoderFrame *frame)
@@ -62,16 +68,22 @@ schro_motionest_new (SchroEncoderFrame *frame)
     me->downsampled_src1[4] = frame->ref_frame1->downsampled_frames[3];
   }
 
-  me->motion_vectors = schro_malloc0 (sizeof(SchroMotionVector) *
-      me->params->x_num_blocks * me->params->y_num_blocks);
-
   return me;
 }
 
 void
 schro_motionest_free (SchroMotionEst *me)
 {
-  schro_free (me->motion_vectors);
+  int ref;
+  int i;
+
+  for(ref=0;ref<2;ref++){
+    for(i=0;i<5;i++){
+      if (me->downsampled_mf[ref][i]) {
+        schro_motion_field_free (me->downsampled_mf[ref][i]);
+      }
+    }
+  }
 
   schro_free (me);
 }
@@ -98,6 +110,13 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
   n = 0;
 
   if (frame->encoder->enable_bigblock_estimation) {
+    int ref;
+
+    for(ref=0;ref<params->num_refs;ref++){
+      schro_motionest_rough_scan_nohint (me, 3, ref, 12);
+      schro_motionest_rough_scan_hint (me, 2, ref, 2);
+    }
+
     schro_encoder_bigblock_estimation (me);
   } else {
     schro_encoder_dc_estimation (me);
@@ -1122,7 +1141,6 @@ schro_motionest_rough_scan_nohint (SchroMotionEst *me, int shift, int ref,
     int distance)
 {
   SchroMetricScan scan;
-  SchroMetricScan scan2;
   SchroMotionVector *mv;
   SchroMotionField *mf;
   SchroParams *params = me->params;
@@ -1135,13 +1153,6 @@ schro_motionest_rough_scan_nohint (SchroMotionEst *me, int shift, int ref,
     scan.ref_frame = get_downsampled (me->encoder_frame->ref_frame0, shift);
   } else {
     scan.ref_frame = get_downsampled (me->encoder_frame->ref_frame1, shift);
-  }
-
-  scan2.frame = get_downsampled (me->encoder_frame, 0);
-  if (ref == 0) {
-    scan2.ref_frame = get_downsampled (me->encoder_frame->ref_frame0, 0);
-  } else {
-    scan2.ref_frame = get_downsampled (me->encoder_frame->ref_frame1, 0);
   }
 
   mf = schro_motion_field_new (params->x_num_blocks, params->y_num_blocks);
@@ -1187,19 +1198,20 @@ schro_motionest_rough_scan_nohint (SchroMotionEst *me, int shift, int ref,
   me->downsampled_mf[ref][shift] = mf;
 }
 
-static SchroMotionField *
-schro_encoder_motion_field_scan_no_hint (SchroMotionEst *me,
-    int shift, int ref, int distance)
+void
+schro_motionest_rough_scan_hint (SchroMotionEst *me, int shift, int ref,
+    int distance)
 {
   SchroMetricScan scan;
-  SchroMetricScan scan2;
   SchroMotionVector *mv;
   SchroMotionField *mf;
+  SchroMotionField *hint_mf;
+  SchroMotionVector *hint_mv;
   SchroParams *params = me->params;
   int i;
   int j;
   int skip;
-  int scan2_dist;
+  unsigned int hint_mask;
 
   scan.frame = get_downsampled (me->encoder_frame, shift);
   if (ref == 0) {
@@ -1208,14 +1220,8 @@ schro_encoder_motion_field_scan_no_hint (SchroMotionEst *me,
     scan.ref_frame = get_downsampled (me->encoder_frame->ref_frame1, shift);
   }
 
-  scan2.frame = get_downsampled (me->encoder_frame, 0);
-  if (ref == 0) {
-    scan2.ref_frame = get_downsampled (me->encoder_frame->ref_frame0, 0);
-  } else {
-    scan2.ref_frame = get_downsampled (me->encoder_frame->ref_frame1, 0);
-  }
-
   mf = schro_motion_field_new (params->x_num_blocks, params->y_num_blocks);
+  hint_mf = me->downsampled_mf[ref][shift+1];
 
   schro_motion_field_set (mf, 0, 1<<ref);
 
@@ -1226,27 +1232,24 @@ schro_encoder_motion_field_scan_no_hint (SchroMotionEst *me,
   scan.gravity_x = 0;
   scan.gravity_y = 0;
 
-  scan2_dist = 1<<shift;
-  scan2.block_width = 4*params->xbsep_luma;
-  scan2.block_height = 4*params->ybsep_luma;
-  scan2.metrics = schro_malloc ((scan2_dist * 2 + 1) * (scan2_dist * 2 + 1) * sizeof(int32_t));
-  scan2.gravity_scale = 0;
-  scan2.gravity_x = 0;
-  scan2.gravity_y = 0;
-
+  hint_mask = ~((1<<(shift + 1))-1);
   skip = 1<<shift;
   for(j=0;j<params->y_num_blocks;j+=skip){
     for(i=0;i<params->x_num_blocks;i+=skip){
       int dx, dy;
 
+      hint_mv = motion_field_get (hint_mf, i&hint_mask, j&hint_mask);
+      dx = hint_mv->dx[0]>>shift;
+      dy = hint_mv->dy[0]>>shift;
+
       scan.x = (i>>shift) * params->xbsep_luma;
       scan.y = (j>>shift) * params->ybsep_luma;
-      schro_metric_scan_setup (&scan, 0, 0, distance);
+      schro_metric_scan_setup (&scan, dx, dy, distance);
 
       mv = motion_field_get (mf, i, j);
       if (scan.scan_width <= 0 || scan.scan_height <= 0) {
-        mv->dx[0] = 0 << shift;
-        mv->dy[0] = 0 << shift;
+        mv->dx[0] = 0;
+        mv->dy[0] = 0;
         mv->metric = SCHRO_METRIC_INVALID;
         continue;
       }
@@ -1256,12 +1259,66 @@ schro_encoder_motion_field_scan_no_hint (SchroMotionEst *me,
       dx <<= shift;
       dy <<= shift;
 
+      mv->dx[ref] = dx;
+      mv->dy[ref] = dy;
+    }
+  }
+
+  schro_free (scan.metrics);
+
+  me->downsampled_mf[ref][shift] = mf;
+}
+
+static SchroMotionField *
+schro_motionest_superblock_scan (SchroMotionEst *me, int ref, int distance)
+{
+  SchroMetricScan scan2;
+  SchroMotionVector *mv;
+  SchroMotionField *hint_mf;
+  SchroMotionVector *hint_mv;
+  SchroMotionField *mf;
+  SchroParams *params = me->params;
+  int i;
+  int j;
+  int skip;
+
+  scan2.frame = get_downsampled (me->encoder_frame, 0);
+  if (ref == 0) {
+    scan2.ref_frame = get_downsampled (me->encoder_frame->ref_frame0, 0);
+  } else {
+    scan2.ref_frame = get_downsampled (me->encoder_frame->ref_frame1, 0);
+  }
+
+  hint_mf = me->downsampled_mf[ref][2];
+
+  mf = schro_motion_field_new (params->x_num_blocks, params->y_num_blocks);
+
+  schro_motion_field_set (mf, 0, 1<<ref);
+
+  scan2.block_width = 4*params->xbsep_luma;
+  scan2.block_height = 4*params->ybsep_luma;
+  scan2.metrics = schro_malloc ((distance * 2 + 1) * (distance * 2 + 1) * sizeof(int32_t));
+  scan2.gravity_scale = 0;
+  scan2.gravity_x = 0;
+  scan2.gravity_y = 0;
+
+  skip = 4;
+  for(j=0;j<params->y_num_blocks;j+=skip){
+    for(i=0;i<params->x_num_blocks;i+=skip){
+      int dx, dy;
+
+      mv = motion_field_get (mf, i, j);
+      hint_mv = motion_field_get (hint_mf, i, j);
+      
+      dx = hint_mv->dx[0];
+      dy = hint_mv->dy[0];
+
       scan2.x = i * params->xbsep_luma;
       scan2.y = j * params->ybsep_luma;
-      schro_metric_scan_setup (&scan2, dx, dy, scan2_dist);
+      schro_metric_scan_setup (&scan2, dx, dy, distance);
       if (scan2.scan_width <= 0 || scan2.scan_height <= 0) {
-        mv->dx[0] = 0 << shift;
-        mv->dy[0] = 0 << shift;
+        mv->dx[0] = 0;
+        mv->dy[0] = 0;
         mv->metric = SCHRO_METRIC_INVALID;
         continue;
       }
@@ -1271,10 +1328,10 @@ schro_encoder_motion_field_scan_no_hint (SchroMotionEst *me,
 
       mv->dx[0] = dx;
       mv->dy[0] = dy;
+      motion_field_splat_4x4 (mf, i, j);
     }
   }
 
-  schro_free (scan.metrics);
   schro_free (scan2.metrics);
 
   return mf;
@@ -1294,7 +1351,6 @@ schro_motion_splat_4x4 (SchroMotion *motion, int i, int j)
   memcpy (SCHRO_MOTION_GET_BLOCK (motion, i, j+3), mv, 4*sizeof(*mv));
 }
 
-#ifdef unused
 static void
 motion_field_splat_4x4 (SchroMotionField *mf, int i, int j)
 {
@@ -1308,7 +1364,6 @@ motion_field_splat_4x4 (SchroMotionField *mf, int i, int j)
   memcpy (motion_field_get (mf, i, j+2), mv, 4*sizeof(*mv));
   memcpy (motion_field_get (mf, i, j+3), mv, 4*sizeof(*mv));
 }
-#endif
 
 #ifdef unused
 static void
@@ -1323,12 +1378,15 @@ motion_field_splat_2x2 (SchroMotionField *mf, int i, int j)
 #endif
 
 static SchroMotionField *
-schro_motion_field_scan_block (SchroMotionEst *me,
-    SchroMotionField *mf_mask, int ref)
+schro_motionest_block_scan (SchroMotionEst *me, SchroMotionField *mask_mf,
+    int ref)
 {
   SchroMetricScan scan;
   SchroMotionVector *mv;
   SchroMotionField *mf;
+  SchroMotionVector *hint_mv;
+  SchroMotionField *hint_mf;
+  SchroMotionVector *mask_mv;
   SchroParams *params = me->params;
   int i;
   int j;
@@ -1341,6 +1399,7 @@ schro_motion_field_scan_block (SchroMotionEst *me,
     scan.ref_frame = get_downsampled (me->encoder_frame->ref_frame1, 0);
   }
 
+  hint_mf = me->downsampled_mf[ref][2];
   mf = schro_motion_field_new (params->x_num_blocks, params->y_num_blocks);
 
   schro_motion_field_set (mf, 2, 1<<ref);
@@ -1356,12 +1415,16 @@ schro_motion_field_scan_block (SchroMotionEst *me,
     for(i=0;i<params->x_num_blocks;i++){
       int dx, dy;
 
-      mv = motion_field_get (mf_mask, i&(~3), j&(~3));
-      if (mv->metric < (scan.block_width * scan.block_height)*5) continue;
+      mask_mv = motion_field_get (mask_mf, i&(~3), j&(~3));
+      /* FIXME */
+      //if (mask_mv->metric != SCHRO_METRIC_INVALID) continue;
+
+      hint_mv = motion_field_get (hint_mf, i, j);
 
       scan.x = i * params->xbsep_luma;
       scan.y = j * params->ybsep_luma;
-      schro_metric_scan_setup (&scan, 0, 0, distance);
+      schro_metric_scan_setup (&scan, hint_mv->dx[0], hint_mv->dy[0],
+          distance);
 
       mv = motion_field_get (mf, i, j);
       if (scan.scan_width <= 0 || scan.scan_height <= 0) {
@@ -1421,6 +1484,9 @@ schro_encoder_dc_predict (SchroEncoderFrame *frame, int i, int j)
   mvdc->metric = DC_METRIC*8*8;
 }
 
+#define MAGIC_SUPERBLOCK_METRIC 5
+#define MAGIC_BLOCK_METRIC 50
+
 void
 schro_encoder_bigblock_estimation (SchroMotionEst *me)
 {
@@ -1430,43 +1496,56 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
   SchroMotionField *mf4 = NULL;
   SchroMotionVector *mv;
   SchroMotionVector *mv1;
+  SchroMotionVector *mv2;
   SchroParams *params = me->params;
   int i,j;
   int k,l;
   int n;
 
-  mf1 = schro_encoder_motion_field_scan_no_hint (me, 2, 0, 12);
+  n = params->xbsep_luma * params->ybsep_luma;
+
+  mf1 = schro_motionest_superblock_scan (me, 0, 4);
   schro_motion_field_lshift (mf1, params->mv_precision);
 
-  mf3 = schro_motion_field_scan_block (me, mf1, 0);
+  mf3 = schro_motionest_block_scan (me, mf1, 0);
 
   if (me->encoder_frame->num_refs > 1) {
-    mf2 = schro_encoder_motion_field_scan_no_hint (me, 2, 1, 12);
+    mf2 = schro_motionest_superblock_scan (me, 1, 4);
     schro_motion_field_lshift (mf2, params->mv_precision);
 
-    mf4 = schro_motion_field_scan_block (me, mf2, 1);
+    mf4 = schro_motionest_block_scan (me, mf2, 1);
   }
 
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
       mv = SCHRO_MOTION_GET_BLOCK (me->encoder_frame->motion, i, j);
 
-      mv1 = motion_field_get (mf1, i, j);
-      mv1->pred_mode = 1;
-      n = params->xbsep_luma * params->ybsep_luma;
-      if (mv1->metric < n*5) {
-        *mv = *mv1;
-        schro_motion_splat_4x4 (me->encoder_frame->motion, i, j);
-        continue;
-      }
-
-      if (me->encoder_frame->num_refs > 1) {
-        mv1 = motion_field_get (mf2, i, j);
-        mv1->pred_mode = 2;
-        if (mv1->metric < n*5) {
+      if (me->encoder_frame->num_refs == 1) {
+        mv1 = motion_field_get (mf1, i, j);
+        if (mv1->metric < n*MAGIC_SUPERBLOCK_METRIC) {
           *mv = *mv1;
-          mv->dx[1] = mv->dx[0];
-          mv->dy[1] = mv->dy[0];
+          mv->pred_mode = 1;
+          schro_motion_splat_4x4 (me->encoder_frame->motion, i, j);
+          continue;
+        }
+      } else {
+        int pred_mode = 0;
+
+        mv1 = motion_field_get (mf1, i, j);
+        mv2 = motion_field_get (mf2, i, j);
+
+        if (mv1->metric < n*MAGIC_SUPERBLOCK_METRIC) pred_mode |= 1;
+        if (mv2->metric < n*MAGIC_SUPERBLOCK_METRIC) pred_mode |= 2;
+
+        if (pred_mode != 0) {
+          mv->pred_mode = pred_mode;
+          mv->split = 0;
+          mv->dx[0] = mv1->dx[0];
+          mv->dy[0] = mv1->dy[0];
+          mv->dx[1] = mv2->dx[0];
+          mv->dy[1] = mv2->dy[0];
+          mv->metric = MIN(mv1->metric, mv2->metric);
+
           schro_motion_splat_4x4 (me->encoder_frame->motion, i, j);
           continue;
         }
@@ -1476,21 +1555,39 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
         for(k=i;k<i+4;k++) {
           mv = SCHRO_MOTION_GET_BLOCK (me->encoder_frame->motion, k, l);
 
-          mv1 = motion_field_get (mf3, k, l);
-          mv1->pred_mode = 1;
-          n = params->xbsep_luma * params->ybsep_luma;
-          if (mv1->metric < n*10) {
-            *mv = *mv1;
-            continue;
-          }
-
-          if (me->encoder_frame->num_refs > 1) {
-            mv1 = motion_field_get (mf4, k, l);
-            mv1->pred_mode = 2;
-            if (mv1->metric < n*10) {
+          if (me->encoder_frame->num_refs == 1) {
+            mv1 = motion_field_get (mf3, k, l);
+            if (mv1->metric < n*MAGIC_BLOCK_METRIC) {
               *mv = *mv1;
-              mv->dx[1] = mv->dx[0];
-              mv->dy[1] = mv->dy[0];
+              mv->pred_mode = 1;
+              mv->split = 2;
+              continue;
+            }
+          } else {
+            int pred_mode = 0;
+
+            mv1 = motion_field_get (mf3, k, l);
+            mv2 = motion_field_get (mf4, k, l);
+
+            if (mv1->metric < n*MAGIC_BLOCK_METRIC) pred_mode |= 1;
+            if (mv2->metric < n*MAGIC_BLOCK_METRIC) pred_mode |= 2;
+
+            if (pred_mode == 3) {
+              if (mv1->metric < mv2->metric/2) {
+                pred_mode = 1;
+              } else if (mv2->metric < mv1->metric/2) {
+                pred_mode = 2;
+              }
+            }
+
+            if (pred_mode != 0) {
+              mv->pred_mode = pred_mode;
+              mv->split = 2;
+              mv->dx[0] = mv1->dx[0];
+              mv->dy[0] = mv1->dy[0];
+              mv->dx[1] = mv2->dx[0];
+              mv->dy[1] = mv2->dy[0];
+              mv->metric = MIN(mv1->metric, mv2->metric);
               continue;
             }
           }

@@ -88,7 +88,7 @@ schro_encoder_new (void)
   encoder->magic_nonref_lambda_scale = 0.2;
   encoder->magic_allocation_scale = 2.0;
   encoder->magic_keyframe_weight = 5.0;
-  encoder->magic_scene_change_threshold = 2000.0;
+  encoder->magic_scene_change_threshold = 10000.0;
   encoder->magic_inter_p_weight = 1.0;
   encoder->magic_inter_b_weight = 0.4;
 
@@ -103,10 +103,10 @@ schro_encoder_new (void)
   encoder->enable_internal_testing = FALSE;
   encoder->enable_noarith = FALSE;
   encoder->enable_fullscan_estimation = FALSE;
-  encoder->enable_hierarchical_estimation = TRUE;
+  encoder->enable_hierarchical_estimation = FALSE;
   encoder->enable_zero_estimation = FALSE;
   encoder->enable_phasecorr_estimation = FALSE;
-  encoder->enable_bigblock_estimation = FALSE;
+  encoder->enable_bigblock_estimation = TRUE;
 
   encoder->magic_dc_metric_offset = 1.0;
 
@@ -394,6 +394,20 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         frame->state |= SCHRO_ENCODER_FRAME_STATE_FREE;
         encoder->output_slot++;
 
+        schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g %d\n",
+            frame->frame_number,
+            frame->num_refs,
+            frame->is_ref,
+            frame->allocated_mc_bits,
+            frame->allocated_residual_bits,
+            frame->picture_weight,
+            frame->estimated_mc_bits,
+            frame->estimated_residual_bits,
+            frame->actual_mc_bits,
+            frame->actual_residual_bits,
+            frame->scene_change_score,
+            encoder->buffer_level);
+
         {
           /* FIXME move this */
           double x;
@@ -416,11 +430,11 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
       if (encoder->rate_control == SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE) {
         encoder->buffer_level -= buffer->length * 8;
         if (is_picture) {
-          encoder->buffer_level += encoder->bits_per_picture;
           if (encoder->buffer_level < 0) {
-            SCHRO_ERROR("buffer underrun");
+            SCHRO_ERROR("buffer underrun by %d bytes", -encoder->buffer_level);
             encoder->buffer_level = 0;
           }
+          encoder->buffer_level += encoder->bits_per_picture;
           if (encoder->buffer_level > encoder->buffer_size) {
             int n;
 
@@ -875,19 +889,6 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
 
   schro_pack_flush (frame->pack);
   frame->actual_residual_bits += schro_pack_get_offset (frame->pack)*8;
-
-  schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g\n",
-      frame->frame_number,
-      frame->num_refs,
-      frame->is_ref,
-      frame->allocated_mc_bits,
-      frame->allocated_residual_bits,
-      frame->picture_weight,
-      frame->estimated_mc_bits,
-      frame->estimated_residual_bits,
-      frame->actual_mc_bits,
-      frame->actual_residual_bits,
-      frame->scene_change_score);
 
   subbuffer = schro_buffer_new_subbuffer (frame->output_buffer, 0,
       schro_pack_get_offset (frame->pack));

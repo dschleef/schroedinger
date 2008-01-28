@@ -19,11 +19,11 @@ struct _SchroMotionEst {
   SchroUpsampledFrame *src1;
   SchroFrame *downsampled_src1[5];
 
-  SchroMotionVector *motion_vectors;
+  //SchroMotionVector *motion_vectors;
 
   SchroMotionField *downsampled_mf[2][5];
 
-
+  //SchroMotionField *mf;
 };
 
 SchroMotionEst *schro_motionest_new (SchroEncoderFrame *frame);
