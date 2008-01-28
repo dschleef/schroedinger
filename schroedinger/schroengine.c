@@ -386,17 +386,17 @@ init_params (SchroEncoderFrame *frame)
   }
   switch (encoder->motion_block_overlap) {
     case 1:
-      params->xblen_luma = params->xblen_luma;
-      params->yblen_luma = params->yblen_luma;
+      params->xblen_luma = params->xbsep_luma;
+      params->yblen_luma = params->ybsep_luma;
       break;
     case 0:
     case 2:
-      params->xblen_luma = (params->xblen_luma * 3 / 2) & (~3);
-      params->yblen_luma = (params->yblen_luma * 3 / 2) & (~3);
+      params->xblen_luma = (params->xbsep_luma * 3 / 2) & (~3);
+      params->yblen_luma = (params->ybsep_luma * 3 / 2) & (~3);
       break;
     case 3:
-      params->xblen_luma = 2 * params->xblen_luma;
-      params->yblen_luma = 2 * params->yblen_luma;
+      params->xblen_luma = 2 * params->xbsep_luma;
+      params->yblen_luma = 2 * params->ybsep_luma;
       break;
   }
 
