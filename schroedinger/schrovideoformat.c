@@ -484,7 +484,7 @@ schro_video_format_get_std_signal_range (SchroVideoFormat *format)
   for(i=1;i<ARRAY_SIZE(schro_signal_ranges);i++){
     if (format->luma_offset == schro_signal_ranges[i].luma_offset &&
         format->luma_excursion == schro_signal_ranges[i].luma_excursion &&
-        format->chroma_excursion == schro_signal_ranges[i].chroma_excursion &&
+        format->chroma_offset == schro_signal_ranges[i].chroma_offset &&
         format->chroma_excursion == schro_signal_ranges[i].chroma_excursion) {
       return i;
     }
