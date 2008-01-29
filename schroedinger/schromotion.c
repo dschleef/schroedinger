@@ -1394,7 +1394,7 @@ schro_motion_get_mode_prediction (SchroMotion *motion, int x, int y)
   }
 }
 
-static int
+int
 schro_motion_vector_is_equal (SchroMotionVector *a, SchroMotionVector *b)
 {
   if (a == b) return 1;

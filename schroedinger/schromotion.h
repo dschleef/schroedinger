@@ -117,6 +117,8 @@ void schro_obmc_init (SchroObmc *obmc, int x_len, int y_len,
     int x_sep, int y_sep, int ref1_weight, int ref2_weight, int ref_shift);
 void schro_obmc_cleanup (SchroObmc *obmc);
 
+int schro_motion_vector_is_equal (SchroMotionVector *mv1, SchroMotionVector *mv2);
+
 
 #endif
 
