@@ -752,8 +752,6 @@ schro_encoder_estimate_entropy (SchroEncoderFrame *frame)
         frame->estimated_residual_bits,
         frame->allocated_residual_bits);
   }
-
-  frame->estimated_mc_bits = frame->allocated_mc_bits;
 }
 
 static int

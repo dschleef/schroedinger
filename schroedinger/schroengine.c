@@ -111,7 +111,8 @@ handle_gop (SchroEncoder *encoder, int i)
           f->picture_number_ref0);
       f->slot = encoder->next_slot++;
       f->presentation_frame = f->frame_number;
-      f->picture_weight = 1 + (gop_length - 2) * (1 - encoder->magic_inter_b_weight);
+      f->picture_weight = encoder->magic_inter_p_weight;
+      //f->picture_weight += (gop_length - 2) * (1 - encoder->magic_inter_b_weight);
       if (encoder->last_ref != -1) {
         f->retired_picture_number = encoder->last_ref;
       }
@@ -143,8 +144,8 @@ handle_gop (SchroEncoder *encoder, int i)
           f->picture_number_ref0);
       f->slot = encoder->next_slot++;
       f->presentation_frame = f->frame_number;
-      f->picture_weight = 1 + (gop_length - 1) *
-        (1 - encoder->magic_inter_b_weight);
+      f->picture_weight = encoder->magic_inter_p_weight;
+      //f->picture_weight += (gop_length - 1) * (1 - encoder->magic_inter_b_weight);
       if (encoder->last_ref != -1) {
         f->retired_picture_number = encoder->last_ref;
       }
@@ -448,13 +449,7 @@ get_residual_alloc (SchroEncoder *encoder, int buffer_level, double picture_weig
 static int
 get_mc_alloc (SchroEncoderFrame *frame)
 {
-  if (frame->encoder->enable_bigblock_estimation) {
-    return 10 * frame->params.x_num_blocks * frame->params.y_num_blocks *
-      frame->num_refs / 16;
-  } else {
-    return 10 * frame->params.x_num_blocks * frame->params.y_num_blocks *
-      frame->num_refs;
-  }
+  return 10 * frame->params.x_num_blocks * frame->params.y_num_blocks / 16;
 }
 
 void
