@@ -10,6 +10,8 @@ typedef struct _SchroMetricScan SchroMetricScan;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
+#define SCHRO_LIMIT_METRIC_SCAN 32
+
 struct _SchroMetricScan {
   SchroFrame *frame;
   SchroFrame *ref_frame;
@@ -22,7 +24,7 @@ struct _SchroMetricScan {
   int gravity_scale;
   int gravity_x, gravity_y;
   /* output */
-  uint32_t *metrics;
+  uint32_t metrics[SCHRO_LIMIT_METRIC_SCAN*SCHRO_LIMIT_METRIC_SCAN];
 };
 
 #define SCHRO_METRIC_INVALID 0x7fff
