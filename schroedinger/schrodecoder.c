@@ -1407,6 +1407,8 @@ schro_decoder_decode_block_data (SchroPicture *picture)
       /* FIXME complain about buffer over/underrun */
     }
   }
+
+  schro_motion_verify (picture->motion);
 }
 
 void
@@ -1446,21 +1448,25 @@ schro_decoder_decode_macroblock(SchroPicture *picture, SchroArith **arith,
       mv[1] = mv[0];
       schro_decoder_decode_prediction_unit (picture, arith, unpack,
           motion->motion_vectors, i + 2, j);
+      mv[2].split = 1;
       mv[3] = mv[2];
       memcpy(mv + params->x_num_blocks, mv, 4*sizeof(*mv));
 
       mv += 2*params->x_num_blocks;
       schro_decoder_decode_prediction_unit (picture, arith, unpack,
           motion->motion_vectors, i, j + 2);
+      mv[0].split = 1;
       mv[1] = mv[0];
       schro_decoder_decode_prediction_unit (picture, arith, unpack,
           motion->motion_vectors, i + 2, j + 2);
+      mv[2].split = 1;
       mv[3] = mv[2];
       memcpy(mv + params->x_num_blocks, mv, 4*sizeof(*mv));
       break;
     case 2:
       for (l=0;l<4;l++) {
         for (k=0;k<4;k++) {
+          mv[l*params->x_num_blocks + k].split = 2;
           schro_decoder_decode_prediction_unit (picture, arith, unpack,
               motion->motion_vectors, i + k, j + l);
         }

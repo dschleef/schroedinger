@@ -1408,6 +1408,11 @@ schro_motion_verify (SchroMotion *motion)
   SchroMotionVector *mv, *sbmv, *bmv;
   SchroParams *params = motion->params;
 
+  if (motion->src1 == NULL) {
+    SCHRO_ERROR("motion->src1 is NULL");
+    return 0;
+  }
+
   for(y=0;y<params->y_num_blocks;y++){
     for(x=0;x<params->x_num_blocks;x++){
       mv = &motion->motion_vectors[y*params->x_num_blocks + x];
@@ -1447,8 +1452,9 @@ schro_motion_verify (SchroMotion *motion)
 
             for(i=0;i<3;i++){
               /* FIXME 8bit */
-              if (mvdc->dc[0] < -128 || mvdc->dc[0] > 127) {
-                SCHRO_ERROR("mv(%d,%d) has bad DC values", x, y);
+              if (mvdc->dc[i] < -128 || mvdc->dc[i] > 127) {
+                SCHRO_ERROR("mv(%d,%d) has bad DC value [%d] %d", x, y,
+                    i, mvdc->dc[i]);
                 return 0;
               }
             }
