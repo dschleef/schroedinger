@@ -3,12 +3,11 @@
 #include "config.h"
 #endif
 
-#include <gst/gst.h>
 #include <schroedinger/schro.h>
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schrounpack.h>
-#include <glib.h>
 #include <string.h>
+#include <stdio.h>
 
 #define DIRAC_COMPAT 1
 
@@ -22,107 +21,107 @@ do { \
 #define MARKER()
 #endif
 
-static void fakesink_handoff (GstElement *fakesink, GstBuffer *buffer,
-    GstPad *pad, gpointer p_pipeline);
-static void event_loop(GstElement *pipeline);
+static void handle_packet(unsigned char *data, int size);
 
-gboolean raw = FALSE;
-char *fn = "output.ogg";
-
-static GOptionEntry entries[] = 
-{
-    { "raw", 'r', 0, G_OPTION_ARG_NONE, &raw, "File is raw Dirac stream", NULL },
-    { NULL }
-};
+char *fn = "output.drc";
 
 int
 main (int argc, char *argv[])
 {
-  GstElement *pipeline;
-  GstElement *fakesink;
-  GstElement *filesrc;
-  GError *error = NULL;
-  GOptionContext *context;
+  FILE *file;
 
-  if (!g_thread_supported ()) g_thread_init(NULL);
-
-  context = g_option_context_new ("dump_packets");
-  g_option_context_add_main_entries (context, entries, NULL);
-  g_option_context_add_group (context, gst_init_get_option_group ());
-  g_option_context_parse (context, &argc, &argv, &error);
-  g_option_context_free (context);
   if (argc > 1) {
     fn = argv[1];
   }
 
-  gst_init(NULL,NULL);
-
-  if (raw) {
-    pipeline = gst_parse_launch("filesrc ! schroparse ! video/x-dirac ! fakesink", NULL);
-  } else {
-    pipeline = gst_parse_launch("filesrc ! oggdemux ! video/x-dirac ! fakesink", NULL);
+  file = fopen (fn, "r");
+  if (file == NULL) {
+    printf("cannot open %s\n", fn);
+    return 1;
   }
 
-  fakesink = gst_bin_get_by_name (GST_BIN(pipeline), "fakesink0");
-  g_assert(fakesink != NULL);
+  while (1) {
+    unsigned char *packet;
+    unsigned char header[13];
+    int n;
+    int size;
 
-  g_object_set (G_OBJECT(fakesink), "signal-handoffs", TRUE, NULL);
+    n = fread (header, 1, 13, file);
+    if (n == 0) {
+      return 0;
+    }
+    if (n < 13) {
+      printf("truncated header\n");
+      return 1;
+    }
 
-  g_signal_connect (G_OBJECT(fakesink), "handoff",
-      G_CALLBACK(fakesink_handoff), pipeline);
+    if (header[0] != 'B' || header[1] != 'B' || header[2] != 'C' ||
+        header[3] != 'D') {
+      printf("expected BBCD header\n");
+      return 1;
+    }
 
-  filesrc = gst_bin_get_by_name (GST_BIN(pipeline), "filesrc0");
-  g_assert(filesrc != NULL);
+    size = (header[5]<<24) | (header[6]<<16) | (header[7]<<8) | (header[8]);
+    if (size == 0) {
+      size = 13;
+    }
+    if (size < 13) {
+      printf("packet too small (%d < 13)\n", size);
+      return 1;
+    }
+    if (size > 16*1024*1024) {
+      printf("packet too large? (%d > 16777216)\n", size);
+      return 1;
+    }
 
-  g_object_set (G_OBJECT(filesrc), "location", fn, NULL);
+    packet = malloc (size);
+    memcpy (packet, header, 13);
+    n = fread (packet + 13, 1, size - 13, file);
+    if (n < size - 13) {
+      printf("truncated packet (%d < %d)\n", n, size-13);
+      exit(1);
+    }
 
-  gst_element_set_state (pipeline, GST_STATE_PLAYING);
-
-  event_loop(pipeline);
-
-  gst_element_set_state (pipeline, GST_STATE_NULL);
+    handle_packet (packet, size);
+        
+    free(packet);
+  }
 
   return 0;
 }
 
 static void
-dump_hex (guint8 *data, int length, char *prefix)
+dump_hex (unsigned char *data, int length, char *prefix)
 {
   int i;
   for(i=0;i<length;i++){
     if ((i&0xf) == 0) {
-      g_print("%s0x%04x: ", prefix, i);
+      printf("%s0x%04x: ", prefix, i);
     }
-    g_print("%02x ", data[i]);
+    printf("%02x ", data[i]);
     if ((i&0xf) == 0xf) {
-      g_print("\n");
+      printf("\n");
     }
   }
   if ((i&0xf) != 0xf) {
-    g_print("\n");
+    printf("\n");
   }
 }
 
 static void
-fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
-    gpointer p_pipeline)
+handle_packet(unsigned char *data, int size)
 {
-  guint8 *data;
   SchroUnpack unpack;
   const char *parse_code;
   int next;
   int prev;
-  int size;
-
-  data = GST_BUFFER_DATA(buffer);
-  size = GST_BUFFER_SIZE(buffer);
 
   if (memcmp (data, "KW-DIRAC", 8) == 0) {
-    g_print("KW-DIRAC header\n");
+    printf("KW-DIRAC header\n");
     return;
   }
   if (memcmp (data, "BBCD", 4) != 0) {
-    g_print("non-Dirac packet\n");
+    printf("non-Dirac packet\n");
     dump_hex (data, MIN(size, 100), "  ");
     return;
   }
@@ -186,62 +185,62 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       parse_code = "unknown";
       break;
   }
-  g_print("Parse code: %s (0x%02x)\n", parse_code, data[4]);
+  printf("Parse code: %s (0x%02x)\n", parse_code, data[4]);
   
   schro_unpack_init_with_data (&unpack, data + 5, size - 5, 1);
 
   next = schro_unpack_decode_bits (&unpack, 32);
   prev = schro_unpack_decode_bits (&unpack, 32);
 
-  g_print("  offset to next: %d\n", next);
-  g_print("  offset to prev: %d\n", prev);
+  printf("  offset to next: %d\n", next);
+  printf("  offset to prev: %d\n", prev);
 
   if (data[4] == SCHRO_PARSE_CODE_SEQUENCE_HEADER) {
     int bit;
 
     /* parse parameters */
-    g_print("  version.major: %d\n", schro_unpack_decode_uint(&unpack));
-    g_print("  version.minor: %d\n", schro_unpack_decode_uint(&unpack));
-    g_print("  profile: %d\n", schro_unpack_decode_uint(&unpack));
-    g_print("  level: %d\n", schro_unpack_decode_uint(&unpack));
+    printf("  version.major: %d\n", schro_unpack_decode_uint(&unpack));
+    printf("  version.minor: %d\n", schro_unpack_decode_uint(&unpack));
+    printf("  profile: %d\n", schro_unpack_decode_uint(&unpack));
+    printf("  level: %d\n", schro_unpack_decode_uint(&unpack));
 
     /* sequence parameters */
-    g_print("  video_format: %d\n", schro_unpack_decode_uint(&unpack));
+    printf("  video_format: %d\n", schro_unpack_decode_uint(&unpack));
 
     bit = schro_unpack_decode_bit(&unpack);
-    g_print("  custom dimensions flag: %s\n", bit ? "yes" : "no");
+    printf("  custom dimensions flag: %s\n", bit ? "yes" : "no");
     if (bit) {
-      g_print("    width: %d\n", schro_unpack_decode_uint(&unpack));
-      g_print("    height: %d\n", schro_unpack_decode_uint(&unpack));
+      printf("    width: %d\n", schro_unpack_decode_uint(&unpack));
+      printf("    height: %d\n", schro_unpack_decode_uint(&unpack));
     }
 
     bit = schro_unpack_decode_bit(&unpack);
-    g_print("  chroma format flag: %s\n", bit ? "yes" : "no");
+    printf("  chroma format flag: %s\n", bit ? "yes" : "no");
     if (bit) {
-      g_print("    chroma format: %d\n", schro_unpack_decode_uint(&unpack));
+      printf("    chroma format: %d\n", schro_unpack_decode_uint(&unpack));
     }
 
     bit = schro_unpack_decode_bit(&unpack);
-    g_print("  custom_scan_format_flag: %s\n", bit ? "yes" : "no");
+    printf("  custom_scan_format_flag: %s\n", bit ? "yes" : "no");
     if (bit) {
-      g_print("  interlaced source: %s\n", bit ? "yes" : "no");
+      printf("  interlaced source: %s\n", bit ? "yes" : "no");
       if (bit) {
         bit = schro_unpack_decode_bit(&unpack);
-        g_print("    top field first: %s\n", bit ? "yes" : "no");
+        printf("    top field first: %s\n", bit ? "yes" : "no");
       }
     }
     
     MARKER();
 
     bit = schro_unpack_decode_bit(&unpack);
-    g_print("  frame rate flag: %s\n", bit ? "yes" : "no");
+    printf("  frame rate flag: %s\n", bit ? "yes" : "no");
     if (bit) {
       int index = schro_unpack_decode_uint(&unpack);
-      g_print("    frame rate index: %d\n", index);
+      printf("    frame rate index: %d\n", index);
       if (index == 0) {
-        g_print("      frame rate numerator: %d\n",
+        printf("      frame rate numerator: %d\n",
             schro_unpack_decode_uint(&unpack));
-        g_print("      frame rate demoninator: %d\n",
+        printf("      frame rate demoninator: %d\n",
             schro_unpack_decode_uint(&unpack));
       }
     }
@@ -249,14 +248,14 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     MARKER();
 
     bit = schro_unpack_decode_bit(&unpack);
-    g_print("  aspect ratio flag: %s\n", bit ? "yes" : "no");
+    printf("  aspect ratio flag: %s\n", bit ? "yes" : "no");
     if (bit) {
       int index = schro_unpack_decode_uint(&unpack);
-      g_print("    aspect ratio index: %d\n", index);
+      printf("    aspect ratio index: %d\n", index);
       if (index == 0) {
-        g_print("      aspect ratio numerator: %d\n",
+        printf("      aspect ratio numerator: %d\n",
             schro_unpack_decode_uint(&unpack));
-        g_print("      aspect ratio demoninator: %d\n",
+        printf("      aspect ratio demoninator: %d\n",
             schro_unpack_decode_uint(&unpack));
       }
     }
@@ -264,58 +263,58 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     MARKER();
 
     bit = schro_unpack_decode_bit(&unpack);
-    g_print("  clean area flag: %s\n", bit ? "yes" : "no");
+    printf("  clean area flag: %s\n", bit ? "yes" : "no");
     if (bit) {
-      g_print("    clean width: %d\n", schro_unpack_decode_uint(&unpack));
-      g_print("    clean height: %d\n", schro_unpack_decode_uint(&unpack));
-      g_print("    left offset: %d\n", schro_unpack_decode_uint(&unpack));
-      g_print("    top offset: %d\n", schro_unpack_decode_uint(&unpack));
+      printf("    clean width: %d\n", schro_unpack_decode_uint(&unpack));
+      printf("    clean height: %d\n", schro_unpack_decode_uint(&unpack));
+      printf("    left offset: %d\n", schro_unpack_decode_uint(&unpack));
+      printf("    top offset: %d\n", schro_unpack_decode_uint(&unpack));
     }
 
     MARKER();
 
     bit = schro_unpack_decode_bit(&unpack);
-    g_print("  signal range flag: %s\n", bit ? "yes" : "no");
+    printf("  signal range flag: %s\n", bit ? "yes" : "no");
     if (bit) {
       int index = schro_unpack_decode_uint(&unpack);
-      g_print("    signal range index: %d\n", index);
+      printf("    signal range index: %d\n", index);
       if (index == 0) {
-        g_print("      luma offset: %d\n", schro_unpack_decode_uint(&unpack));
-        g_print("      luma excursion: %d\n", schro_unpack_decode_uint(&unpack));
-        g_print("      chroma offset: %d\n", schro_unpack_decode_uint(&unpack));
-        g_print("      chroma excursion: %d\n", schro_unpack_decode_uint(&unpack));
+        printf("      luma offset: %d\n", schro_unpack_decode_uint(&unpack));
+        printf("      luma excursion: %d\n", schro_unpack_decode_uint(&unpack));
+        printf("      chroma offset: %d\n", schro_unpack_decode_uint(&unpack));
+        printf("      chroma excursion: %d\n", schro_unpack_decode_uint(&unpack));
       }
     }
 
     MARKER();
 
     bit = schro_unpack_decode_bit(&unpack);
-    g_print("  colour spec flag: %s\n", bit ? "yes" : "no");
+    printf("  colour spec flag: %s\n", bit ? "yes" : "no");
     if (bit) {
       int index = schro_unpack_decode_uint(&unpack);
-      g_print("    colour spec index: %d\n", index);
+      printf("    colour spec index: %d\n", index);
       if (index == 0) {
         bit = schro_unpack_decode_bit(&unpack);
-        g_print("      colour primaries flag: %s\n", bit ? "yes" : "no");
+        printf("      colour primaries flag: %s\n", bit ? "yes" : "no");
         if (bit) {
-          g_print("        colour primaries: %d\n",
+          printf("        colour primaries: %d\n",
               schro_unpack_decode_uint(&unpack));
         }
         bit = schro_unpack_decode_bit(&unpack);
-        g_print("      colour matrix flag: %s\n", bit ? "yes" : "no");
+        printf("      colour matrix flag: %s\n", bit ? "yes" : "no");
         if (bit) {
-          g_print("        colour matrix: %d\n", schro_unpack_decode_uint(&unpack));
+          printf("        colour matrix: %d\n", schro_unpack_decode_uint(&unpack));
         }
         bit = schro_unpack_decode_bit(&unpack);
-        g_print("      transfer function flag: %s\n", bit ? "yes" : "no");
+        printf("      transfer function flag: %s\n", bit ? "yes" : "no");
         if (bit) {
-          g_print("        transfer function: %d\n",
+          printf("        transfer function: %d\n",
               schro_unpack_decode_uint(&unpack));
         }
       }
     }
 
-    g_print("  interlaced_coding: %d\n", schro_unpack_decode_uint(&unpack));
+    printf("  interlaced_coding: %d\n", schro_unpack_decode_uint(&unpack));
 
     MARKER();
 
@@ -326,22 +325,22 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     int i;
     int lowdelay = SCHRO_PARSE_CODE_IS_LOW_DELAY(data[4]);
 
-    g_print("  num refs: %d\n", num_refs);
+    printf("  num refs: %d\n", num_refs);
 
     schro_unpack_byte_sync(&unpack);
-    g_print("  picture_number: %u\n", schro_unpack_decode_bits(&unpack, 32));
+    printf("  picture_number: %u\n", schro_unpack_decode_bits(&unpack, 32));
     if (num_refs > 0) {
-      g_print("  ref1_offset: %d\n", schro_unpack_decode_sint(&unpack));
+      printf("  ref1_offset: %d\n", schro_unpack_decode_sint(&unpack));
     }
     if (num_refs > 1) {
-      g_print("  ref2_offset: %d\n", schro_unpack_decode_sint(&unpack));
+      printf("  ref2_offset: %d\n", schro_unpack_decode_sint(&unpack));
     }
     if (SCHRO_PARSE_CODE_IS_REFERENCE(data[4])) {
       int r = schro_unpack_decode_sint(&unpack);
       if (r == 0) {
-        g_print("  retire: none\n");
+        printf("  retire: none\n");
       } else {
-        g_print("  retire: %d\n", r);
+        printf("  retire: %d\n", r);
       }
     }
 
@@ -351,61 +350,61 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       schro_unpack_byte_sync(&unpack);
       index = schro_unpack_decode_uint(&unpack);
       
-      g_print("  block parameters index: %d\n", index);
+      printf("  block parameters index: %d\n", index);
       if (index == 0) {
-        g_print("    luma block width: %d\n", schro_unpack_decode_uint(&unpack));
-        g_print("    luma block height: %d\n", schro_unpack_decode_uint(&unpack));
-        g_print("    horiz luma block sep: %d\n", schro_unpack_decode_uint(&unpack));
-        g_print("    vert luma block sep: %d\n", schro_unpack_decode_uint(&unpack));
+        printf("    luma block width: %d\n", schro_unpack_decode_uint(&unpack));
+        printf("    luma block height: %d\n", schro_unpack_decode_uint(&unpack));
+        printf("    horiz luma block sep: %d\n", schro_unpack_decode_uint(&unpack));
+        printf("    vert luma block sep: %d\n", schro_unpack_decode_uint(&unpack));
       }
       
       MARKER();
 
-      g_print("  motion vector precision bits: %d\n", schro_unpack_decode_uint(&unpack));
+      printf("  motion vector precision bits: %d\n", schro_unpack_decode_uint(&unpack));
       
       MARKER();
 
       bit = schro_unpack_decode_bit(&unpack);
-      g_print("  using global motion flag: %s\n", bit ? "yes" : "no");
+      printf("  using global motion flag: %s\n", bit ? "yes" : "no");
       if (bit) {
         for(i=0;i<num_refs;i++){
-          g_print("    global motion ref%d:\n", i+1);
+          printf("    global motion ref%d:\n", i+1);
           bit = schro_unpack_decode_bit(&unpack);
-          g_print("      non-zero pan/tilt flag: %s\n", bit ? "yes" : "no");
+          printf("      non-zero pan/tilt flag: %s\n", bit ? "yes" : "no");
           if (bit) {
-            g_print("        pan %d\n", schro_unpack_decode_sint(&unpack));
-            g_print("        tilt %d\n", schro_unpack_decode_sint(&unpack));
+            printf("        pan %d\n", schro_unpack_decode_sint(&unpack));
+            printf("        tilt %d\n", schro_unpack_decode_sint(&unpack));
           }
           bit = schro_unpack_decode_bit(&unpack);
-          g_print("      non-zero zoom rot shear flag: %s\n", bit ? "yes" : "no");
+          printf("      non-zero zoom rot shear flag: %s\n", bit ? "yes" : "no");
           if (bit) {
-            g_print("       exponent %d\n", schro_unpack_decode_uint(&unpack));
-            g_print("       A11 %d\n", schro_unpack_decode_sint(&unpack));
-            g_print("       A12 %d\n", schro_unpack_decode_sint(&unpack));
-            g_print("       A21 %d\n", schro_unpack_decode_sint(&unpack));
-            g_print("       A22 %d\n", schro_unpack_decode_sint(&unpack));
+            printf("       exponent %d\n", schro_unpack_decode_uint(&unpack));
+            printf("       A11 %d\n", schro_unpack_decode_sint(&unpack));
+            printf("       A12 %d\n", schro_unpack_decode_sint(&unpack));
+            printf("       A21 %d\n", schro_unpack_decode_sint(&unpack));
+            printf("       A22 %d\n", schro_unpack_decode_sint(&unpack));
           }
           bit = schro_unpack_decode_bit(&unpack);
-          g_print("     non-zero perspective flag: %s\n", bit ? "yes" : "no");
+          printf("     non-zero perspective flag: %s\n", bit ? "yes" : "no");
           if (bit) {
-            g_print("       exponent %d\n", schro_unpack_decode_uint(&unpack));
-            g_print("       perspective_x %d\n", schro_unpack_decode_sint(&unpack));
-            g_print("       perspective_y %d\n", schro_unpack_decode_sint(&unpack));
+            printf("       exponent %d\n", schro_unpack_decode_uint(&unpack));
+            printf("       perspective_x %d\n", schro_unpack_decode_sint(&unpack));
+            printf("       perspective_y %d\n", schro_unpack_decode_sint(&unpack));
           }
         }
       }
 
       MARKER();
 
-      g_print("  picture prediction mode: %d\n", schro_unpack_decode_uint(&unpack));
+      printf("  picture prediction mode: %d\n", schro_unpack_decode_uint(&unpack));
 
       bit = schro_unpack_decode_bit(&unpack);
-      g_print("  non-default weights flag: %s\n", bit ? "yes" : "no");
+      printf("  non-default weights flag: %s\n", bit ? "yes" : "no");
       if (bit) {
-        g_print("  picture weight precision: %d\n",
+        printf("  picture weight precision: %d\n",
             schro_unpack_decode_uint(&unpack));
         for(i=0;i<num_refs;i++){
-          g_print("  picture weight ref%d: %d\n", i+1,
+          printf("  picture weight ref%d: %d\n", i+1,
               schro_unpack_decode_sint(&unpack));
         }
       }
@@ -415,49 +414,49 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       schro_unpack_byte_sync(&unpack);
 
       n = schro_unpack_decode_uint(&unpack);
-      g_print("  superblock split data length: %d\n", n);
+      printf("  superblock split data length: %d\n", n);
       schro_unpack_byte_sync (&unpack);
       schro_unpack_skip_bits (&unpack, n*8);
 
       n = schro_unpack_decode_uint(&unpack);
-      g_print("  prediction modes data length: %d\n", n);
+      printf("  prediction modes data length: %d\n", n);
       schro_unpack_byte_sync (&unpack);
       schro_unpack_skip_bits (&unpack, n*8);
 
       n = schro_unpack_decode_uint(&unpack);
-      g_print("  vector data (ref1,x) length: %d\n", n);
+      printf("  vector data (ref1,x) length: %d\n", n);
       schro_unpack_byte_sync (&unpack);
       schro_unpack_skip_bits (&unpack, n*8);
 
       n = schro_unpack_decode_uint(&unpack);
-      g_print("  vector data (ref1,y) length: %d\n", n);
+      printf("  vector data (ref1,y) length: %d\n", n);
       schro_unpack_byte_sync (&unpack);
       schro_unpack_skip_bits (&unpack, n*8);
 
       if (num_refs>1) {
         n = schro_unpack_decode_uint(&unpack);
-        g_print("  vector data (ref2,x) length: %d\n", n);
+        printf("  vector data (ref2,x) length: %d\n", n);
         schro_unpack_byte_sync (&unpack);
         schro_unpack_skip_bits (&unpack, n*8);
 
         n = schro_unpack_decode_uint(&unpack);
-        g_print("  vector data (ref2,y) length: %d\n", n);
+        printf("  vector data (ref2,y) length: %d\n", n);
         schro_unpack_byte_sync (&unpack);
         schro_unpack_skip_bits (&unpack, n*8);
       }
 
       n = schro_unpack_decode_uint(&unpack);
-      g_print("  DC data (y) length: %d\n", n);
+      printf("  DC data (y) length: %d\n", n);
       schro_unpack_byte_sync (&unpack);
       schro_unpack_skip_bits (&unpack, n*8);
 
       n = schro_unpack_decode_uint(&unpack);
-      g_print("  DC data (u) length: %d\n", n);
+      printf("  DC data (u) length: %d\n", n);
       schro_unpack_byte_sync (&unpack);
       schro_unpack_skip_bits (&unpack, n*8);
 
       n = schro_unpack_decode_uint(&unpack);
-      g_print("  DC data (v) length: %d\n", n);
+      printf("  DC data (v) length: %d\n", n);
       schro_unpack_byte_sync (&unpack);
       schro_unpack_skip_bits (&unpack, n*8);
 
@@ -468,51 +467,51 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
       bit = 0;
     } else {
       bit = schro_unpack_decode_bit (&unpack);
-      g_print("  zero residual: %s\n", bit ? "yes" : "no");
+      printf("  zero residual: %s\n", bit ? "yes" : "no");
     }
     if (!bit) {
       int depth;
       int j;
 
-      g_print("  wavelet index: %d\n", schro_unpack_decode_uint(&unpack));
+      printf("  wavelet index: %d\n", schro_unpack_decode_uint(&unpack));
 
       depth = schro_unpack_decode_uint(&unpack);
-      g_print("  transform depth: %d\n", depth);
+      printf("  transform depth: %d\n", depth);
 
       if (!lowdelay) {
         bit = schro_unpack_decode_bit (&unpack);
-        g_print("    non-default partition flag: %s\n", bit ? "yes" : "no");
+        printf("    non-default partition flag: %s\n", bit ? "yes" : "no");
         if (bit) {
           for(i=0;i<depth+1;i++){
-            g_print("      number of codeblocks depth=%d\n", i);
-            g_print("        horizontal codeblocks: %d\n",
+            printf("      number of codeblocks depth=%d\n", i);
+            printf("        horizontal codeblocks: %d\n",
                 schro_unpack_decode_uint(&unpack));
-            g_print("        vertical codeblocks: %d\n",
+            printf("        vertical codeblocks: %d\n",
                 schro_unpack_decode_uint(&unpack));
           }
-          g_print("    codeblock mode index: %d\n", schro_unpack_decode_uint(&unpack));
+          printf("    codeblock mode index: %d\n", schro_unpack_decode_uint(&unpack));
         }
 
         schro_unpack_byte_sync (&unpack);
         for(j=0;j<3;j++){
-          g_print("  component %d:\n",j);
-          g_print("    comp subband  length  quantiser_index\n");
+          printf("  component %d:\n",j);
+          printf("    comp subband  length  quantiser_index\n");
           for(i=0;i<1+depth*3;i++){
             int length;
 
             if(unpack.overrun) {
-              g_print("    PAST END\n");
+              printf("    PAST END\n");
               continue;
             }
 
             length = schro_unpack_decode_uint(&unpack);
             if (length > 0) {
-              g_print("    %4d %4d:   %6d    %3d\n", j, i, length,
+              printf("    %4d %4d:   %6d    %3d\n", j, i, length,
                   schro_unpack_decode_uint(&unpack));
               schro_unpack_byte_sync(&unpack);
               schro_unpack_skip_bits (&unpack, length*8);
             } else {
-              g_print("    %4d %4d:   %6d\n", j, i, length);
+              printf("    %4d %4d:   %6d\n", j, i, length);
               schro_unpack_byte_sync(&unpack);
             }
           }
@@ -528,16 +527,16 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
         slice_bytes_numerator = schro_unpack_decode_uint(&unpack);
         slice_bytes_denominator = schro_unpack_decode_uint(&unpack);
 
-        g_print("  n_horiz_slices: %d\n", slice_x);
-        g_print("  n_horiz_slices: %d\n", slice_y);
-        g_print("  slice_bytes_numerator: %d\n", slice_bytes_numerator);
-        g_print("  slice_bytes_denominator: %d\n", slice_bytes_denominator);
+        printf("  n_horiz_slices: %d\n", slice_x);
+        printf("  n_horiz_slices: %d\n", slice_y);
+        printf("  slice_bytes_numerator: %d\n", slice_bytes_numerator);
+        printf("  slice_bytes_denominator: %d\n", slice_bytes_denominator);
 
         bit = schro_unpack_decode_bit (&unpack);
-        g_print("  encode_quant_matrix: %s\n", bit ? "yes" : "no");
+        printf("  encode_quant_matrix: %s\n", bit ? "yes" : "no");
         if (bit) {
           for(i=0;i<1+depth*3;i++){
-            g_print("    %2d: %d\n", i, schro_unpack_decode_uint(&unpack));
+            printf("    %2d: %d\n", i, schro_unpack_decode_uint(&unpack));
           }
         }
 
@@ -549,39 +548,39 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
     int code = data[13];
     switch (code) {
       case 0:
-        g_print("  code: 0 (invalid)\n");
+        printf("  code: 0 (invalid)\n");
         break;
       case 1:
-        g_print("  code: 1 (encoder implementation/version)\n");
-        g_print("  string: %.*s\n", length, data + 14);
+        printf("  code: 1 (encoder implementation/version)\n");
+        printf("  string: %.*s\n", length, data + 14);
         break;
       case 2:
-        g_print("  code: 2 (SMPTE 12M timecode)\n");
+        printf("  code: 2 (SMPTE 12M timecode)\n");
         break;
       case 3:
         {
           int i;
-          g_print("  code: 3 (MD5 checksum)\n");
-          g_print("  checksum: ");
+          printf("  code: 3 (MD5 checksum)\n");
+          printf("  checksum: ");
           for(i=0;i<16;i++){
-            g_print("%02x", data[14+i]);
+            printf("%02x", data[14+i]);
           }
-          g_print("\n");
+          printf("\n");
         }
         break;
       case 4:
         {
           int bitrate;
-          g_print("  code: %d (bitrate)\n", code);
+          printf("  code: %d (bitrate)\n", code);
           bitrate = (data[14]<<24);
           bitrate |= (data[15]<<16);
           bitrate |= (data[16]<<8);
           bitrate |= (data[17]<<0);
-          g_print("  bitrate: %d\n", bitrate);
+          printf("  bitrate: %d\n", bitrate);
         }
         break;
       default:
-        g_print("  code: %d (unknown)\n", code);
+        printf("  code: %d (unknown)\n", code);
         dump_hex (data + 14, length, "    ");
         break;
     }
@@ -594,42 +593,7 @@ fakesink_handoff (GstElement *fakesink, GstBuffer *buffer, GstPad *pad,
 
   schro_unpack_byte_sync (&unpack);
 
-  g_print("offset %d\n", schro_unpack_get_bits_read (&unpack)/8);
+  printf("offset %d\n", schro_unpack_get_bits_read (&unpack)/8);
   dump_hex (unpack.data, MIN(data + size - unpack.data, 100), "  ");
-}
-
-static void
-event_loop(GstElement *pipeline)
-{
-  GstBus *bus;
-  GstMessage *message = NULL;
-
-  bus = gst_element_get_bus (GST_ELEMENT(pipeline));
-
-  while (TRUE) {
-    message = gst_bus_poll (bus, GST_MESSAGE_ANY, -1);
-    
-    switch(message->type) {
-      case GST_MESSAGE_EOS:
-        gst_message_unref (message);
-        return;
-      case GST_MESSAGE_WARNING:
-      case GST_MESSAGE_ERROR:
-        {
-          GError *error = NULL;
-          gchar *debug;
-
-          gst_message_parse_error (message, &error, &debug);
-          gst_object_default_error (GST_MESSAGE_SRC(message), error, debug);
-          gst_message_unref(message);
-          g_error_free (error);
-          g_free (debug);
-          return;
-        }
-      default:
-        gst_message_unref(message);
-        break;
-    }
-  }
 }
 
