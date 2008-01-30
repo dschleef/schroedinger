@@ -42,6 +42,12 @@ void schro_metric_scan_do_scan (SchroMetricScan *scan);
 int schro_metric_scan_get_min (SchroMetricScan *scan, int *dx, int *dy);
 void schro_metric_scan_setup (SchroMetricScan *scan, int dx, int dy, int dist);
 
+int schro_metric_get (SchroFrameData *src1, SchroFrameData *src2, int width, int height);
+int schro_metric_get_biref (SchroFrameData *fd, SchroFrameData *src1,
+    int weight1, SchroFrameData *src2, int weight2, int shift, int width,
+    int height);
+int schro_metric_get_dc (SchroFrameData *src, int value, int width, int height);
+
 #endif
 
 SCHRO_END_DECLS

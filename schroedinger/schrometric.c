@@ -129,3 +129,77 @@ schro_metric_scan_setup (SchroMetricScan *scan, int dx, int dy, int dist)
   scan->scan_height = ymax - ymin + 1;
 }
 
+int
+schro_metric_get (SchroFrameData *src1, SchroFrameData *src2, int width,
+    int height)
+{
+  int i,j;
+  int metric = 0;
+  uint8_t *line1;
+  uint8_t *line2;
+
+  SCHRO_ASSERT(src1->width >= width);
+  SCHRO_ASSERT(src1->height >= height);
+  SCHRO_ASSERT(src2->width >= width);
+  SCHRO_ASSERT(src2->height >= height);
+
+  for(j=0;j<height;j++){
+    line1 = SCHRO_FRAME_DATA_GET_LINE(src1, j);
+    line2 = SCHRO_FRAME_DATA_GET_LINE(src1, j);
+    for(i=0;i<height;i++){
+      metric += abs(line1[i] - line2[i]);
+    }
+  }
+  return metric;
+}
+
+int
+schro_metric_get_dc (SchroFrameData *src, int value, int width, int height)
+{
+  int i,j;
+  int metric = 0;
+  uint8_t *line;
+
+  SCHRO_ASSERT(src->width >= width);
+  SCHRO_ASSERT(src->height >= height);
+
+  for(j=0;j<height;j++){
+    line = SCHRO_FRAME_DATA_GET_LINE(src, j);
+    for(i=0;i<height;i++){
+      metric += abs(value - line[i]);
+    }
+  }
+  return metric;
+}
+
+int schro_metric_get_biref (SchroFrameData *fd, SchroFrameData *src1,
+    int weight1, SchroFrameData *src2, int weight2, int shift, int width,
+    int height)
+{
+  int i,j;
+  int metric = 0;
+  uint8_t *line;
+  uint8_t *src1_line;
+  uint8_t *src2_line;
+  int offset = (1<<(shift-1));
+  int x;
+
+  SCHRO_ASSERT(fd->width >= width);
+  SCHRO_ASSERT(fd->height >= height);
+  SCHRO_ASSERT(src1->width >= width);
+  SCHRO_ASSERT(src1->height >= height);
+  SCHRO_ASSERT(src2->width >= width);
+  SCHRO_ASSERT(src2->height >= height);
+
+  for(j=0;j<height;j++){
+    line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    src1_line = SCHRO_FRAME_DATA_GET_LINE(src1, j);
+    src2_line = SCHRO_FRAME_DATA_GET_LINE(src2, j);
+    for(i=0;i<height;i++){
+      x = (src1_line[i]*weight1 + src2_line[i]*weight2 + offset)>>shift;
+      metric += abs(line[i] - x);
+    }
+  }
+  return metric;
+}
+
