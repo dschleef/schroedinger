@@ -83,7 +83,7 @@ schro_encoder_new (void)
   encoder->enable_ssim = FALSE;
   encoder->enable_md5 = FALSE;
 
-  encoder->magic_subband0_lambda_scale = 1.0;
+  encoder->magic_subband0_lambda_scale = 2.0;
   encoder->magic_chroma_lambda_scale = 1.0;
   encoder->magic_nonref_lambda_scale = 0.5;
   encoder->magic_allocation_scale = 1.5;
@@ -91,6 +91,7 @@ schro_encoder_new (void)
   encoder->magic_scene_change_threshold = 10000.0;
   encoder->magic_inter_p_weight = 1.0;
   encoder->magic_inter_b_weight = 0.0;
+  encoder->magic_mc_bailout_limit = 0.25;
 
   encoder->ref_distance = 4;
   encoder->transform_depth = 4;
@@ -394,7 +395,7 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         frame->state |= SCHRO_ENCODER_FRAME_STATE_FREE;
         encoder->output_slot++;
 
-        schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g %d %g\n",
+        schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g %d %g %d\n",
             frame->frame_number, /* 1 */
             frame->num_refs,
             frame->is_ref,
@@ -407,7 +408,8 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
             frame->actual_residual_bits, /* 10 */
             frame->scene_change_score,
             encoder->buffer_level,
-            frame->base_lambda);
+            frame->base_lambda,
+            frame->mc_error);
 
         {
           /* FIXME move this */
@@ -793,9 +795,20 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
   if (frame->params.num_refs > 0) {
     schro_encoder_motion_predict (frame);
 
-    schro_frame_convert (frame->iwt_frame, frame->filtered_frame);
-
     SCHRO_ASSERT(schro_motion_verify (frame->motion));
+
+    if (frame->estimated_mc_bits >
+        frame->encoder->bits_per_picture * frame->encoder->magic_mc_bailout_limit) {
+      SCHRO_ERROR("%d: MC bailout %d > %g", frame->frame_number,
+          frame->estimated_mc_bits,
+          frame->encoder->bits_per_picture*frame->encoder->magic_mc_bailout_limit);
+      frame->params.num_refs = 0;
+      frame->num_refs = 0;
+    }
+  }
+
+  if (frame->params.num_refs > 0) {
+    schro_frame_convert (frame->iwt_frame, frame->filtered_frame);
 
     schro_motion_render (frame->motion, frame->prediction_frame);
 
