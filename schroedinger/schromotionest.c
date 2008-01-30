@@ -1297,8 +1297,10 @@ schro_motionest_superblock_scan_one (SchroMotionEst *me, int ref, int distance,
 
   hint_mf = me->downsampled_mf[ref][2];
 
-  scan2.block_width = 4*params->xbsep_luma;
-  scan2.block_height = 4*params->ybsep_luma;
+  scan2.x = i * params->xbsep_luma;
+  scan2.y = j * params->ybsep_luma;
+  scan2.block_width = MIN(4*params->xbsep_luma, scan2.frame->width - scan2.x);
+  scan2.block_height = MIN(4*params->ybsep_luma, scan2.frame->height - scan2.y);
   scan2.gravity_scale = 0;
   scan2.gravity_x = 0;
   scan2.gravity_y = 0;
@@ -1309,8 +1311,6 @@ schro_motionest_superblock_scan_one (SchroMotionEst *me, int ref, int distance,
   dx = hint_mv->dx[0];
   dy = hint_mv->dy[0];
 
-  scan2.x = i * params->xbsep_luma;
-  scan2.y = j * params->ybsep_luma;
   schro_metric_scan_setup (&scan2, dx, dy, distance);
   if (scan2.scan_width <= 0 || scan2.scan_height <= 0) {
     mv->dx[ref] = 0;
@@ -1952,108 +1952,55 @@ int
 schro_motionest_superblock_get_metric (SchroMotionEst *me,
     SchroBlock *block, int i, int j)
 {
-  SchroMetricScan scan;
   SchroMotionVector *mv;
-  int ref;
-  int metric;
+  SchroFrameData orig;
+  int width, height;
+
+  schro_frame_get_subdata (get_downsampled (me->encoder_frame, 0), &orig,
+      0, i*me->params->xbsep_luma, j*me->params->ybsep_luma);
+
+  width = MIN(4*me->params->xbsep_luma, orig.width);
+  height = MIN(4*me->params->ybsep_luma, orig.height);
 
   mv = &block->mv[0][0];
 
   if (mv->pred_mode == 0) {
-    int xmax;
-    int ymax;
-    int ii,jj;
-    SchroFrame *frame;
-    SchroFrameData *comp;
     SchroMotionVectorDC *mvdc = (SchroMotionVectorDC *)mv;
 
-    frame = get_downsampled (me->encoder_frame, 0);
-    comp = frame->components + 0;
+    return schro_metric_get_dc (&orig, mvdc->dc[0], width, height);
+  }
+  if (mv->pred_mode == 1 || mv->pred_mode == 2) {
+    SchroFrame *ref_frame;
+    SchroFrameData ref_data;
+    int ref;
 
-    xmax = MIN((i+4)*me->params->xbsep_luma, comp->width);
-    ymax = MIN((j+4)*me->params->ybsep_luma, comp->height);
+    ref = mv->pred_mode - 1;
 
-    metric = 0;
-    for(jj=j*me->params->ybsep_luma;jj<ymax;jj++){
-      for(ii=i*me->params->xbsep_luma;ii<xmax;ii++){
-        metric += abs (mvdc->dc[0] - SCHRO_GET(comp->data, jj*comp->stride + ii, uint8_t));
-      }
+    if (ref == 0) {
+      ref_frame = get_downsampled (me->encoder_frame->ref_frame0, 0);
+    } else {
+      ref_frame = get_downsampled (me->encoder_frame->ref_frame1, 0);
     }
-    return metric;
+
+    schro_frame_get_subdata (ref_frame, &ref_data,
+        0, i*me->params->xbsep_luma + mv->dx[ref],
+        j*me->params->ybsep_luma + mv->dy[ref]);
+
+    return schro_metric_get (&orig, &ref_data, width, height);
   }
 
   if (mv->pred_mode == 3) {
-    SchroFrameData *comp;
-    SchroFrameData *comp_ref0;
-    SchroFrameData *comp_ref1;
-    int xmax;
-    int ymax;
-    int ii,jj;
-    int val;
-    int ref_val;
+    SchroFrameData ref0_data;
+    SchroFrameData ref1_data;
 
-    SCHRO_ASSERT(mv->dx[0] == 0);
-    SCHRO_ASSERT(mv->dx[1] == 0);
-    SCHRO_ASSERT(mv->dy[0] == 0);
-    SCHRO_ASSERT(mv->dy[1] == 0);
+    schro_frame_get_subdata (get_downsampled (me->encoder_frame->ref_frame0, 0),
+        &ref0_data, 0, i*me->params->xbsep_luma + mv->dx[0],
+        j*me->params->ybsep_luma + mv->dy[0]);
+    schro_frame_get_subdata (get_downsampled (me->encoder_frame->ref_frame1, 0),
+        &ref1_data, 0, i*me->params->xbsep_luma + mv->dx[1],
+        j*me->params->ybsep_luma + mv->dy[1]);
 
-    comp = get_downsampled (me->encoder_frame, 0)->components + 0;
-    comp_ref0 = get_downsampled (me->encoder_frame->ref_frame0, 0)->components + 0;
-    comp_ref1 = get_downsampled (me->encoder_frame->ref_frame1, 0)->components + 0;
-
-    xmax = MIN((i+4)*me->params->xbsep_luma, comp->width);
-    ymax = MIN((j+4)*me->params->ybsep_luma, comp->height);
-
-    metric = 0;
-    for(jj=j*me->params->ybsep_luma;jj<ymax;jj++){
-      for(ii=i*me->params->xbsep_luma;ii<xmax;ii++){
-        val = SCHRO_GET(comp->data, jj*comp->stride + ii, uint8_t);
-        ref_val = (SCHRO_GET(comp_ref0->data, jj*comp->stride + ii, uint8_t) +
-            SCHRO_GET(comp_ref1->data, jj*comp->stride + ii, uint8_t))/2;
-        metric += abs (val - ref_val);
-      }
-    }
-    return metric;
-  }
-
-  if (mv->pred_mode == 1) {
-    ref = 0;
-  } else {
-    ref = 1;
-  }
-
-  scan.frame = get_downsampled (me->encoder_frame, 0);
-  if (ref == 0) {
-    scan.ref_frame = get_downsampled (me->encoder_frame->ref_frame0, 0);
-  } else {
-    scan.ref_frame = get_downsampled (me->encoder_frame->ref_frame1, 0);
-  }
-
-
-  /* FIXME this shouldn't use SchroMetricScan */
-  if (mv->split == 0) {
-    int dx, dy;
-
-    scan.block_width = 4*me->params->xbsep_luma;
-    scan.block_height = 4*me->params->ybsep_luma;
-    scan.gravity_scale = 0;
-    scan.gravity_x = 0;
-    scan.gravity_y = 0;
-
-    scan.x = i * me->params->xbsep_luma;
-    scan.y = j * me->params->ybsep_luma;
-    schro_metric_scan_setup (&scan, mv->dx[ref], mv->dy[ref], 0);
-    if (scan.scan_width <= 0 || scan.scan_height <= 0) {
-      mv->dx[ref] = 0;
-      mv->dy[ref] = 0;
-      mv->metric = SCHRO_METRIC_INVALID;
-      return SCHRO_METRIC_INVALID;
-    }
-
-    schro_metric_scan_do_scan (&scan);
-    metric = schro_metric_scan_get_min (&scan, &dx, &dy);
-
-    return metric;
+    return schro_metric_get_biref (&orig, &ref0_data, 1, &ref1_data, 1, 1, width, height);
   }
 
   SCHRO_ASSERT(0);
@@ -2152,5 +2099,4 @@ schro_motion_copy_to (SchroMotion *motion, int i, int j, SchroBlock *block)
     }
   }
 }
-
 
