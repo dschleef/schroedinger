@@ -8,6 +8,7 @@
 #include <math.h>
 
 int schro_engine_get_scene_change_score (SchroEncoder *encoder, int i);
+void schro_encoder_calculate_allocation (SchroEncoderFrame *frame);
 
 static void
 schro_engine_check_new_access_unit(SchroEncoder *encoder,
@@ -453,6 +454,21 @@ get_mc_alloc (SchroEncoderFrame *frame)
 }
 
 void
+schro_encoder_calculate_allocation (SchroEncoderFrame *frame)
+{
+  SchroEncoder *encoder = frame->encoder;
+
+  frame->allocated_mc_bits = get_mc_alloc (frame);
+  frame->allocated_residual_bits = get_residual_alloc (encoder,
+      encoder->buffer_level, frame->picture_weight);
+  frame->allocated_residual_bits -= frame->allocated_mc_bits;
+  if (frame->allocated_residual_bits < 0) {
+    frame->allocated_residual_bits = 0;
+  }
+
+}
+
+void
 schro_encoder_recalculate_allocations (SchroEncoder *encoder)
 {
   SchroEncoderFrame *frame;
@@ -578,7 +594,7 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
   int i;
 
   /* FIXME there must be a better place to put this */
-  schro_encoder_recalculate_allocations (encoder);
+  //schro_encoder_recalculate_allocations (encoder);
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
@@ -641,7 +657,7 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
   int i;
 
   /* FIXME there must be a better place to put this */
-  schro_encoder_recalculate_allocations (encoder);
+  //schro_encoder_recalculate_allocations (encoder);
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
@@ -734,6 +750,14 @@ setup_frame_tworef (SchroEncoderFrame *frame)
   return TRUE;
 }
 
+static void
+choose_quantisers (SchroEncoderFrame *frame)
+{
+  schro_encoder_calculate_allocation (frame);
+  schro_encoder_choose_quantisers (frame);
+  schro_encoder_estimate_entropy (frame);
+}
+
 int
 schro_encoder_engine_tworef (SchroEncoder *encoder)
 {
@@ -744,7 +768,7 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
   SCHRO_DEBUG("engine iteration");
 
   /* FIXME there must be a better place to put this */
-  schro_encoder_recalculate_allocations (encoder);
+  //schro_encoder_recalculate_allocations (encoder);
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
@@ -793,6 +817,7 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
         return TRUE;
       case SCHRO_ENCODER_FRAME_STATE_PREDICT:
+        choose_quantisers (frame);
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ENCODING);
         return TRUE;
       case SCHRO_ENCODER_FRAME_STATE_ENCODING:
