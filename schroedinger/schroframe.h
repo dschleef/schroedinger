@@ -138,6 +138,10 @@ int schro_upsampled_frame_get_pixel_prec3 (SchroUpsampledFrame *upframe, int k,
 int schro_upsampled_frame_get_pixel_precN (SchroUpsampledFrame *upframe, int k,
     int x, int y, int mv_precision);
 
+void schro_frame_get_subdata (SchroFrame *frame, SchroFrameData *fd,
+        int comp, int x, int y);
+
+
 #endif
 
 SCHRO_END_DECLS

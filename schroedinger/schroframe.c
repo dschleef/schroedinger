@@ -1681,3 +1681,20 @@ schro_upsampled_frame_get_pixel_precN (SchroUpsampledFrame *upframe, int k,
   SCHRO_ASSERT(0);
 }
 
+void
+schro_frame_get_subdata (SchroFrame *frame, SchroFrameData *fd,
+    int component, int x, int y)
+{
+  SchroFrameData *comp = frame->components + component;
+
+  SCHRO_ASSERT(SCHRO_FRAME_FORMAT_DEPTH(comp->format) == SCHRO_FRAME_FORMAT_DEPTH_U8);
+
+  fd->format = comp->format;
+  fd->data = SCHRO_FRAME_DATA_GET_PIXEL_U8(comp, x, y);
+  fd->stride = comp->stride;
+  fd->width = MAX(0, comp->width - x);
+  fd->height = MAX(0, comp->height - y);
+  fd->h_shift = comp->h_shift;
+  fd->v_shift = comp->v_shift;
+}
+
