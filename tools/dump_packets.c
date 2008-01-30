@@ -9,8 +9,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#define DIRAC_COMPAT 1
-
 #if 0
 /* Used for checking bitstream bugs */
 #define MARKER() \
