@@ -126,6 +126,7 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
     for(ref=0;ref<params->num_refs;ref++){
       schro_motionest_rough_scan_nohint (me, 3, ref, 12);
       schro_motionest_rough_scan_hint (me, 2, ref, 2);
+      schro_motionest_rough_scan_hint (me, 1, ref, 2);
     }
 
     //schro_encoder_bigblock_estimation (me);
@@ -1430,6 +1431,7 @@ schro_motionest_superblock_dc (SchroMotionEst *me,
 
   mvdc->metric = metric/16;
   block->error = metric;
+  block->error += 4 * 2 * me->params->xbsep_luma * 10;
 
   schro_block_fixup (block);
 
@@ -1454,6 +1456,7 @@ schro_motionest_superblock_dc_predicted (SchroMotionEst *me,
   mvdc->dc[2] = pred[2];
 
   block->error = schro_motionest_superblock_get_metric (me, block, i, j);
+  block->error += 4 * 2 * me->params->xbsep_luma * 10;
   mvdc->metric = block->error/16;
 
   schro_block_fixup (block);
@@ -1519,7 +1522,7 @@ schro_motionest_block_scan_one (SchroMotionEst *me, int ref, int distance,
     scan.ref_frame = get_downsampled (me->encoder_frame->ref_frame1, 0);
   }
 
-  hint_mf = me->downsampled_mf[ref][2];
+  hint_mf = me->downsampled_mf[ref][1];
 
   scan.block_width = params->xbsep_luma;
   scan.block_height = params->ybsep_luma;
@@ -1530,7 +1533,7 @@ schro_motionest_block_scan_one (SchroMotionEst *me, int ref, int distance,
   for(jj=0;jj<4;jj++){
     for(ii=0;ii<4;ii++){
       mv = &block->mv[jj][ii];
-      hint_mv = motion_field_get (hint_mf, i + ii, j + jj);
+      hint_mv = motion_field_get (hint_mf, i + (ii&2), j + (jj&2));
       
       dx = hint_mv->dx[0];
       dy = hint_mv->dy[0];
@@ -1675,6 +1678,7 @@ schro_encoder_bigblock2_estimation (SchroMotionEst *me)
 {
   SchroParams *params = me->params;
   int i,j;
+  int total_error = 0;
 
   me->lambda = 0.1;
 
@@ -1722,8 +1726,12 @@ schro_encoder_bigblock2_estimation (SchroMotionEst *me)
       }
       schro_block_fixup (blocks + min_k);
       schro_motion_copy_to (me->motion, i, j, blocks + min_k);
+      
+      total_error += blocks[min_k].error;
     }
   }
+
+  me->encoder_frame->mc_error = total_error;
 }
 
 void
