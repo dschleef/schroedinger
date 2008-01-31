@@ -18,6 +18,14 @@ schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
     uint32_t m;
     oil_sad8x8_u8 (&m, a, a_stride, b, b_stride);
     metric = m;
+  } else if (height == 12 && width == 12) {
+    uint32_t m;
+    oil_sad12x12_u8 (&m, a, a_stride, b, b_stride);
+    metric = m;
+  } else if (height == 16 && width == 16) {
+    uint32_t m;
+    oil_sad16x16_u8 (&m, a, a_stride, b, b_stride);
+    metric = m;
   } else {
     for(j=0;j<height;j++){
       for(i=0;i<width;i++){
@@ -143,11 +151,25 @@ schro_metric_get (SchroFrameData *src1, SchroFrameData *src2, int width,
   SCHRO_ASSERT(src2->width >= width);
   SCHRO_ASSERT(src2->height >= height);
 
-  for(j=0;j<height;j++){
-    line1 = SCHRO_FRAME_DATA_GET_LINE(src1, j);
-    line2 = SCHRO_FRAME_DATA_GET_LINE(src2, j);
-    for(i=0;i<width;i++){
-      metric += abs(line1[i] - line2[i]);
+  if (width == 8 && height == 8) {
+    uint32_t m;
+    oil_sad8x8_u8 (&m, src1->data, src1->stride, src2->data, src2->stride);
+    metric = m;
+  } else if (height == 12 && width == 12) {
+    uint32_t m;
+    oil_sad12x12_u8 (&m, src1->data, src1->stride, src2->data, src2->stride);
+    metric = m;
+  } else if (height == 16 && width == 16) {
+    uint32_t m;
+    oil_sad16x16_u8 (&m, src1->data, src1->stride, src2->data, src2->stride);
+    metric = m;
+  } else {
+    for(j=0;j<height;j++){
+      line1 = SCHRO_FRAME_DATA_GET_LINE(src1, j);
+      line2 = SCHRO_FRAME_DATA_GET_LINE(src2, j);
+      for(i=0;i<width;i++){
+        metric += abs(line1[i] - line2[i]);
+      }
     }
   }
   return metric;
