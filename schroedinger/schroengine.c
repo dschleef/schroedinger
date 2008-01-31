@@ -85,7 +85,7 @@ handle_gop (SchroEncoder *encoder, int i)
     frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
     frame->slot = encoder->next_slot++;
     frame->presentation_frame = frame->frame_number;
-    frame->picture_weight = 1;
+    frame->picture_weight = encoder->magic_bailout_weight;
   } else {
     if (intra_start) {
       /* IBBBP */
