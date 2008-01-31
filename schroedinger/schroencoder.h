@@ -187,6 +187,7 @@ struct _SchroEncoderFrame {
   int actual_residual_bits;
   int actual_mc_bits;
   int mc_error;
+  double psnr;
 };
 
 struct _SchroEncoder {
@@ -250,6 +251,7 @@ struct _SchroEncoder {
   double magic_inter_p_weight;
   double magic_inter_b_weight;
   double magic_mc_bailout_limit;
+  double magic_bailout_weight;
 
   /* other */
 

@@ -673,11 +673,14 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
     bits = frame->allocated_residual_bits * scale;
   }
 
-  if (frame->num_refs == 0) {
-    /* FIXME bad place to adjust for arith context ratio */
+  base_lambda = schro_encoder_entropy_to_lambda (frame, bits);
+#if 0
+  if (frame->is_ref) {
     base_lambda = schro_encoder_entropy_to_lambda (frame, bits);
   } else {
-    if (frame->num_refs == 1) {
+    if (frame->num_refs == 0) {
+      base_lambda = schro_encoder_entropy_to_lambda (frame, bits);
+    } else if (frame->num_refs == 1) {
       if (frame->is_ref) {
         base_lambda = schro_encoder_entropy_to_lambda (frame, bits);
       } else {
@@ -691,6 +694,7 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
       base_lambda *= frame->encoder->magic_nonref_lambda_scale;
     }
   }
+#endif
   frame->base_lambda = base_lambda;
   SCHRO_DEBUG("LAMBDA: %d %g", frame->frame_number, base_lambda);
 
