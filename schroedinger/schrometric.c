@@ -145,8 +145,8 @@ schro_metric_get (SchroFrameData *src1, SchroFrameData *src2, int width,
 
   for(j=0;j<height;j++){
     line1 = SCHRO_FRAME_DATA_GET_LINE(src1, j);
-    line2 = SCHRO_FRAME_DATA_GET_LINE(src1, j);
-    for(i=0;i<height;i++){
+    line2 = SCHRO_FRAME_DATA_GET_LINE(src2, j);
+    for(i=0;i<width;i++){
       metric += abs(line1[i] - line2[i]);
     }
   }
@@ -165,7 +165,7 @@ schro_metric_get_dc (SchroFrameData *src, int value, int width, int height)
 
   for(j=0;j<height;j++){
     line = SCHRO_FRAME_DATA_GET_LINE(src, j);
-    for(i=0;i<height;i++){
+    for(i=0;i<width;i++){
       metric += abs(value - line[i]);
     }
   }
@@ -195,7 +195,7 @@ int schro_metric_get_biref (SchroFrameData *fd, SchroFrameData *src1,
     line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
     src1_line = SCHRO_FRAME_DATA_GET_LINE(src1, j);
     src2_line = SCHRO_FRAME_DATA_GET_LINE(src2, j);
-    for(i=0;i<height;i++){
+    for(i=0;i<width;i++){
       x = (src1_line[i]*weight1 + src2_line[i]*weight2 + offset)>>shift;
       metric += abs(line[i] - x);
     }
