@@ -300,11 +300,9 @@ schro_motion_field_lshift (SchroMotionField *mf, int n)
       mv = motion_field_get(mf,i,j);
 
       if (mv->using_global || mv->pred_mode == 0) continue;
-      if (mv->pred_mode & 1) {
+      if (mv->pred_mode & 3) {
         mv->dx[0] <<= n;
         mv->dy[0] <<= n;
-      }
-      if (mv->pred_mode & 2) {
         mv->dx[1] <<= n;
         mv->dy[1] <<= n;
       }
@@ -1190,8 +1188,8 @@ schro_motionest_rough_scan_nohint (SchroMotionEst *me, int shift, int ref,
 
       mv = motion_field_get (mf, i, j);
       if (scan.scan_width <= 0 || scan.scan_height <= 0) {
-        mv->dx[0] = 0 << shift;
-        mv->dy[0] = 0 << shift;
+        mv->dx[ref] = 0 << shift;
+        mv->dy[ref] = 0 << shift;
         mv->metric = SCHRO_METRIC_INVALID;
         continue;
       }
@@ -1217,8 +1215,8 @@ schro_motionest_rough_scan_hint (SchroMotionEst *me, int shift, int ref,
   SchroMotionVector *mv;
   SchroMotionField *mf;
   SchroMotionField *hint_mf;
-  SchroMotionVector *hint_mv;
   SchroParams *params = me->params;
+  SchroMotionVector zero_mv;
   int i;
   int j;
   int skip;
@@ -1242,15 +1240,87 @@ schro_motionest_rough_scan_hint (SchroMotionEst *me, int shift, int ref,
   scan.gravity_x = 0;
   scan.gravity_y = 0;
 
+  memset (&zero_mv, 0, sizeof(zero_mv));
+
   hint_mask = ~((1<<(shift + 1))-1);
   skip = 1<<shift;
   for(j=0;j<params->y_num_blocks;j+=skip){
     for(i=0;i<params->x_num_blocks;i+=skip){
+      SchroFrameData orig;
+      SchroFrameData ref_data;
+      SchroMotionVector *hint_mv[LIST_LENGTH];
+      int m;
+      int n = 0;
       int dx, dy;
+      int min_m;
+      int min_metric;
 
-      hint_mv = motion_field_get (hint_mf, i&hint_mask, j&hint_mask);
-      dx = hint_mv->dx[0]>>shift;
-      dy = hint_mv->dy[0]>>shift;
+      schro_frame_get_subdata (scan.frame, &orig,
+          0, i*me->params->xbsep_luma >> shift,
+          j*me->params->ybsep_luma >> shift);
+
+      /* always test the zero vector */
+      hint_mv[n] = &zero_mv;
+      n++;
+
+      /* inherit from nearby parents */
+      /* This overly clever bit of code checks the parents of the diagonal
+       * neighbors, which corresponds to the nearest parents. */
+      for(m=0;m<4;m++) {
+        int l = (i-1 + 2*(m&1))&hint_mask;
+        int k = (j-1 + (m&2))&hint_mask;
+        if (l >= 0 && l < params->x_num_blocks &&
+            k >= 0 && k < params->y_num_blocks) {
+          hint_mv[n] = motion_field_get (hint_mf, l, k);
+          n++;
+        }
+      }
+
+      /* inherit from neighbors (only towards SE) */
+      if (i > 0) {
+        hint_mv[n] = motion_field_get (mf, i-1, j);
+        n++;
+      }
+      if (j > 0) {
+        hint_mv[n] = motion_field_get (mf, i, j - 1);
+        n++;
+      }
+      if (i > 0 && j > 0) {
+        hint_mv[n] = motion_field_get (mf, i - 1, j - 1);
+        n++;
+      }
+
+      SCHRO_ASSERT(n <= LIST_LENGTH);
+
+      min_m = 0;
+      min_metric = SCHRO_METRIC_INVALID;
+      for(m = 0; m < n; m++) {
+        int metric;
+        int width, height;
+
+        dx = hint_mv[m]->dx[ref];
+        dy = hint_mv[m]->dy[ref];
+
+        schro_frame_get_subdata (scan.ref_frame,
+            &ref_data, 0,
+            (i*me->params->xbsep_luma + dx) >> shift,
+            (j*me->params->ybsep_luma + dy) >> shift);
+
+        width = MIN(me->params->xbsep_luma, orig.width);
+        height = MIN(me->params->ybsep_luma, orig.height);
+        if (width == 0 || height == 0) continue;
+        if (ref_data.width < width || ref_data.height < height) continue;
+
+        metric = schro_metric_get (&orig, &ref_data, width, height);
+
+        if (metric < min_metric) {
+          min_metric = metric;
+          min_m = m;
+        }
+      }
+      
+      dx = hint_mv[min_m]->dx[ref] >> shift;
+      dy = hint_mv[min_m]->dy[ref] >> shift;
 
       scan.x = (i>>shift) * params->xbsep_luma;
       scan.y = (j>>shift) * params->ybsep_luma;
@@ -1258,8 +1328,8 @@ schro_motionest_rough_scan_hint (SchroMotionEst *me, int shift, int ref,
 
       mv = motion_field_get (mf, i, j);
       if (scan.scan_width <= 0 || scan.scan_height <= 0) {
-        mv->dx[0] = 0;
-        mv->dy[0] = 0;
+        mv->dx[ref] = 0;
+        mv->dy[ref] = 0;
         mv->metric = SCHRO_METRIC_INVALID;
         continue;
       }
@@ -1308,8 +1378,8 @@ schro_motionest_superblock_scan_one (SchroMotionEst *me, int ref, int distance,
   mv = &block->mv[0][0];
   hint_mv = motion_field_get (hint_mf, i, j);
   
-  dx = hint_mv->dx[0];
-  dy = hint_mv->dy[0];
+  dx = hint_mv->dx[ref];
+  dy = hint_mv->dy[ref];
 
   schro_metric_scan_setup (&scan2, dx, dy, distance);
   if (scan2.scan_width <= 0 || scan2.scan_height <= 0) {
@@ -1530,13 +1600,14 @@ schro_motionest_block_scan_one (SchroMotionEst *me, int ref, int distance,
   scan.gravity_x = 0;
   scan.gravity_y = 0;
 
+  block->error = 0;
   for(jj=0;jj<4;jj++){
     for(ii=0;ii<4;ii++){
       mv = &block->mv[jj][ii];
       hint_mv = motion_field_get (hint_mf, i + (ii&2), j + (jj&2));
       
-      dx = hint_mv->dx[0];
-      dy = hint_mv->dy[0];
+      dx = hint_mv->dx[ref];
+      dy = hint_mv->dy[ref];
 
       scan.x = (i + ii) * params->xbsep_luma;
       scan.y = (j + jj) * params->ybsep_luma;
@@ -1611,13 +1682,14 @@ schro_motionest_block_scan (SchroMotionEst *me, SchroMotionField *mask_mf,
 
       scan.x = i * params->xbsep_luma;
       scan.y = j * params->ybsep_luma;
-      schro_metric_scan_setup (&scan, hint_mv->dx[0], hint_mv->dy[0],
+      schro_metric_scan_setup (&scan, hint_mv->dx[ref], hint_mv->dy[ref],
           distance);
 
       mv = motion_field_get (mf, i, j);
       if (scan.scan_width <= 0 || scan.scan_height <= 0) {
-        mv->dx[0] = 0;
-        mv->dy[0] = 0;
+        mv->pred_mode = 1<<ref;
+        mv->dx[ref] = 0;
+        mv->dy[ref] = 0;
         mv->split = 2;
         mv->metric = SCHRO_METRIC_INVALID;
         continue;
@@ -1626,8 +1698,8 @@ schro_motionest_block_scan (SchroMotionEst *me, SchroMotionField *mask_mf,
       schro_metric_scan_do_scan (&scan);
       mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy);
 
-      mv->dx[0] = dx;
-      mv->dy[0] = dy;
+      mv->dx[ref] = dx;
+      mv->dy[ref] = dy;
 
       mv->split = 2;
       mv->pred_mode = 1<<ref;
@@ -1789,8 +1861,8 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
           mv->split = 0;
           mv->dx[0] = mv1->dx[0];
           mv->dy[0] = mv1->dy[0];
-          mv->dx[1] = mv2->dx[0];
-          mv->dy[1] = mv2->dy[0];
+          mv->dx[1] = mv2->dx[1];
+          mv->dy[1] = mv2->dy[1];
           mv->metric = MIN(mv1->metric, mv2->metric);
 
           schro_motion_splat_4x4 (me->motion, i, j);
@@ -1832,8 +1904,8 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
               mv->split = 2;
               mv->dx[0] = mv1->dx[0];
               mv->dy[0] = mv1->dy[0];
-              mv->dx[1] = mv2->dx[0];
-              mv->dy[1] = mv2->dy[0];
+              mv->dx[1] = mv2->dx[1];
+              mv->dy[1] = mv2->dy[1];
               mv->metric = MIN(mv1->metric, mv2->metric);
               continue;
             }
@@ -1986,6 +2058,10 @@ schro_motionest_superblock_get_metric (SchroMotionEst *me,
         0, i*me->params->xbsep_luma + mv->dx[ref],
         j*me->params->ybsep_luma + mv->dy[ref]);
 
+    if (ref_data.width < width || ref_data.height < height) {
+      return SCHRO_METRIC_INVALID;
+    }
+
     return schro_metric_get (&orig, &ref_data, width, height);
   }
 
@@ -1999,6 +2075,11 @@ schro_motionest_superblock_get_metric (SchroMotionEst *me,
     schro_frame_get_subdata (get_downsampled (me->encoder_frame->ref_frame1, 0),
         &ref1_data, 0, i*me->params->xbsep_luma + mv->dx[1],
         j*me->params->ybsep_luma + mv->dy[1]);
+
+    if (ref0_data.width < width || ref0_data.height < height ||
+        ref1_data.width < width || ref1_data.height < height) {
+      return SCHRO_METRIC_INVALID;
+    }
 
     return schro_metric_get_biref (&orig, &ref0_data, 1, &ref1_data, 1, 1, width, height);
   }
