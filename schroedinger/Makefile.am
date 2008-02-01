@@ -48,7 +48,8 @@ pkginclude_HEADERS = \
 	schromotion.h
 
 noinst_HEADERS = \
-	schrooil.h
+	schrooil.h \
+	schrogpuframe.h
 
 if HAVE_CUDA
 cuda_sources = \
