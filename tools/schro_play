@@ -24,7 +24,7 @@ class VideoWidget(gtk.DrawingArea):
 	self.width = 500
 	self.height = 240
 
-        self.playing = False
+        self.is_playing = False
         self.player = gst.element_factory_make("playbin", "player")
 	self.videosink = gst.parse_bin_from_description("framestore ! xvimagesink qos=false", True)
 	self.framestore = self.videosink.get_by_name("framestore0")
@@ -76,6 +76,8 @@ class VideoWidget(gtk.DrawingArea):
 	print 'setting location %s' % location
         self.player.set_property('uri', location)
 	self.set_playing(False)
+	self.player.set_state(gst.STATE_PLAYING)
+	self.framestore.set_property("step", True)
 
     def query_position(self):
         try:
@@ -166,64 +168,56 @@ class VideoWidget(gtk.DrawingArea):
         self.imagesink.set_xwindow_id(self.window.xid)
 
     def set_playing(self, value):
+        self.is_playing = value;
 	if value:
-            self.playing = True
-	    self.imagesink.set_property("async", True);
-            self.player.set_state(gst.STATE_PLAYING)
+	    self.framestore.set_property("stepping", False)
 	else:
-            self.playing = False
-	    self.imagesink.set_property("async", False);
-            self.player.set_state(gst.STATE_PAUSED)
+	    self.framestore.set_property("stepping", True)
 
     def jump_back(self):
-	now = self.query_position()
-	now -= 5*gst.SECOND
-	if now < 0:
-	    now = 0
-	self.seek(now, False)
+	print "not supported"
 
     def step_forward(self):
-	#now = 30*gst.MSECOND
-	#self.seekcur(now, False)
 	self.framestore.set_property("step", True)
 
     def step_back(self):
-	now = self.query_position()
-	now -= 30*gst.MSECOND
-	if now < 0:
-	    now = 0
-	self.seek(now, False)
+	print "not supported"
 
     def get_state(self, timeout=1):
         return self.player.get_state(timeout=timeout)
 
     def is_playing(self):
-        return self.playing
+        return self.is_playing;
+
+    def get_frame_number(self):
+	if self.framestore:
+	    return self.framestore.get_property("frame-number");
+	return 1234;
     
 class Player(gtk.Window):
     def __init__(self):
         gtk.Window.__init__(self)
 
-	self.is_playing = False
-	self.at_beginning = True
+	self.is_playing = False;
+	self.at_beginning = True;
 	self.at_end = False
 	self.have_media = False
 	self.is_fullscreen = False
 	self.update_id = -1
 
+        self.videowidget = VideoWidget()
         self.create_ui()
         self.show_all()
 
-        self.player = VideoWidget()
-
         def on_eos():
-            self.player.seek(0L)
+            self.videowidget.seek(0L)
             self.toggle_playpause()
-        #self.player.on_eos = lambda *x: on_eos()
+        #self.videowidget.on_eos = lambda *x: on_eos()
         
-        self.update_id = -1
         self.changed_id = -1
         self.seek_timeout_id = -1
+
+	self.update_id = gobject.timeout_add(10, self.update_label)
 
         self.connect('delete-event', lambda *x: gtk.main_quit())
 
@@ -297,7 +291,6 @@ class Player(gtk.Window):
 	helpmenu.set_accel_path("<SchroPlay>/Help")
 	helpmenu.set_accel_group(self.accelgroup)
 
-        self.videowidget = VideoWidget()
         vbox.pack_start(self.videowidget, expand=True)
         
         hbox = gtk.HBox()
@@ -340,7 +333,7 @@ class Player(gtk.Window):
 
 	self.update_playpause()
         
-	self.position_label = gtk.Label('0:00:00.00')
+	self.position_label = gtk.Label('0')
         hbox.pack_start(self.position_label)
 
     def open(self):
@@ -359,7 +352,6 @@ class Player(gtk.Window):
 	    uri = 'file://' + os.getcwd() + '/' + filename
 	self.videowidget.set_location(uri)
 	self.have_media = True
-	#self.is_playing = True
 	self.update_playpause()
 
     def toggle_fullscreen(self,moo=None):
@@ -384,11 +376,8 @@ class Player(gtk.Window):
 	dialog.destroy()
 
     def update_label(self):
-	position = self.videowidget.query_position()
-	label_value = "%d:%02d:%02d.%02d" % (position/3600000000000,
-			(position/60000000000)%60,
-			(position/1000000000)%60,
-			(position/10000000)%100)
+	frame_number = self.videowidget.get_frame_number();
+	label_value = "%d" % (frame_number);
 	self.position_label.set_text(label_value)
 	return True
 
@@ -409,8 +398,6 @@ class Player(gtk.Window):
 	self.is_playing = value
 	self.videowidget.set_playing(value)
 	self.update_playpause()
-	if self.update_id == -1:
-	    self.update_id = gobject.timeout_add(10, self.update_label)
 
     def toggle_playpause(self):
 	self.set_playpause(not self.is_playing)
@@ -434,6 +421,8 @@ def main(args):
     def usage():
         sys.stderr.write("usage: %s URI-OF-MEDIA-FILE\n" % args[0])
         sys.exit(1)
+
+    gobject.threads_init()
 
     # Need to register our derived widget types for implicit event
     # handlers to get called.
