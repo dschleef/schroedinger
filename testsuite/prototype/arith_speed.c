@@ -350,11 +350,11 @@ test_arith_decode_bit (SchroArith *arith, int i)
 #else
     "  movw probabilities(%[arith],%[i],2), %%ax\n"
     "  cmp $0x10000, %%edx\n"
-    "  je fullrange\n"
+    "  je 1f\n"
     "  mul %%dx\n"
     // result in %%dx
     "  movzwl %%dx, %%eax\n"
-    "fullrange:\n"
+    "1:\n"
     "  mov %%eax, %%edx\n"
 #endif
 
