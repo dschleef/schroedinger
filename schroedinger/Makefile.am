@@ -3,6 +3,10 @@ if HAVE_CUDA
 SUBDIRS = cuda
 endif
 
+if HAVE_OPENGL
+SUBDIRS = opengl
+endif
+
 pkgincludedir = $(includedir)/schroedinger-@SCHRO_MAJORMINOR@/schroedinger
 
 lib_LTLIBRARIES = libschroedinger-@SCHRO_MAJORMINOR@.la
@@ -59,6 +63,10 @@ cuda_sources = \
 cuda_libs = cuda/libdcuda.la
 endif
 
+if HAVE_OPENGL
+opengl_libs = opengl/libopengl.la
+endif
+
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schro.c \
 	schroanalysis.c \
@@ -104,6 +112,8 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = \
 libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = \
 	$(cuda_libs) \
 	$(CUDA_LIBS) \
+	$(opengl_libs) \
+	$(OPENGL_LIBS) \
 	$(LIBOIL_LIBS)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-no-undefined \

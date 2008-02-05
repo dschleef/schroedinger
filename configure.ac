@@ -46,6 +46,11 @@ if test "x${HAVE_LIBOIL}" != xyes ; then
   AC_ERROR([liboil-0.3 >= $OIL_VER is required])
 fi
 
+AC_ARG_WITH([opengl],
+    AS_HELP_STRING([--with-opengl=PATH],[prefix where OpenGL is installed [default=no]]),
+    [],
+    [with_opengl=no])
+
 ##################################################
 # Check for gtk-doc.
 ##################################################
@@ -78,11 +83,15 @@ GST_MAJORMINOR=0.10
 
 dnl *** check for arguments to configure ***
 
+if test "x$with_opengl" = xyes; then
+  GST_GL_DEP="gst-plugins-gl-0.10"
+fi
+
 AC_ARG_ENABLE(gstreamer, AC_HELP_STRING([--disable-gstreamer],
               [disable gstreamer support (default=enabled)]))
 if test "x$enable_gstreamer" != xno
 then
-  PKG_CHECK_MODULES(GST, gstreamer-0.10 >= 0.10.12 gstreamer-base-0.10 gstreamer-plugins-base-0.10,
+  PKG_CHECK_MODULES(GST, gstreamer-0.10 >= 0.10.12 gstreamer-base-0.10 gstreamer-video-0.10 >= 0.10.15 ${GST_GL_DEP},
       HAVE_GST=yes, HAVE_GST=no)
 else
   HAVE_GST=no
@@ -138,6 +147,27 @@ AC_SUBST(NVCC)
 AC_SUBST(NVCCFLAGS)
 AM_CONDITIONAL(HAVE_CUDA, test "x$HAVE_CUDA" = "xyes")
 
+########################
+# Check for OpenGL
+########################
+if test "x$with_opengl" = xyes; then
+  save_CPPFLAGS="$CPPFLAGS"
+  save_LIBS="$LIBS"
+  CPPFLAGS="$CPPFLAGS $X_CFLAGS"
+  LIBS="$LIBS $X_LIBS"
+  AC_CHECK_LIB(GL, glTexImage2D, [
+    OPENGL_CFLAGS=
+    OPENGL_LIBS=
+    HAVE_OPENGL=yes
+  ], [HAVE_OPENGL=no])
+  CPPFLAGS="$save_CPPFLAGS"
+  LIBS="$save_LIBS"
+fi
+AC_SUBST(OPENGL_CFLAGS)
+AC_SUBST(OPENGL_LIBS)
+AM_CONDITIONAL(HAVE_OPENGL, test "x$HAVE_OPENGL" = "xyes")
+
+
 #
 # Check for check
 #
@@ -162,6 +192,7 @@ Makefile
 doc/Makefile
 schroedinger/Makefile
 schroedinger/cuda/Makefile
+schroedinger/opengl/Makefile
 gst/Makefile
 testsuite/Makefile
 testsuite/check/Makefile
