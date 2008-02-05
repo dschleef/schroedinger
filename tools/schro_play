@@ -77,7 +77,6 @@ class VideoWidget(gtk.DrawingArea):
         self.player.set_property('uri', location)
 	self.set_playing(False)
 	self.player.set_state(gst.STATE_PLAYING)
-	self.framestore.set_property("step", True)
 
     def query_position(self):
         try:
@@ -169,19 +168,18 @@ class VideoWidget(gtk.DrawingArea):
 
     def set_playing(self, value):
         self.is_playing = value;
-	if value:
-	    self.framestore.set_property("stepping", False)
-	else:
-	    self.framestore.set_property("stepping", True)
+	self.framestore.set_property("stepping", not value)
 
     def jump_back(self):
 	print "not supported"
 
     def step_forward(self):
-	self.framestore.set_property("step", True)
+	frame_number = self.framestore.get_property("frame-number")
+	self.framestore.set_property("frame-number", frame_number + 1)
 
     def step_back(self):
-	print "not supported"
+	frame_number = self.framestore.get_property("frame-number")
+	self.framestore.set_property("frame-number", frame_number - 1)
 
     def get_state(self, timeout=1):
         return self.player.get_state(timeout=timeout)
@@ -389,7 +387,7 @@ class Player(gtk.Window):
             self.button.add(self.play_image)
 	self.button.set_sensitive(self.have_media)
 	self.jumpback_button.set_sensitive(self.have_media)
-	self.back_button.set_sensitive(self.have_media and not self.at_beginning)
+	self.back_button.set_sensitive(self.have_media)
 	self.forward_button.set_sensitive(self.have_media and not self.at_end)
 
     def set_playpause(self,value):

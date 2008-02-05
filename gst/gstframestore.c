@@ -50,15 +50,15 @@ struct _GstFrameStore
   GstPad *sinkpad;
 
   gboolean stepping;
-  gboolean step;
-  gboolean new_buffer;
 
-  GstBuffer *buffer;
-
-  int frame_number;
-  int n_frames;
-  int max_frames;
   GstBuffer **frames;
+  int range_offset;
+  int range_size;
+
+  int input_frame_number;
+  int frame_number;
+  int pushed_frame_number;
+  gboolean need_newsegment;
 
   gboolean flushing;
   GMutex *lock;
@@ -104,6 +104,9 @@ static GstPadLinkReturn gst_frame_store_link_src (GstPad *pad, GstPad *peer);
 static void gst_frame_store_task (GstPad *pad);
 static GstCaps * gst_frame_store_getcaps (GstPad *pad);
 static void gst_frame_store_finalize (GObject *object);
+
+static GstBuffer * gst_frame_store_get_frame (GstFrameStore *fs, int frame_number);
+static void gst_frame_store_advance (GstFrameStore *fs);
 
 static GstStaticPadTemplate gst_framestore_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
@@ -172,10 +175,12 @@ gst_frame_store_init (GstFrameStore * filter, GstFrameStoreClass * klass)
 
   gst_frame_store_reset (filter);
 
-  filter->n_frames = 0;
-  filter->max_frames = 10;
-  filter->frames = g_malloc(sizeof(GstBuffer*)*filter->max_frames);
+  filter->range_offset = 0;
+  filter->range_size = 10;
+  filter->frames = g_malloc0(sizeof(GstBuffer*)*filter->range_size);
   filter->frame_number = 0;
+  filter->pushed_frame_number = -1;
+  filter->need_newsegment = TRUE;
 
   filter->cond = g_cond_new ();
   filter->lock = g_mutex_new ();
@@ -232,12 +237,15 @@ gst_frame_store_set_property (GObject * object, guint prop_id,
       g_mutex_lock (fs->lock);
       fs->stepping = g_value_get_boolean (value);
       GST_DEBUG("stepping %d", fs->stepping);
+      if (fs->stepping == FALSE) {
+        fs->need_newsegment = TRUE;
+      }
       g_cond_broadcast (fs->cond);
       g_mutex_unlock (fs->lock);
       break;
     case PROP_STEP:
       g_mutex_lock (fs->lock);
-      fs->step = g_value_get_boolean (value);
+      fs->frame_number++;
       g_cond_broadcast (fs->cond);
       g_mutex_unlock (fs->lock);
       break;
@@ -264,7 +272,7 @@ gst_frame_store_get_property (GObject * object, guint prop_id,
       g_value_set_boolean (value, fs->stepping);
       break;
     case PROP_STEP:
-      g_value_set_boolean (value, fs->step);
+      g_value_set_boolean (value, FALSE);
       break;
     case PROP_FRAME_NUMBER:
       g_value_set_int (value, fs->frame_number);
@@ -275,102 +283,11 @@ gst_frame_store_get_property (GObject * object, guint prop_id,
   }
 }
 
-#if 0
-static GstStateChangeReturn
-gst_frame_store_change_state (GstElement *element, GstStateChange transition)
-{
-  GstFrameStore *fs = GST_FRAME_STORE (base);
-
-  switch (transition) {
-    case GST_STATE_CHANGE_PAUSED_TO_READY:
-      break;
-    case GST_STATE_CHANGE_READY_TO_PAUSED:
-      break;
-    default:
-      break;
-  }
-
-  if (parent_class->change_state) {
-    return parent_class->change_state (element, transition);
-
-  return GST_STATE_CHANGE_SUCCESS;
-}
-#endif
-
-
-#if 0
-static gboolean
-gst_frame_store_set_caps (GstBaseTransform * base, GstCaps *incaps,
-    GstCaps *outcaps)
-{
-  //GstFrameStore *fs = GST_FRAME_STORE (base);
-  GstStructure *structure;
-
-  structure = gst_caps_get_structure (incaps, 0);
-
-  return TRUE;
-}
-#endif
-
 static void
 gst_frame_store_reset (GstFrameStore *fs)
 {
   gst_frame_store_clear (fs);
 }
-
-static void
-gst_frame_store_clear (GstFrameStore *fs)
-{
-  int i;
-  for(i=0;i<fs->n_frames;i++){
-    gst_buffer_unref (fs->frames[i]);
-  }
-  fs->n_frames = 0;
-}
-
-#if 0
-static GstCaps *
-gst_frame_store_transform_caps (GstBaseTransform *base,
-    GstPadDirection direction, GstCaps *caps)
-{
-  return caps;
-}
-#endif
-
-#if 0
-static gboolean
-gst_frame_store_get_unit_size (GstBaseTransform *base, GstCaps *caps,
-    guint *size)
-{
-  int width, height;
-  GstStructure *structure;
-
-  structure = gst_caps_get_structure(caps, 0);
-  gst_structure_get_int (structure, "width", &width);
-  gst_structure_get_int (structure, "height", &height);
-
-  /* FIXME bogus */
-  *size = (width*height*3)/2;
-
-  return TRUE;
-}
-#endif
-
-#if 0
-static void
-gst_frame_store_append (GstFrameStore *fs, GstBuffer *buffer)
-{
-  gst_buffer_ref(buffer);
-  if (fs->n_frames < fs->max_frames) {
-    fs->frames[fs->n_frames] = buffer;
-    fs->n_frames++;
-  } else {
-    gst_buffer_unref(fs->frames[0]);
-    memmove (fs->frames, fs->frames+1, (fs->n_frames-1)*sizeof(GstBuffer*));
-    fs->frames[fs->n_frames-1] = buffer;
-  }
-}
-#endif
 
 static GstPadLinkReturn
 gst_frame_store_link_src (GstPad *pad, GstPad *peer)
@@ -414,12 +331,13 @@ gst_frame_store_chain (GstPad *pad, GstBuffer *buffer)
   GST_DEBUG("chain");
 
   g_mutex_lock (fs->lock);
-  while(fs->new_buffer == TRUE) {
-    GST_DEBUG("waiting for empty");
+  while (fs->range_offset + fs->range_size == fs->input_frame_number) {
+    GST_DEBUG("waiting for empty slot");
     g_cond_wait (fs->cond, fs->lock);
   }
-  fs->buffer = buffer;
-  fs->new_buffer = TRUE;
+  GST_DEBUG("adding %d", fs->input_frame_number);
+  fs->frames[fs->input_frame_number - fs->range_offset] = buffer;
+  fs->input_frame_number++;
   g_cond_broadcast (fs->cond);
   g_mutex_unlock (fs->lock);
 
@@ -435,35 +353,57 @@ gst_frame_store_task (GstPad *pad)
 {
   GstFrameStore *fs;
   GstBuffer *buffer;
+  GstEvent *event = NULL;
 
   fs = GST_FRAME_STORE (gst_pad_get_parent (pad));
 
   GST_DEBUG("task");
 
   g_mutex_lock (fs->lock);
-  while(fs->new_buffer == FALSE) {
-    GST_DEBUG("waiting for full");
+  while(1) {
+    if (fs->stepping == FALSE || (fs->frame_number != fs->pushed_frame_number)) {
+      buffer = gst_frame_store_get_frame (fs, fs->frame_number);
+    }
+    if (buffer) break;
     g_cond_wait (fs->cond, fs->lock);
   }
-  buffer = fs->buffer;
-  fs->new_buffer = FALSE;
-  fs->buffer = NULL;
-  g_cond_broadcast (fs->cond);
-  g_mutex_unlock (fs->lock);
+  if (fs->need_newsegment) {
+    GstClock *clock;
+    GstClockTime now;
+    GstClockTime stream_time;
 
-  g_mutex_lock (fs->lock);
-  while (fs->stepping && !fs->step) {
-    GST_DEBUG("waiting for step");
-    g_cond_wait (fs->cond, fs->lock);
+    clock = GST_ELEMENT_CLOCK (fs);
+    if (clock == NULL) {
+      now = 0;
+      stream_time = 0;
+    } else {
+      now = gst_clock_get_time (GST_ELEMENT_CLOCK (fs));
+      stream_time = now - GST_ELEMENT(fs)->base_time;
+    }
+    GST_ERROR("now %lld buffer %lld stream_time %lld",
+        now, GST_BUFFER_TIMESTAMP(buffer), stream_time);
+    stream_time = GST_SECOND*10;
+    event = gst_event_new_new_segment (FALSE, 1.0, GST_FORMAT_TIME,
+        GST_BUFFER_TIMESTAMP(buffer), -1, stream_time);
+    fs->need_newsegment = FALSE;
   }
-  GST_DEBUG("got step");
-  fs->step = FALSE;
   if (fs->stepping) {
+    buffer = gst_buffer_make_metadata_writable (buffer);
     GST_BUFFER_TIMESTAMP(buffer) = -1;
     GST_BUFFER_DURATION(buffer) = -1;
   }
-  fs->frame_number++;
+  fs->pushed_frame_number = fs->frame_number;
+  if (!fs->stepping) {
+    fs->frame_number++;
+  }
+  if (fs->frame_number + 1 >= fs->range_offset + fs->range_size) {
+    gst_frame_store_advance (fs);
+  }
   g_mutex_unlock (fs->lock);
+
+  if (event) {
+    gst_pad_push_event (fs->srcpad, event);
+  }
 
   gst_pad_push (fs->srcpad, buffer);
 
@@ -492,7 +432,7 @@ gst_frame_store_sink_event (GstPad *pad, GstEvent *event)
         gst_event_parse_new_segment_full (event, &update, &rate, &applied_rate,
             &format, &start, &stop, &position);
 
-        GST_DEBUG("new_segment %d %g %g %d %lld %lld %lld",
+        GST_ERROR("new_segment %d %g %g %d %lld %lld %lld",
             update, rate, applied_rate, format, start, stop, position);
 
         gst_frame_store_clear (fs);
@@ -516,3 +456,42 @@ gst_frame_store_sink_event (GstPad *pad, GstEvent *event)
 }
 
 
+static GstBuffer *
+gst_frame_store_get_frame (GstFrameStore *fs, int frame_number)
+{
+  GstBuffer *buffer;
+
+  if (frame_number < fs->range_offset ||
+      frame_number >= fs->range_offset + fs->range_size) {
+    return NULL;
+  }
+
+  buffer = fs->frames[frame_number - fs->range_offset];
+  if (buffer) gst_buffer_ref (buffer);
+
+  return buffer;
+}
+
+static void
+gst_frame_store_clear (GstFrameStore *fs)
+{
+  int i;
+  for(i=0;i<fs->range_size;i++){
+    if (fs->frames[i]) {
+      gst_buffer_unref (fs->frames[i]);
+    }
+    fs->frames[i] = NULL;
+  }
+}
+
+static void
+gst_frame_store_advance (GstFrameStore *fs)
+{
+  if (fs->frames[0]) {
+    gst_buffer_unref (fs->frames[0]);
+  }
+  memmove (fs->frames, fs->frames+1, sizeof(GstBuffer *)*(fs->range_size - 1));
+  fs->frames[fs->range_size - 1] = NULL;
+  fs->range_offset++;
+  g_cond_broadcast (fs->cond);
+}
