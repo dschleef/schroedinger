@@ -82,7 +82,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/schroedinger-0.9/schroedinger/schromotion.h
 %{_includedir}/schroedinger-0.9/schroedinger/schroparams.h
 %{_includedir}/schroedinger-0.9/schroedinger/schrophasecorrelation.h
-%{_includedir}/schroedinger-0.9/schroedinger/schropredict.h
 %{_includedir}/schroedinger-0.9/schroedinger/schroqueue.h
 %{_includedir}/schroedinger-0.9/schroedinger/schrossim.h
 %{_includedir}/schroedinger-0.9/schroedinger/schro-stdint.h
@@ -92,7 +91,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/schroedinger-0.9/schroedinger/schrowavelet.h
 %{_includedir}/schroedinger-0.9/schroedinger/schrocog.h
 %{_includedir}/schroedinger-0.9/schroedinger/schrodomain.h
-
+%{_includedir}/schroedinger-0.9/schroedinger/schromotionest.h
 %{_includedir}/schroedinger-0.9/schroedinger/schrolimits.h
 %{_includedir}/schroedinger-0.9/schroedinger/schrolist.h
 %{_includedir}/schroedinger-0.9/schroedinger/schropack.h
@@ -100,6 +99,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/gtk-doc/html/schroedinger-0.9
 
 %changelog
+* Fri Feb 1 2008 Christian F.K. Schaller <christian.schaller@collabora.co.uk>
+- add schromotionest.h
+- remove schropredict.h
+
 * Tue Jan 22 2008 Christian F.K. Schaller <christian.schaller@collabora.co.uk>
 - Update for latest changes
 
