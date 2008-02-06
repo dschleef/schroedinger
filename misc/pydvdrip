@@ -2,20 +2,21 @@
 # -*- Mode: Python -*-
 # vi:si:et:sw=4:sts=4:ts=4
 
-playback = 0
+playback = 1
 
 #file = '/home/ds/public_html/dude_clip.mpg'
 #file = '/home/ds/vob/mulholland_clip.mpg'
 #file = '/home/ds/vob/luke_clip.mpg'
-file = '/home/ds/vob/x3_clip.mpg'
+#file = '/home/ds/vob/x3_clip.mpg'
+file = '/home/ds/media/7.vob'
 #file = '/home/ds/vob/curb_your_enthusiasm.1.vob'
 seek_time = 0
 length = 28
 fps = 24
 audiochan = 0
-engine = 1
+rate_control = 1
 psnr = 30
-bitrate = 2000000
+bitrate = 3000000
 quant_engine = 0
 intra_wavelet=0
 #transform_depth=4
@@ -184,8 +185,8 @@ class Moo:
                 queue.get_pad("src").link (videorate.get_pad("sink"));
 
                 schroenc = gst.element_factory_make("schroenc");
-                #schroenc.set_property ("engine", engine);
-                #schroenc.set_property ("bitrate", bitrate);
+                schroenc.set_property ("rate-control", rate_control);
+                schroenc.set_property ("bitrate", bitrate);
                 #schroenc.set_property ("psnr", psnr);
                 #schroenc.set_property ("quant-engine", quant_engine);
                 #schroenc.set_property ("intra-wavelet", intra_wavelet);
