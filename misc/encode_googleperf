@@ -1,0 +1,13 @@
+#!/bin/sh
+
+
+
+CPUPROFILE=prof.out \
+LD_PRELOAD=/usr/lib/libprofiler.so \
+/usr/local/bin/gst-launch-0.10 \
+	videotestsrc num-buffers=100 ! \
+	schroenc $schroopts ! fakesink
+
+pprof --pdf /usr/local/bin/gst-launch-0.10 prof.out >prof.pdf
+
+
