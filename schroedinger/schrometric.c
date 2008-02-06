@@ -26,7 +26,38 @@ schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
     uint32_t m;
     oil_sad16x16_u8 (&m, a, a_stride, b, b_stride);
     metric = m;
+  } else if (height == 32 && width == 16) {
+    uint32_t m;
+    oil_sad16x16_u8 (&m, a, a_stride, b, b_stride);
+    metric = m;
+    a += a_stride * 16;
+    b += b_stride * 16;
+    oil_sad16x16_u8 (&m, a, a_stride, b, b_stride);
+    metric += m;
+  } else if (height == 32 && width == 32) {
+    uint32_t m;
+    oil_sad16x16_u8 (&m, a, a_stride, b, b_stride);
+    metric = m;
+    oil_sad16x16_u8 (&m, a + 16, a_stride, b + 16, b_stride);
+    metric += m;
+    a += a_stride * 16;
+    b += b_stride * 16;
+    oil_sad16x16_u8 (&m, a, a_stride, b, b_stride);
+    metric += m;
+    oil_sad16x16_u8 (&m, a + 16, a_stride, b + 16, b_stride);
+    metric += m;
+  } else if ((height&7) == 0 && (width&7) == 0) {
+    uint32_t m;
+    metric = 0;
+    for(j=0;j<height;j+=8){
+      for(i=0;i<width;i+=8){
+        oil_sad8x8_u8 (&m, a + i + j*a_stride, a_stride,
+            b + i + j*b_stride, b_stride);
+        metric += m;
+      }
+    }
   } else {
+    SCHRO_ERROR("slow metric %dx%d", width, height);
     for(j=0;j<height;j++){
       for(i=0;i<width;i++){
         int x;
