@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+# -*- Mode: Python -*-
+# vi:si:et:sw=4:sts=4:ts=4
+
+import sys
+import Numeric;
+
+def readdata(filename):
+    file = open(filename);
+    points = [];
+    for line in file.readlines():
+        points.append(map(float,line.split()));
+    file.close();
+    return points;
+
+def get_mean_squared_error(pts):
+    sum = 0;
+    for x in pts:
+        sum += x[14];
+    return sum/len(pts);
+
+def get_frames_per_second(pts):
+    return len(pts)/pts[-1][16];
+
+def main(args):
+    pts = readdata("schro_dump.picture");
+    tpts = Numeric.transpose(pts);
+
+    print "mean squared error: %g" % get_mean_squared_error(pts);
+    print "frames per second: %g" % get_frames_per_second(pts);
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
+

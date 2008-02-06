@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+# -*- Mode: Python -*-
+# vi:si:et:sw=4:sts=4:ts=4
+
+#infile="showreel.HD720-master.drc"
+infile="showreel.SD-master.drc"
+outfile="showreel.test.drc"
+
+mediadir="/home/ds/media/masters"
+
+#rate_control = 0
+#noise_threshold = 30
+rate_control = 1
+bitrate = 2500000
+
+
+import sys
+
+import gobject
+gobject.threads_init()
+
+import pygst
+pygst.require('0.10')
+import gst
+import Numeric;
+
+
+mainloop = gobject.MainLoop();
+
+class Moo:
+    def __init__(self):
+        self.bin = gst.parse_launch('filesrc ! schrodec ! schroenc ! filesink');
+        self.filesrc = self.bin.get_by_name('filesrc0');
+        self.schrodec = self.bin.get_by_name('schrodec0');
+        self.schroenc = self.bin.get_by_name('schroenc0');
+        self.filesink = self.bin.get_by_name('filesink0');
+
+        self.schroenc.set_property ("rate-control", rate_control);
+        self.schroenc.set_property ("bitrate", bitrate);
+        #self.schroenc.set_property ("noise-threshold", noise_threshold);
+        #schroenc.set_property ("quant-engine", quant_engine);
+        #schroenc.set_property ("intra-wavelet", intra_wavelet);
+        #schroenc.set_property ("transform-depth", transform_depth);
+        #schroenc.set_property ("md5", 1);
+        #schroenc.set_property ("enable-phasecorr-prediction", 1);
+        #schroenc.set_property ("enable-hierarchical-prediction", 0);
+        #schroenc.set_property ("mv-precision", 1);
+
+        bus = self.bin.get_bus();
+        bus.enable_sync_message_emission();
+        bus.add_signal_watch();
+        bus.connect('sync-message::element', self.on_sync_message);
+        bus.connect('message', self.on_message);
+
+    def set_input_file(self, input_file):
+        self.filesrc.set_property('location', input_file);
+
+    def set_output_file(self, output_file):
+        self.filesink.set_property('location', output_file);
+
+    def start(self):
+        self.bin.set_state(gst.STATE_PLAYING);
+
+    def on_sync_message(self, bus, message):
+        t = message.type;
+        #if message.structure:
+        #    print "Sync Message: %d %s" % (t, message.structure.to_string());
+        #else:
+        #    print "Sync Message: %d" % t;
+
+    def on_message(self, bus, message):
+        t = message.type;
+        #if message.structure:
+        #    print "Message: %d %s" % (t, message.structure.to_string());
+        #else:
+        #    print "Message: %d" % t;
+        if t == gst.MESSAGE_ERROR:
+            err, debug = message.parse_error()
+            print "Error: %s" % err, debug
+            self.bin.set_state (gst.STATE_NULL);
+        elif t == gst.MESSAGE_EOS:
+            print "EOS"
+            self.bin.set_state (gst.STATE_NULL);
+            mainloop.quit();
+
+    def stop(self):
+        self.bin.set_state (gst.STATE_NULL);
+
+def readdata(filename):
+    file = open(filename);
+    points = [];
+    for line in file.readlines():
+        points.append(map(float,line.split()));
+    file.close();
+    return points;
+
+def main(args):
+    moo = Moo();
+
+    moo.set_input_file(mediadir + "/" + infile)
+    moo.set_output_file(outfile)
+
+    moo.start();
+
+    try:
+        mainloop.run();
+    except KeyboardInterrupt:
+        pass
+
+    moo.stop();
+    moo = None;
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
+

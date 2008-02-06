@@ -1,0 +1,238 @@
+#!/usr/bin/env python
+
+import cairo;
+import os;
+import locale;
+import Numeric;
+import math;
+
+
+
+class Plot:
+	def __init__(self, width, height):
+		self.width=width;
+		self.height=height;
+
+		self.margin_top=20;
+		self.margin_bottom=40;
+		self.margin_left=40;
+		self.margin_right=20;
+
+		self.range_xmin=0.0;
+		self.range_xmax=1.0;
+		self.range_ymin=0.0;
+		self.range_ymax=1.0;
+
+		self.symbol_size = 2;
+		self.tick_size = 5;
+
+		self.with_lines = 1;
+
+		self.surface = cairo.ImageSurface (cairo.FORMAT_ARGB32,
+				self.width, self.height);
+		self.ctx = cairo.Context (self.surface);
+
+	def set_x_range (self, xmin, xmax):
+		if xmin == xmax:
+			print "Invalid x range";
+			xmin -= 1;
+			xmax += 1;
+		print "x range %g %g" % (xmin, xmax);
+		self.range_xmin=float(xmin);
+		self.range_xmax=float(xmax);
+
+	def set_y_range (self, ymin, ymax):
+		if ymin == ymax:
+			print "Invalid y range";
+			ymin -= 1;
+			ymax += 1;
+		print "y range %g %g" % (ymin, ymax);
+		self.range_ymin=float(ymin);
+		self.range_ymax=float(ymax);
+
+	def set_sane_ticks (self):
+		logrange = math.log10((self.range_xmax - self.range_xmin)/3);
+		tick = math.pow(10, math.floor(logrange));
+		self.tick_major_x = tick;
+
+		logrange = math.log10((self.range_ymax - self.range_ymin)/3);
+		tick = math.pow(10, math.floor(logrange));
+		self.tick_major_y = tick;
+
+		print "tick %g %g" % (self.tick_major_x, self.tick_major_y);
+
+	def draw_border (self):
+		self.ctx.move_to (self.margin_left, self.margin_top);
+		self.ctx.line_to (self.width - self.margin_right, self.margin_top);
+		self.ctx.line_to (self.width - self.margin_right, self.height - self.margin_bottom);
+		self.ctx.line_to (self.margin_left, self.height - self.margin_bottom);
+		self.ctx.close_path ();
+
+		self.ctx.set_source_rgb (0, 0, 0);
+		self.ctx.stroke();
+
+	def marker (self, x, y):
+		self.ctx.move_to (x, y);
+		self.ctx.save ();
+		self.ctx.identity_matrix ();
+		self.ctx.rel_move_to (-self.symbol_size, 0);
+		self.ctx.rel_line_to (self.symbol_size*2, 0);
+		self.ctx.rel_move_to (-self.symbol_size, -self.symbol_size);
+		self.ctx.rel_line_to (0, self.symbol_size*2);
+		self.ctx.restore ();
+
+	def draw_plot (self, points):
+		self.ctx.save();
+
+		self.ctx.translate (self.margin_left,
+				self.height - self.margin_bottom);
+		self.ctx.scale ((self.width - self.margin_right - self.margin_left)/
+				(self.range_xmax - self.range_xmin),
+				-(self.height - self.margin_top - self.margin_bottom)/
+				(self.range_ymax - self.range_ymin));
+		self.ctx.translate (-self.range_xmin, -self.range_ymin);
+
+		if (self.with_lines):
+			self.ctx.move_to (points[0][0], points[0][1]);
+			for point in points[1:]:
+				self.ctx.line_to (point[0], point[1]);
+		else:
+			for point in points:
+				self.marker (point[0], point[1]);
+
+		self.ctx.restore();
+		self.ctx.stroke();
+
+	def vtick (self, y):
+		self.ctx.move_to (self.range_xmin, y);
+		self.ctx.save ();
+		self.ctx.identity_matrix ();
+		self.ctx.rel_move_to (0, 0);
+		self.ctx.rel_line_to (-self.tick_size, 0);
+		self.ctx.restore ();
+
+	def htick (self, x):
+		self.ctx.move_to (x, self.range_ymin);
+		self.ctx.save ();
+		self.ctx.identity_matrix ();
+		self.ctx.rel_move_to (0, 0);
+		self.ctx.rel_line_to (0, self.tick_size);
+		self.ctx.restore ();
+
+	def vlabel (self, y):
+		self.ctx.move_to (self.range_xmin, y);
+		self.ctx.save ();
+		self.ctx.identity_matrix ();
+		self.ctx.rel_move_to (-self.tick_size * 6, 0);
+		self.ctx.show_text("%g" % y);
+		self.ctx.restore ();
+
+	def hlabel (self, x):
+		self.ctx.move_to (x, self.range_ymin);
+		self.ctx.save ();
+		self.ctx.identity_matrix ();
+		self.ctx.rel_move_to (0, self.tick_size * 4);
+		self.ctx.show_text("%g" % x);
+		self.ctx.restore ();
+
+	def draw_ticks (self):
+		self.ctx.save ();
+		self.ctx.translate (self.margin_left, self.height - self.margin_bottom);
+		self.x_scale = (self.width - self.margin_right - self.margin_left)/(self.range_xmax - self.range_xmin);
+		self.y_scale = (self.height - self.margin_top - self.margin_bottom)/(self.range_ymax - self.range_ymin);
+		print "scale %g %g" % (self.x_scale, self.y_scale);
+		self.ctx.scale (self.x_scale, -self.y_scale);
+		self.ctx.translate (-self.range_xmin, -self.range_ymin);
+
+		x = self.range_ymin;
+		while (x <= self.range_ymax):
+			self.vtick(x);
+			x+=self.tick_major_y;
+		x = self.range_xmin;
+		while (x <= self.range_xmax):
+			self.htick(x);
+			x+=self.tick_major_x;
+
+		x = self.range_ymin;
+		while (x <= self.range_ymax):
+			self.vlabel(x);
+			x+=self.tick_major_y;
+		x = self.range_xmin;
+		while (x <= self.range_xmax):
+			self.hlabel(x);
+			x+=self.tick_major_x;
+
+		self.ctx.restore();
+		self.ctx.set_source_rgb (0, 0, 0);
+		self.ctx.stroke();
+
+def readdata(filename):
+	file = open(filename);
+
+	points = [];
+	for line in file.readlines():
+		points.append(map(float,line.split()));
+
+	file.close();
+	return points;
+
+
+def plot_mse():
+	plot = Plot(800,600);
+	plot.set_x_range(0, len(pts));
+	m = max(Numeric.transpose(tpts[14]));
+	#plot.set_x_range(0, m);
+	plot.set_y_range(0, m);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.draw_plot (Numeric.transpose(tpts[0:15:14]));
+
+	plot.ctx.set_source_rgb (0, 1, 0);
+	plot.draw_plot (Numeric.transpose(tpts[0:16:15]));
+
+	#plot.with_lines = 0;
+	#plot.draw_plot (Numeric.transpose(tpts[14:16:1]));
+
+	plot.surface.write_to_png('00000-mse.png');
+
+def plot_buffer_level():
+	plot = Plot(800,600);
+	plot.set_x_range(0, len(pts));
+	m = max(Numeric.transpose(tpts[11]));
+	plot.set_y_range(0, m);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.draw_plot (Numeric.transpose(tpts[0:12:11]));
+
+	plot.surface.write_to_png('00000-buffer-level.png');
+
+
+pts = readdata("schro_dump.picture");
+tpts = Numeric.transpose(pts);
+
+plot_mse();
+plot_buffer_level();
+
+
