@@ -87,6 +87,7 @@ void schro_quantise_s16 (int16_t *dest, int16_t *src, int quant_factor,
 double schro_utils_probability_to_entropy (double x);
 double schro_utils_entropy (double a, double total);
 void schro_utils_reduce_fraction (int *n, int *d);
+double schro_utils_get_time (void);
 
 #endif
 

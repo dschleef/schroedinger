@@ -273,6 +273,8 @@ struct _SchroEncoder {
   SchroEngineIterateFunc engine_iterate;
   int quantiser_engine;
 
+  double start_time;
+
 #if 0
   int prefs[SCHRO_PREF_LAST];
 #endif

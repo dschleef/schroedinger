@@ -7,8 +7,9 @@
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schro-stdint.h>
 #include <string.h>
-
 #include <math.h>
+#include <time.h>
+#include <sys/time.h>
 
 
 void *
@@ -188,6 +189,13 @@ schro_utils_reduce_fraction (int *n, int *d)
   SCHRO_DEBUG("to %d/%d", *n, *d);
 }
 
+double
+schro_utils_get_time (void)
+{
+  struct timeval tv;
 
+  gettimeofday (&tv, NULL);
 
+  return tv.tv_sec + 1e-6*tv.tv_usec;
+}
 

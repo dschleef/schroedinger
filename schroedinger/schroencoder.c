@@ -198,7 +198,7 @@ schro_encoder_start (SchroEncoder *encoder)
       break;
   }
 
-
+  encoder->start_time = schro_utils_get_time ();
 }
 
 void
@@ -389,6 +389,8 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         buffer = schro_list_remove (frame->inserted_buffers, 0);
         *presentation_frame = -1;
       } else {
+        double elapsed_time;
+
         buffer = frame->output_buffer;
         frame->output_buffer = NULL;
 
@@ -396,7 +398,9 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         frame->state |= SCHRO_ENCODER_FRAME_STATE_FREE;
         encoder->output_slot++;
 
-        schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g %d %g %d %g\n",
+        elapsed_time = schro_utils_get_time() - encoder->start_time;
+
+        schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g %d %g %d %g %g %g\n",
             frame->frame_number, /* 1 */
             frame->num_refs,
             frame->is_ref,
@@ -411,7 +415,9 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
             encoder->buffer_level,
             frame->base_lambda,
             frame->mc_error,
-            frame->psnr /* 15 */);
+            frame->mean_squared_error /* 15 */,
+            frame->mean_squared_error,
+            elapsed_time);
 
         {
           /* FIXME move this */
@@ -444,7 +450,7 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
             int n;
 
             n = (encoder->buffer_level - encoder->buffer_size + 7)/8;
-            SCHRO_ERROR("buffer overrun, adding padding of %d bytes", n);
+            SCHRO_DEBUG("buffer overrun, adding padding of %d bytes", n);
             n = schro_encoder_encode_padding (encoder, n);
             encoder->buffer_level -= n*8;
           }
@@ -799,9 +805,9 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
 
     SCHRO_ASSERT(schro_motion_verify (frame->motion));
 
-    if (frame->estimated_mc_bits >
+    if (frame->encoder->bits_per_picture && frame->estimated_mc_bits >
         frame->encoder->bits_per_picture * frame->encoder->magic_mc_bailout_limit) {
-      SCHRO_ERROR("%d: MC bailout %d > %g", frame->frame_number,
+      SCHRO_DEBUG("%d: MC bailout %d > %g", frame->frame_number,
           frame->estimated_mc_bits,
           frame->encoder->bits_per_picture*frame->encoder->magic_mc_bailout_limit);
       frame->picture_weight = frame->encoder->magic_bailout_weight;
