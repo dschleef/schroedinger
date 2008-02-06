@@ -130,16 +130,16 @@ schro_gpumotion_copy (SchroGPUMotion * self, SchroMotion * motion)
     } else {
       // Reference 1
       if (motion->motion_vectors[i].pred_mode & 1) {
-        vectors[i].x1 = motion->motion_vectors[i].x1 << precision;
-        vectors[i].y1 = motion->motion_vectors[i].y1 << precision;
+        vectors[i].x1 = motion->motion_vectors[i].dx[0] << precision;
+        vectors[i].y1 = motion->motion_vectors[i].dy[0] << precision;
       } else {
         vectors[i].x1 = MOTION_NONE;
         vectors[i].y1 = MOTION_NONE;
       }
       // Reference 2
       if (motion->motion_vectors[i].pred_mode & 2) {
-        vectors[i].x2 = motion->motion_vectors[i].x2 << precision;
-        vectors[i].y2 = motion->motion_vectors[i].y2 << precision;
+        vectors[i].x2 = motion->motion_vectors[i].dx[1] << precision;
+        vectors[i].y2 = motion->motion_vectors[i].dy[1] << precision;
       } else {
         vectors[i].x2 = MOTION_NONE;
         vectors[i].y2 = MOTION_NONE;
