@@ -415,8 +415,8 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
             encoder->buffer_level,
             frame->base_lambda,
             frame->mc_error,
-            frame->mean_squared_error /* 15 */,
-            frame->mean_squared_error,
+            frame->mean_squared_error_luma /* 15 */,
+            frame->mean_squared_error_chroma,
             elapsed_time);
 
         {
@@ -963,26 +963,18 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
 void
 schro_encoder_postanalyse_picture (SchroEncoderFrame *frame)
 {
+  SchroVideoFormat *video_format = frame->params.video_format;
+
   if (frame->encoder->enable_psnr) {
-    double mse;
-    double psnr;
+    double mse[3];
 
-    mse = schro_frame_mean_squared_error (frame->filtered_frame,
-        frame->reconstructed_frame->frames[0]);
-    psnr = 10*log(255*255/mse)/log(10);
-    if (frame->encoder->average_psnr == 0) {
-      frame->encoder->average_psnr = psnr;
-    } else {
-      double alpha = 0.9;
-      frame->encoder->average_psnr *= alpha;
-      frame->encoder->average_psnr += (1.0-alpha) * psnr;
-    }
+    schro_frame_mean_squared_error (frame->filtered_frame,
+        frame->reconstructed_frame->frames[0], mse);
 
-    SCHRO_WARNING("%d %g %g %g",
-        frame->frame_number, mse, psnr, frame->encoder->average_psnr);
-    schro_dump(SCHRO_DUMP_PSNR, "%d %g %g %g\n",
-        frame->frame_number, mse, psnr, frame->encoder->average_psnr);
-    frame->psnr = psnr;
+    frame->mean_squared_error_luma = mse[0] /
+      (video_format->luma_excursion*video_format->luma_excursion);
+    frame->mean_squared_error_chroma = 0.5 * (mse[1] + mse[2]) /
+      (video_format->chroma_excursion*video_format->chroma_excursion);
   }
 
   if (frame->encoder->enable_ssim) {

@@ -187,7 +187,8 @@ struct _SchroEncoderFrame {
   int actual_residual_bits;
   int actual_mc_bits;
   int mc_error;
-  double psnr;
+  double mean_squared_error_luma;
+  double mean_squared_error_chroma;
 };
 
 struct _SchroEncoder {
@@ -293,7 +294,6 @@ struct _SchroEncoder {
 
   /* statistics */
 
-  double average_psnr;
   double average_arith_context_ratio;
 
   /* engine specific stuff */

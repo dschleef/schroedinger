@@ -57,7 +57,7 @@ schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
       }
     }
   } else {
-    SCHRO_ERROR("slow metric %dx%d", width, height);
+    //SCHRO_ERROR("slow metric %dx%d", width, height);
     for(j=0;j<height;j++){
       for(i=0;i<width;i++){
         int x;
