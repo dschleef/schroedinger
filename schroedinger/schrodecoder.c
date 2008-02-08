@@ -968,7 +968,7 @@ schro_decoder_x_combine (SchroPicture *picture)
 void
 schro_decoder_x_upsample (SchroPicture *picture)
 {
-  /* FIXME */
+  schro_upsampled_frame_upsample (picture->upsampled_frame);
 }
 
 void
