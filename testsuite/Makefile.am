@@ -6,6 +6,10 @@ if HAVE_CUDA
 SUBDIRS += cuda
 endif
 
+if HAVE_OPENGL
+SUBDIRS += opengl
+endif
+
 buildnoinstdir = $(libdir)
 buildnoinst_LTLIBRARIES = libschrotest.la
 
@@ -142,8 +146,9 @@ perceptual_curves_SOURCES = perceptual_curves.c
 
 
 zzuf_test:
-	zzuf -A -s0:10000 -r0.001 -c -v ./decode test.drc
+	zzuf -A -s0:10000 -r0.00001 -c -v ./decode test_stream.drc
 
-zzuf_one:
-	zzuf -A -s9 -r0.001 -c -v cat test.drc >test-n.drc
+test-%.drc:
+	num=`echo $@ | sed 's/test-\(.*\)\.drc/\1/'`; \
+	zzuf -A -s$$num -r0.00001 -c -v cat test_stream.drc >$@
 

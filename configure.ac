@@ -157,7 +157,7 @@ if test "x$with_opengl" = xyes; then
   LIBS="$LIBS $X_LIBS"
   AC_CHECK_LIB(GL, glTexImage2D, [
     OPENGL_CFLAGS=
-    OPENGL_LIBS=
+    OPENGL_LIBS=-lGL
     HAVE_OPENGL=yes
   ], [HAVE_OPENGL=no])
   CPPFLAGS="$save_CPPFLAGS"
@@ -202,6 +202,7 @@ testsuite/coder/Makefile
 testsuite/dirac/Makefile
 testsuite/installation/Makefile
 testsuite/manual/Makefile
+testsuite/opengl/Makefile
 testsuite/prototype/Makefile
 testsuite/streams/Makefile
 testsuite/tables2/Makefile
