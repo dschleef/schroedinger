@@ -987,11 +987,11 @@ gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer)
         break;
       case SCHRO_DECODER_ERROR:
         go = FALSE;
-        /* FIXME */
         GST_ERROR ("codec error");
+        ret = GST_FLOW_ERROR;
         break;
     }
   }
-  return GST_FLOW_OK;
+  return ret;
 }
 
