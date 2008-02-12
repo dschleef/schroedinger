@@ -1464,7 +1464,7 @@ schro_motion_verify (SchroMotion *motion)
           break;
         case 2:
         case 3:
-          if (motion->src2->frames[0] == NULL) {
+          if (motion->params->num_refs < 2) {
             SCHRO_ERROR("mv(%d,%d) uses non-existent src2", x, y);
             return 0;
           }

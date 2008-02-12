@@ -57,6 +57,7 @@ struct _SchroDecoder {
   int prev_parse_offset;
 
   int have_access_unit;
+  SchroBuffer *access_unit_buffer;
   int have_frame_number;
 
   double skip_value;
@@ -78,6 +79,8 @@ struct _SchroPicture {
   unsigned int needed_state;
   unsigned int working;
   int busy;
+  int skip;
+  int error;
 
   SchroBuffer *input_buffer;
   SchroParams params;
@@ -152,6 +155,7 @@ SchroPictureNumber schro_decoder_get_picture_number (SchroDecoder *decoder);
 
 void schro_decoder_decode_parse_header (SchroDecoder *decoder);
 void schro_decoder_parse_access_unit (SchroDecoder *decoder);
+int schro_decoder_compare_access_unit_buffer (SchroBuffer *a, SchroBuffer *b);
 
 void schro_decoder_subband_dc_predict (SchroFrameData *fd);
 
@@ -171,7 +175,7 @@ void schro_decoder_x_combine (SchroPicture *picture);
 void schro_decoder_x_upsample (SchroPicture *picture);
 
 int schro_decoder_iterate_picture (SchroDecoder *decoder);
-int schro_decoder_parse_picture (SchroPicture *picture);
+void schro_decoder_parse_picture (SchroPicture *picture);
 void schro_decoder_parse_picture_header (SchroPicture *picture);
 void schro_decoder_parse_picture_prediction_parameters (SchroPicture *picture);
 void schro_decoder_parse_block_data (SchroPicture *picture);
