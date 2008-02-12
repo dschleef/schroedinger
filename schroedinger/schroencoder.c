@@ -83,17 +83,6 @@ schro_encoder_new (void)
   encoder->enable_ssim = FALSE;
   encoder->enable_md5 = FALSE;
 
-  encoder->magic_subband0_lambda_scale = 2.0;
-  encoder->magic_chroma_lambda_scale = 1.0;
-  encoder->magic_nonref_lambda_scale = 0.5;
-  encoder->magic_allocation_scale = 1.1;
-  encoder->magic_keyframe_weight = 7.5;
-  encoder->magic_scene_change_threshold = 10000.0;
-  encoder->magic_inter_p_weight = 1.5;
-  encoder->magic_inter_b_weight = 0.5;
-  encoder->magic_mc_bailout_limit = 0.25;
-  encoder->magic_bailout_weight = 2.0;
-
   encoder->ref_distance = 4;
   encoder->transform_depth = 4;
   encoder->intra_wavelet = SCHRO_WAVELET_DESLAURIES_DUBUC_9_7;
@@ -111,6 +100,16 @@ schro_encoder_new (void)
   encoder->enable_bigblock_estimation = TRUE;
 
   encoder->magic_dc_metric_offset = 1.0;
+  encoder->magic_subband0_lambda_scale = 2.0;
+  encoder->magic_chroma_lambda_scale = 1.0;
+  encoder->magic_nonref_lambda_scale = 0.5;
+  encoder->magic_allocation_scale = 1.1;
+  encoder->magic_keyframe_weight = 7.5;
+  encoder->magic_scene_change_threshold = 0.2;
+  encoder->magic_inter_p_weight = 1.5;
+  encoder->magic_inter_b_weight = 0.5;
+  encoder->magic_mc_bailout_limit = 0.25;
+  encoder->magic_bailout_weight = 2.0;
 
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
@@ -2388,7 +2387,18 @@ static SchroEncoderSetting encoder_settings[] = {
   BOOL("enable_zero_estimation", FALSE),
   BOOL("enable_phasecorr_estimation", FALSE),
   BOOL("enable_bigblock_estimation", FALSE),
-  INT ("magic_dc_metric_offset", 0, 255, 1.0),
+
+  DOUB("magic_dc_metric_offset", 0.0, 1000.0, 0.0),
+  DOUB("magic_subband0_lambda_scale", 0.0, 1000.0, 0.0),
+  DOUB("magic_chroma_lambda_scale", 0.0, 1000.0, 0.0),
+  DOUB("magic_nonref_lambda_scale", 0.0, 1000.0, 0.0),
+  DOUB("magic_allocation_scale", 0.0, 1000.0, 0.0),
+  DOUB("magic_keyframe_weight", 0.0, 1000.0, 0.0),
+  DOUB("magic_scene_change_threshold", 0.0, 1000.0, 0.0),
+  DOUB("magic_inter_p_weight", 0.0, 1000.0, 0.0),
+  DOUB("magic_inter_b_weight", 0.0, 1000.0, 0.0),
+  DOUB("magic_mc_bailout_limit", 0.0, 1000.0, 0.0),
+  DOUB("magic_bailout_weight", 0.0, 1000.0, 0.0),
 };
 
 int
@@ -2453,6 +2463,18 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(enable_bigblock_estimation);
   VAR_SET(magic_dc_metric_offset);
   //VAR_SET();
+  
+  VAR_SET(magic_dc_metric_offset);
+  VAR_SET(magic_subband0_lambda_scale);
+  VAR_SET(magic_chroma_lambda_scale);
+  VAR_SET(magic_nonref_lambda_scale);
+  VAR_SET(magic_allocation_scale);
+  VAR_SET(magic_keyframe_weight);
+  VAR_SET(magic_scene_change_threshold);
+  VAR_SET(magic_inter_p_weight);
+  VAR_SET(magic_inter_b_weight);
+  VAR_SET(magic_mc_bailout_limit);
+  VAR_SET(magic_bailout_weight);
 }
 
 double
@@ -2492,6 +2514,18 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(enable_bigblock_estimation);
   VAR_GET(magic_dc_metric_offset);
   //VAR_GET();
+
+  VAR_GET(magic_dc_metric_offset);
+  VAR_GET(magic_subband0_lambda_scale);
+  VAR_GET(magic_chroma_lambda_scale);
+  VAR_GET(magic_nonref_lambda_scale);
+  VAR_GET(magic_allocation_scale);
+  VAR_GET(magic_keyframe_weight);
+  VAR_GET(magic_scene_change_threshold);
+  VAR_GET(magic_inter_p_weight);
+  VAR_GET(magic_inter_b_weight);
+  VAR_GET(magic_mc_bailout_limit);
+  VAR_GET(magic_bailout_weight);
 
   return 0;
 }
