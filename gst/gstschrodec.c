@@ -814,7 +814,8 @@ gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
     }
 
     size = GST_READ_UINT32_BE(header + 5);
-    if (size == 0) {
+    if (size == 0) size = 13;
+    if (size < 13) {
       /* FIXME: should handle this by resyncing. */
       return GST_FLOW_ERROR;
     }
