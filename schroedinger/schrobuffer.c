@@ -6,6 +6,7 @@
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schrodebug.h>
 #include <liboil/liboil.h>
+#include <string.h>
 
 static void schro_buffer_free_mem (SchroBuffer * buffer, void *);
 static void schro_buffer_free_subbuffer (SchroBuffer * buffer, void *priv);
@@ -95,5 +96,16 @@ static void
 schro_buffer_free_subbuffer (SchroBuffer * buffer, void *priv)
 {
   schro_buffer_unref (buffer->parent);
+}
+
+SchroBuffer *
+schro_buffer_dup (SchroBuffer * buffer)
+{
+  SchroBuffer *dup;
+
+  dup = schro_buffer_new_and_alloc (buffer->length);
+  memcpy (dup->data, buffer->data, buffer->length);
+
+  return dup;
 }
 
