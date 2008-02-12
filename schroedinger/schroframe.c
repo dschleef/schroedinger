@@ -44,6 +44,7 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
   frame->domain = domain;
 
   if (SCHRO_FRAME_IS_PACKED (format)) {
+    frame->components[0].format = format;
     frame->components[0].width = width;
     frame->components[0].height = height;
     if (format == SCHRO_FRAME_FORMAT_AYUV) {
@@ -88,6 +89,7 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
   chroma_width = ROUND_UP_SHIFT(width, h_shift);
   chroma_height = ROUND_UP_SHIFT(height, v_shift);
 
+  frame->components[0].format = format;
   frame->components[0].width = width;
   frame->components[0].height = height;
   frame->components[0].stride = ROUND_UP_4(width * bytes_pp);
@@ -96,6 +98,7 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
   frame->components[0].v_shift = 0;
   frame->components[0].h_shift = 0;
 
+  frame->components[1].format = format;
   frame->components[1].width = chroma_width;
   frame->components[1].height = chroma_height;
   frame->components[1].stride = ROUND_UP_4(chroma_width * bytes_pp);
@@ -104,6 +107,7 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
   frame->components[1].v_shift = v_shift;
   frame->components[1].h_shift = h_shift;
 
+  frame->components[2].format = format;
   frame->components[2].width = chroma_width;
   frame->components[2].height = chroma_height;
   frame->components[2].stride = ROUND_UP_4(chroma_width * bytes_pp);
