@@ -87,8 +87,9 @@ void schro_params_init (SchroParams *params, int video_format);
 void schro_params_calculate_iwt_sizes (SchroParams *params);
 void schro_params_calculate_mc_sizes (SchroParams *params);
 
-void schro_params_set_block_params (SchroParams *params, int index);
+int schro_params_set_block_params (SchroParams *params, int index);
 int schro_params_get_block_params (SchroParams *params);
+int schro_params_verify_block_params (SchroParams *params);
 
 void schro_params_set_default_codeblock (SchroParams *params);
 schro_bool schro_params_is_default_codeblock (SchroParams *params);

@@ -208,18 +208,20 @@ schro_block_params[] = {
  * structure pointed to by @params to the
  * standard block parameters given by @index.
  */
-void
+int
 schro_params_set_block_params (SchroParams *params, int index)
 {
   if (index < 1 || index >= ARRAY_SIZE(schro_block_params)) {
     SCHRO_ERROR("illegal block params index");
-    return;
+    return FALSE;
   }
 
   params->xblen_luma = schro_block_params[index].xblen_luma;
   params->yblen_luma = schro_block_params[index].yblen_luma;
   params->xbsep_luma = schro_block_params[index].xbsep_luma;
   params->ybsep_luma = schro_block_params[index].ybsep_luma;
+
+  return TRUE;
 }
 
 int
@@ -235,6 +237,27 @@ schro_params_get_block_params (SchroParams *params)
     }
   }
   return 0;
+}
+
+int
+schro_params_verify_block_params (SchroParams *params)
+{
+  if (params->xblen_luma < 0) return FALSE;
+  if (params->yblen_luma < 0) return FALSE;
+  if (params->xbsep_luma < 0) return FALSE;
+  if (params->ybsep_luma < 0) return FALSE;
+  if (params->xblen_luma > SCHRO_LIMIT_BLOCK_SIZE) return FALSE;
+  if (params->yblen_luma > SCHRO_LIMIT_BLOCK_SIZE) return FALSE;
+  if ((params->xblen_luma & 3) != 0) return FALSE;
+  if ((params->xbsep_luma & 3) != 0) return FALSE;
+  if ((params->yblen_luma & 3) != 0) return FALSE;
+  if ((params->ybsep_luma & 3) != 0) return FALSE;
+  if (params->xblen_luma < params->xbsep_luma) return FALSE;
+  if (params->yblen_luma < params->ybsep_luma) return FALSE;
+  if (params->xblen_luma > 2*params->xbsep_luma) return FALSE;
+  if (params->yblen_luma > 2*params->ybsep_luma) return FALSE;
+
+  return TRUE;
 }
 
 /**
