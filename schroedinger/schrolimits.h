@@ -58,6 +58,14 @@ SCHRO_BEGIN_DECLS
  */
 #define SCHRO_LIMIT_WIDTH 2048
 
+/**
+ * SCHRO_LIMIT_BLOCK_SIZE
+ *
+ * Maximum block size.  Both length and separation must be less than
+ * or equal to this limit.
+ */
+#define SCHRO_LIMIT_BLOCK_SIZE 64
+
 SCHRO_END_DECLS
 
 #endif
