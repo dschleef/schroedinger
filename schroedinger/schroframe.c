@@ -1327,6 +1327,23 @@ schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src)
   }
 }
 
+static void
+mas8_across_u8_slow (uint8_t *d, uint8_t **s1_a8,
+    const int16_t *s2_8, const int16_t *s3_2, int n)
+{
+  int i;
+  int j;
+  int x;
+
+  for(i=0;i<n;i++){
+    x = 0;
+    for(j=0;j<8;j++){
+      x += s1_a8[j][i] * s2_8[j];
+    }
+    d[i] = CLAMP((x + s3_2[0])>>s3_2[1],0,255);
+  }
+}
+
 void
 schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
 {
@@ -1350,12 +1367,20 @@ schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
     scomp = &src->components[k];
 
     for(j=0;j<dcomp->height;j++){
-      for(i=0;i<8;i++){
-        list[i] = SCHRO_FRAME_DATA_GET_LINE(scomp,
-            CLAMP(i+j-3,0,scomp->height-1));
-      }
-      oil_mas8_across_u8 (SCHRO_FRAME_DATA_GET_LINE(dcomp, j), list,
+      if (j < 3 || j >= scomp->height - 4) {
+        for (i=0;i<8;i++) {
+          list[i] = SCHRO_FRAME_DATA_GET_LINE(scomp,
+              CLAMP(i+j-3,0,scomp->height-1));
+        }
+        mas8_across_u8_slow (SCHRO_FRAME_DATA_GET_LINE(dcomp, j), list,
           taps, offsetshift, scomp->width);
+      } else {
+        SCHRO_ASSERT(j-3 >= 0);
+        SCHRO_ASSERT(j-3+7 < scomp->height);
+        oil_mas8_across_u8 (SCHRO_FRAME_DATA_GET_LINE(dcomp, j),
+            SCHRO_FRAME_DATA_GET_LINE (scomp, j-3), scomp->stride,
+            taps, offsetshift, scomp->width);
+      }
     }
   }
 }
@@ -1642,16 +1667,21 @@ schro_upsampled_frame_get_block_fast_prec0 (SchroUpsampledFrame *upframe, int k,
 
   comp = upframe->frames[0]->components + k;
 
-  SCHRO_ASSERT(x >= 0);
-  SCHRO_ASSERT(y >= 0);
-  SCHRO_ASSERT(x + fd->width <= comp->width);
-  SCHRO_ASSERT(y + fd->height <= comp->height);
-
   for(j=0;j<fd->height;j++) {
     uint8_t *dest = SCHRO_FRAME_DATA_GET_LINE (fd, j);
     uint8_t *src = SCHRO_FRAME_DATA_GET_LINE (comp, y + j);
     memcpy (dest, src + x, fd->width);
   }
+}
+
+void
+schro_upsampled_frame_get_subdata_prec0 (SchroUpsampledFrame *upframe,
+    int component, int x, int y, SchroFrameData *fd)
+{
+  SchroFrameData *comp = upframe->frames[0]->components + component;
+
+  fd->data = SCHRO_FRAME_DATA_GET_PIXEL_U8(comp, x, y);
+  fd->stride = comp->stride;
 }
 
 int
@@ -1690,6 +1720,42 @@ schro_upsampled_frame_get_block_prec1 (SchroUpsampledFrame *upframe, int k,
           x + (i<<1), y + (j<<1));
     }
   }
+}
+
+void
+schro_upsampled_frame_get_block_fast_prec1 (SchroUpsampledFrame *upframe, int k,
+    int x, int y, SchroFrameData *fd)
+{
+  SchroFrameData *comp;
+  int i;
+  int j;
+
+  i = ((y&1)<<1) | (x&1);
+  x >>= 1;
+  y >>= 1;
+
+  comp = upframe->frames[i]->components + k;
+  for(j=0;j<fd->height;j++) {
+    uint8_t *dest = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+    uint8_t *src = SCHRO_FRAME_DATA_GET_LINE (comp, y + j);
+    memcpy (dest, src + x, fd->width);
+  }
+}
+
+void
+schro_upsampled_frame_get_subdata_prec1 (SchroUpsampledFrame *upframe,
+    int k, int x, int y, SchroFrameData *fd)
+{
+  SchroFrameData *comp;
+  int i;
+
+  i = ((y&1)<<1) | (x&1);
+  x >>= 1;
+  y >>= 1;
+
+  comp = upframe->frames[i]->components + k;
+  fd->data = SCHRO_FRAME_DATA_GET_PIXEL_U8(comp, x, y);
+  fd->stride = comp->stride;
 }
 
 int
@@ -1733,6 +1799,86 @@ schro_upsampled_frame_get_block_prec3 (SchroUpsampledFrame *upframe, int k,
       data[i] = schro_upsampled_frame_get_pixel_prec3 (upframe, k,
           x + (i<<3), y + (j<<3));
     }
+  }
+}
+
+void
+schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
+    int x, int y, SchroFrameData *fd)
+{
+  int i,j;
+  int hx, hy;
+  int rx, ry;
+  int w00, w01, w10, w11;
+  int value;
+  SchroFrameData fd00;
+  SchroFrameData fd01;
+  SchroFrameData fd10;
+  SchroFrameData fd11;
+  int16_t p[6];
+
+  hx = x >> 2;
+  hy = y >> 2;
+
+  rx = x & 0x3;
+  ry = y & 0x3;
+
+  w00 = (4 - ry) * (4 - rx);
+  w01 = (4 - ry) * rx;
+  w10 = ry * (4 - rx);
+  w11 = ry * rx;
+
+  schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy, &fd00);
+  schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx + 1, hy, &fd01);
+  schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy + 1, &fd10);
+  schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx + 1, hy + 1, &fd11);
+
+  p[0] = w00;
+  p[1] = w01;
+  p[2] = w10;
+  p[3] = w11;
+  p[4] = 8;
+  p[5] = 4;
+
+  switch (fd->width) {
+    case 8:
+      oil_combine4_8xn_u8 (fd->data, fd->stride,
+          fd00.data, fd00.stride,
+          fd01.data, fd01.stride,
+          fd10.data, fd10.stride,
+          fd11.data, fd11.stride, p, fd->height);
+      break;
+    case 12:
+      oil_combine4_12xn_u8 (fd->data, fd->stride,
+          fd00.data, fd00.stride,
+          fd01.data, fd01.stride,
+          fd10.data, fd10.stride,
+          fd11.data, fd11.stride, p, fd->height);
+      break;
+    case 16:
+      oil_combine4_16xn_u8 (fd->data, fd->stride,
+          fd00.data, fd00.stride,
+          fd01.data, fd01.stride,
+          fd10.data, fd10.stride,
+          fd11.data, fd11.stride, p, fd->height);
+      break;
+    default:
+      for(j=0;j<fd->height;j++) {
+        uint8_t *data = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+        uint8_t *d00 = SCHRO_FRAME_DATA_GET_LINE (&fd00, j);
+        uint8_t *d01 = SCHRO_FRAME_DATA_GET_LINE (&fd01, j);
+        uint8_t *d10 = SCHRO_FRAME_DATA_GET_LINE (&fd10, j);
+        uint8_t *d11 = SCHRO_FRAME_DATA_GET_LINE (&fd11, j);
+
+        for(i=0;i<fd->width;i++) {
+          value = w00 * d00[i];
+          value += w01 * d01[i];
+          value += w10 * d10[i];
+          value += w11 * d11[i];
+          data[i] = ROUND_SHIFT(value, 4);
+        }
+      }
+      break;
   }
 }
 
@@ -1785,13 +1931,13 @@ schro_upsampled_frame_get_block_fast_precN (SchroUpsampledFrame *upframe, int k,
       schro_upsampled_frame_get_block_fast_prec0 (upframe, k, x, y, fd);
       return;
     case 1:
-      schro_upsampled_frame_get_block_prec1 (upframe, k, x, y, fd);
+      schro_upsampled_frame_get_block_fast_prec1 (upframe, k, x, y, fd);
       return;
     case 2:
-      schro_upsampled_frame_get_block_prec3 (upframe, k, x<<1, y<<1, fd);
+      schro_upsampled_frame_get_block_fast_prec3 (upframe, k, x<<1, y<<1, fd);
       return;
     case 3:
-      schro_upsampled_frame_get_block_prec3 (upframe, k, x, y, fd);
+      schro_upsampled_frame_get_block_fast_prec3 (upframe, k, x, y, fd);
       return;
   }
 

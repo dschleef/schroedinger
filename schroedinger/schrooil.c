@@ -182,6 +182,7 @@ oil_mas10_s16 (int16_t *d, const int16_t *s1_np3, const int32_t *s2_4,
   }
 }
 
+#if 0
 void
 oil_mas8_across_u8 (uint8_t *d, uint8_t **s1_a8,
     const int16_t *s2_8, const int16_t *s3_2, int n)
@@ -198,6 +199,7 @@ oil_mas8_across_u8 (uint8_t *d, uint8_t **s1_a8,
     d[i] = CLAMP((x + s3_2[0])>>s3_2[1],0,255);
   }
 }
+#endif
 
 void
 oil_mas10_across_u8 (uint8_t *d, uint8_t **s1_a10,

@@ -1520,7 +1520,7 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
     schro_motion_render_ref (motion, dest);
     return;
   }
-  if (0) {
+  if (1) {
     schro_motion_render_new (motion, dest);
     return;
   }
