@@ -290,8 +290,14 @@ get_block (SchroMotion *motion, int k, int ref, int i, int j, int dx, int dy)
   px = (x << motion->mv_precision) + dx;
   py = (y << motion->mv_precision) + dy;
 
-  schro_upsampled_frame_get_block_precN (upframe, k, px, py,
-      motion->mv_precision, &motion->tmp_block_ref[ref]);
+  if (px >= 0 && py >= 0 &&
+      px < motion->max_fast_x && py < motion->max_fast_y) {
+    schro_upsampled_frame_get_block_fast_precN (upframe, k, px, py,
+        motion->mv_precision, &motion->tmp_block_ref[ref]);
+  } else {
+    schro_upsampled_frame_get_block_precN (upframe, k, px, py,
+        motion->mv_precision, &motion->tmp_block_ref[ref]);
+  }
 }
 
 static void
@@ -498,10 +504,11 @@ schro_motion_block_accumulate_slow (SchroMotion *motion, SchroFrameData *comp,
     if (y + j < 0 || y + j >= comp->height) continue;
 
     w_y = motion->weight_y[j];
-    if (y + j < 2*motion->yoffset) {
+    if (y + j < motion->yoffset) {
       w_y += motion->weight_y[2*motion->yoffset - j - 1];
     }
-    if (y + j >= motion->params->y_num_blocks * motion->ybsep - 2*motion->yoffset) {
+    if (y + j >=
+        motion->params->y_num_blocks * motion->ybsep - motion->yoffset) {
       w_y += motion->weight_y[2*(motion->yblen - motion->yoffset) - j - 1];
     }
 
@@ -510,10 +517,11 @@ schro_motion_block_accumulate_slow (SchroMotion *motion, SchroFrameData *comp,
       if (x + i < 0 || x + i >= comp->width) continue;
 
       w_x = motion->weight_x[i];
-      if (x + i < 2*motion->xoffset) {
+      if (x + i < motion->xoffset) {
         w_x += motion->weight_x[2*motion->xoffset - i - 1];
       }
-      if (x + i >= motion->params->x_num_blocks * motion->xbsep - 2*motion->xoffset) {
+      if (x + i >=
+          motion->params->x_num_blocks * motion->xbsep - motion->xoffset) {
         w_x += motion->weight_x[2*(motion->xblen - motion->xoffset) - i - 1];
       }
 
@@ -593,14 +601,20 @@ schro_motion_render_new (SchroMotion *motion, SchroFrame *dest)
       motion->ybsep = params->ybsep_luma;
       motion->xblen = params->xblen_luma;
       motion->yblen = params->yblen_luma;
+      motion->width = motion->params->video_format->width;
+      motion->height = motion->params->video_format->height;
     } else {
       motion->xbsep = params->xbsep_luma >> params->video_format->chroma_h_shift;
       motion->ybsep = params->ybsep_luma >> params->video_format->chroma_v_shift;
       motion->xblen = params->xblen_luma >> params->video_format->chroma_h_shift;
       motion->yblen = params->yblen_luma >> params->video_format->chroma_v_shift;
+      motion->width = motion->params->video_format->width >> params->video_format->chroma_h_shift;
+      motion->height = motion->params->video_format->height >> params->video_format->chroma_v_shift;
     }
     motion->xoffset = (motion->xblen - motion->xbsep)/2;
     motion->yoffset = (motion->yblen - motion->ybsep)/2;
+    motion->max_fast_x = (motion->width - motion->xblen) << motion->mv_precision;
+    motion->max_fast_y = (motion->height - motion->yblen) << motion->mv_precision;
 
     motion->block.data = schro_malloc (motion->xblen * motion->yblen * sizeof(int16_t));
     motion->block.stride = motion->xblen * sizeof(int16_t);
@@ -626,9 +640,9 @@ schro_motion_render_new (SchroMotion *motion, SchroFrame *dest)
     }
 
     max_x_blocks = MIN(params->x_num_blocks - 1,
-        (comp->width - motion->xoffset)/motion->xbsep);
+        (motion->width - motion->xoffset)/motion->xbsep);
     max_y_blocks = MIN(params->y_num_blocks - 1,
-        (comp->height - motion->yoffset)/motion->ybsep);
+        (motion->height - motion->yoffset)/motion->ybsep);
 
     j = 0;
     for(i=0;i<params->x_num_blocks;i++){
@@ -663,10 +677,10 @@ schro_motion_render_new (SchroMotion *motion, SchroFrame *dest)
         schro_motion_block_accumulate_slow (motion, comp, x, y);
       }
     }
-    for(;j<params->y_num_blocks;j++){
+    for(j=max_y_blocks;j<params->y_num_blocks;j++){
+      y = motion->ybsep * j - motion->yoffset;
       for(i=0;i<params->x_num_blocks;i++){
         x = motion->xbsep * i - motion->xoffset;
-        y = motion->ybsep * j - motion->yoffset;
 
         schro_motion_block_predict_block (motion, x, y, k, i, j);
         schro_motion_block_accumulate_slow (motion, comp, x, y);
@@ -681,7 +695,7 @@ schro_motion_render_new (SchroMotion *motion, SchroFrame *dest)
       as[0] = ((1<<as[1])>>1);
 
       oil_add_const_rshift_s16 (SCHRO_FRAME_DATA_GET_LINE(comp, j),
-          SCHRO_FRAME_DATA_GET_LINE(comp, j), as, comp->width);
+          SCHRO_FRAME_DATA_GET_LINE(comp, j), as, motion->width);
     }
 
     free (motion->block.data);
