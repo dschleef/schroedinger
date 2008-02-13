@@ -89,6 +89,12 @@ struct _SchroMotion {
   int ybsep;
   int xblen;
   int yblen;
+
+  SchroFrameData block;
+  SchroFrameData obmc_weight;
+  SchroFrameData tmp_block_ref[2];
+  int weight_x[SCHRO_LIMIT_BLOCK_SIZE];
+  int weight_y[SCHRO_LIMIT_BLOCK_SIZE];
 };
 
 #define SCHRO_MOTION_GET_BLOCK(motion,x,y) \

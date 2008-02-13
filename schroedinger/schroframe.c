@@ -1686,6 +1686,22 @@ schro_upsampled_frame_get_pixel_precN (SchroUpsampledFrame *upframe, int k,
 }
 
 void
+schro_upsampled_frame_get_block_precN (SchroUpsampledFrame *upframe, int k,
+    int x, int y, int prec, SchroFrameData *fd)
+{
+  int i,j;
+  uint8_t *data;
+
+  for(j=0;j<fd->height;j++) {
+    data = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+    for(i=0;i<fd->width;i++) {
+      data[i] = schro_upsampled_frame_get_pixel_precN (upframe, k,
+          x + (i<<prec), y + (j<<prec), prec);
+    }
+  }
+}
+
+void
 schro_frame_get_subdata (SchroFrame *frame, SchroFrameData *fd,
     int component, int x, int y)
 {

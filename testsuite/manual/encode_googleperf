@@ -1,0 +1,22 @@
+#!/bin/sh
+
+
+GST_LAUNCH=$(type -p gst-launch-0.10)
+if test "$GST_LAUNCH" == "" ; then
+  echo This test requires GStreamer
+fi
+
+if test ! -f /usr/lib/libprofiler.so -o ! -f /usr/bin/pprof ; then
+  echo This test requires the Google profiler tools.
+  exit 1
+fi
+
+CPUPROFILE=prof.out \
+LD_PRELOAD=/usr/lib/libprofiler.so \
+$GST_LAUNCH \
+	videotestsrc num-buffers=100 ! \
+	schroenc $schroopts ! fakesink
+
+pprof --pdf $GST_LAUNCH prof.out >prof.pdf
+
+
