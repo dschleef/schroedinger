@@ -75,8 +75,8 @@ schro_motion_pixel_predict (SchroMotion *motion, int x, int y, int k)
   int i,j;
   int value;
 
-  i = (x + motion->xbsep/2) / motion->xbsep - 1;
-  j = (y + motion->ybsep/2) / motion->ybsep - 1;
+  i = (x + motion->xoffset) / motion->xbsep - 1;
+  j = (y + motion->yoffset) / motion->ybsep - 1;
 
   value = schro_motion_pixel_predict_block (motion, x, y, k, i, j);
   value += schro_motion_pixel_predict_block (motion, x, y, k, i + 1, j);
@@ -233,7 +233,7 @@ schro_motion_pixel_predict_block (SchroMotion *motion, int x, int y, int k,
 
   if (motion->yoffset == 0) {
     wy = 8;
-  } else if (y < motion->yoffset || y >= width - motion->yoffset) {
+  } else if (y < motion->yoffset || y >= height - motion->yoffset) {
     wy = 8;
   } else if (y - ymin < 2*motion->yoffset) {
     wy = get_ramp (y - ymin, motion->yoffset);
@@ -1926,10 +1926,6 @@ schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest)
   int x,y;
   int16_t *line;
 
-  SCHRO_ASSERT(motion->src1->frames[0]);
-  SCHRO_ASSERT(motion->src1->frames[1]);
-  SCHRO_ASSERT(motion->src1->frames[2]);
-  SCHRO_ASSERT(motion->src1->frames[3]);
   if (params->num_refs == 1) {
     SCHRO_ASSERT(params->picture_weight_2 == 1);
   }
