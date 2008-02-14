@@ -2,6 +2,7 @@
 
 
 function encode {
+  echo "ENCODING $testname with $schroopts"
   gst-launch-0.10 \
     videotestsrc num-buffers=300 ! \
     timeoverlay ! \
@@ -13,43 +14,144 @@ function encode {
 }
 
 
-width=352
+width=320
 height=240
 format=I420
 
+testname="default"
+schroopts=""
+encode
+
+# gop structure
 
 testname="intra-only"
-schroopts="engine=0"
+schroopts="gop-structure=1"
 encode
 
 testname="backref"
-schroopts="engine=1"
+schroopts="gop-structure=2"
 encode
 
-# broken
-#testname="backref2"
-#schroopts="engine=2"
-#encode
-
-testname="tworef"
-schroopts="engine=3"
+testname="biref"
+schroopts="gop-structure=4"
 encode
 
-testname="test_intra"
-schroopts="engine=4"
+# rate control
+
+testname="CBR-250kb"
+schroopts="rate-control=1 bitrate=250000"
+encode
+
+testname="CBR-500kb"
+schroopts="rate-control=1 bitrate=500000"
+encode
+
+testname="CBR-1Mb"
+schroopts="rate-control=1 bitrate=1000000"
+encode
+
+testname="LD-2Mb"
+schroopts="rate-control=2 bitrate=2000000"
+encode
+
+testname="LD-4Mb"
+schroopts="rate-control=2 bitrate=4000000"
+encode
+
+testname="LD-8Mb"
+schroopts="rate-control=2 bitrate=8000000"
 encode
 
 testname="lossless"
-schroopts="engine=5"
+schroopts="rate-control=3"
 encode
 
-# broken playback
-#testname="backtest"
-#schroopts="engine=6"
-#encode
+# noise threshold
 
-testname=lowdelay
-bitrate=$(($width*$height*3/2*8*30))
-schroopts="engine=7 transform_depth=3 bitrate=$(($bitrate/4))"
+testname="10dB"
+schroopts="noise-threshold=10"
 encode
+
+testname="20dB"
+schroopts="noise-threshold=20"
+encode
+
+testname="30dB"
+schroopts="noise-threshold=30"
+encode
+
+testname="40dB"
+schroopts="noise-threshold=40"
+encode
+
+# perceptual weighting
+
+testname="percep-ccir959"
+schroopts="perceptual-weighting=1"
+encode
+
+# filtering
+
+testname="cwm"
+schroopts="filtering=1 filter-value=4"
+encode
+
+testname="gaussian"
+schroopts="filtering=2 filter-value=5"
+encode
+
+testname="add-noise"
+schroopts="filtering=3 filter-value=10"
+encode
+
+testname="adaptive-gaussian"
+schroopts="filtering=4"
+encode
+
+# transform depth
+
+testname="transform-1"
+schroopts="transform-depth=1"
+encode
+
+testname="transform-2"
+schroopts="transform-depth=2"
+encode
+
+testname="transform-3"
+schroopts="transform-depth=3"
+encode
+
+testname="transform-4"
+schroopts="transform-depth=4"
+encode
+
+# intra wavelet
+
+for i in 0 1 2 3 4 5 6 ; do
+  testname="intra-wavelet-$i"
+  schroopts="intra-wavelet=$i"
+  encode
+done
+
+for i in 0 1 2 3 4 5 6 ; do
+  testname="inter-wavelet-$i"
+  schroopts="inter-wavelet=$i"
+  encode
+done
+ 
+for i in 0 1 2 3 ; do
+  testname="mv-precision-$i"
+  schroopts="mv-precision=$i"
+  encode
+done
+
+for i in 1 2 3 ; do
+  for j in 1 2 3 ; do
+    testname="MB-size-$i-overlap-$j"
+    schroopts="motion-block-size=$i motion-block-overlap=$j"
+    encode
+  done
+done
+
 
