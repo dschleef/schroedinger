@@ -526,7 +526,7 @@ schro_motion_block_accumulate_slow (SchroMotion *motion, SchroFrameData *comp,
 
   for(j=0;j<motion->yblen;j++) {
     int16_t *d = SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y + j);
-    int16_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->block, j);
+    uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->block, j);
     
     if (y + j < 0 || y + j >= comp->height) continue;
 
@@ -552,7 +552,7 @@ schro_motion_block_accumulate_slow (SchroMotion *motion, SchroFrameData *comp,
         w_x += motion->weight_x[2*(motion->xblen - motion->xoffset) - i - 1];
       }
 
-      d[i] += s[i] * w_x * w_y;
+      d[i] += (s[i]-128) * w_x * w_y;
     }
   }
 }
