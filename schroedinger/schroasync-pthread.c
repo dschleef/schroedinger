@@ -175,7 +175,7 @@ schro_async_dump (SchroAsync *async)
     SchroThread *thread = async->threads + i;
     const char *states[] = { "idle", "busy", "stopped" };
 
-    SCHRO_ERROR ("thread %d: %s", i, states[thread->state]);
+    SCHRO_WARNING ("thread %d: %s", i, states[thread->state]);
   }
 }
 
@@ -195,7 +195,7 @@ schro_async_wait_locked (SchroAsync *async)
       if (async->threads[i].state != 0) break;
     }
     if (i == async->n_threads) {
-      SCHRO_ERROR("timeout.  deadlock?");
+      SCHRO_WARNING("timeout.  deadlock?");
       schro_async_dump (async);
       return FALSE;
     }
