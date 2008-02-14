@@ -313,9 +313,9 @@ get_dc_block (SchroMotion *motion, int i, int j, int k, int x, int y)
 
   value = mvdc->dc[k];
   for(jj=0;jj<motion->yblen;jj++) {
-    int16_t *data = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
+    uint8_t *data = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
     for(ii=0;ii<motion->xblen;ii++) {
-      data[ii] = value;
+      data[ii] = value + 128;
     }
   }
 }
@@ -337,11 +337,19 @@ get_ref1_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   weight = motion->ref1_weight + motion->ref2_weight;
   shift = motion->ref_weight_precision;
 
-  for(jj=0;jj<motion->yblen;jj++) {
-    int16_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-    uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[0], jj);
-    for(ii=0;ii<motion->xblen;ii++) {
-      d[ii] = ROUND_SHIFT(s[ii] * weight, shift) - 128;
+  if (weight == (1<<shift)) {
+    for(jj=0;jj<motion->yblen;jj++) {
+      uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
+      uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[0], jj);
+      memcpy(d,s,motion->xblen);
+    }
+  } else {
+    for(jj=0;jj<motion->yblen;jj++) {
+      uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
+      uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[0], jj);
+      for(ii=0;ii<motion->xblen;ii++) {
+        d[ii] = ROUND_SHIFT(s[ii] * weight, shift);
+      }
     }
   }
 }
@@ -363,11 +371,19 @@ get_ref2_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   weight = motion->ref1_weight + motion->ref2_weight;
   shift = motion->ref_weight_precision;
 
-  for(jj=0;jj<motion->yblen;jj++) {
-    int16_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-    uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[1], jj);
-    for(ii=0;ii<motion->xblen;ii++) {
-      d[ii] = ROUND_SHIFT(s[ii] * weight, shift) - 128;
+  if (weight == (1<<shift)) {
+    for(jj=0;jj<motion->yblen;jj++) {
+      uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
+      uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[1], jj);
+      memcpy(d,s,motion->xblen);
+    }
+  } else {
+    for(jj=0;jj<motion->yblen;jj++) {
+      uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
+      uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[1], jj);
+      for(ii=0;ii<motion->xblen;ii++) {
+        d[ii] = ROUND_SHIFT(s[ii] * weight, shift);
+      }
     }
   }
 }
@@ -391,12 +407,23 @@ get_biref_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   weight1 = motion->ref2_weight;
   shift = motion->ref_weight_precision;
 
-  for(jj=0;jj<motion->yblen;jj++) {
-    int16_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-    uint8_t *s0 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[0], jj);
-    uint8_t *s1 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[1], jj);
-    for(ii=0;ii<motion->xblen;ii++) {
-      d[ii] = ROUND_SHIFT(s0[ii] * weight0 + s1[ii] * weight1, shift) - 128;
+  if (weight0 == 1 && weight1 == 1) {
+    for(jj=0;jj<motion->yblen;jj++) {
+      uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
+      uint8_t *s0 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[0], jj);
+      uint8_t *s1 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[1], jj);
+      for(ii=0;ii<motion->xblen;ii++) {
+        d[ii] = ROUND_SHIFT(s0[ii] + s1[ii], shift);
+      }
+    }
+  } else {
+    for(jj=0;jj<motion->yblen;jj++) {
+      uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
+      uint8_t *s0 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[0], jj);
+      uint8_t *s1 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[1], jj);
+      for(ii=0;ii<motion->xblen;ii++) {
+        d[ii] = ROUND_SHIFT(s0[ii] * weight0 + s1[ii] * weight1, shift);
+      }
     }
   }
 }
@@ -437,10 +464,10 @@ schro_motion_block_accumulate (SchroMotion *motion, SchroFrameData *comp,
 
   for(j=0;j<motion->yblen;j++) {
     int16_t *d = SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y + j);
-    int16_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->block, j);
+    uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->block, j);
     int16_t *w = SCHRO_FRAME_DATA_GET_LINE (&motion->obmc_weight, j);
     for(i=0;i<motion->xblen;i++) {
-      d[i] += s[i] * w[i];
+      d[i] += (s[i] - 128) * w[i];
     }
   }
 #if 0
@@ -616,8 +643,8 @@ schro_motion_render_new (SchroMotion *motion, SchroFrame *dest)
     motion->max_fast_x = (motion->width - motion->xblen) << motion->mv_precision;
     motion->max_fast_y = (motion->height - motion->yblen) << motion->mv_precision;
 
-    motion->block.data = schro_malloc (motion->xblen * motion->yblen * sizeof(int16_t));
-    motion->block.stride = motion->xblen * sizeof(int16_t);
+    motion->block.data = schro_malloc (motion->xblen * motion->yblen * sizeof(uint8_t));
+    motion->block.stride = motion->xblen * sizeof(uint8_t);
     motion->block.width = motion->xblen;
     motion->block.height = motion->yblen;
     motion->obmc_weight.data = schro_malloc (motion->xblen * motion->yblen * sizeof(int16_t));
