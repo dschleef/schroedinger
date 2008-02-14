@@ -1015,6 +1015,7 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
         /* set up params */
         params = &frame->params;
         params->num_refs = frame->num_refs;
+        params->video_format = &encoder->video_format;
         init_params (frame);
         if (params->is_noarith) {
           init_small_codeblocks (params);
@@ -1195,10 +1196,11 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
         /* set up params */
         params = &frame->params;
         params->is_lowdelay = TRUE;
+        params->video_format = &encoder->video_format;
 
         /* FIXME should be parameters */
-        params->n_horiz_slices = 16;
-        params->n_vert_slices = 16;
+        params->n_horiz_slices = params->video_format->width/16;
+        params->n_vert_slices = params->video_format->height/16;
         init_params (frame);
         //schro_params_init_lowdelay_quantisers(params);
 
