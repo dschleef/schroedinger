@@ -1778,10 +1778,35 @@ schro_upsampled_frame_get_pixel_prec3 (SchroUpsampledFrame *upframe, int k,
   w10 = ry * (4 - rx);
   w11 = ry * rx;
 
-  value = w00 * schro_upsampled_frame_get_pixel_prec1 (upframe, k, hx, hy);
-  value += w01 * schro_upsampled_frame_get_pixel_prec1 (upframe, k, hx + 1, hy);
-  value += w10 * schro_upsampled_frame_get_pixel_prec1 (upframe, k, hx, hy + 1);
-  value += w11 * schro_upsampled_frame_get_pixel_prec1 (upframe, k, hx + 1, hy + 1);
+  if (hx >= 0 && hx < 2*upframe->frames[0]->components[k].width - 1 &&
+      hy >= 0 && hy < 2*upframe->frames[0]->components[k].height - 1) {
+    SchroFrameData *comp;
+    int p;
+    int i;
+
+    i = ((hy&1)<<1) | (hx&1);
+
+    comp = upframe->frames[i]->components + k;
+    p = *SCHRO_FRAME_DATA_GET_PIXEL_U8(comp, hx>>1, hy>>1);
+    value = w00 * p;
+
+    comp = upframe->frames[i^1]->components + k;
+    p = *SCHRO_FRAME_DATA_GET_PIXEL_U8(comp, (hx+1)>>1, hy>>1);
+    value += w01 * p;
+
+    comp = upframe->frames[i^2]->components + k;
+    p = *SCHRO_FRAME_DATA_GET_PIXEL_U8(comp, hx>>1, (hy+1)>>1);
+    value += w10 * p;
+
+    comp = upframe->frames[i^3]->components + k;
+    p = *SCHRO_FRAME_DATA_GET_PIXEL_U8(comp, (hx+1)>>1, (hy+1)>>1);
+    value += w11 * p;
+  } else {
+    value = w00 * schro_upsampled_frame_get_pixel_prec1 (upframe, k, hx, hy);
+    value += w01 * schro_upsampled_frame_get_pixel_prec1 (upframe, k, hx + 1, hy);
+    value += w10 * schro_upsampled_frame_get_pixel_prec1 (upframe, k, hx, hy + 1);
+    value += w11 * schro_upsampled_frame_get_pixel_prec1 (upframe, k, hx + 1, hy + 1);
+  }
 
   return ROUND_SHIFT(value, 4);
 }

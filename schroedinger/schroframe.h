@@ -85,8 +85,8 @@ struct _SchroUpsampledFrame {
 };
 
 #define SCHRO_FRAME_DATA_GET_LINE(fd,i) (OFFSET((fd)->data,(fd)->stride*(i)))
-#define SCHRO_FRAME_DATA_GET_PIXEL_U8(fd,i,j) (OFFSET((fd)->data,(fd)->stride*(j)+(i)))
-#define SCHRO_FRAME_DATA_GET_PIXEL_S16(fd,i,j) (OFFSET((fd)->data,(fd)->stride*(j)+(i)*sizeof(int16_t)))
+#define SCHRO_FRAME_DATA_GET_PIXEL_U8(fd,i,j) ((uint8_t *)OFFSET((fd)->data,(fd)->stride*(j)+(i)))
+#define SCHRO_FRAME_DATA_GET_PIXEL_S16(fd,i,j) ((int16_t *)OFFSET((fd)->data,(fd)->stride*(j)+(i)*sizeof(int16_t)))
 
 SchroFrame * schro_frame_new (void);
 SchroFrame * schro_frame_new_and_alloc (SchroMemoryDomain *domain,
