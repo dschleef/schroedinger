@@ -12,48 +12,15 @@
 
 #include <liboil/liboilrandom.h>
 
-static void decode (unsigned char *data, int length);
+#include "common.h"
 
-void *
-getfile (const char *filename, int *length)
-{
-  FILE *file;
-  void *data;
-  int n_allocated = 0;
-  int n = 0;
-  int ret;
-
-  file = fopen (filename, "r");
-  if (!file) return NULL;
-
-  n_allocated = 4096;
-  n = 0;
-  data = malloc(n_allocated);
-  while(!feof(file)) {
-    if (n == n_allocated) {
-      n_allocated *= 2;
-      data = realloc (data, n_allocated);
-    }
-
-    ret = fread (data + n, 1, n_allocated - n, file);
-    n += ret;
-
-    if (ferror(file)) {
-      printf("error reading file\n");
-      exit(0);
-    }
-  }
-
-  fclose (file);
-  *length = n;
-  return data;
-}
+void decode (FILE *file);
+void parse (FILE *file);
 
 int
 main (int argc, char *argv[])
 {
-  unsigned char *data;
-  int length;
+  FILE *file;
 
   schro_init();
 
@@ -62,66 +29,59 @@ main (int argc, char *argv[])
     exit(1);
   }
 
-  data = getfile (argv[1], &length);
-  if (!data) {
-    exit(1);
+  file = fopen (argv[1], "r");
+  if (file == NULL) {
+    printf("cannot open %s\n", argv[1]);
+    return 1;
   }
 
-  decode (data, length);
+  decode (file);
+  //parse (file);
 
-  free(data);
+  fclose (file);
 
   return 0;
 }
 
-
 static void
-decode (unsigned char *data, int length)
+buffer_free (SchroBuffer *buf, void *priv)
+{
+  free (priv);
+}
+
+void
+decode (FILE *file)
 {
   SchroDecoder *decoder;
   SchroBuffer *buffer;
   SchroVideoFormat *format = NULL;
   SchroFrame *frame;
-  int offset = 0;
-  int packet_length;
   int go;
   int it;
   int eos = FALSE;
+  void *packet;
+  int size;
+  int ret;
 
   decoder = schro_decoder_new();
 
   while(!eos) {
-    if (length > 0) {
-      if (length < 13) {
-        printf("offset=%d: frame too short\n", offset);
-        exit(0);
-      }
-      if (memcmp(data, "BBCD", 4) != 0) {
-        printf("offset=%d: failed to find BBCD marker\n", offset);
-        exit(0);
-      }
+    ret = parse_packet (file, &packet, &size);
+    if (!ret) {
+      exit(1);
+    }
 
-      packet_length = (data[5]<<24) | (data[6]<<16) | (data[7]<<8) | (data[8]);
-      if (packet_length > 0x1000000) {
-        printf("offset=%d: large packet (%d > 0x1000000)\n", offset, packet_length);
-        exit(0);
-      }
-      if (packet_length > length) {
-        printf("offset=%d: packet past end (%d > %d)\n", offset, packet_length, length);
-        exit(0);
-      }
+    if (size == 0) {
+      schro_decoder_push_end_of_stream (decoder);
+    } else {
+      buffer = schro_buffer_new_with_data (packet, size);
+      buffer->free = buffer_free;
+      buffer->priv = packet;
 
-      buffer = schro_buffer_new_with_data (data, packet_length);
       it = schro_decoder_push (decoder, buffer);
       if (it == SCHRO_DECODER_FIRST_ACCESS_UNIT) {
         format = schro_decoder_get_video_format (decoder);
       }
-
-      offset += packet_length;
-      data += packet_length;
-      length -= packet_length;
-    } else {
-      schro_decoder_push_end_of_stream (decoder);
     }
 
     go = 1;
@@ -140,11 +100,11 @@ decode (unsigned char *data, int length)
           break;
         case SCHRO_DECODER_OK:
           frame = schro_decoder_pull (decoder);
-          printf("got frame %p\n", frame);
+          //printf("got frame %p\n", frame);
 
           if (frame) {
-            printf("picture number %d\n",
-                schro_decoder_get_picture_number (decoder) - 1);
+            //printf("picture number %d\n",
+            //    schro_decoder_get_picture_number (decoder) - 1);
 
             schro_frame_unref (frame);
           }
@@ -155,7 +115,6 @@ decode (unsigned char *data, int length)
           go = 0;
           break;
         case SCHRO_DECODER_ERROR:
-          printf("offset=%d: decoder error\n", offset);
           exit(0);
           break;
       }
@@ -165,5 +124,23 @@ decode (unsigned char *data, int length)
   printf("freeing decoder\n");
   schro_decoder_free (decoder);
   free(format);
+}
+
+void
+parse (FILE *file)
+{
+  void *packet;
+  int size;
+  int ret;
+
+  while(1) {
+    ret = parse_packet (file, &packet, &size);
+    if (!ret) {
+      exit(1);
+    }
+
+    if (packet) free (packet);
+    if (size == 0) return;
+  }
 }
 

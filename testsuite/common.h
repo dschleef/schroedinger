@@ -25,5 +25,7 @@ void frame_data_dump_full (SchroFrameData *dest, SchroFrameData *src,
 int frame_compare (SchroFrame *dest, SchroFrame *src);
 void frame_dump (SchroFrame *test, SchroFrame *ref);
 
+int parse_packet (FILE *file, void **data, int *size);
+
 #endif
 

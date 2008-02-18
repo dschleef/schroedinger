@@ -449,3 +449,55 @@ frame_dump (SchroFrame *test, SchroFrame *ref)
   }
 }
 
+/* simple parse dirac stream */
+
+
+int
+parse_packet (FILE *file, void **p_data, int *p_size)
+{
+  unsigned char *packet;
+  unsigned char header[13];
+  int n;
+  int size;
+
+  n = fread (header, 1, 13, file);
+  if (n == 0) {
+    *p_data = NULL;
+    *p_size = 0;
+    return 1;
+  }
+  if (n < 13) {
+    printf("truncated header\n");
+    return 0;
+  }
+
+  if (header[0] != 'B' || header[1] != 'B' || header[2] != 'C' ||
+      header[3] != 'D') {
+    return 0;
+  }
+
+  size = (header[5]<<24) | (header[6]<<16) | (header[7]<<8) | (header[8]);
+  if (size == 0) {
+    size = 13;
+  }
+  if (size < 13) {
+    return 0;
+  }
+  if (size > 16*1024*1024) {
+    printf("packet too large? (%d > 16777216)\n", size);
+    return 0;
+  }
+
+  packet = malloc (size);
+  memcpy (packet, header, 13);
+  n = fread (packet + 13, 1, size - 13, file);
+  if (n < size - 13) {
+    free (packet);
+    return 0;
+  }
+
+  *p_data = packet;
+  *p_size = size;
+  return 1;
+}
+
