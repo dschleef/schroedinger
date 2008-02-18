@@ -1855,60 +1855,102 @@ schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
   rx = x & 0x3;
   ry = y & 0x3;
 
-  w00 = (4 - ry) * (4 - rx);
-  w01 = (4 - ry) * rx;
-  w10 = ry * (4 - rx);
-  w11 = ry * rx;
-
-  __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy, &fd00);
-  __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx + 1, hy, &fd01);
-  __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy + 1, &fd10);
-  __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx + 1, hy + 1, &fd11);
-
-  p[0] = w00;
-  p[1] = w01;
-  p[2] = w10;
-  p[3] = w11;
-  p[4] = 8;
-  p[5] = 4;
-
-  switch (fd->width) {
+  switch ((ry<<2)|rx) {
+    case 0:
+      schro_upsampled_frame_get_block_fast_prec1 (upframe, k, hx, hy, fd);
+      break;
+    case 2:
     case 8:
-      oil_combine4_8xn_u8 (fd->data, fd->stride,
-          fd00.data, fd00.stride,
-          fd01.data, fd01.stride,
-          fd10.data, fd10.stride,
-          fd11.data, fd11.stride, p, fd->height);
-      break;
-    case 12:
-      oil_combine4_12xn_u8 (fd->data, fd->stride,
-          fd00.data, fd00.stride,
-          fd01.data, fd01.stride,
-          fd10.data, fd10.stride,
-          fd11.data, fd11.stride, p, fd->height);
-      break;
-    case 16:
-      oil_combine4_16xn_u8 (fd->data, fd->stride,
-          fd00.data, fd00.stride,
-          fd01.data, fd01.stride,
-          fd10.data, fd10.stride,
-          fd11.data, fd11.stride, p, fd->height);
+      __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy, &fd00);
+      if (rx == 0) {
+        __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy + 1, &fd10);
+      } else {
+        __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx + 1, hy, &fd10);
+      }
+
+      switch (fd->width) {
+        case 8:
+          oil_avg2_8xn_u8 (fd->data, fd->stride,
+              fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
+          break;
+        case 12:
+          oil_avg2_12xn_u8 (fd->data, fd->stride,
+              fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
+          break;
+        case 16:
+          oil_avg2_16xn_u8 (fd->data, fd->stride,
+              fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
+          break;
+        default:
+          for(j=0;j<fd->height;j++) {
+            uint8_t *data = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+            uint8_t *d00 = SCHRO_FRAME_DATA_GET_LINE (&fd00, j);
+            uint8_t *d10 = SCHRO_FRAME_DATA_GET_LINE (&fd10, j);
+
+            for(i=0;i<fd->width;i++) {
+              data[i] = (1 + d00[i] + d10[i]) >> 1;
+            }
+          }
+          break;
+      }
       break;
     default:
-      for(j=0;j<fd->height;j++) {
-        uint8_t *data = SCHRO_FRAME_DATA_GET_LINE (fd, j);
-        uint8_t *d00 = SCHRO_FRAME_DATA_GET_LINE (&fd00, j);
-        uint8_t *d01 = SCHRO_FRAME_DATA_GET_LINE (&fd01, j);
-        uint8_t *d10 = SCHRO_FRAME_DATA_GET_LINE (&fd10, j);
-        uint8_t *d11 = SCHRO_FRAME_DATA_GET_LINE (&fd11, j);
+      w00 = (4 - ry) * (4 - rx);
+      w01 = (4 - ry) * rx;
+      w10 = ry * (4 - rx);
+      w11 = ry * rx;
 
-        for(i=0;i<fd->width;i++) {
-          value = w00 * d00[i];
-          value += w01 * d01[i];
-          value += w10 * d10[i];
-          value += w11 * d11[i];
-          data[i] = ROUND_SHIFT(value, 4);
-        }
+      __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy, &fd00);
+      __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx + 1, hy, &fd01);
+      __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy + 1, &fd10);
+      __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx + 1, hy + 1, &fd11);
+
+      p[0] = w00;
+      p[1] = w01;
+      p[2] = w10;
+      p[3] = w11;
+      p[4] = 8;
+      p[5] = 4;
+
+      switch (fd->width) {
+        case 8:
+          oil_combine4_8xn_u8 (fd->data, fd->stride,
+              fd00.data, fd00.stride,
+              fd01.data, fd01.stride,
+              fd10.data, fd10.stride,
+              fd11.data, fd11.stride, p, fd->height);
+          break;
+        case 12:
+          oil_combine4_12xn_u8 (fd->data, fd->stride,
+              fd00.data, fd00.stride,
+              fd01.data, fd01.stride,
+              fd10.data, fd10.stride,
+              fd11.data, fd11.stride, p, fd->height);
+          break;
+        case 16:
+          oil_combine4_16xn_u8 (fd->data, fd->stride,
+              fd00.data, fd00.stride,
+              fd01.data, fd01.stride,
+              fd10.data, fd10.stride,
+              fd11.data, fd11.stride, p, fd->height);
+          break;
+        default:
+          for(j=0;j<fd->height;j++) {
+            uint8_t *data = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+            uint8_t *d00 = SCHRO_FRAME_DATA_GET_LINE (&fd00, j);
+            uint8_t *d01 = SCHRO_FRAME_DATA_GET_LINE (&fd01, j);
+            uint8_t *d10 = SCHRO_FRAME_DATA_GET_LINE (&fd10, j);
+            uint8_t *d11 = SCHRO_FRAME_DATA_GET_LINE (&fd11, j);
+
+            for(i=0;i<fd->width;i++) {
+              value = w00 * d00[i];
+              value += w01 * d01[i];
+              value += w10 * d10[i];
+              value += w11 * d11[i];
+              data[i] = ROUND_SHIFT(value, 4);
+            }
+          }
+          break;
       }
       break;
   }

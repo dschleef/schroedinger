@@ -406,15 +406,36 @@ get_biref_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   weight1 = motion->ref2_weight;
   shift = motion->ref_weight_precision;
 
-  /* FIXME this needs a liboil class */
-  if (0 && weight0 == 1 && weight1 == 1) {
-    for(jj=0;jj<motion->yblen;jj++) {
-      uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-      uint8_t *s0 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[0], jj);
-      uint8_t *s1 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[1], jj);
-      for(ii=0;ii<motion->xblen;ii++) {
-        d[ii] = ROUND_SHIFT(s0[ii] + s1[ii], shift);
-      }
+  if (weight0 == 1 && weight1 == 1 && shift == 1) {
+    switch (motion->xblen) {
+      case 8:
+        oil_avg2_8xn_u8(motion->block.data, motion->block.stride,
+            motion->tmp_block_ref[0].data, motion->tmp_block_ref[0].stride,
+            motion->tmp_block_ref[1].data, motion->tmp_block_ref[1].stride,
+            motion->yblen);
+        break;
+      case 12:
+        oil_avg2_12xn_u8(motion->block.data, motion->block.stride,
+            motion->tmp_block_ref[0].data, motion->tmp_block_ref[0].stride,
+            motion->tmp_block_ref[1].data, motion->tmp_block_ref[1].stride,
+            motion->yblen);
+        break;
+      case 16:
+        oil_avg2_16xn_u8(motion->block.data, motion->block.stride,
+            motion->tmp_block_ref[0].data, motion->tmp_block_ref[0].stride,
+            motion->tmp_block_ref[1].data, motion->tmp_block_ref[1].stride,
+            motion->yblen);
+        break;
+      default:
+        for(jj=0;jj<motion->yblen;jj++) {
+          uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
+          uint8_t *s0 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[0], jj);
+          uint8_t *s1 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[1], jj);
+          for(ii=0;ii<motion->xblen;ii++) {
+            d[ii] = (s0[ii] + s1[ii] + 1)>>1;
+          }
+        }
+        break;
     }
   } else {
     int16_t as[4];
