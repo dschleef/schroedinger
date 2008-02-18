@@ -1416,8 +1416,9 @@ schro_decoder_decode_block_data (SchroPicture *picture)
   SchroArith *arith[9];
   SchroUnpack unpack[9];
   int i, j;
+  uint8_t zero = 0;
 
-  memset(picture->motion->motion_vectors, 0,
+  oil_splat_u8_ns ((uint8_t *)picture->motion->motion_vectors, &zero,
       sizeof(SchroMotionVector)*params->y_num_blocks*params->x_num_blocks);
 
   for(i=0;i<9;i++){
