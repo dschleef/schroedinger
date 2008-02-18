@@ -530,7 +530,7 @@ schro_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src)
     height = MIN(dcomp->height, scomp->height);
 
     for(y=0;y<height;y++){
-      memcpy (ddata, sdata, width);
+      oil_memcpy (ddata, sdata, width);
       ddata = OFFSET(ddata, dcomp->stride);
       sdata = OFFSET(sdata, scomp->stride);
     }
@@ -560,7 +560,7 @@ schro_frame_convert_s16_s16 (SchroFrame *dest, SchroFrame *src)
     height = MIN(dcomp->height, scomp->height);
 
     for(y=0;y<height;y++){
-      memcpy (ddata, sdata, width * sizeof(int16_t));
+      oil_memcpy (ddata, sdata, width * sizeof(int16_t));
       ddata = OFFSET(ddata, dcomp->stride);
       sdata = OFFSET(sdata, scomp->stride);
     }
@@ -1259,7 +1259,7 @@ schro_frame_component_downsample (SchroFrameData *dest,
         taps, offsetshift);
   }
   for(i=0;i<5;i++){
-    memcpy (tmplist[i], tmplist[5], dest->width);
+    oil_memcpy (tmplist[i], tmplist[5], dest->width);
   }
   oil_mas12across_addc_rshift_u8 (dest->data + dest->stride * 0, tmplist,
       taps, offsetshift, dest->width);
@@ -1428,7 +1428,7 @@ schro_frame_component_planar_copy_u8 (SchroFrameData *dest,
   int j;
 
   for(j=0;j<dest->height;j++) {
-    memcpy (dest->data + dest->stride * j, src->data + src->stride * j,
+    oil_memcpy (dest->data + dest->stride * j, src->data + src->stride * j,
         dest->width);
   }
 }
@@ -1670,7 +1670,7 @@ schro_upsampled_frame_get_block_fast_prec0 (SchroUpsampledFrame *upframe, int k,
   for(j=0;j<fd->height;j++) {
     uint8_t *dest = SCHRO_FRAME_DATA_GET_LINE (fd, j);
     uint8_t *src = SCHRO_FRAME_DATA_GET_LINE (comp, y + j);
-    memcpy (dest, src + x, fd->width);
+    oil_memcpy (dest, src + x, fd->width);
   }
 }
 
@@ -1738,7 +1738,7 @@ schro_upsampled_frame_get_block_fast_prec1 (SchroUpsampledFrame *upframe, int k,
   for(j=0;j<fd->height;j++) {
     uint8_t *dest = SCHRO_FRAME_DATA_GET_LINE (fd, j);
     uint8_t *src = SCHRO_FRAME_DATA_GET_LINE (comp, y + j);
-    memcpy (dest, src + x, fd->width);
+    oil_memcpy (dest, src + x, fd->width);
   }
 }
 

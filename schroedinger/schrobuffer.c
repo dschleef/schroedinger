@@ -104,7 +104,7 @@ schro_buffer_dup (SchroBuffer * buffer)
   SchroBuffer *dup;
 
   dup = schro_buffer_new_and_alloc (buffer->length);
-  memcpy (dup->data, buffer->data, buffer->length);
+  oil_memcpy (dup->data, buffer->data, buffer->length);
 
   return dup;
 }
