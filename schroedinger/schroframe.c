@@ -1742,8 +1742,8 @@ schro_upsampled_frame_get_block_fast_prec1 (SchroUpsampledFrame *upframe, int k,
   }
 }
 
-void
-schro_upsampled_frame_get_subdata_prec1 (SchroUpsampledFrame *upframe,
+static void
+__schro_upsampled_frame_get_subdata_prec1 (SchroUpsampledFrame *upframe,
     int k, int x, int y, SchroFrameData *fd)
 {
   SchroFrameData *comp;
@@ -1756,6 +1756,13 @@ schro_upsampled_frame_get_subdata_prec1 (SchroUpsampledFrame *upframe,
   comp = upframe->frames[i]->components + k;
   fd->data = SCHRO_FRAME_DATA_GET_PIXEL_U8(comp, x, y);
   fd->stride = comp->stride;
+}
+
+void
+schro_upsampled_frame_get_subdata_prec1 (SchroUpsampledFrame *upframe,
+    int k, int x, int y, SchroFrameData *fd)
+{
+  __schro_upsampled_frame_get_subdata_prec1 (upframe, k, x, y, fd);
 }
 
 int
@@ -1853,10 +1860,10 @@ schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
   w10 = ry * (4 - rx);
   w11 = ry * rx;
 
-  schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy, &fd00);
-  schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx + 1, hy, &fd01);
-  schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy + 1, &fd10);
-  schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx + 1, hy + 1, &fd11);
+  __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy, &fd00);
+  __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx + 1, hy, &fd01);
+  __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy + 1, &fd10);
+  __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx + 1, hy + 1, &fd11);
 
   p[0] = w00;
   p[1] = w01;
