@@ -478,7 +478,7 @@ handle_packet(unsigned char *data, int size)
 
       if (!lowdelay) {
         bit = schro_unpack_decode_bit (&unpack);
-        printf("    non-default partition flag: %s\n", bit ? "yes" : "no");
+        printf("    spatial partition flag: %s\n", bit ? "yes" : "no");
         if (bit) {
           for(i=0;i<depth+1;i++){
             printf("      number of codeblocks depth=%d\n", i);
