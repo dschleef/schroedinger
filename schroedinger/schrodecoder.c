@@ -252,7 +252,7 @@ schro_decoder_reset (SchroDecoder *decoder)
   decoder->next_frame_number = 0;
   decoder->have_frame_number = FALSE;
 
-  decoder->end_of_stream;
+  decoder->end_of_stream = FALSE;
 }
 
 SchroVideoFormat *
