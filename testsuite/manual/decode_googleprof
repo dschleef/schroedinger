@@ -1,0 +1,21 @@
+#!/bin/sh
+
+if test "$1" = "" ; then
+  file=../test_stream.drc
+else
+  file="$1"
+fi
+
+if test ! -f /usr/lib/libprofiler.so -o ! -f /usr/bin/pprof ; then
+  echo This test requires the Google profiler tools.
+  exit 1
+fi
+
+CPUPROFILE=prof.out \
+LD_PRELOAD=/usr/lib/libprofiler.so \
+../.libs/lt-decode $file
+
+pprof ../.libs/lt-decode prof.out >prof
+pprof --pdf ../.libs/lt-decode prof.out >prof.pdf
+
+
