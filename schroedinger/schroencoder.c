@@ -430,7 +430,7 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
             encoder->average_arith_context_ratio *= alpha;
             encoder->average_arith_context_ratio += (1.0-alpha) * x;
           }
-          SCHRO_WARNING("arith ratio %g", encoder->average_arith_context_ratio);
+          SCHRO_DEBUG("arith ratio %g", encoder->average_arith_context_ratio);
 
         }
 
@@ -455,8 +455,6 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
           }
           SCHRO_DEBUG("buffer level %d of %d bits", encoder->buffer_level,
               encoder->buffer_size);
-          SCHRO_WARNING("buffer level %4.1f%%",
-              100.0*encoder->buffer_level/encoder->buffer_size);
         }
       }
 

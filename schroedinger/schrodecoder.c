@@ -209,7 +209,7 @@ schro_picture_unref (SchroPicture *picture)
     int i;
     int component;
 
-    SCHRO_WARNING("freeing picture %p", picture);
+    SCHRO_DEBUG("freeing picture %p", picture);
     for(component=0;component<3;component++){
       for(i=0;i<SCHRO_LIMIT_SUBBANDS;i++) {
         if (picture->subband_buffer[component][i]) {
