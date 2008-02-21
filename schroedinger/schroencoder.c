@@ -110,6 +110,7 @@ schro_encoder_new (void)
   encoder->magic_inter_b_weight = 0.5;
   encoder->magic_mc_bailout_limit = 0.25;
   encoder->magic_bailout_weight = 2.0;
+  encoder->magic_error_power = 4.0;
 
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
@@ -160,6 +161,8 @@ schro_encoder_start (SchroEncoder *encoder)
   schro_encoder_encode_codec_comment (encoder);
 
   schro_encoder_init_perceptual_weighting (encoder);
+
+  schro_encoder_init_error_tables (encoder);
 
   encoder->async = schro_async_new (0,
       (SchroAsyncScheduleFunc)schro_encoder_async_schedule,
@@ -2397,6 +2400,7 @@ static SchroEncoderSetting encoder_settings[] = {
   DOUB("magic_inter_b_weight", 0.0, 1000.0, 0.0),
   DOUB("magic_mc_bailout_limit", 0.0, 1000.0, 0.0),
   DOUB("magic_bailout_weight", 0.0, 1000.0, 0.0),
+  DOUB("magic_error_power", 0.0, 1000.0, 0.0),
 };
 
 int
@@ -2473,6 +2477,7 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(magic_inter_b_weight);
   VAR_SET(magic_mc_bailout_limit);
   VAR_SET(magic_bailout_weight);
+  VAR_SET(magic_error_power);
 }
 
 double
@@ -2524,6 +2529,7 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(magic_inter_b_weight);
   VAR_GET(magic_mc_bailout_limit);
   VAR_GET(magic_bailout_weight);
+  VAR_GET(magic_error_power);
 
   return 0;
 }

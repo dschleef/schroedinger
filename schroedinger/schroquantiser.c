@@ -423,6 +423,47 @@ measure_error_subband (SchroEncoderFrame *frame, int component, int index,
 }
 #endif
 
+typedef struct _ErrorFuncInfo ErrorFuncInfo;
+struct _ErrorFuncInfo {
+  int quant_factor;
+  int quant_offset;
+  double power;
+};
+
+static double error_pow(int x, void *priv)
+{
+  ErrorFuncInfo *efi = priv;
+  int q;
+  int value;
+  int y;
+
+  q = schro_quantise (x, efi->quant_factor, efi->quant_offset);
+  value = schro_dequantise (q, efi->quant_factor, efi->quant_offset);
+
+  y = abs (value - x);
+
+  return pow (y, efi->power);
+}
+
+void
+schro_encoder_init_error_tables (SchroEncoder *encoder)
+{
+  int i;
+
+  for(i=0;i<60;i++){
+    ErrorFuncInfo efi;
+
+    efi.quant_factor = schro_table_quant[i];
+    efi.quant_offset = schro_table_offset_1_2[i];
+    efi.power = encoder->magic_error_power;
+
+    schro_histogram_table_generate (encoder->intra_hist_tables + i,
+        error_pow, &efi);
+  }
+
+}
+
+#if 0
 static double
 schro_histogram_estimate_error (SchroHistogram *hist, int quant_index,
     int num_refs)
@@ -438,6 +479,7 @@ schro_histogram_estimate_error (SchroHistogram *hist, int quant_index,
   }
   return schro_histogram_apply_table (hist, table);
 }
+#endif
 
 #ifdef unused
 static double
@@ -601,9 +643,8 @@ schro_encoder_dump_subband_curves (SchroEncoderFrame *frame)
         error = measure_error_subband (frame, component, i, j);
         est_entropy = schro_histogram_estimate_entropy (
             &frame->subband_hists[component][i], j, params->is_noarith);
-        est_error = schro_histogram_estimate_error (
-            &frame->subband_hists[component][i], j,
-            frame->params.num_refs);
+        est_error = schro_histogram_apply_table (hist,
+            &encoder->intra_hist_table[j]);
         arith_entropy = schro_encoder_estimate_subband_arith (frame,
             component, i, j);
 
@@ -644,8 +685,8 @@ schro_encoder_calc_estimates (SchroEncoderFrame *frame)
         hist = &frame->subband_hists[component][i];
         frame->est_entropy[component][i][j] =
           schro_histogram_estimate_entropy (hist, j, params->is_noarith);
-        frame->est_error[component][i][j] =
-          schro_histogram_estimate_error (hist, j, params->num_refs);
+        frame->est_error[component][i][j] = schro_histogram_apply_table (hist,
+              &frame->encoder->intra_hist_tables[j]);
       }
     }
   }

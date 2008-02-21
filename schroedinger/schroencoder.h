@@ -253,6 +253,7 @@ struct _SchroEncoder {
   double magic_inter_b_weight;
   double magic_mc_bailout_limit;
   double magic_bailout_weight;
+  double magic_error_power;
 
   /* other */
 
@@ -287,6 +288,7 @@ struct _SchroEncoder {
   double pixels_per_degree_diag;
 
   double subband_weights[SCHRO_N_WAVELETS][SCHRO_LIMIT_TRANSFORM_DEPTH][SCHRO_LIMIT_SUBBANDS];
+  SchroHistogramTable intra_hist_tables[60];
 
   int buffer_size;
   int buffer_level;
@@ -444,6 +446,8 @@ void schro_encoder_estimate_entropy (SchroEncoderFrame *frame);
 void schro_encoder_recalculate_allocations (SchroEncoder *encoder);
 
 void schro_encoder_calculate_test_info (SchroEncoderFrame *frame);
+
+void schro_encoder_init_error_tables (SchroEncoder *encoder);
 
 #endif
 
