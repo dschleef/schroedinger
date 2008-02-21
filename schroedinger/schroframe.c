@@ -1613,6 +1613,8 @@ schro_upsampled_frame_free (SchroUpsampledFrame *df)
 void
 schro_upsampled_frame_upsample (SchroUpsampledFrame *df)
 {
+  int k;
+
   if (df->frames[1]) return;
 
   df->frames[1] = schro_frame_new_and_alloc (df->frames[0]->domain,
@@ -1621,9 +1623,65 @@ schro_upsampled_frame_upsample (SchroUpsampledFrame *df)
       df->frames[0]->format, df->frames[0]->width, df->frames[0]->height);
   df->frames[3] = schro_frame_new_and_alloc (df->frames[0]->domain,
       df->frames[0]->format, df->frames[0]->width, df->frames[0]->height);
+
+#if 1
+  for(k=0;k<3;k++){
+    const int16_t taps[8] = { -1, 3, -7, 21, 21, -7, 3, -1 };
+    const int16_t offsetshift[2] = { 16, 5 };
+    int i, j;
+    SchroFrameData *scomp;
+    SchroFrameData *d1comp;
+    SchroFrameData *d2comp;
+    SchroFrameData *d3comp;
+    uint8_t *list[8];
+    int j0;
+
+    scomp = &df->frames[0]->components[k];
+    d1comp = &df->frames[1]->components[k];
+    d2comp = &df->frames[2]->components[k];
+    d3comp = &df->frames[3]->components[k];
+
+    for(j=0;j<scomp->height + 10;j++){
+      j0 = j;
+      if (j0 >= 0 && j0 < scomp->height) {
+        schro_cog_mas8_u8_edgeextend (
+            SCHRO_FRAME_DATA_GET_LINE(d1comp, j0),
+            SCHRO_FRAME_DATA_GET_LINE(scomp, j0),
+            taps, 16, 5, 3, scomp->width);
+      }
+
+      j0 = j;
+      if (j0 >= 0 && j0 < scomp->height) {
+        if (j0 < 3 || j0 >= scomp->height - 4) {
+          for (i=0;i<8;i++) {
+            list[i] = SCHRO_FRAME_DATA_GET_LINE(scomp,
+                CLAMP(i+j0-3,0,scomp->height-1));
+          }
+          mas8_across_u8_slow (SCHRO_FRAME_DATA_GET_LINE(d2comp, j0), list,
+            taps, offsetshift, scomp->width);
+        } else {
+          SCHRO_ASSERT(j0-3 >= 0);
+          SCHRO_ASSERT(j0-3+7 < scomp->height);
+          oil_mas8_across_u8 (SCHRO_FRAME_DATA_GET_LINE(d2comp, j0),
+              SCHRO_FRAME_DATA_GET_LINE (scomp, j0-3), scomp->stride,
+              taps, offsetshift, scomp->width);
+        }
+      }
+
+      j0 = j - 8;
+      if (j0 >= 0 && j0 < scomp->height) {
+        schro_cog_mas8_u8_edgeextend (
+            SCHRO_FRAME_DATA_GET_LINE(d3comp, j0),
+            SCHRO_FRAME_DATA_GET_LINE(d2comp, j0),
+            taps, 16, 5, 3, scomp->width);
+      }
+    }
+  }
+#else
   schro_frame_upsample_horiz (df->frames[1], df->frames[0]);
   schro_frame_upsample_vert (df->frames[2], df->frames[0]);
   schro_frame_upsample_horiz (df->frames[3], df->frames[2]);
+#endif
 }
 
 int
