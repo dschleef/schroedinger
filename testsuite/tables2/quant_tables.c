@@ -3,6 +3,8 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include <schroedinger/schrohistogram.h>
+
 unsigned int
 get_quant (int i)
 {
@@ -84,9 +86,26 @@ quantize (int value, int quant_factor, int quant_offset)
   return value;
 }
 
-static double pow2(double x)
+typedef struct _ErrorFuncInfo ErrorFuncInfo;
+struct _ErrorFuncInfo {
+  int quant_factor;
+  int quant_offset;
+  double power;
+};
+
+static double error_pow2(int x, void *priv)
 {
-  return x*x;
+  ErrorFuncInfo *efi = priv;
+  int q;
+  int value;
+  int y;
+
+  q = quantize (x, efi->quant_factor, efi->quant_offset);
+  value = dequantize (q, efi->quant_factor, efi->quant_offset);
+
+  y = abs (value - x);
+
+  return pow (y, efi->power);
 }
 
 static int
@@ -218,29 +237,19 @@ main (int argc, char *argv[])
   printf("const double schro_table_error_hist_shift3_1_2[60][%d] = {\n",
       ((16-SHIFT)<<SHIFT));
   for(i=0;i<60;i++){
-    int quant_factor = get_quant(i);
-    int quant_offset = get_offset_1_2(i);
+    SchroHistogramTable table;
+    ErrorFuncInfo efi;
     int j;
 
-    printf("  { /* %d */\n", i);
-    for(j=0;j<((16-SHIFT)<<SHIFT);j++){
-      int kmin = iexpx(j);
-      int kmax = iexpx(j+1);
-      int k;
-      double x = 0;
-      int value;
-      int q;
+    efi.quant_factor = get_quant(i);
+    efi.quant_offset = get_offset_1_2(i);
+    efi.power = 2.0;
+    schro_histogram_table_generate (&table, error_pow2, &efi);
 
+    printf("  { /* %d */\n", i);
+    for(j=0;j<SCHRO_HISTOGRAM_SIZE;j++){
       if ((j&0x7)==0) printf("    ");
-      for(k=kmin;k<kmax;k++){
-        q = quantize(abs(k), quant_factor, quant_offset);
-        value = dequantize(q, quant_factor, quant_offset);
-        x += pow2(value - k);
-      }
-      if ((j>>SHIFT) > 0) {
-        x *= 1.0/(1<<((j>>SHIFT)-1));
-      }
-      printf("%g, ", x);
+      printf("%g, ", table.weights[j]);
       if ((j&0x7)==0x7) printf("\n");
     }
     printf("  },\n");
