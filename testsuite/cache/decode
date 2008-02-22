@@ -1,0 +1,12 @@
+#!/bin/sh
+
+../decode /dev/null
+
+opcontrol -i ./.libs/lt-upsample_speed
+opcontrol --reset
+opcontrol --separate=lib -e CPU_CLK_UNHALTED:3000:0:0:1 --start
+../decode
+opcontrol -h
+
+opreport -l
+
