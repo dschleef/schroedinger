@@ -110,7 +110,7 @@ schro_encoder_new (void)
   encoder->magic_inter_b_weight = 0.5;
   encoder->magic_mc_bailout_limit = 0.25;
   encoder->magic_bailout_weight = 2.0;
-  encoder->magic_error_power = 4.0;
+  encoder->magic_error_power = 2.0;
 
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
