@@ -17,7 +17,6 @@
 
 
 int16_t tmp[2048+100];
-int16_t *data;
 
 int oil_profile_get_min (OilProfile *prof)
 {
@@ -35,40 +34,40 @@ int oil_profile_get_min (OilProfile *prof)
 }
 
 void
-wavelet_speed (int filter, int width, int height)
+upsample_speed (int filter, int width, int height)
 {
   OilProfile prof1;
-  OilProfile prof2;
-  double ave_horiz, ave_vert;
+  double ave;
   int i;
   SchroFrame *frame1;
   SchroFrame *frame2;
+  SchroUpsampledFrame *upframe;
+  SchroMemoryDomain *mem;
 
-  frame1 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_444, width, height);
-  frame2 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_444, width, height);
+  mem = schro_memory_domain_new_local ();
+  frame1 = schro_frame_new_and_alloc (mem, SCHRO_FRAME_FORMAT_U8_444, width, height);
+  frame2 = schro_frame_new_and_alloc (mem, SCHRO_FRAME_FORMAT_U8_444, width, height);
 
   oil_profile_init (&prof1);
-  oil_profile_init (&prof2);
 
-  schro_frame_upsample_horiz (frame2, frame1);
-  schro_frame_upsample_vert (frame2, frame1);
-  for(i=0;i<10;i++){
+  upframe = schro_upsampled_frame_new (schro_frame_ref(frame1));
+  schro_upsampled_frame_upsample (upframe);
+  schro_upsampled_frame_free (upframe);
+  for(i=0;i<10;i++) {
+    upframe = schro_upsampled_frame_new (schro_frame_ref(frame1));
     oil_profile_start (&prof1);
-    schro_frame_upsample_horiz (frame2, frame1);
+    schro_upsampled_frame_upsample (upframe);
     oil_profile_stop (&prof1);
-
-    oil_profile_start (&prof2);
-    schro_frame_upsample_vert (frame2, frame1);
-    oil_profile_stop (&prof2);
+    schro_upsampled_frame_free (upframe);
   }
 
-  ave_horiz = oil_profile_get_min (&prof1);
-  ave_vert = oil_profile_get_min (&prof2);
-  printf("%d %d %g %g %g %g\n", width, height, ave_horiz, ave_vert,
-      ave_horiz/(width*height), ave_vert/(width*height));
+  ave = oil_profile_get_min (&prof1);
+  printf("%d %d %g %g\n", width, height, ave, ave/(width*height));
 
   schro_frame_unref (frame1);
   schro_frame_unref (frame2);
+
+  schro_memory_domain_free (mem);
 }
 
 
@@ -79,19 +78,9 @@ main (int argc, char *argv[])
 
   oil_init();
 
-  data = malloc(2048*512*2);
-
-#if 0
-  for(i=0;i<8;i++){
-    printf("wavelet %d\n", i);
-    wavelet_speed (i, 256, 256);
-  }
-#endif
   for(i=16;i<=2048;i+=16){
-    wavelet_speed (1, i, 256);
+    upsample_speed (1, i, (i*9)/16);
   }
-
-  free(data);
 
   return 0;
 }
