@@ -197,6 +197,7 @@ schroedinger/cuda/Makefile
 schroedinger/opengl/Makefile
 gst/Makefile
 testsuite/Makefile
+testsuite/cache/Makefile
 testsuite/check/Makefile
 testsuite/cuda/Makefile
 testsuite/perf/Makefile

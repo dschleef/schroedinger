@@ -1,6 +1,6 @@
 
 SUBDIRS = . check perf coder installation prototype streams tables2 dirac \
-	  manual
+	  manual cache
 
 if HAVE_CUDA
 SUBDIRS += cuda
@@ -16,7 +16,7 @@ buildnoinst_LTLIBRARIES = libschrotest.la
 noinst_PROGRAMS = arith arith_encode \
 	 encode wavelet wavelet_2d \
 	 obmc phasecorrelation motion \
-	 quant decode \
+	 quant decode divide \
 	 global_motion upsample \
 	 motion2 sort filter ssim gaussian fft \
 	 wavelet_gain wavelet_noise_gain \
