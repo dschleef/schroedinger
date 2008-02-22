@@ -50,6 +50,20 @@ class Plot:
 		self.range_ymin=float(ymin);
 		self.range_ymax=float(ymax);
 
+	def set_x_range_data (self, data):
+		xmin = min(data);
+		xmax = max(data);
+		print "x range %g %g" % (xmin, xmax);
+		self.range_xmin=float(xmin);
+		self.range_xmax=float(xmax);
+
+	def set_y_range_data (self, data):
+		ymin = min(data);
+		ymax = max(data);
+		print "y range %g %g" % (ymin, ymax);
+		self.range_ymin=float(ymin);
+		self.range_ymax=float(ymax);
+
 	def set_sane_ticks (self):
 		logrange = math.log10((self.range_xmax - self.range_xmin)/3);
 		tick = math.pow(10, math.floor(logrange));
@@ -179,7 +193,7 @@ def readdata(filename):
 
 def plot_mse():
 	plot = Plot(800,600);
-	plot.set_x_range(0, len(pts));
+	plot.set_x_range_data(tpts[0]);
 	m = max(Numeric.transpose(tpts[14]));
 	#plot.set_x_range(0, m);
 	plot.set_y_range(0, m);
@@ -208,7 +222,7 @@ def plot_mse():
 
 def plot_buffer_level():
 	plot = Plot(800,600);
-	plot.set_x_range(0, len(pts));
+	plot.set_x_range_data(tpts[0]);
 	m = max(Numeric.transpose(tpts[11]));
 	plot.set_y_range(0, m);
 
@@ -228,11 +242,147 @@ def plot_buffer_level():
 
 	plot.surface.write_to_png('00000-buffer-level.png');
 
+def plot_bits_per_pic():
+	plot = Plot(800,600);
+	plot.set_x_range_data(tpts[0]);
+
+	data_x = Numeric.transpose(tpts[0]);
+	data_y1 = Numeric.transpose(tpts[8]);
+	data_y2 = Numeric.transpose(tpts[9]);
+	data_y = Numeric.transpose(tpts[8]+tpts[9]);
+	m = max(Numeric.transpose(data_y));
+	plot.set_y_range(0, m);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose([data_x,data_y]));
+
+	plot.ctx.set_source_rgb (0, 1, 0);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose([data_x,data_y1]));
+
+	plot.ctx.set_source_rgb (0, 0, 1);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose([data_x,data_y2]));
+
+	plot.ctx.set_source_rgb (0.5, 0.5, 0.5);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose([data_x,Numeric.transpose(tpts[3])]));
+
+	plot.ctx.set_source_rgb (0.5, 0.5, 0.5);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose([data_x,Numeric.transpose(tpts[4])]));
+
+	plot.surface.write_to_png('00000-bits-per-pic.png');
+
+def plot_est_act_residual():
+	plot = Plot(800,600);
+	mx = max(Numeric.transpose(tpts[7]));
+	my = max(Numeric.transpose(tpts[9]));
+	m = max(mx,my);
+	plot.set_x_range(0, m);
+	plot.set_y_range(0, m);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (0, 1, 0);
+	plot.with_lines = 1;
+	plot.draw_plot ( [[0,0],[m,m]]);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose(tpts[7:10:2]));
+
+	plot.surface.write_to_png('00000-est-act-residual.png');
+
+def plot_alloc_est_residual():
+	plot = Plot(800,600);
+	mx = max(Numeric.transpose(tpts[4]));
+	my = max(Numeric.transpose(tpts[7]));
+	m = max(mx,my);
+	plot.set_x_range(0, m);
+	plot.set_y_range(0, m);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (0, 1, 0);
+	plot.with_lines = 1;
+	plot.draw_plot ( [[0,0],[m,m]]);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose(tpts[4:8:3]));
+
+	plot.surface.write_to_png('00000-alloc-est-residual.png');
+
+def plot_est_act_mc():
+	plot = Plot(800,600);
+	mx = max(Numeric.transpose(tpts[6]));
+	my = max(Numeric.transpose(tpts[8]));
+	m = max(mx,my);
+	plot.set_x_range(0, m);
+	plot.set_y_range(0, m);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (0, 1, 0);
+	plot.with_lines = 1;
+	plot.draw_plot ( [[0,0],[m,m]]);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose(tpts[6:9:2]));
+
+	plot.surface.write_to_png('00000-est-act-mc.png');
+
 
 pts = readdata("schro_dump.picture");
+#pts = pts[700:1000];
 tpts = Numeric.transpose(pts);
 
 plot_mse();
 plot_buffer_level();
+plot_alloc_est_residual();
+plot_est_act_residual();
+plot_est_act_mc();
+plot_bits_per_pic();
 
 
