@@ -19,7 +19,8 @@ list="$all"
 #list=SD-CBR-3Mb
 list=HD720-CBR-5Mb
 
-extraopts="enable-bigblock-estimation=true enable-hierarchical-estimation=false"
+#extraopts="enable-bigblock-estimation=true enable-hierarchical-estimation=false"
+extraopts=""
 export SCHRO_DUMP=1
 
 trap exit INT
