@@ -190,7 +190,11 @@ get_pixel (SchroMotion *motion, int k, SchroUpsampledFrame *upframe,
 static int
 get_ramp (int x, int offset)
 {
-  return 1 + (6 * (x+1) + offset)/(2*offset + 1);
+  if (offset == 1) {
+    if (x == 0) return 3;
+    return 5;
+  }
+  return 1 + (6 * x + offset - 1)/(2*offset - 1);
 }
 
 
