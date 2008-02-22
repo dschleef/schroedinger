@@ -46,6 +46,16 @@ schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
     metric += m;
     oil_sad16x16_u8 (&m, a + 16, a_stride, b + 16, b_stride);
     metric += m;
+  } else if ((height&15) == 0 && (width&15) == 0) {
+    uint32_t m;
+    metric = 0;
+    for(j=0;j<height;j+=16){
+      for(i=0;i<width;i+=16){
+        oil_sad16x16_u8 (&m, a + i + j*a_stride, a_stride,
+            b + i + j*b_stride, b_stride);
+        metric += m;
+      }
+    }
   } else if ((height&7) == 0 && (width&7) == 0) {
     uint32_t m;
     metric = 0;
