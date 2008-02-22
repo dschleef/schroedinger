@@ -97,8 +97,8 @@ schro_utils_multiplier_to_quant_index (double x)
 }
 
 
-int
-schro_dequantise (int q, int quant_factor, int quant_offset)
+static int
+__schro_dequantise (int q, int quant_factor, int quant_offset)
 {
   if (q == 0) return 0;
   if (q < 0) {
@@ -109,7 +109,13 @@ schro_dequantise (int q, int quant_factor, int quant_offset)
 }
 
 int
-schro_quantise (int value, int quant_factor, int quant_offset)
+schro_dequantise (int q, int quant_factor, int quant_offset)
+{
+  return __schro_dequantise(q,quant_factor,quant_offset);
+}
+
+static int
+__schro_quantise (int value, int quant_factor, int quant_offset)
 {
   unsigned int x;
 
@@ -133,17 +139,32 @@ schro_quantise (int value, int quant_factor, int quant_offset)
   return value;
 }
 
+int
+schro_quantise (int value, int quant_factor, int quant_offset)
+{
+  return __schro_quantise (value, quant_factor, quant_offset);
+}
+
 void
 schro_quantise_s16 (int16_t *dest, int16_t *src, int quant_factor,
     int quant_offset, int n)
 {
   int i;
   for(i=0;i<n;i++){
-    dest[i] = schro_quantise (src[i], quant_factor, quant_offset);
-    src[i] = schro_dequantise (dest[i], quant_factor, quant_offset);
+    dest[i] = __schro_quantise (src[i], quant_factor, quant_offset);
+    src[i] = __schro_dequantise (dest[i], quant_factor, quant_offset);
   }
 }
 
+void
+schro_dequantise_s16 (int16_t *dest, int16_t *src, int quant_factor,
+    int quant_offset, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    dest[i] = __schro_dequantise (src[i], quant_factor, quant_offset);
+  }
+}
 
 /* log(2.0) */
 #define LOG_2 0.69314718055994528623

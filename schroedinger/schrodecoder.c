@@ -1922,12 +1922,12 @@ static void
 codeblock_line_decode_noarith (SchroPictureSubbandContext *ctx,
     int16_t *line)
 {
-  int i;
+  int n = ctx->xmax - ctx->xmin;
 
-  for(i=ctx->xmin;i<ctx->xmax;i++){
-    line[i] = schro_dequantise (schro_unpack_decode_sint (&ctx->unpack),
-        ctx->quant_factor, ctx->quant_offset);
-  }
+  line += ctx->xmin;
+
+  schro_unpack_decode_sint_s16 (line, &ctx->unpack, n);
+  schro_dequantise_s16 (line, line, ctx->quant_factor, ctx->quant_offset, n);
 }
 
 #if 0
