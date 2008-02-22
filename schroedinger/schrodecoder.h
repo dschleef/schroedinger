@@ -9,6 +9,8 @@
 #include <schroedinger/schrounpack.h>
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schroqueue.h>
+#include <schroedinger/schroasync.h>
+#include <schroedinger/schroarith.h>
 
 SCHRO_BEGIN_DECLS
 

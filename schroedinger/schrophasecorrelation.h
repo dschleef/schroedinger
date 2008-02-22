@@ -3,6 +3,7 @@
 #define __SCHRO_PHASECORRELATION_H__
 
 #include <schroedinger/schroencoder.h>
+#include <schroedinger/schromotionest.h>
 
 SCHRO_BEGIN_DECLS
 

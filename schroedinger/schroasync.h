@@ -3,6 +3,7 @@
 #define __SCHRO_ASYNC_H__
 
 #include <schroedinger/schroutils.h>
+#include <schroedinger/schrodomain.h>
 
 SCHRO_BEGIN_DECLS
 
