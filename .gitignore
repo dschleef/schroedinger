@@ -20,8 +20,8 @@ ltmain.sh
 missing
 schroedinger-uninstalled.pc
 schroedinger.pc
-schroedinger-0.9-uninstalled.pc
-schroedinger-0.9.pc
+schroedinger-1.0-uninstalled.pc
+schroedinger-1.0.pc
 schroedinger.spec
 .libs
 *.la
