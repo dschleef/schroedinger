@@ -7,7 +7,7 @@ obmc
 phasecorrelation
 motion
 quant
-decode
+./decode
 global_motion
 upsample
 motion2
