@@ -1660,15 +1660,13 @@ schro_upsampled_frame_upsample (SchroUpsampledFrame *df)
           mas8_across_u8_slow (SCHRO_FRAME_DATA_GET_LINE(d2comp, j0), list,
             taps, offsetshift, scomp->width);
         } else {
-          SCHRO_ASSERT(j0-3 >= 0);
-          SCHRO_ASSERT(j0-3+7 < scomp->height);
           oil_mas8_across_u8 (SCHRO_FRAME_DATA_GET_LINE(d2comp, j0),
               SCHRO_FRAME_DATA_GET_LINE (scomp, j0-3), scomp->stride,
               taps, offsetshift, scomp->width);
         }
       }
 
-      j0 = j - 8;
+      j0 = j - 0;
       if (j0 >= 0 && j0 < scomp->height) {
         schro_cog_mas8_u8_edgeextend (
             SCHRO_FRAME_DATA_GET_LINE(d3comp, j0),
