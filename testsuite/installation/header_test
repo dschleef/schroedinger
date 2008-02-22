@@ -9,7 +9,7 @@ else
 fi
 
 CC=gcc
-pkg=schroedinger-0.1
+pkg=schroedinger-0.9
 includedir=$(pkg-config --variable=includedir ${pkg})
 
 CFLAGS="-Wall -Werror $(pkg-config --cflags ${pkg}) -DSCHRO_ENABLE_UNSTABLE_API"
