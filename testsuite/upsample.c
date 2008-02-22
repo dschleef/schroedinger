@@ -53,14 +53,16 @@ void test (int width, int height)
 {
   SchroFrame *frame;
   SchroFrame *frame_ref;
+  SchroFrame *frame_1;
   SchroFrame *frame_test;
+  SchroUpsampledFrame *upframe;
   char name[TEST_PATTERN_NAME_SIZE];
   int i;
   int ok;
 
   frame = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420, width, height);
   frame_ref = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420, width, height);
-  frame_test = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420, width, height);
+  frame_1 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420, width, height);
 
   printf("HORIZONTAL %dx%d\n", width, height);
   for(i=0;i<test_pattern_get_n_generators();i++){
@@ -69,8 +71,10 @@ void test (int width, int height)
     test_pattern_generate (frame->components + 2, name, i);
 
     ref_h_upsample (frame_ref, frame);
-    schro_frame_upsample_horiz (frame_test, frame);
+    upframe = schro_upsampled_frame_new (schro_frame_ref(frame));
+    schro_upsampled_frame_upsample (upframe);
 
+    frame_test = upframe->frames[1];
     ok = frame_compare (frame_ref, frame_test);
     printf("  pattern %s: %s\n", name, ok ? "OK" : "broken");
     if (dump_all || !ok) {
@@ -78,6 +82,8 @@ void test (int width, int height)
           frame_ref->components + 0, frame->components + 0);
       failed = TRUE;
     }
+
+    schro_upsampled_frame_free (upframe);
   }
 
   printf("VERTICAL %dx%d\n", width, height);
@@ -87,8 +93,10 @@ void test (int width, int height)
     test_pattern_generate (frame->components + 2, name, i);
 
     ref_v_upsample (frame_ref, frame);
-    schro_frame_upsample_vert (frame_test, frame);
+    upframe = schro_upsampled_frame_new (schro_frame_ref(frame));
+    schro_upsampled_frame_upsample (upframe);
 
+    frame_test = upframe->frames[2];
     ok = frame_compare (frame_ref, frame_test);
     printf("  pattern %s: %s\n", name, ok ? "OK" : "broken");
     if (dump_all || !ok) {
@@ -96,11 +104,35 @@ void test (int width, int height)
           frame_ref->components + 0, frame->components + 0);
       failed = TRUE;
     }
+
+    schro_upsampled_frame_free (upframe);
+  }
+
+  printf("HV %dx%d\n", width, height);
+  for(i=0;i<test_pattern_get_n_generators();i++){
+    test_pattern_generate (frame->components + 0, name, i);
+    test_pattern_generate (frame->components + 1, name, i);
+    test_pattern_generate (frame->components + 2, name, i);
+
+    ref_v_upsample (frame_1, frame);
+    ref_h_upsample (frame_ref, frame_1);
+    upframe = schro_upsampled_frame_new (schro_frame_ref(frame));
+    schro_upsampled_frame_upsample (upframe);
+
+    frame_test = upframe->frames[3];
+    ok = frame_compare (frame_ref, frame_test);
+    printf("  pattern %s: %s\n", name, ok ? "OK" : "broken");
+    if (dump_all || !ok) {
+      frame_data_dump_full (frame_test->components + 0,
+          frame_ref->components + 0, frame->components + 0);
+      failed = TRUE;
+    }
+
+    schro_upsampled_frame_free (upframe);
   }
 
   schro_frame_unref (frame);
   schro_frame_unref (frame_ref);
-  schro_frame_unref (frame_test);
 }
 
 
