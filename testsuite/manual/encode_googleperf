@@ -2,7 +2,7 @@
 
 
 GST_LAUNCH=$(type -p gst-launch-0.10)
-if test "$GST_LAUNCH" == "" ; then
+if test "$GST_LAUNCH" = "" ; then
   echo This test requires GStreamer
 fi
 
