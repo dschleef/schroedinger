@@ -68,11 +68,16 @@ if HAVE_OPENGL
 opengl_libs = opengl/libopengl.la
 endif
 
+if HAVE_PTHREAD
+async_sources = schroasync-pthread.c
+else
+async_sources = schroasync-none.c
+endif
+
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schro.c \
 	schroanalysis.c \
 	schroarith.c \
-	schroasync-pthread.c \
 	schrocog.c \
 	schrodecoder.c \
 	schrodebug.c \
@@ -103,7 +108,9 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrovideoformat.c \
 	schrowavelet.c \
 	schrowavelettables.c \
-	$(cuda_sources)
+	$(cuda_sources) \
+	$(async_sources)
+
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = \
 	$(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ERROR_CFLAGS) \
@@ -115,7 +122,8 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = \
 	$(CUDA_LIBS) \
 	$(opengl_libs) \
 	$(OPENGL_LIBS) \
-	$(LIBOIL_LIBS)
+	$(LIBOIL_LIBS) \
+	$(PTHREAD_LIBS)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-no-undefined \
 	-version-info $(SCHRO_LIBVERSION) \

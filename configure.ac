@@ -39,6 +39,9 @@ dnl the version check needs to stay here because autopoint greps for it
 #AM_GNU_GETTEXT_VERSION([0.11.5])
 #AM_GNU_GETTEXT([external])
 
+AC_CHECK_LIBM
+AC_SUBST(LIBM)
+
 dnl liboil is required
 OIL_VER="0.3.13"
 PKG_CHECK_MODULES(LIBOIL, liboil-0.3 >= $OIL_VER, HAVE_LIBOIL=yes, HAVE_LIBOIL=no)
@@ -46,8 +49,18 @@ if test "x${HAVE_LIBOIL}" != xyes ; then
   AC_ERROR([liboil-0.3 >= $OIL_VER is required])
 fi
 
+AC_ARG_WITH([pthread],
+    AS_HELP_STRING([--with-pthread],[use pthread library [[default=yes]]]),
+    [],
+    [with_pthread=yes])
+if test "x${with_pthread}" = "xyes" ; then
+  PTHREAD_LIBS="-lpthread"
+  AC_SUBST(PTHREAD_LIBS)
+fi
+AM_CONDITIONAL(HAVE_PTHREAD, test "x$with_pthread" = "xyes")
+
 AC_ARG_WITH([opengl],
-    AS_HELP_STRING([--with-opengl=PATH],[prefix where OpenGL is installed [default=no]]),
+    AS_HELP_STRING([--with-opengl=PATH],[prefix where OpenGL is installed [[default=no]]]),
     [],
     [with_opengl=no])
 
@@ -118,7 +131,7 @@ AC_DEFINE(GST_PACKAGE_ORIGIN, "unknown", [Package origin in GStreamer plugin])
 # Check for CUDA
 ########################
 AC_ARG_WITH([cuda],
-    AS_HELP_STRING([--with-cuda=PATH],[prefix where cuda is installed [default=no]]),
+    AS_HELP_STRING([--with-cuda=PATH],[prefix where cuda is installed [[default=no]]]),
     [],
     [with_cuda=no])
 if test "x$with_cuda" = xyes; then
@@ -180,7 +193,7 @@ AM_CONDITIONAL(BUILD_BROKEN_TESTS, false)
 
 SCHRO_LIBS="\$(top_builddir)/schroedinger/libschroedinger-$SCHRO_MAJORMINOR.la"
 # hack around ld bug
-SCHRO_LIBS="$SCHRO_LIBS $LIBOIL_LIBS $CUDA_LIBS -lpthread"
+SCHRO_LIBS="$SCHRO_LIBS $LIBOIL_LIBS $CUDA_LIBS $PTHREAD_LIBS $LIBM"
 #SCHRO_LIBS="$SCHRO_LIBS -lprofiler"
 AC_SUBST(SCHRO_LIBS)
 
