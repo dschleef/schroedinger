@@ -6,6 +6,7 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schroasync.h>
 #include <schroedinger/schrodebug.h>
+#include <schroedinger/schrodomain.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,8 +18,12 @@ struct _SchroAsync {
 
   void *done_priv;
 
-  int (*schedule) (void *);
+  SchroAsyncScheduleFunc schedule;
+  SchroAsyncCompleteFunc complete;
   void *schedule_closure;
+
+  void (*task_func)(void *);
+  void *task_priv;
 };
 
 struct _SchroThread {
@@ -28,7 +33,9 @@ struct _SchroThread {
 };
 
 SchroAsync *
-schro_async_new(int n_threads, int (*schedule)(void *), void *closure)
+schro_async_new(int n_threads,
+    SchroAsyncScheduleFunc schedule,
+    SchroAsyncCompleteFunc complete, void *closure)
 {
   SchroAsync *async;
 
@@ -36,6 +43,7 @@ schro_async_new(int n_threads, int (*schedule)(void *), void *closure)
 
   async->schedule = schedule;
   async->schedule_closure = closure;
+  async->complete = complete;
 
   return async;
 }
@@ -49,9 +57,10 @@ schro_async_free (SchroAsync *async)
 void
 schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 {
-  func (ptr);
+  SCHRO_ASSERT(async->task_func == NULL);
 
-  async->done_priv = ptr;
+  async->task_func = func;
+  async->task_priv = ptr;
 }
 
 int schro_async_get_num_completed (SchroAsync *async)
@@ -91,22 +100,38 @@ schro_async_pull_locked (SchroAsync *async)
   return ptr;
 }
 
-void
+int
 schro_async_wait_locked (SchroAsync *async)
 {
-  async->schedule (async->schedule_closure);
+  async->schedule (async->schedule_closure, SCHRO_EXEC_DOMAIN_CPU);
+  if (async->task_func) {
+    async->task_func (async->task_priv);
+    async->task_func = NULL;
+    async->complete (async->task_priv);
+  }
+  return TRUE;
 }
 
 void
 schro_async_wait_one (SchroAsync *async)
 {
-  async->schedule (async->schedule_closure);
+  async->schedule (async->schedule_closure, SCHRO_EXEC_DOMAIN_CPU);
+  if (async->task_func) {
+    async->task_func (async->task_priv);
+    async->task_func = NULL;
+    async->complete (async->task_priv);
+  }
 }
 
 void
 schro_async_wait (SchroAsync *async, int min_waiting)
 {
-  async->schedule (async->schedule_closure);
+  async->schedule (async->schedule_closure, SCHRO_EXEC_DOMAIN_CPU);
+  if (async->task_func) {
+    async->task_func (async->task_priv);
+    async->task_func = NULL;
+    async->complete (async->task_priv);
+  }
 }
 
 void schro_async_lock (SchroAsync *async)
