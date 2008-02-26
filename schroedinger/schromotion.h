@@ -7,8 +7,6 @@
 
 SCHRO_BEGIN_DECLS
 
-typedef struct _SchroObmc SchroObmc;
-typedef struct _SchroObmcRegion SchroObmcRegion;
 typedef struct _SchroMotionVector SchroMotionVector;
 typedef struct _SchroMotionVectorDC SchroMotionVectorDC;
 typedef struct _SchroMotionField SchroMotionField;
@@ -44,27 +42,6 @@ struct _SchroMotionField {
   SchroMotionVector *motion_vectors;
 };
 
-struct _SchroObmcRegion {
-  int16_t *weights[3];
-  int start_x;
-  int start_y;
-  int end_x;
-  int end_y;
-};
-
-struct _SchroObmc {
-  SchroObmcRegion regions[9];
-  int16_t *region_data;
-  int16_t *horiz_ramp;
-  int16_t *vert_ramp;
-  int x_ramp;
-  int y_ramp;
-  int x_len;
-  int y_len;
-  int x_sep;
-  int y_sep;
-};
-
 struct _SchroMotion {
   SchroUpsampledFrame *src1;
   SchroUpsampledFrame *src2;
@@ -74,8 +51,6 @@ struct _SchroMotion {
   int sx_max;
   int sy_max;
   uint8_t *tmpdata;
-  SchroObmc *obmc_luma;
-  SchroObmc *obmc_chroma;
   uint8_t *blocks[3];
   int strides[3];
 
@@ -122,10 +97,6 @@ void schro_motion_dc_prediction (SchroMotion *motion,
     int x, int y, int *pred);
 int schro_motion_get_global_prediction (SchroMotion *motion,
     int x, int y);
-
-void schro_obmc_init (SchroObmc *obmc, int x_len, int y_len,
-    int x_sep, int y_sep, int ref1_weight, int ref2_weight, int ref_shift);
-void schro_obmc_cleanup (SchroObmc *obmc);
 
 int schro_motion_vector_is_equal (SchroMotionVector *mv1, SchroMotionVector *mv2);
 

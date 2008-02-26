@@ -15,7 +15,7 @@ buildnoinst_LTLIBRARIES = libschrotest.la
 
 noinst_PROGRAMS = arith arith_encode \
 	 encode wavelet wavelet_2d \
-	 obmc phasecorrelation motion \
+	 phasecorrelation motion \
 	 quant decode divide \
 	 global_motion upsample \
 	 motion2 sort filter ssim gaussian fft \
@@ -96,10 +96,6 @@ wavelet_gain_curve_SOURCES = wavelet_gain_curve.c
 wavelet_2d_SOURCES = wavelet_2d.c
 
 wavelet_noise_2d_SOURCES = wavelet_noise_2d.c
-
-#obmc_CFLAGS = $(SCHRO_CFLAGS)
-#obmc_LDADD = $(SCHRO_LIBS)
-obmc_SOURCES = obmc.c
 
 #phasecorrelation_CFLAGS = $(SCHRO_CFLAGS)
 #phasecorrelation_LDADD = $(SCHRO_LIBS) -lm
