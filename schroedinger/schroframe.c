@@ -1749,8 +1749,8 @@ schro_upsampled_frame_get_pixel_prec1 (SchroUpsampledFrame *upframe, int k,
   int i;
 
   comp = upframe->frames[0]->components + k;
-  x = CLAMP(x, 0, comp->width * 2 - 1);
-  y = CLAMP(y, 0, comp->height * 2 - 1);
+  x = CLAMP(x, 0, comp->width * 2 - 2);
+  y = CLAMP(y, 0, comp->height * 2 - 2);
 
   i = ((y&1)<<1) | (x&1);
   x >>= 1;
@@ -1841,8 +1841,8 @@ schro_upsampled_frame_get_pixel_prec3 (SchroUpsampledFrame *upframe, int k,
   w10 = ry * (4 - rx);
   w11 = ry * rx;
 
-  if (hx >= 0 && hx < 2*upframe->frames[0]->components[k].width - 1 &&
-      hy >= 0 && hy < 2*upframe->frames[0]->components[k].height - 1) {
+  if (hx >= 0 && hx < 2*upframe->frames[0]->components[k].width - 2 &&
+      hy >= 0 && hy < 2*upframe->frames[0]->components[k].height - 2) {
     SchroFrameData *comp;
     int p;
     int i;
