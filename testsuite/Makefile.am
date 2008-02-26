@@ -35,9 +35,10 @@ TESTS = arith encode wavelet wavelet_2d unpack downsample
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS) \
 	    -DSCHRO_ENABLE_UNSTABLE_API
-LDADD = $(SCHRO_LIBS) libschrotest.la
+LDADD = $(SCHRO_LIBS) $(LIBM) libschrotest.la
 
 libschrotest_la_SOURCES = common.c
+libschrotest_la_LIBADD = $(LIBM)
 
 install-buildnoinstLTLIBRARIES:
 
