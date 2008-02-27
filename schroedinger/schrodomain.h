@@ -8,6 +8,8 @@ typedef int SchroExecDomain;
 
 typedef struct _SchroMemoryDomain SchroMemoryDomain;
 
+#ifdef SCHRO_ENABLE_UNSTABLE_API
+
 #define SCHRO_MEMORY_DOMAIN_SLOTS 1000
 
 struct _SchroMemoryDomain {
@@ -47,6 +49,8 @@ void * schro_memory_domain_alloc (SchroMemoryDomain *domain, int size);
 void * schro_memory_domain_alloc_2d (SchroMemoryDomain *domain,
     int depth, int width, int height);
 void schro_memory_domain_memfree (SchroMemoryDomain *domain, void *ptr);
+
+#endif
 
 #endif
 
