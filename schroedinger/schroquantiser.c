@@ -930,20 +930,60 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
   double log_lambda_hi, log_lambda_lo, log_lambda_mid;
   double entropy_hi, entropy_lo, entropy_mid;
 
-  /* FIXME this function would enjoy an implementation of Newton's
-   * method */
-
-  log_lambda_hi = log(1000);
-  log_lambda_lo = log(0.0001);
-
+  log_lambda_hi = log(1);
   entropy_hi = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_hi));
-  entropy_lo = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_lo));
+  SCHRO_DEBUG("start %g %g target=%g", entropy_hi, log_lambda_hi, entropy);
+
+  if (entropy_hi < entropy) {
+    entropy_lo = entropy_hi;
+    log_lambda_lo = log_lambda_hi;
+
+    for(j=0;j<5;j++) {
+      log_lambda_hi = log_lambda_lo + log(100);
+      entropy_hi = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_hi));
+
+      SCHRO_DEBUG("step up %g %g %g %g target=%g",
+          entropy_lo, entropy_hi, log_lambda_lo, log_lambda_hi, entropy);
+      if (entropy_hi >= entropy) break;
+
+      entropy_lo = entropy_hi;
+      log_lambda_lo = log_lambda_hi;
+    }
+  } else {
+    for(j=0;j<5;j++) {
+      log_lambda_lo = log_lambda_hi - log(100);
+      entropy_lo = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_lo));
+
+      SCHRO_DEBUG("step down %g %g %g %g target=%g",
+          entropy_lo, entropy_hi, log_lambda_lo, log_lambda_hi, entropy);
+
+      if (entropy_lo < entropy) break;
+
+      entropy_hi = entropy_lo;
+      log_lambda_hi = log_lambda_lo;
+    }
+  }
+
+  if (entropy_lo == entropy_hi) {
+    return exp(0.5*(log_lambda_lo + log_lambda_hi));
+  }
+
+  if (!(entropy_lo <= entropy && entropy_hi >= entropy)) {
+    SCHRO_ERROR("entropy not bracketed");
+  }
 
   SCHRO_DEBUG("%g %g %g %g target=%g",
         entropy_lo, entropy_hi, log_lambda_lo, log_lambda_hi, entropy);
 
-  for(j=0;j<14;j++){
-    log_lambda_mid = 0.5*(log_lambda_hi + log_lambda_lo);
+  for(j=0;j<10;j++){
+    double x;
+
+    if (entropy_hi == entropy_lo) break;
+
+    x = (entropy - entropy_lo) / (entropy_hi - entropy_lo);
+    if (x < 0.2) x = 0.2;
+    if (x > 0.8) x = 0.8;
+    log_lambda_mid = log_lambda_lo + (log_lambda_hi - log_lambda_lo) * x;
     entropy_mid = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_mid));
 
     if (entropy_mid > entropy) {

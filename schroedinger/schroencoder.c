@@ -833,10 +833,6 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
   schro_frame_iwt_transform (frame->iwt_frame, &frame->params,
       frame->tmpbuf);
   schro_encoder_clean_up_transform (frame);
-
-  /* FIXME this needs a better place */
-  schro_encoder_choose_quantisers (frame);
-  schro_encoder_estimate_entropy (frame);
 }
 
 void
