@@ -429,7 +429,7 @@ gst_schro_buffer_wrap (GstSchroEnc *schro_enc, GstBuffer *buf,
 }
 
 #define OGG_DIRAC_GRANULE_SHIFT 30
-#define OGG_DIRAC_GRANULE_LOW_MASK ((1<<OGG_DIRAC_GRANULE_SHIFT)-1)
+#define OGG_DIRAC_GRANULE_LOW_MASK ((1ULL<<OGG_DIRAC_GRANULE_SHIFT)-1)
 
 static gint64
 granulepos_to_frame (gint64 granulepos)
@@ -672,7 +672,7 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
           /* FIXME This shouldn't happen */
           return GST_FLOW_ERROR;
         }
-        parse_code = encoded_buffer->data[5];
+        parse_code = encoded_buffer->data[4];
 
         if (SCHRO_PARSE_CODE_IS_SEQ_HEADER(parse_code)) {
           schro_enc->granulepos_hi = schro_enc->granulepos_offset +
@@ -685,29 +685,37 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
         outbuf = gst_buffer_new_and_alloc (encoded_buffer->length);
         memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data,
             encoded_buffer->length);
-        gst_buffer_set_caps (outbuf, gst_pad_get_caps(schro_enc->srcpad));
-
-        GST_BUFFER_OFFSET_END (outbuf) =
-          (schro_enc->granulepos_hi<<30) + schro_enc->granulepos_low;
-        GST_BUFFER_OFFSET (outbuf) = gst_util_uint64_scale (
-            (schro_enc->granulepos_hi + schro_enc->granulepos_low),
-            schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
-
-        GST_BUFFER_TIMESTAMP (outbuf) = gst_util_uint64_scale (
-            (schro_enc->granulepos_hi + schro_enc->granulepos_low),
-            schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
+        gst_buffer_set_caps (outbuf,
+            gst_caps_new_simple ("video/x-dirac",
+              "width", G_TYPE_INT, schro_enc->width,
+              "height", G_TYPE_INT, schro_enc->height,
+              "framerate", GST_TYPE_FRACTION, schro_enc->fps_n,
+              schro_enc->fps_d,
+              NULL));
 
         if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
+          GST_BUFFER_OFFSET_END (outbuf) =
+            (schro_enc->granulepos_hi<<OGG_DIRAC_GRANULE_SHIFT) +
+            schro_enc->granulepos_low;
+          GST_BUFFER_OFFSET (outbuf) = gst_util_uint64_scale (
+              (schro_enc->granulepos_hi + schro_enc->granulepos_low),
+              schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
           GST_BUFFER_DURATION (outbuf) = schro_enc->duration;
+          GST_BUFFER_TIMESTAMP (outbuf) = gst_util_uint64_scale (
+              (schro_enc->granulepos_hi + schro_enc->granulepos_low),
+              schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
         } else {
-          GST_BUFFER_DURATION (outbuf) = 0;
+          GST_BUFFER_OFFSET_END (outbuf) = 0;
+          GST_BUFFER_OFFSET (outbuf) = 0;
+          GST_BUFFER_DURATION (outbuf) = -1;
+          GST_BUFFER_TIMESTAMP (outbuf) = -1;
         }
 
         GST_INFO("size %d offset %lld granulepos %llu:%llu timestamp %lld duration %lld",
             GST_BUFFER_SIZE (outbuf),
             GST_BUFFER_OFFSET (outbuf),
-            GST_BUFFER_OFFSET_END (outbuf)>>30,
-            GST_BUFFER_OFFSET_END (outbuf)&((1<<30) - 1),
+            GST_BUFFER_OFFSET_END (outbuf)>>OGG_DIRAC_GRANULE_SHIFT,
+            GST_BUFFER_OFFSET_END (outbuf)&OGG_DIRAC_GRANULE_LOW_MASK,
             GST_BUFFER_TIMESTAMP (outbuf),
             GST_BUFFER_DURATION (outbuf));
 
