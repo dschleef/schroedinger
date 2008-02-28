@@ -244,6 +244,15 @@ schro_picture_unref (SchroPicture *picture)
 void
 schro_decoder_reset (SchroDecoder *decoder)
 {
+  int i;
+
+  schro_async_lock (decoder->async);
+  for(i=0;i<decoder->picture_queue->n;i++){
+    SchroPicture *picture = decoder->picture_queue->elements[i].data;
+
+    picture->needed_state = 0;
+  }
+
   schro_queue_clear (decoder->picture_queue);
   schro_queue_clear (decoder->reference_queue);
   schro_queue_clear (decoder->output_queue);
@@ -253,6 +262,7 @@ schro_decoder_reset (SchroDecoder *decoder)
   decoder->have_frame_number = FALSE;
 
   decoder->end_of_stream = FALSE;
+  schro_async_unlock (decoder->async);
 }
 
 SchroVideoFormat *
@@ -418,6 +428,7 @@ int
 schro_decoder_wait (SchroDecoder *decoder)
 {
   int ret;
+
 
   schro_async_lock (decoder->async);
   while (1) {
@@ -703,6 +714,7 @@ schro_decoder_picture_complete (SchroPicture *picture)
   }
   picture->busy = FALSE;
 
+  schro_picture_unref (picture);
 }
 
 static int 
@@ -762,6 +774,7 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
           refpic->busy = TRUE;
 
           func = schro_decoder_x_upsample;
+          schro_picture_ref (refpic);
           schro_async_run_locked (decoder->async, func, refpic);
 
           return TRUE;
@@ -797,6 +810,7 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
     if (func) {
       picture->busy = TRUE;
 
+      schro_picture_ref (picture);
       schro_async_run_locked (decoder->async, func, picture);
 
       return TRUE;
