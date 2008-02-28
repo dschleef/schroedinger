@@ -373,6 +373,31 @@ def plot_est_act_mc():
 
 	plot.surface.write_to_png('00000-est-act-mc.png');
 
+def plot_scs_mse():
+	plot = Plot(800,600);
+	#mx = max(Numeric.transpose(tpts[10]));
+	mx = 1;
+	my = max(Numeric.transpose(tpts[14]));
+	plot.set_x_range(0, mx);
+	plot.set_y_range(0, my);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose(tpts[10:15:4]));
+
+	plot.surface.write_to_png('00000-scs-mse.png');
+
 
 pts = readdata("schro_dump.picture");
 #pts = pts[700:1000];
@@ -384,5 +409,6 @@ plot_alloc_est_residual();
 plot_est_act_residual();
 plot_est_act_mc();
 plot_bits_per_pic();
+plot_scs_mse();
 
 
