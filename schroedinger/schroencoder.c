@@ -158,8 +158,8 @@ schro_encoder_start (SchroEncoder *encoder)
 {
   encoder->engine_init = 1;
 
-  if (encoder->video_format->luma_excursion >= 256 ||
-      encoder->video_format->chroma_excursion >= 256) {
+  if (encoder->video_format.luma_excursion >= 256 ||
+      encoder->video_format.chroma_excursion >= 256) {
     SCHRO_ERROR("luma or chroma excursion is too large for 8 bit");
   }
 
