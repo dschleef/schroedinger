@@ -264,6 +264,11 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
   schro_enc->video_format->aspect_ratio_numerator = schro_enc->par_n;
   schro_enc->video_format->aspect_ratio_denominator = schro_enc->par_d;
 
+  schro_video_format_set_std_signal_range (schro_enc->video_format,
+      SCHRO_SIGNAL_RANGE_8BIT_VIDEO);
+  schro_video_format_set_std_colour_spec (schro_enc->video_format,
+      SCHRO_COLOUR_SPEC_HDTV);
+
   schro_encoder_set_video_format (schro_enc->encoder, schro_enc->video_format);
 
   schro_enc->duration = gst_util_uint64_scale_int (GST_SECOND,
