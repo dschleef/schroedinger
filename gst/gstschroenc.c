@@ -73,6 +73,8 @@ struct _GstSchroEnc
   uint64_t granulepos_low;
   uint64_t granulepos_hi;
   gboolean started;
+  gint64 timestamp_offset;
+  int picture_number;
 
   SchroEncoder *encoder;
   SchroVideoFormat *video_format;
@@ -637,6 +639,9 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
     GST_DEBUG("using granulepos offset %lld", schro_enc->granulepos_offset);
     schro_enc->granulepos_hi = 0;
     schro_enc->got_offset = TRUE;
+
+    schro_enc->timestamp_offset = GST_BUFFER_TIMESTAMP(buf);
+    schro_enc->picture_number = 0;
   }
   if (!schro_enc->started) {
     schro_encoder_start (schro_enc->encoder);
@@ -706,14 +711,20 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
               (schro_enc->granulepos_hi + schro_enc->granulepos_low),
               schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
           GST_BUFFER_DURATION (outbuf) = schro_enc->duration;
-          GST_BUFFER_TIMESTAMP (outbuf) = gst_util_uint64_scale (
-              (schro_enc->granulepos_hi + schro_enc->granulepos_low),
+          GST_BUFFER_TIMESTAMP (outbuf) = 
+            schro_enc->timestamp_offset + gst_util_uint64_scale (
+              schro_enc->picture_number,
               schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
+          schro_enc->picture_number++;
         } else {
           GST_BUFFER_OFFSET_END (outbuf) = 0;
           GST_BUFFER_OFFSET (outbuf) = 0;
           GST_BUFFER_DURATION (outbuf) = -1;
-          GST_BUFFER_TIMESTAMP (outbuf) = -1;
+          //GST_BUFFER_TIMESTAMP (outbuf) = -1;
+          GST_BUFFER_TIMESTAMP (outbuf) = 
+            schro_enc->timestamp_offset + gst_util_uint64_scale (
+              schro_enc->picture_number,
+              schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
         }
 
         GST_INFO("size %d offset %lld granulepos %llu:%llu timestamp %lld duration %lld",
