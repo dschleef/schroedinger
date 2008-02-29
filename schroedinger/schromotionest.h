@@ -32,6 +32,7 @@ struct _SchroMotionEst {
 };
 
 struct _SchroBlock {
+  int valid;
   int error;
   int entropy;
 

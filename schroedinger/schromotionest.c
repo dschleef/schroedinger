@@ -12,6 +12,8 @@
 #define DC_METRIC 50
 #define BIDIR_LIMIT (10*8*8)
 
+#define SCHRO_METRIC_INVALID_2 0x7fffffff
+
 #define motion_field_get(mf,x,y) \
   ((mf)->motion_vectors + (y)*(mf)->x_num_blocks + (x))
 
@@ -804,7 +806,7 @@ schro_block_average (int16_t *dest, SchroFrameData *comp,
   }
 
   if (n == 0) {
-    return SCHRO_METRIC_INVALID;
+    return SCHRO_METRIC_INVALID_2;
   }
 
   ave = (sum + n/2)/n;
@@ -1386,6 +1388,7 @@ schro_motionest_superblock_scan_one (SchroMotionEst *me, int ref, int distance,
     mv->dx[ref] = 0;
     mv->dy[ref] = 0;
     mv->metric = SCHRO_METRIC_INVALID;
+    block->valid = FALSE;
     return;
   }
 
@@ -1402,6 +1405,7 @@ schro_motionest_superblock_scan_one (SchroMotionEst *me, int ref, int distance,
   schro_block_fixup (block);
   block->entropy = schro_motion_superblock_try_estimate_entropy (me->motion,
       i, j, block);
+  block->valid = TRUE;
 }
 
 static SchroMotionField *
@@ -1451,6 +1455,8 @@ schro_motionest_superblock_predicted (SchroMotionEst *me, int ref,
   block->error = schro_motionest_superblock_get_metric (me, block, i, j);
   block->entropy = 0;
   schro_block_fixup (block);
+
+  block->valid = (block->error != SCHRO_METRIC_INVALID_2);
 }
 
 static void
@@ -1471,6 +1477,7 @@ schro_motionest_superblock_biref_zero (SchroMotionEst *me,
   schro_block_fixup (block);
   block->entropy = schro_motion_superblock_try_estimate_entropy (me->motion,
       i, j, block);
+  block->valid = (block->error != SCHRO_METRIC_INVALID_2);
 }
 
 static void
@@ -1507,6 +1514,7 @@ schro_motionest_superblock_dc (SchroMotionEst *me,
 
   block->entropy = schro_motion_superblock_try_estimate_entropy (me->motion,
       i, j, block);
+  block->valid = TRUE;
 }
 
 static void
@@ -1531,6 +1539,7 @@ schro_motionest_superblock_dc_predicted (SchroMotionEst *me,
 
   schro_block_fixup (block);
   block->entropy = 0;
+  block->valid = TRUE;
 }
 
 static void
@@ -1601,6 +1610,7 @@ schro_motionest_block_scan_one (SchroMotionEst *me, int ref, int distance,
   scan.gravity_y = 0;
 
   block->error = 0;
+  block->valid = TRUE;
   for(jj=0;jj<4;jj++){
     for(ii=0;ii<4;ii++){
       mv = &block->mv[jj][ii];
@@ -1617,12 +1627,14 @@ schro_motionest_block_scan_one (SchroMotionEst *me, int ref, int distance,
         mv->dy[ref] = 0;
         mv->metric = SCHRO_METRIC_INVALID;
         block->error += mv->metric;
+        block->valid = FALSE;
         continue;
       }
 
       schro_metric_scan_do_scan (&scan);
       mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy);
       block->error += mv->metric;
+      block->valid &= (mv->metric != SCHRO_METRIC_INVALID);
 
       mv->split = 2;
       mv->pred_mode = 1<<ref;
@@ -1790,6 +1802,14 @@ schro_encoder_bigblock2_estimation (SchroMotionEst *me)
       min_k = 0;
       min_score = blocks[0].entropy + me->lambda * blocks[0].error;
       for(k=0;k<n;k++){
+#if 0
+        if (blocks[k].error == SCHRO_METRIC_INVALID) {
+          SCHRO_ERROR("k %d", k);
+          SCHRO_ASSERT(blocks[k].error != SCHRO_METRIC_INVALID);
+        }
+        SCHRO_ASSERT(blocks[k].error != 16*SCHRO_METRIC_INVALID);
+#endif
+        if (!blocks[k].valid) continue;
         score = blocks[k].entropy + me->lambda * blocks[k].error;
         if (score < min_score) {
           min_k = k;
@@ -2054,12 +2074,17 @@ schro_motionest_superblock_get_metric (SchroMotionEst *me,
       ref_frame = get_downsampled (me->encoder_frame->ref_frame1, 0);
     }
 
+    if (i*me->params->xbsep_luma + mv->dx[ref] < 0 ||
+        j*me->params->ybsep_luma + mv->dy[ref] < 0) {
+      return SCHRO_METRIC_INVALID_2;
+    }
+
     schro_frame_get_subdata (ref_frame, &ref_data,
         0, i*me->params->xbsep_luma + mv->dx[ref],
         j*me->params->ybsep_luma + mv->dy[ref]);
 
     if (ref_data.width < width || ref_data.height < height) {
-      return SCHRO_METRIC_INVALID;
+      return SCHRO_METRIC_INVALID_2;
     }
 
     return schro_metric_get (&orig, &ref_data, width, height);
@@ -2068,6 +2093,13 @@ schro_motionest_superblock_get_metric (SchroMotionEst *me,
   if (mv->pred_mode == 3) {
     SchroFrameData ref0_data;
     SchroFrameData ref1_data;
+
+    if (i*me->params->xbsep_luma + mv->dx[0] < 0 ||
+        j*me->params->ybsep_luma + mv->dy[0] < 0 ||
+        i*me->params->xbsep_luma + mv->dx[1] < 0 ||
+        j*me->params->ybsep_luma + mv->dy[1] < 0) {
+      return SCHRO_METRIC_INVALID_2;
+    }
 
     schro_frame_get_subdata (get_downsampled (me->encoder_frame->ref_frame0, 0),
         &ref0_data, 0, i*me->params->xbsep_luma + mv->dx[0],
@@ -2078,7 +2110,7 @@ schro_motionest_superblock_get_metric (SchroMotionEst *me,
 
     if (ref0_data.width < width || ref0_data.height < height ||
         ref1_data.width < width || ref1_data.height < height) {
-      return SCHRO_METRIC_INVALID;
+      return SCHRO_METRIC_INVALID_2;
     }
 
     return schro_metric_get_biref (&orig, &ref0_data, 1, &ref1_data, 1, 1, width, height);
@@ -2086,7 +2118,7 @@ schro_motionest_superblock_get_metric (SchroMotionEst *me,
 
   SCHRO_ASSERT(0);
 
-  return SCHRO_METRIC_INVALID;
+  return SCHRO_METRIC_INVALID_2;
 }
 
 int
