@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 function encode {
   echo "ENCODING $testname with $schroopts"
   gst-launch-0.10 \
@@ -9,7 +8,7 @@ function encode {
     cairotextoverlay text=$testname halign=left deltay=-100 ! \
     ffmpegcolorspace ! \
     video/x-raw-yuv,format=\(fourcc\)"$format",width=$width,height=$height,framerate=30/1 ! \
-    schroenc $schroopts ! \
+    schroenc enable-md5=1 $schroopts ! \
     filesink location=vts.$testname.drc
 }
 
