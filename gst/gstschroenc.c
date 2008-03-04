@@ -716,6 +716,9 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
               schro_enc->picture_number,
               schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
           schro_enc->picture_number++;
+          if (!SCHRO_PARSE_CODE_IS_INTRA(parse_code)) {
+            GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
+          }
         } else {
           GST_BUFFER_OFFSET_END (outbuf) = 0;
           GST_BUFFER_OFFSET (outbuf) = 0;
@@ -734,10 +737,6 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
             GST_BUFFER_OFFSET_END (outbuf)&OGG_DIRAC_GRANULE_LOW_MASK,
             GST_BUFFER_TIMESTAMP (outbuf),
             GST_BUFFER_DURATION (outbuf));
-
-        if (SCHRO_PARSE_CODE_IS_INTRA(parse_code)) {
-          GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
-        }
 
         schro_buffer_unref (encoded_buffer);
         
