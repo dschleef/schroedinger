@@ -9,7 +9,7 @@ AUTOMAKE_OPTIONS = 1.6
 # of using the various options.
 
 # The name of the module, e.g. 'glib'.
-DOC_MODULE=schroedinger-$(SCHRO_MAJORMINOR)
+DOC_MODULE=schroedinger
 
 # The top-level SGML file. You can change this if you want to.
 DOC_MAIN_SGML_FILE=$(DOC_MODULE)-docs.sgml
@@ -47,7 +47,25 @@ CFILE_GLOB=$(top_srcdir)/schroedinger/*.c
 
 # Header files to ignore when scanning.
 # e.g. IGNORE_HFILES=gtkdebug.h gtkintl.h
-IGNORE_HFILES=schro-stdint.h
+IGNORE_HFILES=schro-stdint.h \
+	arith.h \
+	arith_coalesce.h \
+	common.h \
+	convert_base.h \
+	convert_base_coalesce.h \
+	convert_packed.h \
+	cudaframe.h \
+	cudainit.h \
+	cudamotion.h \
+	cudaupsample.h \
+	cudawavelet.h \
+	motion_kernel_divb.h \
+	motion_kernel_shared.h \
+	motion_kernel_tex.h \
+	upsample_kernel.h \
+	wavelet.h \
+	wavelet_common.h \
+	wavelets.h
 
 # Images to copy into HTML directory.
 # e.g. HTML_IMAGES=$(top_srcdir)/gtk/stock-icons/stock_about_24.png
