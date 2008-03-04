@@ -10,6 +10,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <time.h>
 
 enum {
   STATE_IDLE,
@@ -186,7 +188,17 @@ schro_async_wait_locked (SchroAsync *async)
   struct timespec ts;
   int ret;
 
+#ifdef HAVE_CLOCK_GETTIME
   clock_gettime (CLOCK_REALTIME, &ts);
+#else
+  {
+    struct timeval tv;
+
+    gettimeofday(&tv, NULL);
+    ts.tv_sec = tv.tv_sec;
+    ts.tv_nsec = tv.tv_usec * 1000;
+  }
+#endif
   ts.tv_sec += 1;
   ret = pthread_cond_timedwait (&async->app_cond, &async->mutex, &ts);
   if (ret != 0) {
