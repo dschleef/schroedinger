@@ -87,7 +87,6 @@ struct _SchroPicture {
   SchroBuffer *input_buffer;
   SchroParams params;
   SchroPictureNumber picture_number;
-  //int n_refs;
   SchroPictureNumber reference1;
   SchroPictureNumber reference2;
   SchroPictureNumber retired_picture_number;

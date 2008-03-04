@@ -42,7 +42,7 @@ struct _SchroParams {
 
   /* motion prediction parameters */
   int num_refs;
-  int have_global_motion; // using_global_motion
+  int have_global_motion; /* using_global_motion */
   int xblen_luma;
   int yblen_luma;
   int xbsep_luma;
@@ -56,8 +56,8 @@ struct _SchroParams {
 
   /* DiracPro parameters */
   int is_lowdelay;
-  int n_horiz_slices; // slices_x
-  int n_vert_slices; // slices_y
+  int n_horiz_slices; /* slices_x */
+  int n_vert_slices; /* slices_y */
   int slice_bytes_num;
   int slice_bytes_denom;
   int quant_matrix[3*SCHRO_LIMIT_TRANSFORM_DEPTH+1];

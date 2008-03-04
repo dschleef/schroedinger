@@ -58,9 +58,6 @@ struct _SchroFrameData {
   int length;
   int h_shift;
   int v_shift;
-
-  /* for CUDA */
-  //void *gdata;
 };
 
 struct _SchroFrame {
@@ -79,9 +76,7 @@ struct _SchroFrame {
 
 struct _SchroUpsampledFrame {
   SchroFrame *frames[4];
-#ifdef HAVE_CUDA
-  struct cudaArray *components[3];
-#endif
+  void *components[3];
 };
 
 #define SCHRO_FRAME_DATA_GET_LINE(fd,i) (OFFSET((fd)->data,(fd)->stride*(i)))

@@ -26,8 +26,6 @@ struct _SchroMotionEst {
 
   SchroBlock *sblocks;
 
-  //SchroMotionVector *motion_vectors;
-
   SchroMotionField *downsampled_mf[2][5];
 };
 
