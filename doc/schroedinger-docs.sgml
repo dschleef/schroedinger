@@ -9,18 +9,22 @@
   <chapter id="schropublic">
     <title>Schroedinger Public API</title>
     <xi:include href="xml/schro.xml"/>
-    <xi:include href="xml/schroarith.xml"/>
-    <xi:include href="xml/schroasync.xml"/>
     <xi:include href="xml/schrobitstream.xml"/>
     <xi:include href="xml/schrobuffer.xml"/>
-    <xi:include href="xml/schrocuda.xml"/>
-    <xi:include href="xml/schrodebug.xml"/>
     <xi:include href="xml/schrodecoder.xml"/>
     <xi:include href="xml/schrodomain.xml"/>
     <xi:include href="xml/schroencoder.xml"/>
-    <xi:include href="xml/schrofft.xml"/>
-    <xi:include href="xml/schrofilter.xml"/>
     <xi:include href="xml/schroframe.xml"/>
+    <xi:include href="xml/schrovideoformat.xml"/>
+  </chapter>
+  <chapter id="schrointernal">
+    <title>Schroedinger Internal API</title>
+    <xi:include href="xml/schroasync.xml"/>
+    <xi:include href="xml/schroarith.xml"/>
+    <xi:include href="xml/schrocuda.xml"/>
+    <xi:include href="xml/schrodebug.xml"/>
+    <xi:include href="xml/schrofilter.xml"/>
+    <xi:include href="xml/schrofft.xml"/>
     <xi:include href="xml/schrohistogram.xml"/>
     <xi:include href="xml/schrolimits.xml"/>
     <xi:include href="xml/schrolist.xml"/>
@@ -34,8 +38,6 @@
     <xi:include href="xml/schrosubband.xml"/>
     <xi:include href="xml/schrounpack.xml"/>
     <xi:include href="xml/schroutils.xml"/>
-    <xi:include href="xml/schrovideoformat.xml"/>
     <xi:include href="xml/schrowavelet.xml"/>
-    <title>Schroedinger Private API</title>
   </chapter>
 </book>
