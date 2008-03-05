@@ -151,7 +151,6 @@ struct _SchroEncoderFrame {
   int16_t *quant_data;
 
   int16_t *tmpbuf;
-  int16_t *tmpbuf2;
 
   int quant_index[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3];
   double est_entropy[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3][60];
