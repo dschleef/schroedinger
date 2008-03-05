@@ -97,7 +97,6 @@ struct _SchroPicture {
   int is_ref;
 
   int16_t *tmpbuf;
-  int16_t *tmpbuf2;
 
   int zero_residual;
 

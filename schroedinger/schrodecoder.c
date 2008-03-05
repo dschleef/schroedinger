@@ -151,8 +151,7 @@ schro_picture_new (SchroDecoder *decoder)
 
   picture->decoder = decoder;
 
-  picture->tmpbuf = schro_malloc(sizeof(int16_t) * (video_format->width + 20));
-  picture->tmpbuf2 = schro_malloc(sizeof(int16_t) * (video_format->width + 20));
+  picture->tmpbuf = schro_malloc(sizeof(int16_t) * (video_format->width + 16));
 
   picture->params.video_format = video_format;
 
@@ -230,7 +229,6 @@ schro_picture_unref (SchroPicture *picture)
     if (picture->planar_output_frame) schro_frame_unref (picture->planar_output_frame);
     if (picture->output_picture) schro_frame_unref (picture->output_picture);
     if (picture->tmpbuf) schro_free (picture->tmpbuf);
-    if (picture->tmpbuf2) schro_free (picture->tmpbuf2);
     if (picture->motion) schro_motion_free (picture->motion);
     if (picture->input_buffer) schro_buffer_unref (picture->input_buffer);
     if (picture->upsampled_frame) schro_upsampled_frame_free (picture->upsampled_frame);
@@ -1003,16 +1001,16 @@ schro_decoder_x_combine (SchroPicture *picture)
 
     schro_frame_md5 (picture->output_picture, state);
     if (memcmp (state, picture->md5_checksum, 16) != 0) {
-      char a[65];
-      char b[65];
+      char a[33];
+      char b[33];
       int i;
 
       for(i=0;i<16;i++){
         sprintf(a+2*i, "%02x", ((uint8_t *)state)[i]);
         sprintf(b+2*i, "%02x", picture->md5_checksum[i]);
       }
-      a[64] = 0;
-      b[64] = 0;
+      a[32] = 0;
+      b[32] = 0;
       SCHRO_ERROR("MD5 checksum mismatch (%s should be %s)", a, b);
     }
   }
