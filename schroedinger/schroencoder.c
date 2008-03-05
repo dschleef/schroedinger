@@ -802,8 +802,8 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
 {
   SCHRO_INFO("predict picture %d", frame->frame_number);
 
-  frame->tmpbuf = schro_malloc(SCHRO_LIMIT_WIDTH * 2);
-  frame->tmpbuf2 = schro_malloc(SCHRO_LIMIT_WIDTH * 2);
+  frame->tmpbuf = schro_malloc(sizeof(int16_t) * frame->encoder->video_format.width);
+  frame->tmpbuf2 = schro_malloc(sizeof(int16_t) * frame->encoder->video_format.width);
 
   if (frame->params.num_refs > 0) {
     schro_encoder_motion_predict (frame);

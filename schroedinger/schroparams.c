@@ -6,8 +6,6 @@
 #include <liboil/liboil.h>
 
 
-const int16_t schro_zero[SCHRO_LIMIT_WIDTH];
-
 void
 schro_params_init (SchroParams *params, int video_format)
 {

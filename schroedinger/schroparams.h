@@ -79,7 +79,6 @@ struct _SchroParams {
 #define SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position) (((position)&3) == 1)
 #define SCHRO_SUBBAND_SHIFT(position) ((position)>>2)
 
-extern const int16_t schro_zero[];
 extern const int schro_tables_lowdelay_quants[7][4][9];
 
 void schro_params_init (SchroParams *params, int video_format);

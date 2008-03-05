@@ -151,8 +151,8 @@ schro_picture_new (SchroDecoder *decoder)
 
   picture->decoder = decoder;
 
-  picture->tmpbuf = schro_malloc(SCHRO_LIMIT_WIDTH * 2);
-  picture->tmpbuf2 = schro_malloc(SCHRO_LIMIT_WIDTH * 2);
+  picture->tmpbuf = schro_malloc(sizeof(int16_t) * (video_format->width + 20));
+  picture->tmpbuf2 = schro_malloc(sizeof(int16_t) * (video_format->width + 20));
 
   picture->params.video_format = video_format;
 
@@ -1011,6 +1011,8 @@ schro_decoder_x_combine (SchroPicture *picture)
         sprintf(a+2*i, "%02x", ((uint8_t *)state)[i]);
         sprintf(b+2*i, "%02x", picture->md5_checksum[i]);
       }
+      a[64] = 0;
+      b[64] = 0;
       SCHRO_ERROR("MD5 checksum mismatch (%s should be %s)", a, b);
     }
   }
@@ -2175,11 +2177,12 @@ schro_decoder_zero_block (SchroPictureSubbandContext *ctx,
 {
   int j;
   int16_t *line;
+  int16_t zero = 0;
 
   //SCHRO_DEBUG("subband is zero");
   for(j=y1;j<y2;j++){
     line = SCHRO_FRAME_DATA_GET_LINE (ctx->frame_data, j);
-    oil_splat_s16_ns (line + x1, schro_zero, x2 - x1);
+    oil_splat_s16_ns (line + x1, &zero, x2 - x1);
   }
 }
 
@@ -2239,13 +2242,13 @@ schro_decoder_decode_codeblock (SchroPicture *picture,
       parent_line = NULL;
     }
     if (j==0) {
-      prev_line = schro_zero;
+      prev_line = NULL;
     } else {
       prev_line = SCHRO_FRAME_DATA_GET_LINE (ctx->frame_data, (j-1));
     }
     if (params->is_noarith) {
       codeblock_line_decode_noarith (ctx, p);
-    } else if (ctx->position >= 4) {
+    } else if (ctx->position >= 4 && j > 0) {
       if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(ctx->position)) {
         codeblock_line_decode_p_horiz (ctx, p, j, parent_line, prev_line);
       } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(ctx->position)) {
