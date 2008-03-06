@@ -34,6 +34,21 @@ struct _SchroLowDelay {
 };
 
 
+void
+dump_frame (SchroLowDelay *lowdelay)
+{
+  int i, j;
+  int16_t *line;
+  SchroFrameData *fd;
+
+  fd = lowdelay->luma_subbands + 1;
+  for(j=0;j<fd->height;j++){
+    line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    for(i=0;i<fd->width;i++){
+      SCHRO_ERROR("%d %d %d", i, j, line[i]);
+    }
+  }
+}
 
 
 void
@@ -109,10 +124,10 @@ schro_decoder_decode_slice (SchroPicture *picture,
         slice_x, slice_y,
         lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
 
-    quant_index = base_index - params->quant_matrix[i];
+    quant_index = CLAMP(base_index - params->quant_matrix[i], 0, 60);
 
-    quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
-    quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+    quant_factor = schro_table_quant[quant_index];
+    quant_offset = schro_table_offset_1_2[quant_index];
 
     for(y=0;y<block.height;y++){
       line = OFFSET(block.data, block.stride * y);
@@ -139,9 +154,9 @@ schro_decoder_decode_slice (SchroPicture *picture,
         slice_x, slice_y,
         lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
 
-    quant_index = base_index - params->quant_matrix[i];
-    quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
-    quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+    quant_index = CLAMP(base_index - params->quant_matrix[i], 0, 60);
+    quant_factor = schro_table_quant[quant_index];
+    quant_offset = schro_table_offset_1_2[quant_index];
 
     for(y=0;y<block1.height;y++){
       line1 = OFFSET(block1.data, block1.stride * y);
@@ -216,6 +231,8 @@ schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture)
   schro_decoder_subband_dc_predict (lowdelay.luma_subbands + 0);
   schro_decoder_subband_dc_predict (lowdelay.chroma1_subbands + 0);
   schro_decoder_subband_dc_predict (lowdelay.chroma2_subbands + 0);
+
+  //dump_frame (&lowdelay);
 }
 
 static int
@@ -313,8 +330,8 @@ quantise_block (SchroFrameData *block, int16_t *quant_data, int quant_index)
   int n = 0;
   int16_t *line;
 
-  quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
-  quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+  quant_factor = schro_table_quant[quant_index];
+  quant_offset = schro_table_offset_1_2[quant_index];
 
   for(y=0;y<block->height;y++){
     line = OFFSET(block->data, block->stride * y);
@@ -336,8 +353,8 @@ quantise_dc_block (SchroFrameData *block, int16_t *quant_data,
   int pred_value;
   int16_t *line;
 
-  quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
-  quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+  quant_factor = schro_table_quant[quant_index];
+  quant_offset = schro_table_offset_1_2[quant_index];
 
   for(y=0;y<block->height;y++){
     line = OFFSET(block->data, block->stride * y);
@@ -362,8 +379,8 @@ dequantise_block (SchroFrameData *block, int16_t *quant_data, int quant_index)
   int n = 0;
   int16_t *line;
 
-  quant_factor = schro_table_quant[CLAMP(quant_index,0,60)];
-  quant_offset = schro_table_offset_1_2[CLAMP(quant_index,0,60)];
+  quant_factor = schro_table_quant[quant_index];
+  quant_offset = schro_table_offset_1_2[quant_index];
 
   for(y=0;y<block->height;y++){
     line = OFFSET(block->data, block->stride * y);
@@ -449,7 +466,7 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame,
         slice_x, slice_y,
         lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
 
-    quant_index = base_index - params->quant_matrix[i];
+    quant_index = CLAMP(base_index - params->quant_matrix[i], 0, 60);
 
     if (i == 0) {
       quantise_dc_block (&block, quant_data + n, quant_index, slice_x, slice_y);
@@ -485,7 +502,7 @@ schro_encoder_estimate_slice (SchroEncoderFrame *frame,
         slice_x, slice_y,
         lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
 
-    quant_index = base_index - params->quant_matrix[i];
+    quant_index = CLAMP(base_index - params->quant_matrix[i], 0, 60);
 
     if (i == 0) {
       quantise_dc_block (&block1, quant_data + n,
@@ -538,7 +555,7 @@ schro_encoder_dequantise_slice (SchroEncoderFrame *frame,
         slice_x, slice_y,
         lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
 
-    quant_index = base_index - params->quant_matrix[i];
+    quant_index = CLAMP(base_index - params->quant_matrix[i], 0, 60);
 
     if (i == 0) {
       /* dc dequant is handled by estimation */
@@ -561,7 +578,7 @@ schro_encoder_dequantise_slice (SchroEncoderFrame *frame,
         slice_x, slice_y,
         lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
 
-    quant_index = base_index - params->quant_matrix[i];
+    quant_index = CLAMP(base_index - params->quant_matrix[i], 0, 60);
 
     if (i == 0) {
       /* dc dequant is handled by estimation */
@@ -703,6 +720,7 @@ schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame)
           x, y, n_bytes + extra, base_index);
     }
   }
+  //dump_frame (&lowdelay);
 
   SCHRO_INFO("used bits %d of %d", total_bits,
       lowdelay.n_horiz_slices * lowdelay.n_vert_slices * params->slice_bytes_num * 8 /
