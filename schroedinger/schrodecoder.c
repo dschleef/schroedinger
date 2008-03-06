@@ -519,7 +519,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
   }
 
   if (SCHRO_PARSE_CODE_IS_END_OF_SEQUENCE (decoder->parse_code)) {
-    SCHRO_ERROR ("decoding end sequence");
+    SCHRO_DEBUG ("decoding end sequence");
     schro_buffer_unref (decoder->input_buffer);
     decoder->input_buffer = NULL;
     decoder->end_of_stream = TRUE;
