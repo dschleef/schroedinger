@@ -98,6 +98,8 @@ schro_encoder_new (void)
   encoder->enable_zero_estimation = FALSE;
   encoder->enable_phasecorr_estimation = FALSE;
   encoder->enable_bigblock_estimation = TRUE;
+  encoder->horiz_slices = 16;
+  encoder->vert_slices = 16;
 
   encoder->magic_dc_metric_offset = 1.0;
   encoder->magic_subband0_lambda_scale = 2.0;
@@ -2387,6 +2389,8 @@ static SchroEncoderSetting encoder_settings[] = {
   BOOL("enable_zero_estimation", FALSE),
   BOOL("enable_phasecorr_estimation", FALSE),
   BOOL("enable_bigblock_estimation", FALSE),
+  INT ("horiz_slices", 1, INT_MAX, 16),
+  INT ("vert_slices", 1, INT_MAX, 16),
 
   DOUB("magic_dc_metric_offset", 0.0, 1000.0, 0.0),
   DOUB("magic_subband0_lambda_scale", 0.0, 1000.0, 0.0),
@@ -2462,7 +2466,8 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(enable_zero_estimation);
   VAR_SET(enable_phasecorr_estimation);
   VAR_SET(enable_bigblock_estimation);
-  VAR_SET(magic_dc_metric_offset);
+  VAR_SET(horiz_slices);
+  VAR_SET(vert_slices);
   //VAR_SET();
   
   VAR_SET(magic_dc_metric_offset);
@@ -2514,7 +2519,8 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(enable_zero_estimation);
   VAR_GET(enable_phasecorr_estimation);
   VAR_GET(enable_bigblock_estimation);
-  VAR_GET(magic_dc_metric_offset);
+  VAR_GET(horiz_slices);
+  VAR_GET(vert_slices);
   //VAR_GET();
 
   VAR_GET(magic_dc_metric_offset);

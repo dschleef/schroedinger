@@ -1198,9 +1198,8 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
         params->is_lowdelay = TRUE;
         params->video_format = &encoder->video_format;
 
-        /* FIXME should be parameters */
-        params->n_horiz_slices = params->video_format->width/16;
-        params->n_vert_slices = params->video_format->height/16;
+        params->n_horiz_slices = encoder->horiz_slices;
+        params->n_vert_slices = encoder->vert_slices;
         init_params (frame);
         //schro_params_init_lowdelay_quantisers(params);
 
