@@ -17,6 +17,11 @@ width=640
 height=480
 format=I420
 
+testname="CBR-2Mb"
+diracopts="targetrate=2000"
+encode
+exit
+
 testname="default"
 diracopts=""
 encode
@@ -26,8 +31,6 @@ encode
 testname="intra-only"
 diracopts="num-l1=0"
 encode
-
-exit
 
 #testname="backref"
 #diracopts="gop-structure=2"
@@ -49,6 +52,10 @@ encode
 
 testname="CBR-1Mb"
 diracopts="targetrate=1000"
+encode
+
+testname="CBR-2Mb"
+diracopts="targetrate=2000"
 encode
 
 testname="lossless"
