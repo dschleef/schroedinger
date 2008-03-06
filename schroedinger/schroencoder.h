@@ -240,6 +240,8 @@ struct _SchroEncoder {
   schro_bool enable_zero_estimation;
   schro_bool enable_phasecorr_estimation;
   schro_bool enable_bigblock_estimation;
+  int horiz_slices;
+  int vert_slices;
 
   double magic_dc_metric_offset;
   double magic_subband0_lambda_scale;
