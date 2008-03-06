@@ -10,6 +10,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "common.h"
+
 #define OIL_ENABLE_UNSTABLE_API
 #include <liboil/liboil.h>
 #include <liboil/liboilrandom.h>
@@ -18,389 +20,167 @@ int filtershift[] = { 1, 1, 1, 0, 1, 0, 1 };
 
 int fail = 0;
 
-typedef struct _Picture Picture;
-struct _Picture {
-  int16_t *data;
-  int stride;
-  int width;
-  int height;
-};
-
-void dump(Picture *p);
-void dump_cmp(Picture *p, Picture *ref);
-void iwt_ref(Picture *p, int filter);
-void iiwt_ref(Picture *p, int filter);
-void iwt_test(Picture *p, int filter);
-void iiwt_test(Picture *p, int filter);
+void iwt_ref(SchroFrameData *p, int filter);
+void iiwt_ref(SchroFrameData *p, int filter);
+void iwt_test(SchroFrameData *p, int filter);
+void iiwt_test(SchroFrameData *p, int filter);
 
 void schro_split_ext (int16_t *hi, int16_t *lo, int n, int filter);
 void schro_synth_ext (int16_t *hi, int16_t *lo, int n, int filter);
 
 void
-gen_const (Picture *p)
+fwd_test (int filter, int width, int height)
 {
   int i;
-  int j;
-  int16_t *data;
+  SchroFrame *test;
+  SchroFrame *ref;
+  SchroFrameData *fd_test;
+  SchroFrameData *fd_ref;
+  char name[TEST_PATTERN_NAME_SIZE] = { 0 };
 
-  for(j=0;j<p->height;j++){
-    data = OFFSET(p->data,j*p->stride);
-    for(i=0;i<p->width;i++){
-      data[i] = 100;
-    }
+  test = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_test = test->components + 0;
+  ref = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_ref = ref->components + 0;
+
+  for(i=0;i<test_pattern_get_n_generators();i++){
+    test_pattern_generate (fd_ref, name, i);
+    printf("  forward test \"%s\":\n", name);
+  fflush(stdout);
+
+    schro_frame_convert (test, ref);
+    iwt_ref(fd_ref,filter);
+    iwt_test(fd_test,filter);
+    fail |= frame_data_compare(fd_test, fd_ref);
   }
+  schro_frame_unref (test);
+  schro_frame_unref (ref);
 }
 
 void
-gen_vramp (Picture *p)
+inv_test (int filter, int width, int height)
 {
   int i;
-  int j;
-  int16_t *data;
+  SchroFrame *test;
+  SchroFrame *ref;
+  SchroFrameData *fd_test;
+  SchroFrameData *fd_ref;
+  char name[TEST_PATTERN_NAME_SIZE] = { 0 };
 
-  for(j=0;j<p->height;j++){
-    data = OFFSET(p->data,j*p->stride);
-    for(i=0;i<p->width;i++){
-      data[i] = (100*j+p->height/2)/p->height;
-    }
+  test = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_test = test->components + 0;
+  ref = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_ref = ref->components + 0;
+
+  for(i=0;i<test_pattern_get_n_generators();i++){
+    test_pattern_generate (fd_ref, name, i);
+    printf("  reverse test \"%s\":\n", name);
+  fflush(stdout);
+
+    schro_frame_convert (test, ref);
+    iiwt_ref(fd_ref,filter);
+    iiwt_test(fd_test,filter);
+    fail |= frame_data_compare(fd_test, fd_ref);
   }
+  schro_frame_unref (test);
+  schro_frame_unref (ref);
 }
 
 void
-gen_hramp (Picture *p)
+fwd_random_test (int filter, int width, int height)
 {
-  int i;
-  int j;
-  int16_t *data;
+  SchroFrame *test;
+  SchroFrame *ref;
+  SchroFrameData *fd_test;
+  SchroFrameData *fd_ref;
+  char name[TEST_PATTERN_NAME_SIZE] = { 0 };
 
-  for(j=0;j<p->height;j++){
-    data = OFFSET(p->data,j*p->stride);
-    for(i=0;i<p->width;i++){
-      data[i] = (100*i+p->width/2)/p->width;
-    }
-  }
+  test = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_test = test->components + 0;
+  ref = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_ref = ref->components + 0;
+
+  test_pattern_generate (fd_ref, name, 0);
+  printf("  forward test \"%s\":\n", name);
+  fflush(stdout);
+
+  schro_frame_convert (test, ref);
+  iwt_ref(fd_ref,filter);
+  iwt_test(fd_test,filter);
+  fail |= frame_data_compare(fd_test, fd_ref);
+  
+  schro_frame_unref (test);
+  schro_frame_unref (ref);
 }
 
 void
-gen_valt (Picture *p)
+inv_random_test (int filter, int width, int height)
 {
-  int i;
-  int j;
-  int16_t *data;
+  SchroFrame *test;
+  SchroFrame *ref;
+  SchroFrameData *fd_test;
+  SchroFrameData *fd_ref;
+  char name[TEST_PATTERN_NAME_SIZE] = { 0 };
 
-  for(j=0;j<p->height;j++){
-    data = OFFSET(p->data,j*p->stride);
-    for(i=0;i<p->width;i++){
-      data[i] = (j&1)*100;
-    }
-  }
-}
+  test = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_test = test->components + 0;
+  ref = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_ref = ref->components + 0;
 
-void
-gen_halt (Picture *p)
-{
-  int i;
-  int j;
-  int16_t *data;
+  test_pattern_generate (fd_ref, name, 0);
+  printf("  reverse test \"%s\":\n", name);
+  fflush(stdout);
 
-  for(j=0;j<p->height;j++){
-    data = OFFSET(p->data,j*p->stride);
-    for(i=0;i<p->width;i++){
-      data[i] = (i&1)*100;
-    }
-  }
-}
-
-void
-gen_checkerboard (Picture *p)
-{
-  int i;
-  int j;
-  int16_t *data;
-
-  for(j=0;j<p->height;j++){
-    data = OFFSET(p->data,j*p->stride);
-    for(i=0;i<p->width;i++){
-      data[i] = ((i+j)&1)*100;
-    }
-  }
-}
-
-void
-gen_hline (Picture *p)
-{
-  int i;
-  int j;
-  int16_t *data;
-
-  for(j=0;j<p->height;j++){
-    data = OFFSET(p->data,j*p->stride);
-    for(i=0;i<p->width;i++){
-      data[i] = (j==(p->height/2))*100;
-    }
-  }
-}
-
-void
-gen_point (Picture *p)
-{
-  int i;
-  int j;
-  int16_t *data;
-
-  for(j=0;j<p->height;j++){
-    data = OFFSET(p->data,j*p->stride);
-    for(i=0;i<p->width;i++){
-      data[i] = (j==(p->height/2) && i==(p->width/2))*100;
-    }
-  }
-}
-
-void
-gen_random (Picture *p)
-{
-  int i;
-  int j;
-  int16_t *data;
-
-  for(j=0;j<p->height;j++){
-    data = OFFSET(p->data,j*p->stride);
-    for(i=0;i<p->width;i++){
-      data[i] = oil_rand_u8()&0xf;
-    }
-  }
-}
-
-
-typedef struct _Generator Generator;
-struct _Generator {
-  char *name;
-  void (*create)(Picture *p);
-};
-
-Generator generators[] = {
-  { "constant", gen_const },
-  { "hramp", gen_hramp },
-  { "vramp", gen_vramp },
-  { "halt", gen_halt },
-  { "valt", gen_valt },
-  { "checkerboard", gen_checkerboard },
-  { "hline", gen_hline },
-  { "point", gen_point },
-  { "random", gen_random }
-};
-
-
-Picture *
-picture_new (int width, int height)
-{
-  Picture *p;
-
-  p = malloc(sizeof(Picture));
-  p->data = malloc (width * height * sizeof(int16_t));
-  p->stride = width * sizeof(int16_t);
-  p->width = width;
-  p->height = height;
-
-  return p;
-}
-
-void
-picture_free (Picture *p)
-{
-  free(p->data);
-  free(p);
-}
-
-void
-picture_copy (Picture *dest, Picture *src)
-{
-  int i;
-  int j;
-  int16_t *d, *s;
-
-  for(j=0;j<dest->height;j++){
-    d = OFFSET(dest->data,j*dest->stride);
-    s = OFFSET(src->data,j*src->stride);
-    for(i=0;i<dest->width;i++){
-      d[i] = s[i];
-    }
-  }
-}
-
-int
-picture_compare (Picture *dest, Picture *src)
-{
-  int i;
-  int j;
-  int16_t *d, *s;
-
-  for(j=0;j<dest->height;j++){
-    d = OFFSET(dest->data,j*dest->stride);
-    s = OFFSET(src->data,j*src->stride);
-    for(i=0;i<dest->width;i++){
-      if (d[i] != s[i]) return 0;
-    }
-  }
-  return 1;
-}
-
-void
-local_test (int filter)
-{
-  int i;
-  Picture *p;
-  Picture *ref;
-
-  p = picture_new (20, 20);
-  ref = picture_new (20, 20);
-
-  for(i=0;i<sizeof(generators)/sizeof(generators[0]);i++){
-    printf("  test \"%s\":\n", generators[i].name);
-    generators[i].create(ref);
-    picture_copy (p, ref);
-    dump(ref);
-    iwt_ref(ref,filter);
-    iwt_test(p,filter);
-    dump(ref);
-    dump_cmp(p, ref);
-    if (!picture_compare(p, ref)) {
-      printf("  FAILED\n");
-      fail = 1;
-    }
-  }
-  picture_free(p);
-  picture_free(ref);
-}
-
-void
-random_test (int filter)
-{
-  int i;
-  Picture *p;
-  Picture *ref;
-
-  p = picture_new (20, 20);
-  ref = picture_new (20, 20);
-
-  printf("  Random tests:\n");
-  for(i=0;i<100;i++){
-    gen_random(ref);
-    picture_copy (p, ref);
-    iwt_ref(ref,filter);
-    iwt_test(p,filter);
-    if (!picture_compare(p, ref)) {
-      printf("  FAILED\n");
-      dump_cmp(p, ref);
-      fail = 1;
-      goto out;
-    }
-  }
-  printf("  OK\n");
-out:
-  picture_free(p);
-  picture_free(ref);
-}
-
-void
-inv_test (int filter)
-{
-  int i;
-  Picture *p;
-  Picture *ref;
-
-  p = picture_new (20, 20);
-  ref = picture_new (20, 20);
-
-  for(i=0;i<sizeof(generators)/sizeof(generators[0]);i++){
-    printf("  test \"%s\":\n", generators[i].name);
-    generators[i].create(ref);
-    iwt_ref(ref,filter);
-    picture_copy (p, ref);
-    iiwt_ref(ref,filter);
-    iiwt_test(p,filter);
-    dump(ref);
-    dump_cmp(p, ref);
-    if (!picture_compare(p, ref)) {
-      printf("  FAILED\n");
-      fail = 1;
-    }
-  }
-  picture_free(p);
-  picture_free(ref);
+  schro_frame_convert (test, ref);
+  iiwt_ref(fd_ref,filter);
+  iiwt_test(fd_test,filter);
+  fail |= frame_data_compare(fd_test, fd_ref);
+  schro_frame_unref (test);
+  schro_frame_unref (ref);
 }
 
 int
 main (int argc, char *argv[])
 {
   int filter;
+  int width;
+  int height;
 
   schro_init();
-    
+
   for(filter=0;filter<=SCHRO_WAVELET_DAUBECHIES_9_7;filter++){
     printf("Filter %d:\n", filter);
-    local_test(filter);
-    random_test(filter);
-    inv_test(filter);
+    fwd_test(filter, 20, 20);
+    inv_test(filter, 20, 20);
+  }
+
+  for(width = 4; width <= 40; width++) {
+    for(height = 4; height <= 40; height++) {
+      printf("Size %dx%d:\n", width, height);
+      for(filter=0;filter<=SCHRO_WAVELET_DAUBECHIES_9_7;filter++){
+        printf("  filter %d:\n", filter);
+        if (filter == SCHRO_WAVELET_FIDELITY && (width < 16 || height < 16)) {
+          continue;
+        }
+        fwd_random_test(filter, width, height);
+        inv_random_test(filter, width, height);
+      }
+    }
   }
 
   return fail;
 }
 
-void dump(Picture *p)
-{
-  int i;
-  int j;
-  int16_t *data;
-
-  printf("-----\n");
-  for(j=0;j<p->height;j++){
-    data = OFFSET(p->data,j*p->stride);
-    for(i=0;i<p->width;i++){
-      printf("%3d ", data[i]);
-    }
-    printf("\n");
-  }
-  printf("-----\n");
-}
-
-void dump_cmp(Picture *p, Picture *ref)
-{
-  int i;
-  int j;
-  int16_t *data;
-  int16_t *rdata;
-
-  printf("-----\n");
-  for(j=0;j<p->height;j++){
-    data = OFFSET(p->data,j*p->stride);
-    rdata = OFFSET(ref->data,j*p->stride);
-    for(i=0;i<p->width;i++){
-      if (data[i] == rdata[i]) {
-        printf("%3d ", data[i]);
-      } else {
-        printf("\033[00;01;37;41m%3d\033[00m ", data[i]);
-      }
-    }
-    printf("\n");
-  }
-  printf("-----\n");
-}
-
 void
-copy (int16_t *d, int ds, int16_t *s, int ss, int n)
-{
-  int i;
-  int16_t *xd, *xs;
-  for(i=0;i<n;i++){
-    xd = OFFSET(d,ds * i);
-    xs = OFFSET(s,ss * i);
-    *xd = *xs;
-  }
-}
-
-void
-rshift (Picture *p, int n)
+rshift (SchroFrameData *p, int n)
 {
   int i;
   int j;
@@ -416,7 +196,7 @@ rshift (Picture *p, int n)
 }
 
 void
-lshift (Picture *p, int n)
+lshift (SchroFrameData *p, int n)
 {
   int i;
   int j;
@@ -431,7 +211,19 @@ lshift (Picture *p, int n)
   }
 }
 
-void iwt_ref(Picture *p, int filter)
+void
+copy (int16_t *d, int ds, int16_t *s, int ss, int n)
+{
+  int i;
+  int16_t *xd, *xs;
+  for(i=0;i<n;i++){
+    xd = OFFSET(d,ds * i);
+    xs = OFFSET(s,ss * i);
+    *xd = *xs;
+  }
+}
+
+void iwt_ref(SchroFrameData *p, int filter)
 {
   int16_t tmp1[100], *hi;
   int16_t tmp2[100], *lo;
@@ -463,7 +255,7 @@ void iwt_ref(Picture *p, int filter)
 
 }
 
-void iiwt_ref(Picture *p, int filter)
+void iiwt_ref(SchroFrameData *p, int filter)
 {
   int16_t tmp1[100], *hi;
   int16_t tmp2[100], *lo;
@@ -546,7 +338,7 @@ schro_synth_ext (int16_t *hi, int16_t *lo, int n, int filter)
   }
 }
 
-void iwt_test(Picture *p, int filter)
+void iwt_test(SchroFrameData *p, int filter)
 {
   int16_t *tmp;
 
@@ -579,7 +371,7 @@ void iwt_test(Picture *p, int filter)
   free(tmp);
 }
 
-void iiwt_test(Picture *p, int filter)
+void iiwt_test(SchroFrameData *p, int filter)
 {
   int16_t *tmp;
 
