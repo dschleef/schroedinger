@@ -9,6 +9,7 @@
 
 int schro_engine_get_scene_change_score (SchroEncoder *encoder, int i);
 void schro_encoder_calculate_allocation (SchroEncoderFrame *frame);
+static void choose_quantisers (SchroEncoderFrame *frame);
 
 static void
 schro_engine_check_new_access_unit(SchroEncoder *encoder,
@@ -616,6 +617,7 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
         return TRUE;
       case SCHRO_ENCODER_FRAME_STATE_PREDICT:
+        choose_quantisers (frame);
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ENCODING);
         return TRUE;
       case SCHRO_ENCODER_FRAME_STATE_ENCODING:
