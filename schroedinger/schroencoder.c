@@ -98,8 +98,8 @@ schro_encoder_new (void)
   encoder->enable_zero_estimation = FALSE;
   encoder->enable_phasecorr_estimation = FALSE;
   encoder->enable_bigblock_estimation = TRUE;
-  encoder->horiz_slices = 16;
-  encoder->vert_slices = 16;
+  encoder->horiz_slices = 8;
+  encoder->vert_slices = 6;
 
   encoder->magic_dc_metric_offset = 1.0;
   encoder->magic_subband0_lambda_scale = 2.0;
