@@ -296,11 +296,26 @@ schro_histogram_estimate_entropy (SchroHistogram *hist, int quant_index,
 
     estimated_entropy += schro_utils_entropy (ones, zeros + ones);
   } else {
+    double x;
+
+    /* When the proportion of 0's gets very large, codeblocks are
+     * skipped, dropping the contribution from bin[0].  This is a
+     * gross hack estimate. */
+
+    /* proportion of non-zero coefficients */
+    x = (double)bin[1] / bin[0];
+
+    /* probability that a codeblock is entirely zero.  25 (5x5) is the
+     * size of the codeblocks created by init_small_codeblocks, and 0.5
+     * is a magic factor */
+    x = 1.0 - exp (-0.5 * 25 * x);
+
+    /* entropy of first continue bit */
+    estimated_entropy += x * bin[0] + (1-x) * bin[1];
+
     /* entropy of sign bit */
     estimated_entropy += bin[1];
 
-    /* entropy of continue bits */
-    estimated_entropy += bin[0];
     /* entropy of continue and data bits */
     for(i=1;i<N;i++){
       estimated_entropy += 2*bin[i];
