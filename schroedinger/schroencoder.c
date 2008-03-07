@@ -47,11 +47,9 @@ schro_encoder_new (void)
 
   encoder->au_frame = -1;
 
+  encoder->intra_ref = -1;
   encoder->last_ref = -1;
   encoder->last_ref2 = -1;
-  encoder->next_ref = -1;
-  encoder->mid1_ref = -1;
-  encoder->mid2_ref = -1;
 
 #if 0
   encoder->prefs[SCHRO_PREF_ENGINE] = 1;

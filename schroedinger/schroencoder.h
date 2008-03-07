@@ -303,11 +303,12 @@ struct _SchroEncoder {
 
   int gop_picture;
 
+  int intra_ref;
   int last_ref;
   int last_ref2;
-  int next_ref;
-  int mid1_ref;
-  int mid2_ref;
+  //int next_ref;
+  //int mid1_ref;
+  //int mid2_ref;
 };
 #endif
 

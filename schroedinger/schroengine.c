@@ -23,7 +23,7 @@ schro_engine_check_new_access_unit(SchroEncoder *encoder,
 }
 
 static void
-handle_gop (SchroEncoder *encoder, int i)
+handle_gop_tworef (SchroEncoder *encoder, int i)
 {
   SchroEncoderFrame *frame;
   SchroEncoderFrame *ref2;
@@ -98,11 +98,10 @@ handle_gop (SchroEncoder *encoder, int i)
       frame->presentation_frame = frame->frame_number;
       //frame->picture_weight = 1 + (gop_length - 1) * 0.6;
       frame->picture_weight = encoder->magic_keyframe_weight;
-      if (encoder->last_ref != -1) {
-        frame->retired_picture_number = encoder->last_ref;
+      if (encoder->intra_ref != -1) {
+        frame->retired_picture_number = encoder->intra_ref;
       }
-      encoder->last_ref = encoder->last_ref2;
-      encoder->last_ref2 = frame->frame_number;
+      encoder->intra_ref = frame->frame_number;
 
       f = encoder->frame_queue->elements[i+gop_length-1].data;
       f->is_ref = TRUE;
@@ -139,8 +138,9 @@ handle_gop (SchroEncoder *encoder, int i)
       /* BBBP */
       f = encoder->frame_queue->elements[i+gop_length-1].data;
       f->is_ref = TRUE;
-      f->num_refs = 1;
+      f->num_refs = 2;
       f->picture_number_ref0 = encoder->last_ref2;
+      f->picture_number_ref1 = encoder->intra_ref;
       f->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
       SCHRO_DEBUG("preparing %d as inter ref (%d)", f->frame_number,
           f->picture_number_ref0);
@@ -793,7 +793,7 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
     if (frame->frame_number == encoder->gop_picture) {
-      handle_gop (encoder, i);
+      handle_gop_tworef (encoder, i);
       break;
     }
   }
