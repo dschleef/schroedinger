@@ -8,6 +8,7 @@
 #include <string.h>
 #include <math.h>
 
+//#define DUMP_SUBBAND_CURVES
 
 void schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame);
@@ -359,14 +360,14 @@ schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame)
 }
 
 
-#ifdef unused
+#ifdef DUMP_SUBBAND_CURVES
 static double pow2(double x)
 {
   return x*x;
 }
 #endif
 
-#ifdef unused
+#ifdef DUMP_SUBBAND_CURVES
 static double
 measure_error_subband (SchroEncoderFrame *frame, int component, int index,
     int quant_index)
@@ -481,7 +482,7 @@ schro_histogram_estimate_error (SchroHistogram *hist, int quant_index,
 }
 #endif
 
-#ifdef unused
+#ifdef DUMP_SUBBAND_CURVES
 static double
 schro_encoder_estimate_subband_arith (SchroEncoderFrame *frame, int component,
     int index, int quant_index)
@@ -606,7 +607,7 @@ schro_encoder_generate_subband_histograms (SchroEncoderFrame *frame)
   frame->have_histograms = TRUE;
 }
 
-#ifdef unused
+#ifdef DUMP_SUBBAND_CURVES
 static void
 schro_encoder_dump_subband_curves (SchroEncoderFrame *frame)
 {
@@ -614,10 +615,6 @@ schro_encoder_dump_subband_curves (SchroEncoderFrame *frame)
   int i;
   int component;
   int pos;
-
-  if (!frame->encoder->enable_internal_testing) {
-    return;
-  }
 
   SCHRO_ASSERT(frame->have_histograms);
 
@@ -628,11 +625,13 @@ schro_encoder_dump_subband_curves (SchroEncoderFrame *frame)
       int stride;
       int width, height;
       int j;
+      SchroHistogram *hist;
 
       pos = schro_subband_get_position (i);
       schro_subband_get (frame->iwt_frame, component, pos,
           &frame->params, &data, &stride, &width, &height);
       vol = width * height;
+      hist = &frame->subband_hists[component][i];
 
       for(j=0;j<60;j++){
         double est_entropy;
@@ -644,7 +643,7 @@ schro_encoder_dump_subband_curves (SchroEncoderFrame *frame)
         est_entropy = schro_histogram_estimate_entropy (
             &frame->subband_hists[component][i], j, params->is_noarith);
         est_error = schro_histogram_apply_table (hist,
-            &encoder->intra_hist_table[j]);
+            &frame->encoder->intra_hist_tables[j]);
         arith_entropy = schro_encoder_estimate_subband_arith (frame,
             component, i, j);
 
@@ -666,6 +665,10 @@ schro_encoder_calc_estimates (SchroEncoderFrame *frame)
   int component;
 
   SCHRO_ASSERT(frame->have_histograms);
+
+#ifdef DUMP_SUBBAND_CURVES
+  schro_encoder_dump_subband_curves (frame);
+#endif
 
   for(component=0;component<3;component++){
     for(i=0;i<1 + 3*params->transform_depth; i++) {
@@ -932,7 +935,8 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
 
   log_lambda_hi = log(1);
   entropy_hi = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_hi));
-  SCHRO_DEBUG("start %g %g target=%g", entropy_hi, log_lambda_hi, entropy);
+  SCHRO_DEBUG("start target=%g log_lambda=%g entropy=%g",
+      entropy, log_lambda_hi, entropy_hi, log_lambda_hi, entropy);
 
   if (entropy_hi < entropy) {
     entropy_lo = entropy_hi;
@@ -942,26 +946,31 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
       log_lambda_hi = log_lambda_lo + log(100);
       entropy_hi = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_hi));
 
-      SCHRO_DEBUG("step up %g %g %g %g target=%g",
-          entropy_lo, entropy_hi, log_lambda_lo, log_lambda_hi, entropy);
+      SCHRO_DEBUG("have: log_lambda=[%g,%g] entropy=[%g,%g] target=%g",
+          log_lambda_lo, log_lambda_hi, entropy_lo, entropy_hi, entropy);
       if (entropy_hi >= entropy) break;
+
+      SCHRO_DEBUG("--> step up");
 
       entropy_lo = entropy_hi;
       log_lambda_lo = log_lambda_hi;
     }
+    SCHRO_DEBUG("--> stopping");
   } else {
     for(j=0;j<5;j++) {
       log_lambda_lo = log_lambda_hi - log(100);
       entropy_lo = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_lo));
 
-      SCHRO_DEBUG("step down %g %g %g %g target=%g",
-          entropy_lo, entropy_hi, log_lambda_lo, log_lambda_hi, entropy);
+      SCHRO_DEBUG("have: log_lambda=[%g,%g] entropy=[%g,%g] target=%g",
+          log_lambda_lo, log_lambda_hi, entropy_lo, entropy_hi, entropy);
 
+      SCHRO_DEBUG("--> step down");
       if (entropy_lo < entropy) break;
 
       entropy_hi = entropy_lo;
       log_lambda_hi = log_lambda_lo;
     }
+    SCHRO_DEBUG("--> stopping");
   }
 
   if (entropy_lo == entropy_hi) {
@@ -969,16 +978,16 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
   }
 
   if (!(entropy_lo <= entropy && entropy_hi >= entropy)) {
-    SCHRO_ERROR("entropy not bracketed");
+    SCHRO_DEBUG("entropy not bracketed");
   }
-
-  SCHRO_DEBUG("%g %g %g %g target=%g",
-        entropy_lo, entropy_hi, log_lambda_lo, log_lambda_hi, entropy);
 
   for(j=0;j<10;j++){
     double x;
 
     if (entropy_hi == entropy_lo) break;
+
+    SCHRO_DEBUG("have: log_lambda=[%g,%g] entropy=[%g,%g] target=%g",
+        log_lambda_lo, log_lambda_hi, entropy_lo, entropy_hi, entropy);
 
     x = (entropy - entropy_lo) / (entropy_hi - entropy_lo);
     if (x < 0.2) x = 0.2;
@@ -986,15 +995,18 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
     log_lambda_mid = log_lambda_lo + (log_lambda_hi - log_lambda_lo) * x;
     entropy_mid = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_mid));
 
+    SCHRO_DEBUG("picking x=%g log_lambda_mid=%g entropy=%g", x,
+        log_lambda_mid, entropy_mid);
+
     if (entropy_mid > entropy) {
       log_lambda_hi = log_lambda_mid;
       entropy_hi = entropy_mid;
+      SCHRO_DEBUG("--> focus up");
     } else {
       log_lambda_lo = log_lambda_mid;
       entropy_lo = entropy_mid;
+      SCHRO_DEBUG("--> focus down");
     }
-    SCHRO_DEBUG("%g %g %g %g",
-        entropy_lo, entropy_hi, log_lambda_lo, log_lambda_hi);
   }
 
   log_lambda_mid = 0.5*(log_lambda_hi + log_lambda_lo);
