@@ -725,11 +725,11 @@ schro_encoder_frame_complete (SchroEncoderFrame *frame)
 
     SCHRO_ASSERT(frame->output_buffer_size > 0);
 
-    if (frame->ref_frame0) {
-      schro_encoder_frame_unref (frame->ref_frame0);
+    if (frame->ref_frame[0]) {
+      schro_encoder_frame_unref (frame->ref_frame[0]);
     }
-    if (frame->ref_frame1) {
-      schro_encoder_frame_unref (frame->ref_frame1);
+    if (frame->ref_frame[1]) {
+      schro_encoder_frame_unref (frame->ref_frame[1]);
     }
     if (frame->is_ref) {
       schro_encoder_reference_add (frame->encoder, frame);
@@ -1548,14 +1548,15 @@ schro_encoder_encode_picture_header (SchroEncoderFrame *frame)
   schro_pack_sync(frame->pack);
   schro_pack_encode_bits (frame->pack, 32, frame->frame_number);
 
-  SCHRO_DEBUG("refs %i ref0 %i ref1 %i", frame->params.num_refs, frame->picture_number_ref0, frame->picture_number_ref1);
+  SCHRO_DEBUG("refs %d ref0 %d ref1 %d", frame->params.num_refs,
+      frame->picture_number_ref[0], frame->picture_number_ref[1]);
 
   if (frame->params.num_refs > 0) {
     schro_pack_encode_sint (frame->pack,
-        (int32_t)(frame->picture_number_ref0 - frame->frame_number));
+        (int32_t)(frame->picture_number_ref[0] - frame->frame_number));
     if (frame->params.num_refs > 1) {
       schro_pack_encode_sint (frame->pack,
-          (int32_t)(frame->picture_number_ref1 - frame->frame_number));
+          (int32_t)(frame->picture_number_ref[1] - frame->frame_number));
     }
   }
 

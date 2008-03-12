@@ -122,8 +122,7 @@ struct _SchroEncoderFrame {
 
   int is_ref;
   int num_refs;
-  SchroPictureNumber picture_number_ref0;
-  SchroPictureNumber picture_number_ref1;
+  SchroPictureNumber picture_number_ref[2];
   SchroPictureNumber retired_picture_number;
 
   int16_t slice_y_dc_values[100];
@@ -162,8 +161,7 @@ struct _SchroEncoderFrame {
   SchroFrame *iwt_frame;
   SchroFrame *prediction_frame;
 
-  SchroEncoderFrame *ref_frame0;
-  SchroEncoderFrame *ref_frame1;
+  SchroEncoderFrame *ref_frame[2];
 
   SchroMotion *motion;
   SchroList *motion_field_list;

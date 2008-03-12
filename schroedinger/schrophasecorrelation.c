@@ -348,9 +348,9 @@ do_phase_corr (SchroPhaseCorr *pc, int ref)
 
   src_frame = get_downsampled(pc->frame, pc->picture_shift);
   if (ref == 0) {
-    ref_frame = get_downsampled(pc->frame->ref_frame0, pc->picture_shift);
+    ref_frame = get_downsampled(pc->frame->ref_frame[0], pc->picture_shift);
   } else {
-    ref_frame = get_downsampled(pc->frame->ref_frame1, pc->picture_shift);
+    ref_frame = get_downsampled(pc->frame->ref_frame[1], pc->picture_shift);
   }
 
   for(iy=0;iy<pc->num_y;iy++){
@@ -406,9 +406,9 @@ do_motion_field (SchroPhaseCorr *pc, int i)
   mf = schro_motion_field_new (params->x_num_blocks, params->y_num_blocks);
     src = get_downsampled(pc->frame, 0);
     if (i == 0) {
-      ref = get_downsampled(pc->frame->ref_frame0, 0);
+      ref = get_downsampled(pc->frame->ref_frame[0], 0);
     } else {
-      ref = get_downsampled(pc->frame->ref_frame1, 0);
+      ref = get_downsampled(pc->frame->ref_frame[1], 0);
     }
     for(l=0;l<params->y_num_blocks;l++){
       for(k=0;k<params->x_num_blocks;k++){
