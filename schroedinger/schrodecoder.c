@@ -80,6 +80,16 @@ static void schro_decoder_picture_complete (SchroPicture *picture);
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
 
+/* API */
+
+/**
+ * schro_decoder_new:
+ *
+ * Creates a new decoder object.  The decoder object should be freed
+ * using @schro_decoder_free() when it is no longer needed.
+ *
+ * Returns: a new decoder object
+ */
 SchroDecoder *
 schro_decoder_new (void)
 {
@@ -117,6 +127,12 @@ schro_decoder_new (void)
   return decoder;
 }
 
+/**
+ * schro_decoder_free:
+ * @decoder: decoder object
+ *
+ * Frees a decoder object.
+ */
 void
 schro_decoder_free (SchroDecoder *decoder)
 {
@@ -138,6 +154,16 @@ schro_decoder_free (SchroDecoder *decoder)
   schro_free (decoder);
 }
 
+/**
+ * schro_picture_new:
+ * @decoder: a decoder object
+ *
+ * Creates a new picture for @decoder.
+ *
+ * Internal API.
+ *
+ * Returns: a new picture
+ */
 SchroPicture *
 schro_picture_new (SchroDecoder *decoder)
 {
@@ -239,6 +265,14 @@ schro_picture_unref (SchroPicture *picture)
   }
 }
 
+/**
+ * schro_decoder_reset:
+ * @decoder: a decoder object
+ *
+ * Resets the internal state of the decoder.  This function should be
+ * called after a discontinuity of the stream, for example, as the
+ * result of a seek.
+ */
 void
 schro_decoder_reset (SchroDecoder *decoder)
 {
@@ -263,29 +297,80 @@ schro_decoder_reset (SchroDecoder *decoder)
   schro_async_unlock (decoder->async);
 }
 
+/**
+ * schro_decoder_get_video_format:
+ * @decoder: a decoder object
+ *
+ * Returns a structure containing information on the video format being
+ * decoded by the decoder.  This structure should be freed using free()
+ * when it is no longer needed.
+ *
+ * Returns: a video format structure
+ */
 SchroVideoFormat *
 schro_decoder_get_video_format (SchroDecoder *decoder)
 {
   SchroVideoFormat *format;
 
-  format = schro_malloc(sizeof(SchroVideoFormat));
+  /* FIXME check that decoder is in the right state */
+
+  format = malloc(sizeof(SchroVideoFormat));
   memcpy (format, &decoder->video_format, sizeof(SchroVideoFormat));
 
   return format;
 }
 
+/**
+ * schro_decoder_get_picture_number:
+ * @decoder: a decoder object
+ *
+ * Returns the picture number of the next picture that will be returned
+ * by @schro_decoder_pull().
+ *
+ * Returns: a picture number
+ */
 SchroPictureNumber
 schro_decoder_get_picture_number (SchroDecoder *decoder)
 {
   return decoder->next_frame_number;
 }
 
+/**
+ * schro_decoder_add_output_picture:
+ * @decoder: a decoder object
+ * @frame: the frame to add to the picture queue
+ *
+ * Adds a frame provided by the application to the picture queue.
+ * Frames in the picture queue will be used for decoding images, and
+ * are eventually returned to the application by schro_decoder_pull().
+ *
+ * The caller loses its reference to @frame after calling this
+ * function.
+ */
 void
 schro_decoder_add_output_picture (SchroDecoder *decoder, SchroFrame *frame)
 {
   schro_queue_add (decoder->output_queue, frame, 0);
 }
 
+/**
+ * schro_decoder_set_earliest_frame:
+ * @decoder: a decoder object
+ * @earliest_frame: the earliest frame that the application is interested in
+ *
+ * The application can tell the decoder the earliest frame it is
+ * interested in by calling this function.  Subsequent calls to
+ * schro_decoder_pull() will only return pictures with picture
+ * numbers greater than or equal to this number.  The decoder will
+ * avoid decoding pictures that will not be displayed or used as
+ * reference pictures.
+ *
+ * This feature can be used for frame-accurate seeking.
+ *
+ * This function can be called at any time during decoding.  Calling
+ * this function with a picture number less than the current earliest
+ * frame setting is invalid.
+ */
 void
 schro_decoder_set_earliest_frame (SchroDecoder *decoder,
     SchroPictureNumber earliest_frame)
@@ -293,6 +378,33 @@ schro_decoder_set_earliest_frame (SchroDecoder *decoder,
   decoder->earliest_frame = earliest_frame;
 }
 
+/**
+ * schro_decoder_set_skip_ratio:
+ * @decoder: a decoder object
+ * @ratio: skip ratio.
+ *
+ * Sets the skip ratio of the decoder.  The skip ratio is used by the
+ * decoder to skip decoding of some pictures.  Reference pictures are
+ * always decoded.
+ *
+ * A picture is skipped when the running average of the proportion of
+ * pictures skipped is less than the skip ratio.  Reference frames are
+ * always decoded and contribute to the running average.  Thus, the
+ * actual ratio of skipped pictures may be larger than the requested
+ * skip ratio.
+ *
+ * The decoder indicates a skipped picture in the pictures returned
+ * by @schro_decoder_pull() by a frame that has a width and height of
+ * 0.
+ *
+ * The default skip ratio is 1.0, indicating that all pictures should
+ * be decoded.  A skip ratio of 0.0 indicates that no pictures should
+ * be decoded, although as mentioned above, some pictures will be
+ * decoded anyway.  Values outside the range of 0.0 to 1.0 are quietly
+ * clamped to that range.
+ *
+ * This function may be called at any time during decoding.
+ */
 void
 schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio)
 {
@@ -320,6 +432,29 @@ schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
   return FALSE;
 }
 
+/**
+ * schro_decoder_pull:
+ * @decoder: a decoder object
+ *
+ * Removes the next picture from the picture queue and returns a frame
+ * containing the image.
+ *
+ * The application provides the frames that pictures are decoded into,
+ * and the same frames are returned from this function.  However, the
+ * order of frames returned may be different than the order that the
+ * application provides the frames to the decoder.
+ *
+ * An exception to this is that skipped frames are indicated by a
+ * frame having a height and width equal to 0.  This frame is created
+ * using @schro_frame_new(), and is not one of the frames provided by
+ * the application.
+ *
+ * Frames should be freed using @schro_frame_unref() when no longer
+ * needed.  The frame must not be reused by the application, since it
+ * may contain a reference frame still in use by the decoder.
+ *
+ * Returns: the next picture
+ */
 SchroFrame *
 schro_decoder_pull (SchroDecoder *decoder)
 {
@@ -353,6 +488,15 @@ schro_decoder_pull (SchroDecoder *decoder)
   return frame;
 }
 
+/**
+ * schro_decoder_push_ready:
+ * @decoder: a decoder object
+ *
+ * This function is used by the application to determine if it should push
+ * more data to the decoder.
+ *
+ * Returns: TRUE if the decoder is ready for more data
+ */
 int
 schro_decoder_push_ready (SchroDecoder *decoder)
 {
@@ -422,11 +566,20 @@ schro_decoder_dump (SchroDecoder *decoder)
   SCHRO_ERROR("next_frame_number %d", decoder->next_frame_number);
 }
 
+/**
+ * schro_decoder_wait:
+ * @decoder: a decoder object
+ *
+ * Waits until the decoder requires the application to do something,
+ * e.g., push more data or remove a frame from the picture queue,
+ * and then returns the decoder status.
+ *
+ * Returns: decoder status
+ */
 int
 schro_decoder_wait (SchroDecoder *decoder)
 {
   int ret;
-
 
   schro_async_lock (decoder->async);
   while (1) {
