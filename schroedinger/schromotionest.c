@@ -1355,27 +1355,27 @@ schro_motionest_superblock_scan_one (SchroMotionEst *me, int ref, int distance,
 {
   SchroParams *params = me->params;
   SchroMotionVector *mv;
-  SchroMetricScan scan2;
+  SchroMetricScan scan;
   SchroMotionField *hint_mf;
   SchroMotionVector *hint_mv;
   int dx, dy;
 
-  scan2.frame = get_downsampled (me->encoder_frame, 0);
+  scan.frame = get_downsampled (me->encoder_frame, 0);
   if (ref == 0) {
-    scan2.ref_frame = get_downsampled (me->encoder_frame->ref_frame0, 0);
+    scan.ref_frame = get_downsampled (me->encoder_frame->ref_frame0, 0);
   } else {
-    scan2.ref_frame = get_downsampled (me->encoder_frame->ref_frame1, 0);
+    scan.ref_frame = get_downsampled (me->encoder_frame->ref_frame1, 0);
   }
 
   hint_mf = me->downsampled_mf[ref][2];
 
-  scan2.x = i * params->xbsep_luma;
-  scan2.y = j * params->ybsep_luma;
-  scan2.block_width = MIN(4*params->xbsep_luma, scan2.frame->width - scan2.x);
-  scan2.block_height = MIN(4*params->ybsep_luma, scan2.frame->height - scan2.y);
-  scan2.gravity_scale = 0;
-  scan2.gravity_x = 0;
-  scan2.gravity_y = 0;
+  scan.x = i * params->xbsep_luma;
+  scan.y = j * params->ybsep_luma;
+  scan.block_width = MIN(4*params->xbsep_luma, scan.frame->width - scan.x);
+  scan.block_height = MIN(4*params->ybsep_luma, scan.frame->height - scan.y);
+  scan.gravity_scale = 0;
+  scan.gravity_x = 0;
+  scan.gravity_y = 0;
 
   mv = &block->mv[0][0];
   hint_mv = motion_field_get (hint_mf, i, j);
@@ -1383,8 +1383,8 @@ schro_motionest_superblock_scan_one (SchroMotionEst *me, int ref, int distance,
   dx = hint_mv->dx[ref];
   dy = hint_mv->dy[ref];
 
-  schro_metric_scan_setup (&scan2, dx, dy, distance);
-  if (scan2.scan_width <= 0 || scan2.scan_height <= 0) {
+  schro_metric_scan_setup (&scan, dx, dy, distance);
+  if (scan.scan_width <= 0 || scan.scan_height <= 0) {
     mv->dx[ref] = 0;
     mv->dy[ref] = 0;
     mv->metric = SCHRO_METRIC_INVALID;
@@ -1392,8 +1392,8 @@ schro_motionest_superblock_scan_one (SchroMotionEst *me, int ref, int distance,
     return;
   }
 
-  schro_metric_scan_do_scan (&scan2);
-  block->error = schro_metric_scan_get_min (&scan2, &dx, &dy);
+  schro_metric_scan_do_scan (&scan);
+  block->error = schro_metric_scan_get_min (&scan, &dx, &dy);
   mv->metric = block->error/16;
 
   mv->split = 0;
