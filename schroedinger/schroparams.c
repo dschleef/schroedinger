@@ -153,7 +153,8 @@ schro_params_calculate_iwt_sizes (SchroParams *params)
  * the new values.
  *
  * The structure fields changed are: x_num_blocks, y_num_blocks,
- * mc_luma_width, mc_luma_height, mc_chroma_width, mc_chroma_height.
+ * mc_luma_width, mc_luma_height, mc_chroma_width, mc_chroma_height,
+ * x_offset, y_offset.
  */
 void
 schro_params_calculate_mc_sizes (SchroParams *params)
@@ -178,6 +179,9 @@ schro_params_calculate_mc_sizes (SchroParams *params)
   SCHRO_DEBUG("mc_luma %dx%d, mc_chroma %dx%d",
       params->mc_luma_width, params->mc_luma_height,
       params->mc_chroma_width, params->mc_chroma_height);
+
+  params->x_offset = (params->xblen_luma - params->xbsep_luma)/2;
+  params->y_offset = (params->yblen_luma - params->ybsep_luma)/2;
 }
 
 typedef struct _SchroBlockParams SchroBlockParams;

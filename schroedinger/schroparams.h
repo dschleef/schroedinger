@@ -73,6 +73,8 @@ struct _SchroParams {
   int mc_luma_height;
   int x_num_blocks;
   int y_num_blocks;
+  int x_offset;
+  int y_offset;
 };
 
 #define SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position) (((position)&3) == 2)
