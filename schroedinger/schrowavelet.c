@@ -302,6 +302,9 @@ void schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
 
 #define ROW(row) ((int16_t *)OFFSET(data, (row)*stride))
 
+  /* FIXME */
+  SCHRO_ASSERT(height>=6);
+
   for(i=0;i<height + 6;i++){
     int i1 = i-4;
     int i2 = i-6;
@@ -446,6 +449,9 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
 {
   int i;
   int16_t one = 1;
+
+  /* FIXME */
+  SCHRO_ASSERT(height>=6);
 
 #define ROW(row) ((int16_t *)OFFSET(data, (row)*stride))
   for(i=0;i<height + 8;i++){
@@ -746,6 +752,9 @@ void schro_iiwt_desl_9_3 (int16_t *data, int stride, int width, int height,
 
 #define ROW(row) ((int16_t *)OFFSET(data, (row)*stride))
 
+  /* FIXME */
+  SCHRO_ASSERT(height>=6);
+
   for(i=-6;i<height;i++){
     int i1 = i+2;
     int i2 = i+6;
@@ -894,6 +903,9 @@ void schro_iiwt_13_5 (int16_t *data, int stride, int width, int height,
     int16_t *tmp)
 {
   int i;
+
+  /* FIXME */
+  SCHRO_ASSERT(height>=6);
 
 #define ROW(row) ((int16_t *)OFFSET(data, (row)*stride))
   for(i=-8;i<height;i++){

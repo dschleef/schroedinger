@@ -48,12 +48,15 @@ fwd_test (int filter, int width, int height)
   for(i=0;i<test_pattern_get_n_generators();i++){
     test_pattern_generate (fd_ref, name, i);
     printf("  forward test \"%s\":\n", name);
-  fflush(stdout);
+    fflush(stdout);
 
     schro_frame_convert (test, ref);
     iwt_ref(fd_ref,filter);
     iwt_test(fd_test,filter);
-    fail |= frame_data_compare(fd_test, fd_ref);
+    if (!frame_data_compare(fd_test, fd_ref)) { 
+      frame_data_dump (fd_test, fd_ref);
+      fail = TRUE;
+    }
   }
   schro_frame_unref (test);
   schro_frame_unref (ref);
@@ -79,12 +82,16 @@ inv_test (int filter, int width, int height)
   for(i=0;i<test_pattern_get_n_generators();i++){
     test_pattern_generate (fd_ref, name, i);
     printf("  reverse test \"%s\":\n", name);
-  fflush(stdout);
+    fflush(stdout);
 
+    iwt_ref(fd_ref,filter);
     schro_frame_convert (test, ref);
     iiwt_ref(fd_ref,filter);
     iiwt_test(fd_test,filter);
-    fail |= frame_data_compare(fd_test, fd_ref);
+    if (!frame_data_compare(fd_test, fd_ref)) { 
+      frame_data_dump (fd_test, fd_ref);
+      fail = TRUE;
+    }
   }
   schro_frame_unref (test);
   schro_frame_unref (ref);
@@ -113,7 +120,10 @@ fwd_random_test (int filter, int width, int height)
   schro_frame_convert (test, ref);
   iwt_ref(fd_ref,filter);
   iwt_test(fd_test,filter);
-  fail |= frame_data_compare(fd_test, fd_ref);
+  if (!frame_data_compare(fd_test, fd_ref)) { 
+    frame_data_dump (fd_test, fd_ref);
+    fail = TRUE;
+  }
   
   schro_frame_unref (test);
   schro_frame_unref (ref);
@@ -139,10 +149,14 @@ inv_random_test (int filter, int width, int height)
   printf("  reverse test \"%s\":\n", name);
   fflush(stdout);
 
+  iwt_ref(fd_ref,filter);
   schro_frame_convert (test, ref);
   iiwt_ref(fd_ref,filter);
   iiwt_test(fd_test,filter);
-  fail |= frame_data_compare(fd_test, fd_ref);
+  if (!frame_data_compare(fd_test, fd_ref)) { 
+    frame_data_dump (fd_test, fd_ref);
+    fail = TRUE;
+  }
   schro_frame_unref (test);
   schro_frame_unref (ref);
 }
@@ -162,11 +176,17 @@ main (int argc, char *argv[])
     inv_test(filter, 20, 20);
   }
 
-  for(width = 4; width <= 40; width++) {
-    for(height = 4; height <= 40; height++) {
+  for(width = 4; width <= 40; width+=2) {
+    for(height = 4; height <= 40; height+=2) {
       printf("Size %dx%d:\n", width, height);
       for(filter=0;filter<=SCHRO_WAVELET_DAUBECHIES_9_7;filter++){
         printf("  filter %d:\n", filter);
+        if (filter == SCHRO_WAVELET_DESLAURIES_DUBUC_9_7 && (width < 0 || height <= 4)) {
+          continue;
+        }
+        if (filter == SCHRO_WAVELET_DESLAURIES_DUBUC_13_7 && (width < 0 || height <= 4)) {
+          continue;
+        }
         if (filter == SCHRO_WAVELET_FIDELITY && (width < 16 || height < 16)) {
           continue;
         }
