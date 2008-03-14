@@ -957,14 +957,10 @@ schro_motionest_superblock_scan_one (SchroMotionEst *me, int ref, int distance,
 
   hint_mf = me->downsampled_mf[ref][2];
 
-  scan.block_width = 4*params->xbsep_luma + 2*params->x_offset;
-  scan.block_height = 4*params->ybsep_luma + 2*params->y_offset;
-  scan.x = i * params->xbsep_luma - params->x_offset;
-  scan.y = j * params->ybsep_luma - params->y_offset;
-  scan.x = MAX(0,scan.x);
-  scan.y = MAX(0,scan.y);
-  scan.block_width = MIN(scan.block_width, scan.frame->width - scan.x);
-  scan.block_height = MIN(scan.block_height, scan.frame->height - scan.y);
+  scan.x = i * params->xbsep_luma;
+  scan.y = j * params->ybsep_luma;
+  scan.block_width = MIN(4*params->xbsep_luma, scan.frame->width - scan.x);
+  scan.block_height = MIN(4*params->ybsep_luma, scan.frame->height - scan.y);
   scan.gravity_scale = 0;
   scan.gravity_x = 0;
   scan.gravity_y = 0;
@@ -1166,8 +1162,8 @@ schro_motionest_block_scan_one (SchroMotionEst *me, int ref, int distance,
 
   hint_mf = me->downsampled_mf[ref][1];
 
-  scan.block_width = params->xbsep_luma + 2*params->x_offset;
-  scan.block_height = params->ybsep_luma + 2*params->y_offset;
+  scan.block_width = params->xbsep_luma;
+  scan.block_height = params->ybsep_luma;
   scan.gravity_scale = 0;
   scan.gravity_x = 0;
   scan.gravity_y = 0;
@@ -1182,10 +1178,8 @@ schro_motionest_block_scan_one (SchroMotionEst *me, int ref, int distance,
       dx = hint_mv->dx[ref];
       dy = hint_mv->dy[ref];
 
-      scan.x = (i + ii) * params->xbsep_luma - params->x_offset;
-      scan.y = (j + jj) * params->ybsep_luma - params->y_offset;
-      scan.x = MAX(0,scan.x);
-      scan.y = MAX(0,scan.y);
+      scan.x = (i + ii) * params->xbsep_luma;
+      scan.y = (j + jj) * params->ybsep_luma;
       schro_metric_scan_setup (&scan, dx, dy, distance);
       if (scan.scan_width <= 0 || scan.scan_height <= 0) {
         mv->dx[ref] = 0;
