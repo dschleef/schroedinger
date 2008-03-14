@@ -690,19 +690,19 @@ schro_encoder_wait (SchroEncoder *encoder)
     SCHRO_DEBUG("encoder waiting");
     ret = schro_async_wait_locked (encoder->async);
     if (!ret) {
-#if 0
       int i;
 
-      SCHRO_ERROR ("doh!");
+      SCHRO_WARNING ("deadlock?  kicking scheduler");
       for(i=0;i<encoder->frame_queue->n;i++){
         SchroEncoderFrame *frame = encoder->frame_queue->elements[i].data;
-        SCHRO_ERROR("%d: %d %04x", i, frame->frame_number, frame->state);
+        SCHRO_WARNING("%d: %d %d %d %d %04x", i, frame->frame_number,
+            frame->picture_number_ref[0], frame->picture_number_ref[1],
+            frame->busy, frame->state);
       }
-      SCHRO_ASSERT(0);
-#else
+      //SCHRO_ASSERT(0);
       schro_async_signal_scheduler (encoder->async);
       ret = SCHRO_STATE_AGAIN;
-#endif
+      break;
     }
   }
   schro_async_unlock (encoder->async);
