@@ -1,4 +1,26 @@
 
+1.0.1
+=====
+
+ - Add API reference documentation for SchroDecoder.
+ - Restructure API reference documentation, although coverage is very
+   low.
+ - Default GOP structure now uses 3 reference frames.  This gives a
+   very slight improvement in quality.
+ - Fix encode/decode mismatch for low-delay syntax.
+ - Fix brokenness in CBR intra-only encoding
+ - Additional testing and code cleanups
+ - Eliminate artificial width limitation in encoder and decoder.
+ - Fix encoding/decoding of video offset and excursion.
+ - Fix granulepos calculation in GStreamer encoder element
+ - Set DELTA_UNIT correctly in GStreamer encoder element
+ - Update code path used when pthread is disabled.
+
+1.0.0
+=====
+
+ - Major release
+
 0.2.1
 =====
 
