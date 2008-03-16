@@ -23,6 +23,49 @@ schro_engine_check_new_access_unit(SchroEncoder *encoder,
 }
 
 static void
+schro_engine_code_picture (SchroEncoderFrame *frame,
+    int is_ref, int retire, int num_refs, int ref0, int ref1)
+{
+  SchroEncoder *encoder = frame->encoder;
+
+  SCHRO_DEBUG("preparing %d as is_ref=%d retire=%d num_refs=%d ref0=%d ref1=%d",
+      frame->frame_number, is_ref, retire, num_refs, ref0, ref1);
+
+  frame->is_ref = is_ref;
+  frame->retired_picture_number = retire;
+  frame->num_refs = num_refs;
+  frame->picture_number_ref[0] = ref0;
+  frame->picture_number_ref[1] = ref1;
+
+  frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
+  frame->slot = encoder->next_slot++;
+
+  if (num_refs > 0) {
+    frame->ref_frame[0] = schro_encoder_reference_get (encoder, ref0);
+    SCHRO_ASSERT(frame->ref_frame[0]);
+    schro_encoder_frame_ref (frame->ref_frame[0]);
+  }
+  if (num_refs > 1) {
+    frame->ref_frame[1] = schro_encoder_reference_get (encoder, ref1);
+    SCHRO_ASSERT(frame->ref_frame[1]);
+    schro_encoder_frame_ref (frame->ref_frame[1]);
+  }
+  if (is_ref) {
+    int i;
+    for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
+      if (encoder->reference_pictures[i] == NULL) break;
+      if (encoder->reference_pictures[i]->frame_number == retire) {
+        schro_encoder_frame_unref(encoder->reference_pictures[i]);
+        break;
+      }
+    }
+    SCHRO_ASSERT(i<SCHRO_LIMIT_REFERENCE_FRAMES);
+    encoder->reference_pictures[i] = frame;
+    schro_encoder_frame_ref (frame);
+  }
+}
+
+static void
 handle_gop_tworef (SchroEncoder *encoder, int i)
 {
   SchroEncoderFrame *frame;
@@ -80,90 +123,52 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
   SCHRO_DEBUG("gop length %d", gop_length);
 
   if (gop_length == 1) {
-    frame->is_ref = FALSE;
-    frame->num_refs = 0;
-    SCHRO_DEBUG("preparing %d as intra non-ref", frame->frame_number);
-    frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
-    frame->slot = encoder->next_slot++;
+    schro_engine_code_picture (frame, FALSE, -1, 0, -1, -1);
     frame->presentation_frame = frame->frame_number;
     frame->picture_weight = encoder->magic_bailout_weight;
   } else {
     if (intra_start) {
       /* IBBBP */
-      frame->is_ref = TRUE;
-      frame->num_refs = 0;
-      SCHRO_DEBUG("preparing %d as intra ref", frame->frame_number);
-      frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
-      frame->slot = encoder->next_slot++;
+      schro_engine_code_picture (frame, TRUE, encoder->intra_ref, 0, -1, -1);
+      encoder->intra_ref = frame->frame_number;
+
       frame->presentation_frame = frame->frame_number;
       //frame->picture_weight = 1 + (gop_length - 1) * 0.6;
       frame->picture_weight = encoder->magic_keyframe_weight;
-      if (encoder->intra_ref != -1) {
-        frame->retired_picture_number = encoder->intra_ref;
-      }
-      encoder->intra_ref = frame->frame_number;
 
       f = encoder->frame_queue->elements[i+gop_length-1].data;
-      f->is_ref = TRUE;
-      f->num_refs = 1;
-      f->picture_number_ref[0] = frame->frame_number;
-      f->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
-      SCHRO_DEBUG("preparing %d as inter ref (%d)", f->frame_number,
-          f->picture_number_ref[0]);
-      f->slot = encoder->next_slot++;
+      schro_engine_code_picture (f, TRUE, encoder->last_ref,
+          1, frame->frame_number, -1);
+
       f->presentation_frame = f->frame_number;
       f->picture_weight = encoder->magic_inter_p_weight;
       //f->picture_weight += (gop_length - 2) * (1 - encoder->magic_inter_b_weight);
-      if (encoder->last_ref != -1) {
-        f->retired_picture_number = encoder->last_ref;
-      }
       encoder->last_ref = encoder->last_ref2;
       encoder->last_ref2 = f->frame_number;
       ref2 = f;
 
       for (j = 1; j < gop_length - 1; j++) {
         f = encoder->frame_queue->elements[i+j].data;
-        f->is_ref = FALSE;
-        f->num_refs = 2;
-        f->picture_number_ref[0] = frame->frame_number;
-        f->picture_number_ref[1] = ref2->frame_number;
-        f->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
-        SCHRO_DEBUG("preparing %d as inter (%d)", f->frame_number,
-            f->picture_number_ref[0]);
-        f->slot = encoder->next_slot++;
+        schro_engine_code_picture (f, FALSE, -1,
+            2, frame->frame_number, ref2->frame_number);
         f->presentation_frame = f->frame_number;
         f->picture_weight = encoder->magic_inter_b_weight;
       }
     } else {
       /* BBBP */
       f = encoder->frame_queue->elements[i+gop_length-1].data;
-      f->is_ref = TRUE;
-      f->num_refs = 2;
-      f->picture_number_ref[0] = encoder->last_ref2;
-      f->picture_number_ref[1] = encoder->intra_ref;
-      f->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
-      SCHRO_DEBUG("preparing %d as inter ref (%d)", f->frame_number,
-          f->picture_number_ref[0]);
-      f->slot = encoder->next_slot++;
+      schro_engine_code_picture (f, TRUE, encoder->last_ref,
+          2, encoder->last_ref2, encoder->intra_ref);
       f->presentation_frame = f->frame_number;
       f->picture_weight = encoder->magic_inter_p_weight;
       //f->picture_weight += (gop_length - 1) * (1 - encoder->magic_inter_b_weight);
-      if (encoder->last_ref != -1) {
-        f->retired_picture_number = encoder->last_ref;
-      }
       encoder->last_ref = encoder->last_ref2;
       encoder->last_ref2 = f->frame_number;
 
       for (j = 0; j < gop_length - 1; j++) {
         f = encoder->frame_queue->elements[i+j].data;
-        f->is_ref = FALSE;
-        f->num_refs = 2;
-        f->picture_number_ref[0] = encoder->last_ref;
-        f->picture_number_ref[1] = encoder->last_ref2;
-        f->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
-        SCHRO_DEBUG("preparing %d as inter (%d)", f->frame_number,
-            f->picture_number_ref[0]);
-        f->slot = encoder->next_slot++;
+        schro_engine_code_picture (f, FALSE, -1,
+            2, encoder->last_ref, encoder->last_ref2);
         f->presentation_frame = f->frame_number;
         f->picture_weight = encoder->magic_inter_b_weight;
       }
@@ -222,27 +227,14 @@ handle_gop_backref (SchroEncoder *encoder, int i)
 
   SCHRO_DEBUG("gop length %d", gop_length);
 
-  frame->is_ref = TRUE;
-  frame->num_refs = 0;
-  SCHRO_DEBUG("preparing %d as intra ref", frame->frame_number);
-  frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
-  frame->slot = encoder->next_slot++;
+  schro_engine_code_picture (frame, TRUE, encoder->last_ref, 0, -1, -1);
   frame->presentation_frame = frame->frame_number;
   frame->picture_weight = 1 + (gop_length - 1) * (1 - encoder->magic_inter_b_weight);
-  if (encoder->last_ref != -1) {
-    frame->retired_picture_number = encoder->last_ref;
-  }
   encoder->last_ref = frame->frame_number;
 
   for (j = 1; j < gop_length; j++) {
     f = encoder->frame_queue->elements[i+j].data;
-    f->is_ref = FALSE;
-    f->num_refs = 1;
-    f->picture_number_ref[0] = frame->frame_number;
-    f->state = SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
-    SCHRO_DEBUG("preparing %d as inter (%d)", f->frame_number,
-        f->picture_number_ref[0]);
-    f->slot = encoder->next_slot++;
+    schro_engine_code_picture (f, FALSE, -1, 1, frame->frame_number, -1);
     f->presentation_frame = f->frame_number;
     f->picture_weight = encoder->magic_inter_b_weight;
   }
@@ -255,21 +247,15 @@ check_refs (SchroEncoderFrame *frame)
 {
   if (frame->num_refs == 0) return TRUE;
 
-  frame->ref_frame[0] = schro_encoder_reference_get (frame->encoder,
-      frame->picture_number_ref[0]);
-  if (frame->ref_frame[0] == NULL) return FALSE;
-
-  if (frame->num_refs == 1) {
-    schro_encoder_frame_ref (frame->ref_frame[0]);
-    return TRUE;
+  if (frame->num_refs > 0 &&
+      !(frame->ref_frame[0]->state & SCHRO_ENCODER_FRAME_STATE_DONE)) {
+    return FALSE;
+  }
+  if (frame->num_refs > 1 &&
+      !(frame->ref_frame[1]->state & SCHRO_ENCODER_FRAME_STATE_DONE)) {
+    return FALSE;
   }
 
-  frame->ref_frame[1] = schro_encoder_reference_get (frame->encoder,
-      frame->picture_number_ref[1]);
-  if (frame->ref_frame[1] == NULL) return FALSE;
-
-  schro_encoder_frame_ref (frame->ref_frame[0]);
-  schro_encoder_frame_ref (frame->ref_frame[1]);
   return TRUE;
 }
 
@@ -576,7 +562,7 @@ setup_params_intra_only (SchroEncoderFrame *frame)
 
   frame->presentation_frame = frame->frame_number;
 
-  frame->slot = frame->frame_number;
+  schro_engine_code_picture (frame, FALSE, -1, 0, -1, -1);
 
   frame->output_buffer_size =
     schro_engine_pick_output_buffer_size (encoder, frame);
@@ -925,7 +911,7 @@ schro_encoder_engine_test_intra (SchroEncoder *encoder)
 
         frame->presentation_frame = frame->frame_number;
 
-        frame->slot = frame->frame_number;
+        schro_engine_code_picture (frame, FALSE, -1, 0, -1, -1);
 
         frame->output_buffer_size =
           schro_engine_pick_output_buffer_size (encoder, frame);
@@ -1053,115 +1039,6 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
 }
 
 int
-schro_encoder_engine_backtest (SchroEncoder *encoder)
-{
-  SchroParams *params;
-  SchroEncoderFrame *frame;
-  int i;
-  int j;
-  int comp;
-
-  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_SIMPLE;
-
-  for(i=0;i<encoder->frame_queue->n;i++) {
-    int is_ref;
-
-    frame = encoder->frame_queue->elements[i].data;
-    SCHRO_DEBUG("backref i=%d picture=%d state=%d busy=%d", i, frame->frame_number, frame->state, frame->busy);
-
-    if (frame->busy) continue;
-
-    switch (frame->state) {
-      case SCHRO_ENCODER_FRAME_STATE_NEW:
-        frame->need_downsampling = TRUE;
-        frame->need_filtering = (encoder->filtering != 0);
-        frame->need_average_luma = FALSE;
-
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ANALYSE);
-        return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_ANALYSE:
-        schro_engine_check_new_access_unit (encoder, frame);
-
-        is_ref = FALSE;
-        if (encoder->last_ref == -1) {
-          is_ref = TRUE;
-        }
-        if (frame->start_access_unit) {
-          is_ref = TRUE;
-        }
-
-        if (!is_ref) {
-          if (!schro_encoder_reference_get (encoder, encoder->last_ref)) {
-            continue;
-          }
-        }
-
-        frame->presentation_frame = frame->frame_number;
-        frame->slot = frame->frame_number;
-
-        frame->output_buffer_size =
-          schro_engine_pick_output_buffer_size (encoder, frame);
-
-        /* set up params */
-        params = &frame->params;
-        frame->is_ref = is_ref;
-        if (frame->is_ref) {
-          params->num_refs = 0;
-          if (frame->frame_number > 0) {
-            frame->retired_picture_number = encoder->last_ref;
-          }
-          encoder->last_ref = frame->frame_number;
-        } else {
-          params->num_refs = 1;
-          frame->picture_number_ref[0] = encoder->last_ref;
-        }
-
-        init_params (frame);
-
-        params->xbsep_luma = 8;
-        params->xblen_luma = 8;
-        params->ybsep_luma = 8;
-        params->yblen_luma = 8;
-
-        for(comp=0;comp<3;comp++){
-          for(j=0;j<SCHRO_LIMIT_SUBBANDS;j++){
-            frame->quant_index[comp][j] = 0;
-          }
-        }
-
-        if (params->num_refs > 0) {
-          frame->ref_frame[0] = schro_encoder_reference_get (encoder,
-              frame->picture_number_ref[0]);
-          schro_encoder_frame_ref (frame->ref_frame[0]);
-        } else {
-          frame->ref_frame[0] = NULL;
-        }
-
-        SCHRO_DEBUG("queueing %d", frame->frame_number);
-
-        frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
-        break;
-      case SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS:
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
-        return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_PREDICT:
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ENCODING);
-        return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_ENCODING:
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT);
-        return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT:
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_POSTANALYSE);
-        return TRUE;
-      default:
-        break;
-    }
-  }
-
-  return FALSE;
-}
-
-int
 schro_encoder_engine_lowdelay (SchroEncoder *encoder)
 {
   SchroParams *params;
@@ -1190,7 +1067,7 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
 
         frame->presentation_frame = frame->frame_number;
 
-        frame->slot = frame->frame_number;
+        schro_engine_code_picture (frame, FALSE, -1, 0, -1, -1);
 
         frame->output_buffer_size =
           schro_engine_pick_output_buffer_size (encoder, frame);

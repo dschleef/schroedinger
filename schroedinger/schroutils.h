@@ -21,6 +21,8 @@ typedef int SchroCUDAStream;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
+#define SCHRO_PICTURE_NUMBER_INVALID (-1)
+
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 #define DIVIDE_ROUND_UP(a,b) (((a) + (b) - 1)/(b))
 #ifndef MIN

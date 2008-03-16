@@ -42,7 +42,7 @@ SCHRO_BEGIN_DECLS
  * the number of active reference frames may be much larger than in
  * the resulting stream.
  */
-#define SCHRO_LIMIT_REFERENCE_FRAMES 20
+#define SCHRO_LIMIT_REFERENCE_FRAMES 4
 
 /**
  * SCHRO_LIMIT_FRAME_QUEUE_LENGTH:

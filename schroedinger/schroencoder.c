@@ -118,9 +118,6 @@ schro_encoder_new (void)
   encoder->frame_queue = schro_queue_new (encoder->queue_depth,
       (SchroQueueFreeFunc)schro_encoder_frame_unref);
 
-  encoder->reference_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
-      (SchroQueueFreeFunc)schro_encoder_frame_unref);
-
   schro_encoder_set_default_subband_weights (encoder);
 
   encoder->inserted_buffers =
@@ -212,11 +209,17 @@ schro_encoder_start (SchroEncoder *encoder)
 void
 schro_encoder_free (SchroEncoder *encoder)
 {
+  int i;
+
   if (encoder->async) {
     schro_async_free(encoder->async);
   }
 
-  schro_queue_free (encoder->reference_queue);
+  for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
+    if (encoder->reference_pictures[i]) {
+      schro_encoder_frame_unref (encoder->reference_pictures[i]);
+    }
+  }
   schro_queue_free (encoder->frame_queue);
 
   schro_list_free (encoder->inserted_buffers);
@@ -704,6 +707,15 @@ schro_encoder_wait (SchroEncoder *encoder)
             frame->picture_number_ref[0], frame->picture_number_ref[1],
             frame->busy, frame->state);
       }
+      for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
+        SchroEncoderFrame *frame = encoder->reference_pictures[i];
+        if (frame) {
+          SCHRO_WARNING("ref %d: %d %d %04x", i, frame->frame_number,
+              frame->busy, frame->state);
+        } else {
+          SCHRO_WARNING("ref %d: NULL", i);
+        }
+      }
       //SCHRO_ASSERT(0);
       schro_async_signal_scheduler (encoder->async);
       ret = SCHRO_STATE_AGAIN;
@@ -735,9 +747,6 @@ schro_encoder_frame_complete (SchroEncoderFrame *frame)
     }
     if (frame->ref_frame[1]) {
       schro_encoder_frame_unref (frame->ref_frame[1]);
-    }
-    if (frame->is_ref) {
-      schro_encoder_reference_add (frame->encoder, frame);
     }
 
     if (frame->start_access_unit) {
@@ -2214,6 +2223,7 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
   }
 }
 
+#if 0
 /* reference pool */
 
 void
@@ -2228,12 +2238,20 @@ schro_encoder_reference_add (SchroEncoder *encoder, SchroEncoderFrame *frame)
   schro_encoder_frame_ref (frame);
   schro_queue_add (encoder->reference_queue, frame, frame->frame_number);
 }
+#endif
 
 SchroEncoderFrame *
 schro_encoder_reference_get (SchroEncoder *encoder,
     SchroPictureNumber frame_number)
 {
-  return schro_queue_find (encoder->reference_queue, frame_number);
+  int i;
+  for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
+    if (encoder->reference_pictures[i] && 
+        encoder->reference_pictures[i]->frame_number == frame_number) {
+      return encoder->reference_pictures[i];
+    }
+  }
+  return NULL;
 }
 
 #if 0

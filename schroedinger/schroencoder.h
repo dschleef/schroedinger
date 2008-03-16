@@ -200,7 +200,7 @@ struct _SchroEncoder {
 
   SchroQueue *frame_queue;
 
-  SchroQueue *reference_queue;
+  SchroEncoderFrame *reference_pictures[SCHRO_LIMIT_REFERENCE_FRAMES];
 
   int need_rap;
 
@@ -431,7 +431,6 @@ SchroFrame * schro_encoder_frame_queue_get (SchroEncoder *encoder,
     SchroPictureNumber frame_number);
 void schro_encoder_frame_queue_remove (SchroEncoder *encoder,
     SchroPictureNumber frame_number);
-void schro_encoder_reference_add (SchroEncoder *encoder, SchroEncoderFrame *encoder_frame);
 SchroEncoderFrame * schro_encoder_reference_get (SchroEncoder *encoder,
     SchroPictureNumber frame_number);
 void schro_encoder_encode_picture_header (SchroEncoderFrame *frame);
