@@ -125,8 +125,8 @@ schro_gpumotion_copy (SchroGPUMotion * self, SchroMotion * motion)
       vectors[i].x1 = MOTION_NONE;
       vectors[i].x2 = MOTION_NONE;
       // YUV color code is encoded in these
-      vectors[i].y1 = (mvdc->dc[0] & 0xFF) | ((mvdc->dc[1] & 0xFF) << 8);
-      vectors[i].y2 = mvdc->dc[2] & 0xFF;
+      vectors[i].y1 = ((mvdc->dc[0]+128) & 0xFF) | (((mvdc->dc[1]+128) & 0xFF) << 8);
+      vectors[i].y2 = (mvdc->dc[2]+128) & 0xFF;
     } else {
       // Reference 1
       if (motion->motion_vectors[i].pred_mode & 1) {
