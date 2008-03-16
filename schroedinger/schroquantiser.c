@@ -16,6 +16,8 @@ void schro_encoder_choose_quantisers_lossless (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame);
 
 double schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy);
+static double schro_encoder_lambda_to_entropy (SchroEncoderFrame *frame, double lambda);
+
 
 static int schro_subband_pick_quant (SchroEncoderFrame *frame,
     int component, int i, double lambda);
@@ -699,23 +701,25 @@ schro_encoder_calc_estimates (SchroEncoderFrame *frame)
 void
 schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
 {
-  SchroParams *params = &frame->params;
-  int i;
-  int component;
+  //SchroParams *params = &frame->params;
+  //int i;
+  //int component;
   double base_lambda;
   int bits;
+  double ratio;
 
   schro_encoder_generate_subband_histograms (frame);
   schro_encoder_calc_estimates (frame);
 
   SCHRO_ASSERT(frame->have_estimate_tables);
 
-  {
-    double scale = 1/frame->encoder->average_arith_context_ratio;
-    if (scale < 0.8) scale = 0.8;
-    if (scale > 2.0) scale = 2.0;
-    bits = frame->allocated_residual_bits * scale;
+  if (frame->num_refs == 0) {
+    ratio = frame->encoder->average_arith_context_ratio_intra;
+  } else {
+    ratio = frame->encoder->average_arith_context_ratio_inter;
   }
+  frame->estimated_arith_context_ratio = CLAMP(ratio, 0.5, 1.2);
+  bits = frame->allocated_residual_bits;
 
   base_lambda = schro_encoder_entropy_to_lambda (frame, bits);
 #if 0
@@ -742,20 +746,12 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
   frame->base_lambda = base_lambda;
   SCHRO_DEBUG("LAMBDA: %d %g", frame->frame_number, base_lambda);
 
+  schro_encoder_lambda_to_entropy (frame, base_lambda);
+#if 0
   for(component=0;component<3;component++){
     for(i=0;i<1 + 3*params->transform_depth; i++) {
-      int vol;
-      int16_t *data;
-      int stride;
-      int width, height;
       double lambda;
-      int position;
       double weight;
-
-      position = schro_subband_get_position (i);
-      schro_subband_get (frame->iwt_frame, component, position,
-          &frame->params, &data, &stride, &width, &height);
-      vol = width * height;
 
       lambda = base_lambda;
       if (i == 0) {
@@ -773,6 +769,7 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
           component, i, lambda);
     }
   }
+#endif
 }
 
 
@@ -786,12 +783,16 @@ schro_encoder_estimate_entropy (SchroEncoderFrame *frame)
 
   for(component=0;component<3;component++){
     for(i=0;i<1 + 3*params->transform_depth; i++) {
+#if 0
       n += schro_histogram_estimate_entropy (
             &frame->subband_hists[component][i],
             frame->quant_index[component][i], params->is_noarith);
+#else
+      n += frame->est_entropy[component][i][frame->quant_index[component][i]];
+#endif
     }
   }
-  frame->estimated_residual_bits = n;
+  frame->estimated_residual_bits = n * frame->estimated_arith_context_ratio;
 
   if (frame->allocated_residual_bits > 0 &&
       frame->estimated_residual_bits >
@@ -915,15 +916,24 @@ schro_encoder_lambda_to_entropy (SchroEncoderFrame *frame, double base_lambda)
 
       lambda = base_lambda;
 
+      if (i == 0) {
+        lambda *= frame->encoder->magic_subband0_lambda_scale;
+      }
+      if (component > 0) {
+        lambda *= frame->encoder->magic_chroma_lambda_scale;
+      }
+
       weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
         [frame->params.transform_depth-1][i];
       lambda /= weight*weight;
       
       quant_index = schro_subband_pick_quant (frame, component, i, lambda);
       entropy += frame->est_entropy[component][i][quant_index];
+      frame->quant_index[component][i] = quant_index;
     }
   }
-  return entropy;
+
+  return entropy * frame->estimated_arith_context_ratio;
 }
 
 double
@@ -948,7 +958,7 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
 
       SCHRO_DEBUG("have: log_lambda=[%g,%g] entropy=[%g,%g] target=%g",
           log_lambda_lo, log_lambda_hi, entropy_lo, entropy_hi, entropy);
-      if (entropy_hi >= entropy) break;
+      if (entropy_hi > entropy) break;
 
       SCHRO_DEBUG("--> step up");
 
@@ -972,16 +982,16 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
     }
     SCHRO_DEBUG("--> stopping");
   }
-
   if (entropy_lo == entropy_hi) {
+    frame->found_entropy = entropy_lo;
     return exp(0.5*(log_lambda_lo + log_lambda_hi));
   }
 
-  if (!(entropy_lo <= entropy && entropy_hi >= entropy)) {
-    SCHRO_DEBUG("entropy not bracketed");
+  if (entropy_lo > entropy || entropy_hi < entropy) {
+    SCHRO_ERROR("entropy not bracketed");
   }
 
-  for(j=0;j<10;j++){
+  for(j=0;j<14;j++){
     double x;
 
     if (entropy_hi == entropy_lo) break;
@@ -989,9 +999,13 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
     SCHRO_DEBUG("have: log_lambda=[%g,%g] entropy=[%g,%g] target=%g",
         log_lambda_lo, log_lambda_hi, entropy_lo, entropy_hi, entropy);
 
+#if 0
     x = (entropy - entropy_lo) / (entropy_hi - entropy_lo);
     if (x < 0.2) x = 0.2;
     if (x > 0.8) x = 0.8;
+#else
+    x = 0.5;
+#endif
     log_lambda_mid = log_lambda_lo + (log_lambda_hi - log_lambda_lo) * x;
     entropy_mid = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_mid));
 
@@ -1010,6 +1024,7 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
   }
 
   log_lambda_mid = 0.5*(log_lambda_hi + log_lambda_lo);
+  frame->found_entropy = 0.5*(entropy_lo + entropy_hi);
   SCHRO_DEBUG("done %g", exp(log_lambda_mid));
   return exp(log_lambda_mid);
 }

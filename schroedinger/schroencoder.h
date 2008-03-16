@@ -186,6 +186,10 @@ struct _SchroEncoderFrame {
   int mc_error;
   double mean_squared_error_luma;
   double mean_squared_error_chroma;
+
+  double estimated_arith_context_ratio;
+
+  double found_entropy;
 };
 
 struct _SchroEncoder {
@@ -295,7 +299,8 @@ struct _SchroEncoder {
 
   /* statistics */
 
-  double average_arith_context_ratio;
+  double average_arith_context_ratio_intra;
+  double average_arith_context_ratio_inter;
 
   /* engine specific stuff */
 

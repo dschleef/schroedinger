@@ -126,7 +126,8 @@ schro_encoder_new (void)
   encoder->inserted_buffers =
     schro_list_new_full ((SchroListFreeFunc)schro_buffer_unref, NULL);
 
-  encoder->average_arith_context_ratio = 1.0;
+  encoder->average_arith_context_ratio_intra = 1.0;
+  encoder->average_arith_context_ratio_inter = 1.0;
 
   return encoder;
 }
@@ -407,39 +408,43 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
 
         elapsed_time = schro_utils_get_time() - encoder->start_time;
 
-        schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g %d %g %d %g %g %g\n",
-            frame->frame_number, /* 1 */
+        schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g %d %g %d %g %g %g %g\n",
+            frame->frame_number, /* 0 */
             frame->num_refs,
             frame->is_ref,
             frame->allocated_mc_bits,
-            frame->allocated_residual_bits, /* 5 */
-            frame->picture_weight,
+            frame->allocated_residual_bits,
+            frame->picture_weight, /* 5 */
             frame->estimated_mc_bits,
             frame->estimated_residual_bits,
             frame->actual_mc_bits,
-            frame->actual_residual_bits, /* 10 */
-            frame->scene_change_score,
+            frame->actual_residual_bits,
+            frame->scene_change_score, /* 10 */
             encoder->buffer_level,
             frame->base_lambda,
             frame->mc_error,
-            frame->mean_squared_error_luma /* 15 */,
-            frame->mean_squared_error_chroma,
-            elapsed_time);
+            frame->mean_squared_error_luma,
+            frame->mean_squared_error_chroma, /* 15 */
+            elapsed_time,
+            frame->found_entropy);
 
-        {
-          /* FIXME move this */
+        /* FIXME move this */
+        if (frame->num_refs == 0) {
           double x;
+          double alpha = 0.9;
 
-          x = (double)frame->actual_residual_bits / frame->estimated_residual_bits;
-          if (encoder->average_arith_context_ratio == 0) {
-            encoder->average_arith_context_ratio = x;
-          } else {
-            double alpha = 0.9;
-            encoder->average_arith_context_ratio *= alpha;
-            encoder->average_arith_context_ratio += (1.0-alpha) * x;
-          }
-          SCHRO_DEBUG("arith ratio %g", encoder->average_arith_context_ratio);
+          x = frame->estimated_arith_context_ratio * (double)frame->actual_residual_bits / frame->estimated_residual_bits;
+          encoder->average_arith_context_ratio_intra *= alpha;
+          encoder->average_arith_context_ratio_intra += (1.0-alpha) * x;
+          SCHRO_DEBUG("arith ratio %g", encoder->average_arith_context_ratio_intra);
+        } else {
+          double x;
+          double alpha = 0.9;
 
+          x = frame->estimated_arith_context_ratio * (double)frame->actual_residual_bits / frame->estimated_residual_bits;
+          encoder->average_arith_context_ratio_inter *= alpha;
+          encoder->average_arith_context_ratio_inter += (1.0-alpha) * x;
+          SCHRO_DEBUG("arith ratio %g", encoder->average_arith_context_ratio_inter);
         }
 
         schro_encoder_shift_frame_queue (encoder);
