@@ -177,6 +177,10 @@ schro_gpumotion_render (SchroGPUMotion * self, SchroMotion * motion,
   hshift = motion->params->video_format->chroma_h_shift;
   vshift = motion->params->video_format->chroma_v_shift;
 
+  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
+
+  SCHRO_ASSERT(gdest->domain->flags == SCHRO_MEMORY_DOMAIN_CUDA);
+
   if (ref2) {
     cuda_motion_copy (cm, &md, (int16_t *) gdest->components[0].data,
         gdest->components[0].stride, fwidth, fheight, 0, 0, 0,

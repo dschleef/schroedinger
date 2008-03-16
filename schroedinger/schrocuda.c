@@ -7,6 +7,7 @@
 #include <cuda_runtime_api.h>
 
 #include <schroedinger/schrogpuframe.h>
+#include <schroedinger/schrogpumotion.h>
 
 void
 schro_cuda_init (void)
@@ -16,15 +17,15 @@ schro_cuda_init (void)
   cudaError_t ret;
 
   ret = cudaGetDeviceCount (&n);
-  SCHRO_ERROR("cudaGetDeviceCount returned %d", ret);
+  SCHRO_DEBUG("cudaGetDeviceCount returned %d", ret);
 
-  SCHRO_ERROR("CUDA devices %d", n);
+  SCHRO_DEBUG("CUDA devices %d", n);
 
   for(i=0;i<n;i++){
     struct cudaDeviceProp prop;
 
     cudaGetDeviceProperties (&prop, i);
-    SCHRO_ERROR ("CUDA props: %d: %d.%d mem=%d %s", i,
+    SCHRO_DEBUG ("CUDA props: %d: %d.%d mem=%d %s", i,
         prop.major, prop.minor,
         prop.totalGlobalMem, prop.name);
   }
@@ -37,7 +38,7 @@ schro_cuda_alloc (int size)
   void *ptr;
   int ret;
 
-  SCHRO_ERROR("domain is %d", schro_async_get_exec_domain ());
+  SCHRO_DEBUG("domain is %d", schro_async_get_exec_domain ());
   SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
 
   ret = cudaMalloc (&ptr, size);
@@ -48,10 +49,13 @@ schro_cuda_alloc (int size)
 static void
 schro_cuda_free (void *ptr, int size)
 {
-  SCHRO_ERROR("domain is %d", schro_async_get_exec_domain ());
-  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
+  //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
 
-  cudaFree (ptr);
+  if (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA) {
+    cudaFree (ptr);
+  } else {
+    SCHRO_ERROR("Freeing CUDA memory outside CUDA thread.");
+  }
 }
 
 SchroMemoryDomain *
@@ -71,8 +75,16 @@ schro_memory_domain_new_cuda (void)
 void
 schro_motion_render_cuda (SchroMotion *motion, SchroFrame *dest)
 {
+  SchroGPUMotion *gpumotion;
 
-  SCHRO_ASSERT(0);
+  gpumotion = schro_gpumotion_new (0);
+
+  schro_gpumotion_init (gpumotion, motion);
+
+  schro_gpumotion_copy (gpumotion, motion);
+  schro_gpumotion_render (gpumotion, motion, dest);
+
+  schro_gpumotion_free (gpumotion);
 }
 
 void

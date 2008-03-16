@@ -128,6 +128,7 @@ void
 schro_gpuframe_convert (SchroFrame * dest, SchroFrame * src)
 {
   int i;
+  int ret;
 
   SCHRO_ASSERT (dest != NULL);
   SCHRO_ASSERT (src != NULL);
@@ -246,13 +247,21 @@ schro_gpuframe_convert (SchroFrame * dest, SchroFrame * src)
     SCHRO_ERROR ("conversion unimplemented");
     SCHRO_ASSERT (0);
   }
+
+  ret = cudaThreadSynchronize ();
+  if (ret != 0) {
+    SCHRO_ERROR ("thread sync %d", ret);
+  }
+  SCHRO_ASSERT (ret == 0);
 }
 
 void
 schro_gpuframe_add (SchroFrame * dest, SchroFrame * src)
 {
   int i;
+  int ret;
 
+  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
   SCHRO_ASSERT (dest != NULL);
   SCHRO_ASSERT (src != NULL);
   SCHRO_ASSERT (SCHRO_FRAME_IS_CUDA (dest));
@@ -290,6 +299,12 @@ schro_gpuframe_add (SchroFrame * dest, SchroFrame * src)
     SCHRO_ERROR ("add function unimplemented");
     SCHRO_ASSERT (0);
   }
+
+  ret = cudaThreadSynchronize ();
+  if (ret != 0) {
+    SCHRO_ERROR ("thread sync %d", ret);
+  }
+  SCHRO_ASSERT (ret == 0);
 }
 
 void
@@ -297,6 +312,7 @@ schro_gpuframe_subtract (SchroFrame * dest, SchroFrame * src)
 {
   int i;
 
+  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
   SCHRO_ASSERT (dest != NULL);
   SCHRO_ASSERT (src != NULL);
   SCHRO_ASSERT (SCHRO_FRAME_IS_CUDA (dest));
@@ -348,6 +364,8 @@ schro_gpuframe_iwt_transform (SchroFrame * frame, SchroParams * params)
   int height;
   int level;
 
+  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
+
   SCHRO_DEBUG ("schro_gpuframe_iwt_transform %ix%i (%i levels)", frame->width,
       frame->height, params->transform_depth);
 
@@ -389,6 +407,8 @@ schro_gpuframe_inverse_iwt_transform (SchroFrame * frame, SchroParams * params)
   int level;
   int component;
   int ret;
+
+  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
 
   SCHRO_DEBUG
       ("schro_gpuframe_inverse_iwt_transform %ix%i, filter %i, %i levels",
@@ -466,6 +486,7 @@ schro_gpuframe_to_cpu (SchroFrame * dest, SchroFrame * src)
   int bpp;
   int ret;
 
+  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
   SCHRO_ASSERT (SCHRO_FRAME_IS_CUDA (src));
   SCHRO_ASSERT (!SCHRO_FRAME_IS_CUDA (dest));
 
@@ -482,7 +503,8 @@ schro_gpuframe_to_cpu (SchroFrame * dest, SchroFrame * src)
           && dest->components[i].height == src->components[i].height);
     }
   }
-    /** If the buffer is consecutive, move it in one pass */
+
+  /** If the buffer is consecutive, move it in one pass */
   if (src->components[1].data ==
       (src->components[0].data + src->components[0].length)
       && src->components[2].data ==
@@ -508,7 +530,6 @@ schro_gpuframe_to_cpu (SchroFrame * dest, SchroFrame * src)
             src->components[i].data, src->components[i].stride,
             src->components[i].width * bpp, src->components[i].height);
 
-//                cudaMemcpy(dest->components[i].data, src->components[i].data, src->components[i].length, cudaMemcpyDeviceToHost);
         cudaMemcpy2D (dest->components[i].data, dest->components[i].stride,
             src->components[i].data, src->components[i].stride,
             src->components[i].width * bpp, src->components[i].height,
@@ -531,6 +552,7 @@ schro_frame_to_gpu (SchroFrame * dest, SchroFrame * src)
   int bpp;
   int ret;
 
+  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
   SCHRO_ASSERT (!SCHRO_FRAME_IS_CUDA (src));
   SCHRO_ASSERT (SCHRO_FRAME_IS_CUDA (dest));
 
@@ -696,53 +718,49 @@ schro_gpuframe_upsample (SchroFrame * dst, SchroFrame * src)
 SchroUpsampledFrame *
 schro_upsampled_gpuframe_new (SchroVideoFormat * fmt)
 {
-  struct cudaChannelFormatDesc channelDesc =
-      cudaCreateChannelDesc (8, 0, 0, 0, cudaChannelFormatKindUnsigned);
   SchroUpsampledFrame *rv;
 
   SCHRO_DEBUG ("schro_upsampled_gpuframe_new");
   rv = schro_malloc0 (sizeof (SchroUpsampledFrame));
 
-    /** Make an 8 bit texture for each component */
-  cudaMallocArray (&rv->components[0], &channelDesc, fmt->width * 2,
-      fmt->height * 2);
-  cudaMallocArray (&rv->components[1], &channelDesc, fmt->chroma_width * 2,
-      fmt->chroma_height * 2);
-  cudaMallocArray (&rv->components[2], &channelDesc, fmt->chroma_width * 2,
-      fmt->chroma_height * 2);
 
   return rv;
 }
 
 void
-schro_upsampled_gpuframe_upsample (SchroUpsampledFrame * rv,
-    SchroFrame * temp_f, SchroFrame * src, SchroVideoFormat * fmt)
+schro_upsampled_gpuframe_upsample (SchroUpsampledFrame * uf)
 {
-  SCHRO_ASSERT (SCHRO_FRAME_IS_CUDA (temp_f));
+  struct cudaChannelFormatDesc channelDesc =
+      cudaCreateChannelDesc (8, 0, 0, 0, cudaChannelFormatKindUnsigned);
+  SchroFrame *tmp_frame;
+  SchroFrame *src = uf->frames[0];
+  struct cudaArray *ca;
+  int k;
+
+  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
   SCHRO_ASSERT (SCHRO_FRAME_IS_CUDA (src));
 
-  SCHRO_DEBUG ("schro_upsampled_gpuframe_upsample %ix%i <- %ix%i",
-      temp_f->width, temp_f->height, src->width, src->height);
+  tmp_frame = schro_frame_new_and_alloc (src->domain, src->format,
+      src->width * 2, src->height * 2);
 
-    /** Temporary texture must have two times the size of a frame in each dimension */
-  schro_gpuframe_upsample (temp_f, src);
-  //schro_gpuframe_convert(temp_f, src);
+  /** Make an 8 bit texture for each component */
+  for(k=0;k<3;k++) {
+    cudaMallocArray (&ca, &channelDesc,
+        src->components[k].width * 2, src->components[k].height * 2);
+    uf->components[k] = ca;
+  }
 
-    /** Copy data to texture */
-  cudaMemcpy2DToArray (rv->components[0], 0, 0, temp_f->components[0].data,
-      temp_f->components[0].stride, fmt->width * 2, fmt->height * 2,
-      cudaMemcpyDeviceToDevice);
-  cudaMemcpy2DToArray (rv->components[1], 0, 0, temp_f->components[1].data,
-      temp_f->components[1].stride, fmt->chroma_width * 2,
-      fmt->chroma_height * 2, cudaMemcpyDeviceToDevice);
-  cudaMemcpy2DToArray (rv->components[2], 0, 0, temp_f->components[2].data,
-      temp_f->components[2].stride, fmt->chroma_width * 2,
-      fmt->chroma_height * 2, cudaMemcpyDeviceToDevice);
+  /** Temporary texture must have two times the size of a frame in each dimension */
+  schro_gpuframe_upsample (tmp_frame, src);
 
-  //cudaMemcpy2DToArray(rv->components[0], 0, 0, src->components[0].data, src->components[0].stride, fmt->width, fmt->height, cudaMemcpyDeviceToDevice);
-  //cudaMemcpy2DToArray(rv->components[1], 0, 0, src->components[1].data, src->components[1].stride, fmt->chroma_width, fmt->chroma_height, cudaMemcpyDeviceToDevice);    
-  //cudaMemcpy2DToArray(rv->components[2], 0, 0, src->components[2].data, src->components[2].stride, fmt->chroma_width, fmt->chroma_height, cudaMemcpyDeviceToDevice);
+  /** Copy data to texture */
+  for(k=0;k<3;k++) {
+    cudaMemcpy2DToArray (uf->components[k], 0, 0, tmp_frame->components[k].data,
+        tmp_frame->components[k].stride, tmp_frame->components[k].width,
+        tmp_frame->components[k].height, cudaMemcpyDeviceToDevice);
+  }
 
+  schro_frame_unref (tmp_frame);
 }
 
 void

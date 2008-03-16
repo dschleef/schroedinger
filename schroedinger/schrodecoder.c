@@ -915,7 +915,12 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
           continue;
         }
 
-        if (picture->params.mv_precision > 0 &&
+        if (
+#ifdef HAVE_CUDA
+            1 &&
+#else
+            picture->params.mv_precision > 0 &&
+#endif
             !(refpic->state & SCHRO_DECODER_STATE_UPSAMPLE)) {
           if (!render_ok) {
             refs_ready = FALSE;
@@ -1012,6 +1017,20 @@ schro_decoder_x_render_motion (SchroPicture *picture)
     SCHRO_WARNING("motion render with %p and %p", picture->ref0, picture->ref1);
     if (picture->decoder->use_cuda) {
 #ifdef HAVE_CUDA
+      int frame_width;
+      int frame_height;
+      int frame_format;
+      SchroVideoFormat *video_format = params->video_format;
+
+      frame_format = schro_params_get_frame_format (16,
+          video_format->chroma_format);
+      frame_width = ROUND_UP_POW2(video_format->width,
+          SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_h_shift);
+      frame_height = ROUND_UP_POW2(video_format->height,
+          SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_v_shift);
+
+      picture->mc_tmp_frame = schro_frame_new_and_alloc (picture->decoder->cuda_domain,
+          frame_format, frame_width, frame_height);
       schro_motion_render_cuda (picture->motion, picture->mc_tmp_frame);
 #else
       SCHRO_ASSERT(0);
@@ -1172,7 +1191,11 @@ schro_decoder_x_combine (SchroPicture *picture)
 void
 schro_decoder_x_upsample (SchroPicture *picture)
 {
+#ifdef HAVE_CUDA
+  schro_upsampled_gpuframe_upsample (picture->upsampled_frame);
+#else
   schro_upsampled_frame_upsample (picture->upsampled_frame);
+#endif
 }
 
 void

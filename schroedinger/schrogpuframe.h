@@ -24,7 +24,7 @@ void schro_gpuframe_compare (SchroFrame *a, SchroFrame *b);
 void schro_gpuframe_upsample(SchroFrame *dst, SchroFrame *src);
 
 SchroUpsampledFrame *schro_upsampled_gpuframe_new(SchroVideoFormat *fmt);
-void schro_upsampled_gpuframe_upsample(SchroUpsampledFrame *rv, SchroFrame *temp_f, SchroFrame *src, SchroVideoFormat *fmt);
+void schro_upsampled_gpuframe_upsample(SchroUpsampledFrame *rv);
 void schro_upsampled_gpuframe_free(SchroUpsampledFrame *x);
 
 void schro_gpuframe_zero (SchroFrame *dest);

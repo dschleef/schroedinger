@@ -228,7 +228,7 @@ schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture)
   int extra;
   int offset;
 
-  schro_lowdelay_init (&lowdelay, picture->frame, params);
+  schro_lowdelay_init (&lowdelay, picture->transform_frame, params);
 
   lowdelay.n_horiz_slices = params->n_horiz_slices;
   lowdelay.n_vert_slices = params->n_vert_slices;
