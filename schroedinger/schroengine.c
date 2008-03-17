@@ -554,19 +554,40 @@ init_frame (SchroEncoderFrame *frame)
 }
 
 static void
+handle_gop_intra_only (SchroEncoder *encoder, int i)
+{
+  SchroEncoderFrame *frame;
+
+  frame = encoder->frame_queue->elements[i].data;
+
+  if (frame->busy || frame->state != SCHRO_ENCODER_FRAME_STATE_ANALYSE) return;
+
+  schro_engine_check_new_access_unit (encoder, frame);
+
+  SCHRO_DEBUG("handling gop from %d to %d (index %d)", encoder->gop_picture,
+      encoder->gop_picture, i);
+
+  if (frame->busy || frame->state != SCHRO_ENCODER_FRAME_STATE_ANALYSE) {
+    SCHRO_DEBUG("picture %d not ready", i);
+    return;
+  }
+
+  schro_engine_code_picture (frame, FALSE, -1, 0, -1, -1);
+  frame->presentation_frame = frame->frame_number;
+  frame->picture_weight = 1.0;
+
+  encoder->gop_picture++;
+}
+
+static void
 setup_params_intra_only (SchroEncoderFrame *frame)
 {
   SchroEncoder *encoder = frame->encoder;
 
-  schro_engine_check_new_access_unit (encoder, frame);
-
-  frame->presentation_frame = frame->frame_number;
-
-  schro_engine_code_picture (frame, FALSE, -1, 0, -1, -1);
-
   frame->output_buffer_size =
     schro_engine_pick_output_buffer_size (encoder, frame);
-  frame->picture_weight = 1.0;
+
+  frame->params.num_refs = frame->num_refs;
 
   /* set up params */
   init_params (frame);
@@ -595,7 +616,26 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
 
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ANALYSE);
         return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_ANALYSE:
+      default:
+        break;
+    }
+  }
+
+  for(i=0;i<encoder->frame_queue->n;i++) {
+    frame = encoder->frame_queue->elements[i].data;
+    if (frame->frame_number == encoder->gop_picture) {
+      handle_gop_intra_only (encoder, i);
+      break;
+    }
+  }
+
+  for(i=0;i<encoder->frame_queue->n;i++) {
+    frame = encoder->frame_queue->elements[i].data;
+
+    if (frame->busy) continue;
+
+    switch (frame->state) {
+      case SCHRO_ENCODER_FRAME_STATE_HAVE_GOP:
         setup_params_intra_only (frame);
         frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
         break;
