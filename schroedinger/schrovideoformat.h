@@ -37,12 +37,11 @@ struct _SchroVideoFormat {
   SchroColourMatrix colour_matrix;
   SchroTransferFunction transfer_function;
 
-  /* calculated values */
+  int interlaced_coding;
 
-  int chroma_h_shift;
-  int chroma_v_shift;
-  int chroma_width;
-  int chroma_height;
+  int unused0;
+  int unused1;
+  int unused2;
 };  
 
 int schro_video_format_validate (SchroVideoFormat *format);

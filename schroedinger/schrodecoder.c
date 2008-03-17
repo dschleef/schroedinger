@@ -184,9 +184,11 @@ schro_picture_new (SchroDecoder *decoder)
   frame_format = schro_params_get_frame_format (16,
       video_format->chroma_format);
   frame_width = ROUND_UP_POW2(video_format->width,
-      SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_h_shift);
+      SCHRO_LIMIT_TRANSFORM_DEPTH +
+      SCHRO_CHROMA_FORMAT_H_SHIFT(video_format->chroma_format));
   frame_height = ROUND_UP_POW2(video_format->height,
-      SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_v_shift);
+      SCHRO_LIMIT_TRANSFORM_DEPTH +
+      SCHRO_CHROMA_FORMAT_V_SHIFT(video_format->chroma_format));
 
   if (decoder->use_cuda) {
     picture->transform_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
@@ -423,6 +425,7 @@ schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
       decoder->next_frame_number);
   if (!picture && !decoder->end_of_stream &&
       schro_queue_is_full (decoder->picture_queue)) {
+    SCHRO_ERROR("failed to find picture %d", decoder->next_frame_number);
     schro_decoder_error(decoder, "next picture not available in full queue");
     return FALSE;
   }
@@ -1171,7 +1174,13 @@ schro_decoder_x_combine (SchroPicture *picture)
   if (picture->has_md5) {
     uint32_t state[4];
 
-    schro_frame_md5 (picture->output_picture, state);
+    /* FIXME planar_output_frame should be fixed to always be the
+     * planar representation */
+    if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
+      schro_frame_md5 (picture->planar_output_frame, state);
+    } else {
+      schro_frame_md5 (picture->output_picture, state);
+    }
     if (memcmp (state, picture->md5_checksum, 16) != 0) {
       char a[33];
       char b[33];

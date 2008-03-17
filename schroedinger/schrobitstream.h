@@ -78,6 +78,9 @@ typedef enum _SchroChromaFormat {
   SCHRO_CHROMA_420
 } SchroChromaFormat;
 
+#define SCHRO_CHROMA_FORMAT_H_SHIFT(format) (((format) == SCHRO_CHROMA_444)?0:1)
+#define SCHRO_CHROMA_FORMAT_V_SHIFT(format) (((format) == SCHRO_CHROMA_420)?1:0)
+
 typedef enum _SchroSignalRange {
   SCHRO_SIGNAL_RANGE_CUSTOM = 0,
   SCHRO_SIGNAL_RANGE_8BIT_FULL = 1,

@@ -686,8 +686,8 @@ schro_encoder_dc_estimation (SchroMotionEst *me)
 
   luma_w = params->xbsep_luma;
   luma_h = params->xbsep_luma;
-  chroma_w = luma_w>>params->video_format->chroma_h_shift;
-  chroma_h = luma_h>>params->video_format->chroma_v_shift;
+  chroma_w = luma_w>>SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format);
+  chroma_h = luma_h>>SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
 
   for(j=0;j<params->y_num_blocks;j++){
     for(i=0;i<params->x_num_blocks;i++){
@@ -1058,8 +1058,8 @@ schro_motionest_superblock_dc (SchroMotionEst *me,
   metric = schro_block_average (&mvdc->dc[0], frame->components + 0,
       i * params->xbsep_luma, j * params->ybsep_luma,
       4 * params->xbsep_luma, 4 * params->ybsep_luma);
-  chroma_w = params->xbsep_luma>>params->video_format->chroma_h_shift;
-  chroma_h = params->xbsep_luma>>params->video_format->chroma_v_shift;
+  chroma_w = params->xbsep_luma>>SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format);
+  chroma_h = params->ybsep_luma>>SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
   schro_block_average (&mvdc->dc[1], frame->components + 1,
       i * chroma_w, j * chroma_h, 4 * chroma_w, 4 * chroma_h);
   schro_block_average (&mvdc->dc[2], frame->components + 2,

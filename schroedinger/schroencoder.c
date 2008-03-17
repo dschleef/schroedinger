@@ -878,9 +878,11 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
   frame->subband_buffer = schro_buffer_new_and_alloc (frame->subband_size);
 
   frame_width = ROUND_UP_POW2(frame->encoder->video_format.width,
-      SCHRO_LIMIT_TRANSFORM_DEPTH + frame->encoder->video_format.chroma_h_shift);
+      SCHRO_LIMIT_TRANSFORM_DEPTH +
+      SCHRO_CHROMA_FORMAT_H_SHIFT(frame->encoder->video_format.chroma_format));
   frame_height = ROUND_UP_POW2(frame->encoder->video_format.height,
-      SCHRO_LIMIT_TRANSFORM_DEPTH + frame->encoder->video_format.chroma_v_shift);
+      SCHRO_LIMIT_TRANSFORM_DEPTH +
+      SCHRO_CHROMA_FORMAT_V_SHIFT(frame->encoder->video_format.chroma_format));
 
   frame->quant_data = schro_malloc (sizeof(int16_t) * frame_width * frame_height / 4);
 
@@ -1679,8 +1681,10 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int componen
     w = ROUND_UP_SHIFT(params->video_format->width, shift);
     h = ROUND_UP_SHIFT(params->video_format->height, shift);
   } else {
-    w = ROUND_UP_SHIFT(params->video_format->chroma_width, shift);
-    h = ROUND_UP_SHIFT(params->video_format->chroma_height, shift);
+    w = ROUND_UP_SHIFT(params->video_format->width, shift +
+        SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format));
+    h = ROUND_UP_SHIFT(params->video_format->height, shift +
+        SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format));
   }
 
   h = MIN (h + wavelet_extent[params->wavelet_filter_index], height);
@@ -2154,9 +2158,11 @@ schro_encoder_frame_new (SchroEncoder *encoder)
       encoder->video_format.chroma_format);
   
   frame_width = ROUND_UP_POW2(encoder->video_format.width,
-      SCHRO_LIMIT_TRANSFORM_DEPTH + encoder->video_format.chroma_h_shift);
+      SCHRO_LIMIT_TRANSFORM_DEPTH +
+      SCHRO_CHROMA_FORMAT_H_SHIFT(encoder->video_format.chroma_format));
   frame_height = ROUND_UP_POW2(encoder->video_format.height,
-      SCHRO_LIMIT_TRANSFORM_DEPTH + encoder->video_format.chroma_v_shift);
+      SCHRO_LIMIT_TRANSFORM_DEPTH +
+      SCHRO_CHROMA_FORMAT_V_SHIFT(encoder->video_format.chroma_format));
 
   encoder_frame->iwt_frame = schro_frame_new_and_alloc (NULL, frame_format,
       frame_width, frame_height);

@@ -29,27 +29,6 @@ schro_video_format_validate (SchroVideoFormat *format)
     format->aspect_ratio_denominator = 1;
   }
 
-  switch (format->chroma_format) {
-    case SCHRO_CHROMA_444:
-      format->chroma_width = format->width;
-      format->chroma_height = format->height;
-      format->chroma_h_shift = 0;
-      format->chroma_v_shift = 0;
-      break;
-    case SCHRO_CHROMA_422:
-      format->chroma_width = ROUND_UP_SHIFT(format->width,1);
-      format->chroma_height = format->height;
-      format->chroma_h_shift = 1;
-      format->chroma_v_shift = 0;
-      break;
-    case SCHRO_CHROMA_420:
-      format->chroma_width = ROUND_UP_SHIFT(format->width,1);
-      format->chroma_height = ROUND_UP_SHIFT(format->height,1);
-      format->chroma_h_shift = 1;
-      format->chroma_v_shift = 1;
-      break;
-  }
-
   return 1;
 }
 

@@ -67,10 +67,6 @@ struct _SchroParams {
   int iwt_chroma_height;
   int iwt_luma_width;
   int iwt_luma_height;
-  int mc_chroma_width;
-  int mc_chroma_height;
-  int mc_luma_width;
-  int mc_luma_height;
   int x_num_blocks;
   int y_num_blocks;
   int x_offset;

@@ -108,8 +108,6 @@ main (int argc, char *argv[])
   schro_video_format_set_std_video_format (&video_format, 0);
   video_format.width = SIZE;
   video_format.height = SIZE;
-  video_format.chroma_width = SIZE;
-  video_format.chroma_height = SIZE;
 
   memset (&params, 0, sizeof(params));
   params.video_format = &video_format;

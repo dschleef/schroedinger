@@ -176,8 +176,8 @@ get_pixel (SchroMotion *motion, int k, SchroUpsampledFrame *upframe,
   int px, py;
 
   if (k > 0) {
-    dx >>= motion->params->video_format->chroma_h_shift;
-    dy >>= motion->params->video_format->chroma_v_shift;
+    dx >>= SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
+    dy >>= SCHRO_CHROMA_FORMAT_V_SHIFT(motion->params->video_format->chroma_format);
   }
 
   px = (x << motion->mv_precision) + dx;
@@ -279,8 +279,8 @@ get_block (SchroMotion *motion, int k, int ref, int i, int j, int dx, int dy)
   SchroUpsampledFrame *upframe;
 
   if (k > 0) {
-    dx >>= motion->params->video_format->chroma_h_shift;
-    dy >>= motion->params->video_format->chroma_v_shift;
+    dx >>= SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
+    dy >>= SCHRO_CHROMA_FORMAT_V_SHIFT(motion->params->video_format->chroma_format);
   }
   if (ref) {
     upframe = motion->src2;
@@ -683,12 +683,18 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
       motion->width = motion->params->video_format->width;
       motion->height = motion->params->video_format->height;
     } else {
-      motion->xbsep = params->xbsep_luma >> params->video_format->chroma_h_shift;
-      motion->ybsep = params->ybsep_luma >> params->video_format->chroma_v_shift;
-      motion->xblen = params->xblen_luma >> params->video_format->chroma_h_shift;
-      motion->yblen = params->yblen_luma >> params->video_format->chroma_v_shift;
-      motion->width = motion->params->video_format->width >> params->video_format->chroma_h_shift;
-      motion->height = motion->params->video_format->height >> params->video_format->chroma_v_shift;
+      motion->xbsep = params->xbsep_luma >>
+        SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
+      motion->ybsep = params->ybsep_luma >>
+        SCHRO_CHROMA_FORMAT_V_SHIFT(motion->params->video_format->chroma_format);
+      motion->xblen = params->xblen_luma >>
+        SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
+      motion->yblen = params->yblen_luma >>
+        SCHRO_CHROMA_FORMAT_V_SHIFT(motion->params->video_format->chroma_format);
+      motion->width = motion->params->video_format->width >>
+        SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
+      motion->height = motion->params->video_format->height >>
+        SCHRO_CHROMA_FORMAT_V_SHIFT(motion->params->video_format->chroma_format);
     }
     motion->xoffset = (motion->xblen - motion->xbsep)/2;
     motion->yoffset = (motion->yblen - motion->ybsep)/2;
@@ -1118,10 +1124,14 @@ schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest)
       motion->xblen = params->xblen_luma;
       motion->yblen = params->yblen_luma;
     } else {
-      motion->xbsep = params->xbsep_luma >> params->video_format->chroma_h_shift;
-      motion->ybsep = params->ybsep_luma >> params->video_format->chroma_v_shift;
-      motion->xblen = params->xblen_luma >> params->video_format->chroma_h_shift;
-      motion->yblen = params->yblen_luma >> params->video_format->chroma_v_shift;
+      motion->xbsep = params->xbsep_luma >>
+        SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
+      motion->ybsep = params->ybsep_luma >>
+        SCHRO_CHROMA_FORMAT_V_SHIFT(motion->params->video_format->chroma_format);
+      motion->xblen = params->xblen_luma >>
+        SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
+      motion->yblen = params->yblen_luma >>
+        SCHRO_CHROMA_FORMAT_V_SHIFT(motion->params->video_format->chroma_format);
     }
     motion->xoffset = (motion->xblen - motion->xbsep)/2;
     motion->yoffset = (motion->yblen - motion->ybsep)/2;
