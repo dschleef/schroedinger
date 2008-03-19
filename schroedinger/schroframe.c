@@ -1583,6 +1583,32 @@ schro_frame_data_get_codeblock (SchroFrameData *dest, SchroFrameData *src,
   dest->v_shift = src->v_shift;
 }
 
+void
+schro_frame_split_fields (SchroFrame *dest1, SchroFrame *dest2,
+    SchroFrame *src)
+{
+  SchroFrame src_tmp;
+
+  SCHRO_ASSERT((src->height & 1) == 0);
+
+  memcpy (&src_tmp, src, sizeof(src_tmp));
+
+  src_tmp.height = src->height/2;
+  src_tmp.components[0].stride *= 2;
+  src_tmp.components[1].stride *= 2;
+  src_tmp.components[2].stride *= 2;
+
+  schro_frame_convert (dest1, &src_tmp);
+
+  src_tmp.components[0].data = OFFSET(src_tmp.components[0].data,
+      src->components[0].stride);
+  src_tmp.components[1].data = OFFSET(src_tmp.components[1].data,
+      src->components[1].stride);
+  src_tmp.components[2].data = OFFSET(src_tmp.components[2].data,
+      src->components[2].stride);
+
+  schro_frame_convert (dest2, &src_tmp);
+}
 
 /* upsampled frame */
 

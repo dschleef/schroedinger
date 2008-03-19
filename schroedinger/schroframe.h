@@ -140,6 +140,7 @@ void schro_upsampled_frame_get_block_fast_precN (SchroUpsampledFrame *upframe, i
 void schro_frame_get_subdata (SchroFrame *frame, SchroFrameData *fd,
         int comp, int x, int y);
 
+void schro_frame_split_fields (SchroFrame *dest1, SchroFrame *dest2, SchroFrame *src);
 
 #endif
 
