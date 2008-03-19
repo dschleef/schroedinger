@@ -469,8 +469,8 @@ schro_encoder_phasecorr_estimation (SchroMotionEst *me)
 
   for(i=0;i<4;i++) {
     SCHRO_DEBUG("block size %dx%d", 1<<(2+5+i), 1<<(2+4+i));
-    if (params->video_format->width < 1<<(2+5+i) ||
-        params->video_format->height < 1<<(2+4+i)) {
+    if (me->encoder_frame->filtered_frame->width < 1<<(2+5+i) ||
+        me->encoder_frame->filtered_frame->height < 1<<(2+4+i)) {
       continue;
     }
 

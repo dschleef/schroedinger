@@ -126,22 +126,22 @@ void
 schro_params_calculate_iwt_sizes (SchroParams *params)
 {
   SchroVideoFormat *video_format = params->video_format;
-  int chroma_width;
-  int chroma_height;
+  int picture_luma_width, picture_luma_height;
+  int picture_chroma_width, picture_chroma_height;
 
-  chroma_width = ROUND_UP_SHIFT(video_format->width,
-      SCHRO_CHROMA_FORMAT_H_SHIFT(video_format->chroma_format));
-  params->iwt_chroma_width =
-    ROUND_UP_POW2(chroma_width, params->transform_depth);
-  chroma_height = ROUND_UP_SHIFT(video_format->height,
-      SCHRO_CHROMA_FORMAT_V_SHIFT(video_format->chroma_format));
-  params->iwt_chroma_height =
-    ROUND_UP_POW2(chroma_height, params->transform_depth);
-
+  schro_video_format_get_picture_luma_size (video_format,
+      &picture_luma_width, &picture_luma_height);
   params->iwt_luma_width =
-    ROUND_UP_POW2(video_format->width,params->transform_depth);
-  params->iwt_luma_height =
-    ROUND_UP_POW2(video_format->height,params->transform_depth);
+    ROUND_UP_POW2(picture_luma_width, params->transform_depth);
+  params->iwt_luma_height = 
+    ROUND_UP_POW2(picture_luma_height, params->transform_depth);
+
+  schro_video_format_get_picture_chroma_size (video_format,
+      &picture_chroma_width, &picture_chroma_height);
+  params->iwt_chroma_width =
+    ROUND_UP_POW2(picture_chroma_width, params->transform_depth);
+  params->iwt_chroma_height = 
+    ROUND_UP_POW2(picture_chroma_height, params->transform_depth);
 
   SCHRO_DEBUG ("iwt chroma size %d x %d", params->iwt_chroma_width,
       params->iwt_chroma_height);
@@ -166,14 +166,17 @@ void
 schro_params_calculate_mc_sizes (SchroParams *params)
 {
   SchroVideoFormat *video_format = params->video_format;
+  int width, height;
+
+  schro_video_format_get_picture_luma_size (video_format, &width, &height);
 
   params->x_num_blocks =
-    4 * DIVIDE_ROUND_UP(video_format->width, 4*params->xbsep_luma);
+    4 * DIVIDE_ROUND_UP(width, 4*params->xbsep_luma);
   params->y_num_blocks =
-    4 * DIVIDE_ROUND_UP(video_format->height, 4*params->ybsep_luma);
+    4 * DIVIDE_ROUND_UP(height, 4*params->ybsep_luma);
 
-  SCHRO_DEBUG("picture %dx%d, num_blocks %dx%d", video_format->width,
-      video_format->height, params->x_num_blocks, params->y_num_blocks);
+  SCHRO_DEBUG("picture %dx%d, num_blocks %dx%d", width, height,
+      params->x_num_blocks, params->y_num_blocks);
 
   params->x_offset = (params->xblen_luma - params->xbsep_luma)/2;
   params->y_offset = (params->yblen_luma - params->ybsep_luma)/2;

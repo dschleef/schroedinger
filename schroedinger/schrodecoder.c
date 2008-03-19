@@ -170,7 +170,9 @@ schro_picture_new (SchroDecoder *decoder)
   SchroPicture *picture;
   SchroFrameFormat frame_format;
   SchroVideoFormat *video_format = &decoder->video_format;
-  int frame_width, frame_height;
+  int picture_width, picture_height;
+  int iwt_width, iwt_height;
+  int picture_chroma_width, picture_chroma_height;
 
   picture = schro_malloc0 (sizeof(SchroPicture));
   picture->refcount = 1;
@@ -183,16 +185,18 @@ schro_picture_new (SchroDecoder *decoder)
 
   frame_format = schro_params_get_frame_format (16,
       video_format->chroma_format);
-  frame_width = ROUND_UP_POW2(video_format->width,
-      SCHRO_LIMIT_TRANSFORM_DEPTH +
-      SCHRO_CHROMA_FORMAT_H_SHIFT(video_format->chroma_format));
-  frame_height = ROUND_UP_POW2(video_format->height,
-      SCHRO_LIMIT_TRANSFORM_DEPTH +
-      SCHRO_CHROMA_FORMAT_V_SHIFT(video_format->chroma_format));
+  schro_video_format_get_picture_chroma_size (video_format,
+      &picture_chroma_width, &picture_chroma_height);
+
+  picture_width = video_format->width;
+  picture_height = schro_video_format_get_picture_height (video_format);
+
+  schro_video_format_get_iwt_alloc_size (video_format, &iwt_width,
+      &iwt_height);
 
   if (decoder->use_cuda) {
     picture->transform_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
-        frame_format, frame_width, frame_height);
+        frame_format, iwt_width, iwt_height);
 #if 0
     /* These get allocated later, while in the CUDA thread */
     picture->mc_tmp_frame = schro_frame_new_and_alloc (decoder->cuda_domain,
@@ -204,9 +208,9 @@ schro_picture_new (SchroDecoder *decoder)
 #endif
   } else {
     picture->mc_tmp_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
-        frame_format, frame_width, frame_height);
+        frame_format, picture_width, picture_height);
     picture->frame = schro_frame_new_and_alloc (decoder->cpu_domain,
-        frame_format, frame_width, frame_height);
+        frame_format, iwt_width, iwt_height);
     picture->transform_frame = schro_frame_ref (picture->frame);
 
     picture->planar_output_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
@@ -746,7 +750,8 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
     picture->skip = TRUE;
   }
 
-  if (!picture->is_ref && decoder->skip_value > decoder->skip_ratio) {
+  if (!decoder->video_format.interlaced_coding &&
+      !picture->is_ref && decoder->skip_value > decoder->skip_ratio) {
     decoder->skip_value = (1-SCHRO_SKIP_TIME_CONSTANT) * decoder->skip_value;
     SCHRO_INFO("skipping frame %d", picture->picture_number);
     SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
@@ -1158,14 +1163,16 @@ schro_decoder_x_combine (SchroPicture *picture)
     if (picture->decoder->use_cuda) {
 #ifdef HAVE_CUDA
       ref = schro_frame_new_and_alloc (decoder->cuda_domain, frame_format,
-          decoder->video_format.width, decoder->video_format.height);
+          decoder->video_format.width,
+          schro_video_format_get_picture_height(&decoder->video_format));
       schro_gpuframe_convert (ref, combined_frame);
 #else
       SCHRO_ASSERT(0);
 #endif
     } else {
       ref = schro_frame_new_and_alloc (decoder->cpu_domain, frame_format,
-          decoder->video_format.width, decoder->video_format.height);
+          decoder->video_format.width,
+          schro_video_format_get_picture_height(&decoder->video_format));
       schro_frame_convert (ref, combined_frame);
     }
     picture->upsampled_frame = schro_upsampled_frame_new (ref);
@@ -1421,10 +1428,7 @@ schro_decoder_parse_access_unit (SchroDecoder *decoder)
     }
   }
 
-  decoder->interlaced_coding = schro_unpack_decode_uint (unpack);
-  if (decoder->interlaced_coding != 0) {
-    SCHRO_ERROR("Decoder doesn't handle interlaced coding");
-  }
+  format->interlaced_coding = schro_unpack_decode_uint (unpack);
 
   MARKER();
 

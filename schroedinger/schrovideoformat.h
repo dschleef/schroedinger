@@ -60,6 +60,18 @@ void schro_video_format_set_std_colour_spec (SchroVideoFormat *format,
     SchroColourSpec index);
 SchroColourSpec schro_video_format_get_std_colour_spec (SchroVideoFormat *format);
 
+#ifdef SCHRO_ENABLE_UNSTABLE_API
+
+int schro_video_format_get_picture_height (SchroVideoFormat *format);
+void schro_video_format_get_picture_luma_size (SchroVideoFormat *format,
+    int *picture_luma_width, int *picture_luma_height);
+void schro_video_format_get_picture_chroma_size (SchroVideoFormat *format,
+    int *picture_chroma_width, int *picture_chroma_height);
+void schro_video_format_get_iwt_alloc_size (SchroVideoFormat *format,
+    int *width, int *height);
+
+#endif
+
 SCHRO_END_DECLS
 
 #endif

@@ -560,3 +560,74 @@ schro_video_format_get_std_colour_spec (SchroVideoFormat *format)
   return 0;
 }
 
+/**
+ * schro_video_format_get_picture_height:
+ * @format: pointer to SchroVideoFormat structure
+ *
+ * Returns the height of coded pictures in the Dirac stream.  For
+ * streams encoded with interlaced_coding enabled, this will be the
+ * field height, or half of the video height.
+ */
+int
+schro_video_format_get_picture_height (SchroVideoFormat *format)
+{
+  if (format->interlaced_coding) {
+    return ROUND_UP_SHIFT(format->height,1);
+  }
+  return format->height;
+}
+
+int
+schro_video_format_get_chroma_width (SchroVideoFormat *format)
+{
+  return ROUND_UP_SHIFT(format->width,
+      SCHRO_CHROMA_FORMAT_H_SHIFT(format->chroma_format));
+}
+
+int
+schro_video_format_get_chroma_height (SchroVideoFormat *format)
+{
+  return ROUND_UP_SHIFT(format->height,
+      SCHRO_CHROMA_FORMAT_V_SHIFT(format->chroma_format));
+}
+
+void
+schro_video_format_get_picture_luma_size (SchroVideoFormat *format,
+    int *width, int *height)
+{
+  *width = format->width;
+  *height = ROUND_UP_SHIFT(format->height, format->interlaced_coding);
+}
+
+void
+schro_video_format_get_picture_chroma_size (SchroVideoFormat *format,
+    int *width, int *height)
+{
+  *width = ROUND_UP_SHIFT(format->width,
+      SCHRO_CHROMA_FORMAT_H_SHIFT(format->chroma_format));
+  *height = ROUND_UP_SHIFT(format->height,
+      SCHRO_CHROMA_FORMAT_V_SHIFT(format->chroma_format) +
+      format->interlaced_coding);
+}
+
+void
+schro_video_format_get_iwt_alloc_size (SchroVideoFormat *format,
+    int *width, int *height)
+{
+  int picture_chroma_width;
+  int picture_chroma_height;
+
+  schro_video_format_get_picture_chroma_size (format, &picture_chroma_width,
+      &picture_chroma_height);
+
+  picture_chroma_width = ROUND_UP_POW2(picture_chroma_width,
+      SCHRO_LIMIT_TRANSFORM_DEPTH);
+  picture_chroma_height = ROUND_UP_POW2(picture_chroma_height,
+      SCHRO_LIMIT_TRANSFORM_DEPTH);
+
+  *width = picture_chroma_width <<
+    SCHRO_CHROMA_FORMAT_H_SHIFT(format->chroma_format);
+  *height = picture_chroma_height <<
+      SCHRO_CHROMA_FORMAT_V_SHIFT(format->chroma_format);
+}
+

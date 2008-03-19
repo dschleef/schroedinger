@@ -237,6 +237,10 @@ schro_encoder_init_perceptual_weighting (SchroEncoder *encoder)
     encoder->video_format.aspect_ratio_numerator * 
     (encoder->pixels_per_degree_horiz / encoder->video_format.aspect_ratio_denominator);
 
+  if (encoder->video_format.interlaced_coding) {
+    encoder->pixels_per_degree_vert *= 0.5;
+  }
+
   SCHRO_DEBUG("pixels per degree horiz=%g vert=%g",
       encoder->pixels_per_degree_horiz, encoder->pixels_per_degree_vert);
 
@@ -279,52 +283,106 @@ schro_encoder_set_video_format (SchroEncoder *encoder,
   schro_video_format_validate (&encoder->video_format);
 }
 
-int
-schro_encoder_push_ready (SchroEncoder *encoder)
+static int
+schro_encoder_push_is_ready_locked (SchroEncoder *encoder)
 {
-  int ret;
+  int n;
 
   if (encoder->end_of_stream){
     return FALSE;
   }
   
+  n = schro_queue_slots_available (encoder->frame_queue);
+
+  if (encoder->video_format.interlaced_coding) {
+    return (n >= 2);
+  } else {
+    return (n >= 1);
+  }
+}
+
+int
+schro_encoder_push_ready (SchroEncoder *encoder)
+{
+  int ret;
+
   schro_async_lock (encoder->async);
-  ret = schro_queue_is_full (encoder->frame_queue);
+  ret = schro_encoder_push_is_ready_locked (encoder);
   schro_async_unlock (encoder->async);
 
-  return (ret == FALSE);
+  return ret;
 }
 
 void
 schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
 {
-  SchroEncoderFrame *encoder_frame;
-  SchroFrameFormat format;
+  if (encoder->video_format.interlaced_coding == 0) {
+    SchroEncoderFrame *encoder_frame;
+    SchroFrameFormat format;
 
-  encoder_frame = schro_encoder_frame_new(encoder);
-  encoder_frame->encoder = encoder;
+    encoder_frame = schro_encoder_frame_new(encoder);
+    encoder_frame->encoder = encoder;
 
-  format = schro_params_get_frame_format (8, encoder->video_format.chroma_format);
-  if (format == frame->format) {
-    encoder_frame->original_frame = frame;
+    format = schro_params_get_frame_format (8, encoder->video_format.chroma_format);
+    if (format == frame->format) {
+      encoder_frame->original_frame = frame;
+    } else {
+      encoder_frame->original_frame = schro_frame_new_and_alloc (NULL, format,
+          encoder->video_format.width, encoder->video_format.height);
+      schro_frame_convert (encoder_frame->original_frame, frame);
+      schro_frame_unref (frame);
+    }
+
+    encoder_frame->frame_number = encoder->next_frame_number++;
+
+    schro_async_lock (encoder->async);
+    if (schro_queue_is_full (encoder->frame_queue)) {
+      SCHRO_ERROR("push when queue full");
+      SCHRO_ASSERT(0);
+    }
+    schro_queue_add (encoder->frame_queue, encoder_frame,
+        encoder_frame->frame_number);
+    schro_async_signal_scheduler (encoder->async);
+    schro_async_unlock (encoder->async);
   } else {
-    encoder_frame->original_frame = schro_frame_new_and_alloc (NULL, format,
-        encoder->video_format.width, encoder->video_format.height);
-    schro_frame_convert (encoder_frame->original_frame, frame);
+    SchroEncoderFrame *encoder_frame1;
+    SchroEncoderFrame *encoder_frame2;
+    SchroFrameFormat format;
+    int width, height;
+
+    encoder_frame1 = schro_encoder_frame_new(encoder);
+    encoder_frame1->encoder = encoder;
+    encoder_frame2 = schro_encoder_frame_new(encoder);
+    encoder_frame2->encoder = encoder;
+
+    schro_video_format_get_picture_luma_size (&encoder->video_format,
+        &width, &height);
+    format = schro_params_get_frame_format (8,
+        encoder->video_format.chroma_format);
+
+    encoder_frame1->original_frame = schro_frame_new_and_alloc (NULL, format,
+        width, height);
+    encoder_frame2->original_frame = schro_frame_new_and_alloc (NULL, format,
+        width, height);
+    schro_frame_split_fields (encoder_frame1->original_frame,
+        encoder_frame2->original_frame, frame);
     schro_frame_unref (frame);
-  }
 
-  encoder_frame->frame_number = encoder->next_frame_number++;
+    encoder_frame1->frame_number = encoder->next_frame_number++;
+    encoder_frame2->frame_number = encoder->next_frame_number++;
 
-  schro_async_lock (encoder->async);
-  if (schro_queue_is_full (encoder->frame_queue)) {
-    SCHRO_ERROR("push when queue full");
-    SCHRO_ASSERT(0);
+    schro_async_lock (encoder->async);
+    if (schro_queue_slots_available (encoder->frame_queue) < 2) {
+      SCHRO_ERROR("push when queue full");
+      SCHRO_ASSERT(0);
+    }
+    schro_queue_add (encoder->frame_queue, encoder_frame1,
+        encoder_frame1->frame_number);
+    schro_queue_add (encoder->frame_queue, encoder_frame2,
+        encoder_frame2->frame_number);
+    schro_async_signal_scheduler (encoder->async);
+    schro_async_unlock (encoder->async);
   }
-  schro_queue_add (encoder->frame_queue, encoder_frame,
-      encoder_frame->frame_number);
-  schro_async_signal_scheduler (encoder->async);
-  schro_async_unlock (encoder->async);
 }
 
 static int
@@ -685,7 +743,7 @@ schro_encoder_wait (SchroEncoder *encoder)
       ret = SCHRO_STATE_HAVE_BUFFER;
       break;
     }
-    if (!encoder->end_of_stream && !schro_queue_is_full (encoder->frame_queue)) {
+    if (schro_encoder_push_is_ready_locked (encoder)) {
       SCHRO_DEBUG("need frame");
       ret = SCHRO_STATE_NEED_FRAME;
       break;
@@ -816,7 +874,8 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
 {
   SCHRO_INFO("predict picture %d", frame->frame_number);
 
-  frame->tmpbuf = schro_malloc(sizeof(int16_t) * (frame->encoder->video_format.width + 16));
+  frame->tmpbuf = schro_malloc(sizeof(int16_t) *
+      (frame->encoder->video_format.width + 16));
 
   if (frame->params.num_refs > 0) {
     schro_encoder_motion_predict (frame);
@@ -843,7 +902,7 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
 
     schro_frame_zero_extend (frame->iwt_frame,
         frame->params.video_format->width,
-        frame->params.video_format->height);
+        schro_video_format_get_picture_height(frame->params.video_format));
   } else {
     schro_frame_convert (frame->iwt_frame, frame->filtered_frame);
   }
@@ -867,24 +926,20 @@ void
 schro_encoder_encode_picture (SchroEncoderFrame *frame)
 {
   SchroBuffer *subbuffer;
-  int frame_width, frame_height;
+  int picture_chroma_width, picture_chroma_height;
 
   SCHRO_INFO("encode picture %d", frame->frame_number);
 
   frame->output_buffer = schro_buffer_new_and_alloc (frame->output_buffer_size);
 
   frame->subband_size = frame->encoder->video_format.width *
-    frame->encoder->video_format.height / 4 * 2;
-  frame->subband_buffer = schro_buffer_new_and_alloc (frame->subband_size);
+    schro_video_format_get_picture_height(&frame->encoder->video_format) / 4;
+  frame->subband_buffer = schro_buffer_new_and_alloc (frame->subband_size * sizeof(int16_t));
 
-  frame_width = ROUND_UP_POW2(frame->encoder->video_format.width,
-      SCHRO_LIMIT_TRANSFORM_DEPTH +
-      SCHRO_CHROMA_FORMAT_H_SHIFT(frame->encoder->video_format.chroma_format));
-  frame_height = ROUND_UP_POW2(frame->encoder->video_format.height,
-      SCHRO_LIMIT_TRANSFORM_DEPTH +
-      SCHRO_CHROMA_FORMAT_V_SHIFT(frame->encoder->video_format.chroma_format));
+  schro_video_format_get_picture_chroma_size (&frame->encoder->video_format,
+      &picture_chroma_width, &picture_chroma_height);
 
-  frame->quant_data = schro_malloc (sizeof(int16_t) * frame_width * frame_height / 4);
+  frame->quant_data = schro_malloc (sizeof(int16_t) * frame->subband_size);
 
   frame->pack = schro_pack_new ();
   schro_pack_encode_init (frame->pack, frame->output_buffer);
@@ -962,7 +1017,7 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
       encoder_frame->encoder->video_format.chroma_format);
   frame = schro_frame_new_and_alloc (NULL, frame_format,
       encoder_frame->encoder->video_format.width,
-      encoder_frame->encoder->video_format.height);
+      schro_video_format_get_picture_height(&encoder_frame->encoder->video_format));
   schro_frame_convert (frame, encoder_frame->iwt_frame);
   encoder_frame->reconstructed_frame =
     schro_upsampled_frame_new (frame);
@@ -1536,7 +1591,7 @@ schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
   }
 
   /* interlaced coding */
-  schro_pack_encode_uint (pack, encoder->interlaced_coding);
+  schro_pack_encode_uint (pack, format->interlaced_coding);
 
   MARKER(pack);
 
@@ -1678,13 +1733,9 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int componen
 
   shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
   if (component == 0) {
-    w = ROUND_UP_SHIFT(params->video_format->width, shift);
-    h = ROUND_UP_SHIFT(params->video_format->height, shift);
+    schro_video_format_get_picture_luma_size (params->video_format, &w, &h);
   } else {
-    w = ROUND_UP_SHIFT(params->video_format->width, shift +
-        SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format));
-    h = ROUND_UP_SHIFT(params->video_format->height, shift +
-        SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format));
+    schro_video_format_get_picture_chroma_size (params->video_format, &w, &h);
   }
 
   h = MIN (h + wavelet_extent[params->wavelet_filter_index], height);
@@ -2147,8 +2198,9 @@ schro_encoder_frame_new (SchroEncoder *encoder)
 {
   SchroEncoderFrame *encoder_frame;
   SchroFrameFormat frame_format;
-  int frame_width;
-  int frame_height;
+  int iwt_width, iwt_height;
+  int picture_width;
+  int picture_height;
 
   encoder_frame = schro_malloc0 (sizeof(SchroEncoderFrame));
   encoder_frame->state = SCHRO_ENCODER_FRAME_STATE_NEW;
@@ -2156,26 +2208,16 @@ schro_encoder_frame_new (SchroEncoder *encoder)
 
   frame_format = schro_params_get_frame_format (16,
       encoder->video_format.chroma_format);
-  
-  frame_width = ROUND_UP_POW2(encoder->video_format.width,
-      SCHRO_LIMIT_TRANSFORM_DEPTH +
-      SCHRO_CHROMA_FORMAT_H_SHIFT(encoder->video_format.chroma_format));
-  frame_height = ROUND_UP_POW2(encoder->video_format.height,
-      SCHRO_LIMIT_TRANSFORM_DEPTH +
-      SCHRO_CHROMA_FORMAT_V_SHIFT(encoder->video_format.chroma_format));
 
+  schro_video_format_get_iwt_alloc_size (&encoder->video_format,
+      &iwt_width, &iwt_height);
   encoder_frame->iwt_frame = schro_frame_new_and_alloc (NULL, frame_format,
-      frame_width, frame_height);
+      iwt_width, iwt_height);
   
-  frame_width = MAX(
-      4 * 12 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*12),
-      4 * 16 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*16));
-  frame_height = MAX(
-      4 * 12 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*12),
-      4 * 16 * DIVIDE_ROUND_UP(encoder->video_format.width, 4*16));
-
+  schro_video_format_get_picture_luma_size (&encoder->video_format,
+      &picture_width, &picture_height);
   encoder_frame->prediction_frame = schro_frame_new_and_alloc (NULL, frame_format,
-      frame_width, frame_height);
+      picture_width, picture_height);
 
   encoder_frame->inserted_buffers =
     schro_list_new_full ((SchroListFreeFunc)schro_buffer_unref, NULL);

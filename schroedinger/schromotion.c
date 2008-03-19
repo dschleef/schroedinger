@@ -680,8 +680,8 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
       motion->ybsep = params->ybsep_luma;
       motion->xblen = params->xblen_luma;
       motion->yblen = params->yblen_luma;
-      motion->width = motion->params->video_format->width;
-      motion->height = motion->params->video_format->height;
+      motion->width = comp->width;
+      motion->height = comp->height;
     } else {
       motion->xbsep = params->xbsep_luma >>
         SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
@@ -691,10 +691,8 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
         SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
       motion->yblen = params->yblen_luma >>
         SCHRO_CHROMA_FORMAT_V_SHIFT(motion->params->video_format->chroma_format);
-      motion->width = motion->params->video_format->width >>
-        SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
-      motion->height = motion->params->video_format->height >>
-        SCHRO_CHROMA_FORMAT_V_SHIFT(motion->params->video_format->chroma_format);
+      motion->width = comp->width;
+      motion->height = comp->height;
     }
     motion->xoffset = (motion->xblen - motion->xbsep)/2;
     motion->yoffset = (motion->yblen - motion->ybsep)/2;
