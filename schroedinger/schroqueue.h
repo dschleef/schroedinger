@@ -39,6 +39,7 @@ void schro_queue_pop (SchroQueue *queue);
 void * schro_queue_pull (SchroQueue *queue);
 int schro_queue_is_full (SchroQueue *queue);
 int schro_queue_is_empty (SchroQueue *queue);
+int schro_queue_slots_available (SchroQueue *queue);
 
 #endif
 
