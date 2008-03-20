@@ -843,14 +843,25 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
 void
 schro_encoder_analyse_picture (SchroEncoderFrame *frame)
 {
-  if (frame->need_filtering) {
+  if (frame->encoder->filtering != 0) {
     frame->filtered_frame = schro_frame_dup (frame->original_frame);
-    //schro_frame_filter_addnoise (frame->filtered_frame, 0);
-    //schro_frame_filter_lowpass2 (frame->filtered_frame, 2.0);
-    //schro_frame_filter_lowpass (frame->filtered_frame);
-    //schro_frame_filter_adaptive_lowpass (frame->filtered_frame);
-    //schro_frame_filter_cwm7 (frame->filtered_frame);
-    schro_frame_filter_cwmN (frame->filtered_frame, 5);
+    switch (frame->encoder->filtering) {
+      case 1:
+        schro_frame_filter_cwmN (frame->filtered_frame,
+            frame->encoder->filter_value);
+        break;
+      case 2:
+        schro_frame_filter_lowpass2 (frame->filtered_frame,
+            frame->encoder->filter_value);
+        break;
+      case 3:
+        schro_frame_filter_addnoise (frame->filtered_frame,
+            frame->encoder->filter_value);
+        break;
+      case 4:
+        schro_frame_filter_adaptive_lowpass (frame->filtered_frame);
+        break;
+    }
   } else {
     frame->filtered_frame = schro_frame_ref (frame->original_frame);
   }
