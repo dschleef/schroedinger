@@ -1126,6 +1126,9 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
             encoder->video_format.frame_rate_denominator,
             encoder->video_format.frame_rate_numerator * 8);
         denom = params->n_horiz_slices * params->n_vert_slices;
+        if (encoder->video_format.interlaced_coding) {
+          denom *= 2;
+        }
         SCHRO_ASSERT(denom != 0);
         schro_utils_reduce_fraction (&num, &denom);
         params->slice_bytes_num = num;

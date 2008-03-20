@@ -186,6 +186,9 @@ schro_encoder_start (SchroEncoder *encoder)
       encoder->bits_per_picture = muldiv64 (encoder->bitrate,
             encoder->video_format.frame_rate_denominator,
             encoder->video_format.frame_rate_numerator);
+      if (encoder->video_format.interlaced_coding) {
+        encoder->bits_per_picture /= 2;
+      }
 
       schro_encoder_recalculate_allocations (encoder);
 
