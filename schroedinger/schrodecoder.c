@@ -28,6 +28,7 @@ struct _SchroPictureSubbandContext {
   int component;
   int index;
   int position;
+  int broken;
 
   SchroFrameData *frame_data;
   SchroFrameData *parent_frame_data;
@@ -2497,16 +2498,23 @@ schro_decoder_decode_subband (SchroPicture *picture,
   if (!params->is_noarith) {
     schro_arith_decode_flush (ctx->arith);
     if (ctx->arith->offset < ctx->subband_length) {
-      SCHRO_ERROR("arith decoding didn't consume buffer (%d < %d)",
+      SCHRO_WARNING("arith decoding didn't consume buffer (%d < %d)",
           ctx->arith->offset, ctx->subband_length);
+      ctx->broken = TRUE;
     }
     if (ctx->arith->offset > ctx->subband_length + 4) {
-      SCHRO_ERROR("arith decoding overran buffer (%d > %d)",
+      SCHRO_WARNING("arith decoding overran buffer (%d > %d)",
           ctx->arith->offset, ctx->subband_length);
+      ctx->broken = TRUE;
     }
     schro_arith_free (ctx->arith);
   } else {
     /* FIXME check noarith decoding */
+  }
+
+  if (ctx->broken && ctx->position != 0) {
+    schro_decoder_zero_block (ctx, 0, 0,
+        ctx->frame_data->width, ctx->frame_data->height);
   }
 
   if (ctx->position == 0 && picture->params.num_refs == 0) {
