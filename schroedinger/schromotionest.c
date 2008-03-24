@@ -1219,7 +1219,7 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
   int i,j;
   int total_error = 0;
 
-  me->lambda = 0.1;
+  me->lambda = me->encoder_frame->encoder->magic_mc_lambda;
 
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){

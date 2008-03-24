@@ -257,6 +257,7 @@ struct _SchroEncoder {
   double magic_mc_bailout_limit;
   double magic_bailout_weight;
   double magic_error_power;
+  double magic_mc_lambda;
 
   /* other */
 
