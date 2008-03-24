@@ -942,13 +942,15 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
 {
   SchroBuffer *subbuffer;
   int picture_chroma_width, picture_chroma_height;
+  int width, height;
 
   SCHRO_INFO("encode picture %d", frame->frame_number);
 
   frame->output_buffer = schro_buffer_new_and_alloc (frame->output_buffer_size);
 
-  frame->subband_size = frame->encoder->video_format.width *
-    schro_video_format_get_picture_height(&frame->encoder->video_format) / 4;
+  schro_video_format_get_iwt_alloc_size (&frame->encoder->video_format,
+      &width, &height);
+  frame->subband_size = width * height / 4;
   frame->subband_buffer = schro_buffer_new_and_alloc (frame->subband_size * sizeof(int16_t));
 
   schro_video_format_get_picture_chroma_size (&frame->encoder->video_format,
