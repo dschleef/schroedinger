@@ -11,6 +11,14 @@ int schro_engine_get_scene_change_score (SchroEncoder *encoder, int i);
 void schro_encoder_calculate_allocation (SchroEncoderFrame *frame);
 static void choose_quantisers (SchroEncoderFrame *frame);
 
+/**
+ * schro_engine_check_new_access_unit:
+ * @encoder: encoder
+ * @frame: encoder frame
+ *
+ * Checks if the current picture should be the start of a new access
+ * unit.
+ */
 static void
 schro_engine_check_new_access_unit(SchroEncoder *encoder,
     SchroEncoderFrame *frame)
@@ -22,6 +30,17 @@ schro_engine_check_new_access_unit(SchroEncoder *encoder,
   }
 }
 
+/**
+ * schro_engine_code_picture:
+ * @frame: encoder frame
+ * @is_ref:
+ * @retire:
+ * @num_refs:
+ * @ref0:
+ * @ref1:
+ *
+ * Used to set coding order and coding parameters for a picture.
+ */
 static void
 schro_engine_code_picture (SchroEncoderFrame *frame,
     int is_ref, int retire, int num_refs, int ref0, int ref1)
@@ -65,6 +84,13 @@ schro_engine_code_picture (SchroEncoderFrame *frame,
   }
 }
 
+/**
+ * handle_gop_tworef:
+ * @encoder:
+ * @i:
+ *
+ * Sets up a minor group of pictures for the tworef engine.
+ */
 static void
 handle_gop_tworef (SchroEncoder *encoder, int i)
 {
@@ -178,6 +204,13 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
   encoder->gop_picture += gop_length;
 }
 
+/**
+ * handle_gop_backref:
+ * @encoder:
+ * @i:
+ *
+ * Sets up a minor group of pictures for the backref engine.
+ */
 static void
 handle_gop_backref (SchroEncoder *encoder, int i)
 {
@@ -242,6 +275,13 @@ handle_gop_backref (SchroEncoder *encoder, int i)
   encoder->gop_picture += gop_length;
 }
 
+/**
+ * check_refs:
+ * @frame: encoder frame
+ *
+ * Checks whether reference pictures are available to be used for motion
+ * rendering.
+ */
 static int
 check_refs (SchroEncoderFrame *frame)
 {
@@ -259,6 +299,13 @@ check_refs (SchroEncoderFrame *frame)
   return TRUE;
 }
 
+/**
+ * schro_engine_get_scene_change_score:
+ * @frame: encoder frame
+ * @i: index
+ *
+ * Calculates scene change score for two pictures.
+ */
 int
 schro_engine_get_scene_change_score (SchroEncoder *encoder, int i)
 {
@@ -301,6 +348,14 @@ schro_engine_get_scene_change_score (SchroEncoder *encoder, int i)
 }
 
 
+/**
+ * schro_engine_pick_output_buffer_size:
+ * @encoder: encoder
+ * @frame: encoder frame
+ *
+ * Calculates allocated size of output buffer for a picture.  Horribly
+ * inefficient and outdated.
+ */
 static int
 schro_engine_pick_output_buffer_size (SchroEncoder *encoder,
     SchroEncoderFrame *frame)
@@ -326,6 +381,13 @@ schro_engine_pick_output_buffer_size (SchroEncoder *encoder,
   return size;
 }
 
+/**
+ * init_params:
+ * @frame: encoder frame
+ *
+ * Initializes params structure for picture based on encoder parameters
+ * and some heuristics.
+ */
 static void
 init_params (SchroEncoderFrame *frame)
 {
@@ -390,6 +452,22 @@ init_params (SchroEncoderFrame *frame)
       break;
   }
 
+  if (frame->params.is_noarith) {
+    int i;
+    int shift;
+
+    params->horiz_codeblocks[0] = 1;
+    params->vert_codeblocks[0] = 1;
+    for(i=1;i<params->transform_depth+1;i++){
+      shift = params->transform_depth + 1 - i;
+      /* These values are empirically derived from fewer than 2 test results */
+      params->horiz_codeblocks[i] = (params->iwt_luma_width >> shift) / 5;
+      params->vert_codeblocks[i] = (params->iwt_luma_height >> shift) / 5;
+      SCHRO_DEBUG("codeblocks %d %d %d", i, params->horiz_codeblocks[i],
+          params->vert_codeblocks[i]);
+    }
+  }
+
   params->mv_precision = encoder->mv_precision;
   //params->have_global_motion = TRUE;
   params->codeblock_mode_index = 0;
@@ -398,24 +476,15 @@ init_params (SchroEncoderFrame *frame)
   schro_params_calculate_iwt_sizes (params);
 }
 
-static void
-init_small_codeblocks (SchroParams *params)
-{
-  int i;
-  int shift;
-
-  params->horiz_codeblocks[0] = 1;
-  params->vert_codeblocks[0] = 1;
-  for(i=1;i<params->transform_depth+1;i++){
-    shift = params->transform_depth + 1 - i;
-    /* These values are empirically derived from fewer than 2 test results */
-    params->horiz_codeblocks[i] = (params->iwt_luma_width >> shift) / 5;
-    params->vert_codeblocks[i] = (params->iwt_luma_height >> shift) / 5;
-    SCHRO_DEBUG("codeblocks %d %d %d", i, params->horiz_codeblocks[i],
-        params->vert_codeblocks[i]);
-  }
-}
-
+/**
+ * get_residual_alloc:
+ * @encoder:
+ * @buffer_level:
+ * @picture_weight:
+ *
+ * Calculates the number of bits allocated for coding residual for a
+ * picture.
+ */
 static int
 get_residual_alloc (SchroEncoder *encoder, int buffer_level, double picture_weight)
 {
@@ -435,12 +504,24 @@ get_residual_alloc (SchroEncoder *encoder, int buffer_level, double picture_weig
   return bits;
 }
 
+/**
+ * get_mc_alloc:
+ * @frame: encoder frame
+ *
+ * Calculates the number of bits allocated for coding MC for a picture.
+ */
 static int
 get_mc_alloc (SchroEncoderFrame *frame)
 {
   return 10 * frame->params.x_num_blocks * frame->params.y_num_blocks / 16;
 }
 
+/**
+ * schro_encoder_calculate_allocation:
+ * @frame:
+ *
+ * Calculates the number of bits to allocate to a picture.
+ */
 void
 schro_encoder_calculate_allocation (SchroEncoderFrame *frame)
 {
@@ -456,6 +537,13 @@ schro_encoder_calculate_allocation (SchroEncoderFrame *frame)
 
 }
 
+/**
+ * schro_encoder_recalculate_allocations:
+ * @encoder:
+ *
+ * Steps through the picture list and recalculates allocations for
+ * all pictures.  Should be replaced.
+ */
 void
 schro_encoder_recalculate_allocations (SchroEncoder *encoder)
 {
@@ -496,6 +584,13 @@ schro_encoder_recalculate_allocations (SchroEncoder *encoder)
   }
 }
 
+/**
+ * run_stage:
+ * @frame:
+ * @state:
+ *
+ * Runs a stage in the encoding process.
+ */
 static void
 run_stage (SchroEncoderFrame *frame, SchroEncoderFrameStateEnum state)
 {
@@ -525,6 +620,12 @@ run_stage (SchroEncoderFrame *frame, SchroEncoderFrameStateEnum state)
   schro_async_run_locked (frame->encoder->async, func, frame);
 }
 
+/**
+ * init_frame:
+ * @frame:
+ *
+ * Initializes a frame prior to any analysis.
+ */
 static int
 init_frame (SchroEncoderFrame *frame)
 {
@@ -553,6 +654,13 @@ init_frame (SchroEncoderFrame *frame)
   return TRUE;
 }
 
+/**
+ * handle_gop_intra_only:
+ * @encoder:
+ * @i:
+ *
+ * Sets up GOP structure for an intra picture.
+ */
 static void
 handle_gop_intra_only (SchroEncoder *encoder, int i)
 {
@@ -579,6 +687,12 @@ handle_gop_intra_only (SchroEncoder *encoder, int i)
   encoder->gop_picture++;
 }
 
+/**
+ * setup_params_intra_only:
+ * @frame:
+ *
+ * sets up parameters for a picture for intra-only encoding.
+ */
 static void
 setup_params_intra_only (SchroEncoderFrame *frame)
 {
@@ -591,11 +705,14 @@ setup_params_intra_only (SchroEncoderFrame *frame)
 
   /* set up params */
   init_params (frame);
-  if (frame->params.is_noarith) {
-    init_small_codeblocks (&frame->params);
-  }
 }
 
+/**
+ * schro_encoder_engine_intra_only:
+ * @encoder:
+ *
+ * engine for intra-only encoding.
+ */
 int
 schro_encoder_engine_intra_only (SchroEncoder *encoder)
 {
@@ -742,6 +859,7 @@ schro_encoder_engine_backref (SchroEncoder *encoder)
     switch (frame->state) {
 #endif
       case SCHRO_ENCODER_FRAME_STATE_PREDICT:
+        choose_quantisers (frame);
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ENCODING);
         return TRUE;
       case SCHRO_ENCODER_FRAME_STATE_ENCODING:
@@ -864,128 +982,6 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
   return FALSE;
 }
 
-
-static struct {
-  int type;
-  int depth;
-} test_wavelet_types[] = {
-  /* These are the main wavelet/levels that get used */
-  { SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 2 },
-  { SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 3 },
-  { SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 4 },
-  { SCHRO_WAVELET_LE_GALL_5_3, 2 },
-  { SCHRO_WAVELET_LE_GALL_5_3, 3 },
-  { SCHRO_WAVELET_LE_GALL_5_3, 4 },
-  { SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 2 },
-  { SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 3 },
-  { SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 4 },
-  { SCHRO_WAVELET_HAAR_0, 2 },
-  { SCHRO_WAVELET_HAAR_0, 3 },
-  { SCHRO_WAVELET_HAAR_0, 4 },
-  { SCHRO_WAVELET_HAAR_1, 2 },
-  { SCHRO_WAVELET_HAAR_1, 3 },
-  { SCHRO_WAVELET_HAAR_1, 4 },
-  { SCHRO_WAVELET_FIDELITY, 2 },
-  { SCHRO_WAVELET_FIDELITY, 3 },
-  { SCHRO_WAVELET_DAUBECHIES_9_7, 2 },
-  { SCHRO_WAVELET_DAUBECHIES_9_7, 3 },
-
-  /* 1-level transforms look crappy */
-  { SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 1 },
-  { SCHRO_WAVELET_LE_GALL_5_3, 1 },
-  { SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 1 },
-  { SCHRO_WAVELET_HAAR_0, 1 },
-  { SCHRO_WAVELET_HAAR_1, 1 },
-  { SCHRO_WAVELET_FIDELITY, 1 },
-  { SCHRO_WAVELET_DAUBECHIES_9_7, 1 },
-
-#ifdef SCHRO_HAVE_DEEP_WAVELETS
-  { SCHRO_WAVELET_FIDELITY, 4 },
-  { SCHRO_WAVELET_DAUBECHIES_9_7, 4 }
-#endif
-
-#ifdef USE_TRANSFORM_LEVEL_5
-  /* 5-level transforms don't decrease bitrate */
-  { SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 5 },
-  { SCHRO_WAVELET_LE_GALL_5_3, 5 },
-  { SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 5 },
-  { SCHRO_WAVELET_HAAR_0, 5 },
-  { SCHRO_WAVELET_HAAR_1, 5 },
-#endif
-
-#ifdef USE_TRANSFORM_LEVEL_6
-  /* 6-level transforms don't decrease bitrate */
-  { SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 6 },
-  { SCHRO_WAVELET_LE_GALL_5_3, 6 },
-  { SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 6 },
-  { SCHRO_WAVELET_HAAR_0, 6 },
-  { SCHRO_WAVELET_HAAR_1, 6 },
-#endif
-};
-
-int
-schro_encoder_engine_test_intra (SchroEncoder *encoder)
-{
-  SchroParams *params;
-  SchroEncoderFrame *frame;
-  int i;
-  int j;
-
-  encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_SIMPLE;
-
-  for(i=0;i<encoder->frame_queue->n;i++) {
-    frame = encoder->frame_queue->elements[i].data;
-
-    if (frame->busy) continue;
-
-    switch (frame->state) {
-      case SCHRO_ENCODER_FRAME_STATE_NEW:
-        frame->need_downsampling = FALSE;
-        frame->need_filtering = (encoder->filtering != 0);
-        frame->need_average_luma = FALSE;
-
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ANALYSE);
-        return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_ANALYSE:
-        schro_engine_check_new_access_unit (encoder, frame);
-
-        frame->presentation_frame = frame->frame_number;
-
-        schro_engine_code_picture (frame, FALSE, -1, 0, -1, -1);
-
-        frame->output_buffer_size =
-          schro_engine_pick_output_buffer_size (encoder, frame);
-
-        /* set up params */
-        params = &frame->params;
-        j = frame->frame_number % ARRAY_SIZE(test_wavelet_types);
-        /* FIXME don't change config on user */
-        encoder->intra_wavelet = test_wavelet_types[j].type;
-        encoder->transform_depth = test_wavelet_types[j].depth;
-        init_params (frame);
-
-        frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
-        break;
-      case SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS:
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
-        return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_PREDICT:
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ENCODING);
-        return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_ENCODING:
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT);
-        return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT:
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_POSTANALYSE);
-        return TRUE;
-      default:
-        break;
-    }
-  }
-
-  return FALSE;
-}
-
 int
 schro_encoder_engine_lossless (SchroEncoder *encoder)
 {
@@ -1045,9 +1041,6 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
         params->num_refs = frame->num_refs;
         params->video_format = &encoder->video_format;
         init_params (frame);
-        if (params->is_noarith) {
-          init_small_codeblocks (params);
-        }
 
         params->xbsep_luma = 8;
         params->xblen_luma = 8;
