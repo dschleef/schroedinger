@@ -317,8 +317,10 @@ def plot_est_act_residual():
 
 def plot_alloc_est_residual():
 	plot = Plot(800,600);
-	mx = max(Numeric.transpose(tpts[4]));
-	my = max(Numeric.transpose(tpts[7]));
+	data_x = Numeric.transpose(tpts[4]);
+	data_y = Numeric.transpose(tpts[7]);
+	mx = max(data_x);
+	my = max(data_y);
 	m = max(mx,my);
 	plot.set_x_range(0, m);
 	plot.set_y_range(0, m);
@@ -340,7 +342,7 @@ def plot_alloc_est_residual():
 
 	plot.ctx.set_source_rgb (1, 0, 0);
 	plot.with_lines = 0;
-	plot.draw_plot (Numeric.transpose(tpts[4:8:3]));
+	plot.draw_plot (Numeric.transpose([data_x,data_y]));
 
 	plot.surface.write_to_png('00000-alloc-est-residual.png');
 
