@@ -741,9 +741,11 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
   }
 
   if (picture->is_ref) {
+    schro_async_lock (decoder->async);
     schro_decoder_reference_retire (decoder,
         decoder->picture->retired_picture_number);
     schro_decoder_reference_add (decoder, picture);
+    schro_async_unlock (decoder->async);
   }
   schro_decoder_parse_picture (picture);
 
@@ -805,9 +807,11 @@ schro_decoder_parse_picture (SchroPicture *picture)
   if (params->num_refs > 0) {
     SCHRO_DEBUG("inter");
 
+    schro_async_lock (picture->decoder->async);
     picture->ref0 = schro_decoder_reference_get (picture->decoder, picture->reference1);
     if (picture->ref0 == NULL) {
       picture->error = TRUE;
+      schro_async_unlock (picture->decoder->async);
       return;
     }
     schro_picture_ref (picture->ref0);
@@ -817,10 +821,12 @@ schro_decoder_parse_picture (SchroPicture *picture)
       picture->ref1 = schro_decoder_reference_get (picture->decoder, picture->reference2);
       if (picture->ref1 == NULL) {
         picture->error = TRUE;
+        schro_async_unlock (picture->decoder->async);
         return;
       }
       schro_picture_ref (picture->ref1);
     }
+    schro_async_unlock (picture->decoder->async);
 
     schro_unpack_byte_sync (unpack);
     schro_decoder_parse_picture_prediction_parameters (picture);
@@ -2530,6 +2536,7 @@ schro_decoder_reference_add (SchroDecoder *decoder, SchroPicture *picture)
   SCHRO_DEBUG("adding %d", picture->picture_number);
 
   if (schro_queue_is_full(decoder->reference_queue)) {
+    SCHRO_ERROR("auto-retiring reference picture");
     schro_queue_pop (decoder->reference_queue);
   }
   schro_queue_add (decoder->reference_queue, schro_picture_ref(picture),
