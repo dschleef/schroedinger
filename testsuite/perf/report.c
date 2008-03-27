@@ -36,19 +36,7 @@ int oil_profile_get_min (OilProfile *prof)
 }
 
 void
-flush_cache (void *mem, int size)
-{
-  unsigned char *cmem = mem;
-  unsigned char *end = cmem + size;
-
-  while (cmem < end) {
-    __asm__ __volatile__ ("clflush %0" : : "m" (*cmem));
-    cmem += 32;
-  }
-}
-
-void
-wavelet_speed (SchroFrame *frame, int filter, int flush)
+wavelet_speed (SchroFrame *frame, int filter)
 {
   OilProfile prof1;
   OilProfile prof2;
@@ -60,16 +48,10 @@ wavelet_speed (SchroFrame *frame, int filter, int flush)
   oil_profile_init (&prof2);
 
   for(i=0;i<10;i++){
-    if (flush) {
-      flush_cache (fd->data, fd->length);
-    }
     oil_profile_start (&prof1);
     schro_wavelet_transform_2d (fd, filter, tmp);
     oil_profile_stop (&prof1);
 
-    if (flush) {
-      flush_cache (fd->data, fd->length);
-    }
     oil_profile_start (&prof2);
     schro_wavelet_inverse_transform_2d (fd, filter, tmp);
     oil_profile_stop (&prof2);
@@ -103,13 +85,8 @@ main (int argc, char *argv[])
   frame = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
       width, height);
 
-  printf("non-flushing:\n");
   for(i=0;i<7;i++) {
-    wavelet_speed (frame, i, 0);
-  }
-  printf("flushing:\n");
-  for(i=0;i<7;i++) {
-    wavelet_speed (frame, i, 1);
+    wavelet_speed (frame, i);
   }
 
   schro_frame_unref (frame);
