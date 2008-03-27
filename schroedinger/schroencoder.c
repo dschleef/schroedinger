@@ -270,7 +270,7 @@ schro_encoder_get_video_format (SchroEncoder *encoder)
 {
   SchroVideoFormat *format;
 
-  format = schro_malloc (sizeof(SchroVideoFormat));
+  format = malloc (sizeof(SchroVideoFormat));
   memcpy (format, &encoder->video_format, sizeof(SchroVideoFormat));
 
   return format;
