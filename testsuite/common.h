@@ -3,6 +3,7 @@
 #define __COMMON_H__
 
 #include <math.h>
+#include <stdio.h>
 #include <schroedinger/schroframe.h>
 
 double sgn(double x);
