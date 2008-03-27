@@ -1,13 +1,6 @@
 #!/bin/sh
 
-#infile=elephants_dream.SD-master.drc
-#infile=elephants_dream.HD540-master.drc
-#infile=elephants_dream.HD720-master.drc
-#infile=elephants_dream.SD-master.drc
 #file=elephants_dream
-
-infile=showreel.HD720-master.drc
-#infile=showreel.SD-master.drc
 file=showreel
 
 mediadir=/home/ds/media/masters
@@ -23,7 +16,7 @@ list=HD720-CBR-5Mb
 #list=SIF-CBR-750kb
 
 #extraopts="enable-bigblock-estimation=true enable-hierarchical-estimation=false"
-#extraopts="enable-md5=1"
+extraopts="motion-block-size=1"
 export SCHRO_DUMP=1
 
 trap exit INT
@@ -52,6 +45,12 @@ function get_profile {
     SD-CBR-3Mb-tworef) schroopts="rate-control=1 bitrate=3000000" ;;
     HD270-default) schroopts="" ;;
     SIF-CBR-750kb) schroopts="rate-control=1 bitrate=750000" ;;
+  esac
+  case $1 in
+    SIF*) infile="$file.SIF-master.drc" ;;
+    SD*) infile="$file.SD-master.drc" ;;
+    HD720*) infile="$file.HD720-master.drc" ;;
+    HD1080*) infile="$file.HD1080-master.drc" ;;
   esac
 }
 
