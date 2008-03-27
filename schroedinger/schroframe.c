@@ -121,7 +121,7 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
         frame->components[0].length +
         frame->components[1].length + frame->components[2].length);
   } else {
-    frame->regions[0] = schro_malloc (frame->components[0].length +
+    frame->regions[0] = malloc (frame->components[0].length +
         frame->components[1].length + frame->components[2].length);
   }
 
@@ -320,7 +320,7 @@ schro_frame_unref (SchroFrame *frame)
       if (frame->domain) {
         schro_memory_domain_memfree(frame->domain, frame->regions[0]);
       } else {
-        schro_free (frame->regions[0]);
+        free (frame->regions[0]);
       }
     }
 

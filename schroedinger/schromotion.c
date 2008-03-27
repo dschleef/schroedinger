@@ -781,10 +781,10 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
           SCHRO_FRAME_DATA_GET_LINE(comp, j), as, motion->width);
     }
 
-    free (motion->block.data);
-    free (motion->obmc_weight.data);
-    free (motion->tmp_block_ref[0].data);
-    free (motion->tmp_block_ref[1].data);
+    schro_free (motion->block.data);
+    schro_free (motion->obmc_weight.data);
+    schro_free (motion->tmp_block_ref[0].data);
+    schro_free (motion->tmp_block_ref[1].data);
   }
 
 }

@@ -11,21 +11,21 @@
 #include <time.h>
 #include <sys/time.h>
 
+#undef USE_MMAP
+#ifdef USE_MMAP
+#include <sys/mman.h>
+#endif
 
+
+#ifndef USE_MMAP
 void *
 schro_malloc (int size)
 {
   void *ptr;
 
-#if 0
-  if (size >= 4096*4) {
-    SCHRO_ERROR("size %d", size);
-  }
-#endif
-  //SCHRO_ASSERT(size < 4096*4);
-  
   ptr = malloc (size);
   SCHRO_DEBUG("alloc %p %d", ptr, size);
+
   return ptr;
 }
 
@@ -34,31 +34,19 @@ schro_malloc0 (int size)
 {
   void *ptr;
 
-#if 0
-  if (size >= 4096*4) {
-    SCHRO_ERROR("size %d", size);
-  }
-#endif
-  //SCHRO_ASSERT(size < 4096*4);
-
   ptr = malloc (size);
   memset (ptr, 0, size);
   SCHRO_DEBUG("alloc %p %d", ptr, size);
+
   return ptr;
 }
 
 void *
 schro_realloc (void *ptr, int size)
 {
-#if 0
-  if (size >= 4096*4) {
-    SCHRO_ERROR("size %d", size);
-  }
-#endif
-  //SCHRO_ASSERT(size < 4096*4);
-
   ptr = realloc (ptr, size);
   SCHRO_DEBUG("realloc %p %d", ptr, size);
+
   return ptr;
 }
 
@@ -68,6 +56,53 @@ schro_free (void *ptr)
   SCHRO_DEBUG("free %p", ptr);
   free (ptr);
 }
+#else
+void *
+schro_malloc (int size)
+{
+  void *ptr;
+  int rsize;
+
+  rsize = ROUND_UP_POW2(size + 16, 12);
+  ptr = mmap(NULL, rsize + 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+  SCHRO_ASSERT(ptr != MAP_FAILED);
+
+  mprotect (ptr, 4096, PROT_NONE);
+  mprotect (OFFSET(ptr, 4096 + rsize), 4096, PROT_NONE);
+
+  SCHRO_DEBUG("alloc %p %d", ptr, size);
+
+  *(int *)OFFSET(ptr, 4096) = rsize;
+
+  //return OFFSET(ptr, rsize-size);
+  return OFFSET(ptr, 4096 + rsize - size);
+}
+
+void *
+schro_malloc0 (int size)
+{
+  return schro_malloc (size);
+}
+
+void *
+schro_realloc (void *ptr, int size)
+{
+  SCHRO_ASSERT(size <= 0);
+
+  return ptr;
+}
+
+void
+schro_free (void *ptr)
+{
+  unsigned long page = ((unsigned long)ptr) & ~(4095);
+  int rsize;
+
+  rsize = *(int *)page;
+
+  munmap((void *)(page - 4096), rsize + 8192);
+}
+#endif
 
 int
 muldiv64 (int a, int b, int c)
