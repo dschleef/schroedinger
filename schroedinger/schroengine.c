@@ -452,6 +452,9 @@ init_params (SchroEncoderFrame *frame)
       break;
   }
 
+  schro_params_calculate_mc_sizes (params);
+  schro_params_calculate_iwt_sizes (params);
+
   if (frame->params.is_noarith) {
     int i;
     int shift;
@@ -471,9 +474,6 @@ init_params (SchroEncoderFrame *frame)
   params->mv_precision = encoder->mv_precision;
   //params->have_global_motion = TRUE;
   params->codeblock_mode_index = 0;
-  
-  schro_params_calculate_mc_sizes (params);
-  schro_params_calculate_iwt_sizes (params);
 }
 
 /**
