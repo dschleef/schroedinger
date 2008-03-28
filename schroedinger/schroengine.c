@@ -1071,14 +1071,66 @@ schro_encoder_engine_lossless (SchroEncoder *encoder)
   return FALSE;
 }
 
+static void
+handle_gop_lowdelay (SchroEncoder *encoder, int i)
+{
+  SchroEncoderFrame *frame;
+
+  frame = encoder->frame_queue->elements[i].data;
+
+  if (frame->busy || frame->state != SCHRO_ENCODER_FRAME_STATE_ANALYSE) return;
+
+  schro_engine_check_new_access_unit (encoder, frame);
+
+  SCHRO_DEBUG("handling gop from %d to %d (index %d)", encoder->gop_picture,
+      encoder->gop_picture, i);
+
+  schro_engine_code_picture (frame, FALSE, -1, 0, -1, -1);
+  frame->presentation_frame = frame->frame_number;
+  frame->picture_weight = 1.0;
+
+  encoder->gop_picture++;
+}
+
+static void
+setup_params_lowdelay (SchroEncoderFrame *frame)
+{
+  SchroEncoder *encoder = frame->encoder;
+  SchroParams *params = &frame->params;
+  int num;
+  int denom;
+
+  frame->output_buffer_size =
+    schro_engine_pick_output_buffer_size (encoder, frame);
+
+  /* set up params */
+  params->num_refs = frame->num_refs;
+  params->is_lowdelay = TRUE;
+
+  params->n_horiz_slices = encoder->horiz_slices;
+  params->n_vert_slices = encoder->vert_slices;
+  init_params (frame);
+  //schro_params_init_lowdelay_quantisers(params);
+
+  num = muldiv64(encoder->bitrate,
+      encoder->video_format.frame_rate_denominator,
+      encoder->video_format.frame_rate_numerator * 8);
+  denom = params->n_horiz_slices * params->n_vert_slices;
+  if (encoder->video_format.interlaced_coding) {
+    denom *= 2;
+  }
+  SCHRO_ASSERT(denom != 0);
+  schro_utils_reduce_fraction (&num, &denom);
+  params->slice_bytes_num = num;
+  params->slice_bytes_denom = denom;
+}
+
 int
 schro_encoder_engine_lowdelay (SchroEncoder *encoder)
 {
-  SchroParams *params;
   SchroEncoderFrame *frame;
   int i;
-  int num;
-  int denom;
+  int ref;
 
   encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
 
@@ -1089,44 +1141,37 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
 
     switch (frame->state) {
       case SCHRO_ENCODER_FRAME_STATE_NEW:
-        frame->need_downsampling = FALSE;
-        frame->need_filtering = (encoder->filtering != 0);
-        frame->need_average_luma = FALSE;
-
+        init_frame (frame);
         run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ANALYSE);
         return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_ANALYSE:
-        schro_engine_check_new_access_unit (encoder, frame);
+      default:
+        break;
+    }
+  }
 
-        frame->presentation_frame = frame->frame_number;
+  for(i=0;i<encoder->frame_queue->n;i++) {
+    frame = encoder->frame_queue->elements[i].data;
+    if (frame->frame_number == encoder->gop_picture) {
+      handle_gop_lowdelay (encoder, i);
+      break;
+    }
+  }
 
-        schro_engine_code_picture (frame, FALSE, -1, 0, -1, -1);
+  /* Reference pictures are higher priority, so we pass over the list
+   * first for reference pictures, then for non-ref. */
+  for(ref = 1; ref >= 0; ref--){
 
-        frame->output_buffer_size =
-          schro_engine_pick_output_buffer_size (encoder, frame);
+  for(i=0;i<encoder->frame_queue->n;i++) {
+    frame = encoder->frame_queue->elements[i].data;
+    SCHRO_DEBUG("backref i=%d picture=%d state=%d busy=%d", i, frame->frame_number, frame->state, frame->busy);
 
-        /* set up params */
-        params = &frame->params;
-        params->is_lowdelay = TRUE;
-        params->video_format = &encoder->video_format;
+    if (frame->busy) continue;
 
-        params->n_horiz_slices = encoder->horiz_slices;
-        params->n_vert_slices = encoder->vert_slices;
-        init_params (frame);
-        //schro_params_init_lowdelay_quantisers(params);
+    if (frame->is_ref != ref) continue;
 
-        num = muldiv64(encoder->bitrate,
-            encoder->video_format.frame_rate_denominator,
-            encoder->video_format.frame_rate_numerator * 8);
-        denom = params->n_horiz_slices * params->n_vert_slices;
-        if (encoder->video_format.interlaced_coding) {
-          denom *= 2;
-        }
-        SCHRO_ASSERT(denom != 0);
-        schro_utils_reduce_fraction (&num, &denom);
-        params->slice_bytes_num = num;
-        params->slice_bytes_denom = denom;
-
+    switch (frame->state) {
+      case SCHRO_ENCODER_FRAME_STATE_HAVE_GOP:
+        setup_params_lowdelay (frame);
         frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
         break;
       case SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS:
@@ -1144,6 +1189,7 @@ schro_encoder_engine_lowdelay (SchroEncoder *encoder)
       default:
         break;
     }
+  }
   }
 
   return FALSE;
