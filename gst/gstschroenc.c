@@ -435,7 +435,7 @@ gst_schro_buffer_wrap (GstSchroEnc *schro_enc, GstBuffer *buf,
   return frame;
 }
 
-#define OGG_DIRAC_GRANULE_SHIFT 30
+#define OGG_DIRAC_GRANULE_SHIFT 32
 #define OGG_DIRAC_GRANULE_LOW_MASK ((1ULL<<OGG_DIRAC_GRANULE_SHIFT)-1)
 
 static gint64
@@ -718,16 +718,18 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
           schro_enc->picture_number++;
           if (!SCHRO_PARSE_CODE_IS_INTRA(parse_code)) {
             GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
+          } else {
+            GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
           }
         } else {
-          GST_BUFFER_OFFSET_END (outbuf) = 0;
+          GST_BUFFER_OFFSET_END (outbuf) = -1;
           GST_BUFFER_OFFSET (outbuf) = 0;
           GST_BUFFER_DURATION (outbuf) = -1;
-          //GST_BUFFER_TIMESTAMP (outbuf) = -1;
           GST_BUFFER_TIMESTAMP (outbuf) = 
             schro_enc->timestamp_offset + gst_util_uint64_scale (
               schro_enc->picture_number,
               schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
+          GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
         }
 
         GST_INFO("size %d offset %lld granulepos %llu:%llu timestamp %lld duration %lld",

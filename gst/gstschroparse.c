@@ -207,7 +207,7 @@ gst_schro_parse_finalize (GObject *object)
   G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
-#define OGG_DIRAC_GRANULE_SHIFT 30
+#define OGG_DIRAC_GRANULE_SHIFT 32
 #define OGG_DIRAC_GRANULE_LOW_MASK ((1<<OGG_DIRAC_GRANULE_SHIFT)-1)
 
 static gint64
