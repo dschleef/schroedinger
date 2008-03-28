@@ -394,10 +394,6 @@ schro_encoder_pull_is_ready_locked (SchroEncoder *encoder)
 {
   int i;
 
-  if (schro_list_get_size(encoder->inserted_buffers)>0) {
-    return TRUE;
-  }
-
   for(i=0;i<encoder->frame_queue->n;i++){
     SchroEncoderFrame *frame;
     frame = encoder->frame_queue->elements[i].data;
@@ -433,17 +429,6 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
 
   SCHRO_DEBUG("pulling slot %d", encoder->output_slot);
 
-  if (schro_list_get_size(encoder->inserted_buffers)>0) {
-    buffer = schro_list_remove (encoder->inserted_buffers, 0);
-    if (presentation_frame) {
-      *presentation_frame = -1;
-    }
-
-    schro_encoder_fixup_offsets (encoder, buffer);
-
-    return buffer;
-  }
-  
   schro_async_lock (encoder->async);
   for(i=0;i<encoder->frame_queue->n;i++){
     SchroEncoderFrame *frame;
@@ -460,7 +445,14 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         frame->access_unit_buffer = NULL;
       } else if (schro_list_get_size(frame->inserted_buffers)>0) {
         buffer = schro_list_remove (frame->inserted_buffers, 0);
-        *presentation_frame = -1;
+        if (presentation_frame) {
+          *presentation_frame = -1;
+        }
+      } else if (schro_list_get_size(encoder->inserted_buffers)>0) {
+        buffer = schro_list_remove (encoder->inserted_buffers, 0);
+        if (presentation_frame) {
+          *presentation_frame = -1;
+        }
       } else {
         double elapsed_time;
 
