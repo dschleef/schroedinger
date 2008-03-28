@@ -166,7 +166,7 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
       schro_engine_code_picture (f, TRUE, encoder->last_ref,
           1, frame->frame_number, -1);
 
-      f->presentation_frame = f->frame_number;
+      f->presentation_frame = frame->frame_number;
       f->picture_weight = encoder->magic_inter_p_weight;
       //f->picture_weight += (gop_length - 2) * (1 - encoder->magic_inter_b_weight);
       encoder->last_ref = encoder->last_ref2;
@@ -178,6 +178,9 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
         schro_engine_code_picture (f, FALSE, -1,
             2, frame->frame_number, ref2->frame_number);
         f->presentation_frame = f->frame_number;
+        if (j == gop_length-2) {
+          f->presentation_frame++;
+        }
         f->picture_weight = encoder->magic_inter_b_weight;
       }
     } else {
@@ -185,7 +188,7 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
       f = encoder->frame_queue->elements[i+gop_length-1].data;
       schro_engine_code_picture (f, TRUE, encoder->last_ref,
           2, encoder->last_ref2, encoder->intra_ref);
-      f->presentation_frame = f->frame_number;
+      f->presentation_frame = encoder->last_ref2;
       f->picture_weight = encoder->magic_inter_p_weight;
       //f->picture_weight += (gop_length - 1) * (1 - encoder->magic_inter_b_weight);
       encoder->last_ref = encoder->last_ref2;
@@ -196,6 +199,9 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
         schro_engine_code_picture (f, FALSE, -1,
             2, encoder->last_ref, encoder->last_ref2);
         f->presentation_frame = f->frame_number;
+        if (j == gop_length-2) {
+          f->presentation_frame++;
+        }
         f->picture_weight = encoder->magic_inter_b_weight;
       }
     }
