@@ -32,6 +32,7 @@ GType gst_schro_dec_get_type (void);
 GType gst_schro_parse_get_type (void);
 GType gst_waveletvisualizer_get_type (void);
 GType gst_frame_store_get_type (void);
+GType gst_schro_scale_get_type (void);
 
 GST_DEBUG_CATEGORY (schro_debug);
 #define GST_CAT_DEFAULT schro_debug
@@ -56,6 +57,8 @@ plugin_init (GstPlugin * plugin)
       gst_schro_parse_get_type ());
   gst_element_register (plugin, "framestore", GST_RANK_NONE,
       gst_frame_store_get_type ());
+  gst_element_register (plugin, "schroscale", GST_RANK_NONE,
+      gst_schro_scale_get_type ());
 
   return TRUE;
 }
