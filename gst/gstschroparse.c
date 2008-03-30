@@ -208,7 +208,7 @@ gst_schro_parse_finalize (GObject *object)
 }
 
 #define OGG_DIRAC_GRANULE_SHIFT 32
-#define OGG_DIRAC_GRANULE_LOW_MASK ((1<<OGG_DIRAC_GRANULE_SHIFT)-1)
+#define OGG_DIRAC_GRANULE_LOW_MASK ((1ULL<<OGG_DIRAC_GRANULE_SHIFT)-1)
 
 static gint64
 granulepos_to_frame (gint64 granulepos)
