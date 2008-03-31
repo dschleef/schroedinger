@@ -72,43 +72,43 @@
 GST_DEBUG_CATEGORY_EXTERN (schro_scale_debug);
 #define GST_CAT_DEFAULT schro_scale_debug
 
-#define GST_TYPE_VIDEO_SCALE \
+#define GST_TYPE_SCHRO_SCALE \
   (gst_schro_scale_get_type())
-#define GST_VIDEO_SCALE(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_VIDEO_SCALE,GstVideoScale))
-#define GST_VIDEO_SCALE_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_VIDEO_SCALE,GstVideoScaleClass))
-#define GST_IS_VIDEO_SCALE(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_VIDEO_SCALE))
-#define GST_IS_VIDEO_SCALE_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_VIDEO_SCALE))
+#define GST_SCHRO_SCALE(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_SCHRO_SCALE,GstSchroScale))
+#define GST_SCHRO_SCALE_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_SCHRO_SCALE,GstSchroScaleClass))
+#define GST_IS_SCHRO_SCALE(obj) \
+  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_SCHRO_SCALE))
+#define GST_IS_SCHRO_SCALE_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_SCHRO_SCALE))
 
 /**
- * GstVideoScaleMethod:
- * @GST_VIDEO_SCALE_NEAREST: use nearest neighbour scaling (fast and ugly)
- * @GST_VIDEO_SCALE_BILINEAR: use bilinear scaling (slower but prettier).
- * @GST_VIDEO_SCALE_4TAP: use a 4-tap filter for scaling (slow).
+ * GstSchroScaleMethod:
+ * @GST_SCHRO_SCALE_NEAREST: use nearest neighbour scaling (fast and ugly)
+ * @GST_SCHRO_SCALE_BILINEAR: use bilinear scaling (slower but prettier).
+ * @GST_SCHRO_SCALE_4TAP: use a 4-tap filter for scaling (slow).
  *
  * The videoscale method to use.
  */
 typedef enum {
-  GST_VIDEO_SCALE_NEAREST,
-  GST_VIDEO_SCALE_BILINEAR,
-  GST_VIDEO_SCALE_4TAP
-} GstVideoScaleMethod;
+  GST_SCHRO_SCALE_NEAREST,
+  GST_SCHRO_SCALE_BILINEAR,
+  GST_SCHRO_SCALE_4TAP
+} GstSchroScaleMethod;
 
-typedef struct _GstVideoScale GstVideoScale;
-typedef struct _GstVideoScaleClass GstVideoScaleClass;
+typedef struct _GstSchroScale GstSchroScale;
+typedef struct _GstSchroScaleClass GstSchroScaleClass;
 
 /**
- * GstVideoScale:
+ * GstSchroScale:
  *
  * Opaque data structure
  */
-struct _GstVideoScale {
+struct _GstSchroScale {
   GstBaseTransform element;
 
-  GstVideoScaleMethod method;
+  GstSchroScaleMethod method;
 
   /* negotiated stuff */
   int format;
@@ -125,7 +125,7 @@ struct _GstVideoScale {
   guint8 *tmp_buf;
 };
 
-struct _GstVideoScaleClass {
+struct _GstSchroScaleClass {
   GstBaseTransformClass parent_class;
 };
 
@@ -146,7 +146,7 @@ GST_ELEMENT_DETAILS ("Video scaler",
     "Resizes video",
     "Wim Taymans <wim.taymans@chello.be>");
 
-#define DEFAULT_PROP_METHOD	GST_VIDEO_SCALE_NEAREST
+#define DEFAULT_PROP_METHOD	GST_SCHRO_SCALE_NEAREST
 
 enum
 {
@@ -183,42 +183,42 @@ static GstStaticCaps gst_schro_scale_format_caps[] = {
 
 enum
 {
-  GST_VIDEO_SCALE_RGBx = 0,
-  GST_VIDEO_SCALE_xRGB,
-  GST_VIDEO_SCALE_BGRx,
-  GST_VIDEO_SCALE_xBGR,
-  GST_VIDEO_SCALE_RGBA,
-  GST_VIDEO_SCALE_ARGB,
-  GST_VIDEO_SCALE_BGRA,
-  GST_VIDEO_SCALE_ABGR,
-  GST_VIDEO_SCALE_RGB,
-  GST_VIDEO_SCALE_BGR,
-  GST_VIDEO_SCALE_AYUV,
-  GST_VIDEO_SCALE_YUY2,
-  GST_VIDEO_SCALE_YVYU,
-  GST_VIDEO_SCALE_UYVY,
-  GST_VIDEO_SCALE_Y,
-  GST_VIDEO_SCALE_I420,
-  GST_VIDEO_SCALE_YV12,
-  GST_VIDEO_SCALE_RGB565,
-  GST_VIDEO_SCALE_RGB555
+  GST_SCHRO_SCALE_RGBx = 0,
+  GST_SCHRO_SCALE_xRGB,
+  GST_SCHRO_SCALE_BGRx,
+  GST_SCHRO_SCALE_xBGR,
+  GST_SCHRO_SCALE_RGBA,
+  GST_SCHRO_SCALE_ARGB,
+  GST_SCHRO_SCALE_BGRA,
+  GST_SCHRO_SCALE_ABGR,
+  GST_SCHRO_SCALE_RGB,
+  GST_SCHRO_SCALE_BGR,
+  GST_SCHRO_SCALE_AYUV,
+  GST_SCHRO_SCALE_YUY2,
+  GST_SCHRO_SCALE_YVYU,
+  GST_SCHRO_SCALE_UYVY,
+  GST_SCHRO_SCALE_Y,
+  GST_SCHRO_SCALE_I420,
+  GST_SCHRO_SCALE_YV12,
+  GST_SCHRO_SCALE_RGB565,
+  GST_SCHRO_SCALE_RGB555
 };
 
-#define GST_TYPE_VIDEO_SCALE_METHOD (gst_schro_scale_method_get_type())
+#define GST_TYPE_SCHRO_SCALE_METHOD (gst_schro_scale_method_get_type())
 static GType
 gst_schro_scale_method_get_type (void)
 {
   static GType schro_scale_method_type = 0;
   static const GEnumValue schro_scale_methods[] = {
-    {GST_VIDEO_SCALE_NEAREST, "Nearest Neighbour", "nearest-neighbour"},
-    {GST_VIDEO_SCALE_BILINEAR, "Bilinear", "bilinear"},
-    {GST_VIDEO_SCALE_4TAP, "4-tap", "4-tap"},
+    {GST_SCHRO_SCALE_NEAREST, "Nearest Neighbour", "nearest-neighbour"},
+    {GST_SCHRO_SCALE_BILINEAR, "Bilinear", "bilinear"},
+    {GST_SCHRO_SCALE_4TAP, "4-tap", "4-tap"},
     {0, NULL, NULL},
   };
 
   if (!schro_scale_method_type) {
     schro_scale_method_type =
-        g_enum_register_static ("GstVideoScaleMethod", schro_scale_methods);
+        g_enum_register_static ("GstSchroScaleMethod", schro_scale_methods);
   }
   return schro_scale_method_type;
 }
@@ -257,9 +257,9 @@ gst_schro_scale_sink_template_factory (void)
 
 
 static void gst_schro_scale_base_init (gpointer g_class);
-static void gst_schro_scale_class_init (GstVideoScaleClass * klass);
-static void gst_schro_scale_init (GstVideoScale * videoscale);
-static void gst_schro_scale_finalize (GstVideoScale * videoscale);
+static void gst_schro_scale_class_init (GstSchroScaleClass * klass);
+static void gst_schro_scale_init (GstSchroScale * videoscale);
+static void gst_schro_scale_finalize (GstSchroScale * videoscale);
 static gboolean gst_schro_scale_src_event (GstBaseTransform * trans,
     GstEvent * event);
 
@@ -290,19 +290,19 @@ gst_schro_scale_get_type (void)
 
   if (!schro_scale_type) {
     static const GTypeInfo schro_scale_info = {
-      sizeof (GstVideoScaleClass),
+      sizeof (GstSchroScaleClass),
       gst_schro_scale_base_init,
       NULL,
       (GClassInitFunc) gst_schro_scale_class_init,
       NULL,
       NULL,
-      sizeof (GstVideoScale),
+      sizeof (GstSchroScale),
       0,
       (GInstanceInitFunc) gst_schro_scale_init,
     };
 
     schro_scale_type =
-        g_type_register_static (GST_TYPE_BASE_TRANSFORM, "GstVideoScale",
+        g_type_register_static (GST_TYPE_BASE_TRANSFORM, "GstSchroScale",
         &schro_scale_info, 0);
   }
   return schro_scale_type;
@@ -322,7 +322,7 @@ gst_schro_scale_base_init (gpointer g_class)
 }
 
 static void
-gst_schro_scale_class_init (GstVideoScaleClass * klass)
+gst_schro_scale_class_init (GstSchroScaleClass * klass)
 {
   GObjectClass *gobject_class;
   GstBaseTransformClass *trans_class;
@@ -336,7 +336,7 @@ gst_schro_scale_class_init (GstVideoScaleClass * klass)
 
   g_object_class_install_property (gobject_class, PROP_METHOD,
       g_param_spec_enum ("method", "method", "method",
-          GST_TYPE_VIDEO_SCALE_METHOD, DEFAULT_PROP_METHOD,
+          GST_TYPE_SCHRO_SCALE_METHOD, DEFAULT_PROP_METHOD,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   trans_class->transform_caps =
@@ -354,7 +354,7 @@ gst_schro_scale_class_init (GstVideoScaleClass * klass)
 }
 
 static void
-gst_schro_scale_init (GstVideoScale * videoscale)
+gst_schro_scale_init (GstSchroScale * videoscale)
 {
   gst_base_transform_set_qos_enabled (GST_BASE_TRANSFORM (videoscale), TRUE);
   videoscale->tmp_buf = NULL;
@@ -362,7 +362,7 @@ gst_schro_scale_init (GstVideoScale * videoscale)
 }
 
 static void
-gst_schro_scale_finalize (GstVideoScale * videoscale)
+gst_schro_scale_finalize (GstSchroScale * videoscale)
 {
   if (videoscale->tmp_buf)
     g_free (videoscale->tmp_buf);
@@ -374,7 +374,7 @@ static void
 gst_schro_scale_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
 {
-  GstVideoScale *vscale = GST_VIDEO_SCALE (object);
+  GstSchroScale *vscale = GST_SCHRO_SCALE (object);
 
   switch (prop_id) {
     case PROP_METHOD:
@@ -392,7 +392,7 @@ static void
 gst_schro_scale_get_property (GObject * object, guint prop_id, GValue * value,
     GParamSpec * pspec)
 {
-  GstVideoScale *vscale = GST_VIDEO_SCALE (object);
+  GstSchroScale *vscale = GST_SCHRO_SCALE (object);
 
   switch (prop_id) {
     case PROP_METHOD:
@@ -410,7 +410,7 @@ static GstCaps *
 gst_schro_scale_transform_caps (GstBaseTransform * trans,
     GstPadDirection direction, GstCaps * caps)
 {
-  GstVideoScale *videoscale;
+  GstSchroScale *videoscale;
   GstCaps *ret;
   GstStructure *structure;
   const GValue *par;
@@ -419,7 +419,7 @@ gst_schro_scale_transform_caps (GstBaseTransform * trans,
   /* this function is always called with a simple caps */
   g_return_val_if_fail (GST_CAPS_IS_SIMPLE (caps), NULL);
 
-  videoscale = GST_VIDEO_SCALE (trans);
+  videoscale = GST_SCHRO_SCALE (trans);
 
   GST_OBJECT_LOCK (videoscale);
   method = videoscale->method;
@@ -428,7 +428,7 @@ gst_schro_scale_transform_caps (GstBaseTransform * trans,
   structure = gst_caps_get_structure (caps, 0);
 
   /* check compatibility of format and method before we copy the input caps */
-  if (method == GST_VIDEO_SCALE_4TAP) {
+  if (method == GST_SCHRO_SCALE_4TAP) {
     guint32 fourcc;
 
     if (!gst_structure_has_name (structure, "video/x-raw-yuv"))
@@ -498,7 +498,7 @@ gst_schro_scale_get_format (GstCaps * caps)
 
 /* calculate the size of a buffer */
 static gboolean
-gst_schro_scale_prepare_size (GstVideoScale * videoscale, gint format,
+gst_schro_scale_prepare_size (GstSchroScale * videoscale, gint format,
     VSImage * img, gint width, gint height, guint * size)
 {
   gboolean res = TRUE;
@@ -507,35 +507,35 @@ gst_schro_scale_prepare_size (GstVideoScale * videoscale, gint format,
   img->height = height;
 
   switch (format) {
-    case GST_VIDEO_SCALE_RGBx:
-    case GST_VIDEO_SCALE_xRGB:
-    case GST_VIDEO_SCALE_BGRx:
-    case GST_VIDEO_SCALE_xBGR:
-    case GST_VIDEO_SCALE_RGBA:
-    case GST_VIDEO_SCALE_ARGB:
-    case GST_VIDEO_SCALE_BGRA:
-    case GST_VIDEO_SCALE_ABGR:
-    case GST_VIDEO_SCALE_AYUV:
+    case GST_SCHRO_SCALE_RGBx:
+    case GST_SCHRO_SCALE_xRGB:
+    case GST_SCHRO_SCALE_BGRx:
+    case GST_SCHRO_SCALE_xBGR:
+    case GST_SCHRO_SCALE_RGBA:
+    case GST_SCHRO_SCALE_ARGB:
+    case GST_SCHRO_SCALE_BGRA:
+    case GST_SCHRO_SCALE_ABGR:
+    case GST_SCHRO_SCALE_AYUV:
       img->stride = img->width * 4;
       *size = img->stride * img->height;
       break;
-    case GST_VIDEO_SCALE_RGB:
-    case GST_VIDEO_SCALE_BGR:
+    case GST_SCHRO_SCALE_RGB:
+    case GST_SCHRO_SCALE_BGR:
       img->stride = GST_ROUND_UP_4 (img->width * 3);
       *size = img->stride * img->height;
       break;
-    case GST_VIDEO_SCALE_YUY2:
-    case GST_VIDEO_SCALE_YVYU:
-    case GST_VIDEO_SCALE_UYVY:
+    case GST_SCHRO_SCALE_YUY2:
+    case GST_SCHRO_SCALE_YVYU:
+    case GST_SCHRO_SCALE_UYVY:
       img->stride = GST_ROUND_UP_4 (img->width * 2);
       *size = img->stride * img->height;
       break;
-    case GST_VIDEO_SCALE_Y:
+    case GST_SCHRO_SCALE_Y:
       img->stride = GST_ROUND_UP_4 (img->width);
       *size = img->stride * img->height;
       break;
-    case GST_VIDEO_SCALE_I420:
-    case GST_VIDEO_SCALE_YV12:
+    case GST_SCHRO_SCALE_I420:
+    case GST_SCHRO_SCALE_YV12:
     {
       gulong img_u_stride, img_u_height;
 
@@ -548,11 +548,11 @@ gst_schro_scale_prepare_size (GstVideoScale * videoscale, gint format,
           2 * img_u_stride * img_u_height;
       break;
     }
-    case GST_VIDEO_SCALE_RGB565:
+    case GST_SCHRO_SCALE_RGB565:
       img->stride = GST_ROUND_UP_4 (img->width * 2);
       *size = img->stride * img->height;
       break;
-    case GST_VIDEO_SCALE_RGB555:
+    case GST_SCHRO_SCALE_RGB555:
       img->stride = GST_ROUND_UP_4 (img->width * 2);
       *size = img->stride * img->height;
       break;
@@ -590,10 +590,10 @@ parse_caps (GstCaps * caps, gint * format, gint * width, gint * height)
 static gboolean
 gst_schro_scale_set_caps (GstBaseTransform * trans, GstCaps * in, GstCaps * out)
 {
-  GstVideoScale *videoscale;
+  GstSchroScale *videoscale;
   gboolean ret;
 
-  videoscale = GST_VIDEO_SCALE (trans);
+  videoscale = GST_SCHRO_SCALE (trans);
 
   ret = parse_caps (in, &videoscale->format, &videoscale->from_width,
       &videoscale->from_height);
@@ -631,13 +631,13 @@ static gboolean
 gst_schro_scale_get_unit_size (GstBaseTransform * trans, GstCaps * caps,
     guint * size)
 {
-  GstVideoScale *videoscale;
+  GstSchroScale *videoscale;
   gint format, width, height;
   VSImage img;
 
   g_assert (size);
 
-  videoscale = GST_VIDEO_SCALE (trans);
+  videoscale = GST_SCHRO_SCALE (trans);
 
   if (!parse_caps (caps, &format, &width, &height))
     return FALSE;
@@ -779,8 +779,8 @@ gst_schro_scale_prepare_image (gint format, GstBuffer * buf,
   img->pixels = GST_BUFFER_DATA (buf);
 
   switch (format) {
-    case GST_VIDEO_SCALE_I420:
-    case GST_VIDEO_SCALE_YV12:
+    case GST_SCHRO_SCALE_I420:
+    case GST_SCHRO_SCALE_YV12:
       img_u->pixels = img->pixels + GST_ROUND_UP_2 (img->height) * img->stride;
       img_u->height = GST_ROUND_UP_2 (img->height) / 2;
       img_u->width = GST_ROUND_UP_2 (img->width) / 2;
@@ -798,7 +798,7 @@ static GstFlowReturn
 gst_schro_scale_transform (GstBaseTransform * trans, GstBuffer * in,
     GstBuffer * out)
 {
-  GstVideoScale *videoscale;
+  GstSchroScale *videoscale;
   GstFlowReturn ret = GST_FLOW_OK;
   VSImage *dest;
   VSImage *src;
@@ -808,7 +808,7 @@ gst_schro_scale_transform (GstBaseTransform * trans, GstBuffer * in,
   VSImage src_v;
   gint method;
 
-  videoscale = GST_VIDEO_SCALE (trans);
+  videoscale = GST_SCHRO_SCALE (trans);
 
   GST_OBJECT_LOCK (videoscale);
   method = videoscale->method;
@@ -822,96 +822,96 @@ gst_schro_scale_transform (GstBaseTransform * trans, GstBuffer * in,
       &dest_v);
 
   switch (method) {
-    case GST_VIDEO_SCALE_NEAREST:
+    case GST_SCHRO_SCALE_NEAREST:
       switch (videoscale->format) {
-        case GST_VIDEO_SCALE_RGBx:
-        case GST_VIDEO_SCALE_xRGB:
-        case GST_VIDEO_SCALE_BGRx:
-        case GST_VIDEO_SCALE_xBGR:
-        case GST_VIDEO_SCALE_RGBA:
-        case GST_VIDEO_SCALE_ARGB:
-        case GST_VIDEO_SCALE_BGRA:
-        case GST_VIDEO_SCALE_ABGR:
-        case GST_VIDEO_SCALE_AYUV:
+        case GST_SCHRO_SCALE_RGBx:
+        case GST_SCHRO_SCALE_xRGB:
+        case GST_SCHRO_SCALE_BGRx:
+        case GST_SCHRO_SCALE_xBGR:
+        case GST_SCHRO_SCALE_RGBA:
+        case GST_SCHRO_SCALE_ARGB:
+        case GST_SCHRO_SCALE_BGRA:
+        case GST_SCHRO_SCALE_ABGR:
+        case GST_SCHRO_SCALE_AYUV:
           vs_image_scale_nearest_RGBA (dest, src, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_RGB:
-        case GST_VIDEO_SCALE_BGR:
+        case GST_SCHRO_SCALE_RGB:
+        case GST_SCHRO_SCALE_BGR:
           vs_image_scale_nearest_RGB (dest, src, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_YUY2:
-        case GST_VIDEO_SCALE_YVYU:
+        case GST_SCHRO_SCALE_YUY2:
+        case GST_SCHRO_SCALE_YVYU:
           vs_image_scale_nearest_YUYV (dest, src, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_UYVY:
+        case GST_SCHRO_SCALE_UYVY:
           vs_image_scale_nearest_UYVY (dest, src, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_Y:
+        case GST_SCHRO_SCALE_Y:
           vs_image_scale_nearest_Y (dest, src, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_I420:
-        case GST_VIDEO_SCALE_YV12:
+        case GST_SCHRO_SCALE_I420:
+        case GST_SCHRO_SCALE_YV12:
           vs_image_scale_nearest_Y (dest, src, videoscale->tmp_buf);
           vs_image_scale_nearest_Y (&dest_u, &src_u, videoscale->tmp_buf);
           vs_image_scale_nearest_Y (&dest_v, &src_v, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_RGB565:
+        case GST_SCHRO_SCALE_RGB565:
           vs_image_scale_nearest_RGB565 (dest, src, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_RGB555:
+        case GST_SCHRO_SCALE_RGB555:
           vs_image_scale_nearest_RGB555 (dest, src, videoscale->tmp_buf);
           break;
         default:
           goto unsupported;
       }
       break;
-    case GST_VIDEO_SCALE_BILINEAR:
+    case GST_SCHRO_SCALE_BILINEAR:
       switch (videoscale->format) {
-        case GST_VIDEO_SCALE_RGBx:
-        case GST_VIDEO_SCALE_xRGB:
-        case GST_VIDEO_SCALE_BGRx:
-        case GST_VIDEO_SCALE_xBGR:
-        case GST_VIDEO_SCALE_RGBA:
-        case GST_VIDEO_SCALE_ARGB:
-        case GST_VIDEO_SCALE_BGRA:
-        case GST_VIDEO_SCALE_ABGR:
-        case GST_VIDEO_SCALE_AYUV:
+        case GST_SCHRO_SCALE_RGBx:
+        case GST_SCHRO_SCALE_xRGB:
+        case GST_SCHRO_SCALE_BGRx:
+        case GST_SCHRO_SCALE_xBGR:
+        case GST_SCHRO_SCALE_RGBA:
+        case GST_SCHRO_SCALE_ARGB:
+        case GST_SCHRO_SCALE_BGRA:
+        case GST_SCHRO_SCALE_ABGR:
+        case GST_SCHRO_SCALE_AYUV:
           vs_image_scale_linear_RGBA (dest, src, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_RGB:
-        case GST_VIDEO_SCALE_BGR:
+        case GST_SCHRO_SCALE_RGB:
+        case GST_SCHRO_SCALE_BGR:
           vs_image_scale_linear_RGB (dest, src, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_YUY2:
-        case GST_VIDEO_SCALE_YVYU:
+        case GST_SCHRO_SCALE_YUY2:
+        case GST_SCHRO_SCALE_YVYU:
           vs_image_scale_linear_YUYV (dest, src, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_UYVY:
+        case GST_SCHRO_SCALE_UYVY:
           vs_image_scale_linear_UYVY (dest, src, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_Y:
+        case GST_SCHRO_SCALE_Y:
           vs_image_scale_linear_Y (dest, src, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_I420:
-        case GST_VIDEO_SCALE_YV12:
+        case GST_SCHRO_SCALE_I420:
+        case GST_SCHRO_SCALE_YV12:
           vs_image_scale_linear_Y (dest, src, videoscale->tmp_buf);
           vs_image_scale_linear_Y (&dest_u, &src_u, videoscale->tmp_buf);
           vs_image_scale_linear_Y (&dest_v, &src_v, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_RGB565:
+        case GST_SCHRO_SCALE_RGB565:
           vs_image_scale_linear_RGB565 (dest, src, videoscale->tmp_buf);
           break;
-        case GST_VIDEO_SCALE_RGB555:
+        case GST_SCHRO_SCALE_RGB555:
           vs_image_scale_linear_RGB555 (dest, src, videoscale->tmp_buf);
           break;
         default:
           goto unsupported;
       }
       break;
-    case GST_VIDEO_SCALE_4TAP:
+    case GST_SCHRO_SCALE_4TAP:
       switch (videoscale->format) {
-        case GST_VIDEO_SCALE_I420:
-        case GST_VIDEO_SCALE_YV12:
+        case GST_SCHRO_SCALE_I420:
+        case GST_SCHRO_SCALE_YV12:
           vs_image_scale_4tap_Y (dest, src, videoscale->tmp_buf);
           vs_image_scale_4tap_Y (&dest_u, &src_u, videoscale->tmp_buf);
           vs_image_scale_4tap_Y (&dest_v, &src_v, videoscale->tmp_buf);
@@ -950,12 +950,12 @@ unknown_mode:
 static gboolean
 gst_schro_scale_src_event (GstBaseTransform * trans, GstEvent * event)
 {
-  GstVideoScale *videoscale;
+  GstSchroScale *videoscale;
   gboolean ret;
   double a;
   GstStructure *structure;
 
-  videoscale = GST_VIDEO_SCALE (trans);
+  videoscale = GST_SCHRO_SCALE (trans);
 
   GST_DEBUG_OBJECT (videoscale, "handling %s event",
       GST_EVENT_TYPE_NAME (event));
