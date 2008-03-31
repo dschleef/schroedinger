@@ -234,12 +234,12 @@ schro_encoder_free (SchroEncoder *encoder)
 static void
 schro_encoder_init_perceptual_weighting (SchroEncoder *encoder)
 {
-  encoder->pixels_per_degree_horiz =
-    encoder->video_format.width/
-    (2.0*atan(0.5/encoder->perceptual_distance)*180/M_PI);
   encoder->pixels_per_degree_vert =
-    encoder->video_format.aspect_ratio_numerator * 
-    (encoder->pixels_per_degree_horiz / encoder->video_format.aspect_ratio_denominator);
+    encoder->video_format.height/
+    (2.0*atan(0.5/encoder->perceptual_distance)*180/M_PI);
+  encoder->pixels_per_degree_horiz = encoder->pixels_per_degree_vert *
+    encoder->video_format.aspect_ratio_denominator /
+    encoder->video_format.aspect_ratio_numerator;
 
   if (encoder->video_format.interlaced_coding) {
     encoder->pixels_per_degree_vert *= 0.5;
@@ -2443,7 +2443,7 @@ static SchroEncoderSetting encoder_settings[] = {
   ENUM("gop_structure", gop_structure_list, 0),
   INT("queue_depth", 1, SCHRO_LIMIT_FRAME_QUEUE_LENGTH, 20),
   ENUM("perceptual_weighting", perceptual_weighting_list, 0),
-  DOUB("perceptual_distance", 0, 100.0, 3.0),
+  DOUB("perceptual_distance", 0, 100.0, 4.0),
   ENUM("filtering", filtering_list, 0),
   DOUB("filter_value", 0, 100.0, 5.0),
   INT ("profile", 0, 0, 0),
