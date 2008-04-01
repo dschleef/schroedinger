@@ -72,6 +72,7 @@ schro_encoder_new (void)
   encoder->gop_structure = 0;
   encoder->queue_depth = 20;
   encoder->perceptual_weighting = 0;
+  encoder->perceptual_distance = 4.0;
   encoder->filtering = 0;
   encoder->filter_value = 5.0;
   encoder->profile = 0;
@@ -118,8 +119,6 @@ schro_encoder_new (void)
 
   encoder->frame_queue = schro_queue_new (encoder->queue_depth,
       (SchroQueueFreeFunc)schro_encoder_frame_unref);
-
-  schro_encoder_set_default_subband_weights (encoder);
 
   encoder->inserted_buffers =
     schro_list_new_full ((SchroListFreeFunc)schro_buffer_unref, NULL);
@@ -234,19 +233,18 @@ schro_encoder_free (SchroEncoder *encoder)
 static void
 schro_encoder_init_perceptual_weighting (SchroEncoder *encoder)
 {
-  encoder->pixels_per_degree_vert =
-    encoder->video_format.height/
+  encoder->cycles_per_degree_vert = 0.5 * encoder->video_format.height/
     (2.0*atan(0.5/encoder->perceptual_distance)*180/M_PI);
-  encoder->pixels_per_degree_horiz = encoder->pixels_per_degree_vert *
+  encoder->cycles_per_degree_horiz = encoder->cycles_per_degree_vert *
     encoder->video_format.aspect_ratio_denominator /
     encoder->video_format.aspect_ratio_numerator;
 
   if (encoder->video_format.interlaced_coding) {
-    encoder->pixels_per_degree_vert *= 0.5;
+    encoder->cycles_per_degree_vert *= 0.5;
   }
 
-  SCHRO_DEBUG("pixels per degree horiz=%g vert=%g",
-      encoder->pixels_per_degree_horiz, encoder->pixels_per_degree_vert);
+  SCHRO_DEBUG("cycles per degree horiz=%g vert=%g",
+      encoder->cycles_per_degree_horiz, encoder->cycles_per_degree_vert);
 
   switch(encoder->perceptual_weighting) {
     default:

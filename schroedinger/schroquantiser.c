@@ -25,24 +25,27 @@ static int schro_subband_pick_quant (SchroEncoderFrame *frame,
 #define CURVE_SIZE 128
 
 double
-schro_encoder_perceptual_weight_moo (double ppd)
+schro_encoder_perceptual_weight_moo (double cpd)
 {
   /* I pretty much pulled this out of my ass (ppd = pixels per degree) */
-  if (ppd < 8) return 1;
-  return 1.0/(0.34 * ppd * exp (-0.125 * ppd));
+  if (cpd < 4) return 1;
+  return 0.68 * cpd * exp (-0.25 * cpd);
 }
 
 double
-schro_encoder_perceptual_weight_constant (double ppd)
+schro_encoder_perceptual_weight_constant (double cpd)
 {
   return 1;
 }
 
 double
-schro_encoder_perceptual_weight_ccir959 (double ppd)
+schro_encoder_perceptual_weight_ccir959 (double cpd)
 {
-  ppd *= 0.5;
-  return 0.255 / pow(1 + 0.2561 * ppd * ppd, -0.75);
+  double w;
+  w = 0.255 * pow(1 + 0.2561 * cpd * cpd, -0.75);
+
+  /* return normalized value */
+  return w/0.255;
 }
 
 static double
@@ -138,8 +141,8 @@ schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
 
   for(j=0;j<CURVE_SIZE;j++){
     for(i=0;i<CURVE_SIZE;i++){
-      double fv = j*encoder->pixels_per_degree_vert*(1.0/CURVE_SIZE);
-      double fh = i*encoder->pixels_per_degree_horiz*(1.0/CURVE_SIZE);
+      double fv = j*encoder->cycles_per_degree_vert*(1.0/CURVE_SIZE);
+      double fh = i*encoder->cycles_per_degree_horiz*(1.0/CURVE_SIZE);
 
       weight[j*CURVE_SIZE+i] = perceptual_weight (sqrt(fv*fv+fh*fh));
     }

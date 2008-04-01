@@ -287,9 +287,8 @@ struct _SchroEncoder {
 
   /* internal stuff */
 
-  double pixels_per_degree_horiz;
-  double pixels_per_degree_vert;
-  double pixels_per_degree_diag;
+  double cycles_per_degree_horiz;
+  double cycles_per_degree_vert;
 
   double subband_weights[SCHRO_N_WAVELETS][SCHRO_LIMIT_TRANSFORM_DEPTH][SCHRO_LIMIT_SUBBANDS];
   SchroHistogramTable intra_hist_tables[60];
