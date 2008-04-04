@@ -260,6 +260,10 @@ schro_encoder_init_perceptual_weighting (SchroEncoder *encoder)
       schro_encoder_calculate_subband_weights (encoder,
           schro_encoder_perceptual_weight_moo);
       break;
+    case SCHRO_ENCODER_PERCEPTUAL_MANOS_SAKRISON:
+      schro_encoder_calculate_subband_weights (encoder,
+          schro_encoder_perceptual_weight_manos_sakrison);
+      break;
   }
 }
 
@@ -2397,7 +2401,8 @@ static char *gop_structure_list[] = {
 static char *perceptual_weighting_list[] = {
   "none",
   "ccir959",
-  "moo"
+  "moo",
+  "manos_sakrison"
 };
 static char *filtering_list[] = {
   "none",

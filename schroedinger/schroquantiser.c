@@ -48,6 +48,18 @@ schro_encoder_perceptual_weight_ccir959 (double cpd)
   return w/0.255;
 }
 
+double
+schro_encoder_perceptual_weight_manos_sakrison (double cpd)
+{
+  double w;
+
+  if (cpd < 4) return 1;
+  w = 2.6 * (0.0192 + 0.114*cpd) * exp(-pow(0.114*cpd,1.1));
+
+  /* return normalized value */
+  return w / 0.980779694777866;
+}
+
 static double
 weighted_sum (const float *h1, const float *v1, double *weight)
 {
@@ -363,7 +375,6 @@ schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame)
   }
 
 }
-
 
 #ifdef DUMP_SUBBAND_CURVES
 static double pow2(double x)

@@ -61,7 +61,8 @@ typedef enum {
 typedef enum {
   SCHRO_ENCODER_PERCEPTUAL_CONSTANT,
   SCHRO_ENCODER_PERCEPTUAL_CCIR959,
-  SCHRO_ENCODER_PERCEPTUAL_MOO
+  SCHRO_ENCODER_PERCEPTUAL_MOO,
+  SCHRO_ENCODER_PERCEPTUAL_MANOS_SAKRISON
 } SchroEncoderPerceptualEnum;
 
 typedef enum {
@@ -412,9 +413,10 @@ double schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name
 void schro_encoder_set_default_subband_weights (SchroEncoder *encoder);
 void schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
         double (*perceptual_weight)(double));
-double schro_encoder_perceptual_weight_constant (double ppd);
-double schro_encoder_perceptual_weight_ccir959 (double ppd);
-double schro_encoder_perceptual_weight_moo (double ppd);
+double schro_encoder_perceptual_weight_constant (double cpd);
+double schro_encoder_perceptual_weight_ccir959 (double cpd);
+double schro_encoder_perceptual_weight_moo (double cpd);
+double schro_encoder_perceptual_weight_manos_sakrison (double cpd);
 
 void schro_encoder_init_subbands (SchroEncoderFrame *frame);
 void schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index);
