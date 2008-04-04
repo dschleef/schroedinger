@@ -498,7 +498,7 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
 
   schro_engine_check_new_access_unit (encoder, frame);
 
-  gop_length = 4;
+  gop_length = encoder->magic_subgroup_length;
   SCHRO_DEBUG("handling gop from %d to %d (index %d)", encoder->gop_picture,
       encoder->gop_picture + gop_length - 1, i);
 
@@ -645,7 +645,7 @@ handle_gop_backref (SchroEncoder *encoder, int i)
 
   schro_engine_check_new_access_unit (encoder, frame);
 
-  gop_length = 4;
+  gop_length = encoder->magic_subgroup_length;
   SCHRO_DEBUG("handling gop from %d to %d (index %d)", encoder->gop_picture,
       encoder->gop_picture + gop_length - 1, i);
 
