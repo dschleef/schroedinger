@@ -76,7 +76,8 @@ static const char *dump_file_names[SCHRO_DUMP_LAST] = {
   "schro_dump.lambda_curve",
   "schro_dump.hist_test",
   "schro_dump.scene_change",
-  "schro_dump.phase_correlation"
+  "schro_dump.phase_correlation",
+  "schro_dump.motionest"
 };
 
 void
