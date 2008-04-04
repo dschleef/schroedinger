@@ -14,6 +14,7 @@ void schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_lossless (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame);
+void schro_encoder_choose_quantisers_constant_lambda (SchroEncoderFrame *frame);
 
 double schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy);
 static double schro_encoder_lambda_to_entropy (SchroEncoderFrame *frame, double lambda);
@@ -283,8 +284,8 @@ schro_encoder_choose_quantisers (SchroEncoderFrame *frame)
     case SCHRO_QUANTISER_ENGINE_LOWDELAY:
       schro_encoder_choose_quantisers_lowdelay (frame);
       break;
-    case SCHRO_QUANTISER_ENGINE_RATE_DISTORTION_2:
-      //schro_encoder_choose_quantisers_rate_distortion_2 (frame);
+    case SCHRO_QUANTISER_ENGINE_CONSTANT_LAMBDA:
+      schro_encoder_choose_quantisers_constant_lambda (frame);
       break;
   }
 }
@@ -784,6 +785,19 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
     }
   }
 #endif
+}
+
+void
+schro_encoder_choose_quantisers_constant_lambda (SchroEncoderFrame *frame)
+{
+  schro_encoder_generate_subband_histograms (frame);
+  schro_encoder_calc_estimates (frame);
+
+  SCHRO_ASSERT(frame->have_estimate_tables);
+
+  frame->base_lambda = frame->encoder->magic_lambda;
+
+  schro_encoder_lambda_to_entropy (frame, frame->base_lambda);
 }
 
 

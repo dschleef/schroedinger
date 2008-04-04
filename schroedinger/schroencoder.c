@@ -114,6 +114,7 @@ schro_encoder_new (void)
   encoder->magic_error_power = 2.0;
   encoder->magic_mc_lambda = 0.1;
   encoder->magic_subgroup_length = 4;
+  encoder->magic_lambda = 1.0;
 
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
@@ -204,6 +205,10 @@ schro_encoder_start (SchroEncoder *encoder)
     case SCHRO_ENCODER_RATE_CONTROL_LOSSLESS:
       encoder->engine_iterate = schro_encoder_engine_lossless;
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOSSLESS;
+      break;
+    case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_LAMBDA:
+      handle_gop_enum (encoder);
+      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_CONSTANT_LAMBDA;
       break;
   }
 
@@ -2389,7 +2394,8 @@ static char *rate_control_list[] = {
   "constant_noise_threshold",
   "constant_bitrate",
   "low_delay",
-  "lossless"
+  "lossless",
+  "constant_lambda"
 };
 static char *gop_structure_list[] = {
   "adaptive",
@@ -2489,6 +2495,7 @@ static SchroEncoderSetting encoder_settings[] = {
   DOUB("magic_error_power", 0.0, 1000.0, 0.0),
   DOUB("magic_mc_lambda", 0.0, 1000.0, 0.0),
   DOUB("magic_subgroup_length", 2.0, 10.0, 4.0),
+  DOUB("magic_lambda", 0.0, 1000.0, 1.0),
 };
 
 int
@@ -2569,6 +2576,7 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(magic_error_power);
   VAR_SET(magic_mc_lambda);
   VAR_SET(magic_subgroup_length);
+  VAR_SET(magic_lambda);
 }
 
 double
@@ -2624,6 +2632,7 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(magic_error_power);
   VAR_GET(magic_mc_lambda);
   VAR_GET(magic_subgroup_length);
+  VAR_GET(magic_lambda);
 
   return 0;
 }
