@@ -192,8 +192,6 @@ schro_encoder_start (SchroEncoder *encoder)
         encoder->bits_per_picture /= 2;
       }
 
-      schro_encoder_recalculate_allocations (encoder);
-
       schro_encoder_encode_bitrate_comment (encoder, encoder->bitrate);
       break;
     case SCHRO_ENCODER_RATE_CONTROL_LOW_DELAY:
