@@ -491,6 +491,7 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
   int j;
   int gop_length;
   schro_bool intra_start;
+  double scs_sum;
 
   frame = encoder->frame_queue->elements[i].data;
 
@@ -512,6 +513,7 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
   }
 
   intra_start = frame->start_access_unit;
+  scs_sum = 0;
   for (j = 0; j < gop_length; j++) {
     /* FIXME set the gop length correctly for IBBBP */
     f = encoder->frame_queue->elements[i+j].data;
@@ -528,12 +530,16 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
         f->average_luma);
     SCHRO_DEBUG("scene change score %g", f->scene_change_score);
 
-    if (j==0 && f->scene_change_score > encoder->magic_scene_change_threshold) {
-      intra_start = TRUE;
-    }
-    if (j>=1 && f->scene_change_score > encoder->magic_scene_change_threshold) {
-      /* probably a scene change.  terminate gop */
-      gop_length = j;
+    if (j==0) {
+      if (f->scene_change_score > encoder->magic_scene_change_threshold) {
+        intra_start = TRUE;
+      }
+    } else {
+      scs_sum += f->scene_change_score;
+      if (scs_sum > encoder->magic_scene_change_threshold) {
+        /* matching is getting bad.  terminate gop */
+        gop_length = j;
+      }
     }
   }
 
