@@ -108,9 +108,9 @@ schro_encoder_new (void)
   encoder->magic_keyframe_weight = 7.5;
   encoder->magic_scene_change_threshold = 0.2;
   encoder->magic_inter_p_weight = 1.5;
-  encoder->magic_inter_b_weight = 0.5;
-  encoder->magic_mc_bailout_limit = 0.25;
-  encoder->magic_bailout_weight = 2.0;
+  encoder->magic_inter_b_weight = 0.2;
+  encoder->magic_mc_bailout_limit = 0.5;
+  encoder->magic_bailout_weight = 3.0;
   encoder->magic_error_power = 2.0;
   encoder->magic_mc_lambda = 0.1;
   encoder->magic_subgroup_length = 4;

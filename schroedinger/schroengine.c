@@ -285,44 +285,20 @@ init_params (SchroEncoderFrame *frame)
   params->codeblock_mode_index = 0;
 }
 
-/**
- * get_residual_alloc:
- * @encoder:
- * @buffer_level:
- * @picture_weight:
- *
- * Calculates the number of bits allocated for coding residual for a
- * picture.
- */
-static int
-get_residual_alloc (SchroEncoder *encoder, int buffer_level, double picture_weight)
+static double
+get_alloc (SchroEncoder *encoder, double requested_bits)
 {
   double x;
-  int bits;
+  double y;
 
-  x = (double)buffer_level/encoder->buffer_size;
+  x = requested_bits/encoder->buffer_size;
 
-  if (picture_weight == 0) {
-    picture_weight = 1.0;
-  }
-  bits = rint (x * encoder->bits_per_picture * picture_weight *
-      encoder->magic_allocation_scale);
+  y = 1 - exp(-x);
 
-  if (bits > buffer_level) bits = buffer_level;
+  SCHRO_DEBUG("%g/%d -> %g", requested_bits, encoder->buffer_level,
+      encoder->buffer_level * y);
 
-  return bits;
-}
-
-/**
- * get_mc_alloc:
- * @frame: encoder frame
- *
- * Calculates the number of bits allocated for coding MC for a picture.
- */
-static int
-get_mc_alloc (SchroEncoderFrame *frame)
-{
-  return 10 * frame->params.x_num_blocks * frame->params.y_num_blocks / 16;
+  return encoder->buffer_level * y;
 }
 
 /**
@@ -336,14 +312,30 @@ schro_encoder_calculate_allocation (SchroEncoderFrame *frame)
 {
   SchroEncoder *encoder = frame->encoder;
 
-  frame->allocated_mc_bits = get_mc_alloc (frame);
-  frame->allocated_residual_bits = get_residual_alloc (encoder,
-      encoder->buffer_level, frame->picture_weight);
-  frame->allocated_residual_bits -= frame->allocated_mc_bits;
-  if (frame->allocated_residual_bits < 0) {
-    frame->allocated_residual_bits = 0;
-  }
+  /* FIXME should be fixed elsewhere */
+  if (frame->picture_weight == 0.0) frame->picture_weight = 1.0;
 
+  if (frame->num_refs == 0) {
+    frame->allocated_mc_bits = 0;
+    frame->allocated_residual_bits = get_alloc (encoder,
+        encoder->bits_per_picture * frame->picture_weight *
+        encoder->magic_allocation_scale);
+  } else {
+    double weight;
+
+    frame->allocated_mc_bits = frame->estimated_mc_bits;
+
+    weight = frame->picture_weight;
+    if (frame->is_ref) {
+      weight += frame->badblock_ratio * 8.0;
+    } else {
+      weight += frame->badblock_ratio * 4.0;
+    }
+
+    frame->allocated_residual_bits = get_alloc (encoder,
+        encoder->bits_per_picture * weight *
+        encoder->magic_allocation_scale);
+  }
 }
 
 /**
