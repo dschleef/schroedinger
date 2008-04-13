@@ -449,6 +449,9 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
       if (frame->access_unit_buffer) {
         buffer = frame->access_unit_buffer;
         frame->access_unit_buffer = NULL;
+        if (presentation_frame) {
+          *presentation_frame = -1;
+        }
       } else if (schro_list_get_size(frame->inserted_buffers)>0) {
         buffer = schro_list_remove (frame->inserted_buffers, 0);
         if (presentation_frame) {
