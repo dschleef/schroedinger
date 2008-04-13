@@ -136,6 +136,8 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
 
   schro_list_free (frame->motion_field_list);
 
+  frame->badblock_ratio = (double)me->badblocks/(params->x_num_blocks*params->y_num_blocks/16);
+
   schro_motionest_free (me);
 }
 
@@ -798,6 +800,8 @@ schro_motionest_rough_scan_nohint (SchroMotionEst *me, int shift, int ref,
 
       mv->dx[ref] = dx;
       mv->dy[ref] = dy;
+
+      me->hier_score += (mv->metric>10*12*12);
     }
   }
 
@@ -1217,68 +1221,79 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
 {
   SchroParams *params = me->params;
   int i,j;
-  int total_error = 0;
+  double total_error = 0;
 
   me->lambda = me->encoder_frame->encoder->magic_mc_lambda;
 
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
-      SchroBlock blocks[10];
-      int n;
+      SchroBlock block;
+      SchroBlock tryblock;
       double score;
-      int k;
       double min_score;
-      int min_k;
+      double min_score1;
 
-      memset (blocks, 0, sizeof(blocks));
+#define TRYBLOCK \
+      score = tryblock.entropy + me->lambda * tryblock.error; \
+      if (tryblock.valid && score < min_score) { \
+        memcpy (&block, &tryblock, sizeof(block)); \
+        min_score = score; \
+      }
 
-      n = 0;
-      schro_motionest_superblock_scan_one (me, 0, 4, blocks + n, i, j);
-      n++;
-      schro_motionest_superblock_predicted (me, 0, blocks + n, i, j);
-      n++;
-      schro_motionest_block_scan_one (me, 0, 12, blocks + n, i, j);
-      n++;
-      schro_motionest_superblock_dc (me, blocks + n, i, j);
-      n++;
-      schro_motionest_superblock_dc_predicted (me, blocks + n, i, j);
-      n++;
+      /* base 119 s */
+      schro_motionest_superblock_predicted (me, 0, &block, i, j);
+      min_score = block.entropy + me->lambda * block.error;
       if (params->num_refs > 1) {
-        schro_motionest_superblock_scan_one (me, 1, 4, blocks + n, i, j);
-        n++;
-        schro_motionest_superblock_predicted (me, 1, blocks + n, i, j);
-        n++;
-        schro_motionest_superblock_biref_zero (me, blocks + n, i, j);
-        n++;
-        schro_motionest_block_scan_one (me, 1, 12, blocks + n, i, j);
-        n++;
+        schro_motionest_superblock_predicted (me, 1, &tryblock, i, j);
+        TRYBLOCK
       }
 
-      min_k = 0;
-      min_score = blocks[0].entropy + me->lambda * blocks[0].error;
-      for(k=0;k<n;k++){
-#if 0
-        if (blocks[k].error == SCHRO_METRIC_INVALID) {
-          SCHRO_ERROR("k %d", k);
-          SCHRO_ASSERT(blocks[k].error != SCHRO_METRIC_INVALID);
-        }
-        SCHRO_ASSERT(blocks[k].error != 16*SCHRO_METRIC_INVALID);
-#endif
-        if (!blocks[k].valid) continue;
-        score = blocks[k].entropy + me->lambda * blocks[k].error;
-        if (score < min_score) {
-          min_k = k;
-          min_score = score;
+      /* 16 s */
+      schro_motionest_superblock_scan_one (me, 0, 4, &tryblock, i, j);
+      TRYBLOCK
+      if (params->num_refs > 1) {
+        schro_motionest_superblock_scan_one (me, 1, 4, &tryblock, i, j);
+        TRYBLOCK
+      }
+
+      /* 2.5 s */
+      schro_motionest_superblock_dc_predicted (me, &tryblock, i, j);
+      TRYBLOCK
+      schro_motionest_superblock_dc (me, &tryblock, i, j);
+      TRYBLOCK
+
+      /* 3.0 s */
+      if (params->num_refs > 1) {
+        schro_motionest_superblock_biref_zero (me, &tryblock, i, j);
+        TRYBLOCK
+      }
+
+      if (min_score > 1000) {
+        min_score1 = min_score;
+        schro_motionest_block_scan_one (me, 0, 4, &tryblock, i, j);
+        TRYBLOCK
+        //schro_dump(SCHRO_DUMP_MOTIONEST, "%g %g %g\n", min_score1, min_score, score);
+        if (params->num_refs > 1) {
+          schro_motionest_block_scan_one (me, 1, 4, &tryblock, i, j);
+          TRYBLOCK
         }
       }
-      schro_block_fixup (blocks + min_k);
-      schro_motion_copy_to (me->motion, i, j, blocks + min_k);
+
+      if (block.error > 10000) {
+        me->badblocks++;
+      }
+
+      schro_block_fixup (&block);
+      schro_motion_copy_to (me->motion, i, j, &block);
       
-      total_error += blocks[min_k].error;
+      total_error += (double)block.error*block.error/(double)(144*16*144*16);
     }
   }
 
-  me->encoder_frame->mc_error = total_error;
+  me->encoder_frame->mc_error = total_error/(240.0*240.0)/(params->x_num_blocks*params->y_num_blocks/16);
+
+  /* magic parameter */
+  me->encoder_frame->mc_error *= 2.5;
 }
 
 int
