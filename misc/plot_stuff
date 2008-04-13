@@ -37,32 +37,27 @@ class Plot:
 			print "Invalid x range";
 			xmin -= 1;
 			xmax += 1;
-		print "x range %g %g" % (xmin, xmax);
 		self.range_xmin=float(xmin);
 		self.range_xmax=float(xmax);
 
 	def set_y_range (self, ymin, ymax):
+		print "y range %g %g" % (ymin, ymax);
 		if ymin == ymax:
 			print "Invalid y range";
 			ymin -= 1;
 			ymax += 1;
-		print "y range %g %g" % (ymin, ymax);
 		self.range_ymin=float(ymin);
 		self.range_ymax=float(ymax);
 
 	def set_x_range_data (self, data):
 		xmin = min(data);
 		xmax = max(data);
-		print "x range %g %g" % (xmin, xmax);
-		self.range_xmin=float(xmin);
-		self.range_xmax=float(xmax);
+		self.set_x_range(xmin,xmax);
 
 	def set_y_range_data (self, data):
 		ymin = min(data);
 		ymax = max(data);
-		print "y range %g %g" % (ymin, ymax);
-		self.range_ymin=float(ymin);
-		self.range_ymax=float(ymax);
+		self.set_y_range(ymin,ymax);
 
 	def set_sane_ticks (self):
 		logrange = math.log10((self.range_xmax - self.range_xmin)/3);
@@ -286,6 +281,31 @@ def plot_bits_per_pic():
 
 	plot.surface.write_to_png('00000-bits-per-pic.png');
 
+def plot_badblock_ratio():
+	plot = Plot(800,600);
+	data_x = Numeric.transpose(tpts[0]);
+	data_y = Numeric.transpose(tpts[17]);
+	mx = max(data_x);
+	my = max(data_y);
+	plot.set_x_range(0, mx);
+	plot.set_y_range(0, my);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.draw_plot (Numeric.transpose([data_x,data_y]));
+
+	plot.surface.write_to_png('00000-badblock-ratio.png');
+
 def plot_est_act_residual():
 	plot = Plot(800,600);
 	mx = max(Numeric.transpose(tpts[7]));
@@ -375,6 +395,32 @@ def plot_est_act_mc():
 
 	plot.surface.write_to_png('00000-est-act-mc.png');
 
+def plot_est_mc_scs():
+	plot = Plot(800,600);
+	data_x = Numeric.transpose(tpts[6]);
+	data_y = Numeric.transpose(tpts[10]);
+	mx = max(data_x);
+	my = max(data_y);
+	plot.set_x_range(0, mx);
+	plot.set_y_range(0, 0.1);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose([data_x,data_y]));
+
+	plot.surface.write_to_png('00000-est-mc-scs.png');
+
 def plot_scs_mse():
 	plot = Plot(800,600);
 	#mx = max(Numeric.transpose(tpts[10]));
@@ -400,17 +446,128 @@ def plot_scs_mse():
 
 	plot.surface.write_to_png('00000-scs-mse.png');
 
+def plot_badblock_vs_mse():
+	plot = Plot(800,600);
+	data_x = Numeric.transpose(tpts[17]);
+	data_y = Numeric.transpose(tpts[14]);
+	mx = max(data_x);
+	my = max(data_y);
+	plot.set_x_range(0, mx);
+	plot.set_y_range(0, my);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose([data_x,data_y]));
+
+	plot.surface.write_to_png('00000-badblock-vs-mse.png');
+
+def plot_mc_error_vs_mse():
+	plot = Plot(800,600);
+	data_x = Numeric.transpose(tpts[13]);
+	data_y = Numeric.transpose(tpts[14]);
+	#data_x = Numeric.transpose(tpts[0]);
+	#data_y = Numeric.transpose(tpts[13])/Numeric.transpose(tpts[14]);
+	mx = max(data_x);
+	my = max(data_y);
+	plot.set_x_range_data(data_x);
+	plot.set_y_range(0, my);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (0, 1, 0);
+	plot.with_lines = 1;
+	plot.draw_plot ( [[0,0],[mx,mx]]);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose([data_x,data_y]));
+
+	plot.surface.write_to_png('00000-mc-error-vs-mse.png');
+
+def plot_hist_slope():
+	plot = Plot(800,600);
+	data_x = Numeric.transpose(tpts[0]);
+	data_y = Numeric.transpose(tpts[18]);
+	plot.set_x_range_data(data_x);
+	plot.set_y_range_data(data_y);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.draw_plot (Numeric.transpose([data_x,data_y]));
+
+	plot.surface.write_to_png('00000-hist-slope.png');
+
+def plot_hist_slope_vs_mse():
+	plot = Plot(800,600);
+	data_x = Numeric.transpose(tpts[18]);
+	data_y = Numeric.transpose(tpts[14]);
+	plot.set_x_range_data(data_x);
+	plot.set_y_range_data(data_y);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.with_lines = 0;
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.draw_plot (Numeric.transpose([data_x,data_y]));
+
+	plot.surface.write_to_png('00000-hist-slope-vs-mse.png');
+
 
 pts = readdata("schro_dump.picture");
-#pts = pts[700:1000];
+#pts = pts[1600:2000];
 tpts = Numeric.transpose(pts);
 
 plot_mse();
 plot_buffer_level();
-plot_alloc_est_residual();
-plot_est_act_residual();
-plot_est_act_mc();
+#plot_alloc_est_residual();
+#plot_est_act_residual();
+#plot_est_act_mc();
 plot_bits_per_pic();
-plot_scs_mse();
+#plot_scs_mse();
+#plot_est_mc_scs();
+plot_badblock_ratio();
+plot_badblock_vs_mse();
+plot_mc_error_vs_mse();
+plot_hist_slope();
+plot_hist_slope_vs_mse();
 
 
