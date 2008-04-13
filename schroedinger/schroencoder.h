@@ -185,13 +185,14 @@ struct _SchroEncoderFrame {
 
   int actual_residual_bits;
   int actual_mc_bits;
-  int mc_error;
+  double mc_error;
   double mean_squared_error_luma;
   double mean_squared_error_chroma;
 
   double estimated_arith_context_ratio;
 
-  double found_entropy;
+  double badblock_ratio;
+  double hist_slope;
 };
 
 struct _SchroEncoder {

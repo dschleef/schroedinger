@@ -471,7 +471,12 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
 
         elapsed_time = schro_utils_get_time() - encoder->start_time;
 
-        schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g %d %g %d %g %g %g %g\n",
+        if (frame->num_refs == 0) {
+          frame->badblock_ratio = 0;
+          frame->mc_error = 0;
+        }
+
+        schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g %d %g %g %g %g %g %g %g\n",
             frame->frame_number, /* 0 */
             frame->num_refs,
             frame->is_ref,
@@ -489,7 +494,8 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
             frame->mean_squared_error_luma,
             frame->mean_squared_error_chroma, /* 15 */
             elapsed_time,
-            frame->found_entropy);
+            frame->badblock_ratio,
+            frame->hist_slope);
 
         /* FIXME move this */
         if (frame->num_refs == 0) {
@@ -895,8 +901,9 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
 
     SCHRO_ASSERT(schro_motion_verify (frame->motion));
 
-    if (frame->encoder->bits_per_picture && frame->estimated_mc_bits >
-        frame->encoder->bits_per_picture * frame->encoder->magic_mc_bailout_limit) {
+    if ((frame->encoder->bits_per_picture &&
+        frame->estimated_mc_bits > frame->encoder->bits_per_picture * frame->encoder->magic_mc_bailout_limit) ||
+        frame->badblock_ratio > 0.5) {
       SCHRO_DEBUG("%d: MC bailout %d > %g", frame->frame_number,
           frame->estimated_mc_bits,
           frame->encoder->bits_per_picture*frame->encoder->magic_mc_bailout_limit);

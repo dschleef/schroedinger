@@ -15,9 +15,11 @@ void schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_lossless (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_constant_lambda (SchroEncoderFrame *frame);
+void schro_encoder_choose_quantisers_constant_error (SchroEncoderFrame *frame);
 
 double schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy);
 static double schro_encoder_lambda_to_entropy (SchroEncoderFrame *frame, double lambda);
+static void schro_encoder_generate_subband_histograms (SchroEncoderFrame *frame);
 
 
 static int schro_subband_pick_quant (SchroEncoderFrame *frame,
@@ -287,6 +289,9 @@ schro_encoder_choose_quantisers (SchroEncoderFrame *frame)
     case SCHRO_QUANTISER_ENGINE_CONSTANT_LAMBDA:
       schro_encoder_choose_quantisers_constant_lambda (frame);
       break;
+    case SCHRO_QUANTISER_ENGINE_CONSTANT_ERROR:
+      schro_encoder_choose_quantisers_constant_error (frame);
+      break;
   }
 }
 
@@ -307,7 +312,6 @@ void
 schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
-  int psnr;
   int i;
   int component;
   double noise_amplitude;
@@ -315,9 +319,7 @@ schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame)
   double max;
   double *table;
 
-  psnr = frame->encoder->noise_threshold;
-
-  noise_amplitude = 255.0 * pow(0.1, psnr*0.05);
+  noise_amplitude = 255.0 * pow(0.1, frame->encoder->noise_threshold*0.05);
   SCHRO_DEBUG("noise %g", noise_amplitude);
 
   table = frame->encoder->subband_weights[params->wavelet_filter_index]
@@ -352,15 +354,13 @@ void
 schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
-  int psnr;
   int i;
   int component;
   int base;
   const int *table;
 
-  psnr = frame->encoder->noise_threshold;
   /* completely made up */
-  base = 12 + (30 - psnr)/2;
+  base = 12 + (30 - frame->encoder->noise_threshold)/2;
 
   table = schro_tables_lowdelay_quants[params->wavelet_filter_index]
       [params->transform_depth-1];
@@ -621,6 +621,7 @@ schro_encoder_generate_subband_histograms (SchroEncoderFrame *frame)
           &frame->subband_hists[component][i], skip);
     }
   }
+
   frame->have_histograms = TRUE;
 }
 
@@ -1011,7 +1012,6 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
     SCHRO_DEBUG("--> stopping");
   }
   if (entropy_lo == entropy_hi) {
-    frame->found_entropy = entropy_lo;
     return exp(0.5*(log_lambda_lo + log_lambda_hi));
   }
 
@@ -1052,8 +1052,153 @@ schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
   }
 
   log_lambda_mid = 0.5*(log_lambda_hi + log_lambda_lo);
-  frame->found_entropy = 0.5*(entropy_lo + entropy_hi);
   SCHRO_DEBUG("done %g", exp(log_lambda_mid));
   return exp(log_lambda_mid);
+}
+
+static double
+schro_encoder_lambda_to_error (SchroEncoderFrame *frame, double base_lambda)
+{
+  SchroParams *params = &frame->params;
+  int i;
+  int component;
+  double error = 0;
+
+  for(component=0;component<3;component++){
+    for(i=0;i<1 + 3*params->transform_depth; i++) {
+      double lambda;
+      double weight;
+      int quant_index;
+
+      lambda = base_lambda;
+
+      if (i == 0) {
+        lambda *= frame->encoder->magic_subband0_lambda_scale;
+      }
+      if (component > 0) {
+        lambda *= frame->encoder->magic_chroma_lambda_scale;
+      }
+
+      weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
+        [frame->params.transform_depth-1][i];
+      lambda /= weight*weight;
+      
+      quant_index = schro_subband_pick_quant (frame, component, i, lambda);
+      error += frame->est_error[component][i][quant_index];
+      frame->quant_index[component][i] = quant_index;
+    }
+  }
+
+  return error;
+}
+
+double
+schro_encoder_error_to_lambda (SchroEncoderFrame *frame, double error)
+{
+  int j;
+  double log_lambda_hi, log_lambda_lo, log_lambda_mid;
+  double error_hi, error_lo, error_mid;
+
+  log_lambda_hi = log(1);
+  error_hi = schro_encoder_lambda_to_error (frame, exp(log_lambda_hi));
+  SCHRO_ERROR("start target=%g log_lambda=%g error=%g",
+      error, log_lambda_hi, error_hi, log_lambda_hi, error);
+
+  if (error_hi < error) {
+    error_lo = error_hi;
+    log_lambda_lo = log_lambda_hi;
+
+    for(j=0;j<5;j++) {
+      log_lambda_hi = log_lambda_lo + log(100);
+      error_hi = schro_encoder_lambda_to_error (frame, exp(log_lambda_hi));
+
+      SCHRO_ERROR("have: log_lambda=[%g,%g] error=[%g,%g] target=%g",
+          log_lambda_lo, log_lambda_hi, error_lo, error_hi, error);
+      if (error_hi > error) break;
+
+      SCHRO_ERROR("--> step up");
+
+      error_lo = error_hi;
+      log_lambda_lo = log_lambda_hi;
+    }
+    SCHRO_ERROR("--> stopping");
+  } else {
+    for(j=0;j<5;j++) {
+      log_lambda_lo = log_lambda_hi - log(100);
+      error_lo = schro_encoder_lambda_to_error (frame, exp(log_lambda_lo));
+
+      SCHRO_ERROR("have: log_lambda=[%g,%g] error=[%g,%g] target=%g",
+          log_lambda_lo, log_lambda_hi, error_lo, error_hi, error);
+
+      SCHRO_ERROR("--> step down");
+      if (error_lo < error) break;
+
+      error_hi = error_lo;
+      log_lambda_hi = log_lambda_lo;
+    }
+    SCHRO_ERROR("--> stopping");
+  }
+  if (error_lo == error_hi) {
+    return exp(0.5*(log_lambda_lo + log_lambda_hi));
+  }
+
+  if (error_lo > error || error_hi < error) {
+    SCHRO_ERROR("error not bracketed");
+  }
+
+  for(j=0;j<14;j++){
+    double x;
+
+    if (error_hi == error_lo) break;
+
+    SCHRO_ERROR("have: log_lambda=[%g,%g] error=[%g,%g] target=%g",
+        log_lambda_lo, log_lambda_hi, error_lo, error_hi, error);
+
+#if 0
+    x = (error - error_lo) / (error_hi - error_lo);
+    if (x < 0.2) x = 0.2;
+    if (x > 0.8) x = 0.8;
+#else
+    x = 0.5;
+#endif
+    log_lambda_mid = log_lambda_lo + (log_lambda_hi - log_lambda_lo) * x;
+    error_mid = schro_encoder_lambda_to_error (frame, exp(log_lambda_mid));
+
+    SCHRO_ERROR("picking x=%g log_lambda_mid=%g error=%g", x,
+        log_lambda_mid, error_mid);
+
+    if (error_mid > error) {
+      log_lambda_hi = log_lambda_mid;
+      error_hi = error_mid;
+      SCHRO_ERROR("--> focus up");
+    } else {
+      log_lambda_lo = log_lambda_mid;
+      error_lo = error_mid;
+      SCHRO_ERROR("--> focus down");
+    }
+  }
+
+  log_lambda_mid = 0.5*(log_lambda_hi + log_lambda_lo);
+  SCHRO_ERROR("done %g", exp(log_lambda_mid));
+  return exp(log_lambda_mid);
+}
+
+void
+schro_encoder_choose_quantisers_constant_error (SchroEncoderFrame *frame)
+{
+  double base_lambda;
+  double error;
+
+  schro_encoder_generate_subband_histograms (frame);
+  schro_encoder_calc_estimates (frame);
+
+  SCHRO_ASSERT(frame->have_estimate_tables);
+
+  error = 255.0 * pow(0.1, frame->encoder->noise_threshold*0.05);
+
+  base_lambda = schro_encoder_entropy_to_lambda (frame, error);
+
+  frame->base_lambda = base_lambda;
+  SCHRO_ERROR("LAMBDA: %d %g", frame->frame_number, base_lambda);
 }
 
