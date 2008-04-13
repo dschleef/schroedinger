@@ -208,6 +208,10 @@ schro_encoder_start (SchroEncoder *encoder)
       handle_gop_enum (encoder);
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_CONSTANT_LAMBDA;
       break;
+    case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_ERROR:
+      handle_gop_enum (encoder);
+      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_CONSTANT_ERROR;
+      break;
   }
 
   encoder->start_time = schro_utils_get_time ();
@@ -2403,7 +2407,8 @@ static char *rate_control_list[] = {
   "constant_bitrate",
   "low_delay",
   "lossless",
-  "constant_lambda"
+  "constant_lambda",
+  "constant_error"
 };
 static char *gop_structure_list[] = {
   "adaptive",

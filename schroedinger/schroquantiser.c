@@ -1099,42 +1099,42 @@ schro_encoder_error_to_lambda (SchroEncoderFrame *frame, double error)
   double log_lambda_hi, log_lambda_lo, log_lambda_mid;
   double error_hi, error_lo, error_mid;
 
-  log_lambda_hi = log(1);
-  error_hi = schro_encoder_lambda_to_error (frame, exp(log_lambda_hi));
+  log_lambda_lo = log(1);
+  error_lo = schro_encoder_lambda_to_error (frame, exp(log_lambda_lo));
   SCHRO_ERROR("start target=%g log_lambda=%g error=%g",
-      error, log_lambda_hi, error_hi, log_lambda_hi, error);
+      error, log_lambda_lo, error_lo, log_lambda_lo, error);
 
-  if (error_hi < error) {
-    error_lo = error_hi;
-    log_lambda_lo = log_lambda_hi;
+  if (error < error_lo) {
+    error_hi = error_lo;
+    log_lambda_hi = log_lambda_lo;
 
     for(j=0;j<5;j++) {
-      log_lambda_hi = log_lambda_lo + log(100);
-      error_hi = schro_encoder_lambda_to_error (frame, exp(log_lambda_hi));
+      log_lambda_lo = log_lambda_hi + log(100);
+      error_lo = schro_encoder_lambda_to_error (frame, exp(log_lambda_lo));
 
       SCHRO_ERROR("have: log_lambda=[%g,%g] error=[%g,%g] target=%g",
           log_lambda_lo, log_lambda_hi, error_lo, error_hi, error);
-      if (error_hi > error) break;
+      if (error > error_lo) break;
 
       SCHRO_ERROR("--> step up");
 
-      error_lo = error_hi;
-      log_lambda_lo = log_lambda_hi;
+      error_hi = error_lo;
+      log_lambda_hi = log_lambda_lo;
     }
     SCHRO_ERROR("--> stopping");
   } else {
     for(j=0;j<5;j++) {
-      log_lambda_lo = log_lambda_hi - log(100);
-      error_lo = schro_encoder_lambda_to_error (frame, exp(log_lambda_lo));
+      log_lambda_hi = log_lambda_lo - log(100);
+      error_hi = schro_encoder_lambda_to_error (frame, exp(log_lambda_hi));
 
       SCHRO_ERROR("have: log_lambda=[%g,%g] error=[%g,%g] target=%g",
           log_lambda_lo, log_lambda_hi, error_lo, error_hi, error);
 
       SCHRO_ERROR("--> step down");
-      if (error_lo < error) break;
+      if (error < error_hi) break;
 
-      error_hi = error_lo;
-      log_lambda_hi = log_lambda_lo;
+      error_lo = error_hi;
+      log_lambda_lo = log_lambda_hi;
     }
     SCHRO_ERROR("--> stopping");
   }
@@ -1195,8 +1195,10 @@ schro_encoder_choose_quantisers_constant_error (SchroEncoderFrame *frame)
   SCHRO_ASSERT(frame->have_estimate_tables);
 
   error = 255.0 * pow(0.1, frame->encoder->noise_threshold*0.05);
+  error *= frame->params.video_format->width *
+    frame->params.video_format->height;
 
-  base_lambda = schro_encoder_entropy_to_lambda (frame, error);
+  base_lambda = schro_encoder_error_to_lambda (frame, error);
 
   frame->base_lambda = base_lambda;
   SCHRO_ERROR("LAMBDA: %d %g", frame->frame_number, base_lambda);
