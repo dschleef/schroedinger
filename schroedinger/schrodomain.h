@@ -2,7 +2,9 @@
 #ifndef _SCHRO_DOMAIN_H_
 #define _SCHRO_DOMAIN_H_
 
+#ifdef HAVE_PTHREAD
 #include <pthread.h>
+#endif
 
 typedef int SchroExecDomain;
 
@@ -13,7 +15,11 @@ typedef struct _SchroMemoryDomain SchroMemoryDomain;
 #define SCHRO_MEMORY_DOMAIN_SLOTS 1000
 
 struct _SchroMemoryDomain {
+#ifdef HAVE_PTHREAD
   pthread_mutex_t mutex;
+#else
+  void * mutex;
+#endif
 
   unsigned int flags;
 

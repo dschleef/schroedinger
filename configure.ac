@@ -57,6 +57,7 @@ AC_ARG_WITH([pthread],
 if test "x${with_pthread}" = "xyes" ; then
   PTHREAD_LIBS="-lpthread"
   AC_SUBST(PTHREAD_LIBS)
+  AC_DEFINE(HAVE_PTHREAD, 1, [Whether or not pthread is enabled])
 fi
 AM_CONDITIONAL(HAVE_PTHREAD, test "x$with_pthread" = "xyes")
 

@@ -8,20 +8,34 @@
 #include <schroedinger/schrodebug.h>
 #include <stdlib.h>
 
+#ifdef HAVE_PTHREAD
+#include <pthread.h>
+#define schro_mutex_lock(mutex) pthread_mutex_lock(mutex)
+#define schro_mutex_unlock(mutex) pthread_mutex_unlock(mutex)
+#define schro_mutex_init(mutex) do { \
+  pthread_mutexattr_t mutexattr; \
+  pthread_mutexattr_init (&mutexattr); \
+  pthread_mutex_init (mutex, &mutexattr); \
+  pthread_mutexattr_destroy (&mutexattr); \
+} while (0)
+#else
+#define schro_mutex_init(mutex) do {} while (0)
+#define schro_mutex_lock(mutex) do {} while (0)
+#define schro_mutex_unlock(mutex) do {} while (0)
+#endif
+
+
 
 /* SchroMemoryDomain */
 
 SchroMemoryDomain *
 schro_memory_domain_new (void)
 {
-  pthread_mutexattr_t mutexattr;
   SchroMemoryDomain *domain;
 
   domain = schro_malloc0 (sizeof(SchroMemoryDomain));
 
-  pthread_mutexattr_init (&mutexattr);
-  pthread_mutex_init (&domain->mutex, &mutexattr);
-  pthread_mutexattr_destroy (&mutexattr);
+  schro_mutex_init (&domain->mutex);
 
   return domain;
 }
@@ -66,7 +80,9 @@ schro_memory_domain_alloc (SchroMemoryDomain *domain, int size)
 
   SCHRO_DEBUG("alloc %d", size);
 
-  pthread_mutex_lock (&domain->mutex);
+#ifdef HAVE_PTHREAD
+  schro_mutex_lock (&domain->mutex);
+#endif
   for(i=0;i<SCHRO_MEMORY_DOMAIN_SLOTS;i++){
     if (!(domain->slots[i].flags & SCHRO_MEMORY_DOMAIN_SLOT_ALLOCATED)) {
       continue;
@@ -99,7 +115,7 @@ schro_memory_domain_alloc (SchroMemoryDomain *domain, int size)
 
   SCHRO_ASSERT(0);
 done:
-  pthread_mutex_unlock (&domain->mutex);
+  schro_mutex_unlock (&domain->mutex);
   return ptr;
 }
 
@@ -112,7 +128,7 @@ schro_memory_domain_memfree (SchroMemoryDomain *domain, void *ptr)
 
   SCHRO_DEBUG("free %p", ptr);
 
-  pthread_mutex_lock (&domain->mutex);
+  schro_mutex_lock (&domain->mutex);
   for(i=0;i<SCHRO_MEMORY_DOMAIN_SLOTS;i++){
     if (!(domain->slots[i].flags & SCHRO_MEMORY_DOMAIN_SLOT_ALLOCATED)) {
       continue;
@@ -122,11 +138,11 @@ schro_memory_domain_memfree (SchroMemoryDomain *domain, void *ptr)
     }
     if (domain->slots[i].ptr == ptr) {
       domain->slots[i].flags &= (~SCHRO_MEMORY_DOMAIN_SLOT_IN_USE);
-      pthread_mutex_unlock (&domain->mutex);
+      schro_mutex_unlock (&domain->mutex);
       return;
     }
   }
-  pthread_mutex_unlock (&domain->mutex);
+  schro_mutex_unlock (&domain->mutex);
 
   SCHRO_ASSERT(0);
 }
