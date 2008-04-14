@@ -13,8 +13,11 @@ libgstschro_la_SOURCES = \
 	gstschroscale.c \
 	gstframestore.c \
 	vs_image.c \
+	vs_image.h \
 	vs_4tap.c \
-	vs_scanline.c
+	vs_4tap.h \
+	vs_scanline.c \
+	vs_scanline.h
 
 libgstschro_la_CFLAGS = $(GST_CFLAGS) $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 libgstschro_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
