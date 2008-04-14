@@ -1,5 +1,5 @@
 
-SUBDIRS = . check perf coder installation prototype streams tables2 dirac \
+SUBDIRS = . perf coder installation prototype streams tables2 dirac \
 	  manual cache
 
 if HAVE_CUDA

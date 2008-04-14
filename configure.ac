@@ -185,12 +185,6 @@ AC_SUBST(OPENGL_LIBS)
 AM_CONDITIONAL(HAVE_OPENGL, test "x$HAVE_OPENGL" = "xyes")
 
 
-#
-# Check for check
-#
-AM_PATH_CHECK(0.9.2, HAVE_CHECK=yes, HAVE_CHECK=no)
-AM_CONDITIONAL(HAVE_CHECK, test "x$HAVE_CHECK" = "xyes")
-
 AM_CONDITIONAL(BUILD_BROKEN_TESTS, false)
 
 SCHRO_LIBS="\$(top_builddir)/schroedinger/libschroedinger-$SCHRO_MAJORMINOR.la"
@@ -213,7 +207,6 @@ schroedinger/opengl/Makefile
 gst/Makefile
 testsuite/Makefile
 testsuite/cache/Makefile
-testsuite/check/Makefile
 testsuite/cuda/Makefile
 testsuite/perf/Makefile
 testsuite/coder/Makefile
