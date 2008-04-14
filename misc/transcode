@@ -1,7 +1,8 @@
 #!/bin/sh
 
 #file=elephants_dream
-file=showreel
+#file=showreel
+file=squirrel
 
 mediadir=/home/ds/media/masters
 
@@ -11,12 +12,16 @@ all="SD-default SD-VBR-10dB SD-VBR-20dB SD-VBR-30dB SD-VBR-40dB \
 
 list="$all"
 
-#list=SD-CBR-3Mb
-list=HD720-CBR-5Mb
+#list=HD720-Clam
+#list=HD720-CBR-4Mb
 #list=SIF-CBR-750kb
+list=SD-CBR-2Mb
 
 #extraopts="enable-bigblock-estimation=true enable-hierarchical-estimation=false"
-extraopts="motion-block-size=1"
+#extraopts="perceptual-weighting=1 magic-error-power=4.0 magic-mc-lambda=0.01"
+#extraopts="perceptual-weighting=1"
+#extraopts="motion-block-size=2"
+extraopts=""
 export SCHRO_DUMP=1
 
 trap exit INT
@@ -40,11 +45,18 @@ function get_profile {
     SD-intra-only) schroopts="gop-structure=1" ;;
     SD-tworef) schroopts="gop-structure=4" ;;
     HD720-tworef) schroopts="gop-structure=4" ;;
-    HD720-CBR-4Mb) schroopts="rate-control=1 bitrate=4000000" ;;
+    HD720-CBR-3Mb) schroopts="rate-control=1 bitrate=3000000" ;;
+    HD720-CBR-4Mb) schroopts="rate-control=1 bitrate=4500000" ;;
     HD720-CBR-5Mb) schroopts="rate-control=1 bitrate=5000000" ;;
+    HD720-backref-CBR-5Mb) schroopts="gop-structure=2 rate-control=1 bitrate=5000000" ;;
+    HD720-test) schroopts="gop-structure=2 rate-control=1 bitrate=5000000 magic_inter_b_weight=0.0001" ;;
+    HD720-intra) schroopts="gop-structure=1 rate-control=1 bitrate=10000000" ;;
     SD-CBR-3Mb-tworef) schroopts="rate-control=1 bitrate=3000000" ;;
     HD270-default) schroopts="" ;;
     SIF-CBR-750kb) schroopts="rate-control=1 bitrate=750000" ;;
+    SD-Cerr) schroopts="rate-control=5" ;;
+    HD720-Clam) schroopts="rate-control=4 magic-lambda=0.1" ;;
+    HD720-Cerr) schroopts="rate-control=5 noise-threshold=20" ;;
   esac
   case $1 in
     SIF*) infile="$file.SIF-master.drc" ;;
