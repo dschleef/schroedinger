@@ -69,6 +69,7 @@ void schro_video_format_get_picture_chroma_size (SchroVideoFormat *format,
     int *picture_chroma_width, int *picture_chroma_height);
 void schro_video_format_get_iwt_alloc_size (SchroVideoFormat *format,
     int *width, int *height);
+int schro_video_format_get_bit_depth (SchroVideoFormat *format);
 
 #endif
 
