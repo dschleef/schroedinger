@@ -1,15 +1,11 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = schroedinger doc tools
+SUBDIRS = schroedinger doc tools testsuite
 
 DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc
 
 if HAVE_GST
 SUBDIRS += gst
-endif
-
-if HAVE_CHECK
-SUBDIRS += testsuite
 endif
 
 DIST_SUBDIRS = schroedinger doc tools gst testsuite
