@@ -79,7 +79,14 @@ schro_async_new(int n_threads,
       }
     }
     if (n_threads == 0) {
+#ifndef _WIN32
       n_threads = sysconf(_SC_NPROCESSORS_CONF);
+#else
+      const char *s = getenv("NUMBER_OF_PROCESSORS");
+      if (s) {
+        n_threads = atoi(s);
+      }
+#endif
     }
     if (n_threads == 0) {
       n_threads = 1;
