@@ -1,16 +1,16 @@
 #!/bin/sh
 
 format=I420
-width=320
-height=240
-schroopts="enable-bigblock-estimation=true enable-hierarchical-estimation=false"
+width=352
+height=288
+schroopts="gop-structure=2"
 
 
 #export SCHRO_DECODE_PREDICTION_ONLY=1
 #export SCHRO_THREADS=1
 #gdb -args  \
-#valgrind \
-gst-launch-0.10 videotestsrc num-buffers=100 ! \
+valgrind \
+gst-launch-0.10 videotestsrc num-buffers=100 pattern=11 ! \
   video/x-raw-yuv,format=\(fourcc\)$format,width=$width,height=$height,framerate=10/1 ! \
   schroenc $schroopts ! filesink location=output.drc
 
