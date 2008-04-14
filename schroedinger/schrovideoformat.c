@@ -29,7 +29,26 @@ schro_video_format_validate (SchroVideoFormat *format)
     format->aspect_ratio_denominator = 1;
   }
 
+  if (schro_video_format_get_bit_depth (format) != 8) {
+    SCHRO_ERROR("video bit depth != 8");
+    return 0;
+  }
+
   return 1;
+}
+
+int
+schro_video_format_get_bit_depth (SchroVideoFormat *format)
+{
+  int max;
+  int i;
+
+  max = MAX(format->chroma_excursion, format->luma_excursion);
+
+  for(i=0;i<32;i++) {
+    if (max < (1<<i)) return i;
+  }
+  return 0;
 }
 
 static SchroVideoFormat
