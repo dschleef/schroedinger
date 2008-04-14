@@ -742,8 +742,8 @@ random_std (void)
   double y;
 
   while (1) {
-    x = -5.0 + random () * (1.0/RAND_MAX) * 10;
-    y = random () * (1.0/RAND_MAX);
+    x = -5.0 + rand () * (1.0/RAND_MAX) * 10;
+    y = rand () * (1.0/RAND_MAX);
 
     if (y < exp(-x*x*0.5)) return x;
   }
