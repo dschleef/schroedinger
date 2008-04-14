@@ -21,8 +21,6 @@
 
 void ref_frame_downsample (SchroFrame *dest, SchroFrame *src);
 
-int frame_compare (SchroFrame *dest, SchroFrame *src);
-void frame_dump (SchroFrame *dest, SchroFrame *src);
 void frame_create_test_pattern(SchroFrame *frame, int type);
 
 int failed = FALSE;
@@ -132,52 +130,6 @@ ref_frame_downsample (SchroFrame *dest, SchroFrame *src)
   ref_frame_component_downsample (dest->components+0, src->components+0);
   ref_frame_component_downsample (dest->components+1, src->components+1);
   ref_frame_component_downsample (dest->components+2, src->components+2);
-}
-
-
-int
-frame_compare (SchroFrame *dest, SchroFrame *src)
-{
-  int i,j,k;
-  uint8_t *d;
-  uint8_t *s;
-
-  for(k=0;k<3;k++){
-    for(j=0;j<dest->components[k].height;j++){
-      d = OFFSET(dest->components[k].data, dest->components[k].stride * j);
-      s = OFFSET(src->components[k].data, src->components[k].stride * j);
-      for(i=0;i<dest->components[k].width;i++){
-        if (d[i] != s[i]) return FALSE;
-      }
-    }
-  }
-  return TRUE;
-}
-
-void frame_dump(SchroFrame *p, SchroFrame *ref)
-{
-  int i;
-  int j;
-  int k;
-  uint8_t *data;
-  uint8_t *rdata;
-
-  for(k=0;k<3;k++){
-    printf("-----\n");
-    for(j=0;j<p->components[k].height;j++){
-      data = OFFSET(p->components[k].data,j*p->components[k].stride);
-      rdata = OFFSET(ref->components[k].data,j*p->components[k].stride);
-      for(i=0;i<p->components[k].width;i++){
-        if (data[i] == rdata[i]) {
-          printf("%3d ", data[i]);
-        } else {
-          printf("\033[00;01;37;41m%3d\033[00m ", data[i]);
-        }
-      }
-      printf("\n");
-    }
-    printf("-----\n");
-  }
 }
 
 void
