@@ -54,7 +54,7 @@ test (int w, int h)
 
           picture = malloc(size);
           //oil_random_u8(picture, size);
-          memset (picture, 0, size);
+          memset (picture, 128, size);
 
           frame = schro_frame_new_from_data_I420 (picture, w, h);
 
@@ -69,6 +69,7 @@ test (int w, int h)
         break;
       case SCHRO_STATE_HAVE_BUFFER:
         buffer = schro_encoder_pull (encoder, &x);
+        //printf("%d\n", x);
         schro_buffer_unref (buffer);
         break;
       case SCHRO_STATE_AGAIN:
