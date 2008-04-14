@@ -19,7 +19,7 @@ main (int argc, char *argv[])
 
   a->data = buffer;
   for(i=0;i<1000;i++) {
-    buffer[i] = random();
+    buffer[i] = rand();
   }
 
   schro_arith_decode_init (a);

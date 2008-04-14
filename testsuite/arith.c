@@ -108,7 +108,7 @@ main (int argc, char *argv[])
 
   for (j = 0; j < 40; j++){
     int value;
-    value = 0xff & random();
+    value = 0xff & rand();
 
     for(i=0;i<100;i++){
       buffer1->data[i] = value;
@@ -131,7 +131,7 @@ main (int argc, char *argv[])
     int mask;
     mask = (1<<(j+1)) - 1;
     for(i=0;i<100;i++){
-      buffer1->data[i] = mask & random();
+      buffer1->data[i] = mask & rand();
     }
 
     for(n=0;n<100;n++){
@@ -151,7 +151,7 @@ main (int argc, char *argv[])
     int mask;
     mask = (1<<(j+1)) - 1;
     for(i=0;i<100;i++){
-      buffer1->data[i] = mask & random();
+      buffer1->data[i] = mask & rand();
     }
 
     for(n=0;n<100;n++){

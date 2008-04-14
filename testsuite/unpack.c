@@ -46,9 +46,9 @@ int test1 (void)
   int guard;
 
   for(i=0;i<800;i++){
-    ref[i] = random()&1;
+    ref[i] = rand()&1;
   }
-  guard = random()&1;
+  guard = rand()&1;
 
   pack = schro_pack_new ();
   schro_pack_encode_init (pack, buffer);
@@ -95,7 +95,7 @@ int test2 (void)
 
   memset (buffer->data, 0, 1000);
   for(i=0;i<100;i++){
-    ref[i] = random()&0xff;
+    ref[i] = rand()&0xff;
   }
 
   pack = schro_pack_new ();
@@ -139,7 +139,7 @@ int test3 (void)
 
   memset (buffer->data, 0, 1000);
   for(i=0;i<100;i++){
-    ref[i] = (random()&0xff) - 128;
+    ref[i] = (rand()&0xff) - 128;
   }
 
   pack = schro_pack_new ();

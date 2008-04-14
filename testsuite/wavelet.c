@@ -84,7 +84,7 @@ gen_random(int16_t *a, int n)
   int i;
 
   for(i=0;i<n;i++){
-    a[i]=random()&0x7f;
+    a[i]=rand()&0x7f;
   }
 }
 

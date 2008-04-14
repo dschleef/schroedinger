@@ -39,7 +39,7 @@ main (int argc, char *argv[])
   printf("unsigned int\n");
   schro_bits_encode_init (bits, buffer);
   for(i=0;i<N;i++) {
-    ref[i] = random() & 0x7;
+    ref[i] = rand() & 0x7;
     schro_bits_encode_uint(bits,ref[i]);
   }
   schro_bits_flush (bits);
@@ -59,7 +59,7 @@ main (int argc, char *argv[])
   printf("signed int\n");
   schro_bits_encode_init (bits, buffer);
   for(i=0;i<N;i++) {
-    ref[i] = (random() & 0xf) - 8;
+    ref[i] = (rand() & 0xf) - 8;
     schro_bits_encode_sint (bits,ref[i]);
   }
   schro_bits_flush (bits);

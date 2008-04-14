@@ -30,7 +30,7 @@ main (int argc, char *argv[])
     schro_prediction_list_init (&list);
 
     for(i=0;i<n;i++){
-      array[i] = random() & 0xffff;
+      array[i] = rand() & 0xffff;
       vec.metric = array[i];
 
       schro_prediction_list_insert (&list, &vec);

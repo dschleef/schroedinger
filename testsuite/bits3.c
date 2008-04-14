@@ -30,24 +30,24 @@ int test (void)
   int ref[10];
   int x;
 
-  chunk1 = random()&0x1f;
+  chunk1 = rand()&0x1f;
 
   bits = schro_bits_new ();
   schro_bits_encode_init (bits, buffer);
 
   for(i=0;i<chunk1;i++){
-    schro_bits_encode_bit (bits, random()&1);
+    schro_bits_encode_bit (bits, rand()&1);
   }
 
   chunk2 = 0;
   for(i=0;i<10;i++){
-    ref[i] = random() & 0xf;
+    ref[i] = rand() & 0xf;
     schro_bits_encode_sint (bits, ref[i]);
     chunk2 += schro_bits_estimate_sint (ref[i]);
   }
 
   for(i=0;i<100;i++){
-    schro_bits_encode_bit (bits, random()&1);
+    schro_bits_encode_bit (bits, rand()&1);
   }
 
   schro_bits_flush (bits);

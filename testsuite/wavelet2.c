@@ -155,7 +155,7 @@ check_random (int type)
 
   for(n=2;n<16;n+=2) {
     for(i=0;i<n;i++){
-      src[i] = random()&0xff;
+      src[i] = rand()&0xff;
     }
 
     schro_lift_split (type, tmp, src, n);
