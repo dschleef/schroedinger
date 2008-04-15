@@ -783,6 +783,8 @@ schro_motionest_rough_scan_nohint (SchroMotionEst *me, int shift, int ref,
 
       scan.x = (i>>shift) * params->xbsep_luma;
       scan.y = (j>>shift) * params->ybsep_luma;
+      scan.block_width = MIN(scan.frame->width - scan.x, params->xbsep_luma);
+      scan.block_height = MIN(scan.frame->height - scan.y, params->ybsep_luma);
       schro_metric_scan_setup (&scan, 0, 0, distance);
 
       mv = motion_field_get (mf, i, j);
@@ -792,6 +794,17 @@ schro_motionest_rough_scan_nohint (SchroMotionEst *me, int shift, int ref,
         mv->metric = SCHRO_METRIC_INVALID;
         continue;
       }
+#if 0
+      /* this code skips blocks that are off the edge.  Instead, we
+       * scan smaller block sizes */
+      if (scan.x + scan.block_width >= scan.ref_frame->width ||
+          scan.y + scan.block_height >= scan.ref_frame->height) {
+        mv->dx[ref] = 0 << shift;
+        mv->dy[ref] = 0 << shift;
+        mv->metric = SCHRO_METRIC_INVALID;
+        continue;
+      }
+#endif
 
       schro_metric_scan_do_scan (&scan);
       mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy);
@@ -922,6 +935,8 @@ schro_motionest_rough_scan_hint (SchroMotionEst *me, int shift, int ref,
 
       scan.x = (i>>shift) * params->xbsep_luma;
       scan.y = (j>>shift) * params->ybsep_luma;
+      scan.block_width = MIN(scan.frame->width - scan.x, params->xbsep_luma);
+      scan.block_height = MIN(scan.frame->height - scan.y, params->ybsep_luma);
       schro_metric_scan_setup (&scan, dx, dy, distance);
 
       mv = motion_field_get (mf, i, j);
@@ -1227,8 +1242,8 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
 
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
-      SchroBlock block;
-      SchroBlock tryblock;
+      SchroBlock block = { 0 };
+      SchroBlock tryblock = { 0 };
       double score;
       double min_score;
       double min_score1;
