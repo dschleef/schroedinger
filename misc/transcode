@@ -19,9 +19,9 @@ list=HD720-CBR-4Mb
 
 #extraopts="enable-bigblock-estimation=true enable-hierarchical-estimation=false"
 #extraopts="perceptual-weighting=1 magic-error-power=4.0 magic-mc-lambda=0.01"
-#extraopts="perceptual-weighting=1"
+extraopts="perceptual-weighting=2"
 #extraopts="motion-block-size=2"
-extraopts=""
+#extraopts=""
 export SCHRO_DUMP=1
 
 trap exit INT
