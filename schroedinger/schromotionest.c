@@ -1237,8 +1237,11 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
   SchroParams *params = me->params;
   int i,j;
   double total_error = 0;
+  int block_size;
 
   me->lambda = me->encoder_frame->encoder->magic_mc_lambda;
+
+  block_size = 16 * params->xbsep_luma * params->ybsep_luma;
 
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
@@ -1294,18 +1297,19 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
         }
       }
 
-      if (block.error > 10000) {
+      if (block.error > 10*block_size) {
         me->badblocks++;
       }
 
       schro_block_fixup (&block);
       schro_motion_copy_to (me->motion, i, j, &block);
       
-      total_error += (double)block.error*block.error/(double)(144*16*144*16);
+      total_error += (double)block.error*block.error/(double)(block_size * block_size);
     }
   }
 
-  me->encoder_frame->mc_error = total_error/(240.0*240.0)/(params->x_num_blocks*params->y_num_blocks/16);
+  me->encoder_frame->mc_error = total_error/(240.0*240.0)/
+    (params->x_num_blocks*params->y_num_blocks/16);
 
   /* magic parameter */
   me->encoder_frame->mc_error *= 2.5;

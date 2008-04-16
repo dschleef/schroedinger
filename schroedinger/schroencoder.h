@@ -264,6 +264,8 @@ struct _SchroEncoder {
   double magic_mc_lambda;
   double magic_subgroup_length;
   double magic_lambda;
+  double magic_badblock_multiplier_nonref;
+  double magic_badblock_multiplier_ref;
 
   /* other */
 

@@ -327,9 +327,9 @@ schro_encoder_calculate_allocation (SchroEncoderFrame *frame)
 
     weight = frame->picture_weight;
     if (frame->is_ref) {
-      weight += frame->badblock_ratio * 8.0;
+      weight += frame->badblock_ratio * encoder->magic_badblock_multiplier_ref;
     } else {
-      weight += frame->badblock_ratio * 4.0;
+      weight += frame->badblock_ratio * encoder->magic_badblock_multiplier_nonref;
     }
 
     frame->allocated_residual_bits = get_alloc (encoder,

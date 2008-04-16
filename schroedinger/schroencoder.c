@@ -110,11 +110,13 @@ schro_encoder_new (void)
   encoder->magic_inter_p_weight = 1.5;
   encoder->magic_inter_b_weight = 0.2;
   encoder->magic_mc_bailout_limit = 0.5;
-  encoder->magic_bailout_weight = 3.0;
+  encoder->magic_bailout_weight = 4.0;
   encoder->magic_error_power = 2.0;
-  encoder->magic_mc_lambda = 0.1;
+  encoder->magic_mc_lambda = 0.5;
   encoder->magic_subgroup_length = 4;
   encoder->magic_lambda = 1.0;
+  encoder->magic_badblock_multiplier_nonref = 4.0;
+  encoder->magic_badblock_multiplier_ref = 8.0;
 
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
