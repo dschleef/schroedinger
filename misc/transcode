@@ -1,8 +1,8 @@
 #!/bin/sh
 
 #file=elephants_dream
-#file=showreel
-file=squirrel
+file=showreel
+#file=squirrel
 
 mediadir=/home/ds/media/masters
 
@@ -13,9 +13,9 @@ all="SD-default SD-VBR-10dB SD-VBR-20dB SD-VBR-30dB SD-VBR-40dB \
 list="$all"
 
 #list=HD720-Clam
-#list=HD720-CBR-4Mb
+list=HD720-CBR-4Mb
 #list=SIF-CBR-750kb
-list=SD-CBR-2Mb
+#list=SD-CBR-2Mb
 
 #extraopts="enable-bigblock-estimation=true enable-hierarchical-estimation=false"
 #extraopts="perceptual-weighting=1 magic-error-power=4.0 magic-mc-lambda=0.01"
