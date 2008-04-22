@@ -11,7 +11,7 @@
 #include <errno.h>
 
 int parse_packet (FILE *file, unsigned char **p_data, int *p_size);
-void write_packet (FILE *outfile, unsigned char *packet, int size);
+int write_packet (FILE *outfile, unsigned char *packet, int size);
 
 char *fn = "output.drc";
 
@@ -122,9 +122,11 @@ main (int argc, char *argv[])
 
 unsigned int last_offset;
 
-void
+int
 write_packet (FILE *outfile, unsigned char *packet, int size)
 {
+  int ret;
+
   if (packet[4] == SCHRO_PARSE_CODE_END_OF_SEQUENCE) {
     packet[5] = 0;
     packet[6] = 0;
@@ -144,7 +146,10 @@ write_packet (FILE *outfile, unsigned char *packet, int size)
 
   last_offset = size;
 
-  fwrite (packet, 1, size, outfile);
+  ret = fwrite (packet, 1, size, outfile);
+
+  if (ret != size) return FALSE;
+  return TRUE;
 }
 
 int
