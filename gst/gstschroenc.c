@@ -69,6 +69,7 @@ struct _GstSchroEnc
 
   /* state */
   gboolean got_offset;
+  gboolean update_granulepos;
   uint64_t granulepos_offset;
   uint64_t granulepos_low;
   uint64_t granulepos_hi;
@@ -638,6 +639,7 @@ gst_schro_enc_chain (GstPad *pad, GstBuffer *buf)
 
     GST_DEBUG("using granulepos offset %lld", schro_enc->granulepos_offset);
     schro_enc->granulepos_hi = 0;
+    schro_enc->granulepos_low = 0;
     schro_enc->got_offset = TRUE;
 
     schro_enc->timestamp_offset = GST_BUFFER_TIMESTAMP(buf);
@@ -685,12 +687,17 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
         parse_code = encoded_buffer->data[4];
 
         if (SCHRO_PARSE_CODE_IS_SEQ_HEADER(parse_code)) {
-          schro_enc->granulepos_hi = schro_enc->granulepos_offset +
-            presentation_frame + 1;
+          schro_enc->update_granulepos = TRUE;
         }
-
-        schro_enc->granulepos_low = schro_enc->granulepos_offset +
-          presentation_frame + 1 - schro_enc->granulepos_hi;
+        if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
+          if (schro_enc->update_granulepos) {
+            schro_enc->granulepos_hi = schro_enc->granulepos_offset +
+              presentation_frame + 1;
+            schro_enc->update_granulepos = FALSE;
+          }
+          schro_enc->granulepos_low = schro_enc->granulepos_offset +
+            presentation_frame + 1 - schro_enc->granulepos_hi;
+        }
 
         outbuf = gst_buffer_new_and_alloc (encoded_buffer->length);
         memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data,
@@ -703,13 +710,13 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
               schro_enc->fps_d,
               NULL));
 
+        GST_BUFFER_OFFSET_END (outbuf) =
+          (schro_enc->granulepos_hi<<OGG_DIRAC_GRANULE_SHIFT) +
+          schro_enc->granulepos_low;
+        GST_BUFFER_OFFSET (outbuf) = gst_util_uint64_scale (
+            (schro_enc->granulepos_hi + schro_enc->granulepos_low),
+            schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
         if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
-          GST_BUFFER_OFFSET_END (outbuf) =
-            (schro_enc->granulepos_hi<<OGG_DIRAC_GRANULE_SHIFT) +
-            schro_enc->granulepos_low;
-          GST_BUFFER_OFFSET (outbuf) = gst_util_uint64_scale (
-              (schro_enc->granulepos_hi + schro_enc->granulepos_low),
-              schro_enc->fps_d * GST_SECOND, schro_enc->fps_n);
           GST_BUFFER_DURATION (outbuf) = schro_enc->duration;
           GST_BUFFER_TIMESTAMP (outbuf) = 
             schro_enc->timestamp_offset + gst_util_uint64_scale (
@@ -722,8 +729,6 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
             GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
           }
         } else {
-          GST_BUFFER_OFFSET_END (outbuf) = -1;
-          GST_BUFFER_OFFSET (outbuf) = 0;
           GST_BUFFER_DURATION (outbuf) = -1;
           GST_BUFFER_TIMESTAMP (outbuf) = 
             schro_enc->timestamp_offset + gst_util_uint64_scale (
