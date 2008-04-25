@@ -1,20 +1,15 @@
 
 #include "dirac_parse.h"
 #include <string.h>
-#include <stdio.h>
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 
 typedef struct _Unpack Unpack;
 
 struct _Unpack {
-  /* pointer to data that haven't been shifted into the shift register */
   unsigned char *data;
-
   int n_bits_left;
-
   int index;
-  
   int guard_bit;
 };
 
@@ -38,27 +33,36 @@ void schro_video_format_set_std_colour_spec (DiracSequenceHeader *format,
 
 
 int
-dirac_sequence_header_parse (DiracStuff *stuff, DiracSequenceHeader *header,
+dirac_sequence_header_parse (DiracSequenceHeader *header,
     unsigned char *data, int n_bytes)
 {
   int bit;
   int index;
   Unpack _unpack;
   Unpack *unpack = &_unpack;
+  int major_version;
+  int minor_version;
+  int profile;
+  int level;
 
   memset(header, 0, sizeof(*header));
 
   schro_unpack_init_with_data (unpack, data, n_bytes, 1);
 
   /* parse parameters */
-  stuff->major_version = schro_unpack_decode_uint (unpack);
-  stuff->minor_version = schro_unpack_decode_uint (unpack);
-  stuff->profile = schro_unpack_decode_uint (unpack);
-  stuff->level = schro_unpack_decode_uint (unpack);
+  major_version = schro_unpack_decode_uint (unpack);
+  minor_version = schro_unpack_decode_uint (unpack);
+  profile = schro_unpack_decode_uint (unpack);
+  level = schro_unpack_decode_uint (unpack);
 
   /* base video header */
   index = schro_unpack_decode_uint (unpack);
   schro_video_format_set_std_video_format (header, index);
+
+  header->major_version = major_version;
+  header->minor_version = minor_version;
+  header->profile = profile;
+  header->level = level;
 
   /* source parameters */
   /* frame dimensions */
@@ -86,7 +90,6 @@ dirac_sequence_header_parse (DiracStuff *stuff, DiracSequenceHeader *header,
   /* frame rate */
   bit = schro_unpack_decode_bit (unpack);
   if (bit) {
-    int index;
     index = schro_unpack_decode_uint (unpack);
     if (index == 0) {
       header->frame_rate_numerator = schro_unpack_decode_uint (unpack);
@@ -99,7 +102,6 @@ dirac_sequence_header_parse (DiracStuff *stuff, DiracSequenceHeader *header,
   /* aspect ratio */
   bit = schro_unpack_decode_bit (unpack);
   if (bit) {
-    int index;
     index = schro_unpack_decode_uint (unpack);
     if (index == 0) {
       header->aspect_ratio_numerator =
@@ -123,7 +125,6 @@ dirac_sequence_header_parse (DiracStuff *stuff, DiracSequenceHeader *header,
   /* signal range */
   bit = schro_unpack_decode_bit (unpack);
   if (bit) {
-    int index;
     index = schro_unpack_decode_uint (unpack);
     if (index == 0) {
       header->luma_offset = schro_unpack_decode_uint (unpack);
@@ -139,7 +140,6 @@ dirac_sequence_header_parse (DiracStuff *stuff, DiracSequenceHeader *header,
   /* colour spec */
   bit = schro_unpack_decode_bit (unpack);
   if (bit) {
-    int index;
     index = schro_unpack_decode_uint (unpack);
     schro_video_format_set_std_colour_spec (header, index);
     if (index == 0) {
@@ -170,119 +170,136 @@ dirac_sequence_header_parse (DiracStuff *stuff, DiracSequenceHeader *header,
 
 static DiracSequenceHeader
 schro_video_formats[] = {
-  { 0, /* custom */
+  { 0, 0, 0, 0,
+    0, /* custom */
     640, 480, SCHRO_CHROMA_420,
     FALSE, FALSE,
     24000, 1001, 1, 1,
     640, 480, 0, 0,
     0, 255, 128, 255,
     0, 0, 0 },
-  { 1, /* QSIF525 */
+  { 0, 0, 0, 0,
+    1, /* QSIF525 */
     176, 120, SCHRO_CHROMA_420,
     FALSE, FALSE,
     15000, 1001, 10, 11,
     176, 120, 0, 0,
     0, 255, 128, 255,
     1, 1, 0 },
-  { 2, /* QCIF */
+  { 0, 0, 0, 0,
+    2, /* QCIF */
     176, 144, SCHRO_CHROMA_420,
     FALSE, TRUE,
     25, 2, 12, 11,
     176, 144, 0, 0,
     0, 255, 128, 255,
     2, 1, 0 },
-  { 3, /* SIF525 */
+  { 0, 0, 0, 0,
+    3, /* SIF525 */
     352, 240, SCHRO_CHROMA_420,
     FALSE, FALSE,
     15000, 1001, 10, 11,
     352, 240, 0, 0,
     0, 255, 128, 255,
     1, 1, 0 },
-  { 4, /* CIF */
+  { 0, 0, 0, 0,
+    4, /* CIF */
     352, 288, SCHRO_CHROMA_420,
     FALSE, TRUE,
     25, 2, 12, 11,
     352, 288, 0, 0,
     0, 255, 128, 255,
     2, 1, 0 },
-  { 5, /* 4SIF525 */
+  { 0, 0, 0, 0,
+    5, /* 4SIF525 */
     704, 480, SCHRO_CHROMA_420,
     FALSE, FALSE,
     15000, 1001, 10, 11,
     704, 480, 0, 0,
     0, 255, 128, 255,
     1, 1, 0 },
-  { 6, /* 4CIF */
+  { 0, 0, 0, 0,
+    6, /* 4CIF */
     704, 576, SCHRO_CHROMA_420,
     FALSE, TRUE,
     25, 2, 12, 11,
     704, 576, 0, 0,
     0, 255, 128, 255,
     2, 1, 0 },
-  { 7, /* SD480I-60 */
+  { 0, 0, 0, 0,
+    7, /* SD480I-60 */
     720, 480, SCHRO_CHROMA_422,
     TRUE, FALSE,
     30000, 1001, 10, 11,
     704, 480, 8, 0,
     64, 876, 512, 896,
     1, 1, 0 },
-  { 8, /* SD576I-50 */
+  { 0, 0, 0, 0,
+    8, /* SD576I-50 */
     720, 576, SCHRO_CHROMA_422,
     TRUE, TRUE,
     25, 1, 12, 11,
     704, 576, 8, 0,
     64, 876, 512, 896,
     2, 1, 0 },
-  { 9, /* HD720P-60 */
+  { 0, 0, 0, 0,
+    9, /* HD720P-60 */
     1280, 720, SCHRO_CHROMA_422,
     FALSE, TRUE,
     60000, 1001, 1, 1,
     1280, 720, 0, 0,
     64, 876, 512, 896,
     0, 0, 0 },
-  { 10, /* HD720P-50 */
+  { 0, 0, 0, 0,
+    10, /* HD720P-50 */
     1280, 720, SCHRO_CHROMA_422,
     FALSE, TRUE,
     50, 1, 1, 1,
     1280, 720, 0, 0,
     64, 876, 512, 896,
     0, 0, 0 },
-  { 11, /* HD1080I-60 */
+  { 0, 0, 0, 0,
+    11, /* HD1080I-60 */
     1920, 1080, SCHRO_CHROMA_422,
     TRUE, TRUE,
     30000, 1001, 1, 1,
     1920, 1080, 0, 0,
     64, 876, 512, 896,
     0, 0, 0 },
-  { 12, /* HD1080I-50 */
+  { 0, 0, 0, 0,
+    12, /* HD1080I-50 */
     1920, 1080, SCHRO_CHROMA_422,
     TRUE, TRUE,
     25, 1, 1, 1,
     1920, 1080, 0, 0,
     64, 876, 512, 896,
     0, 0, 0 },
-  { 13, /* HD1080P-60 */
+  { 0, 0, 0, 0,
+    13, /* HD1080P-60 */
     1920, 1080, SCHRO_CHROMA_422,
     FALSE, TRUE,
     60000, 1001, 1, 1,
     1920, 1080, 0, 0,
     64, 876, 512, 896,
     0, 0, 0 },
-  { 14, /* HD1080P-50 */
+  { 0, 0, 0, 0,
+    14, /* HD1080P-50 */
     1920, 1080, SCHRO_CHROMA_422,
     FALSE, TRUE,
     50, 1, 1, 1,
     1920, 1080, 0, 0,
     64, 876, 512, 896,
     0, 0, 0 },
-  { 15, /* DC2K */
+  { 0, 0, 0, 0,
+    15, /* DC2K */
     2048, 1080, SCHRO_CHROMA_444,
     FALSE, TRUE,
     24, 1, 1, 1,
     2048, 1080, 0, 0,
     256, 3504, 2048, 3584,
     3, 0, 0 },
-  { 16, /* DC4K */
+  { 0, 0, 0, 0,
+    16, /* DC4K */
     4096, 2160, SCHRO_CHROMA_444,
     FALSE, TRUE,
     24, 1, 1, 1,
@@ -457,8 +474,12 @@ schro_unpack_decode_bit (Unpack *unpack)
 {
   int bit;
 
+  if (unpack->n_bits_left < 1) {
+    return unpack->guard_bit;
+  }
   bit = (unpack->data[unpack->index>>3]>>(7 - (unpack->index & 7))) & 1;
   unpack->index++;
+  unpack->n_bits_left--;
 
   return bit;
 }

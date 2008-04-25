@@ -16,7 +16,6 @@ main (int argc, char *argv[])
 {
   FILE *file;
   int ret;
-  DiracStuff stuff = {0};
   DiracSequenceHeader header = {0};
   int size;
   unsigned char *packet;
@@ -41,20 +40,18 @@ main (int argc, char *argv[])
     if (packet == NULL) break;
     
     if (SCHRO_PARSE_CODE_IS_SEQ_HEADER(packet[4])) {
-      ret = dirac_sequence_header_parse (&stuff, &header, packet + 13, size - 13);
+      ret = dirac_sequence_header_parse (&header, packet + 13, size - 13);
       
       if (!ret) {
         printf("bad header\n");
         exit(1);
       }
 
-#define PRINT(ack) printf( #ack ": %d\n", stuff. ack );
+#define PRINT(ack) printf( #ack ": %d\n", header. ack );
       PRINT(major_version);
       PRINT(minor_version);
       PRINT(profile);
       PRINT(level);
-#undef PRINT
-#define PRINT(ack) printf( #ack ": %d\n", header. ack );
       PRINT(index);
       PRINT(width);
       PRINT(height);

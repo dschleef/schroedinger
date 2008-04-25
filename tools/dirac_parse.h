@@ -124,17 +124,14 @@ typedef enum _SchroTransferFunction {
 
 
 
-typedef struct _DiracStuff DiracStuff;
 typedef struct _DiracSequenceHeader DiracSequenceHeader;
 
-struct _DiracStuff {
+struct _DiracSequenceHeader {
   int major_version;
   int minor_version;
   int profile;
   int level;
-};
 
-struct _DiracSequenceHeader {
   int index;
   int width;
   int height;
@@ -170,8 +167,7 @@ struct _DiracSequenceHeader {
 };  
 
 
-int dirac_sequence_header_parse (DiracStuff *stuff,
-    DiracSequenceHeader *header,
+int dirac_sequence_header_parse (DiracSequenceHeader *header,
     unsigned char *data, int length);
 
 #ifdef __cplusplus
