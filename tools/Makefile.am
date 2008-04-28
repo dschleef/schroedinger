@@ -10,4 +10,5 @@ LDADD = $(SCHRO_LIBS)
 
 parse_header_SOURCES = \
 	dirac_parse.c \
+	dirac_parse.h \
 	parse_header.c
