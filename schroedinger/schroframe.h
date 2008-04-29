@@ -49,6 +49,8 @@ typedef enum _SchroFrameFormat {
 
 #define SCHRO_FRAME_IS_PACKED(format) (((format)>>8) & 0x1)
 
+#define SCHRO_FRAME_CACHE_SIZE 8
+
 struct _SchroFrameData {
   SchroFrameFormat format;
   void *data;
@@ -72,6 +74,12 @@ struct _SchroFrame {
   int height;
 
   SchroFrameData components[3];
+
+  int is_virtual;
+  int cached_lines[3][SCHRO_FRAME_CACHE_SIZE];
+  SchroFrame *virt_frame1;
+  SchroFrame *virt_frame2;
+  void (*render_line) (SchroFrame *frame, void *dest, int component, int i);
 };
 
 struct _SchroUpsampledFrame {

@@ -47,6 +47,7 @@ pkginclude_HEADERS = \
 	schrounpack.h \
 	schroutils.h \
 	schrovideoformat.h \
+	schrovirtframe.h \
 	schrowavelet.h \
 	schrobitstream.h \
 	schromotion.h
@@ -106,6 +107,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrounpacktables.c \
 	schroutils.c \
 	schrovideoformat.c \
+	schrovirtframe.c \
 	schrowavelet.c \
 	schrowavelettables.c \
 	$(cuda_sources) \
