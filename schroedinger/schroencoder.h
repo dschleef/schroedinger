@@ -55,7 +55,8 @@ typedef enum {
   SCHRO_ENCODER_FRAME_STATE_HAVE_GOP = (1<<7),
   SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS = (1<<8),
   SCHRO_ENCODER_FRAME_STATE_FREE = (1<<9),
-  SCHRO_ENCODER_FRAME_STATE_HAVE_REFS = (1<<10)
+  SCHRO_ENCODER_FRAME_STATE_HAVE_REFS = (1<<10),
+  SCHRO_ENCODER_FRAME_STATE_HAVE_QUANTS = (1<<11)
 } SchroEncoderFrameStateEnum;
 
 typedef enum {
@@ -108,6 +109,7 @@ struct _SchroEncoderFrame {
   /* other stuff */
 
   int start_access_unit;
+  int gop_length;
 
   SchroPictureNumber frame_number;
   SchroFrame *original_frame;
@@ -313,6 +315,7 @@ struct _SchroEncoder {
   /* engine specific stuff */
 
   int gop_picture;
+  int quant_slot;
 
   int intra_ref;
   int last_ref;

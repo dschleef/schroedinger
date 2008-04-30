@@ -15,6 +15,7 @@
 #define MARKER(pack)
 #endif
 
+void schro_encoder_render_picture (SchroEncoderFrame *frame);
 static void schro_encoder_encode_picture_prediction_parameters (SchroEncoderFrame *frame);
 static void schro_encoder_encode_superblock_split (SchroEncoderFrame *frame);
 static void schro_encoder_encode_prediction_modes (SchroEncoderFrame *frame);
@@ -898,6 +899,21 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
 
   if (frame->params.num_refs > 0) {
     schro_encoder_motion_predict (frame);
+  }
+
+  schro_encoder_render_picture (frame);
+}
+
+void
+schro_encoder_render_picture (SchroEncoderFrame *frame)
+{
+  SCHRO_INFO("render picture %d", frame->frame_number);
+
+  if (frame->params.num_refs > 0) {
+    frame->motion->src1 = frame->ref_frame[0]->reconstructed_frame;
+    if (frame->params.num_refs > 1) {
+      frame->motion->src2 = frame->ref_frame[1]->reconstructed_frame;
+    }
 
     SCHRO_ASSERT(schro_motion_verify (frame->motion));
 

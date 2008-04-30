@@ -494,6 +494,7 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
     schro_engine_code_picture (frame, FALSE, -1, 0, -1, -1);
     frame->presentation_frame = frame->frame_number;
     frame->picture_weight = encoder->magic_bailout_weight;
+    frame->gop_length = gop_length;
   } else {
     if (intra_start) {
       /* IBBBP */
@@ -503,6 +504,7 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
       frame->presentation_frame = frame->frame_number;
       //frame->picture_weight = 1 + (gop_length - 1) * 0.6;
       frame->picture_weight = encoder->magic_keyframe_weight;
+      frame->gop_length = gop_length;
 
       f = encoder->frame_queue->elements[i+gop_length-1].data;
       schro_engine_code_picture (f, TRUE, encoder->last_ref,
@@ -527,6 +529,8 @@ handle_gop_tworef (SchroEncoder *encoder, int i)
       }
     } else {
       /* BBBP */
+      frame->gop_length = gop_length;
+
       f = encoder->frame_queue->elements[i+gop_length-1].data;
       schro_engine_code_picture (f, TRUE, encoder->last_ref,
           2, encoder->last_ref2, encoder->intra_ref);
@@ -556,10 +560,6 @@ static int
 setup_frame_tworef (SchroEncoderFrame *frame)
 {
   SchroEncoder *encoder = frame->encoder;
-
-  if (!check_refs (frame)) {
-    return FALSE;
-  }
 
   frame->output_buffer_size =
     schro_engine_pick_output_buffer_size (encoder, frame);
@@ -865,6 +865,24 @@ schro_encoder_engine_intra_only (SchroEncoder *encoder)
 
 
 
+int
+handle_quants_tworef (SchroEncoder *encoder, int i)
+{
+  SchroEncoderFrame *frame;
+
+  frame = encoder->frame_queue->elements[i].data;
+
+  if (frame->busy || frame->state != SCHRO_ENCODER_FRAME_STATE_PREDICT) return FALSE;
+
+  SCHRO_DEBUG("got here %d %d", encoder->quant_slot, frame->gop_length);
+  encoder->quant_slot++;
+
+  choose_quantisers (frame);
+
+  frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_QUANTS;
+
+  return TRUE;
+}
 
 int
 schro_encoder_engine_tworef (SchroEncoder *encoder)
@@ -903,38 +921,61 @@ schro_encoder_engine_tworef (SchroEncoder *encoder)
   /* Reference pictures are higher priority, so we pass over the list
    * first for reference pictures, then for non-ref. */
   for(ref = 1; ref >= 0; ref--){
+    for(i=0;i<encoder->frame_queue->n;i++) {
+      frame = encoder->frame_queue->elements[i].data;
+      SCHRO_DEBUG("backref i=%d picture=%d state=%d busy=%d", i, frame->frame_number, frame->state, frame->busy);
+
+      if (frame->busy) continue;
+
+      if (frame->is_ref != ref) continue;
+
+      switch (frame->state) {
+        case SCHRO_ENCODER_FRAME_STATE_HAVE_GOP:
+          if (setup_frame_tworef (frame)) {
+            frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
+          }
+          break;
+        case SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS:
+          if (!check_refs(frame)) continue;
+          run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
+          return TRUE;
+        default:
+          break;
+      }
+    }
+  }
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
-    SCHRO_DEBUG("backref i=%d picture=%d state=%d busy=%d", i, frame->frame_number, frame->state, frame->busy);
-
-    if (frame->busy) continue;
-
-    if (frame->is_ref != ref) continue;
-
-    switch (frame->state) {
-      case SCHRO_ENCODER_FRAME_STATE_HAVE_GOP:
-        if (setup_frame_tworef (frame)) {
-          frame->state = SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
-        }
-        break;
-      case SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS:
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
-        return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_PREDICT:
-        choose_quantisers (frame);
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ENCODING);
-        return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_ENCODING:
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT);
-        return TRUE;
-      case SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT:
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_POSTANALYSE);
-        return TRUE;
-      default:
-        break;
+    if (frame->slot == encoder->quant_slot) {
+      int ret;
+      ret = handle_quants_tworef (encoder, i);
+      if (!ret) break;
     }
   }
+
+  for(ref = 1; ref >= 0; ref--){
+    for(i=0;i<encoder->frame_queue->n;i++) {
+      frame = encoder->frame_queue->elements[i].data;
+      SCHRO_DEBUG("backref i=%d picture=%d state=%d busy=%d", i, frame->frame_number, frame->state, frame->busy);
+
+      if (frame->busy) continue;
+
+      switch (frame->state) {
+        case SCHRO_ENCODER_FRAME_STATE_HAVE_QUANTS:
+          //choose_quantisers (frame);
+          run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ENCODING);
+          return TRUE;
+        case SCHRO_ENCODER_FRAME_STATE_ENCODING:
+          run_stage (frame, SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT);
+          return TRUE;
+        case SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT:
+          run_stage (frame, SCHRO_ENCODER_FRAME_STATE_POSTANALYSE);
+          return TRUE;
+        default:
+          break;
+      }
+    }
   }
 
   return FALSE;

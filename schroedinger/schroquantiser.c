@@ -760,7 +760,7 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
   }
 #endif
   frame->base_lambda = base_lambda;
-  SCHRO_DEBUG("LAMBDA: %d %g", frame->frame_number, base_lambda);
+  SCHRO_DEBUG("LAMBDA: %d %g %d", frame->frame_number, base_lambda, bits);
 
   schro_encoder_lambda_to_entropy (frame, base_lambda);
 #if 0
