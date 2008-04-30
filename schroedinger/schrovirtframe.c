@@ -8,6 +8,7 @@
 #include "schrovirtframe.h"
 #include <schroedinger/schro.h>
 #include <schroedinger/schroutils.h>
+#include <liboil/liboil.h>
 #include <string.h>
 
 
@@ -26,6 +27,30 @@ schro_frame_new_virtual (SchroMemoryDomain *domain, SchroFrameFormat format,
   frame->width = width;
   frame->height = height;
   frame->domain = domain;
+
+  if (SCHRO_FRAME_IS_PACKED (format)) {
+    frame->components[0].format = format;
+    frame->components[0].width = width;
+    frame->components[0].height = height;
+    if (format == SCHRO_FRAME_FORMAT_AYUV) {
+      frame->components[0].stride = width * 4;
+    } else {
+      frame->components[0].stride = ROUND_UP_POW2(width,1) * 2;
+    }
+    frame->components[0].length = frame->components[0].stride * height;
+
+    frame->components[0].data = frame->regions[0];
+    frame->components[0].v_shift = 0;
+    frame->components[0].h_shift = 0;
+
+    frame->regions[0] = malloc (frame->components[0].stride * SCHRO_FRAME_CACHE_SIZE);
+    for(i=0;i<SCHRO_FRAME_CACHE_SIZE;i++){
+      frame->cached_lines[0][i] = -1;
+    }
+    frame->is_virtual = TRUE;
+
+    return frame;
+  }
 
   switch (SCHRO_FRAME_FORMAT_DEPTH(format)) {
     case SCHRO_FRAME_FORMAT_DEPTH_U8:
@@ -200,6 +225,216 @@ schro_virt_frame_new_vert_downsample (SchroFrame *vf)
   virt_frame = schro_frame_new_virtual (NULL, vf->format, vf->width, vf->height/2);
   virt_frame->virt_frame1 = vf;
   virt_frame->render_line = schro_virt_frame_render_downsample_vert;
+
+  return virt_frame;
+}
+
+static void
+unpack_yuyv (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+  int j;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+
+  switch (component) {
+    case 0:
+      for(j=0;j<frame->width;j++){
+        dest[j] = src[j*2];
+      }
+      break;
+    case 1:
+      for(j=0;j<frame->width/2;j++){
+        dest[j] = src[j*4 + 1];
+      }
+      break;
+    case 2:
+      for(j=0;j<frame->width/2;j++){
+        dest[j] = src[j*4 + 3];
+      }
+  }
+}
+
+static void
+unpack_uyvy (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+  int j;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+
+  switch (component) {
+    case 0:
+      for(j=0;j<frame->width;j++){
+        dest[j] = src[j*2 + 1];
+      }
+      break;
+    case 1:
+      for(j=0;j<frame->width/2;j++){
+        dest[j] = src[j*4 + 0];
+      }
+      break;
+    case 2:
+      for(j=0;j<frame->width/2;j++){
+        dest[j] = src[j*4 + 2];
+      }
+  }
+}
+
+static void
+unpack_ayuv (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+  int j;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+
+  switch (component) {
+    case 0:
+      for(j=0;j<frame->width;j++){
+        dest[j] = src[j*4 + 1];
+      }
+      break;
+    case 1:
+      for(j=0;j<frame->width;j++){
+        dest[j] = src[j*4 + 2];
+      }
+      break;
+    case 2:
+      for(j=0;j<frame->width;j++){
+        dest[j] = src[j*4 + 3];
+      }
+  }
+}
+
+SchroFrame *
+schro_virt_frame_new_unpack (SchroFrame *vf)
+{
+  SchroFrame *virt_frame;
+  SchroFrameFormat format;
+  SchroFrameRenderFunc render_line;
+  
+  switch (vf->format) {
+    case SCHRO_FRAME_FORMAT_YUYV:
+      format = SCHRO_FRAME_FORMAT_U8_422;
+      render_line = unpack_yuyv;
+      break;
+    case SCHRO_FRAME_FORMAT_UYVY:
+      format = SCHRO_FRAME_FORMAT_U8_422;
+      render_line = unpack_uyvy;
+      break;
+    case SCHRO_FRAME_FORMAT_AYUV:
+      format = SCHRO_FRAME_FORMAT_U8_444;
+      render_line = unpack_ayuv;
+      break;
+    default:
+      SCHRO_ASSERT(0);
+  }
+
+  virt_frame = schro_frame_new_virtual (NULL, format, vf->width, vf->height);
+  virt_frame->virt_frame1 = vf;
+  virt_frame->render_line = render_line;
+
+  return virt_frame;
+}
+
+
+static void
+pack_yuyv (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint32_t *dest = _dest;
+  uint8_t *src_y;
+  uint8_t *src_u;
+  uint8_t *src_v;
+
+  src_y = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+  src_u = schro_virt_frame_get_line (frame->virt_frame1, 1, i);
+  src_v = schro_virt_frame_get_line (frame->virt_frame1, 2, i);
+
+  oil_packyuyv (dest, src_y, src_u, src_v, frame->width/2);
+}
+
+
+SchroFrame *
+schro_virt_frame_new_pack_YUY2 (SchroFrame *vf)
+{
+  SchroFrame *virt_frame;
+
+  virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_YUYV,
+      vf->width, vf->height);
+  virt_frame->virt_frame1 = vf;
+  virt_frame->render_line = pack_yuyv;
+
+  return virt_frame;
+}
+
+static void
+pack_uyvy (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src_y;
+  uint8_t *src_u;
+  uint8_t *src_v;
+  int j;
+
+  src_y = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+  src_u = schro_virt_frame_get_line (frame->virt_frame1, 1, i);
+  src_v = schro_virt_frame_get_line (frame->virt_frame1, 2, i);
+
+  for(j=0;j<frame->width/2;j++){
+    dest[j*4+1] = src_y[j*2+0];
+    dest[j*4+3] = src_y[j*2+1];
+    dest[j*4+0] = src_u[j];
+    dest[j*4+2] = src_v[j];
+  }
+}
+
+SchroFrame *
+schro_virt_frame_new_pack_UYVY (SchroFrame *vf)
+{
+  SchroFrame *virt_frame;
+
+  virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_YUYV,
+      vf->width, vf->height);
+  virt_frame->virt_frame1 = vf;
+  virt_frame->render_line = pack_uyvy;
+
+  return virt_frame;
+}
+
+static void
+pack_ayuv (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src_y;
+  uint8_t *src_u;
+  uint8_t *src_v;
+  int j;
+
+  src_y = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+  src_u = schro_virt_frame_get_line (frame->virt_frame1, 1, i);
+  src_v = schro_virt_frame_get_line (frame->virt_frame1, 2, i);
+
+  for(j=0;j<frame->width;j++){
+    dest[j*4+0] = 0xff;
+    dest[j*4+1] = src_y[j];
+    dest[j*4+2] = src_u[j];
+    dest[j*4+3] = src_v[j];
+  }
+}
+
+SchroFrame *
+schro_virt_frame_new_pack_AYUV (SchroFrame *vf)
+{
+  SchroFrame *virt_frame;
+
+  virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_YUYV,
+      vf->width, vf->height);
+  virt_frame->virt_frame1 = vf;
+  virt_frame->render_line = pack_ayuv;
 
   return virt_frame;
 }

@@ -12,6 +12,7 @@ typedef struct _SchroFrameData SchroFrameData;
 typedef struct _SchroUpsampledFrame SchroUpsampledFrame;
 
 typedef void (*SchroFrameFreeFunc)(SchroFrame *frame, void *priv);
+typedef void (*SchroFrameRenderFunc)(SchroFrame *frame, void *dest, int component, int i);
 
 /* bit pattern:
  *  0x100 - 0: normal, 1: indirect (packed)

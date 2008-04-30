@@ -18,6 +18,10 @@ void schro_virt_frame_render (SchroFrame *frame, SchroFrame *dest);
 
 SchroFrame *schro_virt_frame_new_horiz_downsample (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_vert_downsample (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_unpack (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_YUY2 (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_UYVY (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_AYUV (SchroFrame *vf);
 
 SCHRO_END_DECLS
 
