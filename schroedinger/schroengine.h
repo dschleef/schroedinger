@@ -25,6 +25,24 @@ int schro_encoder_engine_lossless (SchroEncoder *encoder);
 int schro_encoder_engine_backtest (SchroEncoder *encoder);
 int schro_encoder_engine_lowdelay (SchroEncoder *encoder);
 
+int schro_encoder_handle_quants (SchroEncoder *encoder, int i);
+void schro_encoder_init_frame (SchroEncoderFrame *frame);
+
+void schro_encoder_handle_gop_backref (SchroEncoder *encoder, int i);
+int schro_encoder_setup_frame_backref (SchroEncoderFrame *frame);
+
+void schro_encoder_handle_gop_intra_only (SchroEncoder *encoder, int i);
+int schro_encoder_setup_frame_intra_only (SchroEncoderFrame *frame);
+
+void schro_encoder_handle_gop_tworef (SchroEncoder *encoder, int i);
+int schro_encoder_setup_frame_tworef (SchroEncoderFrame *frame);
+
+void schro_encoder_handle_gop_lowdelay (SchroEncoder *encoder, int i);
+int schro_encoder_setup_frame_lowdelay (SchroEncoderFrame *frame);
+
+void schro_encoder_handle_gop_lossless (SchroEncoder *encoder, int i);
+int schro_encoder_setup_frame_lossless (SchroEncoderFrame *frame);
+
 #endif
 
 SCHRO_END_DECLS

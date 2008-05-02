@@ -45,18 +45,17 @@ typedef enum {
 
 typedef enum {
   SCHRO_ENCODER_FRAME_STATE_NEW = 0,
-  SCHRO_ENCODER_FRAME_STATE_INITED = (1<<0),
   SCHRO_ENCODER_FRAME_STATE_ANALYSE = (1<<1),
+  SCHRO_ENCODER_FRAME_STATE_HAVE_GOP = (1<<7),
+  SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS = (1<<8),
   SCHRO_ENCODER_FRAME_STATE_PREDICT = (1<<2),
+  SCHRO_ENCODER_FRAME_STATE_HAVE_REFS = (1<<10),
+  SCHRO_ENCODER_FRAME_STATE_HAVE_QUANTS = (1<<11),
   SCHRO_ENCODER_FRAME_STATE_ENCODING = (1<<3),
   SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT = (1<<4),
   SCHRO_ENCODER_FRAME_STATE_POSTANALYSE = (1<<5),
   SCHRO_ENCODER_FRAME_STATE_DONE = (1<<6),
-  SCHRO_ENCODER_FRAME_STATE_HAVE_GOP = (1<<7),
-  SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS = (1<<8),
-  SCHRO_ENCODER_FRAME_STATE_FREE = (1<<9),
-  SCHRO_ENCODER_FRAME_STATE_HAVE_REFS = (1<<10),
-  SCHRO_ENCODER_FRAME_STATE_HAVE_QUANTS = (1<<11)
+  SCHRO_ENCODER_FRAME_STATE_FREE = (1<<9)
 } SchroEncoderFrameStateEnum;
 
 typedef enum {
@@ -91,6 +90,8 @@ struct _SchroEncoderFrame {
   /*< private >*/
   int refcount;
   SchroEncoderFrameStateEnum state;
+  SchroEncoderFrameStateEnum needed_state;
+  SchroEncoderFrameStateEnum working;
   int busy;
 
   /* Bits telling the engine stages which stuff needs to happen */
@@ -268,6 +269,13 @@ struct _SchroEncoder {
   double magic_lambda;
   double magic_badblock_multiplier_nonref;
   double magic_badblock_multiplier_ref;
+
+  /* hooks */
+
+  void (*init_frame) (SchroEncoderFrame *frame);
+  void (*handle_gop) (SchroEncoder *encoder, int i);
+  int (*setup_frame) (SchroEncoderFrame *frame);
+  int (*handle_quants) (SchroEncoder *encoder, int i);
 
   /* other */
 

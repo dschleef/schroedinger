@@ -52,19 +52,6 @@ schro_encoder_new (void)
   encoder->last_ref = -1;
   encoder->last_ref2 = -1;
 
-#if 0
-  encoder->prefs[SCHRO_PREF_ENGINE] = 1;
-  encoder->prefs[SCHRO_PREF_QUANT_ENGINE] = 0;
-  encoder->prefs[SCHRO_PREF_REF_DISTANCE] = 4;
-  encoder->prefs[SCHRO_PREF_TRANSFORM_DEPTH] = 4;
-  encoder->prefs[SCHRO_PREF_INTRA_WAVELET] = SCHRO_WAVELET_DESLAURIES_DUBUC_9_7;
-  encoder->prefs[SCHRO_PREF_INTER_WAVELET] = SCHRO_WAVELET_LE_GALL_5_3;
-  encoder->prefs[SCHRO_PREF_LAMBDA] = 1;
-  encoder->prefs[SCHRO_PREF_PSNR] = 25;
-  encoder->prefs[SCHRO_PREF_BITRATE] = 13824000;
-  encoder->prefs[SCHRO_PREF_NOARITH] = 0;
-  encoder->prefs[SCHRO_PREF_MD5] = 0;
-#endif
   encoder->rate_control = 0;
   encoder->bitrate = 13824000;
   encoder->max_bitrate = 13824000;
@@ -141,17 +128,29 @@ handle_gop_enum (SchroEncoder *encoder)
     case SCHRO_ENCODER_GOP_BACKREF:
     case SCHRO_ENCODER_GOP_CHAINED_BACKREF:
       SCHRO_DEBUG("Setting backref\n");
-      encoder->engine_iterate = schro_encoder_engine_backref;
+      encoder->engine_iterate = schro_encoder_engine_tworef;
+      encoder->init_frame = schro_encoder_init_frame;
+      encoder->handle_gop = schro_encoder_handle_gop_backref;
+      encoder->handle_quants = schro_encoder_handle_quants;
+      encoder->setup_frame = schro_encoder_setup_frame_backref;
       break;
     case SCHRO_ENCODER_GOP_INTRA_ONLY:
       SCHRO_DEBUG("Setting intra only\n");
-      encoder->engine_iterate = schro_encoder_engine_intra_only;
+      encoder->engine_iterate = schro_encoder_engine_tworef;
+      encoder->init_frame = schro_encoder_init_frame;
+      encoder->handle_gop = schro_encoder_handle_gop_intra_only;
+      encoder->handle_quants = schro_encoder_handle_quants;
+      encoder->setup_frame = schro_encoder_setup_frame_intra_only;
       break;
     case SCHRO_ENCODER_GOP_ADAPTIVE:
     case SCHRO_ENCODER_GOP_BIREF:
     case SCHRO_ENCODER_GOP_CHAINED_BIREF:
       SCHRO_DEBUG("Setting tworef engine\n");
       encoder->engine_iterate = schro_encoder_engine_tworef;
+      encoder->init_frame = schro_encoder_init_frame;
+      encoder->handle_gop = schro_encoder_handle_gop_tworef;
+      encoder->handle_quants = schro_encoder_handle_quants;
+      encoder->setup_frame = schro_encoder_setup_frame_tworef;
       break;
   }
 }
@@ -198,14 +197,23 @@ schro_encoder_start (SchroEncoder *encoder)
       schro_encoder_encode_bitrate_comment (encoder, encoder->bitrate);
       break;
     case SCHRO_ENCODER_RATE_CONTROL_LOW_DELAY:
-      encoder->engine_iterate = schro_encoder_engine_lowdelay;
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
+
+      encoder->engine_iterate = schro_encoder_engine_tworef;
+      encoder->init_frame = schro_encoder_init_frame;
+      encoder->handle_gop = schro_encoder_handle_gop_lowdelay;
+      encoder->handle_quants = schro_encoder_handle_quants;
+      encoder->setup_frame = schro_encoder_setup_frame_lowdelay;
 
       schro_encoder_encode_bitrate_comment (encoder, encoder->bitrate);
       break;
     case SCHRO_ENCODER_RATE_CONTROL_LOSSLESS:
-      encoder->engine_iterate = schro_encoder_engine_lossless;
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOSSLESS;
+      encoder->engine_iterate = schro_encoder_engine_tworef;
+      encoder->init_frame = schro_encoder_init_frame;
+      encoder->handle_gop = schro_encoder_handle_gop_lossless;
+      encoder->handle_quants = schro_encoder_handle_quants;
+      encoder->setup_frame = schro_encoder_setup_frame_lossless;
       break;
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_LAMBDA:
       handle_gop_enum (encoder);
@@ -797,12 +805,14 @@ schro_encoder_wait (SchroEncoder *encoder)
 static void
 schro_encoder_frame_complete (SchroEncoderFrame *frame)
 {
-  SCHRO_INFO("completing task, picture %d in state %d",
-      frame->frame_number, frame->state);
+  SCHRO_INFO("completing task, picture %d working %02x in state %02x",
+      frame->frame_number, frame->working, frame->state);
 
   SCHRO_ASSERT(frame->busy == TRUE);
 
   frame->busy = FALSE;
+  frame->state |= frame->working;
+  frame->working = 0;
 
   if ((frame->state & SCHRO_ENCODER_FRAME_STATE_POSTANALYSE)) {
     frame->state |= SCHRO_ENCODER_FRAME_STATE_DONE;
@@ -2242,6 +2252,7 @@ schro_encoder_frame_new (SchroEncoder *encoder)
 
   encoder_frame = schro_malloc0 (sizeof(SchroEncoderFrame));
   encoder_frame->state = SCHRO_ENCODER_FRAME_STATE_NEW;
+  encoder_frame->needed_state = 0xfff;
   encoder_frame->refcount = 1;
 
   frame_format = schro_params_get_frame_format (16,
@@ -2339,66 +2350,6 @@ schro_encoder_reference_get (SchroEncoder *encoder,
   }
   return NULL;
 }
-
-#if 0
-static const int pref_range[][2] = {
-  { 0, 7 }, /* engine */
-  { 0, 4 }, /* quant engine */
-  { 2, 20 }, /* ref distance */
-  { 1, SCHRO_LIMIT_ENCODER_TRANSFORM_DEPTH }, /* transform depth */
-  { 0, 7 }, /* intra wavelet */
-  { 0, 7 }, /* inter wavelet */
-  { 0, 100 }, /* lambda */
-  { 0, 100 }, /* psnr */
-  { 0, 1000000000 }, /* bitrate */
-  { 0, 1 }, /* noarith */
-  { 0, 1 }, /* md5 */
-  /* last */
-  { 0, 0 }
-};
-
-int schro_encoder_preference_get_range (SchroEncoder *encoder,
-    SchroPrefEnum pref, int *min, int *max)
-{
-  if (pref < 0 || pref >= SCHRO_PREF_LAST) {
-    return 0;
-  }
-
-  if (min) *min = pref_range[pref][0];
-  if (max) *max = pref_range[pref][1];
-
-  return 1;
-}
-
-int schro_encoder_preference_get (SchroEncoder *encoder, SchroPrefEnum pref)
-{
-  if (pref >= 0 && pref < SCHRO_PREF_LAST) {
-    return encoder->prefs[pref];
-  }
-  return 0;
-}
-
-int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
-    int value)
-{
-  if (pref < 0 || pref >= SCHRO_PREF_LAST) {
-    return 0;
-  }
-
-  value = CLAMP(value, pref_range[pref][0], pref_range[pref][1]);
-
-  switch (pref) {
-    default:
-      break;
-  }
-
-  SCHRO_DEBUG("setting encoder preference %d to %d", pref, value);
-
-  encoder->prefs[pref] = value;
-
-  return value;
-}
-#endif
 
 /* settings */
 
