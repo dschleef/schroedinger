@@ -176,6 +176,7 @@ if test "x$with_opengl" = xyes; then
     OPENGL_CFLAGS=
     OPENGL_LIBS=-lGL
     HAVE_OPENGL=yes
+    AC_DEFINE(HAVE_OPENGL, 1, [Compile in OpenGL rendering backend])
   ], [HAVE_OPENGL=no])
   CPPFLAGS="$save_CPPFLAGS"
   LIBS="$save_LIBS"

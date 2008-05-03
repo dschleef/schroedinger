@@ -117,7 +117,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = \
 	$(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ERROR_CFLAGS) \
 	-DSCHRO_ENABLE_UNSTABLE_API \
-	$(CUDA_CFLAGS) -I$(srcdir)/cuda
+	$(CUDA_CFLAGS) -I$(srcdir)/cuda -I$(srcdir)/opengl
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = \
 	$(cuda_libs) \

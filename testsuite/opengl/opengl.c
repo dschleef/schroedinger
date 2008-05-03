@@ -2,165 +2,157 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
 #include <schroedinger/schro.h>
-
-#include "schroopengl.h"
+#include <schroedinger/opengl/schroopengl.h>
+#include <schroedinger/opengl/schroopenglframe.h>
+#include <string.h>
 #include "../common.h"
 
-#include "glextensions.h"
-
-
-
-
-int main (int argc, char *argv[])
+static void
+opengl_test_push_pull (SchroFrameFormat format, int width, int height,
+    int todo)
 {
-  SchroOpenGL *gl;
-  int ret;
-  SchroFrame *frame;
-  SchroFrame *frame16;
-  SchroFrame *frame16_test;
-  char name[TEST_PATTERN_NAME_SIZE];
-  GLuint fbo;
-  GLuint texture;
-  GLuint rgba_texture;
+  SchroFrameFormat format_u8;
+  char format_name[64];
+  SchroMemoryDomain *cpu_domain;
+  SchroMemoryDomain *opengl_domain;
+  SchroFrame *cpu_frame_u8_ref;
+  SchroFrame *cpu_frame_ref;
+  SchroFrame *cpu_frame_test;
+  SchroFrame *opengl_frame;
+  char pattern_name[TEST_PATTERN_NAME_SIZE];
+  int i;
+  int ok;
+  int frames = 0;
+  double start_push;
+  double start_pull;
+  double elapsed_push = 0;
+  double elapsed_pull = 0;
 
-  schro_init();
+  switch (format) {
+    case SCHRO_FRAME_FORMAT_U8_444:
+      format_u8 = format;
+      strcpy(format_name, "U8 444");
+      break;
+    case SCHRO_FRAME_FORMAT_U8_422:
+      format_u8 = format;
+      strcpy(format_name, "U8 422");
+      break;
+    case SCHRO_FRAME_FORMAT_U8_420:
+      format_u8 = format;
+      strcpy(format_name, "U8 420");
+      break;
+    case SCHRO_FRAME_FORMAT_S16_444:
+      format_u8 = SCHRO_FRAME_FORMAT_U8_444;
+      strcpy(format_name, "S16 444");
+      break;
+    case SCHRO_FRAME_FORMAT_S16_422:
+      format_u8 = SCHRO_FRAME_FORMAT_U8_422;
+      strcpy(format_name, "S16 422");
+      break;
+    case SCHRO_FRAME_FORMAT_S16_420:
+      format_u8 = SCHRO_FRAME_FORMAT_U8_420;
+      strcpy(format_name, "S16 420");
+      break;
+    default:
+      printf("opengl_test_push_pull: %ix%i\n", width, height);
+      printf("  unhandled format 0x%x", format);
+      return;
+  }
 
-  gl = schro_opengl_new ();
-  SCHRO_ERROR("gl %p", gl);
+  printf("opengl_test_push_pull: %ix%i %s\n", width, height, format_name);
+  schro_opengl_frame_print_flags ("  ");
 
-  ret = schro_opengl_connect (gl, NULL);
-  SCHRO_ERROR("ret %d", ret);
+  cpu_domain = schro_memory_domain_new_local ();
+  opengl_domain = schro_memory_domain_new_opengl ();
+  cpu_frame_u8_ref = schro_frame_new_and_alloc (cpu_domain,
+      format_u8, width, height);
+  cpu_frame_ref = schro_frame_new_and_alloc (cpu_domain, format, width,
+      height);
+  cpu_frame_test = schro_frame_new_and_alloc (cpu_domain, format, width,
+      height);
+  opengl_frame = schro_frame_new_and_alloc (opengl_domain, format, width,
+      height);
 
-  schro_opengl_lock (gl);
+  printf("  patterns\n");
 
-  frame = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_444, 16, 16);
+  for (i = 0; i < todo; ++i) {
+    test_pattern_generate (cpu_frame_u8_ref->components + 0, pattern_name,
+        i % test_pattern_get_n_generators());
+    test_pattern_generate (cpu_frame_u8_ref->components + 1, pattern_name,
+        i % test_pattern_get_n_generators());
+    test_pattern_generate (cpu_frame_u8_ref->components + 2, pattern_name,
+        i % test_pattern_get_n_generators());
 
-  test_pattern_generate (frame->components + 0, name, 8);
-  test_pattern_generate (frame->components + 1, name, 8);
-  test_pattern_generate (frame->components + 2, name, 8);
+    schro_frame_convert (cpu_frame_ref, cpu_frame_u8_ref);
 
-  frame16 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444, 16, 16);
-  schro_frame_convert (frame16, frame);
-  {
-    int i,j;
-    for(j=0;j<16;j+=1){
-      int16_t *d = SCHRO_FRAME_DATA_GET_LINE(frame16->components+0, j);
-      for(i=0;i<16;i++){
-        d[i] = 10*128 + i*16;
-      }
+    schro_opengl_lock ();
+
+    schro_opengl_frame_setup (opengl_frame);
+
+    start_push = schro_utils_get_time ();
+
+    schro_opengl_frame_push (opengl_frame, cpu_frame_ref);
+
+    start_pull = schro_utils_get_time ();
+    elapsed_push += start_pull - start_push;
+
+    schro_opengl_frame_pull (cpu_frame_test, opengl_frame);
+
+    elapsed_pull += schro_utils_get_time () - start_pull;
+
+    schro_opengl_frame_cleanup (opengl_frame);
+
+    schro_opengl_unlock ();
+
+    ++frames;
+
+    ok = frame_compare (cpu_frame_ref, cpu_frame_test);
+
+    printf("    %s: %s\n", pattern_name, ok ? "OK" : "broken");
+
+    if (!ok && width <= 24 && height <= 24) {
+      frame_dump (cpu_frame_ref, cpu_frame_ref);
+      frame_dump (cpu_frame_test, cpu_frame_ref);
     }
   }
 
-  glGenTextures (1, &texture);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, texture);
+  int total_length = (cpu_frame_ref->components[0].length
+      + cpu_frame_ref->components[1].length
+      + cpu_frame_ref->components[2].length) * frames;
 
-  glTexImage2D (GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE16, 16, 16,
-      0, GL_LUMINANCE, GL_SHORT, NULL);
-  glTexSubImage2D (GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, 16, 16,
-      GL_LUMINANCE, GL_SHORT, frame16->components[0].data);
+  printf("  results\n");
+  printf("    %i frames push/pull %f mbyte each\n", frames,
+      (float)total_length / (1024 * 1024));
+  printf("    total %f/%f sec, %f/%f mbyte/sec\n", elapsed_push,
+      elapsed_pull, total_length / elapsed_push / (1024 * 1024),
+      total_length / elapsed_pull / (1024 * 1024));
+  printf("    avg   %f/%f sec, %f sec\n", elapsed_push / frames,
+      elapsed_pull / frames, elapsed_push / frames + elapsed_pull / frames);
 
-  schro_opengl_unlock (gl);
+  schro_frame_unref (cpu_frame_u8_ref);
+  schro_frame_unref (cpu_frame_ref);
+  schro_frame_unref (cpu_frame_test);
+  schro_frame_unref (opengl_frame);
+  schro_memory_domain_free (cpu_domain);
+  schro_memory_domain_free (opengl_domain);
+}
 
-  /* download */
+int
+main (int argc, char *argv[])
+{
+  schro_init ();
 
-  schro_opengl_lock (gl);
-
-  frame16_test = schro_frame_new_and_alloc (NULL,
-      SCHRO_FRAME_FORMAT_S16_444, 16, 16);
-
-  glGenFramebuffersEXT (1, &fbo);
-  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, fbo);
-  glGenTextures (1, &rgba_texture);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, rgba_texture);
-
-  glTexImage2D (GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, 16, 16,
-      0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-  glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT,
-      GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_RECTANGLE_ARB, rgba_texture, 0);
-
-  glDrawBuffer (GL_COLOR_ATTACHMENT1_EXT);
-  glReadBuffer (GL_COLOR_ATTACHMENT1_EXT);
-  schro_opengl_check_error (gl, __LINE__);
-
-  SCHRO_ASSERT (glCheckFramebufferStatusEXT (GL_FRAMEBUFFER_EXT) ==
-         GL_FRAMEBUFFER_COMPLETE_EXT);
-
-  glViewport (0, 0, 16, 16);
-  glClearColor (0.3, 0.3, 0.3, 1.0);
-  glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  glMatrixMode (GL_PROJECTION);
-  glLoadIdentity ();
-
-  glMatrixMode (GL_MODELVIEW);
-  glLoadIdentity ();
-
-  glDisable (GL_CULL_FACE);
-  glEnableClientState (GL_TEXTURE_COORD_ARRAY);
-
-  glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);
-  glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
-  glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, texture);
-  glEnable (GL_TEXTURE_RECTANGLE_ARB);
-
-  {
-#if 0
-    const double matrix[16] = {
-      1, 1, 1, 0,
-      0, -0.344 * 1, 1.770 * 1, 0,
-      1.403 * 1, -0.714 * 1, 0, 0,
-      0, 0, 0, 1
-    };
-    glMatrixMode (GL_COLOR);
-    glLoadMatrixd (matrix);
-#endif
-    glPixelTransferf (GL_POST_COLOR_MATRIX_RED_SCALE, 4);
-    //glPixelTransferf (GL_POST_COLOR_MATRIX_GREEN_BIAS, (0.344 + 0.714) / 2);
-    //glPixelTransferf (GL_POST_COLOR_MATRIX_BLUE_BIAS, -1.770 / 2);
-  }
-
-  glColor4f (0.5, 0, 0, 0);
-
-  glBegin (GL_QUADS);
-  glNormal3f (0, 0, -1);
-  glTexCoord2f (16.0, 0);
-  glVertex3f (1.0, -1.0, 0);
-  glTexCoord2f (0, 0);
-  glVertex3f (-1.0, -1.0, 0);
-  glTexCoord2f (0, 16.0);
-  glVertex3f (-1.0, 1.0, 0);
-  glTexCoord2f (16.0, 16.0);
-  glVertex3f (1.0, 1.0, 0);
-  glEnd ();
-  glFlush();
-
-  {
-    unsigned char *data;
-    int i, j;
-
-    data = malloc (16 * 16 * 4);
-    glReadPixels (0, 0, 16, 16, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    for(j=0;j<16;j++) {
-      int16_t *d = SCHRO_FRAME_DATA_GET_LINE(frame16_test->components+0, j);
-      for(i=0;i<16;i++) {
-        d[i] = data[4*(i+16*j)];
-      }
-    }
-    free(data);
-  }
-
-  glDeleteFramebuffersEXT (1, &fbo);
-  schro_opengl_unlock (gl);
-
-  frame_dump (frame16_test, frame16);
+  //opengl_test_push_pull (SCHRO_FRAME_FORMAT_U8_444, 16, 16, 1);
+  //opengl_test_push_pull (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1);
+  //opengl_test_push_pull (SCHRO_FRAME_FORMAT_U8_444, 99, 17, 1);
+  //opengl_test_push_pull (SCHRO_FRAME_FORMAT_S16_444, 99, 17, 1);
+  //opengl_test_push_pull (SCHRO_FRAME_FORMAT_S16_444, 32, 32, 1);
+  //opengl_test_push_pull (SCHRO_FRAME_FORMAT_S16_444, 640, 480, 1);
+  opengl_test_push_pull (SCHRO_FRAME_FORMAT_U8_444, 1920, 1080, 100);
+  opengl_test_push_pull (SCHRO_FRAME_FORMAT_S16_444, 1920, 1080, 100);
+  //opengl_test_push_pull (SCHRO_FRAME_FORMAT_S16_422, 1917, 1080, 1);
 
   return 0;
 }
-
 
