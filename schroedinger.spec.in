@@ -96,9 +96,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/schroedinger-1.0/schroedinger/schrolist.h
 %{_includedir}/schroedinger-1.0/schroedinger/schropack.h
 %{_includedir}/schroedinger-1.0/schroedinger/schrovideoformat.h
+%{_includedir}/schroedinger-1.0/schroedinger/schrovirtframe.h
 %{_datadir}/gtk-doc/html/schroedinger
 
 %changelog
+* Wed May 7 2008 Christian Schaller <christian.schaller@collabora.co.uk>
+- Added Schrovirtframe.h
+
 * Fri Feb 22 2008 David Schleef <ds@schleef.org>
 - Update for 1.0
 
