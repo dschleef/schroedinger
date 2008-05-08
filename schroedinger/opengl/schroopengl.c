@@ -24,7 +24,7 @@ struct _SchroOpenGL {
   XVisualInfo *visual_info;
   GLXContext context;
   Window window;
-}; 
+};
 
 SchroOpenGL opengl;
 
@@ -143,12 +143,12 @@ schro_opengl_destroy_window (void)
     XDestroyWindow (opengl.display, opengl.window);
     opengl.window = None;
   }
-  
+
   if (opengl.context) {
     glXDestroyContext (opengl.display, opengl.context);
     opengl.context = NULL;
   }
-  
+
   if (opengl.visual_info) {
     XFree (opengl.visual_info);
     opengl.visual_info = NULL;
@@ -343,7 +343,7 @@ schro_memory_domain_new_opengl (void)
   domain->flags = SCHRO_MEMORY_DOMAIN_OPENGL;
   domain->alloc = schro_opengl_alloc;
   domain->free = schro_opengl_free;
-  
+
   return domain;
 }
 

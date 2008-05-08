@@ -10,19 +10,20 @@
 #include <stdio.h>
 
 unsigned int _schro_opengl_frame_flags
-    = 0 
+    = 0
     //| SCHRO_OPENGL_FRAME_STORE_RGBA
     //| SCHRO_OPENGL_FRAME_STORE_BGRA
-    | SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8
+    //| SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8
     //| SCHRO_OPENGL_FRAME_STORE_U8_AS_F32
-    | SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
+    //| SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
     //| SCHRO_OPENGL_FRAME_STORE_S16_AS_I16
     //| SCHRO_OPENGL_FRAME_STORE_S16_AS_F32
 
     //| SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD
     //| SCHRO_OPENGL_FRAME_PUSH_SHADER
-    //| SCHRO_OPENGL_FRAME_PUSH_PIXELBUFFER
+    | SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER
     //| SCHRO_OPENGL_FRAME_PUSH_U8_AS_F32
+    //| SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER
     | SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16
     //| SCHRO_OPENGL_FRAME_PUSH_S16_AS_F32
 
@@ -32,14 +33,40 @@ unsigned int _schro_opengl_frame_flags
     //| SCHRO_OPENGL_FRAME_PULL_S16_AS_F32
     ;
 
-/* 
-   - U8 is currently best with storing as UI8 and everything else off
-     push/pull = 972.809028/962.217704 mbyte/sec
-   - S16 is currently best with storing as UI16 push/pull as U16 and
-     everything else off
-     push/pull = 601.249413/914.319981 mbyte/sec
-   - need to test with pixelbuffers
-*/
+/* results on a NVIDIA 8800 GT with nvidia-glx-new drivers on Ubuntu Hardy */
+
+/* U8: 259.028421/502.960679 mbyte/sec *//*
+unsigned int _schro_opengl_frame_flags
+    = 0;*/
+
+/* U8: 972.809028/962.217704 mbyte/sec *//*
+unsigned int _schro_opengl_frame_flags
+    = SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8;*/
+
+/* U8: 2003.478261/462.976159 mbyte/sec *//*
+unsigned int _schro_opengl_frame_flags
+    = SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER;*/
+
+/* S16: 22.265474/492.245509 mbyte/sec *//*
+unsigned int _schro_opengl_frame_flags
+    = SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16
+    | SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER
+    | SCHRO_OPENGL_FRAME_PULL_S16_AS_U16;*/
+
+/* S16: 85.136173/499.591624 mbyte/sec *//*
+unsigned int _schro_opengl_frame_flags
+    = SCHRO_OPENGL_FRAME_PULL_S16_AS_U16;*/
+
+/* S16: 266.568537/490.034023 mbyte/sec *//*
+unsigned int _schro_opengl_frame_flags
+    = SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16
+    | SCHRO_OPENGL_FRAME_PULL_S16_AS_U16;*/
+
+/* S16: 601.249413/914.319981 mbyte/sec *//*
+unsigned int _schro_opengl_frame_flags
+    = SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
+    | SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16
+    | SCHRO_OPENGL_FRAME_PULL_S16_AS_U16;*/
 
 void
 schro_opengl_frame_check_flags (void)
@@ -117,10 +144,16 @@ schro_opengl_frame_check_flags (void)
   }
 
   /* push */
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_PIXELBUFFER
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER
       && !(_schro_opengl_extensions & SCHRO_OPENGL_EXTENSION_PIXELBUFFER)) {
-    SCHRO_ERROR ("no pixelbuffer extension, disabling pixelbuffer push");
-    _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_PIXELBUFFER;
+    SCHRO_ERROR ("no pixelbuffer extension, disabling U8 pixelbuffer push");
+    _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER;
+  }
+
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER
+      && !(_schro_opengl_extensions & SCHRO_OPENGL_EXTENSION_PIXELBUFFER)) {
+    SCHRO_ERROR ("no pixelbuffer extension, disabling S16 pixelbuffer push");
+    _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER;
   }
 
   if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16
@@ -131,7 +164,7 @@ schro_opengl_frame_check_flags (void)
 
   /* pull */
   if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER
-     && !(_schro_opengl_extensions & SCHRO_OPENGL_EXTENSION_PIXELBUFFER)) {
+      && !(_schro_opengl_extensions & SCHRO_OPENGL_EXTENSION_PIXELBUFFER)) {
     SCHRO_ERROR ("no pixelbuffer extension, disabling pixelbuffer pull");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER;
   }
@@ -148,62 +181,38 @@ schro_opengl_frame_print_flags (const char* indent)
 {
   schro_opengl_frame_check_flags ();
 
-  printf("%sstore flags\n", indent);
-  printf("%s  RGBA:        %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_RGBA
-      ? "on" : "off");
-  printf("%s  BGRA:        %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA
-      ? "on" : "off");
-  printf("%s  U8 as UI8:   %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8
-      ? "on" : "off");
-  printf("%s  U8 as F32:   %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_F32
-      ? "on" : "off");
-  printf("%s  S16 as UI16: %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
-      ? "on" : "off");
-  printf("%s  S16 as I16:  %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16
-      ? "on" : "off");
-  printf("%s  S16 as F32:  %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_F32
-      ? "on" : "off");
+  #define PRINT_FLAG(text, flag) \
+      printf ("%s  "text"%s\n", indent, \
+          _schro_opengl_frame_flags & (flag) ? "on" : "off")
 
-  printf("%spush flags\n", indent);
-  printf("%s  render quad: %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD
-      ? "on" : "off");
-  printf("%s  shader:      %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_SHADER
-      ? "on" : "off");
-  printf("%s  pixelbuffer: %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_PIXELBUFFER
-      ? "on" : "off");
-  printf("%s  U8 as F32:   %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_AS_F32
-      ? "on" : "off");
-  printf("%s  S16 as U16:  %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16
-      ? "on" : "off");
-  printf("%s  S16 as F32:  %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_AS_F32
-      ? "on" : "off");
+  printf ("%sstore flags\n", indent);
 
-  printf("%spull flags\n", indent);
-  printf("%s  pixelbuffer: %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER
-      ? "on" : "off");
-  printf("%s  U8 as F32:   %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_U8_AS_F32
-      ? "on" : "off");
-  printf("%s  S16 as U16:  %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_S16_AS_U16
-      ? "on" : "off");
-  printf("%s  S16 as F32:  %s\n", indent,
-      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_S16_AS_F32
-      ? "on" : "off");
+  PRINT_FLAG ("RGBA:            ", SCHRO_OPENGL_FRAME_STORE_RGBA);
+  PRINT_FLAG ("BGRA:            ", SCHRO_OPENGL_FRAME_STORE_BGRA);
+  PRINT_FLAG ("U8 as UI8:       ", SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8);
+  PRINT_FLAG ("U8 as F32:       ", SCHRO_OPENGL_FRAME_STORE_U8_AS_F32);
+  PRINT_FLAG ("S16 as UI16:     ", SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16);
+  PRINT_FLAG ("S16 as I16:      ", SCHRO_OPENGL_FRAME_STORE_S16_AS_I16);
+  PRINT_FLAG ("S16 as F32:      ", SCHRO_OPENGL_FRAME_STORE_S16_AS_F32);
+
+  printf ("%spush flags\n", indent);
+
+  PRINT_FLAG ("render quad:     ", SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD);
+  PRINT_FLAG ("shader:          ", SCHRO_OPENGL_FRAME_PUSH_SHADER);
+  PRINT_FLAG ("U8 pixelbuffer:  ", SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER);
+  PRINT_FLAG ("U8 as F32:       ", SCHRO_OPENGL_FRAME_PUSH_U8_AS_F32);
+  PRINT_FLAG ("S16 pixelbuffer: ", SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER);
+  PRINT_FLAG ("S16 as U16:      ", SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16);
+  PRINT_FLAG ("S16 as F32:      ", SCHRO_OPENGL_FRAME_PUSH_S16_AS_F32);
+
+  printf ("%spull flags\n", indent);
+
+  PRINT_FLAG ("pixelbuffer:     ", SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER);
+  PRINT_FLAG ("U8 as F32:       ", SCHRO_OPENGL_FRAME_PULL_U8_AS_F32);
+  PRINT_FLAG ("S16 as U16:      ", SCHRO_OPENGL_FRAME_PULL_S16_AS_U16);
+  PRINT_FLAG ("S16 as F32:      ", SCHRO_OPENGL_FRAME_PULL_S16_AS_F32);
+
+  #undef PRINT_FLAG
 }
 
 void
@@ -211,6 +220,7 @@ schro_opengl_frame_setup (SchroFrame *frame)
 {
   int i, k;
   int width, height;
+  int create_push_pixelbuffers = FALSE;
   SchroOpenGLFrameData *opengl_data = NULL;
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
   double start, end;
@@ -320,9 +330,12 @@ schro_opengl_frame_setup (SchroFrame *frame)
             = width;/*opengl_data->pull.byte_stride
             / opengl_data->pull.bytes_per_texel*/;
 
-        //printf ("byte_stride %i texel_stride %i\n", opengl_data->pull.byte_stride, opengl_data->pull.texel_stride);
+        //printf ("byte_stride %i texel_stride %i\n",
+        //    opengl_data->pull.byte_stride, opengl_data->pull.texel_stride);
 
-        opengl_data->bytes_per_pixel = sizeof (uint8_t);
+        if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER)
+          create_push_pixelbuffers = TRUE;
+
         break;
       case SCHRO_FRAME_FORMAT_DEPTH_S16:
         if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_F32) {
@@ -443,9 +456,13 @@ schro_opengl_frame_setup (SchroFrame *frame)
             = width;/*opengl_data->pull.byte_stride
             / opengl_data->pull.bytes_per_texel*/;
 
-        //printf ("byte_stride %i texel_stride %i\n", opengl_data->pull.byte_stride, opengl_data->pull.texel_stride);
+        //printf ("byte_stride %i texel_stride %i\n",
+        //    opengl_data->pull.byte_stride, opengl_data->pull.texel_stride);
 
-        opengl_data->bytes_per_pixel = sizeof (int16_t);
+        if (_schro_opengl_frame_flags
+            & SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER)
+          create_push_pixelbuffers = TRUE;
+
         break;
       default:
         SCHRO_ASSERT (0);
@@ -502,7 +519,7 @@ schro_opengl_frame_setup (SchroFrame *frame)
     SCHRO_ASSERT (height >= SCHRO_OPENGL_FRAME_PIXELBUFFERS);
 
     /* push pixelbuffers */
-    if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_PIXELBUFFER) {
+    if (create_push_pixelbuffers) {
       for (k = 0; k < SCHRO_OPENGL_FRAME_PIXELBUFFERS; ++k) {
         SCHRO_ASSERT (opengl_data->push.pixelbuffers[k] == 0);
 
@@ -514,19 +531,17 @@ schro_opengl_frame_setup (SchroFrame *frame)
               = height / SCHRO_OPENGL_FRAME_PIXELBUFFERS;
         }
 
-        //SCHRO_INFO ("pbo %i push %i height %i", i, k,
-            //opengl_data->pull.heights[k]);
-
         glGenBuffersARB (1, &opengl_data->push.pixelbuffers[k]);
-        glBindBufferARB (GL_PIXEL_PACK_BUFFER_EXT, 
+        glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT,
             opengl_data->push.pixelbuffers[k]);
-        glBufferDataARB (GL_PIXEL_PACK_BUFFER_EXT,
+        glBufferDataARB (GL_PIXEL_UNPACK_BUFFER_EXT,
             opengl_data->push.byte_stride * opengl_data->push.heights[k],
             NULL, GL_STREAM_DRAW);
-        glBindBufferARB (GL_PIXEL_PACK_BUFFER_EXT, 0);
 
         SCHRO_OPENGL_CHECK_ERROR
       }
+
+      glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT, 0);
     }
 
     /* pull pixelbuffers */
@@ -542,19 +557,17 @@ schro_opengl_frame_setup (SchroFrame *frame)
               = height / SCHRO_OPENGL_FRAME_PIXELBUFFERS;
         }
 
-        //SCHRO_INFO ("pbo %i pull %i height %i", i, k,
-            //opengl_data->pull.heights[k]);
-
         glGenBuffersARB (1, &opengl_data->pull.pixelbuffers[k]);
-        glBindBufferARB (GL_PIXEL_PACK_BUFFER_EXT, 
+        glBindBufferARB (GL_PIXEL_PACK_BUFFER_EXT,
             opengl_data->pull.pixelbuffers[k]);
         glBufferDataARB (GL_PIXEL_PACK_BUFFER_EXT,
             opengl_data->pull.byte_stride * opengl_data->pull.heights[k],
             NULL, GL_STATIC_READ);
-        glBindBufferARB (GL_PIXEL_PACK_BUFFER_EXT, 0);
 
         SCHRO_OPENGL_CHECK_ERROR
       }
+
+      glBindBufferARB (GL_PIXEL_PACK_BUFFER_EXT, 0);
     }
 
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
@@ -630,7 +643,7 @@ schro_opengl_frame_cleanup (SchroFrame *frame)
 
         SCHRO_OPENGL_CHECK_ERROR
       }
-      
+
       if (opengl_data->pull.pixelbuffers[k]) {
         glDeleteBuffersARB(1, &opengl_data->pull.pixelbuffers[k]);
 

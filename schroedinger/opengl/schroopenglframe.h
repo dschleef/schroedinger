@@ -41,28 +41,28 @@ struct _SchroOpenGLFrameData {
   GLuint framebuffer;
   SchroOpenGLTransfer push;
   SchroOpenGLTransfer pull;
-  int bytes_per_pixel;
 };
 
-#define SCHRO_OPENGL_FRAME_STORE_RGBA        (1 <<  0)
-#define SCHRO_OPENGL_FRAME_STORE_BGRA        (1 <<  1)
-#define SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8   (1 <<  2)
-#define SCHRO_OPENGL_FRAME_STORE_U8_AS_F32   (1 <<  3)
-#define SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16 (1 <<  4)
-#define SCHRO_OPENGL_FRAME_STORE_S16_AS_I16  (1 <<  5)
-#define SCHRO_OPENGL_FRAME_STORE_S16_AS_F32  (1 <<  6)
+#define SCHRO_OPENGL_FRAME_STORE_RGBA           (1 <<  0)
+#define SCHRO_OPENGL_FRAME_STORE_BGRA           (1 <<  1)
+#define SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8      (1 <<  2)
+#define SCHRO_OPENGL_FRAME_STORE_U8_AS_F32      (1 <<  3)
+#define SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16    (1 <<  4)
+#define SCHRO_OPENGL_FRAME_STORE_S16_AS_I16     (1 <<  5)
+#define SCHRO_OPENGL_FRAME_STORE_S16_AS_F32     (1 <<  6)
 
-#define SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD  (1 <<  7)
-#define SCHRO_OPENGL_FRAME_PUSH_SHADER       (1 <<  8)
-#define SCHRO_OPENGL_FRAME_PUSH_PIXELBUFFER  (1 <<  9)
-#define SCHRO_OPENGL_FRAME_PUSH_U8_AS_F32    (1 << 10)
-#define SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16   (1 << 11)
-#define SCHRO_OPENGL_FRAME_PUSH_S16_AS_F32   (1 << 12)
+#define SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD     (1 <<  7)
+#define SCHRO_OPENGL_FRAME_PUSH_SHADER          (1 <<  8)
+#define SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER  (1 <<  9)
+#define SCHRO_OPENGL_FRAME_PUSH_U8_AS_F32       (1 << 10)
+#define SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER (1 << 11)
+#define SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16      (1 << 12)
+#define SCHRO_OPENGL_FRAME_PUSH_S16_AS_F32      (1 << 13)
 
-#define SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER  (1 << 13)
-#define SCHRO_OPENGL_FRAME_PULL_U8_AS_F32    (1 << 14)
-#define SCHRO_OPENGL_FRAME_PULL_S16_AS_U16   (1 << 15)
-#define SCHRO_OPENGL_FRAME_PULL_S16_AS_F32   (1 << 16)
+#define SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER     (1 << 14)
+#define SCHRO_OPENGL_FRAME_PULL_U8_AS_F32       (1 << 15)
+#define SCHRO_OPENGL_FRAME_PULL_S16_AS_U16      (1 << 16)
+#define SCHRO_OPENGL_FRAME_PULL_S16_AS_F32      (1 << 17)
 
 extern unsigned int _schro_opengl_frame_flags;
 

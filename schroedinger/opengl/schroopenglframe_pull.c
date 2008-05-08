@@ -140,13 +140,10 @@ schro_opengl_frame_pull_convert (SchroFrameData *dest, SchroFrameData *src,
 void
 schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
 {
-  int i/*, k*/;
-  //int x, y;
-  int /*stride, visible_width, data_width,*/ width, height;
+  int i, k;
+  int width, height;
   SchroOpenGLFrameData *src_opengl_data;
-  //int16_t *dest_data;
-  //uint16_t *src_data;
-  //int pixelbuffer_y_offset, pixelbuffer_height;
+  int pixelbuffer_y_offset, pixelbuffer_height;
   static void *texture_data = NULL; // FIXME
   static int texture_data_length = 0;
 
@@ -168,20 +165,14 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
     SCHRO_ASSERT (src_opengl_data->texture.handle != 0);
     SCHRO_ASSERT (src_opengl_data->framebuffer != 0);
 
-    //stride = src->components[i].stride;
     width = src->components[i].width;
-    //data_width = stride / src_opengl_data->bytes_per_pixel;
     height = src->components[i].height;
 
-    //SCHRO_ASSERT (dest->components[i].stride == stride);
     SCHRO_ASSERT (dest->components[i].width == width);
     SCHRO_ASSERT (dest->components[i].height == height);
 
     if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER) {
-      /*glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, src_opengl_data->framebuffer);
-
-      //glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,
-          //GL_TEXTURE_RECTANGLE_ARB, src_opengl_data->texture.handle, 0);
+      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, src_opengl_data->framebuffer);
 
       pixelbuffer_y_offset = 0;
 
@@ -193,9 +184,6 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
         glReadPixels (0, pixelbuffer_y_offset, width, pixelbuffer_height,
             GL_RED, src_opengl_data->pull.type, NULL);
 
-        //SCHRO_INFO ("pbo %i offset %i height %i", k, pixelbuffer_y_offset,
-            //pixelbuffer_height);
-        
         pixelbuffer_y_offset += pixelbuffer_height;
 
         SCHRO_OPENGL_CHECK_ERROR
@@ -211,44 +199,9 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
         void *mapped_data = glMapBufferARB (GL_PIXEL_PACK_BUFFER_EXT,
             GL_READ_ONLY);
 
-        if (src_opengl_data->pull.type == GL_UNSIGNED_SHORT) {
-          dest_data = SCHRO_FRAME_DATA_GET_LINE(dest->components + i,
-              pixelbuffer_y_offset);
-          src_data = (uint16_t *) mapped_data;
-
-          for (y = 0; y < pixelbuffer_height; ++y) {
-            for (x = 0; x < visible_width; ++x) {
-              dest_data[x] = (int16_t) ((int32_t) src_data[x] - 32768);
-            }
-
-            dest_data = OFFSET (dest_data, stride);
-            src_data = OFFSET (src_data, stride);
-          }
-        } else if (src_opengl_data->pull.type == GL_FLOAT) {
-          dest_data = SCHRO_FRAME_DATA_GET_LINE(dest->components + i,
-              pixelbuffer_y_offset);
-          float* blubb = (float *) mapped_data;
-
-          oil_scalarmultiply_f32_ns (blubb, blubb, 65536, visible_width * pixelbuffer_height);
-          oil_scalaradd_f32_ns (blubb, blubb, -32768, visible_width * pixelbuffer_height);
-          oil_convert_s16_f32 (dest_data, blubb, visible_width * pixelbuffer_height);
-          
-          //for (y = 0; y < pixelbuffer_height; ++y) {
-          //  for (x = 0; x < visible_width; ++x) {
-          //    dest_data[x] = (int16_t) ((int32_t) src_data[x] - 32768);
-          //  }
-
-          //  dest_data = OFFSET (dest_data, stride);
-          //  src_data = OFFSET (src_data, stride);
-          //}
-          
-          
-        } else {
-          dest_data = SCHRO_FRAME_DATA_GET_LINE(dest->components + i,
-              pixelbuffer_y_offset);
-
-          oil_memcpy (dest_data, mapped_data, stride * pixelbuffer_height);
-        }
+        schro_opengl_frame_pull_convert (dest->components + i,
+            src->components + i, mapped_data, pixelbuffer_y_offset,
+            pixelbuffer_height);
 
         glUnmapBufferARB (GL_PIXEL_PACK_BUFFER_EXT);
 
@@ -257,13 +210,7 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
         SCHRO_OPENGL_CHECK_ERROR
       }
 
-      //for (k = 0; k < SCHRO_OPENGL_FRAME_PIXELBUFFERS; ++k) {
-      //  glBindBufferARB (GL_PIXEL_PACK_BUFFER_EXT,
-      //      src_opengl_data->pull_pixelbuffers[k]);
-      //  glUnmapBufferARB (GL_PIXEL_PACK_BUFFER_EXT);
-      //}
-
-      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);*/
+      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
     } else {
       if (texture_data_length != src_opengl_data->pull.byte_stride * height
           || !texture_data) {

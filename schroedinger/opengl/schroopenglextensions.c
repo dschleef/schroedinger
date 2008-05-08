@@ -265,7 +265,7 @@ schro_opengl_load_extensions (void)
   }
 
   /* check GL_ARB_texture_float || GL_ATI_texture_float*/
-  if (!strstr (extensions, "GL_ARB_texture_float") 
+  if (!strstr (extensions, "GL_ARB_texture_float")
       && !strstr (extensions, "GL_ATI_texture_float")) {
     SCHRO_INFO ("no texture float extension");
   } else {

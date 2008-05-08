@@ -164,11 +164,12 @@ void
 schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 {
   int i, k;
-  int /*stride, visible_width, */width, height;
+  int width, height, depth;
   SchroOpenGLFrameData *dest_opengl_data = NULL;
   static void *texture_data = NULL; // FIXME
   static int texture_data_length = 0;
   GLuint src_texture = 0;
+  void *mapped_data = NULL;
   int pixelbuffer_y_offset, pixelbuffer_height;
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
   double start, end;
@@ -190,10 +191,9 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
     SCHRO_ASSERT (dest_opengl_data != NULL);
 
-    //stride = dest->components[i].stride;
     width = dest->components[i].width;
-    //data_width = stride / dest_opengl_data->bytes_per_pixel;
     height = dest->components[i].height;
+    depth = SCHRO_FRAME_FORMAT_DEPTH (src->format);
 
     //SCHRO_ASSERT (stride == src->components[i].stride);
     SCHRO_ASSERT (width == src->components[i].width);
@@ -227,7 +227,10 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 #endif
     }
 
-    if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_PIXELBUFFER) {
+    if ((_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER
+        && depth == SCHRO_FRAME_FORMAT_DEPTH_U8)
+        || (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER
+        && depth == SCHRO_FRAME_FORMAT_DEPTH_S16)) {
       pixelbuffer_y_offset = 0;
 
       for (k = 0; k < SCHRO_OPENGL_FRAME_PIXELBUFFERS; ++k) {
@@ -239,7 +242,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
         glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT,
             dest_opengl_data->push.pixelbuffers[k]);
 
-        void *mapped_data = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT,
+        mapped_data = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT,
             GL_WRITE_ONLY);
 
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
@@ -253,9 +256,6 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
             pixelbuffer_height);
 
         glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT);
-
-        //SCHRO_INFO ("pbo map %i offset %i height %i", k, pixelbuffer_y_offset,
-            //pixelbuffer_height);
 
         pixelbuffer_y_offset += pixelbuffer_height;
 
@@ -329,66 +329,6 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
       glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, 0);
     } else {
-     /* if (dest_opengl_data->texture.type == GL_UNSIGNED_SHORT
-          || dest_opengl_data->texture.type == GL_FLOAT) {
-        // FIXME: the temporary memory allocation here for S16 -> U16 
-        // conversion needs to be done in a better way, or S16 -> U16 needs 
-        // to be done in a better way
-        if (!src_teximage_data_u16
-            || src_teximage_data_u16_length != stride * height * 2) {
-          src_teximage_data_u16_length = stride * height * 2;
-
-          if (!src_teximage_data_u16) {
-            src_teximage_data_u16
-                = schro_malloc (src_teximage_data_u16_length);
-          } else {
-            src_teximage_data_u16 = schro_realloc (src_teximage_data_u16,
-                src_teximage_data_u16_length);
-          }
-        }
-
-        if (dest_opengl_data->texture.type == GL_UNSIGNED_SHORT) {
-          src_teximage_line_u16 = src_teximage_data_u16;
-          src_teximage_line_s16 = src->components[i].data;
-
-          for (y = 0; y < height; ++y) {
-            for (x = 0 ; x < visible_width; ++x) {
-              src_teximage_line_u16[x]
-                  = (uint16_t)((int32_t)src_teximage_line_s16[x] + 32768);
-            }
-
-            src_teximage_line_u16 = OFFSET(src_teximage_line_u16, stride);
-            src_teximage_line_s16 = OFFSET(src_teximage_line_s16, stride);
-          }
-
-          src_teximage_data = src_teximage_data_u16;
-        } else {
-          float* blubb = src_teximage_data_u16;
-        
-          src_teximage_line_s16 = src->components[i].data;
-        
-          for (y = 0; y < height; ++y) {
-            for (x = 0 ; x < visible_width; ++x) {
-              blubb[x]
-                  = (float)((int32_t)src_teximage_line_s16[x] + 32768) / 65535.0;
-            }
-
-            blubb = OFFSET(blubb, stride * 2);
-            src_teximage_line_s16 = OFFSET(src_teximage_line_s16, stride);
-          }
-        
-          src_teximage_data = blubb;
-        }
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-        end = schro_utils_get_time ();
-        SCHRO_INFO ("u16 %f", end - start);
-        start = schro_utils_get_time ();
-#endif
-      } else {
-        src_teximage_data = src->components[i].data;
-      }*/
-      
       if (texture_data_length != dest_opengl_data->push.byte_stride * height
           || !texture_data) {
         texture_data_length = dest_opengl_data->push.byte_stride * height;
