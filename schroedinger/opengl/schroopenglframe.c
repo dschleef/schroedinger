@@ -21,6 +21,7 @@ unsigned int _schro_opengl_frame_flags
 
     //| SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD
     //| SCHRO_OPENGL_FRAME_PUSH_SHADER
+    //| SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS /* currently broken */
     | SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER
     //| SCHRO_OPENGL_FRAME_PUSH_U8_AS_F32
     //| SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER
@@ -39,9 +40,19 @@ unsigned int _schro_opengl_frame_flags
 unsigned int _schro_opengl_frame_flags
     = 0;*/
 
+/* U8: 382.692291/447.573619 mbyte/sec *//*
+unsigned int _schro_opengl_frame_flags
+    = SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD
+    | SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER;*/
+
 /* U8: 972.809028/962.217704 mbyte/sec *//*
 unsigned int _schro_opengl_frame_flags
     = SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8;*/
+
+/* U8: 1890.699986/848.954058 mbyte/sec *//*
+unsigned int _schro_opengl_frame_flags
+    = SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8
+    | SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER;*/
 
 /* U8: 2003.478261/462.976159 mbyte/sec *//*
 unsigned int _schro_opengl_frame_flags
@@ -144,6 +155,19 @@ schro_opengl_frame_check_flags (void)
   }
 
   /* push */
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD
+      && _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS) {
+    SCHRO_ERROR ("can't render quad and drawpixels, disabling drawpixels");
+    _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS;
+  }
+
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS
+      && !(_schro_opengl_extensions
+      & SCHRO_OPENGL_EXTENSION_WINDOW_POSITION)) {
+    SCHRO_ERROR ("no window position extension, disabling drawpixels");
+    _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS;
+  }
+
   if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER
       && !(_schro_opengl_extensions & SCHRO_OPENGL_EXTENSION_PIXELBUFFER)) {
     SCHRO_ERROR ("no pixelbuffer extension, disabling U8 pixelbuffer push");
@@ -199,6 +223,7 @@ schro_opengl_frame_print_flags (const char* indent)
 
   PRINT_FLAG ("render quad:     ", SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD);
   PRINT_FLAG ("shader:          ", SCHRO_OPENGL_FRAME_PUSH_SHADER);
+  PRINT_FLAG ("drawpixels:      ", SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS);
   PRINT_FLAG ("U8 pixelbuffer:  ", SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER);
   PRINT_FLAG ("U8 as F32:       ", SCHRO_OPENGL_FRAME_PUSH_U8_AS_F32);
   PRINT_FLAG ("S16 pixelbuffer: ", SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER);
@@ -532,16 +557,16 @@ schro_opengl_frame_setup (SchroFrame *frame)
         }
 
         glGenBuffersARB (1, &opengl_data->push.pixelbuffers[k]);
-        glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT,
+        glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_ARB,
             opengl_data->push.pixelbuffers[k]);
-        glBufferDataARB (GL_PIXEL_UNPACK_BUFFER_EXT,
+        glBufferDataARB (GL_PIXEL_UNPACK_BUFFER_ARB,
             opengl_data->push.byte_stride * opengl_data->push.heights[k],
-            NULL, GL_STREAM_DRAW);
+            NULL, GL_STREAM_DRAW_ARB);
 
         SCHRO_OPENGL_CHECK_ERROR
       }
 
-      glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT, 0);
+      glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     }
 
     /* pull pixelbuffers */
@@ -558,16 +583,16 @@ schro_opengl_frame_setup (SchroFrame *frame)
         }
 
         glGenBuffersARB (1, &opengl_data->pull.pixelbuffers[k]);
-        glBindBufferARB (GL_PIXEL_PACK_BUFFER_EXT,
+        glBindBufferARB (GL_PIXEL_PACK_BUFFER_ARB,
             opengl_data->pull.pixelbuffers[k]);
-        glBufferDataARB (GL_PIXEL_PACK_BUFFER_EXT,
+        glBufferDataARB (GL_PIXEL_PACK_BUFFER_ARB,
             opengl_data->pull.byte_stride * opengl_data->pull.heights[k],
-            NULL, GL_STATIC_READ);
+            NULL, GL_STATIC_READ_ARB);
 
         SCHRO_OPENGL_CHECK_ERROR
       }
 
-      glBindBufferARB (GL_PIXEL_PACK_BUFFER_EXT, 0);
+      glBindBufferARB (GL_PIXEL_PACK_BUFFER_ARB, 0);
     }
 
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT

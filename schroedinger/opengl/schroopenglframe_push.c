@@ -131,34 +131,6 @@ schro_opengl_frame_push_convert (SchroFrameData *dest, SchroFrameData *src,
     SCHRO_ASSERT (0);
   }
 }
-/*
-static const char* code2 =
-"uniform sampler2DRect texture;\n"
-"void main() {\n"
-"  vec4 value = texture2DRect(texture, gl_TexCoord[0]);\n"
-"  if (value.r > 0.5) {\n"
-"    gl_FragColor = 0.75;\n"
-"  } else {\n"
-"    gl_FragColor = 0.25;\n"
-"  }\n"
-"}\n\0";
-
-static const char* code1 =
-"uniform sampler2DRect texture;\n"
-"void main() {\n"
-"  vec4 value = texture2DRect(texture, gl_TexCoord[0]);\n"
-"  gl_FragColor = value;\n"
-//"  gl_FragColor = 0.500001;\n"
-//"  gl_FragColor = -1;\n"
-"}\n\0";*/
-
-static const char* code_identity =
-//"#extension GL_EXT_gpu_shader4 : enable\n"
-"uniform sampler2DRect texture;\n"
-"void main() {\n"
-"  gl_FragColor = texture2DRect(texture, gl_TexCoord[0]);\n"
-//"  gl_FragColor = 0.25;\n"
-"}\n\0";
 
 void
 schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
@@ -171,6 +143,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
   GLuint src_texture = 0;
   void *mapped_data = NULL;
   int pixelbuffer_y_offset, pixelbuffer_height;
+  SchroOpenGLShader *shader;
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
   double start, end;
 #endif
@@ -241,9 +214,12 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
         glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT,
             dest_opengl_data->push.pixelbuffers[k]);
+        glBufferDataARB (GL_PIXEL_UNPACK_BUFFER_ARB,
+            dest_opengl_data->push.byte_stride * pixelbuffer_height, NULL,
+            GL_STREAM_DRAW_ARB);
 
-        mapped_data = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT,
-            GL_WRITE_ONLY);
+        mapped_data = glMapBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT,
+            GL_WRITE_ONLY_ARB);
 
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
         end = schro_utils_get_time ();
@@ -255,7 +231,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
             src->components + i, mapped_data, pixelbuffer_y_offset,
             pixelbuffer_height);
 
-        glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT);
+        glUnmapBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT);
 
         pixelbuffer_y_offset += pixelbuffer_height;
 
@@ -294,26 +270,26 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
         SCHRO_OPENGL_CHECK_ERROR
 
-        //glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-        //    dest_opengl_data->framebuffer);
+        if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS) {
+          glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
+              dest_opengl_data->framebuffer);
+
+          glWindowPos2iARB (0, pixelbuffer_y_offset);
+          glDrawPixels (width, pixelbuffer_height,
+              dest_opengl_data->texture.pixel_format,
+              dest_opengl_data->push.type, NULL);
+
+          glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
+        } else {
+          glTexSubImage2D (GL_TEXTURE_RECTANGLE_ARB, 0, 0,
+              pixelbuffer_y_offset, width, pixelbuffer_height,
+              dest_opengl_data->texture.pixel_format,
+              dest_opengl_data->push.type, NULL);
+        }
 
         SCHRO_OPENGL_CHECK_ERROR
-
-        //glWindowPos2i (0, pixelbuffer_y_offset);
-        //glDrawPixels (data_width, pixelbuffer_height,
-        //    GL_RED, dest_opengl_data->push.type, NULL);
-
-        glTexSubImage2D (GL_TEXTURE_RECTANGLE_ARB, 0, 0, pixelbuffer_y_offset,
-            width, pixelbuffer_height, GL_RED, dest_opengl_data->push.type, NULL);
-
-        //glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
-
-        //SCHRO_INFO ("pbo tex %i offset %i height %i", k, pixelbuffer_y_offset,
-            //pixelbuffer_height);
 
         pixelbuffer_y_offset += pixelbuffer_height;
-
-        SCHRO_OPENGL_CHECK_ERROR
       }
 
       if (dest_opengl_data->push.type == GL_SHORT) {
@@ -359,17 +335,26 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
            S16 */
         glPixelTransferf (GL_RED_SCALE, 0.5);
         glPixelTransferf (GL_RED_BIAS, 0.5);
+      }
 
-        glTexSubImage2D (GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, width, height,
-            dest_opengl_data->texture.pixel_format,
+      if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS) {
+        glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
+            dest_opengl_data->framebuffer);
+
+        glWindowPos2iARB (0, 0);
+        glDrawPixels (width, height, dest_opengl_data->texture.pixel_format,
             dest_opengl_data->push.type, texture_data);
 
-        glPixelTransferf (GL_RED_SCALE, 1);
-        glPixelTransferf (GL_RED_BIAS, 0);
+        glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
       } else {
         glTexSubImage2D (GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, width, height,
             dest_opengl_data->texture.pixel_format,
             dest_opengl_data->push.type, texture_data);
+      }
+
+      if (dest_opengl_data->push.type == GL_SHORT) {
+        glPixelTransferf (GL_RED_SCALE, 1);
+        glPixelTransferf (GL_RED_BIAS, 0);
       }
 
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
@@ -397,17 +382,11 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
       start = schro_utils_get_time ();
 #endif
 
-      static GLhandleARB shader = 0; // FIXME
-      static GLint texture_uniform = 0;
-
       if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_SHADER) {
-        if (!shader) {
-          shader = schro_opengl_shader_new (code_identity);
-          texture_uniform = glGetUniformLocationARB (shader, "texture");
-        }
+        shader = schro_opengl_shader_get (SCHRO_OPENGL_SHADER_IDENTITY);
 
-        glUseProgramObjectARB (shader);
-        glUniform1iARB (texture_uniform, 0);
+        glUseProgramObjectARB (shader->program);
+        glUniform1iARB (shader->texture, 0);
       }
 
       glBegin (GL_QUADS);
@@ -419,8 +398,6 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
       if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_SHADER) {
         glUseProgramObjectARB (0);
-        //schro_opengl_program_free (shader);
-        //program = 0;
       }
 
       glFlush ();

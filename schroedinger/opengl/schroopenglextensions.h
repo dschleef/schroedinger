@@ -79,14 +79,33 @@ extern PFNGLUNMAPBUFFERARBPROC glUnmapBufferARB;
 extern PFNGLGETBUFFERPARAMETERIVARBPROC glGetBufferParameterivARB;
 extern PFNGLGETBUFFERPOINTERVARBPROC glGetBufferPointervARB;
 
-#define SCHRO_OPENGL_EXTENSION_FRAMEBUFFER         0x0001 /* GL_EXT_framebuffer_object */
-#define SCHRO_OPENGL_EXTENSION_FRAGMENT_SHADER     0x0002 /* GL_ARB_shader_objects && GL_ARB_shading_language_100 && GL_ARB_fragment_shader */
-#define SCHRO_OPENGL_EXTENSION_TEXTURE_RECTANGLE   0x0004 /* GL_ARB_texture_rectangle || GL_NV_texture_rectangle */
-#define SCHRO_OPENGL_EXTENSION_PIXELBUFFER         0x0008 /* GL_ARB_vertex_buffer_object && GL_ARB_pixel_buffer_object */
-#define SCHRO_OPENGL_EXTENSION_BGRA                0x0010 /* GL_EXT_bgra */
-#define SCHRO_OPENGL_EXTENSION_TEXTURE_INTEGER     0x0020 /* GL_EXT_texture_integer */
-#define SCHRO_OPENGL_EXTENSION_TEXTURE_FLOAT       0x0040 /* GL_ARB_texture_float || GL_ATI_texture_float */
-#define SCHRO_OPENGL_EXTENSION_NVIDIA_FLOAT_BUFFER 0x0080 /* GL_NV_float_buffer */
+/* GL_ARB_window_pos */
+extern PFNGLWINDOWPOS2DARBPROC glWindowPos2dARB;
+extern PFNGLWINDOWPOS2DVARBPROC glWindowPos2dvARB;
+extern PFNGLWINDOWPOS2FARBPROC glWindowPos2fARB;
+extern PFNGLWINDOWPOS2FVARBPROC glWindowPos2fvARB;
+extern PFNGLWINDOWPOS2IARBPROC glWindowPos2iARB;
+extern PFNGLWINDOWPOS2IVARBPROC glWindowPos2ivARB;
+extern PFNGLWINDOWPOS2SARBPROC glWindowPos2sARB;
+extern PFNGLWINDOWPOS2SVARBPROC glWindowPos2svARB;
+extern PFNGLWINDOWPOS3DARBPROC glWindowPos3dARB;
+extern PFNGLWINDOWPOS3DVARBPROC glWindowPos3dvARB;
+extern PFNGLWINDOWPOS3FARBPROC glWindowPos3fARB;
+extern PFNGLWINDOWPOS3FVARBPROC glWindowPos3fvARB;
+extern PFNGLWINDOWPOS3IARBPROC glWindowPos3iARB;
+extern PFNGLWINDOWPOS3IVARBPROC glWindowPos3ivARB;
+extern PFNGLWINDOWPOS3SARBPROC glWindowPos3sARB;
+extern PFNGLWINDOWPOS3SVARBPROC glWindowPos3svARB;
+
+#define SCHRO_OPENGL_EXTENSION_FRAMEBUFFER         (1 << 0) /* GL_EXT_framebuffer_object */
+#define SCHRO_OPENGL_EXTENSION_FRAGMENT_SHADER     (1 << 1) /* GL_ARB_shader_objects && GL_ARB_shading_language_100 && GL_ARB_fragment_shader */
+#define SCHRO_OPENGL_EXTENSION_TEXTURE_RECTANGLE   (1 << 2) /* GL_ARB_texture_rectangle || GL_NV_texture_rectangle */
+#define SCHRO_OPENGL_EXTENSION_PIXELBUFFER         (1 << 3) /* GL_ARB_vertex_buffer_object && GL_ARB_pixel_buffer_object */
+#define SCHRO_OPENGL_EXTENSION_BGRA                (1 << 4) /* GL_EXT_bgra */
+#define SCHRO_OPENGL_EXTENSION_TEXTURE_INTEGER     (1 << 5) /* GL_EXT_texture_integer */
+#define SCHRO_OPENGL_EXTENSION_TEXTURE_FLOAT       (1 << 6) /* GL_ARB_texture_float || GL_ATI_texture_float */
+#define SCHRO_OPENGL_EXTENSION_NVIDIA_FLOAT_BUFFER (1 << 7) /* GL_NV_float_buffer */
+#define SCHRO_OPENGL_EXTENSION_WINDOW_POSITION     (1 << 8) /* GL_ARB_window_pos */
 
 extern unsigned int _schro_opengl_extensions;
 

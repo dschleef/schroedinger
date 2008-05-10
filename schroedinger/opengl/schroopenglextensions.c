@@ -85,6 +85,24 @@ PFNGLUNMAPBUFFERARBPROC glUnmapBufferARB = NULL;
 PFNGLGETBUFFERPARAMETERIVARBPROC glGetBufferParameterivARB = NULL;
 PFNGLGETBUFFERPOINTERVARBPROC glGetBufferPointervARB = NULL;
 
+/* GL_ARB_window_pos */
+PFNGLWINDOWPOS2DARBPROC glWindowPos2dARB = NULL;
+PFNGLWINDOWPOS2DVARBPROC glWindowPos2dvARB = NULL;
+PFNGLWINDOWPOS2FARBPROC glWindowPos2fARB = NULL;
+PFNGLWINDOWPOS2FVARBPROC glWindowPos2fvARB = NULL;
+PFNGLWINDOWPOS2IARBPROC glWindowPos2iARB = NULL;
+PFNGLWINDOWPOS2IVARBPROC glWindowPos2ivARB = NULL;
+PFNGLWINDOWPOS2SARBPROC glWindowPos2sARB = NULL;
+PFNGLWINDOWPOS2SVARBPROC glWindowPos2svARB = NULL;
+PFNGLWINDOWPOS3DARBPROC glWindowPos3dARB = NULL;
+PFNGLWINDOWPOS3DVARBPROC glWindowPos3dvARB = NULL;
+PFNGLWINDOWPOS3FARBPROC glWindowPos3fARB = NULL;
+PFNGLWINDOWPOS3FVARBPROC glWindowPos3fvARB = NULL;
+PFNGLWINDOWPOS3IARBPROC glWindowPos3iARB = NULL;
+PFNGLWINDOWPOS3IVARBPROC glWindowPos3ivARB = NULL;
+PFNGLWINDOWPOS3SARBPROC glWindowPos3sARB = NULL;
+PFNGLWINDOWPOS3SVARBPROC glWindowPos3svARB = NULL;
+
 #define GET_PROC_ADDRESS(type, name) \
     ok = (((name) = (type)glXGetProcAddress ((const GLubyte *) #name)) != NULL) && ok;
 
@@ -102,7 +120,7 @@ schro_opengl_load_extensions (void)
 
   /* check GL_EXT_framebuffer_object */
   if (!strstr (extensions, "GL_EXT_framebuffer_object")) {
-    SCHRO_ERROR ("no framebuffer extension");
+    SCHRO_ERROR ("no framebuffer extension (GL_EXT_framebuffer_object)");
     return FALSE;
   }
 
@@ -135,7 +153,8 @@ schro_opengl_load_extensions (void)
   GET_PROC_ADDRESS (PFNGLGENERATEMIPMAPEXTPROC, glGenerateMipmapEXT);
 
   if (!ok) {
-    SCHRO_ERROR ("reported framebuffer extension fails to resolve");
+    SCHRO_ERROR ("reported framebuffer extension (GL_EXT_framebuffer_object) "
+        "fails to resolve");
     return FALSE;
   } else {
     _schro_opengl_extensions |= SCHRO_OPENGL_EXTENSION_FRAMEBUFFER;
@@ -143,25 +162,26 @@ schro_opengl_load_extensions (void)
 
   /* check GL_ARB_shader_objects */
   if (!strstr (extensions, "GL_ARB_shader_objects")) {
-    SCHRO_ERROR ("no shader objects extension");
+    SCHRO_ERROR ("no shader objects extension (GL_ARB_shader_objects)");
     return FALSE;
   }
 
   /* check GL_ARB_shading_language_100 */
   if (!strstr (extensions, "GL_ARB_shading_language_100")) {
-    SCHRO_ERROR ("no shading language extension");
+    SCHRO_ERROR ("no shading language extension "
+        "(GL_ARB_shading_language_100)");
     return FALSE;
   }
 
   /* check GL_ARB_fragment_shader */
   if (!strstr (extensions, "GL_ARB_fragment_shader")) {
-    SCHRO_ERROR ("no fragment shader extension");
+    SCHRO_ERROR ("no fragment shader extension (GL_ARB_fragment_shader)");
     return FALSE;
   }
 
   /* resolve GL_ARB_shader_objects */
   ok = TRUE;
-  
+
   GET_PROC_ADDRESS (PFNGLDELETEOBJECTARBPROC, glDeleteObjectARB);
   GET_PROC_ADDRESS (PFNGLGETHANDLEARBPROC, glGetHandleARB);
   GET_PROC_ADDRESS (PFNGLDETACHOBJECTARBPROC, glDetachObjectARB);
@@ -205,7 +225,8 @@ schro_opengl_load_extensions (void)
   GET_PROC_ADDRESS (PFNGLGETSHADERSOURCEARBPROC, glGetShaderSourceARB);
 
   if (!ok) {
-    SCHRO_ERROR ("reported shader objects extension fails to resolve");
+    SCHRO_ERROR ("reported shader objects extension (GL_ARB_shader_objects) "
+        "fails to resolve");
     return FALSE;
   } else {
     _schro_opengl_extensions |= SCHRO_OPENGL_EXTENSION_FRAGMENT_SHADER;
@@ -214,13 +235,14 @@ schro_opengl_load_extensions (void)
   /* check GL_ARB_texture_rectangle || GL_NV_texture_rectangle */
   if (!strstr (extensions, "GL_ARB_texture_rectangle")
       && !strstr (extensions, "GL_NV_texture_rectangle")) {
-    SCHRO_ERROR ("no texture rectangle extension");
+    SCHRO_ERROR ("no texture rectangle extension (GL_ARB_texture_rectangle || "
+        "GL_NV_texture_rectangle)");
     return FALSE;
   }
 
   /* check GL_ARB_vertex_buffer_object */
   if (!strstr (extensions, "GL_ARB_vertex_buffer_object")) {
-    SCHRO_ERROR ("no vertexbuffer extension");
+    SCHRO_ERROR ("no vertexbuffer extension (GL_ARB_vertex_buffer_object)");
   } else {
     /* resolve GL_ARB_vertex_buffer_object */
     ok = TRUE;
@@ -239,11 +261,12 @@ schro_opengl_load_extensions (void)
     GET_PROC_ADDRESS (PFNGLGETBUFFERPOINTERVARBPROC, glGetBufferPointervARB);
 
     if (!ok) {
-      SCHRO_ERROR ("reported vertex buffer extension fails to resolve");
+      SCHRO_ERROR ("reported vertexbuffer extension "
+          "(GL_ARB_vertex_buffer_object) fails to resolve");
     } else {
       /* check GL_ARB_pixel_buffer_object */
       if (!strstr (extensions, "GL_ARB_pixel_buffer_object")) {
-        SCHRO_ERROR ("no pixelbuffer extension");
+        SCHRO_ERROR ("no pixelbuffer extension (GL_ARB_pixel_buffer_object)");
       } else {
         _schro_opengl_extensions |= SCHRO_OPENGL_EXTENSION_PIXELBUFFER;
       }
@@ -252,14 +275,14 @@ schro_opengl_load_extensions (void)
 
   /* check GL_EXT_bgra */
   if (!strstr (extensions, "GL_EXT_bgra")) {
-    SCHRO_INFO ("no RGBA extension");
+    SCHRO_INFO ("no RGBA extension (GL_EXT_bgra)");
   } else {
     _schro_opengl_extensions |= SCHRO_OPENGL_EXTENSION_BGRA;
   }
 
   /* check GL_EXT_texture_integer */
   if (!strstr (extensions, "GL_EXT_texture_integer")) {
-    SCHRO_INFO ("no texture integer extension");
+    SCHRO_INFO ("no texture integer extension (GL_EXT_texture_integer)");
   } else {
     _schro_opengl_extensions |= SCHRO_OPENGL_EXTENSION_TEXTURE_INTEGER;
   }
@@ -267,16 +290,49 @@ schro_opengl_load_extensions (void)
   /* check GL_ARB_texture_float || GL_ATI_texture_float*/
   if (!strstr (extensions, "GL_ARB_texture_float")
       && !strstr (extensions, "GL_ATI_texture_float")) {
-    SCHRO_INFO ("no texture float extension");
+    SCHRO_INFO ("no texture float extension (GL_ARB_texture_float || "
+        "GL_ATI_texture_float)");
   } else {
     _schro_opengl_extensions |= SCHRO_OPENGL_EXTENSION_TEXTURE_FLOAT;
   }
 
   /* check GL_NV_float_buffer */
   if (!strstr (extensions, "GL_NV_float_buffer")) {
-    SCHRO_INFO ("no NVIDIA floatbuffer extension");
+    SCHRO_INFO ("no NVIDIA floatbuffer extension (GL_NV_float_buffer)");
   } else {
     _schro_opengl_extensions |= SCHRO_OPENGL_EXTENSION_NVIDIA_FLOAT_BUFFER;
+  }
+
+  /* check GL_ARB_window_pos */
+  if (!strstr (extensions, "GL_ARB_window_pos")) {
+    SCHRO_INFO ("no window position extension (GL_ARB_window_pos)");
+  } else {
+    /* resolve GL_ARB_window_pos */
+    ok = TRUE;
+
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS2DARBPROC, glWindowPos2dARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS2DVARBPROC, glWindowPos2dvARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS2FARBPROC, glWindowPos2fARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS2FVARBPROC, glWindowPos2fvARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS2IARBPROC, glWindowPos2iARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS2IVARBPROC, glWindowPos2ivARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS2SARBPROC, glWindowPos2sARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS2SVARBPROC, glWindowPos2svARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS3DARBPROC, glWindowPos3dARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS3DVARBPROC, glWindowPos3dvARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS3FARBPROC, glWindowPos3fARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS3FVARBPROC, glWindowPos3fvARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS3IARBPROC, glWindowPos3iARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS3IVARBPROC, glWindowPos3ivARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS3SARBPROC, glWindowPos3sARB);
+    GET_PROC_ADDRESS (PFNGLWINDOWPOS3SVARBPROC, glWindowPos3svARB);
+
+    if (!ok) {
+      SCHRO_ERROR ("reported window position extension (GL_ARB_window_pos) "
+          "fails to resolve");
+    } else {
+      _schro_opengl_extensions |= SCHRO_OPENGL_EXTENSION_WINDOW_POSITION;
+    }
   }
 
   schro_opengl_unlock ();

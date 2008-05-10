@@ -53,16 +53,17 @@ struct _SchroOpenGLFrameData {
 
 #define SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD     (1 <<  7)
 #define SCHRO_OPENGL_FRAME_PUSH_SHADER          (1 <<  8)
-#define SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER  (1 <<  9)
-#define SCHRO_OPENGL_FRAME_PUSH_U8_AS_F32       (1 << 10)
-#define SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER (1 << 11)
-#define SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16      (1 << 12)
-#define SCHRO_OPENGL_FRAME_PUSH_S16_AS_F32      (1 << 13)
+#define SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS      (1 <<  9)
+#define SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER  (1 << 10)
+#define SCHRO_OPENGL_FRAME_PUSH_U8_AS_F32       (1 << 11)
+#define SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER (1 << 12)
+#define SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16      (1 << 13)
+#define SCHRO_OPENGL_FRAME_PUSH_S16_AS_F32      (1 << 14)
 
-#define SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER     (1 << 14)
-#define SCHRO_OPENGL_FRAME_PULL_U8_AS_F32       (1 << 15)
-#define SCHRO_OPENGL_FRAME_PULL_S16_AS_U16      (1 << 16)
-#define SCHRO_OPENGL_FRAME_PULL_S16_AS_F32      (1 << 17)
+#define SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER     (1 << 15)
+#define SCHRO_OPENGL_FRAME_PULL_U8_AS_F32       (1 << 16)
+#define SCHRO_OPENGL_FRAME_PULL_S16_AS_U16      (1 << 17)
+#define SCHRO_OPENGL_FRAME_PULL_S16_AS_F32      (1 << 18)
 
 extern unsigned int _schro_opengl_frame_flags;
 
@@ -76,8 +77,6 @@ void schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src); // CPU -> GPU
 void schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src); // CPU <- GPU
 
 void schro_opengl_frame_convert (SchroFrame *dest, SchroFrame *src);
-
-void schro_opengl_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src);
 
 SCHRO_END_DECLS
 

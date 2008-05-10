@@ -146,6 +146,7 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
   int pixelbuffer_y_offset, pixelbuffer_height;
   static void *texture_data = NULL; // FIXME
   static int texture_data_length = 0;
+  void *mapped_data = NULL;
 
   //SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
   SCHRO_ASSERT (dest != NULL);
@@ -179,10 +180,11 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
       for (k = 0; k < SCHRO_OPENGL_FRAME_PIXELBUFFERS; ++k) {
         pixelbuffer_height = src_opengl_data->pull.heights[k];
 
-        glBindBufferARB (GL_PIXEL_PACK_BUFFER_EXT,
+        glBindBufferARB (GL_PIXEL_PACK_BUFFER_ARB,
             src_opengl_data->pull.pixelbuffers[k]);
         glReadPixels (0, pixelbuffer_y_offset, width, pixelbuffer_height,
-            GL_RED, src_opengl_data->pull.type, NULL);
+            src_opengl_data->texture.pixel_format, src_opengl_data->pull.type,
+            NULL);
 
         pixelbuffer_y_offset += pixelbuffer_height;
 
@@ -194,16 +196,20 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
       for (k = 0; k < SCHRO_OPENGL_FRAME_PIXELBUFFERS; ++k) {
         pixelbuffer_height = src_opengl_data->pull.heights[k];
 
-        glBindBufferARB (GL_PIXEL_PACK_BUFFER_EXT,
+        glBindBufferARB (GL_PIXEL_PACK_BUFFER_ARB,
             src_opengl_data->pull.pixelbuffers[k]);
-        void *mapped_data = glMapBufferARB (GL_PIXEL_PACK_BUFFER_EXT,
-            GL_READ_ONLY);
+        /*glBufferDataARB (GL_PIXEL_PACK_BUFFER_ARB,
+            opengl_data->pull.byte_stride * pixelbuffer_height, NULL,
+            GL_STATIC_READ_ARB);*/
+
+        mapped_data = glMapBufferARB (GL_PIXEL_PACK_BUFFER_ARB,
+            GL_READ_ONLY_ARB);
 
         schro_opengl_frame_pull_convert (dest->components + i,
             src->components + i, mapped_data, pixelbuffer_y_offset,
             pixelbuffer_height);
 
-        glUnmapBufferARB (GL_PIXEL_PACK_BUFFER_EXT);
+        glUnmapBufferARB (GL_PIXEL_PACK_BUFFER_ARB);
 
         pixelbuffer_y_offset += pixelbuffer_height;
 
