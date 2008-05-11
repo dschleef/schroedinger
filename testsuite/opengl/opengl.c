@@ -20,12 +20,98 @@ int _failed = FALSE;
 #define OPENGL_CUSTOM_TEST_PATTERN_CONST_MIDDLE 4
 #define OPENGL_CUSTOM_TEST_PATTERN_CONST_MAX    5
 
+static int
+opengl_format_name (SchroFrameFormat format, char *format_name, int size)
+{
+  switch (format) {
+    case SCHRO_FRAME_FORMAT_U8_444:
+      strncpy (format_name, "U8 444", size);
+      break;
+    case SCHRO_FRAME_FORMAT_U8_422:
+      strncpy (format_name, "U8 422", size);
+      break;
+    case SCHRO_FRAME_FORMAT_U8_420:
+      strncpy (format_name, "U8 420", size);
+      break;
+    case SCHRO_FRAME_FORMAT_S16_444:
+      strncpy (format_name, "S16 444", size);
+      break;
+    case SCHRO_FRAME_FORMAT_S16_422:
+      strncpy (format_name, "S16 422", size);
+      break;
+    case SCHRO_FRAME_FORMAT_S16_420:
+      strncpy (format_name, "S16 420", size);
+      break;
+    case SCHRO_FRAME_FORMAT_S32_444:
+      strncpy (format_name, "S32 444", size);
+      break;
+    case SCHRO_FRAME_FORMAT_S32_422:
+      strncpy (format_name, "S32 422", size);
+      break;
+    case SCHRO_FRAME_FORMAT_S32_420:
+      strncpy (format_name, "S32 420", size);
+      break;
+    case SCHRO_FRAME_FORMAT_YUYV:
+      strncpy (format_name, "YUYV", size);
+      break;
+    case SCHRO_FRAME_FORMAT_UYVY:
+      strncpy (format_name, "UYVY", size);
+      break;
+    case SCHRO_FRAME_FORMAT_AYUV:
+      strncpy (format_name, "AYUV", size);
+      break;
+    case SCHRO_FRAME_FORMAT_ARGB:
+      strncpy (format_name, "ARGB", size);
+      break;
+    default:
+      strncpy (format_name, "unknown", size);
+      return FALSE;
+  }
+
+  return TRUE;
+}
+
+static SchroFrameFormat
+opengl_format_as_u8 (SchroFrameFormat format)
+{
+  switch (format) {
+    case SCHRO_FRAME_FORMAT_U8_444:
+      return SCHRO_FRAME_FORMAT_U8_444;
+    case SCHRO_FRAME_FORMAT_U8_422:
+      return SCHRO_FRAME_FORMAT_U8_422;
+    case SCHRO_FRAME_FORMAT_U8_420:
+      return SCHRO_FRAME_FORMAT_U8_420;
+    case SCHRO_FRAME_FORMAT_S16_444:
+      return SCHRO_FRAME_FORMAT_U8_444;
+    case SCHRO_FRAME_FORMAT_S16_422:
+      return SCHRO_FRAME_FORMAT_U8_422;
+    case SCHRO_FRAME_FORMAT_S16_420:
+      return SCHRO_FRAME_FORMAT_U8_420;
+    case SCHRO_FRAME_FORMAT_S32_444:
+      return SCHRO_FRAME_FORMAT_U8_444;
+    case SCHRO_FRAME_FORMAT_S32_422:
+      return SCHRO_FRAME_FORMAT_U8_422;
+    case SCHRO_FRAME_FORMAT_S32_420:
+      return SCHRO_FRAME_FORMAT_U8_420;
+    case SCHRO_FRAME_FORMAT_YUYV:
+      return SCHRO_FRAME_FORMAT_U8_422;
+    case SCHRO_FRAME_FORMAT_UYVY:
+      return SCHRO_FRAME_FORMAT_U8_422;
+    case SCHRO_FRAME_FORMAT_AYUV:
+      return SCHRO_FRAME_FORMAT_U8_444;
+    case SCHRO_FRAME_FORMAT_ARGB:
+      return SCHRO_FRAME_FORMAT_U8_444;
+  }
+
+  return SCHRO_FRAME_FORMAT_U8_444;
+}
+
 void
 opengl_test_push_pull (SchroFrameFormat format, int width, int height,
     int todo)
 {
-  SchroFrameFormat format_u8;
   char format_name[64];
+  SchroFrameFormat format_u8;
   SchroMemoryDomain *cpu_domain;
   SchroMemoryDomain *opengl_domain;
   SchroFrame *cpu_ref_frame_u8;
@@ -45,37 +131,14 @@ opengl_test_push_pull (SchroFrameFormat format, int width, int height,
 
   printf ("==========================================================\n");
 
-  switch (format) {
-    case SCHRO_FRAME_FORMAT_U8_444:
-      format_u8 = format;
-      strcpy (format_name, "U8 444");
-      break;
-    case SCHRO_FRAME_FORMAT_U8_422:
-      format_u8 = format;
-      strcpy (format_name, "U8 422");
-      break;
-    case SCHRO_FRAME_FORMAT_U8_420:
-      format_u8 = format;
-      strcpy (format_name, "U8 420");
-      break;
-    case SCHRO_FRAME_FORMAT_S16_444:
-      format_u8 = SCHRO_FRAME_FORMAT_U8_444;
-      strcpy (format_name, "S16 444");
-      break;
-    case SCHRO_FRAME_FORMAT_S16_422:
-      format_u8 = SCHRO_FRAME_FORMAT_U8_422;
-      strcpy (format_name, "S16 422");
-      break;
-    case SCHRO_FRAME_FORMAT_S16_420:
-      format_u8 = SCHRO_FRAME_FORMAT_U8_420;
-      strcpy (format_name, "S16 420");
-      break;
-    default:
+  if (!opengl_format_name(format, format_name, 64)) {
       printf ("opengl_test_push_pull: %ix%i\n", width, height);
       printf ("  unhandled format 0x%x", format);
       printf ("==========================================================\n");
       return;
   }
+
+  format_u8 = opengl_format_as_u8 (format);
 
   printf ("opengl_test_push_pull: %ix%i %s\n", width, height, format_name);
   schro_opengl_frame_print_flags ("  ");
@@ -138,7 +201,7 @@ opengl_test_push_pull (SchroFrameFormat format, int width, int height,
     if (!ok) {
       _failed = TRUE;
 
-      if (width <= 24 && height <= 24) {
+      if (width <= 32 && height <= 32) {
         frame_dump (cpu_ref_frame, cpu_ref_frame);
         frame_dump (cpu_test_frame, cpu_ref_frame);
       }
@@ -323,65 +386,27 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
 
   printf ("==========================================================\n");
 
-  switch (dest_format) {
-    case SCHRO_FRAME_FORMAT_U8_444:
-      strcpy (dest_format_name, "U8 444");
-      break;
-    case SCHRO_FRAME_FORMAT_U8_422:
-      strcpy (dest_format_name, "U8 422");
-      break;
-    case SCHRO_FRAME_FORMAT_U8_420:
-      strcpy (dest_format_name, "U8 420");
-      break;
-    case SCHRO_FRAME_FORMAT_S16_444:
-      strcpy (dest_format_name, "S16 444");
-      break;
-    case SCHRO_FRAME_FORMAT_S16_422:
-      strcpy (dest_format_name, "S16 422");
-      break;
-    case SCHRO_FRAME_FORMAT_S16_420:
-      strcpy (dest_format_name, "S16 420");
-      break;
-    default:
+  if (!opengl_format_name (dest_format, dest_format_name, 64)) {
       printf ("opengl_test_convert: %ix%i -> %ix%i\n", src_width, src_height,
           dest_width, dest_height);
-      printf ("  unhandled dest_format 0x%x", dest_format);
+      printf ("  unhandled dest_format 0x%x\n", dest_format);
       printf ("==========================================================\n");
+
+       _failed = TRUE;
       return;
   }
 
-  switch (src_format) {
-    case SCHRO_FRAME_FORMAT_U8_444:
-      src_format_u8 = src_format;
-      strcpy (src_format_name, "U8 444");
-      break;
-    case SCHRO_FRAME_FORMAT_U8_422:
-      src_format_u8 = src_format;
-      strcpy (src_format_name, "U8 422");
-      break;
-    case SCHRO_FRAME_FORMAT_U8_420:
-      src_format_u8 = src_format;
-      strcpy (src_format_name, "U8 420");
-      break;
-    case SCHRO_FRAME_FORMAT_S16_444:
-      src_format_u8 = SCHRO_FRAME_FORMAT_U8_444;
-      strcpy (src_format_name, "S16 444");
-      break;
-    case SCHRO_FRAME_FORMAT_S16_422:
-      src_format_u8 = SCHRO_FRAME_FORMAT_U8_422;
-      strcpy (src_format_name, "S16 422");
-      break;
-    case SCHRO_FRAME_FORMAT_S16_420:
-      src_format_u8 = SCHRO_FRAME_FORMAT_U8_420;
-      strcpy (src_format_name, "S16 420");
-      break;
-    default:
+  if (!opengl_format_name (src_format, src_format_name, 64)) {
       printf ("opengl_test_convert: %ix%i -> %ix%i\n", src_width, src_height,
           dest_width, dest_height);
-      printf ("  unhandled src_format 0x%x", src_format);
+      printf ("  unhandled src_format 0x%x\n", src_format);
       printf ("==========================================================\n");
+
+       _failed = TRUE;
       return;
   }
+
+  src_format_u8 = opengl_format_as_u8 (src_format);
 
   printf ("opengl_test_convert: %ix%i -> %ix%i (%s -> %s)\n", src_width,
       src_height, dest_width, dest_height, src_format_name, dest_format_name);
@@ -484,8 +509,8 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
     if (!ok) {
       _failed = TRUE;
 
-      if (dest_width <= 24 && dest_height <= 24 && src_width <= 24
-          && src_height <= 24) {
+      if (dest_width <= 32 && dest_height <= 32 && src_width <= 32
+          && src_height <= 32) {
         printf ("    src ref frame\n");
         frame_dump (cpu_src_ref_frame, cpu_src_ref_frame);
 
@@ -539,6 +564,7 @@ struct ConvertTest {
 };
 
 struct ConvertTest opengl_test_convert_list[] = {
+  /* S16 -> U8 */
   { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444, 1920, 1080, 1920, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
   { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_U8_422, 1920, 1080, 1280,  720, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
   //{ SCHRO_FRAME_FORMAT_S16_420, SCHRO_FRAME_FORMAT_U8_420, 1280,  720, 1920, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
@@ -555,6 +581,7 @@ struct ConvertTest opengl_test_convert_list[] = {
   { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_U8_422, 32, 32, 16, 16, -1, OPENGL_CUSTOM_TEST_PATTERN_NONE },
   //{ SCHRO_FRAME_FORMAT_S16_420, SCHRO_FRAME_FORMAT_U8_420, 32, 32, 16, 16, -1, OPENGL_CUSTOM_TEST_PATTERN_NONE },
 
+  /* U8 -> S16 */
   { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_S16_444, 1280,  720, 1920, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
   { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_S16_422, 1920, 1080, 1280,  720, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
   //{ SCHRO_FRAME_FORMAT_U8_420, SCHRO_FRAME_FORMAT_S16_420, 1920, 1080, 1920, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
@@ -571,13 +598,33 @@ struct ConvertTest opengl_test_convert_list[] = {
   { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_S16_422, 32, 32, 16, 16, -1, OPENGL_CUSTOM_TEST_PATTERN_NONE },
   //{ SCHRO_FRAME_FORMAT_U8_420, SCHRO_FRAME_FORMAT_S16_420, 32, 32, 16, 16, -1, OPENGL_CUSTOM_TEST_PATTERN_NONE },
 
+  /* U8 -> U8 */
   { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_U8_444, 1280,  720, 1920, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
   { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_U8_422, 1920, 1080, 1280,  720, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
   //{ SCHRO_FRAME_FORMAT_U8_420, SCHRO_FRAME_FORMAT_U8_420, 1920, 1080, 1920, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
 
+  /* S16 -> S16 */
   { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444, 1280,  720, 1920, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
   { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_S16_422, 1920, 1080, 1280,  720, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
   //{ SCHRO_FRAME_FORMAT_S16_420, SCHRO_FRAME_FORMAT_S16_420, 1920, 1080, 1920, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
+
+  /* YUYV -> U8 422 */
+  { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_YUYV, 1920 / 2, 1080, 1920, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
+
+  /* UYVY -> U8 422 */
+  { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_UYVY, 1920 / 2, 1080, 1920, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
+
+  /* AYUV -> U8 444 */
+  { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_AYUV, 1920 / 4, 1080, 1920, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
+
+  /* U8 422 -> YUYV */
+  { SCHRO_FRAME_FORMAT_YUYV, SCHRO_FRAME_FORMAT_U8_422, 1920, 1080, 1920 / 2, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
+
+  /* U8 422 -> UYVY */
+  { SCHRO_FRAME_FORMAT_UYVY, SCHRO_FRAME_FORMAT_U8_422, 1920, 1080, 1920 / 2, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM },
+
+  /* U8 444 -> AYUV */
+  { SCHRO_FRAME_FORMAT_AYUV, SCHRO_FRAME_FORMAT_U8_444, 1920, 1080, 1920 / 4, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM }
 };
 
 int
@@ -585,29 +632,68 @@ main (int argc, char *argv[])
 {
   int i;
   int generators;
+  int special = FALSE;
 
   schro_init ();
 
-  if (argc >= 2 && (!strcmp(argv[1], "-b") || !strcmp(argv[1], "--benchmark")))
-    _benchmark = TRUE;
-
   generators = test_pattern_get_n_generators();
 
-  if (_benchmark) {
+  for (i = 1; i < argc; ++i) {
+    if (!strcmp (argv[i], "-b") || !strcmp (argv[i], "--benchmark")) {
+      _benchmark = TRUE;
+    }
+
+    if (!strcmp (argv[i], "-s") || !strcmp (argv[i], "--special")) {
+      special = TRUE;
+    }
+  }
+
+  if (_benchmark && !special) {
     opengl_test_push_pull (SCHRO_FRAME_FORMAT_U8_444, 1920, 1080, 100);
     opengl_test_push_pull (SCHRO_FRAME_FORMAT_S16_444, 1920, 1080, 100);
+    opengl_test_push_pull (SCHRO_FRAME_FORMAT_YUYV, 1920, 1080, 100);
+    opengl_test_push_pull (SCHRO_FRAME_FORMAT_UYVY, 1920, 1080, 100);
+    opengl_test_push_pull (SCHRO_FRAME_FORMAT_AYUV, 1920, 1080, 100);
+
     opengl_test_convert (SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_S16_444,
         1920, 1080, 1920, 1080, 50, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
     opengl_test_convert (SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444,
         1920, 1080, 1920, 1080, 50, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
+
+    opengl_test_convert (SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_YUYV,
+        1920 / 2, 1080, 1920, 1080, 50, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
+    opengl_test_convert (SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_UYVY,
+        1920 / 2, 1080, 1920, 1080, 50, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
+    opengl_test_convert (SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_AYUV,
+        1920 / 4, 1080, 1920, 1080, 50, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
+
+    opengl_test_convert (SCHRO_FRAME_FORMAT_YUYV, SCHRO_FRAME_FORMAT_U8_422,
+        1920, 1080, 1920 / 2, 1080, 50, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
+    opengl_test_convert (SCHRO_FRAME_FORMAT_UYVY, SCHRO_FRAME_FORMAT_U8_422,
+        1920, 1080, 1920 / 2, 1080, 50, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
+    opengl_test_convert (SCHRO_FRAME_FORMAT_AYUV, SCHRO_FRAME_FORMAT_U8_444,
+        1920, 1080, 1920 / 4, 1080, 50, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
+  } else if (special) {
     //opengl_test_convert (SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_S16_444,
     //opengl_test_convert (SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444,
-    //    16, 16, 16, 16, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
+    //opengl_test_convert (SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_YUYV,
+    //    1920/2, 1080, 1920, 1080, 100, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
+    //opengl_test_push_pull (SCHRO_FRAME_FORMAT_AYUV, 1920, 1080, 100);
+    //opengl_test_convert (SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_AYUV,
+    //    1920 / 4, 1080, 1920, 1080, 100, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
+
+    //opengl_test_convert (SCHRO_FRAME_FORMAT_AYUV, SCHRO_FRAME_FORMAT_U8_444,
+    //    1920, 1080, 1920/4, 1080, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
+    opengl_test_convert (SCHRO_FRAME_FORMAT_AYUV, SCHRO_FRAME_FORMAT_U8_444,
+        32, 16, 32/4, 16, 1, OPENGL_CUSTOM_TEST_PATTERN_RANDOM);
   } else {
     opengl_test_push_pull (SCHRO_FRAME_FORMAT_U8_444, 16, 16, generators);
     opengl_test_push_pull (SCHRO_FRAME_FORMAT_S16_444, 16, 16, generators);
     opengl_test_push_pull (SCHRO_FRAME_FORMAT_U8_444, 23, 16, generators);
     opengl_test_push_pull (SCHRO_FRAME_FORMAT_S16_444, 16, 23, generators);
+    opengl_test_push_pull (SCHRO_FRAME_FORMAT_YUYV, 16, 16, generators);
+    opengl_test_push_pull (SCHRO_FRAME_FORMAT_UYVY, 16, 16, generators);
+    opengl_test_push_pull (SCHRO_FRAME_FORMAT_AYUV, 16, 16, generators);
 
     for (i = 0; i < ARRAY_SIZE (opengl_test_convert_list); ++i) {
       opengl_test_convert (opengl_test_convert_list[i].dest_format,

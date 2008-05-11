@@ -66,6 +66,42 @@ extern PFNGLGETUNIFORMFVARBPROC glGetUniformfvARB;
 extern PFNGLGETUNIFORMIVARBPROC glGetUniformivARB;
 extern PFNGLGETSHADERSOURCEARBPROC glGetShaderSourceARB;
 
+/* GL_ARB_multitexture *//*
+extern PFNGLACTIVETEXTUREARBPROC glActiveTextureARB;
+extern PFNGLCLIENTACTIVETEXTUREARBPROC glClientActiveTextureARB;
+extern PFNGLMULTITEXCOORD1DARBPROC glMultiTexCoord1dARB;
+extern PFNGLMULTITEXCOORD1DVARBPROC glMultiTexCoord1dvARB;
+extern PFNGLMULTITEXCOORD1FARBPROC glMultiTexCoord1fARB;
+extern PFNGLMULTITEXCOORD1FVARBPROC glMultiTexCoord1fvARB;
+extern PFNGLMULTITEXCOORD1IARBPROC glMultiTexCoord1iARB;
+extern PFNGLMULTITEXCOORD1IVARBPROC glMultiTexCoord1ivARB;
+extern PFNGLMULTITEXCOORD1SARBPROC glMultiTexCoord1sARB;
+extern PFNGLMULTITEXCOORD1SVARBPROC glMultiTexCoord1svARB;
+extern PFNGLMULTITEXCOORD2DARBPROC glMultiTexCoord2dARB;
+extern PFNGLMULTITEXCOORD2DVARBPROC glMultiTexCoord2dvARB;
+extern PFNGLMULTITEXCOORD2FARBPROC glMultiTexCoord2fARB;
+extern PFNGLMULTITEXCOORD2FVARBPROC glMultiTexCoord2fvARB;
+extern PFNGLMULTITEXCOORD2IARBPROC glMultiTexCoord2iARB;
+extern PFNGLMULTITEXCOORD2IVARBPROC glMultiTexCoord2ivARB;
+extern PFNGLMULTITEXCOORD2SARBPROC glMultiTexCoord2sARB;
+extern PFNGLMULTITEXCOORD2SVARBPROC glMultiTexCoord2svARB;
+extern PFNGLMULTITEXCOORD3DARBPROC glMultiTexCoord3dARB;
+extern PFNGLMULTITEXCOORD3DVARBPROC glMultiTexCoord3dvARB;
+extern PFNGLMULTITEXCOORD3FARBPROC glMultiTexCoord3fARB;
+extern PFNGLMULTITEXCOORD3FVARBPROC glMultiTexCoord3fvARB;
+extern PFNGLMULTITEXCOORD3IARBPROC glMultiTexCoord3iARB;
+extern PFNGLMULTITEXCOORD3IVARBPROC glMultiTexCoord3ivARB;
+extern PFNGLMULTITEXCOORD3SARBPROC glMultiTexCoord3sARB;
+extern PFNGLMULTITEXCOORD3SVARBPROC glMultiTexCoord3svARB;
+extern PFNGLMULTITEXCOORD4DARBPROC glMultiTexCoord4dARB;
+extern PFNGLMULTITEXCOORD4DVARBPROC glMultiTexCoord4dvARB;
+extern PFNGLMULTITEXCOORD4FARBPROC glMultiTexCoord4fARB;
+extern PFNGLMULTITEXCOORD4FVARBPROC glMultiTexCoord4fvARB;
+extern PFNGLMULTITEXCOORD4IARBPROC glMultiTexCoord4iARB;
+extern PFNGLMULTITEXCOORD4IVARBPROC glMultiTexCoord4ivARB;
+extern PFNGLMULTITEXCOORD4SARBPROC glMultiTexCoord4sARB;
+extern PFNGLMULTITEXCOORD4SVARBPROC glMultiTexCoord4svARB;*/
+
 /* GL_ARB_vertex_buffer_object */
 extern PFNGLBINDBUFFERARBPROC glBindBufferARB;
 extern PFNGLDELETEBUFFERSARBPROC glDeleteBuffersARB;
@@ -97,15 +133,19 @@ extern PFNGLWINDOWPOS3IVARBPROC glWindowPos3ivARB;
 extern PFNGLWINDOWPOS3SARBPROC glWindowPos3sARB;
 extern PFNGLWINDOWPOS3SVARBPROC glWindowPos3svARB;
 
+/* essential extension */
 #define SCHRO_OPENGL_EXTENSION_FRAMEBUFFER         (1 << 0) /* GL_EXT_framebuffer_object */
 #define SCHRO_OPENGL_EXTENSION_FRAGMENT_SHADER     (1 << 1) /* GL_ARB_shader_objects && GL_ARB_shading_language_100 && GL_ARB_fragment_shader */
 #define SCHRO_OPENGL_EXTENSION_TEXTURE_RECTANGLE   (1 << 2) /* GL_ARB_texture_rectangle || GL_NV_texture_rectangle */
-#define SCHRO_OPENGL_EXTENSION_PIXELBUFFER         (1 << 3) /* GL_ARB_vertex_buffer_object && GL_ARB_pixel_buffer_object */
-#define SCHRO_OPENGL_EXTENSION_BGRA                (1 << 4) /* GL_EXT_bgra */
-#define SCHRO_OPENGL_EXTENSION_TEXTURE_INTEGER     (1 << 5) /* GL_EXT_texture_integer */
-#define SCHRO_OPENGL_EXTENSION_TEXTURE_FLOAT       (1 << 6) /* GL_ARB_texture_float || GL_ATI_texture_float */
-#define SCHRO_OPENGL_EXTENSION_NVIDIA_FLOAT_BUFFER (1 << 7) /* GL_NV_float_buffer */
-#define SCHRO_OPENGL_EXTENSION_WINDOW_POSITION     (1 << 8) /* GL_ARB_window_pos */
+#define SCHRO_OPENGL_EXTENSION_MULTITEXTURE        (1 << 3) /* GL_ARB_multitexture */
+
+/* optional extension */
+#define SCHRO_OPENGL_EXTENSION_PIXELBUFFER         (1 << 4) /* GL_ARB_vertex_buffer_object && GL_ARB_pixel_buffer_object */
+#define SCHRO_OPENGL_EXTENSION_BGRA                (1 << 5) /* GL_EXT_bgra */
+#define SCHRO_OPENGL_EXTENSION_TEXTURE_INTEGER     (1 << 6) /* GL_EXT_texture_integer */
+#define SCHRO_OPENGL_EXTENSION_TEXTURE_FLOAT       (1 << 7) /* GL_ARB_texture_float || GL_ATI_texture_float */
+#define SCHRO_OPENGL_EXTENSION_NVIDIA_FLOAT_BUFFER (1 << 8) /* GL_NV_float_buffer */
+#define SCHRO_OPENGL_EXTENSION_WINDOW_POSITION     (1 << 9) /* GL_ARB_window_pos */
 
 extern unsigned int _schro_opengl_extensions;
 

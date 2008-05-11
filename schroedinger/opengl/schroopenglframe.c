@@ -11,7 +11,6 @@
 
 unsigned int _schro_opengl_frame_flags
     = 0
-    //| SCHRO_OPENGL_FRAME_STORE_RGBA
     //| SCHRO_OPENGL_FRAME_STORE_BGRA
     //| SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8
     //| SCHRO_OPENGL_FRAME_STORE_U8_AS_F32
@@ -89,31 +88,14 @@ schro_opengl_frame_check_flags (void)
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_BGRA;
   }
 
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_RGBA
-      && _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA) {
-    SCHRO_ERROR ("can't store in RGBA and BGRA, disabling BGRA storing");
-    _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_BGRA;
-  }
-
   if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_F32
       || _schro_opengl_frame_flags
       & SCHRO_OPENGL_FRAME_STORE_S16_AS_F32) {
-    if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_RGBA
-        || _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA) {
-      if (!(_schro_opengl_extensions & SCHRO_OPENGL_EXTENSION_TEXTURE_FLOAT)) {
-        SCHRO_ERROR ("no texturefloat extension, can't store U8/S16 as F32 in "
-            "RGBA/BRGA mode, disabling U8/S16 as F32 storing");
-        _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_U8_AS_F32;
-        _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_S16_AS_F32;
-      }
-    } else {
-      if (!(_schro_opengl_extensions
-          & SCHRO_OPENGL_EXTENSION_NVIDIA_FLOAT_BUFFER)) {
-        SCHRO_ERROR ("no NVIDIA floatbuffer extension, can't store U8/S16 as "
-            "F32, disabling U8/S16 as F32 storing");
-        _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_U8_AS_F32;
-        _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_S16_AS_F32;
-      }
+    if (!(_schro_opengl_extensions & SCHRO_OPENGL_EXTENSION_TEXTURE_FLOAT)) {
+      SCHRO_ERROR ("no texturefloat extension, can't store U8/S16 as F32, "
+          "disabling U8/S16 as F32 storing");
+      _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_U8_AS_F32;
+      _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_S16_AS_F32;
     }
   }
 
@@ -211,7 +193,6 @@ schro_opengl_frame_print_flags (const char* indent)
 
   printf ("%sstore flags\n", indent);
 
-  PRINT_FLAG ("RGBA:            ", SCHRO_OPENGL_FRAME_STORE_RGBA);
   PRINT_FLAG ("BGRA:            ", SCHRO_OPENGL_FRAME_STORE_BGRA);
   PRINT_FLAG ("U8 as UI8:       ", SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8);
   PRINT_FLAG ("U8 as F32:       ", SCHRO_OPENGL_FRAME_STORE_U8_AS_F32);
@@ -245,6 +226,7 @@ schro_opengl_frame_setup (SchroFrame *frame)
 {
   int i, k;
   int width, height;
+  int components;
   int create_push_pixelbuffers = FALSE;
   SchroOpenGLFrameData *opengl_data = NULL;
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
@@ -254,13 +236,18 @@ schro_opengl_frame_setup (SchroFrame *frame)
   //SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
   SCHRO_ASSERT (frame != NULL);
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (frame));
-  SCHRO_ASSERT (!SCHRO_FRAME_IS_PACKED (frame->format)); // FIXME: unimplemented
 
   schro_opengl_lock ();
 
   schro_opengl_frame_check_flags ();
 
-  for (i = 0; i < 3; ++i) {
+  if (SCHRO_FRAME_IS_PACKED (frame->format)) {
+    components = 1;
+  } else {
+    components = 3;
+  }
+
+  for (i = 0; i < components; ++i) {
     width = frame->components[i].width;
     height = frame->components[i].height;
 
@@ -274,18 +261,18 @@ schro_opengl_frame_setup (SchroFrame *frame)
     switch (SCHRO_FRAME_FORMAT_DEPTH (frame->format)) {
       case SCHRO_FRAME_FORMAT_DEPTH_U8:
         if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_F32) {
-          if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_RGBA
-              || _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA) {
-            opengl_data->texture.internal_format = GL_RGBA32F_ARB;
-          } else {
+          if (!SCHRO_FRAME_IS_PACKED (frame->format)
+              && _schro_opengl_extensions
+              & SCHRO_OPENGL_EXTENSION_NVIDIA_FLOAT_BUFFER) {
             opengl_data->texture.internal_format = GL_FLOAT_R32_NV;
+          } else {
+            opengl_data->texture.internal_format = GL_RGBA32F_ARB;
           }
 
           opengl_data->texture.type = GL_FLOAT;
         } else if (_schro_opengl_frame_flags
             & SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8) {
-          if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_RGBA
-              || _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA) {
+          if (SCHRO_FRAME_IS_PACKED (frame->format)) {
             opengl_data->texture.internal_format = GL_RGBA8UI_EXT;
           } else {
             opengl_data->texture.internal_format = GL_ALPHA8UI_EXT;
@@ -293,26 +280,32 @@ schro_opengl_frame_setup (SchroFrame *frame)
 
           opengl_data->texture.type = GL_UNSIGNED_BYTE;
         } else {
+          /* must use RGBA format here, because other formats are in general
+             not supported by framebuffers */
           opengl_data->texture.internal_format = GL_RGBA8;
           opengl_data->texture.type = GL_UNSIGNED_BYTE;
         }
 
-        if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_RGBA) {
-          if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8) {
-            opengl_data->texture.pixel_format = GL_RGBA_INTEGER_EXT;
-          } else {
-            opengl_data->texture.pixel_format = GL_RGBA;
-          }
+        if (SCHRO_FRAME_IS_PACKED (frame->format)) {
+          if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA) {
+            if (_schro_opengl_frame_flags
+                & SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8) {
+              opengl_data->texture.pixel_format = GL_BGRA_INTEGER_EXT;
+            } else {
+              opengl_data->texture.pixel_format = GL_BGRA;
+            }
 
-          opengl_data->texture.components = 4;
-        } else if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA) {
-          if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8) {
-            opengl_data->texture.pixel_format = GL_BGRA_INTEGER_EXT;
+            opengl_data->texture.components = 4;
           } else {
-            opengl_data->texture.pixel_format = GL_BGRA;
-          }
+            if (_schro_opengl_frame_flags
+                & SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8) {
+              opengl_data->texture.pixel_format = GL_RGBA_INTEGER_EXT;
+            } else {
+              opengl_data->texture.pixel_format = GL_RGBA;
+            }
 
-          opengl_data->texture.components = 4;
+            opengl_data->texture.components = 4;
+          }
         } else {
           if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8) {
             opengl_data->texture.pixel_format = GL_ALPHA_INTEGER_EXT;
@@ -364,18 +357,18 @@ schro_opengl_frame_setup (SchroFrame *frame)
         break;
       case SCHRO_FRAME_FORMAT_DEPTH_S16:
         if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_F32) {
-          if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_RGBA
-              || _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA) {
-            opengl_data->texture.internal_format = GL_RGBA32F_ARB;
-          } else {
+          if (!SCHRO_FRAME_IS_PACKED (frame->format)
+              && _schro_opengl_extensions
+              & SCHRO_OPENGL_EXTENSION_NVIDIA_FLOAT_BUFFER) {
             opengl_data->texture.internal_format = GL_FLOAT_R32_NV;
+          } else {
+            opengl_data->texture.internal_format = GL_RGBA32F_ARB;
           }
 
           opengl_data->texture.type = GL_FLOAT;
         } else if (_schro_opengl_frame_flags
             & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16) {
-          if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_RGBA
-              || _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA) {
+          if (SCHRO_FRAME_IS_PACKED (frame->format)) {
             opengl_data->texture.internal_format = GL_RGBA16UI_EXT;
           } else {
             opengl_data->texture.internal_format = GL_ALPHA16UI_EXT;
@@ -384,8 +377,7 @@ schro_opengl_frame_setup (SchroFrame *frame)
           opengl_data->texture.type = GL_UNSIGNED_SHORT;
         } else if (_schro_opengl_frame_flags
             & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
-          if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_RGBA
-              || _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA) {
+          if (SCHRO_FRAME_IS_PACKED (frame->format)) {
             opengl_data->texture.internal_format = GL_RGBA16I_EXT;
           } else {
             opengl_data->texture.internal_format = GL_ALPHA16I_EXT;
@@ -393,30 +385,36 @@ schro_opengl_frame_setup (SchroFrame *frame)
 
           opengl_data->texture.type = GL_SHORT;
         } else {
+          /* must use RGBA format here, because other formats are in general
+             not supported by framebuffers */
           opengl_data->texture.internal_format = GL_RGBA16;
           opengl_data->texture.type = GL_SHORT;
         }
 
-        if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_RGBA) {
-          if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
-              || _schro_opengl_frame_flags
-              & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
-            opengl_data->texture.pixel_format = GL_RGBA_INTEGER_EXT;
-          } else {
-            opengl_data->texture.pixel_format = GL_RGBA;
-          }
+        if (SCHRO_FRAME_IS_PACKED (frame->format)) {
+          if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA) {
+            if (_schro_opengl_frame_flags
+                & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
+                || _schro_opengl_frame_flags
+                & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
+              opengl_data->texture.pixel_format = GL_BGRA_INTEGER_EXT;
+            } else {
+              opengl_data->texture.pixel_format = GL_BGRA;
+            }
 
-          opengl_data->texture.components = 4;
-        } else if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA) {
-          if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
-              || _schro_opengl_frame_flags
-              & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
-            opengl_data->texture.pixel_format = GL_BGRA_INTEGER_EXT;
+            opengl_data->texture.components = 4;
           } else {
-            opengl_data->texture.pixel_format = GL_BGRA;
-          }
+            if (_schro_opengl_frame_flags
+                & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
+                || _schro_opengl_frame_flags
+                & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
+              opengl_data->texture.pixel_format = GL_RGBA_INTEGER_EXT;
+            } else {
+              opengl_data->texture.pixel_format = GL_RGBA;
+            }
 
-          opengl_data->texture.components = 4;
+            opengl_data->texture.components = 4;
+          }
         } else {
           if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
               || _schro_opengl_frame_flags
@@ -608,6 +606,7 @@ void
 schro_opengl_frame_cleanup (SchroFrame *frame)
 {
   int i, k;
+  int components;
   SchroOpenGLFrameData *opengl_data;
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
   double start, end;
@@ -619,7 +618,13 @@ schro_opengl_frame_cleanup (SchroFrame *frame)
 
   schro_opengl_lock ();
 
-  for (i = 0; i < 3; ++i) {
+  if (SCHRO_FRAME_IS_PACKED (frame->format)) {
+    components = 1;
+  } else {
+    components = 3;
+  }
+
+  for (i = 0; i < components; ++i) {
     // FIXME: hack to store custom data per frame component
     opengl_data = (SchroOpenGLFrameData *) frame->components[i].data;
 

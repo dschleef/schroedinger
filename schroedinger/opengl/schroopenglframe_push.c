@@ -27,7 +27,6 @@ schro_opengl_frame_push_convert (SchroFrameData *dest, SchroFrameData *src,
   SCHRO_ASSERT (dest != NULL);
   SCHRO_ASSERT (src != NULL);
   SCHRO_ASSERT (dest->format == src->format);
-  SCHRO_ASSERT (!SCHRO_FRAME_IS_PACKED (src->format)); // FIXME: unimplemented
   SCHRO_ASSERT (texture_data != NULL);
   SCHRO_ASSERT (dest->stride == src->stride);
   SCHRO_ASSERT (dest->width == src->width);
@@ -37,7 +36,12 @@ schro_opengl_frame_push_convert (SchroFrameData *dest, SchroFrameData *src,
   frame_byte_stride = src->stride;
   dest_opengl_data = (SchroOpenGLFrameData *) dest->data;
   texture_byte_stride = dest_opengl_data->push.byte_stride;
-  texture_components = dest_opengl_data->texture.components;
+
+  if (SCHRO_FRAME_IS_PACKED (src->format)) {
+    texture_components = 1;
+  } else {
+    texture_components = dest_opengl_data->texture.components;
+  }
 
   if (depth == SCHRO_FRAME_FORMAT_DEPTH_U8) {
     if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_AS_F32) {
@@ -137,12 +141,13 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 {
   int i, k;
   int width, height, depth;
+  int components;
+  int pixelbuffer_y_offset, pixelbuffer_height;
   SchroOpenGLFrameData *dest_opengl_data = NULL;
   static void *texture_data = NULL; // FIXME
   static int texture_data_length = 0;
   GLuint src_texture = 0;
   void *mapped_data = NULL;
-  int pixelbuffer_y_offset, pixelbuffer_height;
   SchroOpenGLShader *shader;
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
   double start, end;
@@ -154,11 +159,16 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (dest));
   SCHRO_ASSERT (!SCHRO_FRAME_IS_OPENGL (src));
   SCHRO_ASSERT (dest->format == src->format);
-  SCHRO_ASSERT (!SCHRO_FRAME_IS_PACKED (src->format)); // FIXME: unimplemented
 
   schro_opengl_lock ();
 
-  for (i = 0; i < 3; ++i) {
+  if (SCHRO_FRAME_IS_PACKED (src->format)) {
+    components = 1;
+  } else {
+    components = 3;
+  }
+
+  for (i = 0; i < components; ++i) {
     // FIXME: hack to store custom data per frame component
     dest_opengl_data = (SchroOpenGLFrameData *) dest->components[i].data;
 
@@ -386,7 +396,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
         shader = schro_opengl_shader_get (SCHRO_OPENGL_SHADER_IDENTITY);
 
         glUseProgramObjectARB (shader->program);
-        glUniform1iARB (shader->texture, 0);
+        glUniform1iARB (shader->textures[0], 0);
       }
 
       glBegin (GL_QUADS);

@@ -43,7 +43,6 @@ struct _SchroOpenGLFrameData {
   SchroOpenGLTransfer pull;
 };
 
-#define SCHRO_OPENGL_FRAME_STORE_RGBA           (1 <<  0)
 #define SCHRO_OPENGL_FRAME_STORE_BGRA           (1 <<  1)
 #define SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8      (1 <<  2)
 #define SCHRO_OPENGL_FRAME_STORE_U8_AS_F32      (1 <<  3)
