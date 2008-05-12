@@ -188,6 +188,7 @@ gst_schro_dec_init (GstSchroDec *schro_dec, GstSchroDecClass *klass)
   gst_pad_set_query_type_function (schro_dec->srcpad, gst_schro_dec_get_query_types);
   gst_pad_set_query_function (schro_dec->srcpad, gst_schro_dec_src_query);
   gst_pad_set_event_function (schro_dec->srcpad, gst_schro_dec_src_event);
+  gst_pad_use_fixed_caps (schro_dec->srcpad);
   gst_element_add_pad (GST_ELEMENT(schro_dec), schro_dec->srcpad);
 
   schro_dec->adapter = gst_adapter_new();
