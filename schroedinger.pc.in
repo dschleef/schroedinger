@@ -9,7 +9,7 @@ Name: schroedinger-@SCHRO_MAJORMINOR@
 Description: Dirac codec library
 Requires: liboil-0.3
 Version: @VERSION@
-Libs: -L${libdir} -lschroedinger-@SCHRO_MAJORMINOR@ -lm -lpthread
+Libs: -L${libdir} -lschroedinger-@SCHRO_MAJORMINOR@ @PTHREAD_LIBS@ @LIBM@
 Cflags: -I${includedir}
 
 
