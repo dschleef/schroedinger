@@ -2,7 +2,6 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include <schroedinger/opengl/schroopenglextensions.h>
 #include <schroedinger/opengl/schroopenglshader.h>
 
 SchroOpenGLShader *

@@ -4,7 +4,6 @@
 #endif
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
-#include <schroedinger/opengl/schroopenglextensions.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <liboil/liboil.h>
 

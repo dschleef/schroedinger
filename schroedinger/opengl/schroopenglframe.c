@@ -4,7 +4,6 @@
 #endif
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
-#include <schroedinger/opengl/schroopenglextensions.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <liboil/liboil.h>
 #include <stdio.h>
@@ -83,17 +82,17 @@ schro_opengl_frame_check_flags (void)
 {
   /* store */
   if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA
-      && !(_schro_opengl_extensions & SCHRO_OPENGL_EXTENSION_BGRA)) {
-    SCHRO_ERROR ("no BGRA extension, disabling BGRA storing");
+      && !GLEW_EXT_bgra) {
+    SCHRO_ERROR ("missing extension GL_EXT_bgra, disabling BGRA storing");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_BGRA;
   }
 
   if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_F32
       || _schro_opengl_frame_flags
       & SCHRO_OPENGL_FRAME_STORE_S16_AS_F32) {
-    if (!(_schro_opengl_extensions & SCHRO_OPENGL_EXTENSION_TEXTURE_FLOAT)) {
-      SCHRO_ERROR ("no texturefloat extension, can't store U8/S16 as F32, "
-          "disabling U8/S16 as F32 storing");
+    if (!GLEW_ARB_texture_float && !GLEW_ATI_texture_float) {
+      SCHRO_ERROR ("missing extension GL_{ARB|ATI}_texture_float, can't "
+          "store U8/S16 as F32, disabling U8/S16 as F32 storing");
       _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_U8_AS_F32;
       _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_S16_AS_F32;
     }
@@ -102,10 +101,9 @@ schro_opengl_frame_check_flags (void)
   if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8
       || _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
       || _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
-    if (!(_schro_opengl_extensions
-        & SCHRO_OPENGL_EXTENSION_TEXTURE_INTEGER)) {
-      SCHRO_ERROR ("no texture integer extension, can't store U8/S16 as "
-          "UI8/UI16/I16, disabling U8/S16 as UI8/UI16/I16 storing");
+    if (!GLEW_EXT_texture_integer) {
+      SCHRO_ERROR ("missing extension GL_EXT_texture_integer, can't store "
+          "U8/S16 as UI8/UI16/I16, disabling U8/S16 as UI8/UI16/I16 storing");
       _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8;
       _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16;
       _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_S16_AS_I16;
@@ -139,26 +137,29 @@ schro_opengl_frame_check_flags (void)
   /* push */
   if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD
       && _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS) {
-    SCHRO_ERROR ("can't render quad and drawpixels, disabling drawpixels");
+    SCHRO_ERROR ("can't render quad and drawpixels to push, disabling "
+        "drawpixels push");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS;
   }
 
   if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS
-      && !(_schro_opengl_extensions
-      & SCHRO_OPENGL_EXTENSION_WINDOW_POSITION)) {
-    SCHRO_ERROR ("no window position extension, disabling drawpixels");
+      && !GLEW_ARB_window_pos) {
+    SCHRO_ERROR ("missing extension GL_ARB_window_pos, disabling drawpixels "
+        "push");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS;
   }
 
   if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER
-      && !(_schro_opengl_extensions & SCHRO_OPENGL_EXTENSION_PIXELBUFFER)) {
-    SCHRO_ERROR ("no pixelbuffer extension, disabling U8 pixelbuffer push");
+      && (!GLEW_ARB_vertex_buffer_object || !GLEW_ARB_pixel_buffer_object)) {
+    SCHRO_ERROR ("missing extensions GL_ARB_vertex_buffer_object and/or "
+        "GL_ARB_pixel_buffer_object, disabling U8 pixelbuffer push");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER;
   }
 
   if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER
-      && !(_schro_opengl_extensions & SCHRO_OPENGL_EXTENSION_PIXELBUFFER)) {
-    SCHRO_ERROR ("no pixelbuffer extension, disabling S16 pixelbuffer push");
+      && (!GLEW_ARB_vertex_buffer_object || !GLEW_ARB_pixel_buffer_object)) {
+    SCHRO_ERROR ("missing extensions GL_ARB_vertex_buffer_object and/or "
+        "GL_ARB_pixel_buffer_object, disabling S16 pixelbuffer push");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER;
   }
 
@@ -170,8 +171,9 @@ schro_opengl_frame_check_flags (void)
 
   /* pull */
   if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER
-      && !(_schro_opengl_extensions & SCHRO_OPENGL_EXTENSION_PIXELBUFFER)) {
-    SCHRO_ERROR ("no pixelbuffer extension, disabling pixelbuffer pull");
+      && (!GLEW_ARB_vertex_buffer_object || !GLEW_ARB_pixel_buffer_object)) {
+    SCHRO_ERROR ("missing extensions GL_ARB_vertex_buffer_object and/or "
+        "GL_ARB_pixel_buffer_object, disabling S16 pixelbuffer pull");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER;
   }
 
@@ -261,9 +263,7 @@ schro_opengl_frame_setup (SchroFrame *frame)
     switch (SCHRO_FRAME_FORMAT_DEPTH (frame->format)) {
       case SCHRO_FRAME_FORMAT_DEPTH_U8:
         if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_F32) {
-          if (!SCHRO_FRAME_IS_PACKED (frame->format)
-              && _schro_opengl_extensions
-              & SCHRO_OPENGL_EXTENSION_NVIDIA_FLOAT_BUFFER) {
+          if (!SCHRO_FRAME_IS_PACKED (frame->format) && GLEW_NV_float_buffer) {
             opengl_data->texture.internal_format = GL_FLOAT_R32_NV;
           } else {
             opengl_data->texture.internal_format = GL_RGBA32F_ARB;
@@ -357,9 +357,7 @@ schro_opengl_frame_setup (SchroFrame *frame)
         break;
       case SCHRO_FRAME_FORMAT_DEPTH_S16:
         if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_F32) {
-          if (!SCHRO_FRAME_IS_PACKED (frame->format)
-              && _schro_opengl_extensions
-              & SCHRO_OPENGL_EXTENSION_NVIDIA_FLOAT_BUFFER) {
+          if (!SCHRO_FRAME_IS_PACKED (frame->format) && GLEW_NV_float_buffer) {
             opengl_data->texture.internal_format = GL_FLOAT_R32_NV;
           } else {
             opengl_data->texture.internal_format = GL_RGBA32F_ARB;

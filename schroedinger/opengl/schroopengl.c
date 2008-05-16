@@ -4,10 +4,9 @@
 #endif
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
-#include <schroedinger/opengl/schroopenglextensions.h>
 #include <schroedinger/opengl/schroopenglframe.h>
-#include <GL/gl.h>
-#include <GL/glx.h>
+#include <GL/glew.h>
+#include <GL/glxew.h>
 #include <limits.h>
 
 #define OPENGL_HANDLE_X_ERRORS
@@ -90,7 +89,7 @@ schro_opengl_create_window (void)
   ret = glXQueryExtension (opengl.display, &error_base, &event_base);
 
   if (!ret) {
-    SCHRO_ERROR ("no GLX extension");
+    SCHRO_ERROR ("missing GLX extension");
     return FALSE;
   }
 
@@ -155,6 +154,76 @@ schro_opengl_destroy_window (void)
   }
 }*/
 
+static int
+schro_opengl_init_glew (void)
+{
+  int ok = TRUE;
+  int major, minor, micro;
+  GLenum error;
+
+  schro_opengl_lock ();
+
+  error = glewInit ();
+
+  if (error != GLEW_OK) {
+    SCHRO_ERROR("GLEW error: %s", glewGetErrorString (error));
+    ok = FALSE;
+  }
+
+  major = atoi( (const char*) glewGetString (GLEW_VERSION_MAJOR));
+  minor = atoi( (const char*) glewGetString (GLEW_VERSION_MINOR));
+  micro = atoi( (const char*) glewGetString (GLEW_VERSION_MICRO));
+
+  if (major < 1) {
+    SCHRO_ERROR("missing GLEW >= 1.5.0");
+    ok = FALSE;
+  } else if (major == 1 && minor < 5) {
+    SCHRO_ERROR("missing GLEW >= 1.5.0");
+    ok = FALSE;
+  } else if (major == 1 && minor == 5 && micro < 0) {
+    SCHRO_ERROR("missing GLEW >= 1.5.0");
+    ok = FALSE;
+  }
+
+  schro_opengl_unlock ();
+
+  return ok;
+}
+
+static int
+schro_opengl_check_essential_extensions (void)
+{
+  int ok = TRUE;
+
+  schro_opengl_lock ();
+
+  #define CHECK_EXTENSION(name) \
+    if (!GLEW_##name) { \
+      SCHRO_ERROR ("missing essential extension GL_" #name); \
+      ok = FALSE; \
+    }
+
+  #define CHECK_EXTENSION_GROUPS(group1, group2, name) \
+    if (!GLEW_##group1##_##name && !GLEW_##group2##_##name) { \
+      SCHRO_ERROR ("missing essential extension GL_{" #group1 "|" #group2 "}_" #name); \
+      ok = FALSE; \
+    }
+
+  CHECK_EXTENSION (EXT_framebuffer_object)
+  CHECK_EXTENSION_GROUPS (ARB, NV, texture_rectangle)
+  CHECK_EXTENSION (ARB_multitexture)
+  CHECK_EXTENSION (ARB_shader_objects)
+  CHECK_EXTENSION (ARB_shading_language_100)
+  CHECK_EXTENSION (ARB_fragment_shader)
+
+  #undef CHECK_EXTENSION
+  #undef CHECK_EXTENSION_OR
+
+  schro_opengl_unlock ();
+
+  return ok;
+}
+
 void
 schro_opengl_init (void)
 {
@@ -184,7 +253,12 @@ schro_opengl_init (void)
     return;
   }
 
-  if (!schro_opengl_load_extensions ()) {
+  if (!schro_opengl_init_glew ()) {
+    opengl.usable = FALSE;
+    return;
+  }
+
+  if (!schro_opengl_check_essential_extensions ()) {
     opengl.usable = FALSE;
     return;
   }

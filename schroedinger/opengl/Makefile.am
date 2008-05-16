@@ -3,7 +3,6 @@ noinst_LTLIBRARIES = libopengl.la
 
 libopengl_la_SOURCES = \
 	schroopengl.c \
-	schroopenglextensions.c \
 	schroopenglframe.c \
 	schroopenglframe_convert.c \
 	schroopenglframe_pull.c \

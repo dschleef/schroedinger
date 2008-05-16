@@ -4,7 +4,7 @@
 
 #include <schroedinger/schro-stdint.h>
 #include <schroedinger/schroframe.h>
-#include <GL/gl.h>
+#include <GL/glew.h>
 
 SCHRO_BEGIN_DECLS
 

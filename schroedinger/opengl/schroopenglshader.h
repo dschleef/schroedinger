@@ -3,7 +3,7 @@
 #define __SCHRO_OPENGL_SHADER_H__
 
 #include <schroedinger/schro.h>
-#include <GL/gl.h>
+#include <GL/glew.h>
 
 SCHRO_BEGIN_DECLS
 
