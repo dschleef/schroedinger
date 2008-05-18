@@ -5,6 +5,7 @@ libopengl_la_SOURCES = \
 	schroopengl.c \
 	schroopenglframe.c \
 	schroopenglframe_convert.c \
+	schroopenglframe_math.c \
 	schroopenglframe_pull.c \
 	schroopenglframe_push.c \
 	schroopenglshader.c

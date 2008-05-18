@@ -20,7 +20,7 @@ typedef struct _SchroOpenGLTransfer SchroOpenGLTransfer;
 typedef struct _SchroOpenGLFrameData SchroOpenGLFrameData;
 
 struct _SchroOpenGLTexture {
-  GLuint handle;
+  GLuint handles[2];
   GLenum internal_format;
   GLenum pixel_format;
   GLenum type;
@@ -38,7 +38,7 @@ struct _SchroOpenGLTransfer {
 
 struct _SchroOpenGLFrameData {
   SchroOpenGLTexture texture;
-  GLuint framebuffer;
+  GLuint framebuffers[2];
   SchroOpenGLTransfer push;
   SchroOpenGLTransfer pull;
 };
@@ -76,6 +76,8 @@ void schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src); // CPU -> GPU
 void schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src); // CPU <- GPU
 
 void schro_opengl_frame_convert (SchroFrame *dest, SchroFrame *src);
+void schro_opengl_frame_add (SchroFrame *dest, SchroFrame *src);
+void schro_opengl_frame_subtract (SchroFrame *dest, SchroFrame *src);
 
 SCHRO_END_DECLS
 

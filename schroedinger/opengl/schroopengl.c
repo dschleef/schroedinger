@@ -217,7 +217,7 @@ schro_opengl_check_essential_extensions (void)
   CHECK_EXTENSION (ARB_fragment_shader)
 
   #undef CHECK_EXTENSION
-  #undef CHECK_EXTENSION_OR
+  #undef CHECK_EXTENSION_GROUPS
 
   schro_opengl_unlock ();
 

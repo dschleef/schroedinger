@@ -31,6 +31,10 @@ struct _SchroOpenGLShader {
 #define SCHRO_OPENGL_SHADER_CONVERT_YUYV_U8_422 14
 #define SCHRO_OPENGL_SHADER_CONVERT_UYVY_U8_422 15
 #define SCHRO_OPENGL_SHADER_CONVERT_AYUV_U8_444 16
+#define SCHRO_OPENGL_SHADER_ADD_S16_U8          17
+#define SCHRO_OPENGL_SHADER_ADD_S16_S16         18
+#define SCHRO_OPENGL_SHADER_SUBTRACT_S16_U8     19
+#define SCHRO_OPENGL_SHADER_SUBTRACT_S16_S16    20
 
 SchroOpenGLShader *schro_opengl_shader_new (const char* code, int textures);
 void schro_opengl_shader_free (SchroOpenGLShader *shader);

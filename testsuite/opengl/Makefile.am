@@ -6,4 +6,5 @@ AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS) \
 LDADD = $(SCHRO_LIBS) ../libschrotest.la
 
 opengl_SOURCES = \
-	opengl.c
+	opengl.c \
+	opengl_util.c

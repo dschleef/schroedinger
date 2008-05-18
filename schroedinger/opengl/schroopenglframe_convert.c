@@ -8,52 +8,70 @@
 #include <schroedinger/opengl/schroopenglshader.h>
 #include <liboil/liboil.h>
 
-static void schro_opengl_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src);
-static void schro_opengl_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src);
-static void schro_opengl_frame_convert_u8_u8 (SchroFrame *dest, SchroFrame *src);
-static void schro_opengl_frame_convert_s16_s16 (SchroFrame *dest, SchroFrame *src);
-static void schro_opengl_frame_convert_u8_422_yuyv (SchroFrame *dest, SchroFrame *src);
-static void schro_opengl_frame_convert_u8_422_uyvy (SchroFrame *dest, SchroFrame *src);
-static void schro_opengl_frame_convert_u8_444_ayuv (SchroFrame *dest, SchroFrame *src);
-static void schro_opengl_frame_convert_yuyv_u8_422 (SchroFrame *dest, SchroFrame *src);
-static void schro_opengl_frame_convert_uyvy_u8_422 (SchroFrame *dest, SchroFrame *src);
-static void schro_opengl_frame_convert_ayuv_u8_444 (SchroFrame *dest, SchroFrame *src);
+#define CONVERT_PROTOTYPE(func) \
+    static void schro_opengl_frame_convert_##func (SchroFrame *dest, \
+    SchroFrame *src)
+
+CONVERT_PROTOTYPE (u8_s16);
+CONVERT_PROTOTYPE (s16_u8);
+CONVERT_PROTOTYPE (u8_u8);
+CONVERT_PROTOTYPE (s16_s16);
+CONVERT_PROTOTYPE (u8_422_yuyv);
+CONVERT_PROTOTYPE (u8_422_uyvy);
+CONVERT_PROTOTYPE (u8_444_ayuv);
+CONVERT_PROTOTYPE (yuyv_u8_422);
+CONVERT_PROTOTYPE (uyvy_u8_422);
+CONVERT_PROTOTYPE (ayuv_u8_444);
+
+#undef CONVERT_PROTOTYPE
 
 typedef void (*SchroOpenGLFrameBinaryFunc) (SchroFrame *dest, SchroFrame *src);
 
-struct binary_struct {
-  SchroFrameFormat from;
-  SchroFrameFormat to;
+struct FormatToFunction {
+  SchroFrameFormat dest;
+  SchroFrameFormat src;
   SchroOpenGLFrameBinaryFunc func;
 };
 
-static struct binary_struct schro_opengl_frame_convert_func_list[] = {
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444, schro_opengl_frame_convert_u8_s16 },
-  { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_U8_422, schro_opengl_frame_convert_u8_s16 },
-  { SCHRO_FRAME_FORMAT_S16_420, SCHRO_FRAME_FORMAT_U8_420, schro_opengl_frame_convert_u8_s16 },
+#define CONVERT_MAPPING(dest, src, func) \
+    { SCHRO_FRAME_FORMAT_##dest, SCHRO_FRAME_FORMAT_##src, \
+    schro_opengl_frame_convert_##func }
 
-  { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_S16_444, schro_opengl_frame_convert_s16_u8 },
-  { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_S16_422, schro_opengl_frame_convert_s16_u8 },
-  { SCHRO_FRAME_FORMAT_U8_420, SCHRO_FRAME_FORMAT_S16_420, schro_opengl_frame_convert_s16_u8 },
+static struct FormatToFunction schro_opengl_frame_convert_func_list[] = {
+  /* S16 -> U8 */
+  CONVERT_MAPPING (U8_444, S16_444, u8_s16),
+  CONVERT_MAPPING (U8_422, S16_422, u8_s16),
+  CONVERT_MAPPING (U8_420, S16_420, u8_s16),
 
-  { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_U8_444, schro_opengl_frame_convert_u8_u8 },
-  { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_U8_422, schro_opengl_frame_convert_u8_u8 },
-  { SCHRO_FRAME_FORMAT_U8_420, SCHRO_FRAME_FORMAT_U8_420, schro_opengl_frame_convert_u8_u8 },
+  /* U8 -> S16 */
+  CONVERT_MAPPING (S16_444, U8_444, s16_u8),
+  CONVERT_MAPPING (S16_422, U8_422, s16_u8),
+  CONVERT_MAPPING (S16_420, U8_420, s16_u8),
 
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444, schro_opengl_frame_convert_s16_s16 },
-  { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_S16_422, schro_opengl_frame_convert_s16_s16 },
-  { SCHRO_FRAME_FORMAT_S16_420, SCHRO_FRAME_FORMAT_S16_420, schro_opengl_frame_convert_s16_s16 },
+  /* U8 -> U8 */
+  CONVERT_MAPPING (U8_444, U8_444, u8_u8),
+  CONVERT_MAPPING (U8_422, U8_422, u8_u8),
+  CONVERT_MAPPING (U8_420, U8_420, u8_u8),
 
-  { SCHRO_FRAME_FORMAT_YUYV, SCHRO_FRAME_FORMAT_U8_422, schro_opengl_frame_convert_u8_422_yuyv },
-  { SCHRO_FRAME_FORMAT_UYVY, SCHRO_FRAME_FORMAT_U8_422, schro_opengl_frame_convert_u8_422_uyvy },
-  { SCHRO_FRAME_FORMAT_AYUV, SCHRO_FRAME_FORMAT_U8_444, schro_opengl_frame_convert_u8_444_ayuv },
+  /* S16 -> S16 */
+  CONVERT_MAPPING (S16_444, S16_444, s16_s16),
+  CONVERT_MAPPING (S16_422, S16_422, s16_s16),
+  CONVERT_MAPPING (S16_420, S16_420, s16_s16),
 
-  { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_YUYV, schro_opengl_frame_convert_yuyv_u8_422 },
-  { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_UYVY, schro_opengl_frame_convert_uyvy_u8_422 },
-  { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_AYUV, schro_opengl_frame_convert_ayuv_u8_444 },
+  /* packed -> U8 */
+  CONVERT_MAPPING (U8_422, YUYV, u8_422_yuyv),
+  CONVERT_MAPPING (U8_422, UYVY, u8_422_uyvy),
+  CONVERT_MAPPING (U8_444, AYUV, u8_444_ayuv),
 
-  { 0 }
+  /* U8 -> packed */
+  CONVERT_MAPPING (YUYV, U8_422, yuyv_u8_422),
+  CONVERT_MAPPING (UYVY, U8_422, uyvy_u8_422),
+  CONVERT_MAPPING (AYUV, U8_444, ayuv_u8_444),
+
+  { 0, 0, NULL }
 };
+
+#undef CONVERT_MAPPING
 
 void
 schro_opengl_frame_convert (SchroFrame *dest, SchroFrame *src)
@@ -66,8 +84,8 @@ schro_opengl_frame_convert (SchroFrame *dest, SchroFrame *src)
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (src));
 
   for (i = 0; schro_opengl_frame_convert_func_list[i].func; ++i) {
-    if (schro_opengl_frame_convert_func_list[i].from == src->format
-        && schro_opengl_frame_convert_func_list[i].to == dest->format) {
+    if (schro_opengl_frame_convert_func_list[i].dest == dest->format
+        && schro_opengl_frame_convert_func_list[i].src == src->format) {
       schro_opengl_frame_convert_func_list[i].func (dest, src);
       return;
     }
@@ -109,8 +127,10 @@ schro_opengl_frame_convert_with_shader (SchroFrame *dest, SchroFrame *src,
     glLoadIdentity ();
     glOrtho (0, width, 0, height, -1, 1);
 
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_opengl_data->framebuffer);
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_opengl_data->texture.handle);
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
+                          dest_opengl_data->framebuffers[0]);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
+                   src_opengl_data->texture.handles[0]);
 
     SCHRO_OPENGL_CHECK_ERROR
 
@@ -171,8 +191,10 @@ schro_opengl_frame_unpack_with_shader (SchroFrame *dest, SchroFrame *src,
     glLoadIdentity ();
     glOrtho (0, width, 0, height, -1, 1);
 
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_opengl_data->framebuffer);
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_opengl_data->texture.handle);
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
+                          dest_opengl_data->framebuffers[0]);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
+                   src_opengl_data->texture.handles[0]);
 
     SCHRO_OPENGL_CHECK_ERROR
 
@@ -236,20 +258,23 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
   glLoadIdentity ();
   glOrtho (0, width, 0, height, -1, 1);
 
-  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_opengl_data->framebuffer);
+  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_opengl_data->framebuffers[0]);
 
   glUseProgramObjectARB (shader->program);
 
   glActiveTextureARB (GL_TEXTURE0_ARB);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_opengl_y_data->texture.handle);
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
+                 src_opengl_y_data->texture.handles[0]);
   glUniform1iARB (shader->textures[0], 0);
 
   glActiveTextureARB (GL_TEXTURE1_ARB);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_opengl_u_data->texture.handle);
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
+                 src_opengl_u_data->texture.handles[0]);
   glUniform1iARB (shader->textures[1], 1);
 
   glActiveTextureARB (GL_TEXTURE2_ARB);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_opengl_v_data->texture.handle);
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
+                 src_opengl_v_data->texture.handles[0]);
   glUniform1iARB (shader->textures[2], 2);
 
   glActiveTextureARB (GL_TEXTURE0_ARB);

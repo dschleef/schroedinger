@@ -81,14 +81,14 @@ struct IndexToShader {
   const char *code;
 };
 
-static struct IndexToShader index_to_shader_list[] = {
+static struct IndexToShader schro_opengl_shader_list[] = {
   { SCHRO_OPENGL_SHADER_IDENTITY, 1, NULL,
       "uniform sampler2DRect texture;\n"
       "void main (void) {\n"
       "  gl_FragColor = texture2DRect (texture, gl_TexCoord[0]);\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_U8_S16, 1, NULL,
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture;\n" /* S16 */
       "const float scale = 255.0 / 65535.0;\n"
       "const float bias = (32767.0 - 127.0) / 65535.0;\n"
       "void main (void) {\n"
@@ -96,7 +96,7 @@ static struct IndexToShader index_to_shader_list[] = {
       "      = (texture2DRect (texture, gl_TexCoord[0]) - bias) / scale;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_S16_U8, 1, NULL,
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture;\n" /* U8 */
       "const float scale = 255.0 / 65535.0;\n"
       "const float bias = (32767.0 - 127.0) / 65535.0;\n"
       "void main (void) {\n"
@@ -104,18 +104,19 @@ static struct IndexToShader index_to_shader_list[] = {
       "      = texture2DRect (texture, gl_TexCoord[0]) * scale + bias;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_U8_U8, 1, NULL,
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture;\n" /* U8 */
       "void main (void) {\n"
       "  gl_FragColor = texture2DRect (texture, gl_TexCoord[0]);\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_S16_S16, 1, NULL,
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture;\n" /* S16 */
       "void main (void) {\n"
       "  gl_FragColor = texture2DRect (texture, gl_TexCoord[0]);\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_U8_Y4_YUYV, 1, NULL,
       "uniform sampler2DRect texture;\n"
       "void main (void) {\n"
+      /* round x coordinate down from texel center n.5 to texel edge n.0 */
       "  float x = floor (gl_TexCoord[0].x) / 2.0;\n"
       "  float y = gl_TexCoord[0].y;\n"
       "  vec2 coord = vec2 (floor (x) + 0.5, y);\n"
@@ -127,20 +128,21 @@ static struct IndexToShader index_to_shader_list[] = {
       "  }\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_U8_U2_YUYV, 1, NULL,
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture;\n" /* YUYV */
       "void main (void) {\n"
       "  vec4 yuyv = texture2DRect (texture, gl_TexCoord[0]);\n"
       "  gl_FragColor = yuyv.g;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_U8_V2_YUYV, 1, NULL,
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture;\n" /* YUYV */
       "void main (void) {\n"
       "  vec4 yuyv = texture2DRect (texture, gl_TexCoord[0]);\n"
       "  gl_FragColor = yuyv.a;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_U8_Y4_UYVY, 1, NULL,
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture;\n" /* YUYV */
       "void main (void) {\n"
+      /* round x coordinate down from texel center n.5 to texel edge n.0 */
       "  float x = floor (gl_TexCoord[0].x) / 2.0;\n"
       "  float y = gl_TexCoord[0].y;\n"
       "  vec2 coord = vec2 (floor (x) + 0.5, y);\n"
@@ -152,41 +154,42 @@ static struct IndexToShader index_to_shader_list[] = {
       "  }\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_U8_U2_UYVY, 1, NULL,
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture;\n" /* UYVY */
       "void main (void) {\n"
       "  vec4 uyvy = texture2DRect (texture, gl_TexCoord[0]);\n"
       "  gl_FragColor = uyvy.r;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_U8_V2_UYVY, 1, NULL,
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture;\n" /* UYVY */
       "void main (void) {\n"
       "  vec4 uyvy = texture2DRect (texture, gl_TexCoord[0]);\n"
       "  gl_FragColor = uyvy.b;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_U8_Y4_AYUV, 1, NULL,
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture;\n" /* AYUV */
       "void main (void) {\n"
       "  vec4 ayuv = texture2DRect (texture, gl_TexCoord[0]);\n"
       "  gl_FragColor = ayuv.g;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_U8_U4_AYUV, 1, NULL,
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture;\n" /* AYUV */
       "void main (void) {\n"
       "  vec4 ayuv = texture2DRect (texture, gl_TexCoord[0]);\n"
       "  gl_FragColor = ayuv.b;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_U8_V4_AYUV, 1, NULL,
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture;\n" /* AYUV */
       "void main (void) {\n"
       "  vec4 ayuv = texture2DRect (texture, gl_TexCoord[0]);\n"
       "  gl_FragColor = ayuv.a;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_YUYV_U8_422, 3, NULL,
-      "uniform sampler2DRect texture1;\n" /* Y */
-      "uniform sampler2DRect texture2;\n" /* U */
-      "uniform sampler2DRect texture3;\n" /* V */
+      "uniform sampler2DRect texture1;\n" /* Y4 */
+      "uniform sampler2DRect texture2;\n" /* U2 */
+      "uniform sampler2DRect texture3;\n" /* V2 */
       "void main (void) {\n"
       "  vec4 yuyv;\n"
+      /* round x coordinate down from texel center n.5 to texel edge n.0 */
       "  float x = floor (gl_TexCoord[0].x) * 2.0;\n"
       "  float y = gl_TexCoord[0].y;\n"
       "  vec2 coord1 = vec2 (floor (x) + 0.5, y);\n"
@@ -198,11 +201,13 @@ static struct IndexToShader index_to_shader_list[] = {
       "  gl_FragColor = yuyv;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_UYVY_U8_422, 3, NULL,
-      "uniform sampler2DRect texture1;\n" /* Y */
-      "uniform sampler2DRect texture2;\n" /* U */
-      "uniform sampler2DRect texture3;\n" /* V */
+      "uniform sampler2DRect texture1;\n" /* Y4 */
+      "uniform sampler2DRect texture2;\n" /* U2 */
+      "uniform sampler2DRect texture3;\n" /* V2 */
       "void main (void) {\n"
       "  vec4 uyvy;\n"
+      /* round x coordinate down from texel center n.5 to n.0 and scale up to
+         double width */
       "  float x = floor (gl_TexCoord[0].x) * 2.0;\n"
       "  float y = gl_TexCoord[0].y;\n"
       "  vec2 coord1 = vec2 (floor (x) + 0.5, y);\n"
@@ -214,9 +219,9 @@ static struct IndexToShader index_to_shader_list[] = {
       "  gl_FragColor = uyvy;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_CONVERT_AYUV_U8_444, 3, NULL,
-      "uniform sampler2DRect texture1;\n" /* Y */
-      "uniform sampler2DRect texture2;\n" /* U */
-      "uniform sampler2DRect texture3;\n" /* V */
+      "uniform sampler2DRect texture1;\n" /* Y4 */
+      "uniform sampler2DRect texture2;\n" /* U4 */
+      "uniform sampler2DRect texture3;\n" /* V4 */
       "void main (void) {\n"
       "  vec4 ayuv;\n"
       "  ayuv.r = 1.0;\n"
@@ -224,6 +229,74 @@ static struct IndexToShader index_to_shader_list[] = {
       "  ayuv.b = texture2DRect (texture2, gl_TexCoord[0]).r;\n"
       "  ayuv.a = texture2DRect (texture3, gl_TexCoord[0]).r;\n"
       "  gl_FragColor = ayuv;\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_ADD_S16_U8, 2, NULL, // FIXME: CPU overflows, GPU clamps, is this a problem?
+      "uniform sampler2DRect texture1;\n" /* S16 */
+      "uniform sampler2DRect texture2;\n" /* U8 */
+      "const float scale = 255.0 / 65535.0;\n"
+      "const float bias = -32768.0 / 65535.0;\n"
+      "void main (void) {\n"
+      /* bias from [-32768..32767] = [0..1] to [-32768..32767] ~= [-0.5..0.5]
+         so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
+         leading to S16 zero - S16 zero != S16 zero if calculation is done in
+         FP space */
+      "  vec4 a = texture2DRect (texture1, gl_TexCoord[0]) + bias;\n"
+      /* scale from U8 [0..255] == [0..1] to S16 [..0..255..] ~= [0..0.004]
+         so that both inputs from S16 and U8 are mapped equivalent to FP and
+         U8 zero == S16 zero == FP zero holds */
+      "  vec4 b = texture2DRect (texture2, gl_TexCoord[0]) * scale;\n"
+      /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] = [0..1]
+         to undo the initial bias */
+      "  gl_FragColor = (a + b) - bias;\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_ADD_S16_S16, 2, NULL, // FIXME: CPU overflows, GPU clamps, is this a problem?
+      "uniform sampler2DRect texture1;\n" /* S16 */
+      "uniform sampler2DRect texture2;\n" /* S16 */
+      "const float bias = -32768.0 / 65535.0;\n"
+      "void main (void) {\n"
+      /* bias from [-32768..32767] = [0..1] to [-32768..32767] ~= [-0.5..0.5]
+         so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
+         leading to S16 zero - S16 zero != S16 zero if calculation is done in
+         FP space */
+      "  vec4 a = texture2DRect (texture1, gl_TexCoord[0]) + bias;\n"
+      "  vec4 b = texture2DRect (texture2, gl_TexCoord[0]) + bias;\n"
+      /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] = [0..1]
+         to undo the initial bias */
+      "  gl_FragColor = (a + b) - bias;\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_SUBTRACT_S16_U8, 2, NULL, // FIXME: CPU overflows, GPU clamps, is this a problem?
+      "uniform sampler2DRect texture1;\n" /* S16 */
+      "uniform sampler2DRect texture2;\n" /* U8 */
+      "const float scale = 255.0 / 65535.0;\n"
+      "const float bias = -32768.0 / 65535.0;\n"
+      "void main (void) {\n"
+      /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
+         so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
+         leading to S16 zero - S16 zero != S16 zero if calculation is done in
+         FP space */
+      "  vec4 a = texture2DRect (texture1, gl_TexCoord[0]) + bias;\n"
+      /* scale from U8 [0..255] == [0..1] to S16 [..0..255..] ~= [0..0.004]
+         so that both inputs from S16 and U8 are mapped equivalent to FP and
+         U8 zero == S16 zero == FP zero holds */
+      "  vec4 b = texture2DRect (texture2, gl_TexCoord[0]) * scale;\n"
+      /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] = [0..1]
+         to undo the initial bias */
+      "  gl_FragColor = (a - b) - bias;\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_SUBTRACT_S16_S16, 2, NULL, // FIXME: CPU overflows, GPU clamps, is this a problem?
+      "uniform sampler2DRect texture1;\n" /* S16 */
+      "uniform sampler2DRect texture2;\n" /* S16 */
+      "const float bias = -32768.0 / 65535.0;\n"
+      "void main (void) {\n"
+      /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
+         so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
+         leading to S16 zero - S16 zero != S16 zero if calculation is done in
+         FP space */
+      "  vec4 a = texture2DRect (texture1, gl_TexCoord[0]) + bias;\n"
+      "  vec4 b = texture2DRect (texture2, gl_TexCoord[0]) + bias;\n"
+      /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
+         to undo the initial bias */
+      "  gl_FragColor = (a - b) - bias;\n"
       "}\n" },
 
   { -1, 0, NULL, NULL }
@@ -235,17 +308,17 @@ schro_opengl_shader_get (int index)
   int i;
 
   SCHRO_ASSERT (index >= SCHRO_OPENGL_SHADER_IDENTITY);
-  SCHRO_ASSERT (index <= SCHRO_OPENGL_SHADER_CONVERT_AYUV_U8_444);
+  SCHRO_ASSERT (index <= SCHRO_OPENGL_SHADER_SUBTRACT_S16_S16);
 
-  for (i = 0; index_to_shader_list[i].code; ++i) {
-    if (index_to_shader_list[i].index == index) {
-      if (!index_to_shader_list[i].shader) {
-          index_to_shader_list[i].shader
-              = schro_opengl_shader_new (index_to_shader_list[i].code,
-              index_to_shader_list[i].textures);
+  for (i = 0; schro_opengl_shader_list[i].code; ++i) {
+    if (schro_opengl_shader_list[i].index == index) {
+      if (!schro_opengl_shader_list[i].shader) {
+          schro_opengl_shader_list[i].shader
+              = schro_opengl_shader_new (schro_opengl_shader_list[i].code,
+              schro_opengl_shader_list[i].textures);
       }
 
-      return index_to_shader_list[i].shader;
+      return schro_opengl_shader_list[i].shader;
     }
   }
 

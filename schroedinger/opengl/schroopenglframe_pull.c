@@ -172,8 +172,10 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
     src_opengl_data = (SchroOpenGLFrameData *) src->components[i].data;
 
     SCHRO_ASSERT (src_opengl_data != NULL);
-    SCHRO_ASSERT (src_opengl_data->texture.handle != 0);
-    SCHRO_ASSERT (src_opengl_data->framebuffer != 0);
+    SCHRO_ASSERT (src_opengl_data->texture.handles[0] != 0);
+    SCHRO_ASSERT (src_opengl_data->texture.handles[1] != 0);
+    SCHRO_ASSERT (src_opengl_data->framebuffers[0] != 0);
+    SCHRO_ASSERT (src_opengl_data->framebuffers[1] != 0);
 
     width = src->components[i].width;
     height = src->components[i].height;
@@ -182,7 +184,8 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
     SCHRO_ASSERT (dest->components[i].height == height);
 
     if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER) {
-      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, src_opengl_data->framebuffer);
+      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
+                            src_opengl_data->framebuffers[0]);
 
       pixelbuffer_y_offset = 0;
 
@@ -238,7 +241,8 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
         }
       }
 
-      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, src_opengl_data->framebuffer);
+      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
+                            src_opengl_data->framebuffers[0]);
       glReadPixels (0, 0, src_opengl_data->pull.texel_stride, height,
           src_opengl_data->texture.pixel_format, src_opengl_data->pull.type,
           texture_data);

@@ -249,7 +249,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
       if (!(_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD)) {
         glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-            dest_opengl_data->texture.handle);
+            dest_opengl_data->texture.handles[0]);
       }
 
       pixelbuffer_y_offset = 0;
@@ -281,7 +281,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
         if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS) {
           glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-              dest_opengl_data->framebuffer);
+              dest_opengl_data->framebuffers[0]);
 
           glWindowPos2iARB (0, pixelbuffer_y_offset);
           glDrawPixels (width, pixelbuffer_height,
@@ -330,7 +330,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
       if (!(_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD)) {
         glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-            dest_opengl_data->texture.handle);
+            dest_opengl_data->texture.handles[0]);
       }
 
       if (dest_opengl_data->push.type == GL_SHORT) {
@@ -348,7 +348,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
       if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS) {
         glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-            dest_opengl_data->framebuffer);
+            dest_opengl_data->framebuffers[0]);
 
         glWindowPos2iARB (0, 0);
         glDrawPixels (width, height, dest_opengl_data->texture.pixel_format,
@@ -381,7 +381,8 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
       glLoadIdentity ();
       glOrtho (0, width, 0, height, -1, 1);
 
-      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_opengl_data->framebuffer);
+      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
+                            dest_opengl_data->framebuffers[0]);
 
       SCHRO_OPENGL_CHECK_ERROR
 

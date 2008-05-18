@@ -257,8 +257,10 @@ schro_opengl_frame_setup (SchroFrame *frame)
     opengl_data = (SchroOpenGLFrameData *) frame->components[i].data;
 
     SCHRO_ASSERT (opengl_data != NULL);
-    SCHRO_ASSERT (opengl_data->texture.handle == 0);
-    SCHRO_ASSERT (opengl_data->framebuffer == 0);
+    SCHRO_ASSERT (opengl_data->texture.handles[0] == 0);
+    SCHRO_ASSERT (opengl_data->texture.handles[1] == 0);
+    SCHRO_ASSERT (opengl_data->framebuffers[0] == 0);
+    SCHRO_ASSERT (opengl_data->framebuffers[1] == 0);
 
     switch (SCHRO_FRAME_FORMAT_DEPTH (frame->format)) {
       case SCHRO_FRAME_FORMAT_DEPTH_U8:
@@ -494,22 +496,26 @@ schro_opengl_frame_setup (SchroFrame *frame)
     start = schro_utils_get_time ();
 #endif
 
-    /* texture */
-    glGenTextures (1, &opengl_data->texture.handle);
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data->texture.handle);
-    glTexImage2D (GL_TEXTURE_RECTANGLE_ARB, 0,
-        opengl_data->texture.internal_format, width, height, 0,
-        opengl_data->texture.pixel_format, opengl_data->texture.type, NULL);
-    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
-        GL_NEAREST);
-    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
-        GL_NEAREST);
-    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
+    /* textures */
+    for (k = 0; k < 2; ++k) {
+      glGenTextures (1, &opengl_data->texture.handles[k]);
+      glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
+                     opengl_data->texture.handles[k]);
+      glTexImage2D (GL_TEXTURE_RECTANGLE_ARB, 0,
+          opengl_data->texture.internal_format, width, height, 0,
+          opengl_data->texture.pixel_format, opengl_data->texture.type, NULL);
+      glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
+          GL_NEAREST);
+      glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
+          GL_NEAREST);
+      glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);
+      glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
+      glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
-    SCHRO_OPENGL_CHECK_ERROR
+      SCHRO_OPENGL_CHECK_ERROR
+    }
+
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
 
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
     end = schro_utils_get_time ();
@@ -517,17 +523,19 @@ schro_opengl_frame_setup (SchroFrame *frame)
     start = schro_utils_get_time ();
 #endif
 
-    /* framebuffer */
-    glGenFramebuffersEXT (1, &opengl_data->framebuffer);
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data->framebuffer);
-    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,
-        GL_TEXTURE_RECTANGLE_ARB, opengl_data->texture.handle, 0);
-    glDrawBuffer (GL_COLOR_ATTACHMENT1_EXT);
-    glReadBuffer (GL_COLOR_ATTACHMENT1_EXT);
+    /* framebuffers */
+    for (k = 0; k < 2; ++k) {
+      glGenFramebuffersEXT (1, &opengl_data->framebuffers[k]);
+      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data->framebuffers[k]);
+      glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+          GL_TEXTURE_RECTANGLE_ARB, opengl_data->texture.handles[k], 0);
+      glDrawBuffer (GL_COLOR_ATTACHMENT0_EXT);
+      glReadBuffer (GL_COLOR_ATTACHMENT0_EXT);
 
-    SCHRO_OPENGL_CHECK_ERROR
-    // FIXME: checking framebuffer status is an expensive operation
-    SCHRO_OPENGL_CHECK_FRAMEBUFFER
+      SCHRO_OPENGL_CHECK_ERROR
+      // FIXME: checking framebuffer status is an expensive operation
+      SCHRO_OPENGL_CHECK_FRAMEBUFFER
+    }
 
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
@@ -632,13 +640,15 @@ schro_opengl_frame_cleanup (SchroFrame *frame)
     start = schro_utils_get_time ();
 #endif
 
-    /* texture */
-    if (opengl_data->texture.handle) {
-      glDeleteTextures (1, &opengl_data->texture.handle);
+    /* textures */
+    for (k = 0; k < 2; ++k) {
+      if (opengl_data->texture.handles[k]) {
+        glDeleteTextures (1, &opengl_data->texture.handles[k]);
 
-      opengl_data->texture.handle = 0;
+        opengl_data->texture.handles[k] = 0;
 
-      SCHRO_OPENGL_CHECK_ERROR
+        SCHRO_OPENGL_CHECK_ERROR
+      }
     }
 
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
@@ -647,13 +657,15 @@ schro_opengl_frame_cleanup (SchroFrame *frame)
     start = schro_utils_get_time ();
 #endif
 
-    /* framebuffer */
-    if (opengl_data->framebuffer) {
-      glDeleteFramebuffersEXT (1, &opengl_data->framebuffer);
+    /* framebuffers */
+    for (k = 0; k < 2; ++k) {
+      if (opengl_data->framebuffers[k]) {
+        glDeleteFramebuffersEXT (1, &opengl_data->framebuffers[k]);
 
-      opengl_data->framebuffer = 0;
+        opengl_data->framebuffers[k] = 0;
 
-      SCHRO_OPENGL_CHECK_ERROR
+        SCHRO_OPENGL_CHECK_ERROR
+      }
     }
 
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
