@@ -5,6 +5,7 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
 #include <schroedinger/opengl/schroopenglframe.h>
+#include <schroedinger/opengl/schroopenglwavelet.h>
 #include <liboil/liboil.h>
 #include <stdio.h>
 
@@ -697,6 +698,42 @@ schro_opengl_frame_cleanup (SchroFrame *frame)
     end = schro_utils_get_time ();
     SCHRO_INFO ("pbo %f", end - start);
 #endif
+  }
+
+  schro_opengl_unlock ();
+}
+
+void
+schro_opengl_frame_inverse_iwt_transform (SchroFrame *frame,
+    SchroParams *params)
+{
+  int i;
+  int width, height;
+  int level;
+
+  schro_opengl_lock ();
+
+  for (i = 0; i < 3; ++i) {
+    if (i == 0) {
+      width = params->iwt_luma_width;
+      height = params->iwt_luma_height;
+    } else {
+      width = params->iwt_chroma_width;
+      height = params->iwt_chroma_height;
+    }
+
+    for (level = params->transform_depth - 1; level >= 0; --level) {
+      SchroFrameData frame_data;
+
+      frame_data.format = frame->format;
+      frame_data.data = frame->components[i].data;
+      frame_data.width = width >> level;
+      frame_data.height = height >> level;
+      frame_data.stride = frame->components[i].stride << level;
+
+      schro_opengl_wavelet_inverse_transform_2d (&frame_data,
+          params->wavelet_filter_index);
+    }
   }
 
   schro_opengl_unlock ();

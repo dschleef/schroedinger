@@ -8,7 +8,8 @@ libopengl_la_SOURCES = \
 	schroopenglframe_math.c \
 	schroopenglframe_pull.c \
 	schroopenglframe_push.c \
-	schroopenglshader.c
+	schroopenglshader.c \
+	schroopenglwavelet.c
 
 libopengl_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(OPENGL_CFLAGS) $(ERROR_CFLAGS) \
 	-DSCHRO_ENABLE_UNSTABLE_API

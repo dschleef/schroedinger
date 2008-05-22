@@ -376,10 +376,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
     SCHRO_OPENGL_CHECK_ERROR
 
     if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD) {
-      glViewport (0, 0, width, height);
-
-      glLoadIdentity ();
-      glOrtho (0, width, 0, height, -1, 1);
+      schro_opengl_setup_viewport (width, height);
 
       glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
                             dest_opengl_data->framebuffers[0]);
@@ -399,12 +396,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
         glUniform1iARB (shader->textures[0], 0);
       }
 
-      glBegin (GL_QUADS);
-      glTexCoord2f (width, 0);      glVertex3f (width, 0,      0);
-      glTexCoord2f (0,     0);      glVertex3f (0,     0,      0);
-      glTexCoord2f (0,     height); glVertex3f (0,     height, 0);
-      glTexCoord2f (width, height); glVertex3f (width, height, 0);
-      glEnd ();
+      schro_opengl_render_quad (0, 0, width, height);
 
       if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_SHADER) {
         glUseProgramObjectARB (0);

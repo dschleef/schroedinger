@@ -12,6 +12,7 @@ typedef struct _SchroOpenGLShader SchroOpenGLShader;
 struct _SchroOpenGLShader {
   GLhandleARB program;
   GLint textures[3];
+  GLint offset;
 };
 
 #define SCHRO_OPENGL_SHADER_IDENTITY             0
@@ -35,8 +36,16 @@ struct _SchroOpenGLShader {
 #define SCHRO_OPENGL_SHADER_ADD_S16_S16         18
 #define SCHRO_OPENGL_SHADER_SUBTRACT_S16_U8     19
 #define SCHRO_OPENGL_SHADER_SUBTRACT_S16_S16    20
+#define SCHRO_OPENGL_SHADER_INVERSE_WAVELET_VERTICAL_FILTER_XLp   21
+#define SCHRO_OPENGL_SHADER_INVERSE_WAVELET_VERTICAL_FILTER_XHp   22
+#define SCHRO_OPENGL_SHADER_INVERSE_WAVELET_VERTICAL_INTERLEAVE   23
+#define SCHRO_OPENGL_SHADER_INVERSE_WAVELET_HORIZONTAL_FILTER_Lp  24
+#define SCHRO_OPENGL_SHADER_INVERSE_WAVELET_HORIZONTAL_FILTER_Hp  25
+#define SCHRO_OPENGL_SHADER_INVERSE_WAVELET_HORIZONTAL_INTERLEAVE 26
 
-SchroOpenGLShader *schro_opengl_shader_new (const char* code, int textures);
+/* FIXME: find a cleaner and more generic way to specify uniforms */
+SchroOpenGLShader *schro_opengl_shader_new (const char* code, int textures,
+    int offset);
 void schro_opengl_shader_free (SchroOpenGLShader *shader);
 SchroOpenGLShader *schro_opengl_shader_get (int index);
 

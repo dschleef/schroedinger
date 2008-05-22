@@ -122,10 +122,7 @@ schro_opengl_frame_convert_with_shader (SchroFrame *dest, SchroFrame *src,
     width = MAX (dest->components[i].width, src->components[i].width);
     height = MAX (dest->components[i].height, src->components[i].height);
 
-    glViewport (0, 0, width, height);
-
-    glLoadIdentity ();
-    glOrtho (0, width, 0, height, -1, 1);
+    schro_opengl_setup_viewport (width, height);
 
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
                           dest_opengl_data->framebuffers[0]);
@@ -137,12 +134,7 @@ schro_opengl_frame_convert_with_shader (SchroFrame *dest, SchroFrame *src,
     glUseProgramObjectARB (shader->program);
     glUniform1iARB (shader->textures[0], 0);
 
-    glBegin (GL_QUADS);
-    glTexCoord2f (width, 0);      glVertex3f (width, 0,      0);
-    glTexCoord2f (0,     0);      glVertex3f (0,     0,      0);
-    glTexCoord2f (0,     height); glVertex3f (0,     height, 0);
-    glTexCoord2f (width, height); glVertex3f (width, height, 0);
-    glEnd ();
+    schro_opengl_render_quad (0, 0, width, height);
 
     glUseProgramObjectARB (0);
 
@@ -186,10 +178,7 @@ schro_opengl_frame_unpack_with_shader (SchroFrame *dest, SchroFrame *src,
     width = dest->components[i].width;
     height = dest->components[i].height;
 
-    glViewport (0, 0, width, height);
-
-    glLoadIdentity ();
-    glOrtho (0, width, 0, height, -1, 1);
+    schro_opengl_setup_viewport (width, height);
 
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
                           dest_opengl_data->framebuffers[0]);
@@ -201,12 +190,7 @@ schro_opengl_frame_unpack_with_shader (SchroFrame *dest, SchroFrame *src,
     glUseProgramObjectARB (shader->program);
     glUniform1iARB (shader->textures[0], 0);
 
-    glBegin (GL_QUADS);
-    glTexCoord2f (width, 0);      glVertex3f (width, 0,      0);
-    glTexCoord2f (0,     0);      glVertex3f (0,     0,      0);
-    glTexCoord2f (0,     height); glVertex3f (0,     height, 0);
-    glTexCoord2f (width, height); glVertex3f (width, height, 0);
-    glEnd ();
+    schro_opengl_render_quad (0, 0, width, height);
 
     glUseProgramObjectARB (0);
 
@@ -253,40 +237,28 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
   width = dest->components[0].width;
   height = dest->components[0].height;
 
-  glViewport (0, 0, width, height);
-
-  glLoadIdentity ();
-  glOrtho (0, width, 0, height, -1, 1);
+  schro_opengl_setup_viewport (width, height);
 
   glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_opengl_data->framebuffers[0]);
-
-  glUseProgramObjectARB (shader->program);
-
   glActiveTextureARB (GL_TEXTURE0_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-                 src_opengl_y_data->texture.handles[0]);
-  glUniform1iARB (shader->textures[0], 0);
-
+      src_opengl_y_data->texture.handles[0]);
   glActiveTextureARB (GL_TEXTURE1_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-                 src_opengl_u_data->texture.handles[0]);
-  glUniform1iARB (shader->textures[1], 1);
-
+      src_opengl_u_data->texture.handles[0]);
   glActiveTextureARB (GL_TEXTURE2_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-                 src_opengl_v_data->texture.handles[0]);
-  glUniform1iARB (shader->textures[2], 2);
-
+      src_opengl_v_data->texture.handles[0]);
   glActiveTextureARB (GL_TEXTURE0_ARB);
 
   SCHRO_OPENGL_CHECK_ERROR
 
-  glBegin (GL_QUADS);
-  glTexCoord2f (width, 0);      glVertex3f (width, 0,      0);
-  glTexCoord2f (0,     0);      glVertex3f (0,     0,      0);
-  glTexCoord2f (0,     height); glVertex3f (0,     height, 0);
-  glTexCoord2f (width, height); glVertex3f (width, height, 0);
-  glEnd ();
+  glUseProgramObjectARB (shader->program);
+  glUniform1iARB (shader->textures[0], 0);
+  glUniform1iARB (shader->textures[1], 1);
+  glUniform1iARB (shader->textures[2], 2);
+
+  schro_opengl_render_quad (0, 0, width, height);
 
   glUseProgramObjectARB (0);
 

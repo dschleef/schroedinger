@@ -322,52 +322,53 @@ schro_opengl_unlock (void)
 }
 
 void
-schro_opengl_check_error (const char* file, int line)
+schro_opengl_check_error (const char* file, int line, const char* func)
 {
   GLenum error = glGetError ();
 
   if (error) {
-    SCHRO_ERROR ("GL Error 0x%x in %s(%d)", (int) error, file, line);
+    SCHRO_ERROR ("GL Error 0x%x in %s(%d) %s", (int) error, file, line, func);
     //SCHRO_ASSERT (0);
   }
 }
 
 void
-schro_opengl_check_framebuffer (const char* file, int line)
+schro_opengl_check_framebuffer (const char* file, int line, const char* func)
 {
   switch (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT)) {
     case GL_FRAMEBUFFER_COMPLETE_EXT:
       break;
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
-      SCHRO_ERROR ("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT in %s(%d)",
-          file, line);
+      SCHRO_ERROR ("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT in %s(%d) %s",
+          file, line, func);
       break;
     case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
-      SCHRO_ERROR ("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT in %s(%d)",
-          file, line);
+      SCHRO_ERROR ("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT in "
+          "%s(%d) %s", file, line, func);
       break;
     case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
-      SCHRO_ERROR ("GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT in %s(%d)",
-          file, line);
+      SCHRO_ERROR ("GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT in %s(%d) %s",
+          file, line, func);
       break;
     case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
-      SCHRO_ERROR ("GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT in %s(%d)",
-          file, line);
+      SCHRO_ERROR ("GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT in %s(%d) %s",
+          file, line, func);
       break;
     case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
-      SCHRO_ERROR ("GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT in %s(%d)",
-          file, line);
+      SCHRO_ERROR ("GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT in %s(%d) %s",
+          file, line, func);
       break;
     case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
-      SCHRO_ERROR ("GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT in %s(%d)",
-          file, line);
+      SCHRO_ERROR ("GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT in %s(%d) %s",
+          file, line, func);
       break;
     case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
-      SCHRO_ERROR ("GL_FRAMEBUFFER_UNSUPPORTED_EXT in %s(%d)", file, line);
+      SCHRO_ERROR ("GL_FRAMEBUFFER_UNSUPPORTED_EXT in %s(%d)", file, line,
+         func);
       break;
     default:
-      SCHRO_ERROR ("unknown error from glCheckFramebufferStatusEXT in %s(%d)",
-          file, line);
+      SCHRO_ERROR ("unknown error from glCheckFramebufferStatusEXT in "
+          "%s(%d) %s", file, line, func);
       break;
   }
 }
@@ -388,6 +389,26 @@ schro_opengl_set_visible (int visible)
   }
 
   XSync (opengl.display, FALSE);
+}
+
+void
+schro_opengl_setup_viewport (int width, int height)
+{
+  glViewport (0, 0, width, height);
+
+  glLoadIdentity ();
+  glOrtho (0, width, 0, height, -1, 1);
+}
+
+void
+schro_opengl_render_quad (int x, int y, int width, int height)
+{
+  glBegin (GL_QUADS);
+  glTexCoord2f (x,         y);          glVertex3f (x,         y,          0);
+  glTexCoord2f (x + width, y);          glVertex3f (x + width, y,          0);
+  glTexCoord2f (x + width, y + height); glVertex3f (x + width, y + height, 0);
+  glTexCoord2f (x,         y + height); glVertex3f (x,         y + height, 0);
+  glEnd ();
 }
 
 static void *

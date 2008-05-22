@@ -79,6 +79,9 @@ void schro_opengl_frame_convert (SchroFrame *dest, SchroFrame *src);
 void schro_opengl_frame_add (SchroFrame *dest, SchroFrame *src);
 void schro_opengl_frame_subtract (SchroFrame *dest, SchroFrame *src);
 
+void schro_opengl_frame_inverse_iwt_transform (SchroFrame *frame,
+    SchroParams *params);
+
 SCHRO_END_DECLS
 
 #endif

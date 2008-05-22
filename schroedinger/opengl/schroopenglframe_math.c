@@ -122,6 +122,9 @@ schro_opengl_frame_math_with_shader (SchroFrame *dest, SchroFrame *src,
   SchroOpenGLFrameData *src_opengl_data = NULL;
   SchroOpenGLShader *shader;
 
+  SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (dest));
+  SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (src));
+
   schro_opengl_lock ();
 
   shader = schro_opengl_shader_get (shader_index);
@@ -138,23 +141,14 @@ schro_opengl_frame_math_with_shader (SchroFrame *dest, SchroFrame *src,
     width = MIN (dest->components[i].width, src->components[i].width);
     height = MIN (dest->components[i].height, src->components[i].height);
 
-    glViewport (0, 0, width, height);
-
-    glLoadIdentity ();
-    glOrtho (0, width, 0, height, -1, 1);
+    schro_opengl_setup_viewport (width, height);
 
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
                           dest_opengl_data->framebuffers[1]);
-
     glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
                    dest_opengl_data->texture.handles[0]);
 
-    glBegin (GL_QUADS);
-    glTexCoord2f (width, 0);      glVertex3f (width, 0,      0);
-    glTexCoord2f (0,     0);      glVertex3f (0,     0,      0);
-    glTexCoord2f (0,     height); glVertex3f (0,     height, 0);
-    glTexCoord2f (width, height); glVertex3f (width, height, 0);
-    glEnd ();
+    schro_opengl_render_quad (0, 0, width, height);
 
     glFlush ();
 
@@ -177,12 +171,7 @@ schro_opengl_frame_math_with_shader (SchroFrame *dest, SchroFrame *src,
 
     SCHRO_OPENGL_CHECK_ERROR
 
-    glBegin (GL_QUADS);
-    glTexCoord2f (width, 0);      glVertex3f (width, 0,      0);
-    glTexCoord2f (0,     0);      glVertex3f (0,     0,      0);
-    glTexCoord2f (0,     height); glVertex3f (0,     height, 0);
-    glTexCoord2f (width, height); glVertex3f (width, height, 0);
-    glEnd ();
+    schro_opengl_render_quad (0, 0, width, height);
 
     glUseProgramObjectARB (0);
 
