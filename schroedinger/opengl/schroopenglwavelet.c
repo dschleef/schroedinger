@@ -18,7 +18,10 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
     int type)
 {
   int width, height;
+  int framebuffer_index, texture_index;
   SchroOpenGLFrameData *opengl_data = NULL;
+  SchroOpenGLShader *shader_vertical_deinterleave_xl;
+  SchroOpenGLShader *shader_vertical_deinterleave_xh;
   SchroOpenGLShader *shader_vertical_filter_xlp;
   SchroOpenGLShader *shader_vertical_filter_xhp;
   SchroOpenGLShader *shader_vertical_interleave;
@@ -50,15 +53,21 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 
   schro_opengl_lock ();
 
+  shader_vertical_deinterleave_xl
+      = schro_opengl_shader_get
+      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_DEINTERLEAVE_XL);
+  shader_vertical_deinterleave_xh
+      = schro_opengl_shader_get
+      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_DEINTERLEAVE_XH);
   shader_vertical_filter_xlp
       = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_VERTICAL_FILTER_XLp);
+      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_FILTER_XLp);
   shader_vertical_filter_xhp
       = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_VERTICAL_FILTER_XHp);
+      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_FILTER_XHp);
   shader_vertical_interleave
       = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_VERTICAL_INTERLEAVE);
+      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_INTERLEAVE);
 
   SCHRO_ASSERT (shader_vertical_filter_xlp);
   SCHRO_ASSERT (shader_vertical_filter_xhp);
@@ -66,13 +75,13 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 
   shader_horizontal_filter_lp
       = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_HORIZONTAL_FILTER_Lp);
+      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_FILTER_Lp);
   shader_horizontal_filter_hp
       = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_HORIZONTAL_FILTER_Hp);
+      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_FILTER_Hp);
   shader_horizontal_interleave
       = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_HORIZONTAL_INTERLEAVE);
+      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_INTERLEAVE);
 
   SCHRO_ASSERT (shader_horizontal_filter_lp);
   SCHRO_ASSERT (shader_horizontal_filter_hp);
@@ -86,11 +95,44 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 
   schro_opengl_setup_viewport (width, height);
 
-  /* pass 1: primary -> secondary, vertical filtering => XL' */
-  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data->framebuffers[1]);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data->texture.handles[0]);
+  #define SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES \
+      framebuffer_index = 1 - framebuffer_index; \
+      texture_index = 1 - texture_index; \
+      SCHRO_ASSERT (framebuffer_index != texture_index);
+
+  #define BIND_FRAMEBUFFER_AND_TEXTURE \
+      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, \
+          opengl_data->framebuffers[framebuffer_index]); \
+      glBindTexture (GL_TEXTURE_RECTANGLE_ARB, \
+          opengl_data->texture.handles[texture_index]); \
+      SCHRO_OPENGL_CHECK_ERROR
+
+  framebuffer_index = 1;
+  texture_index = 0;
+
+  /* pass 0: vertical deinterleave */
+  BIND_FRAMEBUFFER_AND_TEXTURE
+
+  glUseProgramObjectARB (shader_vertical_deinterleave_xl->program);
+  glUniform1iARB (shader_vertical_deinterleave_xl->textures[0], 0);
+
+  schro_opengl_render_quad (0, 0, width, height / 2);
+
+  glUseProgramObjectARB (shader_vertical_deinterleave_xh->program);
+  glUniform1iARB (shader_vertical_deinterleave_xh->textures[0], 0);
+  glUniform2fARB (shader_vertical_deinterleave_xh->offset, 0, height / 2);
+
+  schro_opengl_render_quad (0, height / 2, width, height / 2);
+
+  glUseProgramObjectARB (0);
 
   SCHRO_OPENGL_CHECK_ERROR
+
+  glFlush ();
+
+  /* pass 1: vertical filtering => XL + f(XH) = XL' */
+  SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
+  BIND_FRAMEBUFFER_AND_TEXTURE
 
   glUseProgramObjectARB (shader_vertical_filter_xlp->program);
   glUniform1iARB (shader_vertical_filter_xlp->textures[0], 0);
@@ -106,11 +148,9 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 
   glFlush ();
 
-  /* pass 2: secondary -> primary, vertical filtering => XH' */
-  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data->framebuffers[0]);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data->texture.handles[1]);
-
-  SCHRO_OPENGL_CHECK_ERROR
+  /* pass 2: vertical filtering => f(XL') + XH = XH' */
+  SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
+  BIND_FRAMEBUFFER_AND_TEXTURE
 
   glUseProgramObjectARB (shader_vertical_filter_xhp->program);
   glUniform1iARB (shader_vertical_filter_xhp->textures[0], 0);
@@ -126,11 +166,9 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 
   glFlush ();
 
-  /* pass 3: primary -> secondary, vertical interleave */
-  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data->framebuffers[1]);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data->texture.handles[0]);
-
-  SCHRO_OPENGL_CHECK_ERROR
+  /* pass 3: vertical interleave => i(LL', LH') = L, i(HL', HH') = H */
+  SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
+  BIND_FRAMEBUFFER_AND_TEXTURE
 
   glUseProgramObjectARB (shader_vertical_interleave->program);
   glUniform1iARB (shader_vertical_interleave->textures[0], 0);
@@ -144,11 +182,9 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 
   glFlush ();
 
-  /* pass 4: secondary -> primary, horizontal filtering => L' */
-  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data->framebuffers[0]);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data->texture.handles[1]);
-
-  SCHRO_OPENGL_CHECK_ERROR
+  /* pass 4: horizontal filtering => L + f(H) = L' */
+  SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
+  BIND_FRAMEBUFFER_AND_TEXTURE
 
   glUseProgramObjectARB (shader_horizontal_filter_lp->program);
   glUniform1iARB (shader_horizontal_filter_lp->textures[0], 0);
@@ -164,11 +200,9 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 
   glFlush ();
 
-  /* pass 5: primary -> secondary, horizontal filtering => H' */
-  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data->framebuffers[1]);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data->texture.handles[0]);
-
-  SCHRO_OPENGL_CHECK_ERROR
+  /* pass 5: horizontal filtering => f(L') + H = H' */
+  SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
+  BIND_FRAMEBUFFER_AND_TEXTURE
 
   glUseProgramObjectARB (shader_horizontal_filter_hp->program);
   glUniform1iARB (shader_horizontal_filter_hp->textures[0], 0);
@@ -182,15 +216,13 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 
   schro_opengl_render_quad (0, 0, width / 2, height);
 
-  SCHRO_OPENGL_CHECK_ERROR // failes
+  SCHRO_OPENGL_CHECK_ERROR
 
   glFlush ();
 
-  /* pass 6: secondary -> primary, horizontal interleave */
-  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data->framebuffers[0]);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data->texture.handles[1]);
-
-  SCHRO_OPENGL_CHECK_ERROR
+  /* pass 6: horizontal interleave => i(L', H') = LL */
+  SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
+  BIND_FRAMEBUFFER_AND_TEXTURE
 
   glUseProgramObjectARB (shader_horizontal_interleave->program);
   glUniform1iARB (shader_horizontal_interleave->textures[0], 0);
@@ -203,6 +235,22 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   SCHRO_OPENGL_CHECK_ERROR
 
   glFlush ();
+
+  /* pass 7: transfer data from secondary to primary framebuffer if previous
+             pass result wasn't rendered into the primary framebuffer */
+  if (framebuffer_index != 0) {
+    SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
+    BIND_FRAMEBUFFER_AND_TEXTURE
+
+    schro_opengl_render_quad (0, 0, width, height);
+
+    SCHRO_OPENGL_CHECK_ERROR
+
+    glFlush ();
+  }
+
+  #undef SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
+  #undef BIND_FRAMEBUFFER_AND_TEXTURE
 
   glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 

@@ -587,10 +587,11 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
   SchroFrameData *opengl_frame_data;
   int16_t *tmp;
   char pattern_name[TEST_PATTERN_NAME_SIZE];
-  int i;
+  int i/*, r*/;
   int ok;
   int frames = 0;
-  //int total_length;
+  int repeats = 1;//_benchmark ? 64 : 1;
+  int total_length;
   double start_cpu;
   double start_opengl;
   double elapsed_cpu = 0;
@@ -642,14 +643,16 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
 
     start_cpu = schro_utils_get_time ();
 
-    schro_wavelet_inverse_transform_2d (cpu_postref_frame_data,
-        SCHRO_WAVELET_HAAR_0, tmp);
+    //for (r = 0; r < repeats; ++r)
+      schro_wavelet_inverse_transform_2d (cpu_postref_frame_data,
+          SCHRO_WAVELET_HAAR_0, tmp);
 
     start_opengl = schro_utils_get_time ();
     elapsed_cpu += start_opengl - start_cpu;
 
-    schro_opengl_wavelet_inverse_transform_2d (opengl_frame_data,
-        SCHRO_WAVELET_HAAR_0);
+    //for (r = 0; r < repeats; ++r)
+      schro_opengl_wavelet_inverse_transform_2d (opengl_frame_data,
+          SCHRO_WAVELET_HAAR_0);
 
     elapsed_opengl += schro_utils_get_time () - start_opengl;
 
@@ -680,20 +683,20 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
     }
   }
 
-  /*if (_benchmark) {
-    total_length = (cpu_ref_frame->components[0].length
-        + cpu_ref_frame->components[1].length
-        + cpu_ref_frame->components[2].length) * frames;
+  if (_benchmark) {
+    total_length = cpu_preref_frame_data->length * frames;
 
     printf ("  results\n");
-    printf ("    %i frames pushed/pulled: %.2f mbyte each\n", frames,
-        (float)total_length / (1024 * 1024));
-    printf ("    total %f/%f sec, %.2f/%.2f mbyte/sec\n", elapsed_push,
-        elapsed_pull, total_length / elapsed_push / (1024 * 1024),
-        total_length / elapsed_pull / (1024 * 1024));
-    printf ("    avg   %f/%f sec, %f sec\n", elapsed_push / frames,
-        elapsed_pull / frames, elapsed_push / frames + elapsed_pull / frames);
-  }*/
+    printf ("    %i frames iiwt'ed via cpu/opengl with %i repeats: %.2f "
+        "mbyte each\n", frames, repeats,
+        ((double)total_length * repeats) / (1024 * 1024));
+    printf ("    total %f/%f sec, %.2f/%.2f mbyte/sec\n", elapsed_cpu,
+        elapsed_opengl,
+        ((double)total_length * repeats) / elapsed_cpu / (1024 * 1024),
+        ((double)total_length * repeats) / elapsed_opengl / (1024 * 1024));
+    printf ("    avg   %.8f/%.8f sec\n", elapsed_cpu / repeats / frames,
+        elapsed_opengl / repeats / frames);
+  }
 
   schro_frame_unref (cpu_preref_frame);
   schro_frame_unref (cpu_postref_frame);
@@ -976,7 +979,9 @@ main (int argc, char *argv[])
         16, 8, 16, 8, 1, OPENGL_CUSTOM_PATTERN_CONST_MAX,
         OPENGL_CUSTOM_PATTERN_CONST_MAX, 0);*/
 
-    opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
+    /*opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 1920, 1080, 100,
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8);*/
+    opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 4, 1,
         OPENGL_CUSTOM_PATTERN_RANDOM_U8);
   } else {
     for (i = 0; i < ARRAY_SIZE (opengl_test_push_pull_list); ++i) {
