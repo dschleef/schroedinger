@@ -1,0 +1,24 @@
+#!/bin/sh
+
+mediadir=/home/ds/media
+
+list="$all"
+
+list=SD-25Mb
+output=output.drc
+
+#extraopts="enable-phasecorr-estimation=true enable-hierarchical-estimation=false"
+#extraopts="perceptual-weighting=2"
+extraopts=""
+
+trap exit INT
+
+schroopts="rate-control=1 bitrate=50000000 gop-structure=1"
+
+SCHRO_DUMP=1 \
+gst-launch-0.10 filesrc location=/home/ds/yuyv ! \
+  videoparse format=0 width=720 height=576 framerate=12/1 pixel-aspect-ratio=11/10 ! \
+  ffmpegcolorspace ! \
+  schroenc $schroopts $extraopts ! \
+  filesink location=$output
+
