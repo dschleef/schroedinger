@@ -979,7 +979,7 @@ main (int argc, char *argv[])
         16, 8, 16, 8, 1, OPENGL_CUSTOM_PATTERN_CONST_MAX,
         OPENGL_CUSTOM_PATTERN_CONST_MAX, 0);*/
 
-    /*opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 1920, 1080, 100,
+    /*opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 1920, 1080, 1,
         OPENGL_CUSTOM_PATTERN_RANDOM_U8);*/
     opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 4, 1,
         OPENGL_CUSTOM_PATTERN_RANDOM_U8);

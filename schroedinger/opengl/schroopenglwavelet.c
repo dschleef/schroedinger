@@ -19,6 +19,7 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 {
   int width, height;
   int framebuffer_index, texture_index;
+  int filter_shift = FALSE;
   SchroOpenGLFrameData *opengl_data = NULL;
   SchroOpenGLShader *shader_vertical_deinterleave_xl;
   SchroOpenGLShader *shader_vertical_deinterleave_xh;
@@ -28,28 +29,40 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   SchroOpenGLShader *shader_horizontal_filter_lp;
   SchroOpenGLShader *shader_horizontal_filter_hp;
   SchroOpenGLShader *shader_horizontal_interleave;
+  SchroOpenGLShader *shader_filter_shift;
 
   SCHRO_ASSERT (SCHRO_FRAME_FORMAT_DEPTH (frame_data->format)
       == SCHRO_FRAME_FORMAT_DEPTH_S16);
   SCHRO_ASSERT (frame_data->width % 2 == 0);
   SCHRO_ASSERT (frame_data->height % 2 == 0);
 
-  /*switch (type) {
+  switch (type) {
     case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
+      filter_shift = TRUE;
       break;
     case SCHRO_WAVELET_LE_GALL_5_3:
+      filter_shift = TRUE;
       break;
     case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
+      filter_shift = TRUE;
       break;
     case SCHRO_WAVELET_HAAR_0:
+      filter_shift = FALSE;
       break;
     case SCHRO_WAVELET_HAAR_1:
+      filter_shift = TRUE;
       break;
     case SCHRO_WAVELET_FIDELITY:
+      filter_shift = FALSE;
       break;
     case SCHRO_WAVELET_DAUBECHIES_9_7:
+      filter_shift = TRUE;
       break;
-  }*/
+    default:
+      SCHRO_ERROR ("unknown type %i", type);
+      SCHRO_ASSERT (0);
+      break;
+  }
 
   schro_opengl_lock ();
 
@@ -86,6 +99,16 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   SCHRO_ASSERT (shader_horizontal_filter_lp);
   SCHRO_ASSERT (shader_horizontal_filter_hp);
   SCHRO_ASSERT (shader_horizontal_interleave);
+
+  if (filter_shift) {
+    shader_filter_shift
+        = schro_opengl_shader_get
+        (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_FILTER_SHIFT);
+
+    SCHRO_ASSERT (shader_filter_shift);
+  } else {
+    shader_filter_shift = NULL;
+  }
 
   width = frame_data->width;
   height = frame_data->height;
@@ -236,7 +259,24 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 
   glFlush ();
 
-  /* pass 7: transfer data from secondary to primary framebuffer if previous
+  /* pass 7: filter shift */
+  if (filter_shift) {
+    SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
+    BIND_FRAMEBUFFER_AND_TEXTURE
+
+    glUseProgramObjectARB (shader_filter_shift->program);
+    glUniform1iARB (shader_filter_shift->textures[0], 0);
+
+    schro_opengl_render_quad (0, 0, width, height);
+
+    glUseProgramObjectARB (0);
+
+    SCHRO_OPENGL_CHECK_ERROR
+
+    glFlush ();
+  }
+
+  /* pass 8: transfer data from secondary to primary framebuffer if previous
              pass result wasn't rendered into the primary framebuffer */
   if (framebuffer_index != 0) {
     SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES

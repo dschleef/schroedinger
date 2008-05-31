@@ -44,6 +44,7 @@ struct _SchroOpenGLShader {
 #define SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_FILTER_Lp  26
 #define SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_FILTER_Hp  27
 #define SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_INTERLEAVE 28
+#define SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_FILTER_SHIFT          29
 
 /* FIXME: find a cleaner and more generic way to specify uniforms */
 SchroOpenGLShader *schro_opengl_shader_new (const char* code, int textures,

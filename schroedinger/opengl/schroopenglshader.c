@@ -397,15 +397,20 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  gl_FragColor = texture2DRect (texture, coord);\n"
       "}\n" },
 
-#define FILTER_HAAR0_STEP1 \
-      "float filter_haar0_step1 (float value) {\n" \
-      /* scale with 65536.0 (instead of 65535.0, to get correct mappings when \
-         applying floor) from FP [-0.5..0.5] to real S16 [-32768..32767] */ \
-      "  float input = floor (value * 65536.0);\n" \
+#define FILTER_HAAR_STEP1 \
+      "float filter_haar_step1 (float value) {\n" \
+      /* scale from FP [-0.5..0.5] to real S16 [-32768..32767] and apply \
+         proper rounding */ \
+      "  float input = floor (value * 65535.0 + 0.5);\n" \
       /* apply haar filter */ \
       "  float output = -floor ((input + 1.0) / 2.0);\n" \
       /* scale from real S16 [-32768..32767] to FP [-0.5..0.5] */ \
       "  return output / 65535.0;\n" \
+      "}\n"
+
+#define FILTER_HAAR_STEP2 \
+      "float filter_haar_step2 (float value) {\n" \
+      "  return value;\n" \
       "}\n"
 
   { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_FILTER_XLp, 1, TRUE, NULL,
@@ -415,7 +420,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
          and XH in texels */
       "uniform vec2 offset;\n" /* = vec2 (0.0, height / 2.0) */
       "const float bias = -32768.0 / 65535.0;\n"
-      FILTER_HAAR0_STEP1
+      FILTER_HAAR_STEP1
       "void main (void) {\n"
       /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
          so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
@@ -426,7 +431,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "      + bias;\n"
       /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
          to undo the initial bias */
-      "  gl_FragColor = (xl + filter_haar0_step1 (xh)) - bias;\n"
+      "  gl_FragColor = (xl + filter_haar_step1 (xh)) - bias;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_FILTER_XHp, 1, TRUE, NULL,
       "#extension GL_ARB_texture_rectangle : enable\n"
@@ -435,9 +440,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
          and XH in texels */
       "uniform vec2 offset;\n" /* = vec2 (0.0, height / 2.0) */
       "const float bias = -32768.0 / 65535.0;\n"
-      "float filter_haar0_step2 (float value) {\n"
-      "  return value;\n"
-      "}\n"
+      FILTER_HAAR_STEP2
       "void main (void) {\n"
       /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
          so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
@@ -448,7 +451,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  float xh = texture2DRect (texture, gl_TexCoord[0].xy).r + bias;\n"
       /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
          to undo the initial bias */
-      "  gl_FragColor = (filter_haar0_step2 (xlp) + xh) - bias;\n"
+      "  gl_FragColor = (filter_haar_step2 (xlp) + xh) - bias;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_INTERLEAVE, 1, TRUE, NULL,
       "#extension GL_ARB_texture_rectangle : enable\n"
@@ -478,7 +481,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
          and H in texels */
       "uniform vec2 offset;\n" /* = vec2 (width / 2.0, 0.0) */
       "const float bias = -32768.0 / 65535.0;\n"
-      FILTER_HAAR0_STEP1
+      FILTER_HAAR_STEP1
       "void main (void) {\n"
       /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
          so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
@@ -489,7 +492,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "      + bias;\n"
       /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
          to undo the initial bias */
-      "  gl_FragColor = (lx + filter_haar0_step1 (hx)) - bias;\n"
+      "  gl_FragColor = (lx + filter_haar_step1 (hx)) - bias;\n"
       "}\n" },
   /* FIXME: may merge with vertical version, the code is the same only the
      value bound to offset differs */
@@ -500,9 +503,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
          and H in texels */
       "uniform vec2 offset;\n" /* = vec2 (width / 2.0, 0.0) */
       "const float bias = -32768.0 / 65535.0;\n"
-      "float filter_haar0_step2 (float value) {\n"
-      "  return value;\n"
-      "}\n"
+      FILTER_HAAR_STEP2
       "void main (void) {\n"
       /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
          so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
@@ -513,7 +514,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  float hx = texture2DRect (texture, gl_TexCoord[0].xy).r + bias;\n"
       /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
          to undo the initial bias */
-      "  gl_FragColor = (filter_haar0_step2 (lxp) + hx) - bias;\n"
+      "  gl_FragColor = (filter_haar_step2 (lxp) + hx) - bias;\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_INTERLEAVE, 1, TRUE,
       NULL,
@@ -535,6 +536,29 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  vec2 coord = vec2 (floor (x) + 0.5, y);\n" /* FIXME: floor */
       "  gl_FragColor = texture2DRect (texture, coord);\n"
       "}\n" },
+  { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_FILTER_SHIFT, 1, FALSE, NULL,
+      "#extension GL_ARB_texture_rectangle : enable\n"
+      "uniform sampler2DRect texture;\n"
+      "const float bias = -32768.0 / 65535.0;\n"
+      "float rshift (float value) {\n" \
+      /* scale from FP [-0.5..0.5] to real S16 [-32768..32767] and apply \
+         proper rounding */ \
+      "  float input = floor (value * 65535.0 + 0.5);\n" \
+      /* add 1 and right shift by 1 */ \
+      "  float output = floor ((input + 1.0) / 2.0);\n" \
+      /* scale from real S16 [-32768..32767] to FP [-0.5..0.5] */ \
+      "  return output / 65535.0;\n" \
+      "}\n"
+      "void main (void) {\n"
+      /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
+         so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
+         leading to S16 zero - S16 zero != S16 zero if calculation is done in
+         FP space */
+      "  float value = texture2DRect (texture, gl_TexCoord[0].xy).r + bias;\n"
+      /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
+         to undo the initial bias */
+      "  gl_FragColor = rshift (value) - bias;\n"
+      "}\n" },
 
   { -1, 0, FALSE, NULL, NULL }
 };
@@ -545,8 +569,7 @@ schro_opengl_shader_get (int index)
   int i;
 
   SCHRO_ASSERT (index >= SCHRO_OPENGL_SHADER_IDENTITY);
-  SCHRO_ASSERT (index
-     <= SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_INTERLEAVE);
+  SCHRO_ASSERT (index <= SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_FILTER_SHIFT);
 
   for (i = 0; schro_opengl_shader_list[i].code; ++i) {
     if (schro_opengl_shader_list[i].index == index) {
