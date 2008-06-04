@@ -1,0 +1,39 @@
+#!/bin/sh
+
+export CC=i586-mingw32msvc-gcc
+export LD=i586-mingw32msvc-ld
+export PKG_CONFIG_LIBDIR=/opt/win32/lib/pkgconfig/
+export PKG_CONFIG_PATH=
+
+mkdir tmp
+cd tmp
+
+rm -rf schroedinger-devel
+prefix=$(pwd)/schroedinger-devel
+mkdir $prefix
+
+git clone git://git.freedesktop.org/git/liboil
+cd liboil
+autoreconf -i -f
+./configure \
+  --host=i586-mingw32msvc --disable-glib \
+  --prefix=$prefix --without-pthread
+make clean
+make
+make install
+cd ..
+
+git clone git://diracvideo.org/git/schroedinger
+cd schroedinger
+autoreconf -i -f
+./configure \
+  --host=i586-mingw32msvc --disable-glib \
+  --prefix=$prefix --without-pthread
+make clean
+make
+make install
+cd ..
+
+rm -f schroedinger-devel.zip
+zip -r ../schroedinger-sdk.zip schroedinger-devel/
+
