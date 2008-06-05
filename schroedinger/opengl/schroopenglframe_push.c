@@ -36,11 +36,8 @@ schro_opengl_frame_push_convert (SchroFrameData *dest, SchroFrameData *src,
   dest_opengl_data = (SchroOpenGLFrameData *) dest->data;
   texture_byte_stride = dest_opengl_data->push.byte_stride;
 
-  if (SCHRO_FRAME_IS_PACKED (src->format)) {
-    texture_components = 1;
-  } else {
-    texture_components = dest_opengl_data->texture.components;
-  }
+  texture_components = SCHRO_FRAME_IS_PACKED (src->format)
+      ? 1 : dest_opengl_data->texture.components;
 
   if (depth == SCHRO_FRAME_FORMAT_DEPTH_U8) {
     if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_AS_F32) {
@@ -143,6 +140,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
   int components;
   int pixelbuffer_y_offset, pixelbuffer_height;
   SchroOpenGLFrameData *dest_opengl_data = NULL;
+  SchroOpenGL *opengl = NULL;
   static void *texture_data = NULL; // FIXME
   static int texture_data_length = 0;
   GLuint src_texture = 0;
@@ -159,19 +157,21 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
   SCHRO_ASSERT (!SCHRO_FRAME_IS_OPENGL (src));
   SCHRO_ASSERT (dest->format == src->format);
 
-  schro_opengl_lock ();
+  components = SCHRO_FRAME_IS_PACKED (src->format) ? 1 : 3;
+  dest_opengl_data = (SchroOpenGLFrameData *) dest->components[0].data;
 
-  if (SCHRO_FRAME_IS_PACKED (src->format)) {
-    components = 1;
-  } else {
-    components = 3;
-  }
+  SCHRO_ASSERT (dest_opengl_data != NULL);
+
+  opengl = dest_opengl_data->opengl;
+
+  schro_opengl_lock (opengl);
 
   for (i = 0; i < components; ++i) {
     // FIXME: hack to store custom data per frame component
     dest_opengl_data = (SchroOpenGLFrameData *) dest->components[i].data;
 
     SCHRO_ASSERT (dest_opengl_data != NULL);
+    SCHRO_ASSERT (dest_opengl_data->opengl == opengl);
 
     width = dest->components[i].width;
     height = dest->components[i].height;
@@ -425,6 +425,6 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 #endif
   }
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 }
 

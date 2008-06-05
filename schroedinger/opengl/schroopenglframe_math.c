@@ -120,12 +120,24 @@ schro_opengl_frame_math_with_shader (SchroFrame *dest, SchroFrame *src,
   int width, height;
   SchroOpenGLFrameData *dest_opengl_data = NULL;
   SchroOpenGLFrameData *src_opengl_data = NULL;
+  SchroOpenGL *opengl = NULL;
   SchroOpenGLShader *shader;
 
+  SCHRO_ASSERT (dest != NULL);
+  SCHRO_ASSERT (src != NULL);
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (dest));
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (src));
 
-  schro_opengl_lock ();
+  dest_opengl_data = (SchroOpenGLFrameData *) dest->components[0].data;
+  src_opengl_data = (SchroOpenGLFrameData *) src->components[0].data;
+
+  SCHRO_ASSERT (dest_opengl_data != NULL);
+  SCHRO_ASSERT (src_opengl_data != NULL);
+  SCHRO_ASSERT (dest_opengl_data->opengl == src_opengl_data->opengl);
+
+  opengl = src_opengl_data->opengl;
+
+  schro_opengl_lock (opengl);
 
   shader = schro_opengl_shader_get (shader_index);
 
@@ -180,7 +192,7 @@ schro_opengl_frame_math_with_shader (SchroFrame *dest, SchroFrame *src,
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
   }
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 }
 
 static void

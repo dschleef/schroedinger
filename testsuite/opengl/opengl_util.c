@@ -14,6 +14,7 @@ int _failed = FALSE;
 int _generators = 0;
 SchroMemoryDomain *_cpu_domain = NULL;
 SchroMemoryDomain *_opengl_domain = NULL;
+SchroOpenGL *_opengl = NULL;
 
 int
 opengl_format_name (SchroFrameFormat format, char *format_name, int size)

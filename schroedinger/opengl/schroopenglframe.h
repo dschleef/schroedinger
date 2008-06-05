@@ -4,7 +4,7 @@
 
 #include <schroedinger/schro-stdint.h>
 #include <schroedinger/schroframe.h>
-#include <GL/glew.h>
+#include <schroedinger/opengl/schroopengl.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -37,6 +37,7 @@ struct _SchroOpenGLTransfer {
 };
 
 struct _SchroOpenGLFrameData {
+  SchroOpenGL *opengl;
   SchroOpenGLTexture texture;
   GLuint framebuffers[2];
   SchroOpenGLTransfer push;
@@ -69,7 +70,7 @@ extern unsigned int _schro_opengl_frame_flags;
 void schro_opengl_frame_check_flags (void);
 void schro_opengl_frame_print_flags (const char* indent);
 
-void schro_opengl_frame_setup (SchroFrame *frame);
+void schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame);
 void schro_opengl_frame_cleanup (SchroFrame *frame);
 
 void schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src); // CPU -> GPU

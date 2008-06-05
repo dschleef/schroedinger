@@ -56,9 +56,9 @@ opengl_test_push_pull (SchroFrameFormat format, int width, int height,
     opengl_custom_pattern_generate (cpu_ref_frame, custom_pattern, i,
         pattern_name);
 
-    schro_opengl_lock ();
+    schro_opengl_lock (_opengl);
 
-    schro_opengl_frame_setup (opengl_frame);
+    schro_opengl_frame_setup (_opengl, opengl_frame);
 
     start_push = schro_utils_get_time ();
 
@@ -73,7 +73,7 @@ opengl_test_push_pull (SchroFrameFormat format, int width, int height,
 
     schro_opengl_frame_cleanup (opengl_frame);
 
-    schro_opengl_unlock ();
+    schro_opengl_unlock (_opengl);
 
     ++frames;
 
@@ -183,10 +183,10 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
 
     elapsed_cpu_convert += schro_utils_get_time () - start_cpu_convert;
 
-    schro_opengl_lock ();
+    schro_opengl_lock (_opengl);
 
-    schro_opengl_frame_setup (opengl_dest_frame);
-    schro_opengl_frame_setup (opengl_src_frame);
+    schro_opengl_frame_setup (_opengl, opengl_dest_frame);
+    schro_opengl_frame_setup (_opengl, opengl_src_frame);
 
     schro_opengl_frame_push (opengl_src_frame, cpu_src_ref_frame);
 
@@ -202,7 +202,7 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
     schro_opengl_frame_cleanup (opengl_dest_frame);
     schro_opengl_frame_cleanup (opengl_src_frame);
 
-    schro_opengl_unlock ();
+    schro_opengl_unlock (_opengl);
 
     ++frames;
 
@@ -326,15 +326,15 @@ opengl_test_add (SchroFrameFormat dest_format, SchroFrameFormat src_format,
 
     schro_frame_convert (cpu_dest_postref_frame, cpu_dest_preref_frame);
 
-    schro_opengl_lock ();
+    schro_opengl_lock (_opengl);
 
-    schro_opengl_frame_setup (opengl_dest_frame);
-    schro_opengl_frame_setup (opengl_src_frame);
+    schro_opengl_frame_setup (_opengl, opengl_dest_frame);
+    schro_opengl_frame_setup (_opengl, opengl_src_frame);
 
     schro_opengl_frame_push (opengl_dest_frame, cpu_dest_preref_frame);
     schro_opengl_frame_push (opengl_src_frame, cpu_src_ref_frame);
 
-    schro_opengl_unlock ();
+    schro_opengl_unlock (_opengl);
 
     start_cpu = schro_utils_get_time ();
 
@@ -343,7 +343,7 @@ opengl_test_add (SchroFrameFormat dest_format, SchroFrameFormat src_format,
 
     elapsed_cpu += schro_utils_get_time () - start_cpu;
 
-    schro_opengl_lock ();
+    schro_opengl_lock (_opengl);
 
     start_opengl = schro_utils_get_time ();
 
@@ -357,7 +357,7 @@ opengl_test_add (SchroFrameFormat dest_format, SchroFrameFormat src_format,
     schro_opengl_frame_cleanup (opengl_dest_frame);
     schro_opengl_frame_cleanup (opengl_src_frame);
 
-    schro_opengl_unlock ();
+    schro_opengl_unlock (_opengl);
 
     ++frames;
 
@@ -485,15 +485,15 @@ opengl_test_subtract (SchroFrameFormat dest_format,
 
     schro_frame_convert (cpu_dest_postref_frame, cpu_dest_preref_frame);
 
-    schro_opengl_lock ();
+    schro_opengl_lock (_opengl);
 
-    schro_opengl_frame_setup (opengl_dest_frame);
-    schro_opengl_frame_setup (opengl_src_frame);
+    schro_opengl_frame_setup (_opengl, opengl_dest_frame);
+    schro_opengl_frame_setup (_opengl, opengl_src_frame);
 
     schro_opengl_frame_push (opengl_dest_frame, cpu_dest_preref_frame);
     schro_opengl_frame_push (opengl_src_frame, cpu_src_ref_frame);
 
-    schro_opengl_unlock ();
+    schro_opengl_unlock (_opengl);
 
     start_cpu = schro_utils_get_time ();
 
@@ -502,7 +502,7 @@ opengl_test_subtract (SchroFrameFormat dest_format,
 
     elapsed_cpu += schro_utils_get_time () - start_cpu;
 
-    schro_opengl_lock ();
+    schro_opengl_lock (_opengl);
 
     start_opengl = schro_utils_get_time ();
 
@@ -516,7 +516,7 @@ opengl_test_subtract (SchroFrameFormat dest_format,
     schro_opengl_frame_cleanup (opengl_dest_frame);
     schro_opengl_frame_cleanup (opengl_src_frame);
 
-    schro_opengl_unlock ();
+    schro_opengl_unlock (_opengl);
 
     ++frames;
 
@@ -636,9 +636,9 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
 
     schro_frame_convert (cpu_postref_frame, cpu_preref_frame);
 
-    schro_opengl_lock ();
+    schro_opengl_lock (_opengl);
 
-    schro_opengl_frame_setup (opengl_frame);
+    schro_opengl_frame_setup (_opengl, opengl_frame);
     schro_opengl_frame_push (opengl_frame, cpu_postref_frame);
 
     start_cpu = schro_utils_get_time ();
@@ -659,7 +659,7 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
     schro_opengl_frame_pull (cpu_test_frame, opengl_frame);
     schro_opengl_frame_cleanup (opengl_frame);
 
-    schro_opengl_unlock ();
+    schro_opengl_unlock (_opengl);
 
     ++frames;
 
@@ -896,6 +896,8 @@ main (int argc, char *argv[])
   _generators = test_pattern_get_n_generators ();
   _cpu_domain = schro_memory_domain_new_local ();
   _opengl_domain = schro_memory_domain_new_opengl ();
+  // FIXME: test with multiple contexts opened at the same time
+  _opengl = schro_opengl_new ();
 
   for (i = 1; i < argc; ++i) {
     if (!strcmp (argv[i], "-b") || !strcmp (argv[i], "--benchmark")) {
@@ -1034,6 +1036,7 @@ main (int argc, char *argv[])
     }
   }
 
+  schro_opengl_free (_opengl);
   schro_memory_domain_free (_cpu_domain);
   schro_memory_domain_free (_opengl_domain);
 

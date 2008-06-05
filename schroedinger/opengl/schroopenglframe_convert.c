@@ -102,11 +102,21 @@ schro_opengl_frame_convert_with_shader (SchroFrame *dest, SchroFrame *src,
 {
   int i;
   int width, height;
+  SchroOpenGL *opengl = NULL;
   SchroOpenGLFrameData *dest_opengl_data = NULL;
   SchroOpenGLFrameData *src_opengl_data = NULL;
   SchroOpenGLShader *shader;
 
-  schro_opengl_lock ();
+  dest_opengl_data = (SchroOpenGLFrameData *) dest->components[0].data;
+  src_opengl_data = (SchroOpenGLFrameData *) src->components[0].data;
+
+  SCHRO_ASSERT (dest_opengl_data != NULL);
+  SCHRO_ASSERT (src_opengl_data != NULL);
+  SCHRO_ASSERT (dest_opengl_data->opengl == src_opengl_data->opengl);
+
+  opengl = src_opengl_data->opengl;
+
+  schro_opengl_lock (opengl);
 
   shader = schro_opengl_shader_get (shader_index);
 
@@ -118,6 +128,8 @@ schro_opengl_frame_convert_with_shader (SchroFrame *dest, SchroFrame *src,
 
     SCHRO_ASSERT (dest_opengl_data != NULL);
     SCHRO_ASSERT (src_opengl_data != NULL);
+    SCHRO_ASSERT (dest_opengl_data->opengl == src_opengl_data->opengl);
+    SCHRO_ASSERT (src_opengl_data->opengl == opengl);
 
     width = MAX (dest->components[i].width, src->components[i].width);
     height = MAX (dest->components[i].height, src->components[i].height);
@@ -143,7 +155,7 @@ schro_opengl_frame_convert_with_shader (SchroFrame *dest, SchroFrame *src,
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
   }
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 }
 
 static void
@@ -152,21 +164,28 @@ schro_opengl_frame_unpack_with_shader (SchroFrame *dest, SchroFrame *src,
 {
   int i;
   int width, height;
+  SchroOpenGL *opengl = NULL;
   SchroOpenGLFrameData *dest_opengl_data = NULL;
   SchroOpenGLFrameData *src_opengl_data = NULL;
   SchroOpenGLShader *shader;
   int shader_indices[] = { shader_y_index, shader_u_index, shader_v_index };
 
-  schro_opengl_lock ();
-
+  dest_opengl_data = (SchroOpenGLFrameData *) dest->components[0].data;
   src_opengl_data = (SchroOpenGLFrameData *) src->components[0].data;
 
+  SCHRO_ASSERT (dest_opengl_data != NULL);
   SCHRO_ASSERT (src_opengl_data != NULL);
+  SCHRO_ASSERT (dest_opengl_data->opengl == src_opengl_data->opengl);
+
+  opengl = src_opengl_data->opengl;
+
+  schro_opengl_lock (opengl);
 
   for (i = 0; i < 3; ++i) {
     dest_opengl_data = (SchroOpenGLFrameData *) dest->components[i].data;
 
     SCHRO_ASSERT (dest_opengl_data != NULL);
+    SCHRO_ASSERT (dest_opengl_data->opengl == opengl);
 
     shader = schro_opengl_shader_get (shader_indices[i]);
 
@@ -199,7 +218,7 @@ schro_opengl_frame_unpack_with_shader (SchroFrame *dest, SchroFrame *src,
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
   }
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 }
 
 static void
@@ -211,9 +230,12 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
   SchroOpenGLFrameData *src_opengl_y_data = NULL;
   SchroOpenGLFrameData *src_opengl_u_data = NULL;
   SchroOpenGLFrameData *src_opengl_v_data = NULL;
+  SchroOpenGL *opengl = NULL;
   SchroOpenGLShader *shader;
 
-  schro_opengl_lock ();
+  dest_opengl_data = (SchroOpenGLFrameData *) dest->components[0].data;
+
+  SCHRO_ASSERT (dest_opengl_data != NULL);
 
   src_opengl_y_data = (SchroOpenGLFrameData *) src->components[0].data;
   src_opengl_u_data = (SchroOpenGLFrameData *) src->components[1].data;
@@ -223,13 +245,13 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
   SCHRO_ASSERT (src_opengl_u_data != NULL);
   SCHRO_ASSERT (src_opengl_v_data != NULL);
 
+  opengl = src_opengl_y_data->opengl;
+
+  schro_opengl_lock (opengl);
+
   shader = schro_opengl_shader_get (shader_index);
 
   SCHRO_ASSERT (shader);
-
-  dest_opengl_data = (SchroOpenGLFrameData *) dest->components[0].data;
-
-  SCHRO_ASSERT (dest_opengl_data != NULL);
 
   /*width = MAX (dest->components[i].width, src->components[0].width);
   height = MAX (dest->components[i].height, src->components[0].height);*/
@@ -266,7 +288,7 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
 
   glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 }
 
 static void

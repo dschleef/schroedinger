@@ -3,6 +3,7 @@
 #define __OPENGL_UTIL_H__
 
 #include <schroedinger/schro.h>
+#include <schroedinger/opengl/schroopengl.h>
 
 #define OPENGL_CUSTOM_PATTERN_NONE         1
 #define OPENGL_CUSTOM_PATTERN_RANDOM       2
@@ -18,6 +19,7 @@ extern int _failed;
 extern int _generators;
 extern SchroMemoryDomain *_cpu_domain;
 extern SchroMemoryDomain *_opengl_domain;
+extern SchroOpenGL *_opengl;
 
 int opengl_format_name (SchroFrameFormat format, char *format_name, int size);
 void opengl_custom_pattern_generate (SchroFrame *cpu_frame, int pattern_type,

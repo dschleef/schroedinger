@@ -5,27 +5,9 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
 #include <schroedinger/opengl/schroopenglframe.h>
-#include <GL/glew.h>
-#include <GL/glxew.h>
 #include <limits.h>
 
 #define OPENGL_HANDLE_X_ERRORS
-
-typedef struct _SchroOpenGL SchroOpenGL;
-
-struct _SchroOpenGL {
-  int usable;
-  int visible;
-  int lock_count;
-  Display *display;
-  Window root;
-  int screen;
-  XVisualInfo *visual_info;
-  GLXContext context;
-  Window window;
-};
-
-SchroOpenGL opengl;
 
 #ifdef OPENGL_HANDLE_X_ERRORS
 static int
@@ -41,38 +23,39 @@ schro_opengl_x_error_handler (Display *display, XErrorEvent *event)
 #endif
 
 static int
-schro_opengl_open_display (const char *display_name)
+schro_opengl_open_display (SchroOpenGL *opengl, const char *display_name)
 {
-  SCHRO_ASSERT (opengl.display == NULL);
+  SCHRO_ASSERT (opengl->display == NULL);
 
-  opengl.display = XOpenDisplay (display_name);
+  opengl->display = XOpenDisplay (display_name);
 
-  if (opengl.display == NULL) {
+  if (opengl->display == NULL) {
     SCHRO_ERROR ("failed to open display %s", display_name);
     return FALSE;
   }
 
 #ifdef OPENGL_HANDLE_X_ERRORS
-  XSynchronize (opengl.display, True);
+  XSynchronize (opengl->display, True);
   XSetErrorHandler (schro_opengl_x_error_handler);
 #endif
 
-  opengl.root = DefaultRootWindow (opengl.display);
-  opengl.screen = DefaultScreen (opengl.display);
+  opengl->root = DefaultRootWindow (opengl->display);
+  opengl->screen = DefaultScreen (opengl->display);
 
   return TRUE;
 }
-/*
+
 static void
-schro_opengl_close_display (void)
+schro_opengl_close_display (SchroOpenGL *opengl)
 {
-  if (opengl.display) {
-    XCloseDisplay (opengl.display);
+  if (opengl->display) {
+    XCloseDisplay (opengl->display);
+    opengl->display = NULL;
   }
-}*/
+}
 
 static int
-schro_opengl_create_window (void)
+schro_opengl_create_window (SchroOpenGL *opengl)
 {
   int error_base;
   int event_base;
@@ -83,28 +66,28 @@ schro_opengl_create_window (void)
   int mask;
   XSetWindowAttributes window_attr;
 
-  SCHRO_ASSERT (opengl.display != NULL);
-  SCHRO_ASSERT (opengl.root != None);
+  SCHRO_ASSERT (opengl->display != NULL);
+  SCHRO_ASSERT (opengl->root != None);
 
-  ret = glXQueryExtension (opengl.display, &error_base, &event_base);
+  ret = glXQueryExtension (opengl->display, &error_base, &event_base);
 
   if (!ret) {
     SCHRO_ERROR ("missing GLX extension");
     return FALSE;
   }
 
-  opengl.visual_info = glXChooseVisual (opengl.display, opengl.screen,
+  opengl->visual_info = glXChooseVisual (opengl->display, opengl->screen,
       visual_attr);
 
-  if (opengl.visual_info == NULL) {
+  if (opengl->visual_info == NULL) {
     SCHRO_ERROR ("no usable visual");
     return FALSE;
   }
 
-  opengl.context = glXCreateContext (opengl.display, opengl.visual_info,
+  opengl->context = glXCreateContext (opengl->display, opengl->visual_info,
       NULL, True);
 
-  if (opengl.context == NULL) {
+  if (opengl->context == NULL) {
     SCHRO_ERROR ("failed to create direct GLX context");
     return FALSE;
   }
@@ -113,55 +96,55 @@ schro_opengl_create_window (void)
 
   window_attr.background_pixel = 0;
   window_attr.border_pixel = 0;
-  window_attr.colormap = XCreateColormap (opengl.display, opengl.root,
-      opengl.visual_info->visual, AllocNone);
+  window_attr.colormap = XCreateColormap (opengl->display, opengl->root,
+      opengl->visual_info->visual, AllocNone);
   window_attr.override_redirect = False;
 
-  opengl.window = XCreateWindow (opengl.display, opengl.root, 0, 0,
-      100, 100, 0, opengl.visual_info->depth, InputOutput,
-      opengl.visual_info->visual, mask, &window_attr);
+  opengl->window = XCreateWindow (opengl->display, opengl->root, 0, 0,
+      100, 100, 0, opengl->visual_info->depth, InputOutput,
+      opengl->visual_info->visual, mask, &window_attr);
 
-  if (opengl.window == None) {
+  if (opengl->window == None) {
     SCHRO_ERROR ("failed to create window with visual %ld",
-        opengl.visual_info->visualid);
+        opengl->visual_info->visualid);
 
-    glXDestroyContext (opengl.display, opengl.context);
-    opengl.context = NULL;
+    glXDestroyContext (opengl->display, opengl->context);
+    opengl->context = NULL;
     return FALSE;
   }
 
-  XSync (opengl.display, FALSE);
+  XSync (opengl->display, FALSE);
 
   return TRUE;
 }
-/*
+
 static void
-schro_opengl_destroy_window (void)
+schro_opengl_destroy_window (SchroOpenGL *opengl)
 {
-  if (opengl.window != None) {
-    XDestroyWindow (opengl.display, opengl.window);
-    opengl.window = None;
+  if (opengl->window != None) {
+    XDestroyWindow (opengl->display, opengl->window);
+    opengl->window = None;
   }
 
-  if (opengl.context) {
-    glXDestroyContext (opengl.display, opengl.context);
-    opengl.context = NULL;
+  if (opengl->context) {
+    glXDestroyContext (opengl->display, opengl->context);
+    opengl->context = NULL;
   }
 
-  if (opengl.visual_info) {
-    XFree (opengl.visual_info);
-    opengl.visual_info = NULL;
+  if (opengl->visual_info) {
+    XFree (opengl->visual_info);
+    opengl->visual_info = NULL;
   }
-}*/
+}
 
 static int
-schro_opengl_init_glew (void)
+schro_opengl_init_glew (SchroOpenGL *opengl)
 {
   int ok = TRUE;
   int major, minor, micro;
   GLenum error;
 
-  schro_opengl_lock ();
+  schro_opengl_lock (opengl);
 
   error = glewInit ();
 
@@ -185,17 +168,17 @@ schro_opengl_init_glew (void)
     ok = FALSE;
   }
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 
   return ok;
 }
 
 static int
-schro_opengl_check_essential_extensions (void)
+schro_opengl_check_essential_extensions (SchroOpenGL *opengl)
 {
   int ok = TRUE;
 
-  schro_opengl_lock ();
+  schro_opengl_lock (opengl);
 
   #define CHECK_EXTENSION(name) \
     if (!GLEW_##name) { \
@@ -219,53 +202,49 @@ schro_opengl_check_essential_extensions (void)
   #undef CHECK_EXTENSION
   #undef CHECK_EXTENSION_GROUPS
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 
   return ok;
 }
 
-void
-schro_opengl_init (void)
+SchroOpenGL *
+schro_opengl_new ()
 {
-  static int inited = FALSE;
+  SchroOpenGL *opengl = schro_malloc0 (sizeof (SchroOpenGL));
 
-  SCHRO_ASSERT(inited == FALSE);
+  opengl->usable = TRUE;
+  opengl->visible = FALSE;
+  opengl->lock_count = 0;
+  opengl->display = NULL;
+  opengl->root = None;
+  opengl->screen = 0;
+  opengl->visual_info = NULL;
+  opengl->context = NULL;
+  opengl->window = None;
 
-  inited = TRUE;
-
-  opengl.usable = TRUE;
-  opengl.visible = FALSE;
-  opengl.lock_count = 0;
-  opengl.display = NULL;
-  opengl.root = None;
-  opengl.screen = 0;
-  opengl.visual_info = NULL;
-  opengl.context = NULL;
-  opengl.window = None;
-
-  if (!schro_opengl_open_display (NULL)) {
-    opengl.usable = FALSE;
-    return;
+  if (!schro_opengl_open_display (opengl, NULL)) {
+    opengl->usable = FALSE;
+    return opengl;
   }
 
-  if (!schro_opengl_create_window ()) {
-    opengl.usable = FALSE;
-    return;
+  if (!schro_opengl_create_window (opengl)) {
+    opengl->usable = FALSE;
+    return opengl;
   }
 
-  if (!schro_opengl_init_glew ()) {
-    opengl.usable = FALSE;
-    return;
+  if (!schro_opengl_init_glew (opengl)) {
+    opengl->usable = FALSE;
+    return opengl;
   }
 
-  if (!schro_opengl_check_essential_extensions ()) {
-    opengl.usable = FALSE;
-    return;
+  if (!schro_opengl_check_essential_extensions (opengl)) {
+    opengl->usable = FALSE;
+    return opengl;
   }
 
   schro_opengl_frame_check_flags ();
 
-  schro_opengl_lock ();
+  schro_opengl_lock (opengl);
 
   glMatrixMode (GL_MODELVIEW);
   glLoadIdentity ();
@@ -275,47 +254,56 @@ schro_opengl_init (void)
 
   glEnable (GL_TEXTURE_RECTANGLE_ARB);
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 
-  //schro_opengl_set_visible (TRUE);
+  //schro_opengl_set_visible (opengl, TRUE);
+
+  return opengl;
 }
 
-int
-schro_opengl_is_usable (void) {
-  return opengl.usable;
+
+void
+schro_opengl_free (SchroOpenGL *opengl)
+{
+  SCHRO_ASSERT (opengl->lock_count == 0);
+
+  schro_opengl_destroy_window (opengl);
+  schro_opengl_close_display (opengl);
+
+  schro_free (opengl);
 }
 
 void
-schro_opengl_lock (void)
+schro_opengl_lock (SchroOpenGL *opengl)
 {
-  SCHRO_ASSERT (opengl.display != NULL);
-  SCHRO_ASSERT (opengl.window != None);
-  SCHRO_ASSERT (opengl.context != NULL);
-  SCHRO_ASSERT (opengl.lock_count < (INT_MAX - 1));
+  SCHRO_ASSERT (opengl->display != NULL);
+  SCHRO_ASSERT (opengl->window != None);
+  SCHRO_ASSERT (opengl->context != NULL);
+  SCHRO_ASSERT (opengl->lock_count < (INT_MAX - 1));
 
-  if (opengl.lock_count == 0) {
-    if (!glXMakeCurrent (opengl.display, opengl.window, opengl.context)) {
+  if (opengl->lock_count == 0) {
+    if (!glXMakeCurrent (opengl->display, opengl->window, opengl->context)) {
       SCHRO_ERROR ("glXMakeCurrent failed");
     }
   }
 
-  ++opengl.lock_count;
+  ++opengl->lock_count;
 
   SCHRO_OPENGL_CHECK_ERROR
 }
 
 void
-schro_opengl_unlock (void)
+schro_opengl_unlock (SchroOpenGL *opengl)
 {
-  SCHRO_ASSERT (opengl.display != NULL);
-  SCHRO_ASSERT (opengl.lock_count > 0);
+  SCHRO_ASSERT (opengl->display != NULL);
+  SCHRO_ASSERT (opengl->lock_count > 0);
 
   SCHRO_OPENGL_CHECK_ERROR
 
-  --opengl.lock_count;
+  --opengl->lock_count;
 
-  if (opengl.lock_count == 0) {
-    if (!glXMakeCurrent (opengl.display, None, NULL)) {
+  if (opengl->lock_count == 0) {
+    if (!glXMakeCurrent (opengl->display, None, NULL)) {
       SCHRO_ERROR ("glXMakeCurrent failed");
     }
   }
@@ -333,7 +321,7 @@ schro_opengl_check_error (const char* file, int line, const char* func)
 }
 
 void
-schro_opengl_check_framebuffer (const char* file, int line, const char* func)
+schro_opengl_check_framebuffer (const char *file, int line, const char *func)
 {
   switch (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT)) {
     case GL_FRAMEBUFFER_COMPLETE_EXT:
@@ -374,21 +362,21 @@ schro_opengl_check_framebuffer (const char* file, int line, const char* func)
 }
 
 void
-schro_opengl_set_visible (int visible)
+schro_opengl_set_visible (SchroOpenGL *opengl, int visible)
 {
-  if (opengl.visible == visible) {
+  if (opengl->visible == visible) {
     return;
   }
 
-  opengl.visible = visible;
+  opengl->visible = visible;
 
-  if (opengl.visible) {
-    XMapWindow (opengl.display, opengl.window);
+  if (opengl->visible) {
+    XMapWindow (opengl->display, opengl->window);
   } else {
-    XUnmapWindow (opengl.display, opengl.window);
+    XUnmapWindow (opengl->display, opengl->window);
   }
 
-  XSync (opengl.display, FALSE);
+  XSync (opengl->display, FALSE);
 }
 
 void
@@ -412,7 +400,7 @@ schro_opengl_render_quad (int x, int y, int width, int height)
 }
 
 static void *
-schro_opengl_alloc (int size)
+schro_opengl_domain_alloc (int size)
 {
   //SCHRO_DEBUG("domain is %d", schro_async_get_exec_domain ());
   //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
@@ -421,7 +409,7 @@ schro_opengl_alloc (int size)
 }
 
 static void
-schro_opengl_free (void *ptr, int size)
+schro_opengl_domain_free (void *ptr, int size)
 {
   //SCHRO_DEBUG("domain is %d", schro_async_get_exec_domain ());
   //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
@@ -436,8 +424,8 @@ schro_memory_domain_new_opengl (void)
 
   domain = schro_memory_domain_new();
   domain->flags = SCHRO_MEMORY_DOMAIN_OPENGL;
-  domain->alloc = schro_opengl_alloc;
-  domain->free = schro_opengl_free;
+  domain->alloc = schro_opengl_domain_alloc;
+  domain->free = schro_opengl_domain_free;
 
   return domain;
 }

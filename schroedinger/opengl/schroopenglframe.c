@@ -225,7 +225,7 @@ schro_opengl_frame_print_flags (const char* indent)
 }
 
 void
-schro_opengl_frame_setup (SchroFrame *frame)
+schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame)
 {
   int i, k;
   int width, height;
@@ -240,15 +240,11 @@ schro_opengl_frame_setup (SchroFrame *frame)
   SCHRO_ASSERT (frame != NULL);
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (frame));
 
-  schro_opengl_lock ();
+  components = SCHRO_FRAME_IS_PACKED (frame->format) ? 1 : 3;
+
+  schro_opengl_lock (opengl);
 
   schro_opengl_frame_check_flags ();
-
-  if (SCHRO_FRAME_IS_PACKED (frame->format)) {
-    components = 1;
-  } else {
-    components = 3;
-  }
 
   for (i = 0; i < components; ++i) {
     width = frame->components[i].width;
@@ -258,10 +254,13 @@ schro_opengl_frame_setup (SchroFrame *frame)
     opengl_data = (SchroOpenGLFrameData *) frame->components[i].data;
 
     SCHRO_ASSERT (opengl_data != NULL);
+    SCHRO_ASSERT (opengl_data->opengl == NULL);
     SCHRO_ASSERT (opengl_data->texture.handles[0] == 0);
     SCHRO_ASSERT (opengl_data->texture.handles[1] == 0);
     SCHRO_ASSERT (opengl_data->framebuffers[0] == 0);
     SCHRO_ASSERT (opengl_data->framebuffers[1] == 0);
+
+    opengl_data->opengl = opengl;
 
     switch (SCHRO_FRAME_FORMAT_DEPTH (frame->format)) {
       case SCHRO_FRAME_FORMAT_DEPTH_U8:
@@ -606,7 +605,7 @@ schro_opengl_frame_setup (SchroFrame *frame)
 #endif
   }
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 }
 
 void
@@ -614,6 +613,7 @@ schro_opengl_frame_cleanup (SchroFrame *frame)
 {
   int i, k;
   int components;
+  SchroOpenGL *opengl;
   SchroOpenGLFrameData *opengl_data;
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
   double start, end;
@@ -623,19 +623,23 @@ schro_opengl_frame_cleanup (SchroFrame *frame)
   SCHRO_ASSERT (frame != NULL);
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (frame));
 
-  schro_opengl_lock ();
+  components = SCHRO_FRAME_IS_PACKED (frame->format) ? 1 : 3;
+  opengl_data = (SchroOpenGLFrameData *) frame->components[0].data;
 
-  if (SCHRO_FRAME_IS_PACKED (frame->format)) {
-    components = 1;
-  } else {
-    components = 3;
-  }
+  SCHRO_ASSERT (opengl_data != NULL);
+
+  opengl = opengl_data->opengl;
+
+  schro_opengl_lock (opengl);
 
   for (i = 0; i < components; ++i) {
     // FIXME: hack to store custom data per frame component
     opengl_data = (SchroOpenGLFrameData *) frame->components[i].data;
 
     SCHRO_ASSERT (opengl_data != NULL);
+    SCHRO_ASSERT (opengl_data->opengl == opengl);
+
+    opengl_data->opengl = NULL;
 
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
     start = schro_utils_get_time ();
@@ -700,7 +704,7 @@ schro_opengl_frame_cleanup (SchroFrame *frame)
 #endif
   }
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 }
 
 void
@@ -710,10 +714,22 @@ schro_opengl_frame_inverse_iwt_transform (SchroFrame *frame,
   int i;
   int width, height;
   int level;
+  SchroOpenGL *opengl;
+  SchroOpenGLFrameData *opengl_data;
 
-  schro_opengl_lock ();
+  opengl_data = (SchroOpenGLFrameData *) frame->components[0].data;
+
+  SCHRO_ASSERT (opengl_data != NULL);
+
+  opengl = opengl_data->opengl;
+
+  schro_opengl_lock (opengl);
 
   for (i = 0; i < 3; ++i) {
+    opengl_data = (SchroOpenGLFrameData *) frame->components[i].data;
+
+    SCHRO_ASSERT (opengl_data->opengl == opengl);
+
     if (i == 0) {
       width = params->iwt_luma_width;
       height = params->iwt_luma_height;
@@ -736,6 +752,6 @@ schro_opengl_frame_inverse_iwt_transform (SchroFrame *frame,
     }
   }
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 }
 

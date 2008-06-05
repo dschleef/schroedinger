@@ -148,6 +148,7 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
   int components;
   int pixelbuffer_y_offset, pixelbuffer_height;
   SchroOpenGLFrameData *src_opengl_data;
+  SchroOpenGL *opengl;
   static void *texture_data = NULL; // FIXME
   static int texture_data_length = 0;
   void *mapped_data = NULL;
@@ -159,19 +160,21 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (src));
   SCHRO_ASSERT (dest->format == src->format);
 
-  schro_opengl_lock ();
+  components = SCHRO_FRAME_IS_PACKED (src->format) ? 1 : 3;
+  src_opengl_data = (SchroOpenGLFrameData *) src->components[0].data;
 
-  if (SCHRO_FRAME_IS_PACKED (src->format)) {
-    components = 1;
-  } else {
-    components = 3;
-  }
+  SCHRO_ASSERT (src_opengl_data != NULL);
+
+  opengl = src_opengl_data->opengl;
+
+  schro_opengl_lock (opengl);
 
   for (i = 0; i < components; ++i) {
     // FIXME: hack to store custom data per frame component
     src_opengl_data = (SchroOpenGLFrameData *) src->components[i].data;
 
     SCHRO_ASSERT (src_opengl_data != NULL);
+    SCHRO_ASSERT (src_opengl_data->opengl == opengl);
     SCHRO_ASSERT (src_opengl_data->texture.handles[0] != 0);
     SCHRO_ASSERT (src_opengl_data->texture.handles[1] != 0);
     SCHRO_ASSERT (src_opengl_data->framebuffers[0] != 0);
@@ -253,6 +256,6 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
     }
   }
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 }
 

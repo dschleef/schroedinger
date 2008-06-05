@@ -21,6 +21,7 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   int framebuffer_index, texture_index;
   int filter_shift = FALSE;
   SchroOpenGLFrameData *opengl_data = NULL;
+  SchroOpenGL *opengl = NULL;
   SchroOpenGLShader *shader_vertical_deinterleave_xl;
   SchroOpenGLShader *shader_vertical_deinterleave_xh;
   SchroOpenGLShader *shader_vertical_filter_xlp;
@@ -64,7 +65,15 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
       break;
   }
 
-  schro_opengl_lock ();
+  width = frame_data->width;
+  height = frame_data->height;
+  opengl_data = (SchroOpenGLFrameData *) frame_data->data;
+
+  SCHRO_ASSERT (opengl_data != NULL);
+
+  opengl = opengl_data->opengl;
+
+  schro_opengl_lock (opengl);
 
   shader_vertical_deinterleave_xl
       = schro_opengl_shader_get
@@ -109,12 +118,6 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   } else {
     shader_filter_shift = NULL;
   }
-
-  width = frame_data->width;
-  height = frame_data->height;
-  opengl_data = (SchroOpenGLFrameData *) frame_data->data;
-
-  SCHRO_ASSERT (opengl_data != NULL);
 
   schro_opengl_setup_viewport (width, height);
 
@@ -294,6 +297,6 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 
   glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
-  schro_opengl_unlock ();
+  schro_opengl_unlock (opengl);
 }
 
