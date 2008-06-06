@@ -1,0 +1,15 @@
+#!/bin/sh
+
+input=$1
+output=output.ogg
+
+schroopts="rate-control=1 bitrate=2000000"
+extraopts=""
+
+gst-launch-0.10 filesrc location="$1" ! \
+    dvdemux ! queue ! dvdec ! \
+    schroenc $schroopts $extraopts ! \
+    oggmux ! \
+    filesink location=$output \
+    dvdemux0. ! queue ! audioconvert ! vorbisenc ! oggmux0.
+
