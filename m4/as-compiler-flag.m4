@@ -31,3 +31,25 @@ AC_DEFUN([AS_COMPILER_FLAG],
   AC_MSG_RESULT([$flag_ok])
 ])
 
+dnl AS_COMPILER_FLAGS(VAR, FLAGS)
+dnl Tries to compile with the given CFLAGS.
+
+AC_DEFUN([AS_COMPILER_FLAGS],
+[
+  list=$2
+  for each in $list
+  do
+    AC_MSG_CHECKING([to see if compiler understands $each])
+
+    save_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS $each"
+    AC_TRY_COMPILE([ ], [], [flag_ok=yes], [flag_ok=no])
+    CFLAGS="$save_CFLAGS"
+
+    if test "X$flag_ok" = Xyes ; then
+      $1="$$1 $each"
+    fi
+    AC_MSG_RESULT([$flag_ok])
+  done
+])
+
