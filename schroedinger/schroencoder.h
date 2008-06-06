@@ -220,6 +220,8 @@ struct _SchroEncoder {
   int bitrate;
   int max_bitrate;
   int min_bitrate;
+  int buffer_size;
+  int buffer_level;
   double noise_threshold;
   int gop_structure;
   int queue_depth;
@@ -311,8 +313,6 @@ struct _SchroEncoder {
   double subband_weights[SCHRO_N_WAVELETS][SCHRO_LIMIT_TRANSFORM_DEPTH][SCHRO_LIMIT_SUBBANDS];
   SchroHistogramTable intra_hist_tables[60];
 
-  int buffer_size;
-  int buffer_level;
   int bits_per_picture;
 
   /* statistics */

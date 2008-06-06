@@ -56,6 +56,8 @@ schro_encoder_new (void)
   encoder->bitrate = 13824000;
   encoder->max_bitrate = 13824000;
   encoder->min_bitrate = 13824000;
+  encoder->buffer_size = 0;
+  encoder->buffer_level = 0;
   encoder->noise_threshold = 25.0;
   encoder->gop_structure = 0;
   encoder->queue_depth = 20;
@@ -182,8 +184,12 @@ schro_encoder_start (SchroEncoder *encoder)
       handle_gop_enum (encoder);
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RATE_DISTORTION;
 
-      encoder->buffer_size = 3 * encoder->bitrate;
-      encoder->buffer_level = encoder->buffer_size;
+      if (encoder->buffer_size == 0) {
+        encoder->buffer_size = 3 * encoder->bitrate;
+      }
+      if (encoder->buffer_level == 0) {
+        encoder->buffer_level = encoder->buffer_size;
+      }
       encoder->bits_per_picture = muldiv64 (encoder->bitrate,
             encoder->video_format.frame_rate_denominator,
             encoder->video_format.frame_rate_numerator);
@@ -2559,6 +2565,8 @@ static SchroEncoderSetting encoder_settings[] = {
   INT ("bitrate", 0, INT_MAX, 13824000),
   INT ("max_bitrate", 0, INT_MAX, 13824000),
   INT ("min_bitrate", 0, INT_MAX, 13824000),
+  INT ("buffer_size", 0, INT_MAX, 0),
+  INT ("buffer_level", 0, INT_MAX, 0),
   DOUB("noise_threshold", 0, 100.0, 25.0),
   ENUM("gop_structure", gop_structure_list, 0),
   INT("queue_depth", 1, SCHRO_LIMIT_FRAME_QUEUE_LENGTH, 20),
@@ -2640,6 +2648,8 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(bitrate);
   VAR_SET(max_bitrate);
   VAR_SET(min_bitrate);
+  VAR_SET(buffer_size);
+  VAR_SET(buffer_level);
   VAR_SET(noise_threshold);
   VAR_SET(gop_structure);
   VAR_SET(queue_depth);
@@ -2696,6 +2706,8 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(bitrate);
   VAR_GET(max_bitrate);
   VAR_GET(min_bitrate);
+  VAR_GET(buffer_size);
+  VAR_GET(buffer_level);
   VAR_GET(noise_threshold);
   VAR_GET(gop_structure);
   VAR_GET(queue_depth);
