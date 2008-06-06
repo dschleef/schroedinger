@@ -2,6 +2,8 @@
 
 if [ $(whoami) = wladimir ]; then
   confflags="--prefix=/home/wladimir --with-cuda --disable-gtk-doc"
+elif [ $(whoami) = ds ]; then
+  confflags="--enable-gtk-doc --enable-orc"
 else
   confflags="--enable-gtk-doc"
 fi

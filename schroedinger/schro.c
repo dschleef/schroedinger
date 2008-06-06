@@ -6,6 +6,9 @@
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <schroedinger/schrocuda.h>
+#ifdef HAVE_ORC
+#include <orc/orc.h>
+#endif
 
 extern int _schro_decode_prediction_only;
 extern int _schro_dump_enable;
@@ -28,6 +31,9 @@ schro_init(void)
   inited = TRUE;
 
   oil_init();
+#ifdef HAVE_ORC
+  orc_init();
+#endif
 
   s = getenv ("SCHRO_DEBUG");
   if (s && s[0]) {

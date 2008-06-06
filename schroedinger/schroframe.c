@@ -846,7 +846,11 @@ schro_frame_add_s16_s16 (SchroFrame *dest, SchroFrame *src)
     height = (dcomp->height < scomp->height) ? dcomp->height : scomp->height;
 
     for(y=0;y<height;y++){
+#ifdef HAVE_ORC
+      orc_add_s16 (ddata, ddata, sdata, width);
+#else
       oil_add_s16 (ddata, ddata, sdata, width);
+#endif
       ddata = OFFSET(ddata, dcomp->stride);
       sdata = OFFSET(sdata, scomp->stride);
     }

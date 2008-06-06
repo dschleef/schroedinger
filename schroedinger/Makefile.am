@@ -54,6 +54,7 @@ pkginclude_HEADERS = \
 
 noinst_HEADERS = \
 	schrooil.h \
+	schroorc.h \
 	schrogpuframe.h
 
 if HAVE_CUDA
@@ -113,9 +114,13 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	$(cuda_sources) \
 	$(async_sources)
 
+if HAVE_ORC
+libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += schroorc.c
+endif
+
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = \
-	$(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ERROR_CFLAGS) \
+	$(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ORC_CFLAGS) $(ERROR_CFLAGS) \
 	-DSCHRO_ENABLE_UNSTABLE_API \
 	$(CUDA_CFLAGS) -I$(srcdir)/cuda
 
@@ -125,6 +130,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = \
 	$(opengl_libs) \
 	$(OPENGL_LIBS) \
 	$(LIBOIL_LIBS) \
+	$(ORC_LIBS) \
 	$(PTHREAD_LIBS)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-no-undefined \

@@ -3,6 +3,7 @@
 #define __SCHRO_NOTOIL_H__
 
 #include <schroedinger/schroutils.h>
+#include <schroedinger/schroorc.h>
 
 SCHRO_BEGIN_DECLS
 
