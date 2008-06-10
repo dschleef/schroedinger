@@ -31,10 +31,12 @@ schro_parse_decode_sequence_header (uint8_t *data, int length,
   level = schro_unpack_decode_uint (unpack);
   SCHRO_DEBUG("level = %d", level);
   
+#if 0
   if (!schro_decoder_check_version (major_version, minor_version)) {
     SCHRO_WARNING("Stream version number %d:%d not handled, expecting 0:20071203, 1:0, 2:0, or 2:1",
         major_version, minor_version);
   }
+#endif
   if (profile != 0 || level != 0) {
     SCHRO_WARNING("Expecting profile/level 0:0, got %d:%d",
         profile, level);
