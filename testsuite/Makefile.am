@@ -23,7 +23,8 @@ noinst_PROGRAMS = arith arith_encode \
 	 wavelet_gain_curve \
 	 perceptual_weight perceptual_curves \
 	 wavelet_noise_2d \
-	 unpack downsample hist_noise_level taps ramp
+	 unpack downsample hist_noise_level taps ramp \
+	 abi
 
 noinst_HEADERS = common.h
 
