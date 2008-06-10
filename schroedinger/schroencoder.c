@@ -2243,7 +2243,7 @@ out:
 
   schro_arith_flush (arith);
 
-  SCHRO_ASSERT(arith->offset < frame->subband_size);
+  SCHRO_ASSERT(arith->offset < frame->subband_buffer->length);
 
   schro_dump(SCHRO_DUMP_SUBBAND_EST, "%d %d %d %g %d %g\n",
       frame->frame_number, component, index,
@@ -2366,7 +2366,7 @@ schro_encoder_encode_subband_noarith (SchroEncoderFrame *frame,
   }
   schro_pack_flush (pack);
 
-  SCHRO_ASSERT(schro_pack_get_offset(pack) < frame->subband_size);
+  SCHRO_ASSERT(schro_pack_get_offset(pack) < frame->subband_buffer->length);
 
   schro_dump(SCHRO_DUMP_SUBBAND_EST, "%d %d %d %d %d\n",
       frame->frame_number, component, index,
