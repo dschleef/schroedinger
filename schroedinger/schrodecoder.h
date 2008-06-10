@@ -57,8 +57,8 @@ struct _SchroDecoder {
   int next_parse_offset;
   int prev_parse_offset;
 
-  int have_access_unit;
-  SchroBuffer *access_unit_buffer;
+  int have_sequence_header;
+  SchroBuffer *sequence_header_buffer;
   int have_frame_number;
 
   double skip_value;

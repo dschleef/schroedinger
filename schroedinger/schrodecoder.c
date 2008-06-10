@@ -150,7 +150,7 @@ schro_decoder_free (SchroDecoder *decoder)
   if (decoder->cpu_domain) schro_memory_domain_free (decoder->cpu_domain);
   if (decoder->cuda_domain) schro_memory_domain_free (decoder->cuda_domain);
 
-  if (decoder->access_unit_buffer) schro_buffer_unref (decoder->access_unit_buffer);
+  if (decoder->sequence_header_buffer) schro_buffer_unref (decoder->sequence_header_buffer);
 
   schro_free (decoder);
 }
@@ -296,7 +296,7 @@ schro_decoder_reset (SchroDecoder *decoder)
   schro_queue_clear (decoder->reference_queue);
   schro_queue_clear (decoder->output_queue);
 
-  decoder->have_access_unit = FALSE;
+  decoder->have_sequence_header = FALSE;
   decoder->next_frame_number = 0;
   decoder->have_frame_number = FALSE;
 
@@ -526,7 +526,7 @@ schro_decoder_get_status_locked (SchroDecoder *decoder)
   if (decoder->error) {
     return SCHRO_DECODER_ERROR;
   }
-  if (decoder->have_access_unit &&
+  if (decoder->have_sequence_header &&
       schro_queue_is_empty (decoder->output_queue)) {
     return SCHRO_DECODER_NEED_FRAME;
   }
@@ -633,15 +633,15 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
     int ret;
 
     SCHRO_INFO ("decoding access unit");
-    if (!decoder->have_access_unit) {
-      schro_decoder_parse_access_unit(decoder);
-      decoder->have_access_unit = TRUE;
-      decoder->access_unit_buffer = schro_buffer_dup (decoder->input_buffer);
+    if (!decoder->have_sequence_header) {
+      schro_decoder_parse_sequence_header(decoder);
+      decoder->have_sequence_header = TRUE;
+      decoder->sequence_header_buffer = schro_buffer_dup (decoder->input_buffer);
 
       ret = SCHRO_DECODER_FIRST_ACCESS_UNIT;
     } else {
-      if (schro_decoder_compare_access_unit_buffer (decoder->input_buffer,
-            decoder->access_unit_buffer)) {
+      if (schro_decoder_compare_sequence_header_buffer (decoder->input_buffer,
+            decoder->sequence_header_buffer)) {
         ret = SCHRO_DECODER_OK;
       } else {
         schro_decoder_error (decoder, "access unit changed");
@@ -689,7 +689,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
 
   if (SCHRO_PARSE_CODE_IS_PICTURE(decoder->parse_code)) {
 
-    if (!decoder->have_access_unit) {
+    if (!decoder->have_sequence_header) {
       SCHRO_INFO ("no access unit -- dropping picture");
       schro_buffer_unref (decoder->input_buffer);
       decoder->input_buffer = NULL;
@@ -1258,7 +1258,7 @@ schro_decoder_check_version (int major, int minor)
 }
 
 int
-schro_decoder_compare_access_unit_buffer (SchroBuffer *a, SchroBuffer *b)
+schro_decoder_compare_sequence_header_buffer (SchroBuffer *a, SchroBuffer *b)
 {
   if (a->length != b->length) return FALSE;
   if (a->length < 13) return FALSE;
@@ -1268,7 +1268,7 @@ schro_decoder_compare_access_unit_buffer (SchroBuffer *a, SchroBuffer *b)
 }
 
 void
-schro_decoder_parse_access_unit (SchroDecoder *decoder)
+schro_decoder_parse_sequence_header (SchroDecoder *decoder)
 {
   int bit;
   int index;

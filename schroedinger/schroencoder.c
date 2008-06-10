@@ -35,6 +35,8 @@ static void schro_encoder_fixup_offsets (SchroEncoder *encoder,
 static void schro_encoder_frame_complete (SchroEncoderFrame *frame);
 static int schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain);
 static void schro_encoder_init_perceptual_weighting (SchroEncoder *encoder);
+void schro_encoder_encode_sequence_header_header (SchroEncoder *encoder,
+    SchroPack *pack);
 
 SchroEncoder *
 schro_encoder_new (void)
@@ -462,9 +464,9 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
       if (presentation_frame) {
         *presentation_frame = frame->presentation_frame;
       }
-      if (frame->access_unit_buffer) {
-        buffer = frame->access_unit_buffer;
-        frame->access_unit_buffer = NULL;
+      if (frame->sequence_header_buffer) {
+        buffer = frame->sequence_header_buffer;
+        frame->sequence_header_buffer = NULL;
       } else if (schro_list_get_size(frame->inserted_buffers)>0) {
         buffer = schro_list_remove (frame->inserted_buffers, 0);
       } else if (schro_list_get_size(encoder->inserted_buffers)>0) {
@@ -708,7 +710,7 @@ schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
 }
 
 SchroBuffer *
-schro_encoder_encode_access_unit (SchroEncoder *encoder)
+schro_encoder_encode_sequence_header (SchroEncoder *encoder)
 {
   SchroPack *pack;
   SchroBuffer *buffer;
@@ -719,7 +721,7 @@ schro_encoder_encode_access_unit (SchroEncoder *encoder)
   pack = schro_pack_new ();
   schro_pack_encode_init (pack, buffer);
 
-  schro_encoder_encode_access_unit_header (encoder, pack);
+  schro_encoder_encode_sequence_header_header (encoder, pack);
 
   schro_pack_flush (pack);
 
@@ -827,8 +829,8 @@ schro_encoder_frame_complete (SchroEncoderFrame *frame)
       schro_encoder_frame_unref (frame->ref_frame[1]);
     }
 
-    if (frame->start_access_unit) {
-      frame->access_unit_buffer = schro_encoder_encode_access_unit (frame->encoder);
+    if (frame->start_sequence_header) {
+      frame->sequence_header_buffer = schro_encoder_encode_sequence_header (frame->encoder);
     }
     if (frame->last_frame) {
       frame->encoder->completed_eos = TRUE;
@@ -1643,7 +1645,7 @@ schro_encoder_encode_dc_data (SchroEncoderFrame *frame, int comp)
 
 
 void
-schro_encoder_encode_access_unit_header (SchroEncoder *encoder,
+schro_encoder_encode_sequence_header_header (SchroEncoder *encoder,
     SchroPack *pack)
 {
   SchroVideoFormat *format = &encoder->video_format;

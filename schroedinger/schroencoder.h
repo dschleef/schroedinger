@@ -92,7 +92,7 @@ struct _SchroEncoderFrame {
 
   /* other stuff */
 
-  int start_access_unit;
+  int start_sequence_header;
   int gop_length;
 
   SchroPictureNumber frame_number;
@@ -101,7 +101,7 @@ struct _SchroEncoderFrame {
   SchroFrame *downsampled_frames[5];
   SchroUpsampledFrame *reconstructed_frame;
 
-  SchroBuffer *access_unit_buffer;
+  SchroBuffer *sequence_header_buffer;
   SchroList *inserted_buffers;
   int output_buffer_size;
   SchroBuffer *output_buffer;
@@ -431,7 +431,7 @@ void schro_encoder_encode_picture_header (SchroEncoderFrame *frame);
 SchroBuffer * schro_encoder_encode_end_of_stream (SchroEncoder *encoder);
 void schro_encoder_clean_up_transform (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers (SchroEncoderFrame *frame);
-SchroBuffer * schro_encoder_encode_access_unit (SchroEncoder *encoder);
+SchroBuffer * schro_encoder_encode_sequence_header (SchroEncoder *encoder);
 void schro_encoder_output_push (SchroEncoder *encoder,
     SchroBuffer *buffer, int slot, int presentation_frame);
 
