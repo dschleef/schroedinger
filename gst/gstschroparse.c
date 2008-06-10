@@ -30,6 +30,9 @@
 #include <liboil/liboil.h>
 #include <math.h>
 
+#define SCHRO_ENABLE_UNSTABLE_API
+#include <schroedinger/schroparse.h>
+
 
 GST_DEBUG_CATEGORY_EXTERN (schro_debug);
 #define GST_CAT_DEFAULT schro_debug
@@ -619,10 +622,21 @@ gst_schro_parse_change_state (GstElement *element, GstStateChange transition)
 }
 
 static void
-get_frame_rate (guint8 *data, int size, int *num, int *denom)
+handle_sequence_header (GstSchroParse *schro_parse, guint8 *data, int size)
 {
-  *num = 30;
-  *denom = 1;
+  SchroVideoFormat video_format;
+  int ret;
+
+  ret = schro_parse_decode_sequence_header (data + 13, size - 13,
+      &video_format);
+  if (ret) {
+    schro_parse->fps_n = video_format.frame_rate_numerator;
+    schro_parse->fps_d = video_format.frame_rate_denominator;
+    GST_ERROR("Frame rate is %d/%d", schro_parse->fps_n,
+        schro_parse->fps_d);
+  } else {
+    GST_ERROR("Failed to get frame rate from sequence header");
+  }
 }
 
 static GstFlowReturn
@@ -671,8 +685,7 @@ gst_schro_parse_push_all (GstSchroParse *schro_parse, gboolean at_eos)
 
     if (SCHRO_PARSE_CODE_IS_SEQ_HEADER(parse_code)) {
       if (!schro_parse->have_seq_header) {
-        get_frame_rate (data, GST_BUFFER_SIZE(outbuf), &schro_parse->fps_n,
-            &schro_parse->fps_d);
+        handle_sequence_header (schro_parse, data, GST_BUFFER_SIZE(outbuf));
         schro_parse->have_seq_header = TRUE;
       }
 
@@ -717,6 +730,7 @@ gst_schro_parse_push_all (GstSchroParse *schro_parse, gboolean at_eos)
 
     if (!schro_parse->caps) {
       schro_parse->caps = gst_caps_new_simple ("video/x-dirac", NULL);
+      gst_pad_set_caps (schro_parse->srcpad, schro_parse->caps);
     }
     gst_buffer_set_caps (outbuf, schro_parse->caps);
 
