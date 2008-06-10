@@ -40,6 +40,7 @@ pkginclude_HEADERS = \
 	schromotionest.h \
 	schropack.h \
 	schroparams.h \
+	schroparse.h \
 	schrophasecorrelation.h \
 	schroqueue.h \
 	schrossim.h \
@@ -99,6 +100,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrooil.c \
 	schropack.c \
 	schroparams.c \
+	schroparse.c \
 	schrophasecorrelation.c \
 	schroquantiser.c \
 	schroqueue.c \
