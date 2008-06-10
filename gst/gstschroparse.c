@@ -63,8 +63,10 @@ struct _GstSchroParse
   /* video properties */
   int fps_n, fps_d;
   guint64 duration;
+  GstCaps *caps;
   
   /* state */
+  gboolean have_seq_header;
   int picture_number;
   GstSegment segment;
   gboolean discont;
@@ -187,6 +189,7 @@ static void
 gst_schro_parse_reset (GstSchroParse *dec)
 {
   GST_DEBUG("reset");
+  dec->have_seq_header = FALSE;
   dec->discont = TRUE;
   dec->picture_number = 0;
   dec->update_granulepos = TRUE;
@@ -615,6 +618,13 @@ gst_schro_parse_change_state (GstElement *element, GstStateChange transition)
   return ret;
 }
 
+static void
+get_frame_rate (guint8 *data, int size, int *num, int *denom)
+{
+  *num = 30;
+  *denom = 1;
+}
+
 static GstFlowReturn
 gst_schro_parse_push_all (GstSchroParse *schro_parse, gboolean at_eos)
 {
@@ -646,8 +656,7 @@ gst_schro_parse_push_all (GstSchroParse *schro_parse, gboolean at_eos)
     GST_LOG ("Have complete parse unit of %d bytes", size);
 
     if (size == 0) {
-      GST_WARNING("BBCD packet with zero size");
-      return GST_FLOW_ERROR;
+      size = 13;
     }
 
     if (gst_adapter_available (schro_parse->adapter) < size) {
@@ -661,6 +670,12 @@ gst_schro_parse_push_all (GstSchroParse *schro_parse, gboolean at_eos)
     presentation_frame = schro_parse->picture_number;
 
     if (SCHRO_PARSE_CODE_IS_SEQ_HEADER(parse_code)) {
+      if (!schro_parse->have_seq_header) {
+        get_frame_rate (data, GST_BUFFER_SIZE(outbuf), &schro_parse->fps_n,
+            &schro_parse->fps_d);
+        schro_parse->have_seq_header = TRUE;
+      }
+
       schro_parse->update_granulepos = TRUE;
     }
     if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
@@ -699,6 +714,11 @@ gst_schro_parse_push_all (GstSchroParse *schro_parse, gboolean at_eos)
           schro_parse->fps_d * GST_SECOND, schro_parse->fps_n);
       GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
     }
+
+    if (!schro_parse->caps) {
+      schro_parse->caps = gst_caps_new_simple ("video/x-dirac", NULL);
+    }
+    gst_buffer_set_caps (outbuf, schro_parse->caps);
 
     ret = gst_pad_push (schro_parse->srcpad, outbuf);
     if (ret != GST_FLOW_OK)
