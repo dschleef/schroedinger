@@ -139,11 +139,6 @@ int schro_decoder_push_ready (SchroDecoder *decoder);
 int schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer);
 int schro_decoder_push_end_of_stream (SchroDecoder *decoder);
 SchroFrame *schro_decoder_pull (SchroDecoder *decoder);
-int schro_decoder_is_parse_unit (SchroBuffer *buffer);
-int schro_decoder_is_access_unit (SchroBuffer *buffer);
-int schro_decoder_is_intra (SchroBuffer *buffer);
-int schro_decoder_is_picture (SchroBuffer *buffer);
-int schro_decoder_iterate (SchroDecoder *decoder);
 int schro_decoder_wait (SchroDecoder *decoder);
 
 void schro_decoder_set_earliest_frame (SchroDecoder *decoder, SchroPictureNumber earliest_frame);
@@ -153,8 +148,8 @@ SchroPictureNumber schro_decoder_get_picture_number (SchroDecoder *decoder);
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
 void schro_decoder_decode_parse_header (SchroDecoder *decoder);
-void schro_decoder_parse_access_unit (SchroDecoder *decoder);
-int schro_decoder_compare_access_unit_buffer (SchroBuffer *a, SchroBuffer *b);
+void schro_decoder_parse_sequence_header (SchroDecoder *decoder);
+int schro_decoder_compare_sequence_header_buffer (SchroBuffer *a, SchroBuffer *b);
 
 void schro_decoder_subband_dc_predict (SchroFrameData *fd);
 

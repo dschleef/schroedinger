@@ -19,23 +19,6 @@ typedef struct _SchroEncoder SchroEncoder;
 typedef struct _SchroEncoderFrame SchroEncoderFrame;
 typedef struct _SchroEncoderSetting SchroEncoderSetting;
 
-#if 0
-typedef enum {
-  SCHRO_PREF_ENGINE,
-  SCHRO_PREF_QUANT_ENGINE,
-  SCHRO_PREF_REF_DISTANCE,
-  SCHRO_PREF_TRANSFORM_DEPTH,
-  SCHRO_PREF_INTRA_WAVELET,
-  SCHRO_PREF_INTER_WAVELET,
-  SCHRO_PREF_LAMBDA,
-  SCHRO_PREF_PSNR,
-  SCHRO_PREF_BITRATE,
-  SCHRO_PREF_NOARITH,
-  SCHRO_PREF_MD5,
-  SCHRO_PREF_LAST
-} SchroPrefEnum;
-#endif
-
 typedef enum {
   SCHRO_STATE_NEED_FRAME,
   SCHRO_STATE_HAVE_BUFFER,
@@ -401,20 +384,11 @@ void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
 
 SchroBuffer * schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
     SchroAuxiliaryDataID id, void *data, int size);
-void schro_encoder_copy_to_frame_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_encode_access_unit_header (SchroEncoder *encoder, SchroPack *bits);
 void schro_encoder_encode_parse_info (SchroPack *bits, int parse_code);
 void schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_frame_insert_buffer (SchroEncoderFrame *frame, SchroBuffer *buffer);
 void schro_encoder_start (SchroEncoder *encoder);
-
-#if 0
-int schro_encoder_preference_get_range (SchroEncoder *encoder,
-    SchroPrefEnum pref, int *min, int *max);
-int schro_encoder_preference_get (SchroEncoder *encoder, SchroPrefEnum pref);
-int schro_encoder_preference_set (SchroEncoder *encoder, SchroPrefEnum pref,
-    int value);
-#endif
 
 SchroStateEnum schro_encoder_wait (SchroEncoder *encoder);
 SchroBuffer * schro_encoder_pull (SchroEncoder *encoder,

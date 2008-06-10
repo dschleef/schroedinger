@@ -30,7 +30,6 @@ SchroBuffer *schro_buffer_new_subbuffer (SchroBuffer * buffer, int offset,
 SchroBuffer *schro_buffer_dup (SchroBuffer * buffer);
 SchroBuffer * schro_buffer_ref (SchroBuffer * buffer);
 void schro_buffer_unref (SchroBuffer * buffer);
-int schro_buffer_compare_data (SchroBuffer *a, SchroBuffer *b);
 
 SCHRO_END_DECLS
 
