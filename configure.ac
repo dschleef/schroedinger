@@ -75,6 +75,17 @@ if test "x${with_pthread}" = "xyes" ; then
 fi
 AM_CONDITIONAL(HAVE_PTHREAD, test "x$with_pthread" = "xyes")
 
+AC_ARG_WITH([gthread],
+    AS_HELP_STRING([--with-gthread],[use gthread library [[default=no]]]),
+    [],
+    [with_gthread=no])
+if test "x${with_gthread}" = "xyes" ; then
+  PKG_CHECK_MODULES(GTHREAD, gthread-2.0, HAVE_GTHREAD=yes, HAVE_GTHREAD=no)
+  AC_SUBST(GTHREAD_LIBS)
+  AC_SUBST(GTHREAD_CFLAGS)
+fi
+AM_CONDITIONAL(HAVE_GTHREAD, test "x$with_gthread" = "xyes")
+
 AC_ARG_WITH([opengl],
     AS_HELP_STRING([--with-opengl=PATH],[prefix where OpenGL is installed [[default=no]]]),
     [],
@@ -204,7 +215,7 @@ AM_CONDITIONAL(BUILD_BROKEN_TESTS, false)
 
 SCHRO_LIBS="\$(top_builddir)/schroedinger/libschroedinger-$SCHRO_MAJORMINOR.la"
 # hack around ld bug
-SCHRO_LIBS="$SCHRO_LIBS $LIBOIL_LIBS $CUDA_LIBS $PTHREAD_LIBS $LIBM"
+SCHRO_LIBS="$SCHRO_LIBS $LIBOIL_LIBS $CUDA_LIBS $PTHREAD_LIBS $GTHREAD_LIBS $LIBM"
 #SCHRO_LIBS="$SCHRO_LIBS -lprofiler"
 AC_SUBST(SCHRO_LIBS)
 

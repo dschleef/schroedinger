@@ -74,7 +74,11 @@ endif
 if HAVE_PTHREAD
 async_sources = schroasync-pthread.c
 else
+if HAVE_GTHREAD
+async_sources = schroasync-gthread.c
+else
 async_sources = schroasync-none.c
+endif
 endif
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
@@ -124,6 +128,7 @@ endif
 libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = \
 	$(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ORC_CFLAGS) $(ERROR_CFLAGS) \
 	-DSCHRO_ENABLE_UNSTABLE_API \
+	$(GTHREAD_CFLAGS) \
 	$(CUDA_CFLAGS) -I$(srcdir)/cuda
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = \

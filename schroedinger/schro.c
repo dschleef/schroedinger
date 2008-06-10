@@ -61,6 +61,7 @@ schro_init(void)
     _schro_dump_enable = TRUE;
   }
 
+  schro_async_init ();
 #ifdef HAVE_CUDA
   schro_cuda_init ();
 #endif

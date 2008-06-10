@@ -6,12 +6,12 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schroasync.h>
 #include <schroedinger/schrodebug.h>
-#include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
+#include <glib.h>
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>
@@ -30,9 +30,9 @@ struct _SchroAsync {
 
   volatile int n_completed;
 
-  pthread_mutex_t mutex;
-  pthread_cond_t app_cond;
-  pthread_cond_t thread_cond;
+  GMutex *mutex;
+  GCond *app_cond;
+  GCond *thread_cond;
 
   SchroThread *threads;
 
@@ -46,7 +46,7 @@ struct _SchroAsync {
 };
 
 struct _SchroThread {
-  pthread_t pthread;
+  GThread *thread;
   SchroExecDomain exec_domain;
   SchroAsync *async;
   int state;
@@ -54,14 +54,14 @@ struct _SchroThread {
 };
 
 static int domain_key_inited;
-static pthread_key_t domain_key;
+static GPrivate *domain_key;
 
 static void * schro_thread_main (void *ptr);
 
 void
 schro_async_init (void)
 {
-
+  if (!g_thread_supported ()) g_thread_init (NULL);
 }
 
 SchroAsync *
@@ -71,9 +71,6 @@ schro_async_new(int n_threads,
     void *closure)
 {
   SchroAsync *async;
-  pthread_attr_t attr;
-  pthread_mutexattr_t mutexattr;
-  pthread_condattr_t condattr;
   int i;
 
   if (n_threads == 0) {
@@ -121,36 +118,29 @@ schro_async_new(int n_threads,
   async->schedule_closure = closure;
   async->complete = complete;
 
-  pthread_mutexattr_init (&mutexattr);
-  pthread_mutex_init (&async->mutex, &mutexattr);
-  pthread_condattr_init (&condattr);
-  pthread_cond_init (&async->app_cond, &condattr);
-  pthread_cond_init (&async->thread_cond, &condattr);
+  async->mutex = g_mutex_new ();
+  async->app_cond = g_cond_new ();
+  async->thread_cond = g_cond_new ();
 
   if (!domain_key_inited) {
-    pthread_key_create (&domain_key, NULL);
+    domain_key = g_private_new (NULL);
     domain_key_inited = TRUE;
   }
 
-  pthread_attr_init (&attr);
-  
-  pthread_mutex_lock (&async->mutex);
+  g_mutex_lock (async->mutex);
 
   for(i=0;i<n_threads;i++){
     SchroThread *thread = async->threads + i;
+    GError *error = NULL;
 
     thread->async = async;
     thread->index = i;
     thread->exec_domain = SCHRO_EXEC_DOMAIN_CPU;
-    pthread_create (&async->threads[i].pthread, &attr,
-        schro_thread_main, async->threads + i);
-    pthread_mutex_lock (&async->mutex);
+    async->threads[i].thread = g_thread_create (schro_thread_main,
+        async->threads + i, TRUE, &error);
+    g_mutex_lock (async->mutex);
   }
-  pthread_mutex_unlock (&async->mutex);
-
-  pthread_attr_destroy (&attr);
-  pthread_mutexattr_destroy (&mutexattr);
-  pthread_condattr_destroy (&condattr);
+  g_mutex_unlock (async->mutex);
 
   return async;
 }
@@ -160,20 +150,23 @@ schro_async_free (SchroAsync *async)
 {
   int i;
 
-  pthread_mutex_lock (&async->mutex);
+  g_mutex_lock (async->mutex);
   for(i=0;i<async->n_threads;i++){
     async->threads[i].state = STATE_STOP;
   }
   while(async->n_threads_running > 0) {
-    pthread_cond_signal (&async->thread_cond);
-    pthread_cond_wait (&async->app_cond, &async->mutex);
+    g_cond_signal (async->thread_cond);
+    g_cond_wait (async->app_cond, async->mutex);
   }
-  pthread_mutex_unlock (&async->mutex);
+  g_mutex_unlock (async->mutex);
 
   for(i=0;i<async->n_threads;i++){
-    void *ignore;
-    pthread_join (async->threads[i].pthread, &ignore);
+    g_thread_join (async->threads[i].thread);
   }
+
+  g_mutex_free (async->mutex);
+  g_cond_free (async->app_cond);
+  g_cond_free (async->thread_cond);
 
   schro_free(async->threads);
   schro_free(async);
@@ -187,7 +180,7 @@ schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
   async->task_func = func;
   async->task_priv = ptr;
 
-  pthread_cond_signal (&async->thread_cond);
+  g_cond_signal (async->thread_cond);
 }
 
 int schro_async_get_num_completed (SchroAsync *async)
@@ -210,23 +203,12 @@ schro_async_dump (SchroAsync *async)
 int
 schro_async_wait_locked (SchroAsync *async)
 {
-#if 1
-  struct timespec ts;
+  GTimeVal ts;
   int ret;
 
-#ifdef HAVE_CLOCK_GETTIME
-  clock_gettime (CLOCK_REALTIME, &ts);
-#else
-  {
-    struct timeval tv;
-
-    gettimeofday(&tv, NULL);
-    ts.tv_sec = tv.tv_sec;
-    ts.tv_nsec = tv.tv_usec * 1000;
-  }
-#endif
-  ts.tv_sec += 1;
-  ret = pthread_cond_timedwait (&async->app_cond, &async->mutex, &ts);
+  g_get_current_time (&ts);
+  g_time_val_add (&ts, 1000000);
+  ret = g_cond_timed_wait (async->app_cond, async->mutex, &ts);
   if (ret != 0) {
     int i;
     for(i=0;i<async->n_threads;i++){
@@ -239,23 +221,19 @@ schro_async_wait_locked (SchroAsync *async)
     }
   }
   return TRUE;
-#else
-  pthread_cond_wait (&async->app_cond, &async->mutex);
-  return TRUE;
-#endif
 }
 
 void
 schro_async_wait_one (SchroAsync *async)
 {
-  pthread_mutex_lock (&async->mutex);
+  g_mutex_lock (async->mutex);
   if (async->n_completed > 0) {
-    pthread_mutex_unlock (&async->mutex);
+    g_mutex_unlock (async->mutex);
     return;
   }
 
-  pthread_cond_wait (&async->app_cond, &async->mutex);
-  pthread_mutex_unlock (&async->mutex);
+  g_cond_wait (async->app_cond, async->mutex);
+  g_mutex_unlock (async->mutex);
 }
 
 void
@@ -263,14 +241,14 @@ schro_async_wait (SchroAsync *async, int min_waiting)
 {
   if (min_waiting < 1) min_waiting = 1;
 
-  pthread_mutex_lock (&async->mutex);
+  g_mutex_lock (async->mutex);
   if (async->n_completed > 0) {
-    pthread_mutex_unlock (&async->mutex);
+    g_mutex_unlock (async->mutex);
     return;
   }
 
-  pthread_cond_wait (&async->app_cond, &async->mutex);
-  pthread_mutex_unlock (&async->mutex);
+  g_cond_wait (async->app_cond, async->mutex);
+  g_mutex_unlock (async->mutex);
 }
 
 static void *
@@ -284,7 +262,7 @@ schro_thread_main (void *ptr)
 
   /* thread starts with async->mutex locked */
 
-  pthread_setspecific (domain_key, (void *)(unsigned long)thread->exec_domain);
+  g_private_set (domain_key, (void *)(unsigned long)thread->exec_domain);
 
   async->n_threads_running++;
   thread->state = STATE_IDLE;
@@ -293,7 +271,7 @@ schro_thread_main (void *ptr)
       case STATE_IDLE:
         async->n_idle++;
         SCHRO_DEBUG("thread %d: idle", thread->index);
-        pthread_cond_wait (&async->thread_cond, &async->mutex);
+        g_cond_wait (async->thread_cond, async->mutex);
         SCHRO_DEBUG("thread %d: got signal", thread->index);
         async->n_idle--;
         if (thread->state == STATE_IDLE) {
@@ -301,9 +279,9 @@ schro_thread_main (void *ptr)
         }
         break;
       case STATE_STOP:
-        pthread_cond_signal (&async->app_cond);
+        g_cond_signal (async->app_cond);
         async->n_threads_running--;
-        pthread_mutex_unlock (&async->mutex);
+        g_mutex_unlock (async->mutex);
         SCHRO_DEBUG("thread %d: stopping", thread->index);
         return NULL;
       case STATE_BUSY:
@@ -320,26 +298,26 @@ schro_thread_main (void *ptr)
         async->task_func = NULL;
 
         if (async->n_idle > 0) {
-          pthread_cond_signal (&async->thread_cond);
+          g_cond_signal (async->thread_cond);
         }
-        pthread_mutex_unlock (&async->mutex);
+        g_mutex_unlock (async->mutex);
 
         SCHRO_DEBUG("thread %d: running", thread->index);
         func (priv);
         SCHRO_DEBUG("thread %d: done", thread->index);
 
-        pthread_mutex_lock (&async->mutex);
+        g_mutex_lock (async->mutex);
 
         async->complete (priv);
       
-        pthread_cond_signal (&async->app_cond);
+        g_cond_signal (async->app_cond);
 #ifdef HAVE_CUDA
         /* FIXME */
         /* This is required because we don't have a better mechanism
          * for indicating to threads in other exec domains that it is
          * their turn to run.  It's mostly harmless, although causes
          * a lot of unnecessary wakeups in some cases. */
-        pthread_cond_broadcast (&async->thread_cond);
+        g_cond_broadcast (async->thread_cond);
 #endif
 
         break;
@@ -351,17 +329,17 @@ schro_thread_main (void *ptr)
 
 void schro_async_lock (SchroAsync *async)
 {
-  pthread_mutex_lock (&async->mutex);
+  g_mutex_lock (async->mutex);
 }
 
 void schro_async_unlock (SchroAsync *async)
 {
-  pthread_mutex_unlock (&async->mutex);
+  g_mutex_unlock (async->mutex);
 }
 
 void schro_async_signal_scheduler (SchroAsync *async)
 {
-  pthread_cond_broadcast (&async->thread_cond);
+  g_cond_broadcast (async->thread_cond);
 }
 
 void
@@ -369,9 +347,9 @@ schro_async_add_cuda (SchroAsync *async)
 {
   SchroThread *thread;
   int i;
-  pthread_attr_t attr;
+  GError *error = NULL;
 
-  pthread_mutex_lock (&async->mutex);
+  g_mutex_lock (async->mutex);
 
   /* We allocated a spare thread structure just for this case. */
   async->n_threads++;
@@ -380,24 +358,20 @@ schro_async_add_cuda (SchroAsync *async)
   thread = async->threads + i;
   memset (thread, 0, sizeof(SchroThread));
 
-  pthread_attr_init (&attr);
-
   thread->async = async;
   thread->index = i;
   thread->exec_domain = SCHRO_EXEC_DOMAIN_CUDA;
-  pthread_create (&async->threads[i].pthread, &attr,
-      schro_thread_main, async->threads + i);
-  pthread_mutex_lock (&async->mutex);
-  pthread_mutex_unlock (&async->mutex);
-
-  pthread_attr_destroy (&attr);
+  async->threads[i].thread = g_thread_create (schro_thread_main,
+      async->threads + i, TRUE, &error);
+  g_mutex_lock (async->mutex);
+  g_mutex_unlock (async->mutex);
 }
 
 SchroExecDomain
 schro_async_get_exec_domain (void)
 {
   void *domain;
-  domain = pthread_getspecific (domain_key);
+  domain = g_private_get (domain_key);
   return (int)(unsigned long)domain;
 }
 

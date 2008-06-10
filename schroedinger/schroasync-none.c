@@ -32,6 +32,12 @@ struct _SchroThread {
   int index;
 };
 
+void
+schro_async_init (void)
+{
+
+}
+
 SchroAsync *
 schro_async_new(int n_threads,
     SchroAsyncScheduleFunc schedule,

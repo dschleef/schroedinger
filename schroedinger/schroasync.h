@@ -16,6 +16,7 @@ typedef struct _SchroAsyncTask SchroAsyncTask;
 typedef int (*SchroAsyncScheduleFunc)(void *, SchroExecDomain exec_domain);
 typedef void (*SchroAsyncCompleteFunc)(void *);
 
+void schro_async_init (void);
 SchroAsync * schro_async_new(int n_threads,
     SchroAsyncScheduleFunc schedule,
     SchroAsyncCompleteFunc complete,
