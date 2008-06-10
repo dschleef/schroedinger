@@ -13,6 +13,10 @@
 #include <sys/time.h>
 #include <time.h>
 
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
+
 enum {
   STATE_IDLE,
   STATE_BUSY,
@@ -79,14 +83,23 @@ schro_async_new(int n_threads,
       }
     }
     if (n_threads == 0) {
-#ifndef _WIN32
-      n_threads = sysconf(_SC_NPROCESSORS_CONF);
-#else
+#ifdef _WIN32
       const char *s = getenv("NUMBER_OF_PROCESSORS");
       if (s) {
         n_threads = atoi(s);
       }
-#endif
+#elif defined __APPLE__
+      {
+        int    mib[]    = {CTL_HW, HW_NCPU};
+        size_t dataSize =  sizeof(int);
+
+        if (sysctl(mib, 2, &n_threads, &dataSize, NULL, 0)) {
+          n_threads = 0;
+        }
+      }
+#else
+      n_threads = sysconf(_SC_NPROCESSORS_CONF);
+#endif        
     }
     if (n_threads == 0) {
       n_threads = 1;
