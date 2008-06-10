@@ -1253,6 +1253,7 @@ schro_decoder_check_version (int major, int minor)
   if (major == 1 && minor == 0) return TRUE;
   if (major == 2 && minor == 0) return TRUE;
   if (major == 2 && minor == 1) return TRUE;
+  if (major == 2 && minor == 2) return TRUE;
 
   return FALSE;
 }
@@ -1288,12 +1289,8 @@ schro_decoder_parse_sequence_header (SchroDecoder *decoder)
   SCHRO_DEBUG("level = %d", decoder->level);
 
   if (!schro_decoder_check_version (decoder->major_version, decoder->minor_version)) {
-    SCHRO_ERROR("Stream version number %d:%d not handled, expecting 0:20071203, 1:0, 2:0, or 2:1",
+    SCHRO_WARNING("Stream version number %d:%d not handled, expecting 0:20071203, 1:0, 2:0, 2:1, or 2:2",
         decoder->major_version, decoder->minor_version);
-  }
-  if (decoder->profile != 0 || decoder->level != 0) {
-    SCHRO_ERROR("Expecting profile/level 0:0, got %d:%d",
-        decoder->profile, decoder->level);
   }
 
   /* base video format */
