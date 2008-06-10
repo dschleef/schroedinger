@@ -135,5 +135,5 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = \
 libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-no-undefined \
 	-version-info $(SCHRO_LIBVERSION) \
-	-export-symbols-regex '^(oil|schro)_'
+	-export-symbols-regex '^schro_'
 
