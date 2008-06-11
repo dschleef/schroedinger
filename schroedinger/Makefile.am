@@ -13,7 +13,11 @@ lib_LTLIBRARIES = libschroedinger-@SCHRO_MAJORMINOR@.la
 
 DISTCLEANFILES = schro-stdint.h
 
-EXTRA_DIST = schroarith-i386.c
+EXTRA_DIST = schroarith-i386.c \
+	schroasync-none.c \
+	schroasync-pthread.c \
+	schroasync-gthread.c \
+	schroasync-win32.c
 
 pkginclude_HEADERS = \
 	schro.h \
@@ -71,16 +75,6 @@ if HAVE_OPENGL
 opengl_libs = opengl/libopengl.la
 endif
 
-if HAVE_PTHREAD
-async_sources = schroasync-pthread.c
-else
-if HAVE_GTHREAD
-async_sources = schroasync-gthread.c
-else
-async_sources = schroasync-none.c
-endif
-endif
-
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schro.c \
 	schroanalysis.c \
@@ -118,7 +112,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrowavelet.c \
 	schrowavelettables.c \
 	$(cuda_sources) \
-	$(async_sources)
+	schroasync-@THREAD_IMPL@.c
 
 if HAVE_ORC
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += schroorc.c
