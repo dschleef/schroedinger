@@ -64,27 +64,41 @@ if test "x${HAVE_ORC}" = xyes ; then
 fi
 AM_CONDITIONAL(HAVE_ORC, test "x$HAVE_ORC" = "xyes")
 
-AC_ARG_WITH([pthread],
-    AS_HELP_STRING([--with-pthread],[use pthread library [[default=yes]]]),
+AC_ARG_WITH([thread],
+    AS_HELP_STRING([--with-thread=IMPL],[use threading library {auto,pthread,gthread,win32,none} [[default=auto]]]),
     [],
-    [with_pthread=yes])
-if test "x${with_pthread}" = "xyes" ; then
-  PTHREAD_LIBS="-lpthread"
-  AC_SUBST(PTHREAD_LIBS)
-  AC_DEFINE(HAVE_PTHREAD, 1, [Whether or not pthread is enabled])
-fi
-AM_CONDITIONAL(HAVE_PTHREAD, test "x$with_pthread" = "xyes")
+    [with_thread=auto])
 
-AC_ARG_WITH([gthread],
-    AS_HELP_STRING([--with-gthread],[use gthread library [[default=no]]]),
-    [],
-    [with_gthread=no])
-if test "x${with_gthread}" = "xyes" ; then
+ACX_PTHREAD([HAVE_PTHREAD=yes])
+
+AC_MSG_CHECKING([threading implementation to use])
+if test "x${with_thread}" = "xauto" ; then
+  case $host_os in
+    mingw* | pw32*)
+      with_thread=win32
+      ;;
+    *)
+      if test "x$HAVE_PTHREAD" = "xyes" ; then
+        with_thread=pthread
+      else
+        with_thread=none
+      fi
+      ;;
+  esac
+fi
+AC_MSG_RESULT([$with_thread])
+
+AC_SUBST(PTHREAD_CFLAGS)
+AC_SUBST(PTHREAD_LIBS)
+
+THREAD_IMPL=${with_thread}
+AC_SUBST(THREAD_IMPL)
+
+if test "x${with_thread}" = "xgthread" ; then
   PKG_CHECK_MODULES(GTHREAD, gthread-2.0, HAVE_GTHREAD=yes, HAVE_GTHREAD=no)
   AC_SUBST(GTHREAD_LIBS)
   AC_SUBST(GTHREAD_CFLAGS)
 fi
-AM_CONDITIONAL(HAVE_GTHREAD, test "x$with_gthread" = "xyes")
 
 AC_ARG_WITH([opengl],
     AS_HELP_STRING([--with-opengl=PATH],[prefix where OpenGL is installed [[default=no]]]),
