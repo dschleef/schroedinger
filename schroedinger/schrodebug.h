@@ -3,6 +3,7 @@
 #define __SCHRO_DEBUG_H__
 
 #include <schroedinger/schroutils.h>
+#include <stdarg.h>
 #include <stdlib.h>
 
 SCHRO_BEGIN_DECLS
@@ -33,6 +34,9 @@ enum
   SCHRO_DUMP_LAST
 };
 #endif
+
+typedef void (*SchroDebugLogFunc) (int level, const char *file,
+        const char *func, int line, const char *format, va_list varargs);
 
 #define SCHRO_ERROR(...) \
   SCHRO_DEBUG_LEVEL(SCHRO_LEVEL_ERROR, __VA_ARGS__)

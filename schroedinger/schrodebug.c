@@ -18,38 +18,48 @@ static const char *schro_debug_level_names[] = {
 static int schro_debug_level = SCHRO_LEVEL_ERROR;
 int _schro_dump_enable;
 
-void
-schro_debug_log (int level, const char *file, const char *function,
-    int line, const char *format, ...)
+static void schro_debug_log_valist (int level, const char *file,
+    const char *func, int line, const char *format, va_list varargs);
+
+static SchroDebugLogFunc _schro_debug_log_func = schro_debug_log_valist;
+
+static void
+schro_debug_log_valist (int level, const char *file, const char *func,
+    int line, const char *format, va_list varargs)
 {
 #ifdef HAVE_GLIB
-  va_list varargs;
   char *s;
 
   if (level > schro_debug_level)
     return;
 
-  va_start (varargs, format);
   s = g_strdup_vprintf (format, varargs);
-  va_end (varargs);
 
   fprintf (stderr, "SCHRO: %s: %s(%d): %s: %s\n",
-      schro_debug_level_names[level], file, line, function, s);
+      schro_debug_level_names[level], file, line, func, s);
   g_free (s);
 #else
-  va_list varargs;
   char s[1000];
 
   if (level > schro_debug_level)
     return;
 
-  va_start (varargs, format);
   vsnprintf (s, 999, format, varargs);
-  va_end (varargs);
 
   fprintf (stderr, "SCHRO: %s: %s(%d): %s: %s\n",
-      schro_debug_level_names[level], file, line, function, s);
+      schro_debug_level_names[level], file, line, func, s);
 #endif
+}
+
+void
+schro_debug_log (int level, const char *file, const char *func,
+        int line, const char *format, ...)
+{
+  va_list var_args;
+
+  va_start (var_args, format);
+  _schro_debug_log_func (level, file, func, line, format, var_args);
+  va_end (var_args);
 }
 
 void
@@ -98,4 +108,13 @@ schro_dump (int type, const char *format, ...)
   fflush (dump_files[type]);
 }
 
+void
+schro_debug_set_log_function (SchroDebugLogFunc func)
+{
+  if (func) {
+    _schro_debug_log_func = func;
+  } else {
+    _schro_debug_log_func = schro_debug_log_valist;
+  }
+}
 
