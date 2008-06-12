@@ -139,7 +139,7 @@ schro_opengl_frame_math_with_shader (SchroFrame *dest, SchroFrame *src,
 
   schro_opengl_lock (opengl);
 
-  shader = schro_opengl_shader_get (shader_index);
+  shader = schro_opengl_shader_get (opengl, shader_index);
 
   SCHRO_ASSERT (shader);
 

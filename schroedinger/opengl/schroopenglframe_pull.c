@@ -149,9 +149,8 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
   int pixelbuffer_y_offset, pixelbuffer_height;
   SchroOpenGLFrameData *src_opengl_data;
   SchroOpenGL *opengl;
-  static void *texture_data = NULL; // FIXME
-  static int texture_data_length = 0;
   void *mapped_data = NULL;
+  void *tmp_data = NULL;
 
   //SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
   SCHRO_ASSERT (dest != NULL);
@@ -213,9 +212,6 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
 
         glBindBufferARB (GL_PIXEL_PACK_BUFFER_ARB,
             src_opengl_data->pull.pixelbuffers[k]);
-        /*glBufferDataARB (GL_PIXEL_PACK_BUFFER_ARB,
-            opengl_data->pull.byte_stride * pixelbuffer_height, NULL,
-            GL_STATIC_READ_ARB);*/
 
         mapped_data = glMapBufferARB (GL_PIXEL_PACK_BUFFER_ARB,
             GL_READ_ONLY_ARB);
@@ -233,26 +229,18 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
 
       glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
     } else {
-      if (texture_data_length != src_opengl_data->pull.byte_stride * height
-          || !texture_data) {
-        texture_data_length = src_opengl_data->pull.byte_stride * height;
-
-        if (!texture_data) {
-          texture_data = schro_malloc (texture_data_length);
-        } else {
-          texture_data = schro_realloc (texture_data, texture_data_length);
-        }
-      }
+      tmp_data = schro_opengl_get_tmp (opengl,
+          src_opengl_data->pull.byte_stride * height);
 
       glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
                             src_opengl_data->framebuffers[0]);
       glReadPixels (0, 0, src_opengl_data->pull.texel_stride, height,
           src_opengl_data->texture.pixel_format, src_opengl_data->pull.type,
-          texture_data);
+          tmp_data);
       glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
       schro_opengl_frame_pull_convert (dest->components + i,
-          src->components + i, texture_data, 0, height);
+          src->components + i, tmp_data, 0, height);
     }
   }
 

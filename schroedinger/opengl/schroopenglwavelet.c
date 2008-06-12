@@ -75,44 +75,35 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 
   schro_opengl_lock (opengl);
 
-  shader_vertical_deinterleave_xl
-      = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_DEINTERLEAVE_XL);
-  shader_vertical_deinterleave_xh
-      = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_DEINTERLEAVE_XH);
-  shader_vertical_filter_xlp
-      = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_FILTER_XLp);
-  shader_vertical_filter_xhp
-      = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_FILTER_XHp);
-  shader_vertical_interleave
-      = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_INTERLEAVE);
+  shader_vertical_deinterleave_xl = schro_opengl_shader_get (opengl,
+      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_DEINTERLEAVE_XL);
+  shader_vertical_deinterleave_xh = schro_opengl_shader_get (opengl,
+      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_DEINTERLEAVE_XH);
+  shader_vertical_filter_xlp = schro_opengl_shader_get (opengl,
+      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_FILTER_XLp);
+  shader_vertical_filter_xhp = schro_opengl_shader_get (opengl,
+      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_FILTER_XHp);
+  shader_vertical_interleave = schro_opengl_shader_get (opengl,
+      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_INTERLEAVE);
 
   SCHRO_ASSERT (shader_vertical_filter_xlp);
   SCHRO_ASSERT (shader_vertical_filter_xhp);
   SCHRO_ASSERT (shader_vertical_interleave);
 
-  shader_horizontal_filter_lp
-      = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_FILTER_Lp);
-  shader_horizontal_filter_hp
-      = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_FILTER_Hp);
-  shader_horizontal_interleave
-      = schro_opengl_shader_get
-      (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_INTERLEAVE);
+  shader_horizontal_filter_lp = schro_opengl_shader_get (opengl,
+      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_FILTER_Lp);
+  shader_horizontal_filter_hp = schro_opengl_shader_get (opengl,
+      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_FILTER_Hp);
+  shader_horizontal_interleave = schro_opengl_shader_get (opengl,
+      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_INTERLEAVE);
 
   SCHRO_ASSERT (shader_horizontal_filter_lp);
   SCHRO_ASSERT (shader_horizontal_filter_hp);
   SCHRO_ASSERT (shader_horizontal_interleave);
 
   if (filter_shift) {
-    shader_filter_shift
-        = schro_opengl_shader_get
-        (SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_FILTER_SHIFT);
+    shader_filter_shift = schro_opengl_shader_get (opengl,
+        SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_FILTER_SHIFT);
 
     SCHRO_ASSERT (shader_filter_shift);
   } else {
@@ -120,6 +111,8 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   }
 
   schro_opengl_setup_viewport (width, height);
+
+  SCHRO_OPENGL_CHECK_ERROR
 
   #define SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES \
       framebuffer_index = 1 - framebuffer_index; \

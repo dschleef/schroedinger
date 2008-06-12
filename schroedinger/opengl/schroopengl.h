@@ -14,18 +14,7 @@ SCHRO_BEGIN_DECLS
     schro_opengl_check_framebuffer (__FILE__, __LINE__, __FUNCTION__);
 
 typedef struct _SchroOpenGL SchroOpenGL;
-
-struct _SchroOpenGL {
-  int usable;
-  int visible;
-  int lock_count;
-  Display *display;
-  Window root;
-  int screen;
-  XVisualInfo *visual_info;
-  GLXContext context;
-  Window window;
-};
+typedef struct _SchroOpenGLShaderLibrary SchroOpenGLShaderLibrary;
 
 SchroOpenGL *schro_opengl_new (void);
 void schro_opengl_free (SchroOpenGL *opengl);
@@ -35,6 +24,8 @@ void schro_opengl_check_error (const char *file, int line, const char *func);
 void schro_opengl_check_framebuffer (const char *file, int line,
     const char *func);
 void schro_opengl_set_visible (SchroOpenGL *opengl, int visible);
+SchroOpenGLShaderLibrary *schro_opengl_get_library (SchroOpenGL *opengl);
+void *schro_opengl_get_tmp (SchroOpenGL *opengl, int size);
 void schro_opengl_setup_viewport (int width, int height);
 void schro_opengl_render_quad (int x, int y, int width, int height);
 

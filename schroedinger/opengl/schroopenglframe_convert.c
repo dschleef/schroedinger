@@ -118,7 +118,7 @@ schro_opengl_frame_convert_with_shader (SchroFrame *dest, SchroFrame *src,
 
   schro_opengl_lock (opengl);
 
-  shader = schro_opengl_shader_get (shader_index);
+  shader = schro_opengl_shader_get (opengl, shader_index);
 
   SCHRO_ASSERT (shader);
 
@@ -187,7 +187,7 @@ schro_opengl_frame_unpack_with_shader (SchroFrame *dest, SchroFrame *src,
     SCHRO_ASSERT (dest_opengl_data != NULL);
     SCHRO_ASSERT (dest_opengl_data->opengl == opengl);
 
-    shader = schro_opengl_shader_get (shader_indices[i]);
+    shader = schro_opengl_shader_get (opengl, shader_indices[i]);
 
     SCHRO_ASSERT (shader);
 
@@ -249,7 +249,7 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
 
   schro_opengl_lock (opengl);
 
-  shader = schro_opengl_shader_get (shader_index);
+  shader = schro_opengl_shader_get (opengl, shader_index);
 
   SCHRO_ASSERT (shader);
 

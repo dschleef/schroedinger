@@ -141,10 +141,9 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
   int pixelbuffer_y_offset, pixelbuffer_height;
   SchroOpenGLFrameData *dest_opengl_data = NULL;
   SchroOpenGL *opengl = NULL;
-  static void *texture_data = NULL; // FIXME
-  static int texture_data_length = 0;
   GLuint src_texture = 0;
   void *mapped_data = NULL;
+  void *tmp_data = NULL;
   SchroOpenGLShader *shader;
 #ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
   double start, end;
@@ -314,19 +313,11 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
       glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, 0);
     } else {
-      if (texture_data_length != dest_opengl_data->push.byte_stride * height
-          || !texture_data) {
-        texture_data_length = dest_opengl_data->push.byte_stride * height;
-
-        if (!texture_data) {
-          texture_data = schro_malloc (texture_data_length);
-        } else {
-          texture_data = schro_realloc (texture_data, texture_data_length);
-        }
-      }
+      tmp_data = schro_opengl_get_tmp (opengl,
+          dest_opengl_data->push.byte_stride * height);
 
       schro_opengl_frame_push_convert (dest->components + i,
-          src->components + i, texture_data, 0, height);
+          src->components + i, tmp_data, 0, height);
 
       if (!(_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD)) {
         glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
@@ -352,13 +343,13 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
         glWindowPos2iARB (0, 0);
         glDrawPixels (width, height, dest_opengl_data->texture.pixel_format,
-            dest_opengl_data->push.type, texture_data);
+            dest_opengl_data->push.type, tmp_data);
 
         glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
       } else {
         glTexSubImage2D (GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, width, height,
             dest_opengl_data->texture.pixel_format,
-            dest_opengl_data->push.type, texture_data);
+            dest_opengl_data->push.type, tmp_data);
       }
 
       if (dest_opengl_data->push.type == GL_SHORT) {
@@ -390,7 +381,8 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 #endif
 
       if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_SHADER) {
-        shader = schro_opengl_shader_get (SCHRO_OPENGL_SHADER_IDENTITY);
+        shader = schro_opengl_shader_get (opengl,
+            SCHRO_OPENGL_SHADER_IDENTITY);
 
         glUseProgramObjectARB (shader->program);
         glUniform1iARB (shader->textures[0], 0);

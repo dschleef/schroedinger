@@ -3,7 +3,7 @@
 #define __SCHRO_OPENGL_SHADER_H__
 
 #include <schroedinger/schro.h>
-#include <GL/glew.h>
+#include <schroedinger/opengl/schroopengl.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -46,11 +46,12 @@ struct _SchroOpenGLShader {
 #define SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_INTERLEAVE 28
 #define SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_FILTER_SHIFT          29
 
-/* FIXME: find a cleaner and more generic way to specify uniforms */
-SchroOpenGLShader *schro_opengl_shader_new (const char* code, int textures,
-    int offset);
-void schro_opengl_shader_free (SchroOpenGLShader *shader);
-SchroOpenGLShader *schro_opengl_shader_get (int index);
+#define SCHRO_OPENGL_SHADER_COUNT \
+    SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_FILTER_SHIFT
+
+SchroOpenGLShaderLibrary *schro_opengl_shader_library_new (SchroOpenGL *opengl);
+void schro_opengl_shader_library_free (SchroOpenGLShaderLibrary *library);
+SchroOpenGLShader *schro_opengl_shader_get (SchroOpenGL *opengl, int index);
 
 SCHRO_END_DECLS
 

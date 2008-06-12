@@ -5,9 +5,25 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
 #include <schroedinger/opengl/schroopenglframe.h>
+#include <schroedinger/opengl/schroopenglshader.h>
 #include <limits.h>
 
 #define OPENGL_HANDLE_X_ERRORS
+
+struct _SchroOpenGL {
+  int usable;
+  int visible;
+  int lock_count;
+  Display *display;
+  Window root;
+  int screen;
+  XVisualInfo *visual_info;
+  GLXContext context;
+  Window window;
+  SchroOpenGLShaderLibrary *library;
+  void *tmp;
+  int tmp_size;
+};
 
 #ifdef OPENGL_HANDLE_X_ERRORS
 static int
@@ -89,6 +105,10 @@ schro_opengl_create_window (SchroOpenGL *opengl)
 
   if (opengl->context == NULL) {
     SCHRO_ERROR ("failed to create direct GLX context");
+
+    XFree (opengl->visual_info);
+    opengl->visual_info = NULL;
+
     return FALSE;
   }
 
@@ -110,6 +130,10 @@ schro_opengl_create_window (SchroOpenGL *opengl)
 
     glXDestroyContext (opengl->display, opengl->context);
     opengl->context = NULL;
+
+    XFree (opengl->visual_info);
+    opengl->visual_info = NULL;
+
     return FALSE;
   }
 
@@ -208,7 +232,7 @@ schro_opengl_check_essential_extensions (SchroOpenGL *opengl)
 }
 
 SchroOpenGL *
-schro_opengl_new ()
+schro_opengl_new (void)
 {
   SchroOpenGL *opengl = schro_malloc0 (sizeof (SchroOpenGL));
 
@@ -221,6 +245,9 @@ schro_opengl_new ()
   opengl->visual_info = NULL;
   opengl->context = NULL;
   opengl->window = None;
+  opengl->library = NULL;
+  opengl->tmp = NULL;
+  opengl->tmp_size = 0;
 
   if (!schro_opengl_open_display (opengl, NULL)) {
     opengl->usable = FALSE;
@@ -242,6 +269,8 @@ schro_opengl_new ()
     return opengl;
   }
 
+  opengl->library = schro_opengl_shader_library_new (opengl);
+
   schro_opengl_frame_check_flags ();
 
   schro_opengl_lock (opengl);
@@ -261,14 +290,23 @@ schro_opengl_new ()
   return opengl;
 }
 
-
 void
 schro_opengl_free (SchroOpenGL *opengl)
 {
   SCHRO_ASSERT (opengl->lock_count == 0);
 
+  if (opengl->library) {
+    schro_opengl_shader_library_free (opengl->library);
+  }
+
+  SCHRO_ASSERT (opengl->lock_count == 0);
+
   schro_opengl_destroy_window (opengl);
   schro_opengl_close_display (opengl);
+
+  if (opengl->tmp) {
+    schro_free (opengl->tmp);
+  }
 
   schro_free (opengl);
 }
@@ -377,6 +415,29 @@ schro_opengl_set_visible (SchroOpenGL *opengl, int visible)
   }
 
   XSync (opengl->display, FALSE);
+}
+
+
+SchroOpenGLShaderLibrary *
+schro_opengl_get_library (SchroOpenGL *opengl)
+{
+  return opengl->library;
+}
+
+void *
+schro_opengl_get_tmp (SchroOpenGL *opengl, int size)
+{
+  if (opengl->tmp_size < size || !opengl->tmp) {
+    opengl->tmp_size = size;
+
+    if (!opengl->tmp) {
+      opengl->tmp = schro_malloc (opengl->tmp_size);
+    } else {
+      opengl->tmp = schro_realloc (opengl->tmp, opengl->tmp_size);
+    }
+  }
+
+  return opengl->tmp;
 }
 
 void

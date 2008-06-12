@@ -890,14 +890,7 @@ main (int argc, char *argv[])
 {
   int i;
   int special = FALSE;
-
-  schro_init ();
-
-  _generators = test_pattern_get_n_generators ();
-  _cpu_domain = schro_memory_domain_new_local ();
-  _opengl_domain = schro_memory_domain_new_opengl ();
-  // FIXME: test with multiple contexts opened at the same time
-  _opengl = schro_opengl_new ();
+  SchroOpenGL *local_opengl;
 
   for (i = 1; i < argc; ++i) {
     if (!strcmp (argv[i], "-b") || !strcmp (argv[i], "--benchmark")) {
@@ -908,6 +901,20 @@ main (int argc, char *argv[])
       special = TRUE;
     }
   }
+
+  schro_init ();
+
+  _generators = test_pattern_get_n_generators ();
+  _cpu_domain = schro_memory_domain_new_local ();
+  _opengl_domain = schro_memory_domain_new_opengl ();
+
+  local_opengl = schro_opengl_new ();
+  _opengl = local_opengl;
+
+  opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 4, 1,
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8);
+
+  _opengl = schro_opengl_new ();
 
   if (_benchmark && !special) {
     opengl_test_push_pull (SCHRO_FRAME_FORMAT_U8_444, 1920, 1080, 100,
@@ -1035,6 +1042,8 @@ main (int argc, char *argv[])
           opengl_test_subtract_list[i].dest_pattern_drift);
     }
   }
+
+  schro_opengl_free (local_opengl);
 
   schro_opengl_free (_opengl);
   schro_memory_domain_free (_cpu_domain);
