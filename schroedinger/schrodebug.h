@@ -70,6 +70,7 @@ void schro_debug_log (int level, const char *file, const char *function,
     int line, const char *format, ...);
 void schro_debug_set_level (int level);
 int schro_debug_get_level (void);
+void schro_debug_set_log_function (SchroDebugLogFunc func);
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
