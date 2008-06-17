@@ -77,6 +77,8 @@ struct _SchroEncoderFrame {
   SchroEncoderFrameStateEnum working;
   int busy;
 
+  void *priv;
+
   /* Bits telling the engine stages which stuff needs to happen */
   unsigned int need_downsampling;
   unsigned int need_filtering;
@@ -381,6 +383,7 @@ void schro_encoder_set_video_format (SchroEncoder *encoder,
 void schro_encoder_end_of_stream (SchroEncoder *encoder);
 int schro_encoder_push_ready (SchroEncoder *encoder);
 void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
+void schro_encoder_push_frame_full (SchroEncoder *encoder, SchroFrame *frame, void *priv);
 
 SchroBuffer * schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
     SchroAuxiliaryDataID id, void *data, int size);
@@ -393,6 +396,8 @@ void schro_encoder_start (SchroEncoder *encoder);
 SchroStateEnum schro_encoder_wait (SchroEncoder *encoder);
 SchroBuffer * schro_encoder_pull (SchroEncoder *encoder,
     int *n_decodable_frames);
+SchroBuffer * schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
+    void **priv);
 
 int schro_encoder_get_n_settings (void);
 const SchroEncoderSetting *schro_encoder_get_setting_info (int i);

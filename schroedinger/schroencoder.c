@@ -344,12 +344,20 @@ schro_encoder_push_ready (SchroEncoder *encoder)
 void
 schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
 {
+  schro_encoder_push_frame_full (encoder, frame, NULL);
+}
+
+void
+schro_encoder_push_frame_full (SchroEncoder *encoder, SchroFrame *frame, void *priv)
+{
   if (encoder->video_format.interlaced_coding == 0) {
     SchroEncoderFrame *encoder_frame;
     SchroFrameFormat format;
 
     encoder_frame = schro_encoder_frame_new(encoder);
     encoder_frame->encoder = encoder;
+
+    encoder_frame->priv = priv;
 
     format = schro_params_get_frame_format (8, encoder->video_format.chroma_format);
     if (format == frame->format) {
@@ -448,6 +456,13 @@ schro_encoder_shift_frame_queue (SchroEncoder *encoder)
 SchroBuffer *
 schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
 {
+  return schro_encoder_pull_full (encoder, presentation_frame, NULL);
+}
+
+SchroBuffer *
+schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
+    void **priv)
+{
   SchroBuffer *buffer;
   int i;
 
@@ -473,6 +488,10 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
         buffer = schro_list_remove (encoder->inserted_buffers, 0);
       } else {
         double elapsed_time;
+
+        if (priv) {
+          *priv = frame->priv;
+        }
 
         buffer = frame->output_buffer;
         frame->output_buffer = NULL;
