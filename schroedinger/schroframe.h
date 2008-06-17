@@ -99,6 +99,7 @@ SchroFrame * schro_frame_new_from_data_I420 (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_YV12 (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_YUY2 (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_UYVY (void *data, int width, int height);
+SchroFrame * schro_frame_new_from_data_UYVY_full (void *data, int width, int height, int stride);
 SchroFrame * schro_frame_new_from_data_AYUV (void *data, int width, int height);
 void schro_frame_set_free_callback (SchroFrame *frame,
     SchroFrameFreeFunc free_func, void *priv);

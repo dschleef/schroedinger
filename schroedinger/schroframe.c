@@ -177,6 +177,27 @@ schro_frame_new_from_data_UYVY (void *data, int width, int height)
 }
 
 SchroFrame *
+schro_frame_new_from_data_UYVY_full (void *data, int width, int height, int stride)
+{
+  SchroFrame *frame = schro_frame_new();
+
+  frame->format = SCHRO_FRAME_FORMAT_UYVY;
+
+  frame->width = width;
+  frame->height = height;
+
+  frame->components[0].width = width;
+  frame->components[0].height = height;
+  frame->components[0].stride = stride;
+  frame->components[0].data = data;
+  frame->components[0].length = frame->components[0].stride * height;
+  frame->components[0].v_shift = 0;
+  frame->components[0].h_shift = 0;
+
+  return frame;
+}
+
+SchroFrame *
 schro_frame_new_from_data_AYUV (void *data, int width, int height)
 {
   SchroFrame *frame = schro_frame_new();
