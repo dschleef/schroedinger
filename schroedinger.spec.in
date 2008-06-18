@@ -97,6 +97,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/schroedinger-1.0/schroedinger/schropack.h
 %{_includedir}/schroedinger-1.0/schroedinger/schrovideoformat.h
 %{_includedir}/schroedinger-1.0/schroedinger/schrovirtframe.h
+%{_includedir}/schroedinger-1.0/schroedinger/schroparse.h
 %{_datadir}/gtk-doc/html/schroedinger
 
 %changelog
