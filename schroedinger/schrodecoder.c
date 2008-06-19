@@ -301,7 +301,10 @@ schro_decoder_reset (SchroDecoder *decoder)
   decoder->have_frame_number = FALSE;
 
   decoder->end_of_stream = FALSE;
+  decoder->flushing = FALSE;
   schro_async_unlock (decoder->async);
+
+  decoder->error = FALSE;
 }
 
 /**
@@ -428,7 +431,7 @@ schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
 
   picture = schro_queue_find (decoder->picture_queue,
       decoder->next_frame_number);
-  if (!picture && !decoder->end_of_stream &&
+  if (!picture && !decoder->flushing &&
       schro_queue_is_full (decoder->picture_queue)) {
     SCHRO_ERROR("failed to find picture %d", decoder->next_frame_number);
     schro_decoder_error(decoder, "next picture not available in full queue");
@@ -530,12 +533,16 @@ schro_decoder_get_status_locked (SchroDecoder *decoder)
       schro_queue_is_empty (decoder->output_queue)) {
     return SCHRO_DECODER_NEED_FRAME;
   }
-  if (!schro_queue_is_full (decoder->picture_queue) && !decoder->end_of_stream) {
+  if (!schro_queue_is_full (decoder->picture_queue) && !decoder->flushing) {
     return SCHRO_DECODER_NEED_BITS;
   }
-  if (decoder->end_of_stream &&
+  if (decoder->flushing &&
       schro_queue_find (decoder->picture_queue, decoder->next_frame_number) == NULL) {
-    return SCHRO_DECODER_EOS;
+    if (decoder->end_of_stream) {
+      return SCHRO_DECODER_EOS;
+    } else {
+      return SCHRO_DECODER_STALLED;
+    }
   }
 
   return SCHRO_DECODER_WAIT;
@@ -613,8 +620,17 @@ schro_decoder_wait (SchroDecoder *decoder)
 int
 schro_decoder_push_end_of_stream (SchroDecoder *decoder)
 {
+  decoder->flushing = TRUE;
   decoder->end_of_stream = TRUE;
   return SCHRO_DECODER_EOS;
+}
+
+int
+schro_decoder_set_flushing (SchroDecoder *decoder, int value)
+{
+  decoder->flushing = value;
+
+  return SCHRO_DECODER_OK;
 }
 
 int
@@ -622,6 +638,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
 {
   SCHRO_ASSERT(decoder->input_buffer == NULL);
 
+  decoder->flushing = FALSE;
   decoder->input_buffer = buffer;
 
   schro_unpack_init_with_data (&decoder->unpack,
@@ -684,6 +701,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
     schro_buffer_unref (decoder->input_buffer);
     decoder->input_buffer = NULL;
     decoder->end_of_stream = TRUE;
+    decoder->flushing = TRUE;
     return SCHRO_DECODER_EOS;
   }
 
