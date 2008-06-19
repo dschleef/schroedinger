@@ -9,61 +9,36 @@
 #include <schroedinger/opengl/schroopenglshader.h>
 
 void
-schro_opengl_wavelet_transform_2d (SchroFrameData *frame_data, int type)
+schro_opengl_wavelet_transform_2d (SchroFrameData *frame_data, int filter)
 {
+  SCHRO_ERROR ("unimplemented");
+  SCHRO_ASSERT (0);
 }
 
 void
 schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
-    int type)
+    int filter)
 {
   int width, height;
   int framebuffer_index, texture_index;
+  int edge_extends[] = { 0, 0, 0, 0 };
   int filter_shift = FALSE;
   SchroOpenGLFrameData *opengl_data = NULL;
   SchroOpenGL *opengl = NULL;
-  SchroOpenGLShader *shader_vertical_deinterleave_xl;
-  SchroOpenGLShader *shader_vertical_deinterleave_xh;
-  SchroOpenGLShader *shader_vertical_filter_xlp;
-  SchroOpenGLShader *shader_vertical_filter_xhp;
-  SchroOpenGLShader *shader_vertical_interleave;
-  SchroOpenGLShader *shader_horizontal_filter_lp;
-  SchroOpenGLShader *shader_horizontal_filter_hp;
-  SchroOpenGLShader *shader_horizontal_interleave;
-  SchroOpenGLShader *shader_filter_shift;
+  SchroOpenGLShader *shader_vertical_deinterleave_xl = NULL;
+  SchroOpenGLShader *shader_vertical_deinterleave_xh = NULL;
+  SchroOpenGLShader *shader_vertical_filter_xlp = NULL;
+  SchroOpenGLShader *shader_vertical_filter_xhp = NULL;
+  SchroOpenGLShader *shader_vertical_interleave = NULL;
+  SchroOpenGLShader *shader_horizontal_filter_lp = NULL;
+  SchroOpenGLShader *shader_horizontal_filter_hp = NULL;
+  SchroOpenGLShader *shader_horizontal_interleave = NULL;
+  SchroOpenGLShader *shader_filter_shift = NULL;
 
   SCHRO_ASSERT (SCHRO_FRAME_FORMAT_DEPTH (frame_data->format)
       == SCHRO_FRAME_FORMAT_DEPTH_S16);
   SCHRO_ASSERT (frame_data->width % 2 == 0);
   SCHRO_ASSERT (frame_data->height % 2 == 0);
-
-  switch (type) {
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
-      filter_shift = TRUE;
-      break;
-    case SCHRO_WAVELET_LE_GALL_5_3:
-      filter_shift = TRUE;
-      break;
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
-      filter_shift = TRUE;
-      break;
-    case SCHRO_WAVELET_HAAR_0:
-      filter_shift = FALSE;
-      break;
-    case SCHRO_WAVELET_HAAR_1:
-      filter_shift = TRUE;
-      break;
-    case SCHRO_WAVELET_FIDELITY:
-      filter_shift = FALSE;
-      break;
-    case SCHRO_WAVELET_DAUBECHIES_9_7:
-      filter_shift = TRUE;
-      break;
-    default:
-      SCHRO_ERROR ("unknown type %i", type);
-      SCHRO_ASSERT (0);
-      break;
-  }
 
   width = frame_data->width;
   height = frame_data->height;
@@ -76,34 +51,97 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   schro_opengl_lock (opengl);
 
   shader_vertical_deinterleave_xl = schro_opengl_shader_get (opengl,
-      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_DEINTERLEAVE_XL);
+      SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_DEINTERLEAVE_XL);
   shader_vertical_deinterleave_xh = schro_opengl_shader_get (opengl,
-      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_DEINTERLEAVE_XH);
-  shader_vertical_filter_xlp = schro_opengl_shader_get (opengl,
-      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_FILTER_XLp);
-  shader_vertical_filter_xhp = schro_opengl_shader_get (opengl,
-      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_FILTER_XHp);
+      SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_DEINTERLEAVE_XH);
   shader_vertical_interleave = schro_opengl_shader_get (opengl,
-      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_INTERLEAVE);
-
-  SCHRO_ASSERT (shader_vertical_filter_xlp);
-  SCHRO_ASSERT (shader_vertical_filter_xhp);
-  SCHRO_ASSERT (shader_vertical_interleave);
-
-  shader_horizontal_filter_lp = schro_opengl_shader_get (opengl,
-      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_FILTER_Lp);
-  shader_horizontal_filter_hp = schro_opengl_shader_get (opengl,
-      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_FILTER_Hp);
+      SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_INTERLEAVE);
   shader_horizontal_interleave = schro_opengl_shader_get (opengl,
-      SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_INTERLEAVE);
+      SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_INTERLEAVE);
 
-  SCHRO_ASSERT (shader_horizontal_filter_lp);
-  SCHRO_ASSERT (shader_horizontal_filter_hp);
-  SCHRO_ASSERT (shader_horizontal_interleave);
+  SCHRO_ASSERT (shader_vertical_deinterleave_xl != NULL);
+  SCHRO_ASSERT (shader_vertical_deinterleave_xh != NULL);
+  SCHRO_ASSERT (shader_vertical_interleave != NULL);
+  SCHRO_ASSERT (shader_horizontal_interleave != NULL);
+
+  switch (filter) {
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
+      filter_shift = TRUE;
+      break;
+    case SCHRO_WAVELET_LE_GALL_5_3:
+      edge_extends[0] = 0;
+      edge_extends[1] = 1;
+      edge_extends[2] = 1;
+      edge_extends[3] = 0;
+
+      shader_vertical_filter_xlp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_FILTER_LE_GALL_5_3_XLp);
+      shader_vertical_filter_xhp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_FILTER_LE_GALL_5_3_XHp);
+      shader_horizontal_filter_lp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_FILTER_LE_GALL_5_3_Lp);
+      shader_horizontal_filter_hp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_FILTER_LE_GALL_5_3_Hp);
+
+      filter_shift = TRUE;
+      break;
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
+      filter_shift = TRUE;
+      break;
+    case SCHRO_WAVELET_HAAR_0:
+      edge_extends[0] = 0;
+      edge_extends[1] = 0;
+      edge_extends[2] = 0;
+      edge_extends[3] = 0;
+
+      shader_vertical_filter_xlp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_FILTER_HAAR_XLp);
+      shader_vertical_filter_xhp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_FILTER_HAAR_XHp);
+      shader_horizontal_filter_lp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_FILTER_HAAR_Lp);
+      shader_horizontal_filter_hp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_FILTER_HAAR_Hp);
+
+      filter_shift = FALSE;
+      break;
+    case SCHRO_WAVELET_HAAR_1:
+      edge_extends[0] = 0;
+      edge_extends[1] = 0;
+      edge_extends[2] = 0;
+      edge_extends[3] = 0;
+
+      shader_vertical_filter_xlp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_FILTER_HAAR_XLp);
+      shader_vertical_filter_xhp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_FILTER_HAAR_XHp);
+      shader_horizontal_filter_lp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_FILTER_HAAR_Lp);
+      shader_horizontal_filter_hp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_FILTER_HAAR_Hp);
+
+      filter_shift = TRUE;
+      break;
+    case SCHRO_WAVELET_FIDELITY:
+      filter_shift = FALSE;
+      break;
+    case SCHRO_WAVELET_DAUBECHIES_9_7:
+      filter_shift = TRUE;
+      break;
+    default:
+      SCHRO_ERROR ("unknown filter %i", filter);
+      SCHRO_ASSERT (0);
+      break;
+  }
+
+  SCHRO_ASSERT (shader_vertical_filter_xlp != NULL);
+  SCHRO_ASSERT (shader_vertical_filter_xhp != NULL);
+  SCHRO_ASSERT (shader_horizontal_filter_lp != NULL);
+  SCHRO_ASSERT (shader_horizontal_filter_hp != NULL);
 
   if (filter_shift) {
     shader_filter_shift = schro_opengl_shader_get (opengl,
-        SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_FILTER_SHIFT);
+        SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_SHIFT);
 
     SCHRO_ASSERT (shader_filter_shift);
   } else {
@@ -157,10 +195,21 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   glUniform1iARB (shader_vertical_filter_xlp->textures[0], 0);
   glUniform2fARB (shader_vertical_filter_xlp->offset, 0, height / 2);
 
-  schro_opengl_render_quad (0, 0, width, height / 2);
+  if (edge_extends[2] == 1) {
+    glUniform2fARB (shader_vertical_filter_xlp->one, 0, 0);
+
+    schro_opengl_render_quad (0, 0, width, 1);
+
+    glUniform2fARB (shader_vertical_filter_xlp->one, 0, 1);
+
+    schro_opengl_render_quad (0, 1, width, height / 2 - 1);
+  } else {
+    schro_opengl_render_quad (0, 0, width, height / 2);
+  }
 
   glUseProgramObjectARB (0);
 
+  /* copy XH */
   schro_opengl_render_quad (0, height / 2, width, height / 2);
 
   SCHRO_OPENGL_CHECK_ERROR
@@ -175,10 +224,21 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   glUniform1iARB (shader_vertical_filter_xhp->textures[0], 0);
   glUniform2fARB (shader_vertical_filter_xhp->offset, 0, height / 2);
 
-  schro_opengl_render_quad (0, height / 2, width, height / 2);
+  if (edge_extends[1] == 1) {
+    glUniform2fARB (shader_vertical_filter_xhp->one, 0, 0);
+
+    schro_opengl_render_quad (0, height - 1, width, 1);
+
+    glUniform2fARB (shader_vertical_filter_xhp->one, 0, 1);
+
+    schro_opengl_render_quad (0, height / 2, width, height / 2 - 1);
+  } else {
+    schro_opengl_render_quad (0, height / 2, width, height / 2);
+  }
 
   glUseProgramObjectARB (0);
 
+  /* copy XL' */
   schro_opengl_render_quad (0, 0, width, height / 2);
 
   SCHRO_OPENGL_CHECK_ERROR
@@ -209,10 +269,21 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   glUniform1iARB (shader_horizontal_filter_lp->textures[0], 0);
   glUniform2fARB (shader_horizontal_filter_lp->offset, width / 2, 0);
 
-  schro_opengl_render_quad (0, 0, width / 2, height);
+  if (edge_extends[2] == 1) {
+    glUniform2fARB (shader_horizontal_filter_lp->one, 0, 0);
+
+    schro_opengl_render_quad (0, 0, 1, height);
+
+    glUniform2fARB (shader_horizontal_filter_lp->one, 1, 0);
+
+    schro_opengl_render_quad (1, 0, width / 2 - 1, height);
+  } else {
+    schro_opengl_render_quad (0, 0, width / 2, height);
+  }
 
   glUseProgramObjectARB (0);
 
+  /* copy H */
   schro_opengl_render_quad (width / 2, 0, width / 2, height);
 
   SCHRO_OPENGL_CHECK_ERROR
@@ -227,12 +298,21 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   glUniform1iARB (shader_horizontal_filter_hp->textures[0], 0);
   glUniform2fARB (shader_horizontal_filter_hp->offset, width / 2, 0);
 
-  SCHRO_OPENGL_CHECK_ERROR
+  if (edge_extends[1] == 1) {
+    glUniform2fARB (shader_horizontal_filter_hp->one, 0, 0);
 
-  schro_opengl_render_quad (width / 2, 0, width / 2, height);
+    schro_opengl_render_quad (width - 1, 0, 1, height);
+
+    glUniform2fARB (shader_horizontal_filter_hp->one, 1, 0);
+
+    schro_opengl_render_quad (width / 2, 0, width / 2 - 1, height);
+  } else {
+    schro_opengl_render_quad (width / 2, 0, width / 2, height);
+  }
 
   glUseProgramObjectARB (0);
 
+  /* copy L' */
   schro_opengl_render_quad (0, 0, width / 2, height);
 
   SCHRO_OPENGL_CHECK_ERROR

@@ -574,9 +574,10 @@ opengl_test_subtract (SchroFrameFormat dest_format,
 
 void
 opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
-    int todo, int custom_pattern)
+    int todo, int custom_pattern, int filter)
 {
   char format_name[64];
+  char filter_name[64];
   SchroFrame *cpu_preref_frame;
   SchroFrame *cpu_postref_frame;
   SchroFrame *cpu_test_frame;
@@ -606,8 +607,16 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
       return;
   }
 
-  printf ("opengl_test_wavelet_inverse: %ix%i %s\n", width, height,
-      format_name);
+  if (!opengl_filter_name(filter, filter_name, 64)) {
+      printf ("opengl_test_wavelet_inverse: %ix%i %s\n", width, height,
+          format_name);
+      printf ("  unhandled filter 0x%x", format);
+      printf ("==========================================================\n");
+      return;
+  }
+
+  printf ("opengl_test_wavelet_inverse: %ix%i %s, %s\n", width, height,
+      format_name, filter_name);
 
   if (_benchmark) {
     schro_opengl_frame_print_flags ("  ");
@@ -644,15 +653,13 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
     start_cpu = schro_utils_get_time ();
 
     //for (r = 0; r < repeats; ++r)
-      schro_wavelet_inverse_transform_2d (cpu_postref_frame_data,
-          SCHRO_WAVELET_HAAR_0, tmp);
+      schro_wavelet_inverse_transform_2d (cpu_postref_frame_data, filter, tmp);
 
     start_opengl = schro_utils_get_time ();
     elapsed_cpu += start_opengl - start_cpu;
 
     //for (r = 0; r < repeats; ++r)
-      schro_opengl_wavelet_inverse_transform_2d (opengl_frame_data,
-          SCHRO_WAVELET_HAAR_0);
+      schro_opengl_wavelet_inverse_transform_2d (opengl_frame_data, filter);
 
     elapsed_opengl += schro_utils_get_time () - start_opengl;
 
@@ -912,7 +919,7 @@ main (int argc, char *argv[])
   _opengl = local_opengl;
 
   opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 4, 1,
-        OPENGL_CUSTOM_PATTERN_RANDOM_U8);
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3);
 
   _opengl = schro_opengl_new ();
 
@@ -990,8 +997,12 @@ main (int argc, char *argv[])
 
     /*opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 1920, 1080, 1,
         OPENGL_CUSTOM_PATTERN_RANDOM_U8);*/
-    opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 4, 1,
-        OPENGL_CUSTOM_PATTERN_RANDOM_U8);
+    opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_HAAR_0);
+    opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_HAAR_1);
+    opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3);
   } else {
     for (i = 0; i < ARRAY_SIZE (opengl_test_push_pull_list); ++i) {
       opengl_test_push_pull (opengl_test_push_pull_list[i].format,

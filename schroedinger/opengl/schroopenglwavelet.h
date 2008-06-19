@@ -4,9 +4,9 @@
 
 SCHRO_BEGIN_DECLS
 
-void schro_opengl_wavelet_transform_2d (SchroFrameData *frame_data, int type);
+void schro_opengl_wavelet_transform_2d (SchroFrameData *frame_data, int filter);
 void schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
-    int type);
+    int filter);
 
 SCHRO_END_DECLS
 

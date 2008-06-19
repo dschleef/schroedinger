@@ -3,6 +3,55 @@
 #include "config.h"
 #endif
 #include <schroedinger/opengl/schroopenglshader.h>
+#include <stdio.h>
+#include <string.h>
+
+static char*
+schro_opengl_shader_add_linenumbers (const char* code)
+{
+  const char *src = code;
+  char *dst;
+  char *linenumbered_code;
+  char number[16];
+  int lines = 1;
+  int size;
+
+  while (*src) {
+    if (*src == '\n') {
+      ++lines;
+    }
+
+    ++src;
+  }
+
+  snprintf (number, sizeof (number) - 1, "%3i: ", lines);
+
+  size = strlen (code) + 1 + lines * strlen(number);
+  linenumbered_code = schro_malloc0 (size);
+  src = code;
+  dst = linenumbered_code;
+
+  strcpy (dst, "  1: ");
+
+  dst += strlen("  1: ");
+  lines = 2;
+
+  while (*src) {
+    *dst++ = *src;
+
+    if (*src == '\n') {
+      snprintf (number, sizeof (number) - 1, "%3i: ", lines);
+      strcpy (dst, number);
+
+      dst += strlen(number);
+      ++lines;
+    }
+
+    ++src;
+  }
+
+  return linenumbered_code;
+}
 
 static int
 schro_opengl_shader_check_status (GLhandleARB handle, GLenum status,
@@ -11,17 +60,13 @@ schro_opengl_shader_check_status (GLhandleARB handle, GLenum status,
   GLint result;
   GLint length;
   char* infolog;
+  char* linenumbered_code;
 
   glGetObjectParameterivARB(handle, status, &result);
-
-  if (result != 0) {
-    return TRUE;
-  }
-
   glGetObjectParameterivARB(handle, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
 
   if (length < 1) {
-    SCHRO_ERROR ("invalid infolog length %d", length);
+    SCHRO_ERROR ("invalid infolog length %i", length);
     return FALSE;
   }
 
@@ -29,16 +74,22 @@ schro_opengl_shader_check_status (GLhandleARB handle, GLenum status,
 
   glGetInfoLogARB(handle, length, &length, infolog);
 
-  SCHRO_ERROR ("\n%s\n%s", code, infolog);
+  if (length > 0) {
+    linenumbered_code = schro_opengl_shader_add_linenumbers (code);
 
-  schro_free(infolog);
+    SCHRO_ERROR ("\nshadercode:\n%s\ninfolog:\n%s", linenumbered_code,
+        infolog);
 
-  return FALSE;
+    schro_free (linenumbered_code);
+  }
+
+  schro_free (infolog);
+
+  return result != 0;
 }
 
-/* FIXME: find a cleaner and more generic way to specify uniforms */
 static SchroOpenGLShader *
-schro_opengl_shader_new (const char* code, int textures, int offset)
+schro_opengl_shader_new (const char* code)
 {
   SchroOpenGLShader *shader;
   GLhandleARB handle;
@@ -73,33 +124,27 @@ schro_opengl_shader_new (const char* code, int textures, int offset)
 
   SCHRO_ASSERT (ok);
 
-  switch (textures) {
-    case 1:
-      shader->textures[0] = glGetUniformLocationARB (shader->program,
-          "texture");
-      break;
-    case 2:
+  if (strstr (code, "uniform sampler2DRect texture1;")) {
       shader->textures[0] = glGetUniformLocationARB (shader->program,
           "texture1");
-      shader->textures[1] = glGetUniformLocationARB (shader->program,
-          "texture2");
-      break;
-    case 3:
-      shader->textures[0] = glGetUniformLocationARB (shader->program,
-          "texture1");
-      shader->textures[1] = glGetUniformLocationARB (shader->program,
-          "texture2");
-      shader->textures[2] = glGetUniformLocationARB (shader->program,
-          "texture3");
-      break;
-    default:
-      SCHRO_ERROR ("unhandled count of texture unforms: %i", textures);
-      SCHRO_ASSERT (0);
-      break;
   }
 
-  if (offset) {
-    shader->offset = glGetUniformLocationARB (shader->program, "offset");
+  if (strstr (code, "uniform sampler2DRect texture2;")) {
+      shader->textures[1] = glGetUniformLocationARB (shader->program,
+          "texture2");
+  }
+
+  if (strstr (code, "uniform sampler2DRect texture3;")) {
+      shader->textures[2] = glGetUniformLocationARB (shader->program,
+          "texture3");
+  }
+
+  if (strstr (code, "uniform vec2 offset;")) {
+      shader->offset = glGetUniformLocationARB (shader->program, "offset");
+  }
+
+  if (strstr (code, "uniform vec2 one;")) {
+      shader->one = glGetUniformLocationARB (shader->program, "one");
   }
 
   return shader;
@@ -117,130 +162,128 @@ schro_opengl_shader_free (SchroOpenGLShader *shader)
 
 struct IndexToShader {
   int index;
-  int textures;
-  int offset;
   const char *code;
 };
 
 static struct IndexToShader schro_opengl_shader_list[] = {
-  { SCHRO_OPENGL_SHADER_IDENTITY, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_IDENTITY,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture1;\n"
       "void main (void) {\n"
-      "  gl_FragColor = texture2DRect (texture, gl_TexCoord[0].xy);\n"
+      "  gl_FragColor = texture2DRect (texture1, gl_TexCoord[0].xy);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_U8_S16, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_U8_S16,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* S16 */
+      "uniform sampler2DRect texture1;\n" /* S16 */
       "const float scale = 255.0 / 65535.0;\n"
       "const float bias = (32767.0 - 127.0) / 65535.0;\n"
       "void main (void) {\n"
       "  gl_FragColor\n"
-      "      = (texture2DRect (texture, gl_TexCoord[0].xy) - bias) / scale;\n"
+      "      = (texture2DRect (texture1, gl_TexCoord[0].xy) - bias) / scale;\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_S16_U8, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_S16_U8,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* U8 */
+      "uniform sampler2DRect texture1;\n" /* U8 */
       "const float scale = 255.0 / 65535.0;\n"
       "const float bias = (32767.0 - 127.0) / 65535.0;\n"
       "void main (void) {\n"
       "  gl_FragColor\n"
-      "      = texture2DRect (texture, gl_TexCoord[0]) * scale + bias;\n"
+      "      = texture2DRect (texture1, gl_TexCoord[0].xy) * scale + bias;\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_U8_U8, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_U8_U8,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* U8 */
+      "uniform sampler2DRect texture1;\n" /* U8 */
       "void main (void) {\n"
-      "  gl_FragColor = texture2DRect (texture, gl_TexCoord[0].xy);\n"
+      "  gl_FragColor = texture2DRect (texture1, gl_TexCoord[0].xy);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_S16_S16, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_S16_S16,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* S16 */
+      "uniform sampler2DRect texture1;\n" /* S16 */
       "void main (void) {\n"
-      "  gl_FragColor = texture2DRect (texture, gl_TexCoord[0].xy);\n"
+      "  gl_FragColor = texture2DRect (texture1, gl_TexCoord[0].xy);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_U8_Y4_YUYV, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_U8_Y4_YUYV,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* YUYV */
+      "uniform sampler2DRect texture1;\n" /* YUYV */
       "void main (void) {\n"
       /* round x coordinate down from texel center n.5 to texel edge n.0 */
       "  float x = floor (gl_TexCoord[0].x) / 2.0;\n"
       "  float y = gl_TexCoord[0].y;\n"
       /* shift x coordinate from texel edge n.0 to texel center n.5 */
       "  vec2 coord = vec2 (floor (x) + 0.5, y);\n"
-      "  vec4 yuyv = texture2DRect (texture, coord);\n"
+      "  vec4 yuyv = texture2DRect (texture1, coord);\n"
       "  if (fract (x) < 0.25) {\n"
-      "    gl_FragColor = yuyv.r;\n"
+      "    gl_FragColor = vec4 (yuyv.r);\n"
       "  } else {\n"
-      "    gl_FragColor = yuyv.b;\n"
+      "    gl_FragColor = vec4 (yuyv.b);\n"
       "  }\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_U8_U2_YUYV, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_U8_U2_YUYV,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* YUYV */
+      "uniform sampler2DRect texture1;\n" /* YUYV */
       "void main (void) {\n"
-      "  vec4 yuyv = texture2DRect (texture, gl_TexCoord[0].xy);\n"
-      "  gl_FragColor = yuyv.g;\n"
+      "  vec4 yuyv = texture2DRect (texture1, gl_TexCoord[0].xy);\n"
+      "  gl_FragColor = vec4 (yuyv.g);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_U8_V2_YUYV, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_U8_V2_YUYV,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* YUYV */
+      "uniform sampler2DRect texture1;\n" /* YUYV */
       "void main (void) {\n"
-      "  vec4 yuyv = texture2DRect (texture, gl_TexCoord[0].xy);\n"
-      "  gl_FragColor = yuyv.a;\n"
+      "  vec4 yuyv = texture2DRect (texture1, gl_TexCoord[0].xy);\n"
+      "  gl_FragColor = vec4 (yuyv.a);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_U8_Y4_UYVY, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_U8_Y4_UYVY,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* UYVY */
+      "uniform sampler2DRect texture1;\n" /* UYVY */
       "void main (void) {\n"
       /* round x coordinate down from texel center n.5 to texel edge n.0 */
       "  float x = floor (gl_TexCoord[0].x) / 2.0;\n"
       "  float y = gl_TexCoord[0].y;\n"
       /* shift x coordinate from texel edge n.0 to texel center n.5 */
       "  vec2 coord = vec2 (floor (x) + 0.5, y);\n"
-      "  vec4 uyvy = texture2DRect (texture, coord);\n"
+      "  vec4 uyvy = texture2DRect (texture1, coord);\n"
       "  if (fract (x) < 0.25) {\n"
-      "    gl_FragColor = uyvy.g;\n"
+      "    gl_FragColor = vec4 (uyvy.g);\n"
       "  } else {\n"
-      "    gl_FragColor = uyvy.a;\n"
+      "    gl_FragColor = vec4 (uyvy.a);\n"
       "  }\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_U8_U2_UYVY, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_U8_U2_UYVY,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* UYVY */
+      "uniform sampler2DRect texture1;\n" /* UYVY */
       "void main (void) {\n"
-      "  vec4 uyvy = texture2DRect (texture, gl_TexCoord[0].xy);\n"
-      "  gl_FragColor = uyvy.r;\n"
+      "  vec4 uyvy = texture2DRect (texture1, gl_TexCoord[0].xy);\n"
+      "  gl_FragColor = vec4 (uyvy.r);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_U8_V2_UYVY, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_U8_V2_UYVY,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* UYVY */
+      "uniform sampler2DRect texture1;\n" /* UYVY */
       "void main (void) {\n"
-      "  vec4 uyvy = texture2DRect (texture, gl_TexCoord[0].xy);\n"
-      "  gl_FragColor = uyvy.b;\n"
+      "  vec4 uyvy = texture2DRect (texture1, gl_TexCoord[0].xy);\n"
+      "  gl_FragColor = vec4 (uyvy.b);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_U8_Y4_AYUV, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_U8_Y4_AYUV,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* AYUV */
+      "uniform sampler2DRect texture1;\n" /* AYUV */
       "void main (void) {\n"
-      "  vec4 ayuv = texture2DRect (texture, gl_TexCoord[0].xy);\n"
-      "  gl_FragColor = ayuv.g;\n"
+      "  vec4 ayuv = texture2DRect (texture1, gl_TexCoord[0].xy);\n"
+      "  gl_FragColor = vec4 (ayuv.g);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_U8_U4_AYUV, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_U8_U4_AYUV,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* AYUV */
+      "uniform sampler2DRect texture1;\n" /* AYUV */
       "void main (void) {\n"
-      "  vec4 ayuv = texture2DRect (texture, gl_TexCoord[0].xy);\n"
-      "  gl_FragColor = ayuv.b;\n"
+      "  vec4 ayuv = texture2DRect (texture1, gl_TexCoord[0].xy);\n"
+      "  gl_FragColor = vec4 (ayuv.b);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_U8_V4_AYUV, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_U8_V4_AYUV,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n" /* AYUV */
+      "uniform sampler2DRect texture1;\n" /* AYUV */
       "void main (void) {\n"
-      "  vec4 ayuv = texture2DRect (texture, gl_TexCoord[0].xy);\n"
-      "  gl_FragColor = ayuv.a;\n"
+      "  vec4 ayuv = texture2DRect (texture1, gl_TexCoord[0].xy);\n"
+      "  gl_FragColor = vec4 (ayuv.a);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_YUYV_U8_422, 3, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_YUYV_U8_422,
       "#extension GL_ARB_texture_rectangle : enable\n"
       "uniform sampler2DRect texture1;\n" /* Y4 */
       "uniform sampler2DRect texture2;\n" /* U2 */
@@ -259,7 +302,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  yuyv.a = texture2DRect (texture3, gl_TexCoord[0].xy).r;\n"
       "  gl_FragColor = yuyv;\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_UYVY_U8_422, 3, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_UYVY_U8_422,
       "#extension GL_ARB_texture_rectangle : enable\n"
       "uniform sampler2DRect texture1;\n" /* Y4 */
       "uniform sampler2DRect texture2;\n" /* U2 */
@@ -279,7 +322,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  uyvy.a = texture2DRect (texture1, coord2).r;\n"
       "  gl_FragColor = uyvy;\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_CONVERT_AYUV_U8_444, 3, FALSE,
+  { SCHRO_OPENGL_SHADER_CONVERT_AYUV_U8_444,
       "#extension GL_ARB_texture_rectangle : enable\n"
       "uniform sampler2DRect texture1;\n" /* Y4 */
       "uniform sampler2DRect texture2;\n" /* U4 */
@@ -293,7 +336,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  gl_FragColor = ayuv;\n"
       "}\n" },
   /* FIXME: CPU overflows, GPU clamps, is this a problem? */
-  { SCHRO_OPENGL_SHADER_ADD_S16_U8, 2, FALSE,
+  { SCHRO_OPENGL_SHADER_ADD_S16_U8,
       "#extension GL_ARB_texture_rectangle : enable\n"
       "uniform sampler2DRect texture1;\n" /* S16 */
       "uniform sampler2DRect texture2;\n" /* U8 */
@@ -314,7 +357,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  gl_FragColor = (a + b) - bias;\n"
       "}\n" },
   /* FIXME: CPU overflows, GPU clamps, is this a problem? */
-  { SCHRO_OPENGL_SHADER_ADD_S16_S16, 2, FALSE,
+  { SCHRO_OPENGL_SHADER_ADD_S16_S16,
       "#extension GL_ARB_texture_rectangle : enable\n"
       "uniform sampler2DRect texture1;\n" /* S16 */
       "uniform sampler2DRect texture2;\n" /* S16 */
@@ -331,7 +374,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  gl_FragColor = (a + b) - bias;\n"
       "}\n" },
   /* FIXME: CPU overflows, GPU clamps, is this a problem? */
-  { SCHRO_OPENGL_SHADER_SUBTRACT_S16_U8, 2, FALSE,
+  { SCHRO_OPENGL_SHADER_SUBTRACT_S16_U8,
       "#extension GL_ARB_texture_rectangle : enable\n"
       "uniform sampler2DRect texture1;\n" /* S16 */
       "uniform sampler2DRect texture2;\n" /* U8 */
@@ -352,7 +395,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  gl_FragColor = (a - b) - bias;\n"
       "}\n" },
   /* FIXME: CPU overflows, GPU clamps, is this a problem? */
-  { SCHRO_OPENGL_SHADER_SUBTRACT_S16_S16, 2, FALSE,
+  { SCHRO_OPENGL_SHADER_SUBTRACT_S16_S16,
       "#extension GL_ARB_texture_rectangle : enable\n"
       "uniform sampler2DRect texture1;\n" /* S16 */
       "uniform sampler2DRect texture2;\n" /* S16 */
@@ -368,9 +411,9 @@ static struct IndexToShader schro_opengl_shader_list[] = {
          to undo the initial bias */
       "  gl_FragColor = (a - b) - bias;\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_DEINTERLEAVE_XL, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_DEINTERLEAVE_XL,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture1;\n"
       "void main (void) {\n"
       "  float x = gl_TexCoord[0].x;\n"
       /* round y coordinate down from texel center n.5 to texel edge n.0 */
@@ -378,11 +421,11 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       /* scale y coordinate to the destination coordinate and shift it from
          texel edge n.0 to texel center n.5 */
       "  vec2 coord = vec2 (x, floor (y * 2.0) + 0.5);\n" /* FIXME: floor */
-      "  gl_FragColor = texture2DRect (texture, coord);\n"
+      "  gl_FragColor = texture2DRect (texture1, coord);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_DEINTERLEAVE_XH, 1, TRUE,
+  { SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_DEINTERLEAVE_XH,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n"
+      "uniform sampler2DRect texture1;\n"
       /* height of subband XL */
       "uniform vec2 offset;\n" /* = vec2 (0.0, height / 2.0) */
       "void main (void) {\n"
@@ -392,68 +435,160 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       /* scale y coordinate to the destination coordinate and shift it from
          texel edge n.0 to texel center n.5 */
       "  vec2 coord = vec2 (x, floor (y * 2.0) + 1.5);\n" /* FIXME: floor */
-      "  gl_FragColor = texture2DRect (texture, coord);\n"
+      "  gl_FragColor = texture2DRect (texture1, coord);\n"
       "}\n" },
 
-#define FILTER_HAAR_STEP1 \
-      "float filter_haar_step1 (float value) {\n" \
-      /* scale from FP [-0.5..0.5] to real S16 [-32768..32767] and apply \
+  #define IIWT_S16_READ_WRITE_BIASED \
+      "uniform sampler2DRect texture1;\n" \
+      "const float bias = -32768.0 / 65535.0;\n" \
+      "float read_biased (vec2 offset = vec2 (0.0)) {\n" \
+      /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
+         so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
+         leading to S16 zero - S16 zero != S16 zero if calculation is done in
+         FP space */ \
+      "  return texture2DRect (texture1, gl_TexCoord[0].xy + offset).r\n" \
+      "      + bias;\n" \
+      "}\n" \
+      "void write_biased (float value) {\n" \
+      /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
+         to undo the initial bias */ \
+      "  gl_FragColor = vec4 (value - bias);\n" \
+      "}\n"
+
+  #define IIWT_S16_SCALE_UP_DOWN \
+      "float scale_up (float value) {\n" \
+      /* scale from FP [-0.5..0.5] to real S16 [-32768..32767] and apply
          proper rounding */ \
-      "  float input = floor (value * 65535.0 + 0.5);\n" \
-      /* apply haar filter */ \
-      "  float output = -floor ((input + 1.0) / 2.0);\n" \
+      "  return floor (value * 65535.0 + 0.5);\n" \
+      "}\n" \
+      "float scale_down (float value) {\n" \
       /* scale from real S16 [-32768..32767] to FP [-0.5..0.5] */ \
-      "  return output / 65535.0;\n" \
+      "  return value / 65535.0;\n" \
       "}\n"
 
-#define FILTER_HAAR_STEP2 \
-      "float filter_haar_step2 (float value) {\n" \
-      "  return value;\n" \
+  /* 1 = Deslauriers-Debuc (9,7)
+     2 = LeGall (5,3)
+     3 = Deslauriers-Debuc (13,7)
+     4 = Haar
+     5 = Fidelity
+     6 = Daubechies (9,7)
+
+     offset = height / 2
+
+     +----------------+
+     |                |
+     |     L/even     |
+     |                |
+     |              o | A[2 * n - 6]    - - - - o -
+     |              o | A[2 * n - 4]    - - - - o -
+     |              o | A[2 * n - 2]    o - o - o -
+     |           /> X | A[2 * n    ] >  X X X X X X
+     |          /   o | A[2 * n + 2]    o o o - o o
+     |          |   o | A[2 * n + 4]    o - o - o -
+     |          |   o | A[2 * n + 6]    - - - - o -
+     |   offset |   o | A[2 * n + 8]    - - - - o -
+     |          |     |
+     +----------|-----+                 1 2 3 4 5 6
+     |          |     |
+     |          |   o | A[2 * n - 7]    - - - - o -
+     |          |   o | A[2 * n - 5]    - - - - o -
+     |          |   o | A[2 * n - 3]    - - o - o -
+     |          \   o | A[2 * n - 1]    o o o - o o
+     |           \> X | A[2 * n + 1] >  X X X X X X
+     |              o | A[2 * n + 3]    - - o - o -
+     |              o | A[2 * n + 5]    - - - - o -
+     |              o | A[2 * n + 7]    - - - - o -
+     |                |
+     |     H/odd      |
+     |                |
+     +----------------+ */
+
+  #define IIWT_S16_FILTER_HAAR_STEP1 \
+      IIWT_S16_SCALE_UP_DOWN \
+      "float filter (float value) {\n" \
+      "  float input = scale_up (value);\n" /* A[2 ∗ n + 1] */ \
+      "  float output = floor ((input + 1.0) / 2.0);\n" \
+      "  return scale_down (output);\n" \
       "}\n"
 
-  { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_FILTER_XLp, 1, TRUE,
+  #define IIWT_S16_FILTER_HAAR_STEP2 \
+      "float filter (float value) {\n" \
+      "  return value;\n" /* A[2 ∗ n] */ \
+      "}\n"
+
+  #define IIWT_S16_FILTER_LE_GALL_5_3_STEP1 \
+      IIWT_S16_SCALE_UP_DOWN \
+      "float filter (float value1, float value2) {\n" \
+      "  float input1 = scale_up (value1);\n" /* A[2 ∗ n - 1] */ \
+      "  float input2 = scale_up (value2);\n" /* A[2 ∗ n + 1] */ \
+      "  float output = floor ((input1 + input2 + 2.0) / 4.0);\n" \
+      "  return scale_down (output);\n" \
+      "}\n"
+
+  #define IIWT_S16_FILTER_LE_GALL_5_3_STEP2 \
+      IIWT_S16_SCALE_UP_DOWN \
+      "float filter (float value1, float value2) {\n" \
+      "  float input1 = scale_up (value1);\n" /* A[2 ∗ n] */ \
+      "  float input2 = scale_up (value2);\n" /* A[2 ∗ n + 2] */ \
+      "  float output = floor ((input1 + input2 + 1.0) / 2.0);\n" \
+      "  return scale_down (output);\n" \
+      "}\n"
+
+  { SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_FILTER_LE_GALL_5_3_XLp,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n"
+      IIWT_S16_READ_WRITE_BIASED
       /* vertical distance between two corresponding texels from subband XL
          and XH in texels */
       "uniform vec2 offset;\n" /* = vec2 (0.0, height / 2.0) */
-      "const float bias = -32768.0 / 65535.0;\n"
-      FILTER_HAAR_STEP1
+      "uniform vec2 one;\n"
+      IIWT_S16_FILTER_LE_GALL_5_3_STEP1
       "void main (void) {\n"
-      /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
-         so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
-         leading to S16 zero - S16 zero != S16 zero if calculation is done in
-         FP space */
-      "  float xl = texture2DRect (texture, gl_TexCoord[0].xy).r + bias;\n"
-      "  float xh = texture2DRect (texture, gl_TexCoord[0].xy + offset).r\n"
-      "      + bias;\n"
-      /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
-         to undo the initial bias */
-      "  gl_FragColor = (xl + filter_haar_step1 (xh)) - bias;\n"
+      "  float xl = read_biased ();\n" /* A[2 ∗ n] */
+      "  float xh1 = read_biased (offset - one);\n" /* A[2 ∗ n - 1] */
+      "  float xh2 = read_biased (offset);\n" /* A[2 ∗ n + 1] */
+      "  write_biased (xl - filter (xh1, xh2));\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_FILTER_XHp, 1, TRUE,
+  { SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_FILTER_LE_GALL_5_3_XHp,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n"
+      IIWT_S16_READ_WRITE_BIASED
       /* vertical distance between two corresponding texels from subband XL'
          and XH in texels */
       "uniform vec2 offset;\n" /* = vec2 (0.0, height / 2.0) */
-      "const float bias = -32768.0 / 65535.0;\n"
-      FILTER_HAAR_STEP2
+      "uniform vec2 one;\n"
+      IIWT_S16_FILTER_LE_GALL_5_3_STEP2
       "void main (void) {\n"
-      /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
-         so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
-         leading to S16 zero - S16 zero != S16 zero if calculation is done in
-         FP space */
-      "  float xlp = texture2DRect (texture, gl_TexCoord[0].xy - offset).r\n"
-      "      + bias;\n"
-      "  float xh = texture2DRect (texture, gl_TexCoord[0].xy).r + bias;\n"
-      /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
-         to undo the initial bias */
-      "  gl_FragColor = (filter_haar_step2 (xlp) + xh) - bias;\n"
+      "  float xlp1 = read_biased (-offset);\n" /* A[2 ∗ n] */
+      "  float xlp2 = read_biased (-offset + one);\n" /* A[2 ∗ n + 2] */
+      "  float xh = read_biased ();\n" /* A[2 ∗ n + 1] */
+      "  write_biased (filter (xlp1, xlp2) + xh);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_VERTICAL_INTERLEAVE, 1, TRUE,
+  { SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_FILTER_HAAR_XLp,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n"
+      IIWT_S16_READ_WRITE_BIASED
+      /* vertical distance between two corresponding texels from subband XL
+         and XH in texels */
+      "uniform vec2 offset;\n" /* = vec2 (0.0, height / 2.0) */
+      IIWT_S16_FILTER_HAAR_STEP1
+      "void main (void) {\n"
+      "  float xl = read_biased ();\n" /* A[2 ∗ n] */
+      "  float xh = read_biased (offset);\n" /* A[2 ∗ n + 1] */
+      "  write_biased (xl - filter (xh));\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_FILTER_HAAR_XHp,
+      "#extension GL_ARB_texture_rectangle : enable\n"
+      IIWT_S16_READ_WRITE_BIASED
+      /* vertical distance between two corresponding texels from subband XL'
+         and XH in texels */
+      "uniform vec2 offset;\n" /* = vec2 (0.0, height / 2.0) */
+      IIWT_S16_FILTER_HAAR_STEP2
+      "void main (void) {\n"
+      "  float xlp = read_biased (-offset);\n" /* A[2 ∗ n] */
+      "  float xh = read_biased ();\n" /* A[2 ∗ n + 1] */
+      "  write_biased (filter (xlp) + xh);\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_INTERLEAVE,
+      "#extension GL_ARB_texture_rectangle : enable\n"
+      "uniform sampler2DRect texture1;\n"
       /* vertical distance between two corresponding texels from subband XL
          and XH in texels */
       "uniform vec2 offset;\n" /* = vec2 (0.0, height / 2.0) */
@@ -468,55 +603,63 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  }\n"
       /* shift y coordinate from texel edge n.0 to texel center n.5 */
       "  vec2 coord = vec2 (x, floor (y) + 0.5);\n" /* FIXME: floor */
-      "  gl_FragColor = texture2DRect (texture, coord);\n"
+      "  gl_FragColor = texture2DRect (texture1, coord);\n"
       "}\n" },
-  /* FIXME: may merge with vertical version, the code is the same only the
-     value bound to offset differs */
-  { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_FILTER_Lp, 1, TRUE,
+  { SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_FILTER_LE_GALL_5_3_Lp,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n"
+      IIWT_S16_READ_WRITE_BIASED
       /* horizontal distance between two corresponding texels from subband L
          and H in texels */
       "uniform vec2 offset;\n" /* = vec2 (width / 2.0, 0.0) */
-      "const float bias = -32768.0 / 65535.0;\n"
-      FILTER_HAAR_STEP1
+      "uniform vec2 one;\n"
+      IIWT_S16_FILTER_LE_GALL_5_3_STEP1
       "void main (void) {\n"
-      /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
-         so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
-         leading to S16 zero - S16 zero != S16 zero if calculation is done in
-         FP space */
-      "  float lx = texture2DRect (texture, gl_TexCoord[0].xy).r + bias;\n"
-      "  float hx = texture2DRect (texture, gl_TexCoord[0].xy + offset).r\n"
-      "      + bias;\n"
-      /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
-         to undo the initial bias */
-      "  gl_FragColor = (lx + filter_haar_step1 (hx)) - bias;\n"
+      "  float lx = read_biased ();\n" /* A[2 ∗ n] */
+      "  float hx1 = read_biased (offset - one);\n" /* A[2 ∗ n - 1] */
+      "  float hx2 = read_biased (offset);\n" /* A[2 ∗ n + 1] */
+      "  write_biased (lx - filter (hx1, hx2));\n"
       "}\n" },
-  /* FIXME: may merge with vertical version, the code is the same only the
-     value bound to offset differs */
-  { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_FILTER_Hp, 1, TRUE,
+  { SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_FILTER_LE_GALL_5_3_Hp,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n"
+      IIWT_S16_READ_WRITE_BIASED
       /* horizontal distance between two corresponding texels from subband L'
          and H in texels */
       "uniform vec2 offset;\n" /* = vec2 (width / 2.0, 0.0) */
-      "const float bias = -32768.0 / 65535.0;\n"
-      FILTER_HAAR_STEP2
+      "uniform vec2 one;\n"
+      IIWT_S16_FILTER_LE_GALL_5_3_STEP2
       "void main (void) {\n"
-      /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
-         so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
-         leading to S16 zero - S16 zero != S16 zero if calculation is done in
-         FP space */
-      "  float lxp = texture2DRect (texture, gl_TexCoord[0].xy - offset).r\n"
-      "      + bias;\n"
-      "  float hx = texture2DRect (texture, gl_TexCoord[0].xy).r + bias;\n"
-      /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
-         to undo the initial bias */
-      "  gl_FragColor = (filter_haar_step2 (lxp) + hx) - bias;\n"
+      "  float lxp1 = read_biased (-offset);\n" /* A[2 ∗ n] */
+      "  float lxp2 = read_biased (-offset + one);\n" /* A[2 ∗ n + 2] */
+      "  float hx = read_biased ();\n" /* A[2 ∗ n + 1] */
+      "  write_biased (filter (lxp1, lxp2) + hx);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_HORIZONTAL_INTERLEAVE, 1, TRUE,
+  { SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_FILTER_HAAR_Lp,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n"
+      IIWT_S16_READ_WRITE_BIASED
+      /* horizontal distance between two corresponding texels from subband L
+         and H in texels */
+      "uniform vec2 offset;\n" /* = vec2 (width / 2.0, 0.0) */
+      IIWT_S16_FILTER_HAAR_STEP1
+      "void main (void) {\n"
+      "  float lx = read_biased ();\n" /* A[2 ∗ n] */
+      "  float hx = read_biased (offset);\n" /* A[2 ∗ n + 1] */
+      "  write_biased (lx - filter (hx));\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_FILTER_HAAR_Hp,
+      "#extension GL_ARB_texture_rectangle : enable\n"
+      IIWT_S16_READ_WRITE_BIASED
+      /* horizontal distance between two corresponding texels from subband L'
+         and H in texels */
+      "uniform vec2 offset;\n" /* = vec2 (width / 2.0, 0.0) */
+      IIWT_S16_FILTER_HAAR_STEP2
+      "void main (void) {\n"
+      "  float lxp = read_biased (-offset);\n" /* A[2 ∗ n] */
+      "  float hx = read_biased ();\n" /* A[2 ∗ n + 1] */
+      "  write_biased (filter (lxp) + hx);\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_INTERLEAVE,
+      "#extension GL_ARB_texture_rectangle : enable\n"
+      "uniform sampler2DRect texture1;\n"
       /* horizontal distance between two corresponding texels from subband L'
          and H' in texels */
       "uniform vec2 offset;\n" /* = vec2 (width / 2.0, 0.0) */
@@ -531,12 +674,11 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  }\n"
       /* shift y coordinate from texel edge n.0 to texel center n.5 */
       "  vec2 coord = vec2 (floor (x) + 0.5, y);\n" /* FIXME: floor */
-      "  gl_FragColor = texture2DRect (texture, coord);\n"
+      "  gl_FragColor = texture2DRect (texture1, coord);\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_INVERSE_WAVELET_S16_FILTER_SHIFT, 1, FALSE,
+  { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_SHIFT,
       "#extension GL_ARB_texture_rectangle : enable\n"
-      "uniform sampler2DRect texture;\n"
-      "const float bias = -32768.0 / 65535.0;\n"
+      IIWT_S16_READ_WRITE_BIASED
       "float rshift (float value) {\n" \
       /* scale from FP [-0.5..0.5] to real S16 [-32768..32767] and apply \
          proper rounding */ \
@@ -547,17 +689,18 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  return output / 65535.0;\n" \
       "}\n"
       "void main (void) {\n"
-      /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
-         so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
-         leading to S16 zero - S16 zero != S16 zero if calculation is done in
-         FP space */
-      "  float value = texture2DRect (texture, gl_TexCoord[0].xy).r + bias;\n"
-      /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
-         to undo the initial bias */
-      "  gl_FragColor = rshift (value) - bias;\n"
+      "  float value = read_biased ();\n"
+      "  write_biased (rshift (value));\n"
       "}\n" },
 
-  { -1, 0, FALSE, NULL }
+  #undef IIWT_S16_READ_WRITE_BIASED
+  #undef IIWT_S16_SCALE_UP_DOWN
+  #undef IIWT_S16_FILTER_HAAR_STEP1
+  #undef IIWT_S16_FILTER_HAAR_STEP2
+  #undef IIWT_S16_FILTER_LE_GALL_5_3_STEP1
+  #undef IIWT_S16_FILTER_LE_GALL_5_3_STEP2
+
+  { -1, NULL }
 };
 
 struct _SchroOpenGLShaderLibrary {
@@ -613,9 +756,7 @@ schro_opengl_shader_get (SchroOpenGL *opengl, int index)
           schro_opengl_lock (opengl);
 
           library->shaders[index]
-              = schro_opengl_shader_new (schro_opengl_shader_list[i].code,
-              schro_opengl_shader_list[i].textures,
-              schro_opengl_shader_list[i].offset);
+              = schro_opengl_shader_new (schro_opengl_shader_list[i].code);
 
           schro_opengl_unlock (opengl);
       }

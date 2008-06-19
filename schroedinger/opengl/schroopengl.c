@@ -77,8 +77,7 @@ schro_opengl_create_window (SchroOpenGL *opengl)
   int event_base;
   int ret;
   int visual_attr[] = { GLX_RGBA, GLX_DOUBLEBUFFER, GLX_RED_SIZE, 8,
-    GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, None
-  };
+      GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, None };
   int mask;
   XSetWindowAttributes window_attr;
 
@@ -427,6 +426,8 @@ schro_opengl_get_library (SchroOpenGL *opengl)
 void *
 schro_opengl_get_tmp (SchroOpenGL *opengl, int size)
 {
+  SCHRO_ASSERT (size > 0);
+
   if (opengl->tmp_size < size || !opengl->tmp) {
     opengl->tmp_size = size;
 

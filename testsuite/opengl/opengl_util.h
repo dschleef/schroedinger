@@ -22,6 +22,7 @@ extern SchroMemoryDomain *_opengl_domain;
 extern SchroOpenGL *_opengl;
 
 int opengl_format_name (SchroFrameFormat format, char *format_name, int size);
+int opengl_filter_name (int filter, char *filter_name, int size);
 void opengl_custom_pattern_generate (SchroFrame *cpu_frame, int pattern_type,
     int pattern_index, char* pattern_name);
 

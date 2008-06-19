@@ -38,13 +38,13 @@ schro_debug_log (int level, const char *file, const char *function,
   g_free (s);
 #else
   va_list varargs;
-  char s[1000];
+  char s[4096];
 
   if (level > schro_debug_level)
     return;
 
   va_start (varargs, format);
-  vsnprintf (s, 999, format, varargs);
+  vsnprintf (s, sizeof (s) - 1, format, varargs);
   va_end (varargs);
 
   fprintf (stderr, "SCHRO: %s: %s(%d): %s: %s\n",

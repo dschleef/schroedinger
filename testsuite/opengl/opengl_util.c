@@ -67,6 +67,39 @@ opengl_format_name (SchroFrameFormat format, char *format_name, int size)
   return TRUE;
 }
 
+int
+opengl_filter_name (int filter, char *filter_name, int size)
+{
+  switch (filter) {
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
+      strncpy (filter_name, "Deslauriers-Debuc (9,7)", size);
+      break;
+    case SCHRO_WAVELET_LE_GALL_5_3:
+      strncpy (filter_name, "LeGall (5,3)", size);
+      break;
+    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
+      strncpy (filter_name, "Deslauriers-Debuc (13,7)", size);
+      break;
+    case SCHRO_WAVELET_HAAR_0:
+      strncpy (filter_name, "Haar 0", size);
+      break;
+    case SCHRO_WAVELET_HAAR_1:
+      strncpy (filter_name, "Haar 1", size);
+      break;
+    case SCHRO_WAVELET_FIDELITY:
+      strncpy (filter_name, "Fidelity", size);
+      break;
+    case SCHRO_WAVELET_DAUBECHIES_9_7:
+      strncpy (filter_name, "Daubechies (9,7)", size);
+      break;
+    default:
+      strncpy (filter_name, "unknown", size);
+      return FALSE;
+  }
+
+  return TRUE;
+}
+
 static SchroFrameFormat
 opengl_format_as_u8 (SchroFrameFormat format)
 {
