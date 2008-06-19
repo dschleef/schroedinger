@@ -738,6 +738,9 @@ schro_opengl_frame_inverse_iwt_transform (SchroFrame *frame,
       height = params->iwt_chroma_height;
     }
 
+    /* FIXME: vertical deinterleave subbands here until there is an option to
+              get non-interleaved subbands, or the filtering is changed to work
+              together with vertical interleaved subbands */
     for (level = params->transform_depth - 1; level >= 0; --level) {
       SchroFrameData frame_data;
 
@@ -747,7 +750,19 @@ schro_opengl_frame_inverse_iwt_transform (SchroFrame *frame,
       frame_data.height = height >> level;
       frame_data.stride = frame->components[i].stride << level;
 
-      schro_opengl_wavelet_inverse_transform_2d (&frame_data,
+      schro_opengl_wavelet_vertical_deinterleave (&frame_data);
+    }
+
+    for (level = params->transform_depth - 1; level >= 0; --level) {
+      SchroFrameData frame_data;
+
+      frame_data.format = frame->format;
+      frame_data.data = frame->components[i].data;
+      frame_data.width = width >> level;
+      frame_data.height = height >> level;
+      frame_data.stride = frame->components[i].stride << level;
+
+      schro_opengl_wavelet_inverse_transform (&frame_data,
           params->wavelet_filter_index);
     }
   }

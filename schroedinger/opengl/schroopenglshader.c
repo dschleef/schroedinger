@@ -469,7 +469,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
   /* 1 = Deslauriers-Debuc (9,7)
      2 = LeGall (5,3)
      3 = Deslauriers-Debuc (13,7)
-     4 = Haar
+     4 = Haar 0/1
      5 = Fidelity
      6 = Daubechies (9,7)
 

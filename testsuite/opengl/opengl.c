@@ -31,10 +31,10 @@ opengl_test_push_pull (SchroFrameFormat format, int width, int height,
   printf ("==========================================================\n");
 
   if (!opengl_format_name(format, format_name, 64)) {
-      printf ("opengl_test_push_pull: %ix%i\n", width, height);
-      printf ("  unhandled format 0x%x", format);
-      printf ("==========================================================\n");
-      return;
+    printf ("opengl_test_push_pull: %ix%i\n", width, height);
+    printf ("  unhandled format 0x%x", format);
+    printf ("==========================================================\n");
+    return;
   }
 
   printf ("opengl_test_push_pull: %ix%i %s\n", width, height, format_name);
@@ -137,23 +137,23 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
   printf ("==========================================================\n");
 
   if (!opengl_format_name (dest_format, dest_format_name, 64)) {
-      printf ("opengl_test_convert: %ix%i -> %ix%i\n", src_width, src_height,
-          dest_width, dest_height);
-      printf ("  unhandled dest_format 0x%x\n", dest_format);
-      printf ("==========================================================\n");
+    printf ("opengl_test_convert: %ix%i -> %ix%i\n", src_width, src_height,
+        dest_width, dest_height);
+    printf ("  unhandled dest_format 0x%x\n", dest_format);
+    printf ("==========================================================\n");
 
-      _failed = TRUE;
-      return;
+    _failed = TRUE;
+    return;
   }
 
   if (!opengl_format_name (src_format, src_format_name, 64)) {
-      printf ("opengl_test_convert: %ix%i -> %ix%i\n", src_width, src_height,
-          dest_width, dest_height);
-      printf ("  unhandled src_format 0x%x\n", src_format);
-      printf ("==========================================================\n");
+    printf ("opengl_test_convert: %ix%i -> %ix%i\n", src_width, src_height,
+        dest_width, dest_height);
+    printf ("  unhandled src_format 0x%x\n", src_format);
+    printf ("==========================================================\n");
 
-       _failed = TRUE;
-      return;
+    _failed = TRUE;
+    return;
   }
 
   printf ("opengl_test_convert: %ix%i -> %ix%i (%s -> %s)\n", src_width,
@@ -178,8 +178,9 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
 
     start_cpu_convert = schro_utils_get_time ();
 
-    for (r = 0; r < repeats; ++r)
+    for (r = 0; r < repeats; ++r) {
       schro_frame_convert (cpu_dest_ref_frame, cpu_src_ref_frame);
+    }
 
     elapsed_cpu_convert += schro_utils_get_time () - start_cpu_convert;
 
@@ -192,8 +193,9 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
 
     start_opengl_convert = schro_utils_get_time ();
 
-    for (r = 0; r < repeats; ++r)
+    for (r = 0; r < repeats; ++r) {
       schro_opengl_frame_convert (opengl_dest_frame, opengl_src_frame);
+    }
 
     elapsed_opengl_convert += schro_utils_get_time () - start_opengl_convert;
 
@@ -281,23 +283,23 @@ opengl_test_add (SchroFrameFormat dest_format, SchroFrameFormat src_format,
   printf ("==========================================================\n");
 
   if (!opengl_format_name (dest_format, dest_format_name, 64)) {
-      printf ("opengl_test_add: %ix%i -> %ix%i\n", src_width, src_height,
-          dest_width, dest_height);
-      printf ("  unhandled dest_format 0x%x\n", dest_format);
-      printf ("==========================================================\n");
+    printf ("opengl_test_add: %ix%i -> %ix%i\n", src_width, src_height,
+        dest_width, dest_height);
+    printf ("  unhandled dest_format 0x%x\n", dest_format);
+    printf ("==========================================================\n");
 
-       _failed = TRUE;
-      return;
+    _failed = TRUE;
+    return;
   }
 
   if (!opengl_format_name (src_format, src_format_name, 64)) {
-      printf ("opengl_test_add: %ix%i -> %ix%i\n", src_width, src_height,
-          dest_width, dest_height);
-      printf ("  unhandled src_format 0x%x\n", src_format);
-      printf ("==========================================================\n");
+    printf ("opengl_test_add: %ix%i -> %ix%i\n", src_width, src_height,
+        dest_width, dest_height);
+    printf ("  unhandled src_format 0x%x\n", src_format);
+    printf ("==========================================================\n");
 
-       _failed = TRUE;
-      return;
+    _failed = TRUE;
+    return;
   }
 
   printf ("opengl_test_add: %ix%i -> %ix%i (%s -> %s)\n", src_width,
@@ -440,23 +442,23 @@ opengl_test_subtract (SchroFrameFormat dest_format,
   printf ("==========================================================\n");
 
   if (!opengl_format_name (dest_format, dest_format_name, 64)) {
-      printf ("opengl_test_add: %ix%i -> %ix%i\n", src_width, src_height,
-          dest_width, dest_height);
-      printf ("  unhandled dest_format 0x%x\n", dest_format);
-      printf ("==========================================================\n");
+    printf ("opengl_test_add: %ix%i -> %ix%i\n", src_width, src_height,
+        dest_width, dest_height);
+    printf ("  unhandled dest_format 0x%x\n", dest_format);
+    printf ("==========================================================\n");
 
-       _failed = TRUE;
-      return;
+    _failed = TRUE;
+    return;
   }
 
   if (!opengl_format_name (src_format, src_format_name, 64)) {
-      printf ("opengl_test_add: %ix%i -> %ix%i\n", src_width, src_height,
-          dest_width, dest_height);
-      printf ("  unhandled src_format 0x%x\n", src_format);
-      printf ("==========================================================\n");
+    printf ("opengl_test_add: %ix%i -> %ix%i\n", src_width, src_height,
+        dest_width, dest_height);
+    printf ("  unhandled src_format 0x%x\n", src_format);
+    printf ("==========================================================\n");
 
-       _failed = TRUE;
-      return;
+    _failed = TRUE;
+    return;
   }
 
   printf ("opengl_test_subtract: %ix%i -> %ix%i (%s -> %s)\n", src_width,
@@ -574,7 +576,7 @@ opengl_test_subtract (SchroFrameFormat dest_format,
 
 void
 opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
-    int todo, int custom_pattern, int filter)
+    int todo, int custom_pattern, int filter, int transform_depth)
 {
   char format_name[64];
   char filter_name[64];
@@ -592,6 +594,7 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
   int ok;
   int frames = 0;
   int repeats = 1;//_benchmark ? 64 : 1;
+  int level;
   int total_length;
   double start_cpu;
   double start_opengl;
@@ -601,22 +604,23 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
   printf ("==========================================================\n");
 
   if (!opengl_format_name(format, format_name, 64)) {
-      printf ("opengl_test_wavelet_inverse: %ix%i\n", width, height);
-      printf ("  unhandled format 0x%x", format);
-      printf ("==========================================================\n");
-      return;
+    printf ("opengl_test_wavelet_inverse: %ix%i\n", width, height);
+    printf ("  unhandled format 0x%x", format);
+    printf ("==========================================================\n");
+    return;
   }
 
   if (!opengl_filter_name(filter, filter_name, 64)) {
-      printf ("opengl_test_wavelet_inverse: %ix%i %s\n", width, height,
-          format_name);
-      printf ("  unhandled filter 0x%x", format);
-      printf ("==========================================================\n");
-      return;
+    printf ("opengl_test_wavelet_inverse: %ix%i %s\n", width, height,
+        format_name);
+    printf ("  unhandled filter 0x%x", format);
+    printf ("==========================================================\n");
+    return;
   }
 
-  printf ("opengl_test_wavelet_inverse: %ix%i %s, %s\n", width, height,
-      format_name, filter_name);
+  printf ("opengl_test_wavelet_inverse: %ix%i %s, %s, %i level%c\n", width,
+      height, format_name, filter_name, transform_depth,
+      transform_depth > 1 ? 's' : ' ');
 
   if (_benchmark) {
     schro_opengl_frame_print_flags ("  ");
@@ -652,14 +656,44 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
 
     start_cpu = schro_utils_get_time ();
 
-    //for (r = 0; r < repeats; ++r)
-      schro_wavelet_inverse_transform_2d (cpu_postref_frame_data, filter, tmp);
+    for (level = transform_depth - 1; level >= 0; --level) {
+      SchroFrameData frame_data;
+
+      frame_data.format = cpu_postref_frame->format;
+      frame_data.data = cpu_postref_frame->components[0].data;
+      frame_data.width = cpu_postref_frame->components[0].width >> level;
+      frame_data.height = cpu_postref_frame->components[0].height >> level;
+      frame_data.stride = cpu_postref_frame->components[0].stride << level;
+
+      schro_wavelet_inverse_transform_2d (&frame_data, filter, tmp);
+    }
 
     start_opengl = schro_utils_get_time ();
     elapsed_cpu += start_opengl - start_cpu;
 
-    //for (r = 0; r < repeats; ++r)
-      schro_opengl_wavelet_inverse_transform_2d (opengl_frame_data, filter);
+    for (level = transform_depth - 1; level >= 0; --level) {
+      SchroFrameData frame_data;
+
+      frame_data.format = opengl_frame->format;
+      frame_data.data = opengl_frame->components[0].data;
+      frame_data.width = opengl_frame->components[0].width >> level;
+      frame_data.height = opengl_frame->components[0].height >> level;
+      frame_data.stride = opengl_frame->components[0].stride << level;
+
+      schro_opengl_wavelet_vertical_deinterleave (&frame_data);
+    }
+
+    for (level = transform_depth - 1; level >= 0; --level) {
+      SchroFrameData frame_data;
+
+      frame_data.format = opengl_frame->format;
+      frame_data.data = opengl_frame->components[0].data;
+      frame_data.width = opengl_frame->components[0].width >> level;
+      frame_data.height = opengl_frame->components[0].height >> level;
+      frame_data.stride = opengl_frame->components[0].stride << level;
+
+      schro_opengl_wavelet_inverse_transform (&frame_data, filter);
+    }
 
     elapsed_opengl += schro_utils_get_time () - start_opengl;
 
@@ -918,12 +952,13 @@ main (int argc, char *argv[])
   local_opengl = schro_opengl_new ();
   _opengl = local_opengl;
 
-  opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 4, 1,
-        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3);
+  //opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 4, 1,
+  //      OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3, 1);
 
   _opengl = schro_opengl_new ();
 
   if (_benchmark && !special) {
+    /* push/pull */
     opengl_test_push_pull (SCHRO_FRAME_FORMAT_U8_444, 1920, 1080, 100,
         OPENGL_CUSTOM_PATTERN_NONE);
     opengl_test_push_pull (SCHRO_FRAME_FORMAT_S16_444, 1920, 1080, 100,
@@ -935,6 +970,7 @@ main (int argc, char *argv[])
     opengl_test_push_pull (SCHRO_FRAME_FORMAT_AYUV, 1920, 1080, 100,
         OPENGL_CUSTOM_PATTERN_NONE);
 
+    /* convert */
     opengl_test_convert (SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_S16_444,
         1920, 1080, 1920, 1080, 50, OPENGL_CUSTOM_PATTERN_RANDOM);
     opengl_test_convert (SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444,
@@ -954,6 +990,7 @@ main (int argc, char *argv[])
     opengl_test_convert (SCHRO_FRAME_FORMAT_AYUV, SCHRO_FRAME_FORMAT_U8_444,
         1920, 1080, 1920 / 4, 1080, 50, OPENGL_CUSTOM_PATTERN_RANDOM);
 
+    /* add */
     opengl_test_add (SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444,
         1920, 1080, 1920, 1080, 50, OPENGL_CUSTOM_PATTERN_CONST_MIDDLE,
         OPENGL_CUSTOM_PATTERN_RANDOM_S8, 0);
@@ -961,6 +998,7 @@ main (int argc, char *argv[])
         1920, 1080, 1920, 1080, 50, OPENGL_CUSTOM_PATTERN_CONST_MIDDLE,
         OPENGL_CUSTOM_PATTERN_RANDOM, 0);
 
+    /* subtract */
     opengl_test_subtract (SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444,
         1920, 1080, 1920, 1080, 50, OPENGL_CUSTOM_PATTERN_CONST_MAX,
         OPENGL_CUSTOM_PATTERN_RANDOM_U8, 0);
@@ -996,14 +1034,15 @@ main (int argc, char *argv[])
         OPENGL_CUSTOM_PATTERN_CONST_MAX, 0);*/
 
     /*opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 1920, 1080, 1,
-        OPENGL_CUSTOM_PATTERN_RANDOM_U8);*/
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_HAAR_0, 1);*/
     opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
-        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_HAAR_0);
+        OPENGL_CUSTOM_PATTERN_CONST_MAX_U8, SCHRO_WAVELET_LE_GALL_5_3, 3);
+    /*opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_HAAR_1, 1);
     opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
-        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_HAAR_1);
-    opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
-        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3);
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3, 1);*/
   } else {
+    /* push/pull */
     for (i = 0; i < ARRAY_SIZE (opengl_test_push_pull_list); ++i) {
       opengl_test_push_pull (opengl_test_push_pull_list[i].format,
           opengl_test_push_pull_list[i].width,
@@ -1013,6 +1052,7 @@ main (int argc, char *argv[])
           opengl_test_push_pull_list[i].custom_pattern);
     }
 
+    /* convert */
     for (i = 0; i < ARRAY_SIZE (opengl_test_convert_list); ++i) {
       opengl_test_convert (opengl_test_convert_list[i].dest_format,
           opengl_test_convert_list[i].src_format,
@@ -1025,6 +1065,7 @@ main (int argc, char *argv[])
           opengl_test_convert_list[i].custom_pattern);
     }
 
+    /* add */
     for (i = 0; i < ARRAY_SIZE (opengl_test_add_list); ++i) {
       opengl_test_add (opengl_test_add_list[i].dest_format,
           opengl_test_add_list[i].src_format,
@@ -1039,6 +1080,7 @@ main (int argc, char *argv[])
           opengl_test_add_list[i].dest_pattern_drift);
     }
 
+    /* subtract */
     for (i = 0; i < ARRAY_SIZE (opengl_test_subtract_list); ++i) {
       opengl_test_subtract (opengl_test_subtract_list[i].dest_format,
           opengl_test_subtract_list[i].src_format,

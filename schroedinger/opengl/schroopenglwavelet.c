@@ -9,14 +9,104 @@
 #include <schroedinger/opengl/schroopenglshader.h>
 
 void
-schro_opengl_wavelet_transform_2d (SchroFrameData *frame_data, int filter)
+schro_opengl_wavelet_transform (SchroFrameData *frame_data, int filter)
 {
   SCHRO_ERROR ("unimplemented");
   SCHRO_ASSERT (0);
 }
 
 void
-schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
+schro_opengl_wavelet_vertical_deinterleave (SchroFrameData *frame_data)
+{
+  int width, height;
+  int framebuffer_index, texture_index;
+  SchroOpenGLFrameData *opengl_data = NULL;
+  SchroOpenGL *opengl = NULL;
+  SchroOpenGLShader *shader_vertical_deinterleave_xl = NULL;
+  SchroOpenGLShader *shader_vertical_deinterleave_xh = NULL;
+
+  SCHRO_ASSERT (SCHRO_FRAME_FORMAT_DEPTH (frame_data->format)
+      == SCHRO_FRAME_FORMAT_DEPTH_S16);
+  SCHRO_ASSERT (frame_data->width % 2 == 0);
+  SCHRO_ASSERT (frame_data->height % 2 == 0);
+
+  width = frame_data->width;
+  height = frame_data->height;
+  opengl_data = (SchroOpenGLFrameData *) frame_data->data;
+
+  SCHRO_ASSERT (opengl_data != NULL);
+
+  opengl = opengl_data->opengl;
+
+  schro_opengl_lock (opengl);
+
+  shader_vertical_deinterleave_xl = schro_opengl_shader_get (opengl,
+      SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_DEINTERLEAVE_XL);
+  shader_vertical_deinterleave_xh = schro_opengl_shader_get (opengl,
+      SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_DEINTERLEAVE_XH);
+
+  SCHRO_ASSERT (shader_vertical_deinterleave_xl != NULL);
+  SCHRO_ASSERT (shader_vertical_deinterleave_xh != NULL);
+
+  schro_opengl_setup_viewport (width, height);
+
+  SCHRO_OPENGL_CHECK_ERROR
+
+  #define SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES \
+      framebuffer_index = 1 - framebuffer_index; \
+      texture_index = 1 - texture_index; \
+      SCHRO_ASSERT (framebuffer_index != texture_index);
+
+  #define BIND_FRAMEBUFFER_AND_TEXTURE \
+      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, \
+          opengl_data->framebuffers[framebuffer_index]); \
+      glBindTexture (GL_TEXTURE_RECTANGLE_ARB, \
+          opengl_data->texture.handles[texture_index]); \
+      SCHRO_OPENGL_CHECK_ERROR
+
+  framebuffer_index = 1;
+  texture_index = 0;
+
+  /* pass 1: vertical deinterleave */
+  BIND_FRAMEBUFFER_AND_TEXTURE
+
+  glUseProgramObjectARB (shader_vertical_deinterleave_xl->program);
+  glUniform1iARB (shader_vertical_deinterleave_xl->textures[0], 0);
+
+  schro_opengl_render_quad (0, 0, width, height / 2);
+
+  glUseProgramObjectARB (shader_vertical_deinterleave_xh->program);
+  glUniform1iARB (shader_vertical_deinterleave_xh->textures[0], 0);
+  glUniform2fARB (shader_vertical_deinterleave_xh->offset, 0, height / 2);
+
+  schro_opengl_render_quad (0, height / 2, width, height / 2);
+
+  glUseProgramObjectARB (0);
+
+  SCHRO_OPENGL_CHECK_ERROR
+
+  glFlush ();
+
+  /* pass 2: transfer data from secondary to primary framebuffer */
+  SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
+  BIND_FRAMEBUFFER_AND_TEXTURE
+
+  schro_opengl_render_quad (0, 0, width, height);
+
+  SCHRO_OPENGL_CHECK_ERROR
+
+  glFlush ();
+
+  #undef SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
+  #undef BIND_FRAMEBUFFER_AND_TEXTURE
+
+  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
+
+  schro_opengl_unlock (opengl);
+}
+
+void
+schro_opengl_wavelet_inverse_transform (SchroFrameData *frame_data,
     int filter)
 {
   int width, height;
@@ -25,8 +115,6 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   int filter_shift = FALSE;
   SchroOpenGLFrameData *opengl_data = NULL;
   SchroOpenGL *opengl = NULL;
-  SchroOpenGLShader *shader_vertical_deinterleave_xl = NULL;
-  SchroOpenGLShader *shader_vertical_deinterleave_xh = NULL;
   SchroOpenGLShader *shader_vertical_filter_xlp = NULL;
   SchroOpenGLShader *shader_vertical_filter_xhp = NULL;
   SchroOpenGLShader *shader_vertical_interleave = NULL;
@@ -50,17 +138,11 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
 
   schro_opengl_lock (opengl);
 
-  shader_vertical_deinterleave_xl = schro_opengl_shader_get (opengl,
-      SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_DEINTERLEAVE_XL);
-  shader_vertical_deinterleave_xh = schro_opengl_shader_get (opengl,
-      SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_DEINTERLEAVE_XH);
   shader_vertical_interleave = schro_opengl_shader_get (opengl,
       SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_INTERLEAVE);
   shader_horizontal_interleave = schro_opengl_shader_get (opengl,
       SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_INTERLEAVE);
 
-  SCHRO_ASSERT (shader_vertical_deinterleave_xl != NULL);
-  SCHRO_ASSERT (shader_vertical_deinterleave_xh != NULL);
   SCHRO_ASSERT (shader_vertical_interleave != NULL);
   SCHRO_ASSERT (shader_horizontal_interleave != NULL);
 
@@ -167,28 +249,7 @@ schro_opengl_wavelet_inverse_transform_2d (SchroFrameData *frame_data,
   framebuffer_index = 1;
   texture_index = 0;
 
-  /* pass 0: vertical deinterleave */
-  BIND_FRAMEBUFFER_AND_TEXTURE
-
-  glUseProgramObjectARB (shader_vertical_deinterleave_xl->program);
-  glUniform1iARB (shader_vertical_deinterleave_xl->textures[0], 0);
-
-  schro_opengl_render_quad (0, 0, width, height / 2);
-
-  glUseProgramObjectARB (shader_vertical_deinterleave_xh->program);
-  glUniform1iARB (shader_vertical_deinterleave_xh->textures[0], 0);
-  glUniform2fARB (shader_vertical_deinterleave_xh->offset, 0, height / 2);
-
-  schro_opengl_render_quad (0, height / 2, width, height / 2);
-
-  glUseProgramObjectARB (0);
-
-  SCHRO_OPENGL_CHECK_ERROR
-
-  glFlush ();
-
   /* pass 1: vertical filtering => XL + f(XH) = XL' */
-  SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
   BIND_FRAMEBUFFER_AND_TEXTURE
 
   glUseProgramObjectARB (shader_vertical_filter_xlp->program);
