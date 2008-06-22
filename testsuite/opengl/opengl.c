@@ -647,6 +647,19 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
     opengl_custom_pattern_generate (cpu_preref_frame, custom_pattern, i,
         pattern_name);
 
+    /* cpu forward transform */
+    for (level = 0; level < transform_depth; ++level) {
+      SchroFrameData frame_data;
+
+      frame_data.format = cpu_preref_frame->format;
+      frame_data.data = cpu_preref_frame->components[0].data;
+      frame_data.width = cpu_preref_frame->components[0].width >> level;
+      frame_data.height = cpu_preref_frame->components[0].height >> level;
+      frame_data.stride = cpu_preref_frame->components[0].stride << level;
+
+      schro_wavelet_transform_2d (&frame_data, filter, tmp);
+    }
+
     schro_frame_convert (cpu_postref_frame, cpu_preref_frame);
 
     schro_opengl_lock (_opengl);
@@ -656,6 +669,7 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
 
     start_cpu = schro_utils_get_time ();
 
+    /* cpu inverse transform */
     for (level = transform_depth - 1; level >= 0; --level) {
       SchroFrameData frame_data;
 
@@ -671,7 +685,8 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
     start_opengl = schro_utils_get_time ();
     elapsed_cpu += start_opengl - start_cpu;
 
-    for (level = transform_depth - 1; level >= 0; --level) {
+    /* opengl vertical deinterleave */
+    for (level = 0; level < transform_depth; ++level) {
       SchroFrameData frame_data;
 
       frame_data.format = opengl_frame->format;
@@ -683,6 +698,7 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
       schro_opengl_wavelet_vertical_deinterleave (&frame_data);
     }
 
+    /* opengl inverse transform */
     for (level = transform_depth - 1; level >= 0; --level) {
       SchroFrameData frame_data;
 
@@ -1033,14 +1049,19 @@ main (int argc, char *argv[])
         16, 8, 16, 8, 1, OPENGL_CUSTOM_PATTERN_CONST_MAX,
         OPENGL_CUSTOM_PATTERN_CONST_MAX, 0);*/
 
-    /*opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 1920, 1080, 1,
-        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_HAAR_0, 1);*/
+    opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 64, 64, 1,
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3, 6);
+    opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 1024, 1024, 1,
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3, 3);
     opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
-        OPENGL_CUSTOM_PATTERN_CONST_MAX_U8, SCHRO_WAVELET_LE_GALL_5_3, 3);
-    /*opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
-        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_HAAR_1, 1);
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3, 4);
     opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
-        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3, 1);*/
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8,
+        SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 1);
+    opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_HAAR_0, 2);
+    opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_HAAR_1, 4);
   } else {
     /* push/pull */
     for (i = 0; i < ARRAY_SIZE (opengl_test_push_pull_list); ++i) {

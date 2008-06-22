@@ -203,15 +203,15 @@ schro_opengl_check_essential_extensions (SchroOpenGL *opengl)
 
   schro_opengl_lock (opengl);
 
-  #define CHECK_EXTENSION(name) \
-    if (!GLEW_##name) { \
-      SCHRO_ERROR ("missing essential extension GL_" #name); \
+  #define CHECK_EXTENSION(_name) \
+    if (!GLEW_##_name) { \
+      SCHRO_ERROR ("missing essential extension GL_" #_name); \
       ok = FALSE; \
     }
 
-  #define CHECK_EXTENSION_GROUPS(group1, group2, name) \
-    if (!GLEW_##group1##_##name && !GLEW_##group2##_##name) { \
-      SCHRO_ERROR ("missing essential extension GL_{" #group1 "|" #group2 "}_" #name); \
+  #define CHECK_EXTENSION_GROUPS(_group1, _group2, _name) \
+    if (!GLEW_##_group1##_##_name && !GLEW_##_group2##_##_name) { \
+      SCHRO_ERROR ("missing essential extension GL_{" #_group1 "|" #_group2 "}_" #_name); \
       ok = FALSE; \
     }
 

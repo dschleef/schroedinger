@@ -8,8 +8,8 @@
 #include <schroedinger/opengl/schroopenglshader.h>
 #include <liboil/liboil.h>
 
-#define CONVERT_PROTOTYPE(func) \
-    static void schro_opengl_frame_convert_##func (SchroFrame *dest, \
+#define CONVERT_PROTOTYPE(_func) \
+    static void schro_opengl_frame_convert_##_func (SchroFrame *dest, \
     SchroFrame *src)
 
 CONVERT_PROTOTYPE (u8_s16);
@@ -33,9 +33,9 @@ struct FormatToFunction {
   SchroOpenGLFrameBinaryFunc func;
 };
 
-#define CONVERT_MAPPING(dest, src, func) \
-    { SCHRO_FRAME_FORMAT_##dest, SCHRO_FRAME_FORMAT_##src, \
-    schro_opengl_frame_convert_##func }
+#define CONVERT_MAPPING(_dest, _src, _func) \
+    { SCHRO_FRAME_FORMAT_##_dest, SCHRO_FRAME_FORMAT_##_src, \
+    schro_opengl_frame_convert_##_func }
 
 static struct FormatToFunction schro_opengl_frame_convert_func_list[] = {
   /* S16 -> U8 */

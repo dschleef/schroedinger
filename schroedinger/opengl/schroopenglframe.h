@@ -10,8 +10,8 @@ SCHRO_BEGIN_DECLS
 
 //#define OPENGL_INTERNAL_TIME_MEASUREMENT
 
-#define SCHRO_FRAME_IS_OPENGL(frame) \
-    ((frame)->domain && ((frame)->domain->flags & SCHRO_MEMORY_DOMAIN_OPENGL))
+#define SCHRO_FRAME_IS_OPENGL(_frame) \
+    ((_frame)->domain && ((_frame)->domain->flags & SCHRO_MEMORY_DOMAIN_OPENGL))
 
 #define SCHRO_OPENGL_FRAME_PIXELBUFFERS 4
 

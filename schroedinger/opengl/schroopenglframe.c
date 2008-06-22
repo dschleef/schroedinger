@@ -190,9 +190,9 @@ schro_opengl_frame_print_flags (const char* indent)
 {
   schro_opengl_frame_check_flags ();
 
-  #define PRINT_FLAG(text, flag) \
-      printf ("%s  "text"%s\n", indent, \
-          _schro_opengl_frame_flags & (flag) ? "on" : "off")
+  #define PRINT_FLAG(_text, _flag) \
+      printf ("%s  "_text"%s\n", indent, \
+          _schro_opengl_frame_flags & (_flag) ? "on" : "off")
 
   printf ("%sstore flags\n", indent);
 
@@ -741,7 +741,7 @@ schro_opengl_frame_inverse_iwt_transform (SchroFrame *frame,
     /* FIXME: vertical deinterleave subbands here until there is an option to
               get non-interleaved subbands, or the filtering is changed to work
               together with vertical interleaved subbands */
-    for (level = params->transform_depth - 1; level >= 0; --level) {
+    for (level = 0; level < params->transform_depth; ++level) {
       SchroFrameData frame_data;
 
       frame_data.format = frame->format;

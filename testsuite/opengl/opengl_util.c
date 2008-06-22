@@ -135,207 +135,145 @@ opengl_format_as_u8 (SchroFrameFormat format)
   return SCHRO_FRAME_FORMAT_U8_444;
 }
 
+#define CUSTOM_PATTERN_CONST(_block_u8, _block_s16) { \
+    int i, j; \
+    uint8_t *data_u8; \
+    int16_t *data_s16; \
+    if (SCHRO_FRAME_FORMAT_DEPTH(frame_data->format) \
+        == SCHRO_FRAME_FORMAT_DEPTH_U8) { \
+      for (j = 0; j < frame_data->height; ++j) { \
+        data_u8 = SCHRO_FRAME_DATA_GET_LINE(frame_data, j); \
+        for (i = 0; i < frame_data->width; ++i) { \
+          _block_u8 \
+        } \
+     } \
+    } else { \
+      for (j = 0; j < frame_data->height; ++j) { \
+        data_s16 = SCHRO_FRAME_DATA_GET_LINE(frame_data, j); \
+        for (i = 0; i < frame_data->width; ++i) { \
+          _block_s16 \
+        } \
+      } \
+    } \
+  }
+
 static void
 opengl_custom_pattern_random (SchroFrameData *frame_data)
 {
-  int i, j;
+  CUSTOM_PATTERN_CONST({
+    data_u8[i] = oil_rand_u8();
+  },{
+    data_s16[i] = oil_rand_s16();
 
-  if (SCHRO_FRAME_FORMAT_DEPTH(frame_data->format)
-      == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-    uint8_t *data;
-
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        data[i] = oil_rand_u8();
-      }
-    }
-  } else {
-    int16_t *data;
-
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        data[i] = oil_rand_s16();
-
-        // FIXME: can't use full S16 range here, schro_frame_convert_u8_s16
-        // doesn't support it, but I need to use schro_frame_convert_u8_s16
-        // to get a ref frame to test the opengl convert against
-        if (data[i] > 32767 - 128)
-          data[i] = 32767 - 128;
-      }
-    }
-  }
+    /* FIXME: can't use full S16 range here, schro_frame_convert_u8_s16 doesn't
+              support it, but I need to use schro_frame_convert_u8_s16 to get a
+              ref frame to test the opengl convert against */
+    if (data_s16[i] > 32767 - 128)
+      data_s16[i] = 32767 - 128;
+  })
 }
+
 static void
 opengl_custom_pattern_random_u8 (SchroFrameData *frame_data)
 {
-  int i, j;
-
-  if (SCHRO_FRAME_FORMAT_DEPTH(frame_data->format)
-      == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-    uint8_t *data;
-
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        data[i] = oil_rand_u8();
-      }
-    }
-  } else {
-    int16_t *data;
-
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        data[i] = oil_rand_u8();
-      }
-    }
-  }
+  CUSTOM_PATTERN_CONST({
+    data_u8[i] = oil_rand_u8();
+  },{
+    data_s16[i] = oil_rand_u8();
+  })
 }
 
 static void
 opengl_custom_pattern_random_s8 (SchroFrameData *frame_data)
 {
-  int i, j;
+  CUSTOM_PATTERN_CONST({
+    data_u8[i] = oil_rand_u8();
+  },{
+    data_s16[i] = oil_rand_s8();
+  })
+}
 
-  if (SCHRO_FRAME_FORMAT_DEPTH(frame_data->format)
-      == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-    opengl_custom_pattern_random_u8 (frame_data);
-  } else {
-    int16_t *data;
+static void
+opengl_custom_pattern_const_1 (SchroFrameData *frame_data)
+{
+  CUSTOM_PATTERN_CONST({
+    data_u8[i] = 1;
+  },{
+    data_s16[i] = 1;
+  })
+}
 
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        data[i] = oil_rand_s8();
-      }
-    }
-  }
+static void
+opengl_custom_pattern_const_16 (SchroFrameData *frame_data)
+{
+  CUSTOM_PATTERN_CONST({
+    data_u8[i] = 16;
+  },{
+    data_s16[i] = 16;
+  })
 }
 
 static void
 opengl_custom_pattern_const_min (SchroFrameData *frame_data)
 {
-  int i, j;
+  CUSTOM_PATTERN_CONST({
+    data_u8[i] = 0;
+  },{
+    data_s16[i] = -32768;
+  })
+}
 
-  if (SCHRO_FRAME_FORMAT_DEPTH(frame_data->format)
-      == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-    uint8_t *data;
-
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        data[i] = 0;
-      }
-    }
-  } else {
-    int16_t *data;
-
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        data[i] = -32768;
-      }
-    }
-  }
+static void
+opengl_custom_pattern_const_min_u8 (SchroFrameData *frame_data)
+{
+  CUSTOM_PATTERN_CONST({
+    data_u8[i] = 0;
+  },{
+    data_s16[i] = 0;
+  })
 }
 
 static void
 opengl_custom_pattern_const_middle (SchroFrameData *frame_data)
 {
-  int i, j;
+  CUSTOM_PATTERN_CONST({
+    data_u8[i] = 127;
+  },{
+    data_s16[i] = 0;
+  })
+}
 
-  if (SCHRO_FRAME_FORMAT_DEPTH(frame_data->format)
-      == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-    uint8_t *data;
-
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        data[i] = 127;
-      }
-    }
-  } else {
-    int16_t *data;
-
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        data[i] = 0;
-      }
-    }
-  }
+static void
+opengl_custom_pattern_const_middle_u8 (SchroFrameData *frame_data)
+{
+  CUSTOM_PATTERN_CONST({
+    data_u8[i] = 127;
+  },{
+    data_s16[i] = 127;
+  })
 }
 
 static void
 opengl_custom_pattern_const_max (SchroFrameData *frame_data)
 {
-  int i, j;
-
-  if (SCHRO_FRAME_FORMAT_DEPTH(frame_data->format)
-      == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-    uint8_t *data;
-
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        data[i] = 255;
-      }
-    }
-  } else {
-    int16_t *data;
-
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        // FIXME: can't use full S16 range here, schro_frame_convert_u8_s16
-        // doesn't support it, but I need to use schro_frame_convert_u8_s16
-        // to get a ref frame to test the opengl convert against
-        data[i] = 32767 - 128;
-      }
-    }
-  }
+  CUSTOM_PATTERN_CONST({
+    data_u8[i] = 255;
+  },{
+    /* FIXME: can't use full S16 range here, schro_frame_convert_u8_s16 doesn't
+              support it, but I need to use schro_frame_convert_u8_s16 to get a
+              ref frame to test the opengl convert against */
+    data_s16[i] = 32767 - 128;
+  })
 }
 
 static void
 opengl_custom_pattern_const_max_u8 (SchroFrameData *frame_data)
 {
-  int i, j;
-
-  if (SCHRO_FRAME_FORMAT_DEPTH(frame_data->format)
-      == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-    uint8_t *data;
-
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        data[i] = 255;
-      }
-    }
-  } else {
-    int16_t *data;
-
-    for (j = 0; j < frame_data->height; ++j) {
-      data = SCHRO_FRAME_DATA_GET_LINE(frame_data, j);
-
-      for (i = 0; i < frame_data->width; ++i) {
-        data[i] = 255;
-      }
-    }
-  }
+  CUSTOM_PATTERN_CONST({
+    data_u8[i] = 255;
+  },{
+    data_s16[i] = 255;
+  })
 }
 
 void
@@ -386,6 +324,20 @@ opengl_custom_pattern_generate (SchroFrame *cpu_frame,
       opengl_custom_pattern_random_s8 (cpu_frame->components + 1);
       opengl_custom_pattern_random_s8 (cpu_frame->components + 2);
       break;
+    case OPENGL_CUSTOM_PATTERN_CONST_1:
+      strcpy (pattern_name, "custom const 1");
+
+      opengl_custom_pattern_const_1 (cpu_frame->components + 0);
+      opengl_custom_pattern_const_1 (cpu_frame->components + 1);
+      opengl_custom_pattern_const_1 (cpu_frame->components + 2);
+      break;
+    case OPENGL_CUSTOM_PATTERN_CONST_16:
+      strcpy (pattern_name, "custom const 16");
+
+      opengl_custom_pattern_const_16 (cpu_frame->components + 0);
+      opengl_custom_pattern_const_16 (cpu_frame->components + 1);
+      opengl_custom_pattern_const_16 (cpu_frame->components + 2);
+      break;
     case OPENGL_CUSTOM_PATTERN_CONST_MIN:
       strcpy (pattern_name, "custom const min");
 
@@ -393,12 +345,26 @@ opengl_custom_pattern_generate (SchroFrame *cpu_frame,
       opengl_custom_pattern_const_min (cpu_frame->components + 1);
       opengl_custom_pattern_const_min (cpu_frame->components + 2);
       break;
+    case OPENGL_CUSTOM_PATTERN_CONST_MIN_U8:
+      strcpy (pattern_name, "custom const min U8");
+
+      opengl_custom_pattern_const_min_u8 (cpu_frame->components + 0);
+      opengl_custom_pattern_const_min_u8 (cpu_frame->components + 1);
+      opengl_custom_pattern_const_min_u8 (cpu_frame->components + 2);
+      break;
     case OPENGL_CUSTOM_PATTERN_CONST_MIDDLE:
       strcpy (pattern_name, "custom const middle");
 
       opengl_custom_pattern_const_middle (cpu_frame->components + 0);
       opengl_custom_pattern_const_middle (cpu_frame->components + 1);
       opengl_custom_pattern_const_middle (cpu_frame->components + 2);
+      break;
+    case OPENGL_CUSTOM_PATTERN_CONST_MIDDLE_U8:
+      strcpy (pattern_name, "custom const middle U8");
+
+      opengl_custom_pattern_const_middle_u8 (cpu_frame->components + 0);
+      opengl_custom_pattern_const_middle_u8 (cpu_frame->components + 1);
+      opengl_custom_pattern_const_middle_u8 (cpu_frame->components + 2);
       break;
     case OPENGL_CUSTOM_PATTERN_CONST_MAX:
       strcpy (pattern_name, "custom const max");
