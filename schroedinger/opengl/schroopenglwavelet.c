@@ -188,6 +188,11 @@ schro_opengl_wavelet_inverse_transform (SchroFrameData *frame_data,
 
   switch (filter) {
     case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
+      shader_filter_lp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIERS_DUBUC_9_7_Lp);
+      shader_filter_hp = schro_opengl_shader_get (opengl,
+          SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIERS_DUBUC_9_7_Hp);
+
       filter_shift = TRUE;
       break;
     case SCHRO_WAVELET_LE_GALL_5_3:
@@ -200,9 +205,9 @@ schro_opengl_wavelet_inverse_transform (SchroFrameData *frame_data,
       break;
     case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
       shader_filter_lp = schro_opengl_shader_get (opengl,
-          SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIES_DUBUC_13_7_Lp);
+          SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIERS_DUBUC_13_7_Lp);
       shader_filter_hp = schro_opengl_shader_get (opengl,
-          SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIES_DUBUC_13_7_Hp);
+          SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIERS_DUBUC_13_7_Hp);
 
       filter_shift = TRUE;
       break;
@@ -223,9 +228,15 @@ schro_opengl_wavelet_inverse_transform (SchroFrameData *frame_data,
       filter_shift = TRUE;
       break;
     case SCHRO_WAVELET_FIDELITY:
+      SCHRO_ERROR ("fidelity filter is not implemented yet");
+      SCHRO_ASSERT (0);
+
       filter_shift = FALSE;
       break;
     case SCHRO_WAVELET_DAUBECHIES_9_7:
+      SCHRO_ERROR ("daubechies 9,7 filter is not implemented yet");
+      SCHRO_ASSERT (0);
+
       filter_shift = TRUE;
       break;
     default:

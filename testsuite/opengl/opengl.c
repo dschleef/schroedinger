@@ -11,109 +11,6 @@
 #include "opengl_util.h"
 
 void
-opengl_test_push_pull (SchroFrameFormat format, int width, int height,
-    int todo, int custom_pattern)
-{
-  char format_name[64];
-  SchroFrame *cpu_ref_frame;
-  SchroFrame *cpu_test_frame;
-  SchroFrame *opengl_frame;
-  char pattern_name[TEST_PATTERN_NAME_SIZE];
-  int i;
-  int ok;
-  int frames = 0;
-  int total_length;
-  double start_push;
-  double start_pull;
-  double elapsed_push = 0;
-  double elapsed_pull = 0;
-
-  printf ("==========================================================\n");
-
-  if (!opengl_format_name(format, format_name, 64)) {
-    printf ("opengl_test_push_pull: %ix%i\n", width, height);
-    printf ("  unhandled format 0x%x", format);
-    printf ("==========================================================\n");
-    return;
-  }
-
-  printf ("opengl_test_push_pull: %ix%i %s\n", width, height, format_name);
-
-  if (_benchmark) {
-    schro_opengl_frame_print_flags ("  ");
-  }
-
-  cpu_ref_frame = schro_frame_new_and_alloc (_cpu_domain, format, width,
-      height);
-  cpu_test_frame = schro_frame_new_and_alloc (_cpu_domain, format, width,
-      height);
-  opengl_frame = schro_frame_new_and_alloc (_opengl_domain, format, width,
-      height);
-
-  printf ("  patterns\n");
-
-  for (i = 0; i < todo; ++i) {
-    opengl_custom_pattern_generate (cpu_ref_frame, custom_pattern, i,
-        pattern_name);
-
-    schro_opengl_lock (_opengl);
-
-    schro_opengl_frame_setup (_opengl, opengl_frame);
-
-    start_push = schro_utils_get_time ();
-
-    schro_opengl_frame_push (opengl_frame, cpu_ref_frame);
-
-    start_pull = schro_utils_get_time ();
-    elapsed_push += start_pull - start_push;
-
-    schro_opengl_frame_pull (cpu_test_frame, opengl_frame);
-
-    elapsed_pull += schro_utils_get_time () - start_pull;
-
-    schro_opengl_frame_cleanup (opengl_frame);
-
-    schro_opengl_unlock (_opengl);
-
-    ++frames;
-
-    ok = frame_compare (cpu_ref_frame, cpu_test_frame);
-
-    printf ("    %s: %s\n", pattern_name, ok ? "OK" : "broken");
-
-    if (!ok) {
-      _failed = TRUE;
-
-      if (width <= 32 && height <= 32) {
-        frame_dump (cpu_ref_frame, cpu_ref_frame);
-        frame_dump (cpu_test_frame, cpu_ref_frame);
-      }
-    }
-  }
-
-  if (_benchmark) {
-    total_length = (cpu_ref_frame->components[0].length
-        + cpu_ref_frame->components[1].length
-        + cpu_ref_frame->components[2].length) * frames;
-
-    printf ("  results\n");
-    printf ("    %i frames pushed/pulled: %.2f mbyte each\n", frames,
-        (float)total_length / (1024 * 1024));
-    printf ("    total %f/%f sec, %.2f/%.2f mbyte/sec\n", elapsed_push,
-        elapsed_pull, total_length / elapsed_push / (1024 * 1024),
-        total_length / elapsed_pull / (1024 * 1024));
-    printf ("    avg   %f/%f sec, %f sec\n", elapsed_push / frames,
-        elapsed_pull / frames, elapsed_push / frames + elapsed_pull / frames);
-  }
-
-  schro_frame_unref (cpu_ref_frame);
-  schro_frame_unref (cpu_test_frame);
-  schro_frame_unref (opengl_frame);
-
-  printf ("==========================================================\n");
-}
-
-void
 opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
     int dest_width, int dest_height, int src_width, int src_height, int todo,
     int custom_pattern)
@@ -249,323 +146,6 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
   }
 
   schro_frame_unref (cpu_dest_ref_frame);
-  schro_frame_unref (cpu_src_ref_frame);
-  schro_frame_unref (cpu_dest_test_frame);
-  schro_frame_unref (opengl_dest_frame);
-  schro_frame_unref (opengl_src_frame);
-
-  printf ("==========================================================\n");
-}
-
-void
-opengl_test_add (SchroFrameFormat dest_format, SchroFrameFormat src_format,
-    int dest_width, int dest_height, int src_width, int src_height, int todo,
-    int custom_dest_pattern, int custom_src_pattern, int dest_pattern_drift)
-{
-  char dest_format_name[64];
-  char src_format_name[64];
-  SchroFrame *cpu_dest_preref_frame;
-  SchroFrame *cpu_dest_postref_frame;
-  SchroFrame *cpu_src_ref_frame;
-  SchroFrame *cpu_dest_test_frame;
-  SchroFrame *opengl_dest_frame;
-  SchroFrame *opengl_src_frame;
-  char dest_pattern_name[TEST_PATTERN_NAME_SIZE];
-  char src_pattern_name[TEST_PATTERN_NAME_SIZE];
-  int i/*, r*/;
-  int ok;
-  int frames = 0;
-  int repeats = 1;//_benchmark ? 64 : 1;
-  int total_length;
-  double start_cpu, start_opengl;
-  double elapsed_cpu = 0, elapsed_opengl = 0;
-
-  printf ("==========================================================\n");
-
-  if (!opengl_format_name (dest_format, dest_format_name, 64)) {
-    printf ("opengl_test_add: %ix%i -> %ix%i\n", src_width, src_height,
-        dest_width, dest_height);
-    printf ("  unhandled dest_format 0x%x\n", dest_format);
-    printf ("==========================================================\n");
-
-    _failed = TRUE;
-    return;
-  }
-
-  if (!opengl_format_name (src_format, src_format_name, 64)) {
-    printf ("opengl_test_add: %ix%i -> %ix%i\n", src_width, src_height,
-        dest_width, dest_height);
-    printf ("  unhandled src_format 0x%x\n", src_format);
-    printf ("==========================================================\n");
-
-    _failed = TRUE;
-    return;
-  }
-
-  printf ("opengl_test_add: %ix%i -> %ix%i (%s -> %s)\n", src_width,
-      src_height, dest_width, dest_height, src_format_name, dest_format_name);
-
-  cpu_dest_preref_frame = schro_frame_new_and_alloc (_cpu_domain, dest_format,
-      dest_width, dest_height);
-  cpu_dest_postref_frame = schro_frame_new_and_alloc (_cpu_domain, dest_format,
-      dest_width, dest_height);
-  cpu_src_ref_frame = schro_frame_new_and_alloc (_cpu_domain, src_format,
-      src_width, src_height);
-  cpu_dest_test_frame = schro_frame_new_and_alloc (_cpu_domain, dest_format,
-      dest_width, dest_height);
-  opengl_dest_frame = schro_frame_new_and_alloc (_opengl_domain, dest_format,
-      dest_width, dest_height);
-  opengl_src_frame = schro_frame_new_and_alloc (_opengl_domain, src_format,
-      src_width, src_height);
-
-  printf ("  patterns\n");
-
-  for (i = 0; i < todo; ++i) {
-    opengl_custom_pattern_generate (cpu_dest_preref_frame, custom_dest_pattern,
-        i + dest_pattern_drift, dest_pattern_name);
-    opengl_custom_pattern_generate (cpu_src_ref_frame, custom_src_pattern, i,
-        src_pattern_name);
-
-    schro_frame_convert (cpu_dest_postref_frame, cpu_dest_preref_frame);
-
-    schro_opengl_lock (_opengl);
-
-    schro_opengl_frame_setup (_opengl, opengl_dest_frame);
-    schro_opengl_frame_setup (_opengl, opengl_src_frame);
-
-    schro_opengl_frame_push (opengl_dest_frame, cpu_dest_preref_frame);
-    schro_opengl_frame_push (opengl_src_frame, cpu_src_ref_frame);
-
-    schro_opengl_unlock (_opengl);
-
-    start_cpu = schro_utils_get_time ();
-
-    //for (r = 0; r < repeats; ++r)
-      schro_frame_add (cpu_dest_postref_frame, cpu_src_ref_frame);
-
-    elapsed_cpu += schro_utils_get_time () - start_cpu;
-
-    schro_opengl_lock (_opengl);
-
-    start_opengl = schro_utils_get_time ();
-
-    //for (r = 0; r < repeats; ++r)
-      schro_opengl_frame_add (opengl_dest_frame, opengl_src_frame);
-
-    elapsed_opengl += schro_utils_get_time () - start_opengl;
-
-    schro_opengl_frame_pull (cpu_dest_test_frame, opengl_dest_frame);
-
-    schro_opengl_frame_cleanup (opengl_dest_frame);
-    schro_opengl_frame_cleanup (opengl_src_frame);
-
-    schro_opengl_unlock (_opengl);
-
-    ++frames;
-
-    ok = frame_compare (cpu_dest_postref_frame, cpu_dest_test_frame);
-
-    printf ("    %s -> %s: %s\n", src_pattern_name, dest_pattern_name,
-        ok ? "OK" : "broken");
-
-    if (!ok) {
-      _failed = TRUE;
-
-      if (dest_width <= 32 && dest_height <= 32 && src_width <= 32
-          && src_height <= 32) {
-        printf ("dest preref frame\n");
-        frame_dump (cpu_dest_preref_frame, cpu_dest_preref_frame);
-
-        printf ("src ref frame\n");
-        frame_dump (cpu_src_ref_frame, cpu_src_ref_frame);
-
-        printf ("dest postref frame = dest preref frame + src ref frame\n");
-        frame_dump (cpu_dest_postref_frame, cpu_dest_postref_frame);
-
-        printf ("dest test frame <-> dest postref frame\n");
-        frame_dump (cpu_dest_test_frame, cpu_dest_postref_frame);
-      }
-    }
-  }
-
-  if (_benchmark) {
-    total_length = (cpu_src_ref_frame->components[0].length
-        + cpu_src_ref_frame->components[1].length
-        + cpu_src_ref_frame->components[2].length) * frames;
-
-    printf ("  results\n");
-    printf ("    %i frames added via cpu/opengl with %i repeats: %.2f "
-        "mbyte each\n", frames, repeats,
-        ((double)total_length * repeats) / (1024 * 1024));
-    printf ("    total %f/%f sec, %.2f/%.2f mbyte/sec\n", elapsed_cpu,
-        elapsed_opengl,
-        ((double)total_length * repeats) / elapsed_cpu / (1024 * 1024),
-        ((double)total_length * repeats) / elapsed_opengl / (1024 * 1024));
-    printf ("    avg   %.8f/%.8f sec\n", elapsed_cpu / repeats / frames,
-        elapsed_opengl / repeats / frames);
-  }
-
-  schro_frame_unref (cpu_dest_preref_frame);
-  schro_frame_unref (cpu_dest_postref_frame);
-  schro_frame_unref (cpu_src_ref_frame);
-  schro_frame_unref (cpu_dest_test_frame);
-  schro_frame_unref (opengl_dest_frame);
-  schro_frame_unref (opengl_src_frame);
-
-  printf ("==========================================================\n");
-}
-
-void
-opengl_test_subtract (SchroFrameFormat dest_format,
-    SchroFrameFormat src_format, int dest_width, int dest_height,
-    int src_width, int src_height, int todo, int custom_dest_pattern,
-    int custom_src_pattern, int dest_pattern_drift)
-{
-  char dest_format_name[64];
-  char src_format_name[64];
-  SchroFrame *cpu_dest_preref_frame;
-  SchroFrame *cpu_dest_postref_frame;
-  SchroFrame *cpu_src_ref_frame;
-  SchroFrame *cpu_dest_test_frame;
-  SchroFrame *opengl_dest_frame;
-  SchroFrame *opengl_src_frame;
-  char dest_pattern_name[TEST_PATTERN_NAME_SIZE];
-  char src_pattern_name[TEST_PATTERN_NAME_SIZE];
-  int i/*, r*/;
-  int ok;
-  int frames = 0;
-  int repeats = 1;//_benchmark ? 64 : 1;
-  int total_length;
-  double start_cpu, start_opengl;
-  double elapsed_cpu = 0, elapsed_opengl = 0;
-
-  printf ("==========================================================\n");
-
-  if (!opengl_format_name (dest_format, dest_format_name, 64)) {
-    printf ("opengl_test_add: %ix%i -> %ix%i\n", src_width, src_height,
-        dest_width, dest_height);
-    printf ("  unhandled dest_format 0x%x\n", dest_format);
-    printf ("==========================================================\n");
-
-    _failed = TRUE;
-    return;
-  }
-
-  if (!opengl_format_name (src_format, src_format_name, 64)) {
-    printf ("opengl_test_add: %ix%i -> %ix%i\n", src_width, src_height,
-        dest_width, dest_height);
-    printf ("  unhandled src_format 0x%x\n", src_format);
-    printf ("==========================================================\n");
-
-    _failed = TRUE;
-    return;
-  }
-
-  printf ("opengl_test_subtract: %ix%i -> %ix%i (%s -> %s)\n", src_width,
-      src_height, dest_width, dest_height, src_format_name, dest_format_name);
-
-  cpu_dest_preref_frame = schro_frame_new_and_alloc (_cpu_domain, dest_format,
-      dest_width, dest_height);
-  cpu_dest_postref_frame = schro_frame_new_and_alloc (_cpu_domain, dest_format,
-      dest_width, dest_height);
-  cpu_src_ref_frame = schro_frame_new_and_alloc (_cpu_domain, src_format,
-      src_width, src_height);
-  cpu_dest_test_frame = schro_frame_new_and_alloc (_cpu_domain, dest_format,
-      dest_width, dest_height);
-  opengl_dest_frame = schro_frame_new_and_alloc (_opengl_domain, dest_format,
-      dest_width, dest_height);
-  opengl_src_frame = schro_frame_new_and_alloc (_opengl_domain, src_format,
-      src_width, src_height);
-
-  printf ("  patterns\n");
-
-  for (i = 0; i < todo; ++i) {
-    opengl_custom_pattern_generate (cpu_dest_preref_frame, custom_dest_pattern,
-        i + dest_pattern_drift, dest_pattern_name);
-    opengl_custom_pattern_generate (cpu_src_ref_frame, custom_src_pattern, i,
-        src_pattern_name);
-
-    schro_frame_convert (cpu_dest_postref_frame, cpu_dest_preref_frame);
-
-    schro_opengl_lock (_opengl);
-
-    schro_opengl_frame_setup (_opengl, opengl_dest_frame);
-    schro_opengl_frame_setup (_opengl, opengl_src_frame);
-
-    schro_opengl_frame_push (opengl_dest_frame, cpu_dest_preref_frame);
-    schro_opengl_frame_push (opengl_src_frame, cpu_src_ref_frame);
-
-    schro_opengl_unlock (_opengl);
-
-    start_cpu = schro_utils_get_time ();
-
-    //for (r = 0; r < repeats; ++r)
-      schro_frame_subtract (cpu_dest_postref_frame, cpu_src_ref_frame);
-
-    elapsed_cpu += schro_utils_get_time () - start_cpu;
-
-    schro_opengl_lock (_opengl);
-
-    start_opengl = schro_utils_get_time ();
-
-    //for (r = 0; r < repeats; ++r)
-      schro_opengl_frame_subtract (opengl_dest_frame, opengl_src_frame);
-
-    elapsed_opengl += schro_utils_get_time () - start_opengl;
-
-    schro_opengl_frame_pull (cpu_dest_test_frame, opengl_dest_frame);
-
-    schro_opengl_frame_cleanup (opengl_dest_frame);
-    schro_opengl_frame_cleanup (opengl_src_frame);
-
-    schro_opengl_unlock (_opengl);
-
-    ++frames;
-
-    ok = frame_compare (cpu_dest_postref_frame, cpu_dest_test_frame);
-
-    printf ("    %s -> %s: %s\n", src_pattern_name, dest_pattern_name,
-        ok ? "OK" : "broken");
-
-    if (!ok) {
-      _failed = TRUE;
-
-      if (dest_width <= 32 && dest_height <= 32 && src_width <= 32
-          && src_height <= 32) {
-        printf ("dest preref frame\n");
-        frame_dump (cpu_dest_preref_frame, cpu_dest_preref_frame);
-
-        printf ("src ref frame\n");
-        frame_dump (cpu_src_ref_frame, cpu_src_ref_frame);
-
-        printf ("dest postref frame = dest preref frame + src ref frame\n");
-        frame_dump (cpu_dest_postref_frame, cpu_dest_postref_frame);
-
-        printf ("dest test frame <-> dest postref frame\n");
-        frame_dump (cpu_dest_test_frame, cpu_dest_postref_frame);
-      }
-    }
-  }
-
-  if (_benchmark) {
-    total_length = (cpu_src_ref_frame->components[0].length
-        + cpu_src_ref_frame->components[1].length
-        + cpu_src_ref_frame->components[2].length) * frames;
-
-    printf ("  results\n");
-    printf ("    %i frames subtracted via cpu/opengl with %i repeats: %.2f "
-        "mbyte each\n", frames, repeats,
-        ((double)total_length * repeats) / (1024 * 1024));
-    printf ("    total %f/%f sec, %.2f/%.2f mbyte/sec\n", elapsed_cpu,
-        elapsed_opengl,
-        ((double)total_length * repeats) / elapsed_cpu / (1024 * 1024),
-        ((double)total_length * repeats) / elapsed_opengl / (1024 * 1024));
-    printf ("    avg   %.8f/%.8f sec\n", elapsed_cpu / repeats / frames,
-        elapsed_opengl / repeats / frames);
-  }
-
-  schro_frame_unref (cpu_dest_preref_frame);
-  schro_frame_unref (cpu_dest_postref_frame);
   schro_frame_unref (cpu_src_ref_frame);
   schro_frame_unref (cpu_dest_test_frame);
   schro_frame_unref (opengl_dest_frame);
@@ -764,30 +344,6 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
   printf ("==========================================================\n");
 }
 
-struct PushPullTest {
-  SchroFrameFormat format;
-  int width, height;
-  int todo;
-  int custom_pattern;
-};
-
-struct PushPullTest opengl_test_push_pull_list[] = {
-  { SCHRO_FRAME_FORMAT_U8_444, 1920, 1080, 1, OPENGL_CUSTOM_PATTERN_RANDOM },
-  { SCHRO_FRAME_FORMAT_U8_444, 16, 16, -1, OPENGL_CUSTOM_PATTERN_NONE },
-  { SCHRO_FRAME_FORMAT_S16_444, 1920, 1080, 1, OPENGL_CUSTOM_PATTERN_RANDOM },
-  { SCHRO_FRAME_FORMAT_S16_444, 16, 16, -1, OPENGL_CUSTOM_PATTERN_NONE  },
-  { SCHRO_FRAME_FORMAT_U8_444, 1920, 1080, 1, OPENGL_CUSTOM_PATTERN_RANDOM },
-  { SCHRO_FRAME_FORMAT_U8_444, 23, 16, -1, OPENGL_CUSTOM_PATTERN_NONE  },
-  { SCHRO_FRAME_FORMAT_S16_444, 1920, 1080, 1, OPENGL_CUSTOM_PATTERN_RANDOM },
-  { SCHRO_FRAME_FORMAT_S16_444, 16, 23, -1, OPENGL_CUSTOM_PATTERN_NONE  },
-  { SCHRO_FRAME_FORMAT_YUYV, 1920, 1080, 1, OPENGL_CUSTOM_PATTERN_RANDOM },
-  { SCHRO_FRAME_FORMAT_YUYV, 16, 16, -1, OPENGL_CUSTOM_PATTERN_NONE  },
-  { SCHRO_FRAME_FORMAT_UYVY, 1920, 1080, 1, OPENGL_CUSTOM_PATTERN_RANDOM },
-  { SCHRO_FRAME_FORMAT_UYVY, 16, 16, -1, OPENGL_CUSTOM_PATTERN_NONE  },
-  { SCHRO_FRAME_FORMAT_AYUV, 1920, 1080, 1, OPENGL_CUSTOM_PATTERN_RANDOM },
-  { SCHRO_FRAME_FORMAT_AYUV, 16, 16, -1, OPENGL_CUSTOM_PATTERN_NONE  }
-};
-
 struct ConvertTest {
   SchroFrameFormat dest_format;
   SchroFrameFormat src_format;
@@ -897,50 +453,18 @@ struct ConvertTest opengl_test_convert_list[] = {
       1080, 1, OPENGL_CUSTOM_PATTERN_RANDOM }
 };
 
-struct MathTest {
-  SchroFrameFormat dest_format;
-  SchroFrameFormat src_format;
-  int dest_width, dest_height;
-  int src_width, src_height;
-  int todo;
-  int custom_dest_pattern;
-  int custom_src_pattern;
-  int dest_pattern_drift;
-};
+void opengl_test_push_pull (SchroFrameFormat format, int width, int height,
+    int todo, int custom_pattern);
+void opengl_test_push_pull_run (void);
 
-struct MathTest opengl_test_add_list[] = {
-  /* U8 -> S16 */
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444, 16, 16, 16, 16, 1,
-    OPENGL_CUSTOM_PATTERN_CONST_MIDDLE, OPENGL_CUSTOM_PATTERN_RANDOM, 0 },
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444, 16, 16, 16, 16, 1,
-    OPENGL_CUSTOM_PATTERN_CONST_MIN, OPENGL_CUSTOM_PATTERN_CONST_MAX, 0 },
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444, 16, 16, 16, 16, -1,
-    OPENGL_CUSTOM_PATTERN_NONE, OPENGL_CUSTOM_PATTERN_NONE, 2 },
-
-  /* S16 -> S16 */
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444, 16, 16, 16, 16, 1,
-    OPENGL_CUSTOM_PATTERN_CONST_MIN, OPENGL_CUSTOM_PATTERN_CONST_MAX, 0 },
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444, 16, 16, 16, 16, 1,
-    OPENGL_CUSTOM_PATTERN_CONST_MIN, OPENGL_CUSTOM_PATTERN_RANDOM_U8, 0 }
-};
-
-struct MathTest opengl_test_subtract_list[] = {
-  /* U8 -> S16 */
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444, 16, 16, 16, 16, 1,
-    OPENGL_CUSTOM_PATTERN_CONST_MIDDLE, OPENGL_CUSTOM_PATTERN_RANDOM, 0 },
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444, 16, 16, 16, 16, 1,
-    OPENGL_CUSTOM_PATTERN_CONST_MIDDLE, OPENGL_CUSTOM_PATTERN_CONST_MAX, 0 },
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444, 16, 16, 16, 16, -1,
-    OPENGL_CUSTOM_PATTERN_NONE, OPENGL_CUSTOM_PATTERN_NONE, 2 },
-
-  /* S16 -> S16 */
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444, 16, 16, 16, 16, 1,
-    OPENGL_CUSTOM_PATTERN_CONST_MAX, OPENGL_CUSTOM_PATTERN_CONST_MAX_U8, 0 },
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444, 16, 16, 16, 16, 1,
-    OPENGL_CUSTOM_PATTERN_CONST_MAX, OPENGL_CUSTOM_PATTERN_CONST_MAX, 0 },
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444, 16, 16, 16, 16, 1,
-    OPENGL_CUSTOM_PATTERN_CONST_MAX, OPENGL_CUSTOM_PATTERN_RANDOM_U8, 0 }
-};
+void opengl_test_add (SchroFrameFormat dest_format, SchroFrameFormat src_format,
+    int dest_width, int dest_height, int src_width, int src_height, int todo,
+    int custom_dest_pattern, int custom_src_pattern, int dest_pattern_drift);
+void opengl_test_subtract (SchroFrameFormat dest_format,
+    SchroFrameFormat src_format, int dest_width, int dest_height,
+    int src_width, int src_height, int todo, int custom_dest_pattern,
+    int custom_src_pattern, int dest_pattern_drift);
+void opengl_test_combine_run (void);
 
 int
 main (int argc, char *argv[])
@@ -1049,6 +573,8 @@ main (int argc, char *argv[])
         16, 8, 16, 8, 1, OPENGL_CUSTOM_PATTERN_CONST_MAX,
         OPENGL_CUSTOM_PATTERN_CONST_MAX, 0);*/
 
+    opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 64, 1,
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 4);
     opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 64, 64, 1,
         OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3, 6);
     opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 1024, 1024, 1,
@@ -1056,22 +582,13 @@ main (int argc, char *argv[])
     opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
         OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3, 4);
     opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
-        OPENGL_CUSTOM_PATTERN_RANDOM_U8,
-        SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 1);
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 1);
     opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
         OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_HAAR_0, 2);
     opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
         OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_HAAR_1, 4);
   } else {
-    /* push/pull */
-    for (i = 0; i < ARRAY_SIZE (opengl_test_push_pull_list); ++i) {
-      opengl_test_push_pull (opengl_test_push_pull_list[i].format,
-          opengl_test_push_pull_list[i].width,
-          opengl_test_push_pull_list[i].height,
-          opengl_test_push_pull_list[i].todo < 1 ? _generators
-          : opengl_test_push_pull_list[i].todo,
-          opengl_test_push_pull_list[i].custom_pattern);
-    }
+    opengl_test_push_pull_run ();
 
     /* convert */
     for (i = 0; i < ARRAY_SIZE (opengl_test_convert_list); ++i) {
@@ -1086,35 +603,7 @@ main (int argc, char *argv[])
           opengl_test_convert_list[i].custom_pattern);
     }
 
-    /* add */
-    for (i = 0; i < ARRAY_SIZE (opengl_test_add_list); ++i) {
-      opengl_test_add (opengl_test_add_list[i].dest_format,
-          opengl_test_add_list[i].src_format,
-          opengl_test_add_list[i].dest_width,
-          opengl_test_add_list[i].dest_height,
-          opengl_test_add_list[i].src_width,
-          opengl_test_add_list[i].src_height,
-          opengl_test_add_list[i].todo < 1 ? _generators
-          : opengl_test_add_list[i].todo,
-          opengl_test_add_list[i].custom_dest_pattern,
-          opengl_test_add_list[i].custom_src_pattern,
-          opengl_test_add_list[i].dest_pattern_drift);
-    }
-
-    /* subtract */
-    for (i = 0; i < ARRAY_SIZE (opengl_test_subtract_list); ++i) {
-      opengl_test_subtract (opengl_test_subtract_list[i].dest_format,
-          opengl_test_subtract_list[i].src_format,
-          opengl_test_subtract_list[i].dest_width,
-          opengl_test_subtract_list[i].dest_height,
-          opengl_test_subtract_list[i].src_width,
-          opengl_test_subtract_list[i].src_height,
-          opengl_test_subtract_list[i].todo < 1 ? _generators
-          : opengl_test_subtract_list[i].todo,
-          opengl_test_subtract_list[i].custom_dest_pattern,
-          opengl_test_subtract_list[i].custom_src_pattern,
-          opengl_test_subtract_list[i].dest_pattern_drift);
-    }
+    opengl_test_combine_run ();
   }
 
   schro_opengl_free (local_opengl);

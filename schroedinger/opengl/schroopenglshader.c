@@ -476,6 +476,58 @@ static struct IndexToShader schro_opengl_shader_list[] = {
      |               |
      +---------------+ */
 
+  { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIERS_DUBUC_9_7_Lp,
+      SHADER_HEADER
+      SHADER_IIWT_S16_READ_WRITE_BIASED
+      SHADER_IIWT_S16_SCALE_UP_DOWN
+      /* distance between two corresponding texels from subbands L and H in
+         texels = vec2 (width / 2.0, 0.0) or vec2 (0.0, height / 2.0) */
+      "uniform vec2 offset;\n"
+      "uniform vec2 one_decrease;\n"
+      "float filter (float h1m, float h0) {\n"
+      "  float sh1m = scale_up (h1m);\n" /* A[2 ∗ n - 1] */
+      "  float sh0 = scale_up (h0);\n"   /* A[2 ∗ n + 1] */
+      "  float output = floor ((sh1m + sh0 + 2.0) / 4.0);\n"
+      "  return scale_down (output);\n"
+      "}\n"
+      "void main (void) {\n"
+      "  float l0 = read_biased ();\n"                       /* A[2 ∗ n] */
+      "  float h1m = read_biased (offset - one_decrease);\n" /* A[2 ∗ n - 1] */
+      "  float h0 = read_biased (offset);\n"                 /* A[2 ∗ n + 1] */
+      "  write_biased (l0 - filter (h1m, h0));\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIERS_DUBUC_9_7_Hp,
+      SHADER_HEADER
+      SHADER_IIWT_S16_READ_WRITE_BIASED
+      SHADER_IIWT_S16_SCALE_UP_DOWN
+      /* distance between two corresponding texels from subbands L' and H in
+         texels = vec2 (width / 2.0, 0.0) or vec2 (0.0, height / 2.0) */
+      "uniform vec2 offset;\n"
+      "uniform vec2 one_decrease;\n"
+      "uniform vec2 one_increase;\n"
+      "uniform vec2 two_increase;\n"
+      "float filter (float l1m, float l0, float l1p, float l2p) {\n"
+#if 1
+      "  float sl1m = scale_up (l1m);\n" /* A[2 ∗ n - 2] */
+      "  float sl0 = scale_up (l0);\n"   /* A[2 ∗ n] */
+      "  float sl1p = scale_up (l1p);\n" /* A[2 ∗ n + 2] */
+      "  float sl2p = scale_up (l2p);\n" /* A[2 ∗ n + 4] */
+      "  float output = floor ((-sl1m + 9.0 * (sl0 + sl1p) - sl2p + 8.0) / 16.0);\n"
+      //"  float output = floor (-sl1m / 16.0 + (9.0 / 16.0) * sl0 + (9.0 / 16.0) * sl1p - sl2p / 16.0 + 8.0 / 16.0);\n"
+      "  return scale_down (output);\n"
+#else
+      "  float output = floor (scale_up (-l1m + 9.0 * (l0 + l1p) - l2p + scale_down (8.0)) / 16.0);\n"
+      "  return scale_down (output);\n"
+#endif
+      "}\n"
+      "void main (void) {\n"
+      "  float l1m = read_biased (-offset - one_decrease);\n" /* A[2 ∗ n - 2] */
+      "  float l0 = read_biased (-offset);\n"                 /* A[2 ∗ n] */
+      "  float l1p = read_biased (-offset + one_increase);\n" /* A[2 ∗ n + 2] */
+      "  float l2p = read_biased (-offset + two_increase);\n" /* A[2 ∗ n + 4] */
+      "  float h0 = read_biased ();\n"                        /* A[2 ∗ n + 1] */
+      "  write_biased (h0 + filter (l1m, l0, l1p, l2p));\n"
+      "}\n" },
   { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_LE_GALL_5_3_Lp,
       SHADER_HEADER
       SHADER_IIWT_S16_READ_WRITE_BIASED
@@ -516,7 +568,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  float h0 = read_biased ();\n"                        /* A[2 ∗ n + 1] */
       "  write_biased (h0 + filter (l0, l1p));\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIES_DUBUC_13_7_Lp,
+  { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIERS_DUBUC_13_7_Lp,
       SHADER_HEADER
       SHADER_IIWT_S16_READ_WRITE_BIASED
       SHADER_IIWT_S16_SCALE_UP_DOWN
@@ -548,7 +600,7 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  float h1p = read_biased (offset + one_increase);\n" /* A[2 ∗ n + 3] */
       "  write_biased (l0 - filter (h2m, h1m, h0, h1p));\n"
       "}\n" },
-  { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIES_DUBUC_13_7_Hp,
+  { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIERS_DUBUC_13_7_Hp,
       SHADER_HEADER
       SHADER_IIWT_S16_READ_WRITE_BIASED
       SHADER_IIWT_S16_SCALE_UP_DOWN

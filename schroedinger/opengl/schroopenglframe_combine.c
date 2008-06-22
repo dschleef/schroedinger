@@ -113,7 +113,7 @@ schro_opengl_frame_subtract (SchroFrame *dest, SchroFrame *src)
 }
 
 static void
-schro_opengl_frame_math_with_shader (SchroFrame *dest, SchroFrame *src,
+schro_opengl_frame_combine_with_shader (SchroFrame *dest, SchroFrame *src,
     int shader_index)
 {
   int i;
@@ -198,28 +198,28 @@ schro_opengl_frame_math_with_shader (SchroFrame *dest, SchroFrame *src,
 static void
 schro_opengl_frame_add_s16_u8 (SchroFrame *dest, SchroFrame *src)
 {
-  schro_opengl_frame_math_with_shader (dest, src,
+  schro_opengl_frame_combine_with_shader (dest, src,
       SCHRO_OPENGL_SHADER_ADD_S16_U8);
 }
 
 static void
 schro_opengl_frame_add_s16_s16 (SchroFrame *dest, SchroFrame *src)
 {
-  schro_opengl_frame_math_with_shader (dest, src,
+  schro_opengl_frame_combine_with_shader (dest, src,
       SCHRO_OPENGL_SHADER_ADD_S16_S16);
 }
 
 static void
 schro_opengl_frame_subtract_s16_u8 (SchroFrame *dest, SchroFrame *src)
 {
-  schro_opengl_frame_math_with_shader (dest, src,
+  schro_opengl_frame_combine_with_shader (dest, src,
       SCHRO_OPENGL_SHADER_SUBTRACT_S16_U8);
 }
 
 static void
 schro_opengl_frame_subtract_s16_s16 (SchroFrame *dest, SchroFrame *src)
 {
-  schro_opengl_frame_math_with_shader (dest, src,
+  schro_opengl_frame_combine_with_shader (dest, src,
       SCHRO_OPENGL_SHADER_SUBTRACT_S16_S16);
 }
 
