@@ -423,14 +423,23 @@ schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio)
   decoder->skip_ratio = ratio;
 }
 
+void
+schro_decoder_set_coded_order (SchroDecoder *decoder, int coded_order)
+{
+  decoder->coded_order = coded_order;
+}
 
 static int
 schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
 {
   SchroPicture *picture;
 
-  picture = schro_queue_find (decoder->picture_queue,
-      decoder->next_frame_number);
+  if (decoder->coded_order) {
+    picture = schro_queue_peek (decoder->picture_queue);
+  } else {
+    picture = schro_queue_find (decoder->picture_queue,
+        decoder->next_frame_number);
+  }
   if (!picture && !decoder->flushing &&
       schro_queue_is_full (decoder->picture_queue)) {
     SCHRO_ERROR("failed to find picture %d", decoder->next_frame_number);
@@ -475,10 +484,14 @@ schro_decoder_pull (SchroDecoder *decoder)
   SCHRO_DEBUG("searching for frame %d", decoder->next_frame_number);
 
   schro_async_lock (decoder->async);
-  picture = schro_queue_find (decoder->picture_queue, decoder->next_frame_number);
+  if (decoder->coded_order) {
+    picture = schro_queue_peek (decoder->picture_queue);
+  } else {
+    picture = schro_queue_find (decoder->picture_queue, decoder->next_frame_number);
+  }
   if (picture) {
     if (picture->state & SCHRO_DECODER_STATE_DONE) {
-      schro_queue_remove (decoder->picture_queue, decoder->next_frame_number);
+      schro_queue_remove (decoder->picture_queue, picture->picture_number);
     } else {
       picture = NULL;
     }
@@ -523,6 +536,8 @@ schro_decoder_push_ready (SchroDecoder *decoder)
 static int
 schro_decoder_get_status_locked (SchroDecoder *decoder)
 {
+  SchroPicture *next_picture;
+
   if (schro_decoder_pull_is_ready_locked (decoder)) {
     return SCHRO_DECODER_OK;
   }
@@ -536,8 +551,13 @@ schro_decoder_get_status_locked (SchroDecoder *decoder)
   if (!schro_queue_is_full (decoder->picture_queue) && !decoder->flushing) {
     return SCHRO_DECODER_NEED_BITS;
   }
-  if (decoder->flushing &&
-      schro_queue_find (decoder->picture_queue, decoder->next_frame_number) == NULL) {
+
+  if (decoder->coded_order) {
+    next_picture = schro_queue_peek (decoder->picture_queue);
+  } else {
+    next_picture = schro_queue_find (decoder->picture_queue, decoder->next_frame_number);
+  }
+  if (decoder->flushing && next_picture == NULL) {
     if (decoder->end_of_stream) {
       return SCHRO_DECODER_EOS;
     } else {

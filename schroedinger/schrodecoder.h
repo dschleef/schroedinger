@@ -50,6 +50,7 @@ struct _SchroDecoder {
   int queue_depth;
   int end_of_stream;
   int flushing;
+  int coded_order;
 
   SchroPictureNumber earliest_frame;
 
@@ -140,6 +141,7 @@ void schro_decoder_add_output_picture (SchroDecoder *decoder, SchroFrame *frame)
 int schro_decoder_push_ready (SchroDecoder *decoder);
 int schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer);
 int schro_decoder_set_flushing (SchroDecoder *decoder, int flushing);
+void schro_decoder_set_coded_order (SchroDecoder *decoder, int coded_order);
 int schro_decoder_push_end_of_stream (SchroDecoder *decoder);
 SchroFrame *schro_decoder_pull (SchroDecoder *decoder);
 int schro_decoder_wait (SchroDecoder *decoder);
