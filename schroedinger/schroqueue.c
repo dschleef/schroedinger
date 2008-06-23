@@ -128,6 +128,14 @@ schro_queue_pop (SchroQueue *queue)
 }
 
 void *
+schro_queue_peek (SchroQueue *queue)
+{
+  if (queue->n == 0) return NULL;
+
+  return queue->elements[0].data;
+}
+
+void *
 schro_queue_pull (SchroQueue *queue)
 {
   void *ret;
