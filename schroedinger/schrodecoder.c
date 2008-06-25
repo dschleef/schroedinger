@@ -424,9 +424,13 @@ schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio)
 }
 
 void
-schro_decoder_set_coded_order (SchroDecoder *decoder, int coded_order)
+schro_decoder_set_picture_order (SchroDecoder *decoder, int order)
 {
-  decoder->coded_order = coded_order;
+  if (order == SCHRO_DECODER_PICTURE_ORDER_CODED) {
+    decoder->coded_order = TRUE;
+  } else {
+    decoder->coded_order = FALSE;
+  }
 }
 
 static int

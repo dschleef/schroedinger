@@ -26,6 +26,7 @@ typedef enum {
   SCHRO_STATE_END_OF_STREAM
 } SchroStateEnum;
 
+#ifdef SCHRO_ENABLE_UNSTABLE_API
 typedef enum {
   SCHRO_ENCODER_FRAME_STATE_NEW = 0,
   SCHRO_ENCODER_FRAME_STATE_ANALYSE = (1<<1),
@@ -40,6 +41,7 @@ typedef enum {
   SCHRO_ENCODER_FRAME_STATE_DONE = (1<<6),
   SCHRO_ENCODER_FRAME_STATE_FREE = (1<<9)
 } SchroEncoderFrameStateEnum;
+#endif
 
 typedef enum {
   SCHRO_ENCODER_PERCEPTUAL_CONSTANT,
