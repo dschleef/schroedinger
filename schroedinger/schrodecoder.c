@@ -537,6 +537,16 @@ schro_decoder_push_ready (SchroDecoder *decoder)
   return (ret == FALSE);
 }
 
+int
+schro_decoder_need_output_frame (SchroDecoder *decoder)
+{
+  if (decoder->have_sequence_header &&
+      schro_queue_is_empty (decoder->output_queue)) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
 static int
 schro_decoder_get_status_locked (SchroDecoder *decoder)
 {
