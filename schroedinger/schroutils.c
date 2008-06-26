@@ -16,6 +16,9 @@
 #include <sys/mman.h>
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #ifndef USE_MMAP
 void *
@@ -248,10 +251,14 @@ schro_utils_reduce_fraction (int *n, int *d)
 double
 schro_utils_get_time (void)
 {
+#ifndef _WIN32
   struct timeval tv;
 
   gettimeofday (&tv, NULL);
 
   return tv.tv_sec + 1e-6*tv.tv_usec;
+#else
+  return (double)GetTickCount() / 1000.;
+#endif
 }
 
