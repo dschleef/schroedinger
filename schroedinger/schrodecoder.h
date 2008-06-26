@@ -18,6 +18,10 @@ typedef struct _SchroDecoder SchroDecoder;
 typedef struct _SchroPicture SchroPicture;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
+
+#define SCHRO_OPENGL_TYPEDEF
+typedef struct _SchroOpenGL SchroOpenGL;
+
 struct _SchroDecoder {
   /*< private >*/
 
@@ -29,8 +33,11 @@ struct _SchroDecoder {
 
   SchroMemoryDomain *cpu_domain;
   SchroMemoryDomain *cuda_domain;
+  SchroMemoryDomain *opengl_domain;
   SchroAsync *async;
   int use_cuda;
+  SchroOpenGL *opengl;
+  int use_opengl;
 
   SchroBuffer *input_buffer;
 

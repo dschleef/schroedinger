@@ -208,10 +208,10 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 #endif
     }
 
-    if ((_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER
-        && depth == SCHRO_FRAME_FORMAT_DEPTH_U8)
-        || (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER
-        && depth == SCHRO_FRAME_FORMAT_DEPTH_S16)) {
+    if ((_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER &&
+        depth == SCHRO_FRAME_FORMAT_DEPTH_U8) ||
+        (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER &&
+        depth == SCHRO_FRAME_FORMAT_DEPTH_S16)) {
       pixelbuffer_y_offset = 0;
 
       for (k = 0; k < SCHRO_OPENGL_FRAME_PIXELBUFFERS; ++k) {
@@ -311,7 +311,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
       start = schro_utils_get_time ();
 #endif
 
-      glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, 0);
+      glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT, 0);
     } else {
       tmp_data = schro_opengl_get_tmp (opengl,
           dest_opengl_data->push.byte_stride * height);

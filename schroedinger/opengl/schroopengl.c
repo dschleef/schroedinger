@@ -7,13 +7,43 @@
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <schroedinger/opengl/schroopenglshader.h>
 #include <limits.h>
+#include <GL/glew.h>
+#include <GL/glxew.h>
+#ifdef HAVE_PTHREAD
+#include <pthread.h>
 
-#define OPENGL_HANDLE_X_ERRORS
+typedef pthread_mutex_t SchroMutex;
+#define schro_mutex_init_recursive(_mutex) \
+    do { \
+      pthread_mutexattr_t mutexattr; \
+      pthread_mutexattr_init (&mutexattr); \
+      pthread_mutexattr_settype (&mutexattr, PTHREAD_MUTEX_RECURSIVE); \
+      pthread_mutex_init (&(_mutex), &mutexattr); \
+      pthread_mutexattr_destroy (&mutexattr); \
+    } while (0)
+#define schro_mutex_destroy(_mutex) pthread_mutex_destroy (&(_mutex))
+#define schro_mutex_lock(_mutex) pthread_mutex_lock (&(_mutex))
+#define schro_mutex_unlock(_mutex) pthread_mutex_unlock (&(_mutex))
+#elif defined HAVE_GTHREAD
+#error add code for a gthread recursive mutex here
+#define schro_mutex_init_recursive(_mutex) do {} while (0)
+#define schro_mutex_destroy(_mutex) do {} while (0)
+#define schro_mutex_lock(_mutex) do {} while (0)
+#define schro_mutex_unlock(_mutex) do {} while (0)
+//#elif defined WIN32
+// FIXME: add code for a critical section here
+#else
+#define schro_mutex_init_recursive(_mutex) do {} while (0)
+#define schro_mutex_destroy(_mutex) do {} while (0)
+#define schro_mutex_lock(_mutex) do {} while (0)
+#define schro_mutex_unlock(_mutex) do {} while (0)
+#endif
 
 struct _SchroOpenGL {
-  int usable;
-  int visible;
+  int is_usable;
+  int is_visible;
   int lock_count;
+  SchroMutex mutex;
   Display *display;
   Window root;
   int screen;
@@ -25,18 +55,16 @@ struct _SchroOpenGL {
   int tmp_size;
 };
 
-#ifdef OPENGL_HANDLE_X_ERRORS
 static int
 schro_opengl_x_error_handler (Display *display, XErrorEvent *event)
 {
   char errormsg[512];
 
-  XGetErrorText(display, event->error_code, errormsg, sizeof(errormsg));
-  SCHRO_ERROR("Xlib error: %s", errormsg);
+  XGetErrorText (display, event->error_code, errormsg, sizeof (errormsg));
+  SCHRO_ERROR ("Xlib error: %s", errormsg);
 
   return 0;
 }
-#endif
 
 static int
 schro_opengl_open_display (SchroOpenGL *opengl, const char *display_name)
@@ -50,10 +78,8 @@ schro_opengl_open_display (SchroOpenGL *opengl, const char *display_name)
     return FALSE;
   }
 
-#ifdef OPENGL_HANDLE_X_ERRORS
-  XSynchronize (opengl->display, True);
+  XSynchronize (opengl->display, False);
   XSetErrorHandler (schro_opengl_x_error_handler);
-#endif
 
   opengl->root = DefaultRootWindow (opengl->display);
   opengl->screen = DefaultScreen (opengl->display);
@@ -75,7 +101,7 @@ schro_opengl_create_window (SchroOpenGL *opengl)
 {
   int error_base;
   int event_base;
-  int ret;
+  int result;
   int visual_attr[] = { GLX_RGBA, GLX_DOUBLEBUFFER, GLX_RED_SIZE, 8,
       GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, None };
   int mask;
@@ -84,9 +110,9 @@ schro_opengl_create_window (SchroOpenGL *opengl)
   SCHRO_ASSERT (opengl->display != NULL);
   SCHRO_ASSERT (opengl->root != None);
 
-  ret = glXQueryExtension (opengl->display, &error_base, &event_base);
+  result = glXQueryExtension (opengl->display, &error_base, &event_base);
 
-  if (!ret) {
+  if (!result) {
     SCHRO_ERROR ("missing GLX extension");
     return FALSE;
   }
@@ -172,22 +198,22 @@ schro_opengl_init_glew (SchroOpenGL *opengl)
   error = glewInit ();
 
   if (error != GLEW_OK) {
-    SCHRO_ERROR("GLEW error: %s", glewGetErrorString (error));
+    SCHRO_ERROR ("GLEW error: %s", glewGetErrorString (error));
     ok = FALSE;
   }
 
-  major = atoi( (const char*) glewGetString (GLEW_VERSION_MAJOR));
-  minor = atoi( (const char*) glewGetString (GLEW_VERSION_MINOR));
-  micro = atoi( (const char*) glewGetString (GLEW_VERSION_MICRO));
+  major = atoi ((const char*) glewGetString (GLEW_VERSION_MAJOR));
+  minor = atoi ((const char*) glewGetString (GLEW_VERSION_MINOR));
+  micro = atoi ((const char*) glewGetString (GLEW_VERSION_MICRO));
 
   if (major < 1) {
-    SCHRO_ERROR("missing GLEW >= 1.5.0");
+    SCHRO_ERROR ("missing GLEW >= 1.5.0");
     ok = FALSE;
   } else if (major == 1 && minor < 5) {
-    SCHRO_ERROR("missing GLEW >= 1.5.0");
+    SCHRO_ERROR ("missing GLEW >= 1.5.0");
     ok = FALSE;
   } else if (major == 1 && minor == 5 && micro < 0) {
-    SCHRO_ERROR("missing GLEW >= 1.5.0");
+    SCHRO_ERROR ("missing GLEW >= 1.5.0");
     ok = FALSE;
   }
 
@@ -230,13 +256,18 @@ schro_opengl_check_essential_extensions (SchroOpenGL *opengl)
   return ok;
 }
 
+void schro_opengl_init (void)
+{
+  XInitThreads ();
+}
+
 SchroOpenGL *
 schro_opengl_new (void)
 {
   SchroOpenGL *opengl = schro_malloc0 (sizeof (SchroOpenGL));
 
-  opengl->usable = TRUE;
-  opengl->visible = FALSE;
+  opengl->is_usable = TRUE;
+  opengl->is_visible = FALSE;
   opengl->lock_count = 0;
   opengl->display = NULL;
   opengl->root = None;
@@ -248,23 +279,25 @@ schro_opengl_new (void)
   opengl->tmp = NULL;
   opengl->tmp_size = 0;
 
+  schro_mutex_init_recursive (opengl->mutex);
+
   if (!schro_opengl_open_display (opengl, NULL)) {
-    opengl->usable = FALSE;
+    opengl->is_usable = FALSE;
     return opengl;
   }
 
   if (!schro_opengl_create_window (opengl)) {
-    opengl->usable = FALSE;
+    opengl->is_usable = FALSE;
     return opengl;
   }
 
   if (!schro_opengl_init_glew (opengl)) {
-    opengl->usable = FALSE;
+    opengl->is_usable = FALSE;
     return opengl;
   }
 
   if (!schro_opengl_check_essential_extensions (opengl)) {
-    opengl->usable = FALSE;
+    opengl->is_usable = FALSE;
     return opengl;
   }
 
@@ -307,7 +340,14 @@ schro_opengl_free (SchroOpenGL *opengl)
     schro_free (opengl->tmp);
   }
 
+  schro_mutex_destroy (opengl->mutex);
+
   schro_free (opengl);
+}
+
+int
+schro_opengl_is_usable (SchroOpenGL *opengl) {
+  return opengl->is_usable;
 }
 
 void
@@ -317,11 +357,18 @@ schro_opengl_lock (SchroOpenGL *opengl)
   SCHRO_ASSERT (opengl->window != None);
   SCHRO_ASSERT (opengl->context != NULL);
   SCHRO_ASSERT (opengl->lock_count < (INT_MAX - 1));
+  //SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
+
+  schro_mutex_lock (opengl->mutex);
 
   if (opengl->lock_count == 0) {
+    XLockDisplay (opengl->display);
+
     if (!glXMakeCurrent (opengl->display, opengl->window, opengl->context)) {
       SCHRO_ERROR ("glXMakeCurrent failed");
     }
+
+    XUnlockDisplay (opengl->display);
   }
 
   ++opengl->lock_count;
@@ -340,10 +387,16 @@ schro_opengl_unlock (SchroOpenGL *opengl)
   --opengl->lock_count;
 
   if (opengl->lock_count == 0) {
+    XLockDisplay (opengl->display);
+
     if (!glXMakeCurrent (opengl->display, None, NULL)) {
       SCHRO_ERROR ("glXMakeCurrent failed");
     }
+
+    XUnlockDisplay (opengl->display);
   }
+
+  schro_mutex_unlock (opengl->mutex);
 }
 
 void
@@ -360,7 +413,7 @@ schro_opengl_check_error (const char* file, int line, const char* func)
 void
 schro_opengl_check_framebuffer (const char *file, int line, const char *func)
 {
-  switch (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT)) {
+  switch (glCheckFramebufferStatusEXT (GL_FRAMEBUFFER_EXT)) {
     case GL_FRAMEBUFFER_COMPLETE_EXT:
       break;
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
@@ -401,13 +454,13 @@ schro_opengl_check_framebuffer (const char *file, int line, const char *func)
 void
 schro_opengl_set_visible (SchroOpenGL *opengl, int visible)
 {
-  if (opengl->visible == visible) {
+  if (opengl->is_visible == visible) {
     return;
   }
 
-  opengl->visible = visible;
+  opengl->is_visible = visible;
 
-  if (opengl->visible) {
+  if (opengl->is_visible) {
     XMapWindow (opengl->display, opengl->window);
   } else {
     XUnmapWindow (opengl->display, opengl->window);
@@ -464,8 +517,8 @@ schro_opengl_render_quad (int x, int y, int width, int height)
 static void *
 schro_opengl_domain_alloc (int size)
 {
-  //SCHRO_DEBUG("domain is %d", schro_async_get_exec_domain ());
-  //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
+  //SCHRO_DEBUG ("domain is %d", schro_async_get_exec_domain ());
+  //SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
 
   return schro_malloc0 (size);
 }
@@ -473,8 +526,8 @@ schro_opengl_domain_alloc (int size)
 static void
 schro_opengl_domain_free (void *ptr, int size)
 {
-  //SCHRO_DEBUG("domain is %d", schro_async_get_exec_domain ());
-  //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
+  //SCHRO_DEBUG ("domain is %d", schro_async_get_exec_domain ());
+  //SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
 
   schro_free (ptr);
 }
@@ -484,7 +537,7 @@ schro_memory_domain_new_opengl (void)
 {
   SchroMemoryDomain *domain;
 
-  domain = schro_memory_domain_new();
+  domain = schro_memory_domain_new ();
   domain->flags = SCHRO_MEMORY_DOMAIN_OPENGL;
   domain->alloc = schro_opengl_domain_alloc;
   domain->free = schro_opengl_domain_free;

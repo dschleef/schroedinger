@@ -5,6 +5,7 @@
 #include <schroedinger/schro-stdint.h>
 #include <schroedinger/schroframe.h>
 #include <schroedinger/opengl/schroopengl.h>
+#include <GL/glew.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -70,8 +71,11 @@ extern unsigned int _schro_opengl_frame_flags;
 void schro_opengl_frame_check_flags (void);
 void schro_opengl_frame_print_flags (const char* indent);
 
-void schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame);
-void schro_opengl_frame_cleanup (SchroFrame *frame);
+SchroFrame *schro_opengl_frame_new (SchroOpenGL *opengl,
+    SchroMemoryDomain *opengl_domain, SchroFrameFormat format, int width,
+    int height);
+SchroFrame *schro_opengl_frame_clone_and_push (SchroOpenGL *opengl,
+    SchroMemoryDomain *opengl_domain, SchroFrame *cpu_frame);
 
 void schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src); // CPU -> GPU
 void schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src); // CPU <- GPU

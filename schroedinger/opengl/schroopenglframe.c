@@ -88,9 +88,8 @@ schro_opengl_frame_check_flags (void)
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_BGRA;
   }
 
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_F32
-      || _schro_opengl_frame_flags
-      & SCHRO_OPENGL_FRAME_STORE_S16_AS_F32) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_F32 ||
+      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_F32) {
     if (!GLEW_ARB_texture_float && !GLEW_ATI_texture_float) {
       SCHRO_ERROR ("missing extension GL_{ARB|ATI}_texture_float, can't "
           "store U8/S16 as F32, disabling U8/S16 as F32 storing");
@@ -99,9 +98,9 @@ schro_opengl_frame_check_flags (void)
     }
   }
 
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8
-      || _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
-      || _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8 ||
+      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16 ||
+      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
     if (!GLEW_EXT_texture_integer) {
       SCHRO_ERROR ("missing extension GL_EXT_texture_integer, can't store "
           "U8/S16 as UI8/UI16/I16, disabling U8/S16 as UI8/UI16/I16 storing");
@@ -111,75 +110,75 @@ schro_opengl_frame_check_flags (void)
     }
   }
 
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_F32
-      && _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_F32 &&
+      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_U8_AS_UI8) {
     SCHRO_ERROR ("can't store U8 in F32 and UI8, disabling F32 storing");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_U8_AS_F32;
   }
 
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_F32
-      && _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_F32 &&
+      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16) {
     SCHRO_ERROR ("can't store S16 in F32 and UI16, disabling F32 storing");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_S16_AS_F32;
   }
 
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_F32
-      && _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_F32 &&
+      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
     SCHRO_ERROR ("can't store S16 in F32 and I16, disabling F32 storing");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_S16_AS_F32;
   }
 
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
-      && _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16 &&
+      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
     SCHRO_ERROR ("can't store S16 in UI16 and I16, disabling UI16 storing");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16;
   }
 
   /* push */
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD
-      && _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD &&
+      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS) {
     SCHRO_ERROR ("can't render quad and drawpixels to push, disabling "
         "drawpixels push");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS;
   }
 
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS
-      && !GLEW_ARB_window_pos) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS &&
+      !GLEW_ARB_window_pos) {
     SCHRO_ERROR ("missing extension GL_ARB_window_pos, disabling drawpixels "
         "push");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS;
   }
 
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER
-      && (!GLEW_ARB_vertex_buffer_object || !GLEW_ARB_pixel_buffer_object)) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER &&
+      (!GLEW_ARB_vertex_buffer_object || !GLEW_ARB_pixel_buffer_object)) {
     SCHRO_ERROR ("missing extensions GL_ARB_vertex_buffer_object and/or "
         "GL_ARB_pixel_buffer_object, disabling U8 pixelbuffer push");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER;
   }
 
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER
-      && (!GLEW_ARB_vertex_buffer_object || !GLEW_ARB_pixel_buffer_object)) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER &&
+      (!GLEW_ARB_vertex_buffer_object || !GLEW_ARB_pixel_buffer_object)) {
     SCHRO_ERROR ("missing extensions GL_ARB_vertex_buffer_object and/or "
         "GL_ARB_pixel_buffer_object, disabling S16 pixelbuffer push");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER;
   }
 
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16
-      && _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_AS_F32) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16 &&
+      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_AS_F32) {
     SCHRO_ERROR ("can't push S16 as U16 and F32, disabling U16 push");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16;
   }
 
   /* pull */
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER
-      && (!GLEW_ARB_vertex_buffer_object || !GLEW_ARB_pixel_buffer_object)) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER &&
+      (!GLEW_ARB_vertex_buffer_object || !GLEW_ARB_pixel_buffer_object)) {
     SCHRO_ERROR ("missing extensions GL_ARB_vertex_buffer_object and/or "
         "GL_ARB_pixel_buffer_object, disabling S16 pixelbuffer pull");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER;
   }
 
-  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_S16_AS_U16
-      && _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_S16_AS_F32) {
+  if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_S16_AS_U16 &&
+      _schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_S16_AS_F32) {
     SCHRO_ERROR ("can't pull S16 as U16 and F32, disabling U16 pull");
     _schro_opengl_frame_flags &= ~SCHRO_OPENGL_FRAME_PULL_S16_AS_U16;
   }
@@ -224,7 +223,7 @@ schro_opengl_frame_print_flags (const char* indent)
   #undef PRINT_FLAG
 }
 
-void
+static void
 schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame)
 {
   int i, k;
@@ -394,8 +393,8 @@ schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame)
         if (SCHRO_FRAME_IS_PACKED (frame->format)) {
           if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_BGRA) {
             if (_schro_opengl_frame_flags
-                & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
-                || _schro_opengl_frame_flags
+                & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16 ||
+                _schro_opengl_frame_flags
                 & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
               opengl_data->texture.pixel_format = GL_BGRA_INTEGER_EXT;
             } else {
@@ -405,8 +404,8 @@ schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame)
             opengl_data->texture.components = 4;
           } else {
             if (_schro_opengl_frame_flags
-                & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
-                || _schro_opengl_frame_flags
+                & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16 ||
+                _schro_opengl_frame_flags
                 & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
               opengl_data->texture.pixel_format = GL_RGBA_INTEGER_EXT;
             } else {
@@ -416,8 +415,9 @@ schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame)
             opengl_data->texture.components = 4;
           }
         } else {
-          if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16
-              || _schro_opengl_frame_flags
+          if (_schro_opengl_frame_flags
+              & SCHRO_OPENGL_FRAME_STORE_S16_AS_UI16 ||
+              _schro_opengl_frame_flags
               & SCHRO_OPENGL_FRAME_STORE_S16_AS_I16) {
             opengl_data->texture.pixel_format = GL_ALPHA_INTEGER_EXT;
           } else {
@@ -499,8 +499,7 @@ schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame)
     /* textures */
     for (k = 0; k < 2; ++k) {
       glGenTextures (1, &opengl_data->texture.handles[k]);
-      glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-                     opengl_data->texture.handles[k]);
+      glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data->texture.handles[k]);
       glTexImage2D (GL_TEXTURE_RECTANGLE_ARB, 0,
           opengl_data->texture.internal_format, width, height, 0,
           opengl_data->texture.pixel_format, opengl_data->texture.type, NULL);
@@ -590,8 +589,8 @@ schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame)
         glBindBufferARB (GL_PIXEL_PACK_BUFFER_ARB,
             opengl_data->pull.pixelbuffers[k]);
         glBufferDataARB (GL_PIXEL_PACK_BUFFER_ARB,
-            opengl_data->pull.byte_stride * opengl_data->pull.heights[k],
-            NULL, GL_STATIC_READ_ARB);
+            opengl_data->pull.byte_stride * opengl_data->pull.heights[k], NULL,
+            GL_STATIC_READ_ARB);
 
         SCHRO_OPENGL_CHECK_ERROR
       }
@@ -608,7 +607,7 @@ schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame)
   schro_opengl_unlock (opengl);
 }
 
-void
+static void
 schro_opengl_frame_cleanup (SchroFrame *frame)
 {
   int i, k;
@@ -682,7 +681,7 @@ schro_opengl_frame_cleanup (SchroFrame *frame)
     /* pixelbuffers */
     for (k = 0; k < SCHRO_OPENGL_FRAME_PIXELBUFFERS; ++k) {
       if (opengl_data->push.pixelbuffers[k]) {
-        glDeleteBuffersARB(1, &opengl_data->push.pixelbuffers[k]);
+        glDeleteBuffersARB (1, &opengl_data->push.pixelbuffers[k]);
 
         opengl_data->push.pixelbuffers[k] = 0;
 
@@ -690,7 +689,7 @@ schro_opengl_frame_cleanup (SchroFrame *frame)
       }
 
       if (opengl_data->pull.pixelbuffers[k]) {
-        glDeleteBuffersARB(1, &opengl_data->pull.pixelbuffers[k]);
+        glDeleteBuffersARB (1, &opengl_data->pull.pixelbuffers[k]);
 
         opengl_data->pull.pixelbuffers[k] = 0;
 
@@ -705,6 +704,54 @@ schro_opengl_frame_cleanup (SchroFrame *frame)
   }
 
   schro_opengl_unlock (opengl);
+}
+
+static void
+schro_opengl_frame_free_callback (SchroFrame *frame, void *priv)
+{
+  SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (frame));
+
+  schro_opengl_frame_cleanup (frame);
+}
+
+SchroFrame *
+schro_opengl_frame_new (SchroOpenGL *opengl,
+    SchroMemoryDomain *opengl_domain, SchroFrameFormat format, int width,
+    int height)
+{
+  SchroFrame *opengl_frame;
+
+  SCHRO_ASSERT (opengl_domain->flags & SCHRO_MEMORY_DOMAIN_OPENGL);
+
+  opengl_frame = schro_frame_new_and_alloc (opengl_domain, format, width,
+      height);
+
+  schro_frame_set_free_callback (opengl_frame,
+      (SchroFrameFreeFunc)schro_opengl_frame_free_callback, NULL);
+
+  schro_opengl_frame_setup (opengl, opengl_frame);
+
+  return opengl_frame;
+}
+
+SchroFrame *
+schro_opengl_frame_clone_and_push (SchroOpenGL *opengl,
+    SchroMemoryDomain *opengl_domain, SchroFrame *cpu_frame)
+{
+  SchroFrame *opengl_frame;
+
+  SCHRO_ASSERT (opengl_domain->flags & SCHRO_MEMORY_DOMAIN_OPENGL);
+  SCHRO_ASSERT (!SCHRO_FRAME_IS_OPENGL (cpu_frame));
+
+  opengl_frame = schro_frame_clone (opengl_domain, cpu_frame);
+
+  schro_frame_set_free_callback (opengl_frame,
+      (SchroFrameFreeFunc)schro_opengl_frame_free_callback, NULL);
+
+  schro_opengl_frame_setup (opengl, opengl_frame);
+  schro_opengl_frame_push (opengl_frame, cpu_frame);
+
+  return opengl_frame;
 }
 
 void

@@ -6,6 +6,7 @@
 #include <liboil/liboil.h>
 #include <stdlib.h>
 #include <schroedinger/schrocuda.h>
+#include <schroedinger/opengl/schroopengl.h>
 
 extern int _schro_decode_prediction_only;
 extern int _schro_dump_enable;
@@ -57,6 +58,10 @@ schro_init(void)
 
 #ifdef HAVE_CUDA
   schro_cuda_init ();
+#endif
+
+#ifdef HAVE_OPENGL
+  schro_opengl_init ();
 #endif
 }
 

@@ -12,7 +12,7 @@ libopengl_la_SOURCES = \
 	schroopenglwavelet.c
 
 libopengl_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(OPENGL_CFLAGS) $(ERROR_CFLAGS) \
-	-DSCHRO_ENABLE_UNSTABLE_API
+	-DSCHRO_ENABLE_UNSTABLE_API -D_GNU_SOURCE
 
 libopengl_la_LIBADD = $(OPENGL_LIBS)
 

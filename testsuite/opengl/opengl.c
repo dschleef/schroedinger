@@ -62,10 +62,10 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
       src_width, src_height);
   cpu_dest_test_frame = schro_frame_new_and_alloc (_cpu_domain, dest_format,
       dest_width, dest_height);
-  opengl_dest_frame = schro_frame_new_and_alloc (_opengl_domain, dest_format,
-      dest_width, dest_height);
-  opengl_src_frame = schro_frame_new_and_alloc (_opengl_domain, src_format,
-      src_width, src_height);
+  opengl_dest_frame = schro_opengl_frame_new (_opengl, _opengl_domain,
+      dest_format, dest_width, dest_height);
+  opengl_src_frame = schro_opengl_frame_new (_opengl, _opengl_domain,
+      src_format, src_width, src_height);
 
   printf ("  patterns\n");
 
@@ -83,9 +83,6 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
 
     schro_opengl_lock (_opengl);
 
-    schro_opengl_frame_setup (_opengl, opengl_dest_frame);
-    schro_opengl_frame_setup (_opengl, opengl_src_frame);
-
     schro_opengl_frame_push (opengl_src_frame, cpu_src_ref_frame);
 
     start_opengl_convert = schro_utils_get_time ();
@@ -97,9 +94,6 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
     elapsed_opengl_convert += schro_utils_get_time () - start_opengl_convert;
 
     schro_opengl_frame_pull (cpu_dest_test_frame, opengl_dest_frame);
-
-    schro_opengl_frame_cleanup (opengl_dest_frame);
-    schro_opengl_frame_cleanup (opengl_src_frame);
 
     schro_opengl_unlock (_opengl);
 
@@ -212,7 +206,7 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
       height);
   cpu_test_frame = schro_frame_new_and_alloc (_cpu_domain, format, width,
       height);
-  opengl_frame = schro_frame_new_and_alloc (_opengl_domain, format, width,
+  opengl_frame = schro_opengl_frame_new (_opengl, _opengl_domain, format, width,
       height);
   tmp = schro_malloc (2 * width * sizeof(int16_t));
 
@@ -244,7 +238,6 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
 
     schro_opengl_lock (_opengl);
 
-    schro_opengl_frame_setup (_opengl, opengl_frame);
     schro_opengl_frame_push (opengl_frame, cpu_postref_frame);
 
     start_cpu = schro_utils_get_time ();
@@ -294,7 +287,6 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
     elapsed_opengl += schro_utils_get_time () - start_opengl;
 
     schro_opengl_frame_pull (cpu_test_frame, opengl_frame);
-    schro_opengl_frame_cleanup (opengl_frame);
 
     schro_opengl_unlock (_opengl);
 

@@ -46,7 +46,7 @@ opengl_test_push_pull (SchroFrameFormat format, int width, int height,
       height);
   cpu_test_frame = schro_frame_new_and_alloc (_cpu_domain, format, width,
       height);
-  opengl_frame = schro_frame_new_and_alloc (_opengl_domain, format, width,
+  opengl_frame = schro_opengl_frame_new (_opengl, _opengl_domain, format, width,
       height);
 
   printf ("  patterns\n");
@@ -56,8 +56,6 @@ opengl_test_push_pull (SchroFrameFormat format, int width, int height,
         pattern_name);
 
     schro_opengl_lock (_opengl);
-
-    schro_opengl_frame_setup (_opengl, opengl_frame);
 
     start_push = schro_utils_get_time ();
 
@@ -69,8 +67,6 @@ opengl_test_push_pull (SchroFrameFormat format, int width, int height,
     schro_opengl_frame_pull (cpu_test_frame, opengl_frame);
 
     elapsed_pull += schro_utils_get_time () - start_pull;
-
-    schro_opengl_frame_cleanup (opengl_frame);
 
     schro_opengl_unlock (_opengl);
 

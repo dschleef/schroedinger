@@ -26,14 +26,14 @@ schro_opengl_shader_add_linenumbers (const char* code)
 
   snprintf (number, sizeof (number) - 1, "%3i: ", lines);
 
-  size = strlen (code) + 1 + lines * strlen(number);
+  size = strlen (code) + 1 + lines * strlen (number);
   linenumbered_code = schro_malloc0 (size);
   src = code;
   dst = linenumbered_code;
 
   strcpy (dst, "  1: ");
 
-  dst += strlen("  1: ");
+  dst += strlen ("  1: ");
   lines = 2;
 
   while (*src) {
@@ -43,7 +43,7 @@ schro_opengl_shader_add_linenumbers (const char* code)
       snprintf (number, sizeof (number) - 1, "%3i: ", lines);
       strcpy (dst, number);
 
-      dst += strlen(number);
+      dst += strlen (number);
       ++lines;
     }
 
@@ -62,17 +62,17 @@ schro_opengl_shader_check_status (GLhandleARB handle, GLenum status,
   char* infolog;
   char* linenumbered_code;
 
-  glGetObjectParameterivARB(handle, status, &result);
-  glGetObjectParameterivARB(handle, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
+  glGetObjectParameterivARB (handle, status, &result);
+  glGetObjectParameterivARB (handle, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
 
   if (length < 1) {
     SCHRO_ERROR ("invalid infolog length %i", length);
     return FALSE;
   }
 
-  infolog = schro_malloc0(length * sizeof (char));
+  infolog = schro_malloc0 (length * sizeof (char));
 
-  glGetInfoLogARB(handle, length, &length, infolog);
+  glGetInfoLogARB (handle, length, &length, infolog);
 
   if (length > 0) {
     linenumbered_code = schro_opengl_shader_add_linenumbers (code);
@@ -790,7 +790,7 @@ schro_opengl_shader_get (SchroOpenGL *opengl, int index)
   SchroOpenGLShaderLibrary* library;
 
   SCHRO_ASSERT (index >= 0);
-  SCHRO_ASSERT (index <= SCHRO_OPENGL_SHADER_COUNT);
+  SCHRO_ASSERT (index < SCHRO_OPENGL_SHADER_COUNT);
 
   library = schro_opengl_get_library (opengl);
 

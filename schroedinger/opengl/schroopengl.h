@@ -2,9 +2,6 @@
 #ifndef __SCHRO_OPENGL_H__
 #define __SCHRO_OPENGL_H__
 
-#include <GL/glew.h>
-#include <GL/glxew.h>
-
 SCHRO_BEGIN_DECLS
 
 #define SCHRO_OPENGL_CHECK_ERROR \
@@ -13,11 +10,19 @@ SCHRO_BEGIN_DECLS
 #define SCHRO_OPENGL_CHECK_FRAMEBUFFER \
     schro_opengl_check_framebuffer (__FILE__, __LINE__, __FUNCTION__);
 
+#ifndef SCHRO_OPENGL_TYPEDEF
+#define SCHRO_OPENGL_TYPEDEF
 typedef struct _SchroOpenGL SchroOpenGL;
+#endif
+
 typedef struct _SchroOpenGLShaderLibrary SchroOpenGLShaderLibrary;
+
+void schro_opengl_init (void);
 
 SchroOpenGL *schro_opengl_new (void);
 void schro_opengl_free (SchroOpenGL *opengl);
+int schro_opengl_is_usable (SchroOpenGL *opengl);
+
 void schro_opengl_lock (SchroOpenGL *opengl);
 void schro_opengl_unlock (SchroOpenGL *opengl);
 void schro_opengl_check_error (const char *file, int line, const char *func);
