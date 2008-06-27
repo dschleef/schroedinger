@@ -16,8 +16,8 @@ git clone git://git.freedesktop.org/git/liboil
 cd liboil
 autoreconf -i -f
 ./configure \
-  --host=i586-mingw32msvc --disable-glib \
-  --prefix=$prefix --without-pthread
+  --host=i586-mingw32msvc \
+  --prefix=$prefix
 make clean
 make
 make install
@@ -27,8 +27,8 @@ git clone git://diracvideo.org/git/schroedinger
 cd schroedinger
 autoreconf -i -f
 ./configure \
-  --host=i586-mingw32msvc --disable-glib \
-  --prefix=$prefix --without-pthread
+  --host=i586-mingw32msvc \
+  --prefix=$prefix
 make clean
 make
 make install
