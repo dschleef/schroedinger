@@ -375,3 +375,25 @@ schro_async_get_exec_domain (void)
   return (int)(unsigned long)domain;
 }
 
+SchroMutex *schro_mutex_new (void)
+{
+  return (SchroMutex *)g_mutex_new();
+}
+
+void schro_mutex_lock (SchroMutex *mutex)
+{
+  g_mutex_lock((GMutex *)mutex);
+}
+
+void
+schro_mutex_unlock (SchroMutex *mutex)
+{
+  g_mutex_unlock((GMutex *)mutex);
+}
+
+void
+schro_mutex_free (SchroMutex *mutex)
+{
+  g_mutex_free((GMutex *)mutex);
+}
+

@@ -17,6 +17,10 @@
 #define COND_LIST_SIZE 10
 #define STACK_SIZE 65536
 
+struct _SchroMutex {
+  CRITICAL_SECTION mutex;
+};
+
 struct _SchroAsync {
   int n_threads;
   int n_threads_running;
@@ -344,5 +348,34 @@ schro_async_get_exec_domain (void)
   void *domain;
   domain = TlsGetValue (domain_key);
   return (int)(unsigned long)domain;
+}
+
+SchroMutex *
+schro_mutex_new (void)
+{
+  SchroMutex *mutex;
+
+  mutex = malloc(sizeof(SchroMutex));
+  InitializeCriticalSection (&async->mutex);
+
+  return mutex;
+}
+
+void
+schro_mutex_lock (SchroMutex *mutex)
+{
+  EnterCriticalSection (&async->mutex);
+}
+
+void
+schro_mutex_unlock (SchroMutex *mutex)
+{
+  LeaveCriticalSection (&async->mutex);
+}
+
+void
+schro_mutex_free (SchroMutex *mutex)
+{
+  DeleteCriticalSection (&async->mutex);
 }
 

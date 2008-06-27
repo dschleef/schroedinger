@@ -48,6 +48,10 @@ struct _SchroThread {
   int index;
 };
 
+struct _SchroMutex {
+  pthread_mutex_t mutex;
+};
+
 static int domain_key_inited;
 static pthread_key_t domain_key;
 
@@ -385,5 +389,38 @@ schro_async_get_exec_domain (void)
   void *domain;
   domain = pthread_getspecific (domain_key);
   return (int)(unsigned long)domain;
+}
+
+SchroMutex *
+schro_mutex_new (void)
+{
+  SchroMutex *mutex;
+  pthread_mutexattr_t mutexattr;
+
+  mutex = malloc(sizeof(SchroMutex));
+  pthread_mutexattr_init (&mutexattr);
+  pthread_mutex_init (&mutex->mutex, &mutexattr);
+  pthread_mutexattr_destroy (&mutexattr);
+
+  return mutex;
+}
+
+void
+schro_mutex_lock (SchroMutex *mutex)
+{
+  pthread_mutex_lock (&mutex->mutex);
+}
+
+void
+schro_mutex_unlock (SchroMutex *mutex)
+{
+  pthread_mutex_unlock (&mutex->mutex);
+}
+
+void
+schro_mutex_free (SchroMutex *mutex)
+{
+  pthread_mutex_destroy (&mutex->mutex);
+  free (mutex);
 }
 

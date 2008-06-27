@@ -7,9 +7,12 @@
 
 SCHRO_BEGIN_DECLS
 
+typedef int SchroExecDomain;
+
 typedef struct _SchroAsync SchroAsync;
 typedef struct _SchroThread SchroThread;
 typedef struct _SchroAsyncTask SchroAsyncTask;
+typedef struct _SchroMutex SchroMutex;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
@@ -36,6 +39,11 @@ void schro_async_unlock (SchroAsync *async);
 SchroExecDomain schro_async_get_exec_domain (void);
 
 void schro_async_add_cuda (SchroAsync *async);
+
+SchroMutex *schro_mutex_new (void);
+void schro_mutex_lock (SchroMutex *mutex);
+void schro_mutex_unlock (SchroMutex *mutex);
+void schro_mutex_free (SchroMutex *mutex);
 
 #endif
 

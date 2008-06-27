@@ -152,3 +152,24 @@ void schro_async_signal_scheduler (SchroAsync *async)
 {
 }
 
+SchroMutex *
+schro_mutex_new (void)
+{
+  return NULL;
+}
+
+void
+schro_mutex_lock (SchroMutex *mutex)
+{
+}
+
+void
+schro_mutex_unlock (SchroMutex *mutex)
+{
+}
+
+void
+schro_mutex_free (SchroMutex *mutex)
+{
+}
+
