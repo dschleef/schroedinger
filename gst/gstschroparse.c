@@ -65,6 +65,8 @@ struct _GstSchroParse
 
   /* video properties */
   int fps_n, fps_d;
+  int par_n, par_d;
+  int width, height;
   guint64 duration;
   GstCaps *caps;
   
@@ -202,6 +204,10 @@ gst_schro_parse_reset (GstSchroParse *dec)
   dec->duration = GST_SECOND/30;
   dec->fps_n = 30;
   dec->fps_d = 1;
+  dec->par_n = 1;
+  dec->par_d = 1;
+  dec->width = -1;
+  dec->height = -1;
 
   gst_segment_init (&dec->segment, GST_FORMAT_TIME);
   gst_adapter_clear (dec->adapter);
@@ -632,8 +638,18 @@ handle_sequence_header (GstSchroParse *schro_parse, guint8 *data, int size)
   if (ret) {
     schro_parse->fps_n = video_format.frame_rate_numerator;
     schro_parse->fps_d = video_format.frame_rate_denominator;
-    GST_ERROR("Frame rate is %d/%d", schro_parse->fps_n,
+    GST_INFO("Frame rate is %d/%d", schro_parse->fps_n,
         schro_parse->fps_d);
+
+    schro_parse->width = video_format.width;
+    schro_parse->height = video_format.height;
+    GST_INFO("Frame dimensions are %d x %d\n", schro_parse->width,
+        schro_parse->height);
+
+    schro_parse->par_n = video_format.aspect_ratio_numerator;
+    schro_parse->par_d = video_format.aspect_ratio_denominator;
+    GST_INFO("Pixel aspect ratio is %d/%d", schro_parse->par_n,
+        schro_parse->par_d);
   } else {
     GST_ERROR("Failed to get frame rate from sequence header");
   }
@@ -729,7 +745,16 @@ gst_schro_parse_push_all (GstSchroParse *schro_parse, gboolean at_eos)
     }
 
     if (!schro_parse->caps) {
-      schro_parse->caps = gst_caps_new_simple ("video/x-dirac", NULL);
+      schro_parse->caps = gst_caps_new_simple ("video/x-dirac",
+              "width", G_TYPE_INT, schro_parse->width,
+              "height", G_TYPE_INT, schro_parse->height,
+              "framerate", GST_TYPE_FRACTION, schro_parse->fps_n,
+              schro_parse->fps_d, NULL);
+      
+      if (schro_parse->par_d != 1 || schro_parse->par_n != 1)
+          gst_caps_set_simple (schro_parse->caps, "pixel-aspect-ratio",
+	      GST_TYPE_FRACTION, schro_parse->par_n, schro_parse->par_d, NULL);
+
       gst_pad_set_caps (schro_parse->srcpad, schro_parse->caps);
     }
     gst_buffer_set_caps (outbuf, schro_parse->caps);

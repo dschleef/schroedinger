@@ -224,6 +224,7 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
 {
   GstStructure *structure;
   GstSchroEnc *schro_enc = GST_SCHRO_ENC (gst_pad_get_parent (pad));
+  GstCaps *srccaps;
 
   structure = gst_caps_get_structure (caps, 0);
 
@@ -276,6 +277,20 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
 
   schro_enc->duration = gst_util_uint64_scale_int (GST_SECOND,
           schro_enc->fps_d, schro_enc->fps_n);
+
+  srccaps = gst_caps_new_simple ("video/x-dirac",
+              "width", G_TYPE_INT, schro_enc->width,
+              "height", G_TYPE_INT, schro_enc->height,
+              "framerate", GST_TYPE_FRACTION, schro_enc->fps_n,
+              schro_enc->fps_d,
+              NULL);
+
+  if (schro_enc->par_d != 1 || schro_enc->par_n != 1)
+    gst_caps_set_simple (srccaps, "pixel-aspect-ratio", GST_TYPE_FRACTION, schro_enc->par_n,
+	      schro_enc->par_d, NULL);
+
+  gst_pad_set_caps (schro_enc->srcpad, srccaps);
+  gst_caps_unref (srccaps);
 
   gst_object_unref (GST_OBJECT(schro_enc));
 
@@ -702,13 +717,7 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
         outbuf = gst_buffer_new_and_alloc (encoded_buffer->length);
         memcpy (GST_BUFFER_DATA (outbuf), encoded_buffer->data,
             encoded_buffer->length);
-        gst_buffer_set_caps (outbuf,
-            gst_caps_new_simple ("video/x-dirac",
-              "width", G_TYPE_INT, schro_enc->width,
-              "height", G_TYPE_INT, schro_enc->height,
-              "framerate", GST_TYPE_FRACTION, schro_enc->fps_n,
-              schro_enc->fps_d,
-              NULL));
+        gst_buffer_set_caps (outbuf, GST_PAD_CAPS (schro_enc->srcpad));
 
         GST_BUFFER_OFFSET_END (outbuf) =
           (schro_enc->granulepos_hi<<OGG_DIRAC_GRANULE_SHIFT) +
