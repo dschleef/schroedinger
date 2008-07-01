@@ -356,7 +356,7 @@ schro_mutex_new (void)
   SchroMutex *mutex;
 
   mutex = malloc(sizeof(SchroMutex));
-  InitializeCriticalSection (&async->mutex);
+  InitializeCriticalSection (&mutex->mutex);
 
   return mutex;
 }
@@ -364,18 +364,18 @@ schro_mutex_new (void)
 void
 schro_mutex_lock (SchroMutex *mutex)
 {
-  EnterCriticalSection (&async->mutex);
+  EnterCriticalSection (&mutex->mutex);
 }
 
 void
 schro_mutex_unlock (SchroMutex *mutex)
 {
-  LeaveCriticalSection (&async->mutex);
+  LeaveCriticalSection (&mutex->mutex);
 }
 
 void
 schro_mutex_free (SchroMutex *mutex)
 {
-  DeleteCriticalSection (&async->mutex);
+  DeleteCriticalSection (&mutex->mutex);
 }
 
