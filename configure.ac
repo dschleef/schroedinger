@@ -1,6 +1,6 @@
 AC_PREREQ([2.58])
 dnl PLEASE remove the nano when doing a release
-AC_INIT(schroedinger,1.0.4)
+AC_INIT(schroedinger,1.0.5)
 
 AS_NANO(SCHRO_CVS=no,SCHRO_CVS=yes)
 
@@ -49,6 +49,7 @@ PKG_CHECK_MODULES(LIBOIL, liboil-0.3 >= $OIL_VER, HAVE_LIBOIL=yes, HAVE_LIBOIL=n
 if test "x${HAVE_LIBOIL}" != xyes ; then
   AC_ERROR([liboil-0.3 >= $OIL_VER is required])
 fi
+SCHRO_PKG_DEPS="liboil-0.3 >= $OIL_VER"
 
 AC_ARG_ENABLE(orc, AC_HELP_STRING([--enable-orc],
               [enable orc support (default=disabled)]))
@@ -61,6 +62,7 @@ else
 fi
 if test "x${HAVE_ORC}" = xyes ; then
   AC_DEFINE(HAVE_ORC, 1, [Whether or not orc is enabled])
+  SCHRO_PKG_DEPS="$SCHRO_PKG_DEPS orc-0.3 >= $ORC_VER"
 fi
 AM_CONDITIONAL(HAVE_ORC, test "x$HAVE_ORC" = "xyes")
 
@@ -69,8 +71,6 @@ AC_ARG_WITH([thread],
     [],
     [with_thread=auto])
 
-ACX_PTHREAD([HAVE_PTHREAD=yes])
-
 AC_MSG_CHECKING([threading implementation to use])
 if test "x${with_thread}" = "xauto" ; then
   case $host_os in
@@ -78,26 +78,31 @@ if test "x${with_thread}" = "xauto" ; then
       with_thread=win32
       ;;
     *)
-      if test "x$HAVE_PTHREAD" = "xyes" ; then
-        with_thread=pthread
-      else
-        with_thread=none
-      fi
+      with_thread=pthread
       ;;
   esac
 fi
 AC_MSG_RESULT([$with_thread])
 
-AC_SUBST(PTHREAD_CFLAGS)
-AC_SUBST(PTHREAD_LIBS)
-
 THREAD_IMPL=${with_thread}
 AC_SUBST(THREAD_IMPL)
+
+if test "x${with_thread}" = "xpthread" ; then
+  case "$host_os" in 
+    *)
+      PTHREAD_CFLAGS=
+      PTHREAD_LIBS=-lpthread
+      ;;
+  esac
+  AC_SUBST(PTHREAD_CFLAGS)
+  AC_SUBST(PTHREAD_LIBS)
+fi
 
 if test "x${with_thread}" = "xgthread" ; then
   PKG_CHECK_MODULES(GTHREAD, gthread-2.0, HAVE_GTHREAD=yes, HAVE_GTHREAD=no)
   AC_SUBST(GTHREAD_LIBS)
   AC_SUBST(GTHREAD_CFLAGS)
+  SCHRO_PKG_DEPS="$SCHRO_PKG_DEPS gthread-2.0"
 fi
 
 AC_ARG_WITH([opengl],
@@ -233,6 +238,7 @@ SCHRO_LIBS="$SCHRO_LIBS $LIBOIL_LIBS $CUDA_LIBS $PTHREAD_LIBS $GTHREAD_LIBS $LIB
 #SCHRO_LIBS="$SCHRO_LIBS -lprofiler"
 AC_SUBST(SCHRO_LIBS)
 
+AC_SUBST(SCHRO_PKG_DEPS)
 AS_HOST_DEFINES()
 	
 pkgconfigdir="\$(libdir)/pkgconfig"

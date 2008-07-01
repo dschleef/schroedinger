@@ -7,7 +7,7 @@ toolsdir=${exec_prefix}/bin
 
 Name: schroedinger-@SCHRO_MAJORMINOR@
 Description: Dirac codec library
-Requires: liboil-0.3
+Requires: @SCHRO_PKG_DEPS@
 Version: @VERSION@
 Libs: -L${libdir} -lschroedinger-@SCHRO_MAJORMINOR@ @PTHREAD_LIBS@ @LIBM@
 Cflags: -I${includedir}
