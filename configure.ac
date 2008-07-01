@@ -1,6 +1,6 @@
 AC_PREREQ([2.58])
 dnl PLEASE remove the nano when doing a release
-AC_INIT(schroedinger,1.0.3.1)
+AC_INIT(schroedinger,1.0.4)
 
 AS_NANO(SCHRO_CVS=no,SCHRO_CVS=yes)
 
@@ -19,7 +19,7 @@ dnl - library source changed -> increment REVISION
 dnl - interfaces added/removed/changed -> increment CURRENT, REVISION = 0
 dnl - interfaces added -> increment AGE
 dnl - interfaces removed -> AGE = 0
-SCHRO_LIBVERSION="0:0:0"
+SCHRO_LIBVERSION="1:0:1"
 AC_SUBST(SCHRO_LIBVERSION)
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
