@@ -100,6 +100,7 @@ schro_opengl_wavelet_vertical_deinterleave (SchroFrameData *frame_data)
   #undef SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
   #undef BIND_FRAMEBUFFER_AND_TEXTURE
 
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
   glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
   schro_opengl_unlock (opengl);
@@ -129,25 +130,21 @@ schro_opengl_wavelet_render_quad (SchroOpenGLShader *shader, int x, int y,
   SCHRO_ASSERT (x_inverse >= 0);
   SCHRO_ASSERT (y_inverse >= 0);
 
-  if (shader->two_decrease != -1) {
-    glUniform2fARB (shader->two_decrease, x < two_x ? x : two_x,
-        y < two_y ? y : two_y);
-  }
+  #define UNIFORM(_number, _operation, __x, __y) \
+      do { \
+        if (shader->_number##_##_operation != -1) { \
+          glUniform2fARB (shader->_number##_##_operation, \
+              __x < _number##_x ? __x : _number##_x, \
+              __y < _number##_y ? __y : _number##_y); \
+        } \
+      } while (0)
 
-  if (shader->one_decrease != -1) {
-    glUniform2fARB (shader->one_decrease, x < one_x ? x : one_x,
-        y < one_y ? y : one_y);
-  }
+  UNIFORM (two, decrease, x, y);
+  UNIFORM (one, decrease, x, y);
+  UNIFORM (one, increase, x_inverse, y_inverse);
+  UNIFORM (two, increase, x_inverse, y_inverse);
 
-  if (shader->one_increase != -1) {
-    glUniform2fARB (shader->one_increase, x_inverse < one_x ? x_inverse : one_x,
-        y_inverse < one_y ? y_inverse : one_y);
-  }
-
-  if (shader->two_increase != -1) {
-    glUniform2fARB (shader->two_increase, x_inverse < two_x ? x_inverse : two_x,
-        y_inverse < two_y ? y_inverse : two_y);
-  }
+  #undef UNIFORM
 
   schro_opengl_render_quad (x, y, quad_width, quad_height);
 }
@@ -297,19 +294,17 @@ schro_opengl_wavelet_inverse_transform (SchroFrameData *frame_data,
 
   RENDER_QUAD_VERTICAL_Lp (0, 1);
 
-  if (subband_height > 1) {
-    if (subband_height > 2) {
-      RENDER_QUAD_VERTICAL_Lp (1, 1);
+  if (subband_height > 2) {
+    RENDER_QUAD_VERTICAL_Lp (1, 1);
 
-      if (subband_height > 4) {
-        RENDER_QUAD_VERTICAL_Lp (2, subband_height - 4);
-      }
-
-      RENDER_QUAD_VERTICAL_Lp (subband_height - 2, 1);
+    if (subband_height > 4) {
+      RENDER_QUAD_VERTICAL_Lp (2, subband_height - 4);
     }
 
-    RENDER_QUAD_VERTICAL_Lp (subband_height - 1, 1);
+    RENDER_QUAD_VERTICAL_Lp (subband_height - 2, 1);
   }
+
+  RENDER_QUAD_VERTICAL_Lp (subband_height - 1, 1);
 
   #undef RENDER_QUAD_VERTICAL_Lp
 
@@ -336,19 +331,17 @@ schro_opengl_wavelet_inverse_transform (SchroFrameData *frame_data,
 
   RENDER_QUAD_VERTICAL_Hp (0, 1);
 
-  if (subband_height > 1) {
-    if (subband_height > 2) {
-      RENDER_QUAD_VERTICAL_Hp (1, 1);
+  if (subband_height > 2) {
+    RENDER_QUAD_VERTICAL_Hp (1, 1);
 
-      if (subband_height > 4) {
-        RENDER_QUAD_VERTICAL_Hp (2, subband_height - 4);
-      }
-
-      RENDER_QUAD_VERTICAL_Hp (subband_height - 2, 1);
+    if (subband_height > 4) {
+      RENDER_QUAD_VERTICAL_Hp (2, subband_height - 4);
     }
 
-    RENDER_QUAD_VERTICAL_Hp (subband_height - 1, 1);
+    RENDER_QUAD_VERTICAL_Hp (subband_height - 2, 1);
   }
+
+  RENDER_QUAD_VERTICAL_Hp (subband_height - 1, 1);
 
   #undef RENDER_QUAD_VERTICAL_Hp
 
@@ -391,19 +384,17 @@ schro_opengl_wavelet_inverse_transform (SchroFrameData *frame_data,
 
   RENDER_QUAD_HORIZONTAL_Lp (0, 1);
 
-  if (subband_width > 1) {
-    if (subband_width > 2) {
-      RENDER_QUAD_HORIZONTAL_Lp (1, 1);
+  if (subband_width > 2) {
+    RENDER_QUAD_HORIZONTAL_Lp (1, 1);
 
-      if (subband_width > 4) {
-        RENDER_QUAD_HORIZONTAL_Lp (2, subband_width - 4);
-      }
-
-      RENDER_QUAD_HORIZONTAL_Lp (subband_width - 2, 1);
+    if (subband_width > 4) {
+      RENDER_QUAD_HORIZONTAL_Lp (2, subband_width - 4);
     }
 
-    RENDER_QUAD_HORIZONTAL_Lp (subband_width - 1, 1);
+    RENDER_QUAD_HORIZONTAL_Lp (subband_width - 2, 1);
   }
+
+  RENDER_QUAD_HORIZONTAL_Lp (subband_width - 1, 1);
 
   #undef RENDER_QUAD_HORIZONTAL_Lp
 
@@ -430,19 +421,17 @@ schro_opengl_wavelet_inverse_transform (SchroFrameData *frame_data,
 
   RENDER_QUAD_HORIZONTAL_Hp (0, 1);
 
-  if (subband_width > 1) {
-    if (subband_width > 2) {
-      RENDER_QUAD_HORIZONTAL_Hp (1, 1);
+  if (subband_width > 2) {
+    RENDER_QUAD_HORIZONTAL_Hp (1, 1);
 
-      if (subband_width > 4) {
-        RENDER_QUAD_HORIZONTAL_Hp (2, subband_width - 4);
-      }
-
-      RENDER_QUAD_HORIZONTAL_Hp (subband_width - 2, 1);
+    if (subband_width > 4) {
+      RENDER_QUAD_HORIZONTAL_Hp (2, subband_width - 4);
     }
 
-    RENDER_QUAD_HORIZONTAL_Hp (subband_width - 1, 1);
+    RENDER_QUAD_HORIZONTAL_Hp (subband_width - 2, 1);
   }
+
+  RENDER_QUAD_HORIZONTAL_Hp (subband_width - 1, 1);
 
   #undef RENDER_QUAD_HORIZONTAL_Hp
 
@@ -504,6 +493,7 @@ schro_opengl_wavelet_inverse_transform (SchroFrameData *frame_data,
   #undef SWITCH_FRAMEBUFFER_AND_TEXTURE_INDICES
   #undef BIND_FRAMEBUFFER_AND_TEXTURE
 
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
   glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
   schro_opengl_unlock (opengl);

@@ -152,6 +152,7 @@ schro_opengl_frame_convert_with_shader (SchroFrame *dest, SchroFrame *src,
 
     glFlush ();
 
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
   }
 
@@ -215,6 +216,7 @@ schro_opengl_frame_unpack_with_shader (SchroFrame *dest, SchroFrame *src,
 
     glFlush ();
 
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
   }
 
@@ -286,6 +288,7 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
 
   glFlush ();
 
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
   glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
   schro_opengl_unlock (opengl);

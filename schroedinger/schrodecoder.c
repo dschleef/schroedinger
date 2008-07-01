@@ -131,8 +131,6 @@ schro_decoder_new (void)
 #endif
 
 #ifdef HAVE_OPENGL
-  SCHRO_ERROR (">>> === schro_opengl_new === >>>");
-
   decoder->opengl = schro_opengl_new ();
 
   if (schro_opengl_is_usable (decoder->opengl)) {
@@ -145,8 +143,6 @@ schro_decoder_new (void)
     decoder->opengl = NULL;
     decoder->use_opengl = FALSE;
   }
-
-  SCHRO_ERROR ("<<< === schro_opengl_new === <<<");
 #endif
 
   return decoder;
@@ -1203,11 +1199,7 @@ schro_decoder_x_combine (SchroPicture *picture)
 #endif
       } else if (picture->decoder->use_opengl) {
 #ifdef HAVE_OPENGL
-        SCHRO_ERROR (">>> === schro_opengl_frame_add === >>>");
-
         schro_opengl_frame_add (picture->frame, picture->mc_tmp_frame);
-
-        SCHRO_ERROR ("<<< === schro_opengl_frame_add === <<<");
 #else
         SCHRO_ASSERT(0);
 #endif
@@ -1228,6 +1220,7 @@ schro_decoder_x_combine (SchroPicture *picture)
     output_opengl_frame = combined_opengl_frame;
   }
 
+  // FIXME: remove {{
   if (picture->decoder->use_opengl) {
 #ifdef HAVE_OPENGL
     SCHRO_ERROR (">>> === schro_opengl_frame_pull === >>>");
@@ -1246,6 +1239,7 @@ schro_decoder_x_combine (SchroPicture *picture)
     combined_cpu_frame = combined_opengl_frame;
     output_cpu_frame = output_opengl_frame;
   }
+  // FIXME: remove }}
 
   if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
     if (picture->decoder->use_cuda) {
@@ -1331,6 +1325,7 @@ schro_decoder_x_combine (SchroPicture *picture)
     }
   }
 
+  // FIXME: remove {{
   if (picture->decoder->use_opengl) {
 #ifdef HAVE_OPENGL
     SCHRO_ERROR (">>> === schro_frame_unref === >>>");
@@ -1343,6 +1338,7 @@ schro_decoder_x_combine (SchroPicture *picture)
     SCHRO_ASSERT(0);
 #endif
   }
+  // FIXME: remove }}
 }
 
 void
@@ -1354,7 +1350,13 @@ schro_decoder_x_upsample (SchroPicture *picture)
 #else
     SCHRO_ASSERT (0);
 #endif
-  } else {
+  } /*else if (picture->decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+    schro_opengl_upsampled_frame_upsample (picture->upsampled_frame);
+#else
+    SCHRO_ASSERT (0);
+#endif
+  }*/ else  {
     schro_upsampled_frame_upsample (picture->upsampled_frame);
   }
 }

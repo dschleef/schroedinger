@@ -14,10 +14,14 @@ struct _SchroOpenGLShader {
   GLhandleARB program;
   GLint textures[3];
   GLint offset;
+  GLint four_decrease;
+  GLint three_decrease;
+  GLint two_decrease;
   GLint one_decrease;
   GLint one_increase;
-  GLint two_decrease;
   GLint two_increase;
+  GLint three_increase;
+  GLint four_increase;
 };
 
 #define SCHRO_OPENGL_SHADER_IDENTITY             0
@@ -54,9 +58,10 @@ struct _SchroOpenGLShader {
 #define SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_INTERLEAVE              31
 #define SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_INTERLEAVE            32
 #define SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_SHIFT                     33
+#define SCHRO_OPENGL_SHADER_UPSAMPLE_U8                               34
 
 #define SCHRO_OPENGL_SHADER_COUNT \
-    ((SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_SHIFT) + 1)
+    ((SCHRO_OPENGL_SHADER_UPSAMPLE_U8) + 1)
 
 SchroOpenGLShaderLibrary *schro_opengl_shader_library_new (SchroOpenGL *opengl);
 void schro_opengl_shader_library_free (SchroOpenGLShaderLibrary *library);

@@ -407,6 +407,8 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 #endif
     }
 
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
+
     if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD) {
       glDeleteTextures (1, &src_texture);
     }

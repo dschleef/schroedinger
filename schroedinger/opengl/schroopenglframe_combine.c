@@ -189,6 +189,7 @@ schro_opengl_frame_combine_with_shader (SchroFrame *dest, SchroFrame *src,
 
     glFlush ();
 
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
   }
 

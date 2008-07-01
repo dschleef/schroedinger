@@ -5,6 +5,7 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
 #include <schroedinger/opengl/schroopenglframe.h>
+#include <schroedinger/opengl/schroopenglshader.h>
 #include <schroedinger/opengl/schroopenglwavelet.h>
 #include <liboil/liboil.h>
 #include <stdio.h>
@@ -735,6 +736,25 @@ schro_opengl_frame_new (SchroOpenGL *opengl,
 }
 
 SchroFrame *
+schro_opengl_frame_clone (SchroFrame *opengl_frame)
+{
+  SchroOpenGL *opengl;
+  SchroOpenGLFrameData *opengl_data;
+
+  SCHRO_ASSERT (opengl_frame != NULL);
+  SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (opengl_frame));
+
+  opengl_data = (SchroOpenGLFrameData *) opengl_frame->components[0].data;
+
+  SCHRO_ASSERT (opengl_data != NULL);
+
+  opengl = opengl_data->opengl;
+
+  return schro_opengl_frame_new (opengl, opengl_frame->domain,
+      opengl_frame->format, opengl_frame->width, opengl_frame->height);
+}
+
+SchroFrame *
 schro_opengl_frame_clone_and_push (SchroOpenGL *opengl,
     SchroMemoryDomain *opengl_domain, SchroFrame *cpu_frame)
 {
@@ -815,5 +835,259 @@ schro_opengl_frame_inverse_iwt_transform (SchroFrame *frame,
   }
 
   schro_opengl_unlock (opengl);
+}
+
+static void
+schro_opengl_upsampled_frame_render_quad (SchroOpenGLShader *shader, int x,
+    int y, int quad_width, int quad_height, int total_width, int total_height)
+{
+  int x_inverse, y_inverse;
+  int four_x = 0, four_y = 0, three_x = 0, three_y = 0, two_x = 0, two_y = 0,
+      one_x = 0, one_y = 0;
+
+  x_inverse = total_width - x - quad_width;
+  y_inverse = total_height - y - quad_height;
+
+  if (quad_width == total_width && quad_height < total_height) {
+    four_y = 4;
+    three_y = 3;
+    two_y = 2;
+    one_y = 1;
+  } else if (quad_width < total_width && quad_height == total_height) {
+    four_x = 4;
+    three_x = 3;
+    two_x = 2;
+    one_x = 1;
+  } else {
+    SCHRO_ERROR ("invalid quad to total relation");
+    SCHRO_ASSERT (0);
+  }
+
+  SCHRO_ASSERT (x_inverse >= 0);
+  SCHRO_ASSERT (y_inverse >= 0);
+
+  #define UNIFORM(_number, _operation, __x, __y) \
+      do { \
+        if (shader->_number##_##_operation != -1) { \
+          glUniform2fARB (shader->_number##_##_operation, \
+              __x < _number##_x ? __x : _number##_x, \
+              __y < _number##_y ? __y : _number##_y); \
+        } \
+      } while (0)
+
+  UNIFORM (four, decrease, x, y);
+  UNIFORM (three, decrease, x, y);
+  UNIFORM (two, decrease, x, y);
+  UNIFORM (one, decrease, x, y);
+  UNIFORM (one, increase, x_inverse, y_inverse);
+  UNIFORM (two, increase, x_inverse, y_inverse);
+  UNIFORM (three, increase, x_inverse, y_inverse);
+  UNIFORM (four, increase, x_inverse, y_inverse);
+
+  #undef UNIFORM
+
+  schro_opengl_render_quad (x, y, quad_width, quad_height);
+}
+
+void
+schro_opengl_upsampled_frame_upsample (SchroUpsampledFrame *upsampled_frame)
+{
+  int i;
+  int width, height;
+  SchroOpenGLFrameData *opengl_data[4];
+  SchroOpenGL *opengl;
+  SchroOpenGLShader *shader = NULL;
+
+  SCHRO_ASSERT (upsampled_frame->frames[0] != NULL);
+  SCHRO_ASSERT (upsampled_frame->frames[1] == NULL);
+  SCHRO_ASSERT (upsampled_frame->frames[2] == NULL);
+  SCHRO_ASSERT (upsampled_frame->frames[3] == NULL);
+  SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (upsampled_frame->frames[0]));
+  SCHRO_ASSERT (!SCHRO_FRAME_IS_PACKED (upsampled_frame->frames[0]->format));
+
+  opengl_data[0] = (SchroOpenGLFrameData *) upsampled_frame->frames[0]->components[0].data;
+
+  SCHRO_ASSERT (opengl_data != NULL);
+
+  opengl = opengl_data[0]->opengl;
+
+  schro_opengl_lock (opengl);
+
+  upsampled_frame->frames[1] = schro_opengl_frame_clone (upsampled_frame->frames[0]);
+  upsampled_frame->frames[2] = schro_opengl_frame_clone (upsampled_frame->frames[0]);
+  upsampled_frame->frames[3] = schro_opengl_frame_clone (upsampled_frame->frames[0]);
+
+  shader = schro_opengl_shader_get (opengl, SCHRO_OPENGL_SHADER_UPSAMPLE_U8);
+
+  SCHRO_ASSERT (shader != NULL);
+
+  glUseProgramObjectARB (shader->program);
+  glUniform1iARB (shader->textures[0], 0);
+
+  SCHRO_OPENGL_CHECK_ERROR
+
+  for (i = 0; i < 3; ++i) {
+    // FIXME: hack to store custom data per frame component
+    opengl_data[0] = (SchroOpenGLFrameData *) upsampled_frame->frames[0]->components[i].data;
+    opengl_data[1] = (SchroOpenGLFrameData *) upsampled_frame->frames[1]->components[i].data;
+    opengl_data[2] = (SchroOpenGLFrameData *) upsampled_frame->frames[2]->components[i].data;
+    opengl_data[3] = (SchroOpenGLFrameData *) upsampled_frame->frames[3]->components[i].data;
+
+    width = upsampled_frame->frames[0]->components[i].width;
+    height = upsampled_frame->frames[0]->components[i].height;
+
+    SCHRO_ASSERT (width >= 2);
+    SCHRO_ASSERT (height >= 2);
+    SCHRO_ASSERT (width % 2 == 0);
+    SCHRO_ASSERT (height % 2 == 0);
+
+    schro_opengl_setup_viewport (width, height);
+
+    /* horizontal filter 0 -> 1 */
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data[1]->framebuffers[0]);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data[0]->texture.handles[0]);
+
+    SCHRO_OPENGL_CHECK_ERROR
+
+    #define RENDER_QUAD_HORIZONTAL(_x, _quad_width) \
+        schro_opengl_upsampled_frame_render_quad (shader, _x, 0,  _quad_width,\
+            height, width, height)
+
+    RENDER_QUAD_HORIZONTAL (0, 1);
+
+    if (width > 2) {
+      RENDER_QUAD_HORIZONTAL (1, 1);
+
+      if (width > 4) {
+        RENDER_QUAD_HORIZONTAL (2, 1);
+
+        if (width > 6) {
+          RENDER_QUAD_HORIZONTAL (3, 1);
+
+           if (width > 8) {
+             RENDER_QUAD_HORIZONTAL (4, width - 8);
+           }
+
+           RENDER_QUAD_HORIZONTAL (width - 4, 1);
+        }
+
+        RENDER_QUAD_HORIZONTAL (width - 3, 1);
+      }
+
+      RENDER_QUAD_HORIZONTAL (width - 2, 1);
+    }
+
+    RENDER_QUAD_HORIZONTAL (width - 1, 1);
+
+    #undef RENDER_QUAD_HORIZONTAL
+
+    /* vertical filter 0 -> 2 */
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data[2]->framebuffers[0]);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data[0]->texture.handles[0]);
+
+    SCHRO_OPENGL_CHECK_ERROR
+
+    #define RENDER_QUAD_VERTICAL(_y, _quad_height) \
+        schro_opengl_upsampled_frame_render_quad (shader, 0, _y,  width,\
+            _quad_height, width, height)
+
+    RENDER_QUAD_VERTICAL (0, 1);
+
+    if (height > 2) {
+      RENDER_QUAD_VERTICAL (1, 1);
+
+      if (height > 4) {
+        RENDER_QUAD_VERTICAL (2, 1);
+
+        if (height > 6) {
+          RENDER_QUAD_VERTICAL (3, 1);
+
+           if (height > 8) {
+             RENDER_QUAD_VERTICAL (4, height - 8);
+           }
+
+           RENDER_QUAD_VERTICAL (height - 4, 1);
+        }
+
+        RENDER_QUAD_VERTICAL (height - 3, 1);
+      }
+
+      RENDER_QUAD_VERTICAL (height - 2, 1);
+    }
+
+    RENDER_QUAD_VERTICAL (height - 1, 1);
+
+    #undef RENDER_QUAD_VERTICAL
+
+    /* horizontal filter 2 -> 3 */
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data[3]->framebuffers[0]);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data[2]->texture.handles[0]);
+
+    SCHRO_OPENGL_CHECK_ERROR
+
+    #define RENDER_QUAD_HORIZONTAL(_x, _quad_width) \
+        schro_opengl_upsampled_frame_render_quad (shader, _x, 0,  _quad_width,\
+            height, width, height)
+
+    RENDER_QUAD_HORIZONTAL (0, 1);
+
+    if (width > 2) {
+      RENDER_QUAD_HORIZONTAL (1, 1);
+
+      if (width > 4) {
+        RENDER_QUAD_HORIZONTAL (2, 1);
+
+        if (width > 6) {
+          RENDER_QUAD_HORIZONTAL (3, 1);
+
+           if (width > 8) {
+             RENDER_QUAD_HORIZONTAL (4, width - 8);
+           }
+
+           RENDER_QUAD_HORIZONTAL (width - 4, 1);
+        }
+
+        RENDER_QUAD_HORIZONTAL (width - 3, 1);
+      }
+
+      RENDER_QUAD_HORIZONTAL (width - 2, 1);
+    }
+
+    RENDER_QUAD_HORIZONTAL (width - 1, 1);
+
+    #undef RENDER_QUAD_HORIZONTAL
+  }
+
+  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
+  glUseProgramObjectARB (0);
+
+  schro_opengl_unlock (opengl);
+}
+
+void
+schro_frame_print (SchroFrame *frame, const char* name)
+{
+  printf ("schro_frame_print: %s\n", name);
+
+  switch (SCHRO_FRAME_FORMAT_DEPTH (frame->format)) {
+    case SCHRO_FRAME_FORMAT_DEPTH_U8:
+      printf ("  depth:  U8\n");
+      break;
+    case SCHRO_FRAME_FORMAT_DEPTH_S16:
+      printf ("  depth:  S16\n");
+      break;
+    case SCHRO_FRAME_FORMAT_DEPTH_S32:
+      printf ("  depth:  S32\n");
+      break;
+    default:
+      printf ("  depth:  unknown\n");
+      break;
+  }
+
+  printf ("  packed: %s\n", SCHRO_FRAME_IS_PACKED (frame->format) ? "yes": "no");
+  printf ("  width:  %i\n", frame->width);
+  printf ("  height: %i\n", frame->height);
+  printf ("  opengl: %s\n", SCHRO_FRAME_IS_OPENGL (frame) ? "yes": "no");
 }
 

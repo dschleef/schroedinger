@@ -379,10 +379,18 @@ schro_opengl_lock (SchroOpenGL *opengl)
 void
 schro_opengl_unlock (SchroOpenGL *opengl)
 {
+  int texture, framebuffer;
+
   SCHRO_ASSERT (opengl->display != NULL);
   SCHRO_ASSERT (opengl->lock_count > 0);
 
   SCHRO_OPENGL_CHECK_ERROR
+
+  glGetIntegerv (GL_TEXTURE_BINDING_RECTANGLE_ARB, &texture);
+  glGetIntegerv (GL_FRAMEBUFFER_BINDING_EXT, &framebuffer);
+
+  SCHRO_ASSERT (texture == 0);
+  SCHRO_ASSERT (framebuffer == 0);
 
   --opengl->lock_count;
 
