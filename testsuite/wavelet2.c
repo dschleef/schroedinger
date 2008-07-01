@@ -184,38 +184,38 @@ main (int argc, char *argv[])
   check_output (SCHRO_WAVELET_DAUBECHIES_9_7, 1);
   check_output (SCHRO_WAVELET_DAUBECHIES_9_7, 0);
 
-  check_output (SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 1);
-  check_output (SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 0);
+  check_output (SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7, 1);
+  check_output (SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7, 0);
 
   check_output (SCHRO_WAVELET_LE_GALL_5_3, 1);
   check_output (SCHRO_WAVELET_LE_GALL_5_3, 0);
 
-  check_output (SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 1);
-  check_output (SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 0);
+  check_output (SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7, 1);
+  check_output (SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7, 0);
   
   check_endpoints (SCHRO_WAVELET_DAUBECHIES_9_7, 1);
   check_endpoints (SCHRO_WAVELET_DAUBECHIES_9_7, 0);
 
-  check_endpoints (SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 1);
-  check_endpoints (SCHRO_WAVELET_DESLAURIES_DUBUC_9_7, 0);
+  check_endpoints (SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7, 1);
+  check_endpoints (SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7, 0);
 
   check_endpoints (SCHRO_WAVELET_LE_GALL_5_3, 1);
   check_endpoints (SCHRO_WAVELET_LE_GALL_5_3, 0);
 
-  check_endpoints (SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 1);
-  check_endpoints (SCHRO_WAVELET_DESLAURIES_DUBUC_13_7, 0);
+  check_endpoints (SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7, 1);
+  check_endpoints (SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7, 0);
   
 
   check_constant (SCHRO_WAVELET_DAUBECHIES_9_7);
-  check_constant (SCHRO_WAVELET_DESLAURIES_DUBUC_9_7);
+  check_constant (SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7);
   check_constant (SCHRO_WAVELET_LE_GALL_5_3);
-  check_constant (SCHRO_WAVELET_DESLAURIES_DUBUC_13_7);
+  check_constant (SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7);
 
 
   check_random (SCHRO_WAVELET_DAUBECHIES_9_7);
-  check_random (SCHRO_WAVELET_DESLAURIES_DUBUC_9_7);
+  check_random (SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7);
   check_random (SCHRO_WAVELET_LE_GALL_5_3);
-  check_random (SCHRO_WAVELET_DESLAURIES_DUBUC_13_7);
+  check_random (SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7);
 
 
   return 0;

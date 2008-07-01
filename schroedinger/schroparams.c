@@ -15,7 +15,7 @@ schro_params_init (SchroParams *params, int video_format)
 
   if (params->num_refs == 0) {
     if (video_format < 11) {
-      params->wavelet_filter_index = SCHRO_WAVELET_DESLAURIES_DUBUC_9_7;
+      params->wavelet_filter_index = SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7;
     } else {
       params->wavelet_filter_index = SCHRO_WAVELET_FIDELITY;
     }
@@ -23,7 +23,7 @@ schro_params_init (SchroParams *params, int video_format)
     if (video_format < 11) {
       params->wavelet_filter_index = SCHRO_WAVELET_LE_GALL_5_3;
     } else {
-      params->wavelet_filter_index = SCHRO_WAVELET_DESLAURIES_DUBUC_9_7;
+      params->wavelet_filter_index = SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7;
     }
   }
 

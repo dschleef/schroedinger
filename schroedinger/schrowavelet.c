@@ -718,13 +718,13 @@ schro_wavelet_transform_2d (SchroFrameData *fd, int filter, int16_t *tmp)
       SCHRO_FRAME_FORMAT_DEPTH_S16);
 
   switch (filter) {
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
       schro_iwt_desl_9_3 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_LE_GALL_5_3:
       schro_iwt_5_3 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
       schro_iwt_13_5 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_HAAR_0:
@@ -1192,13 +1192,13 @@ schro_wavelet_inverse_transform_2d (SchroFrameData *fd, int filter,
       SCHRO_FRAME_FORMAT_DEPTH_S16);
 
   switch (filter) {
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
       schro_iiwt_desl_9_3 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_LE_GALL_5_3:
       schro_iiwt_5_3 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
       schro_iiwt_13_5 (fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
     case SCHRO_WAVELET_HAAR_0:

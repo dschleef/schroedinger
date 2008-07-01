@@ -181,10 +181,10 @@ main (int argc, char *argv[])
       printf("Size %dx%d:\n", width, height);
       for(filter=0;filter<=SCHRO_WAVELET_DAUBECHIES_9_7;filter++){
         printf("  filter %d:\n", filter);
-        if (filter == SCHRO_WAVELET_DESLAURIES_DUBUC_9_7 && (width < 0 || height <= 4)) {
+        if (filter == SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7 && (width < 0 || height <= 4)) {
           continue;
         }
-        if (filter == SCHRO_WAVELET_DESLAURIES_DUBUC_13_7 && (width < 0 || height <= 4)) {
+        if (filter == SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7 && (width < 0 || height <= 4)) {
           continue;
         }
         if (filter == SCHRO_WAVELET_FIDELITY && (width < 16 || height < 16)) {
@@ -310,13 +310,13 @@ void
 schro_split_ext (int16_t *hi, int16_t *lo, int n, int filter)
 {
   switch (filter) {
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
       schro_split_ext_desl93 (hi, lo, n);
       break;
     case SCHRO_WAVELET_LE_GALL_5_3:
       schro_split_ext_53 (hi, lo, n);
       break;
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
       schro_split_ext_135 (hi, lo, n);
       break;
     case SCHRO_WAVELET_HAAR_0:
@@ -336,13 +336,13 @@ void
 schro_synth_ext (int16_t *hi, int16_t *lo, int n, int filter)
 {
   switch (filter) {
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
       schro_synth_ext_desl93 (hi, lo, n);
       break;
     case SCHRO_WAVELET_LE_GALL_5_3:
       schro_synth_ext_53 (hi, lo, n);
       break;
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
       schro_synth_ext_135 (hi, lo, n);
       break;
     case SCHRO_WAVELET_HAAR_0:
@@ -365,13 +365,13 @@ void iwt_test(SchroFrameData *p, int filter)
   tmp = malloc((p->width + 32)*sizeof(int16_t));
 
   switch (filter) {
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
       schro_iwt_desl_9_3 (p->data, p->stride, p->width, p->height, tmp);
       break;
     case SCHRO_WAVELET_LE_GALL_5_3:
       schro_iwt_5_3 (p->data, p->stride, p->width, p->height, tmp);
       break;
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
       schro_iwt_13_5 (p->data, p->stride, p->width, p->height, tmp);
       break;
     case SCHRO_WAVELET_HAAR_0:
@@ -398,13 +398,13 @@ void iiwt_test(SchroFrameData *p, int filter)
   tmp = malloc((p->width + 32)*sizeof(int16_t));
 
   switch (filter) {
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
       schro_iiwt_desl_9_3 (p->data, p->stride, p->width, p->height, tmp);
       break;
     case SCHRO_WAVELET_LE_GALL_5_3:
       schro_iiwt_5_3 (p->data, p->stride, p->width, p->height, tmp);
       break;
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
       schro_iiwt_13_5 (p->data, p->stride, p->width, p->height, tmp);
       break;
     case SCHRO_WAVELET_HAAR_0:
