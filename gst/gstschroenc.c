@@ -26,6 +26,7 @@
 #include <string.h>
 #include <schroedinger/schro.h>
 #include <schroedinger/schrobitstream.h>
+#include <schroedinger/schrovirtframe.h>
 #include <math.h>
 
 GST_DEBUG_CATEGORY_EXTERN (schro_debug);
@@ -61,7 +62,7 @@ struct _GstSchroEnc
   int fps_n, fps_d;
   int par_n, par_d;
   guint64 duration;
-  uint32_t fourcc;
+  GstVideoFormat format;
 
   /* segment properties */
   gint64 segment_start;
@@ -116,7 +117,9 @@ static GstStaticPadTemplate gst_schro_enc_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YV12, YUY2, UYVY, AYUV }"))
+    GST_STATIC_CAPS (
+      GST_VIDEO_CAPS_YUV ("{ I420, YV12, YUY2, UYVY, AYUV }") ";"
+      GST_VIDEO_CAPS_ARGB)
     );
 
 static GstStaticPadTemplate gst_schro_enc_src_template =
@@ -228,29 +231,30 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
 
   structure = gst_caps_get_structure (caps, 0);
 
-  gst_structure_get_fourcc (structure, "format", &schro_enc->fourcc);
-  gst_structure_get_int (structure, "width", &schro_enc->width);
-  gst_structure_get_int (structure, "height", &schro_enc->height);
-  gst_structure_get_fraction (structure, "framerate", &schro_enc->fps_n,
+  gst_video_format_parse_caps (caps, &schro_enc->format, &schro_enc->width,
+      &schro_enc->height);
+  gst_video_parse_caps_framerate (caps, &schro_enc->fps_n,
       &schro_enc->fps_d);
+
   schro_enc->par_n = 1;
   schro_enc->par_d = 1;
-  gst_structure_get_fraction (structure, "pixel-aspect-ratio",
-      &schro_enc->par_n, &schro_enc->par_d);
+  gst_video_parse_caps_pixel_aspect_ratio (caps, &schro_enc->par_n,
+      &schro_enc->par_d);
 
   schro_video_format_set_std_video_format (schro_enc->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
 
-  switch (schro_enc->fourcc) {
-    case GST_MAKE_FOURCC('I','4','2','0'):
-    case GST_MAKE_FOURCC('Y','V','1','2'):
+  switch (schro_enc->format) {
+    case GST_VIDEO_FORMAT_I420:
+    case GST_VIDEO_FORMAT_YV12:
       schro_enc->video_format->chroma_format = SCHRO_CHROMA_420;
       break;
-    case GST_MAKE_FOURCC('Y','U','Y','2'):
-    case GST_MAKE_FOURCC('U','Y','V','Y'):
+    case GST_VIDEO_FORMAT_YUY2:
+    case GST_VIDEO_FORMAT_UYVY:
       schro_enc->video_format->chroma_format = SCHRO_CHROMA_422;
       break;
-    case GST_MAKE_FOURCC('A','Y','U','V'):
+    case GST_VIDEO_FORMAT_AYUV:
+    case GST_VIDEO_FORMAT_ARGB:
       schro_enc->video_format->chroma_format = SCHRO_CHROMA_444;
       break;
     default:
@@ -427,21 +431,38 @@ gst_schro_buffer_wrap (GstSchroEnc *schro_enc, GstBuffer *buf,
 {
   SchroFrame *frame;
 
-  switch (schro_enc->fourcc) {
-    case GST_MAKE_FOURCC('I','4','2','0'):
+  switch (schro_enc->format) {
+    case GST_VIDEO_FORMAT_I420:
       frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA (buf), width, height);
       break;
-    case GST_MAKE_FOURCC('Y','V','1','2'):
+    case GST_VIDEO_FORMAT_YV12:
       frame = schro_frame_new_from_data_YV12 (GST_BUFFER_DATA (buf), width, height);
       break;
-    case GST_MAKE_FOURCC('Y','U','Y','2'):
+    case GST_VIDEO_FORMAT_YUY2:
       frame = schro_frame_new_from_data_YUY2 (GST_BUFFER_DATA (buf), width, height);
       break;
-    case GST_MAKE_FOURCC('U','Y','V','Y'):
+    case GST_VIDEO_FORMAT_UYVY:
       frame = schro_frame_new_from_data_UYVY (GST_BUFFER_DATA (buf), width, height);
       break;
-    case GST_MAKE_FOURCC('A','Y','U','V'):
+    case GST_VIDEO_FORMAT_AYUV:
       frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA (buf), width, height);
+      break;
+    case GST_VIDEO_FORMAT_ARGB:
+      {
+        SchroFrame *rgbframe = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA (buf), width, height);
+        SchroFrame *vframe1;
+        SchroFrame *vframe2;
+
+        vframe1 = schro_virt_frame_new_unpack (rgbframe);
+        vframe2 = schro_virt_frame_new_color_matrix (vframe1);
+
+        frame = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_444,
+            width, height);
+        schro_virt_frame_render (vframe2, frame);
+        schro_frame_unref (rgbframe);
+        schro_frame_unref (vframe1);
+        schro_frame_unref (vframe2);
+      }
       break;
     default:
       g_assert_not_reached();
