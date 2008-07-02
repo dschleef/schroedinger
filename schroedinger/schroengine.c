@@ -22,10 +22,11 @@ static void
 schro_engine_check_new_sequence_header(SchroEncoder *encoder,
     SchroEncoderFrame *frame)
 {
-  if (encoder->au_frame == -1 ||
+  if (encoder->force_sequence_header ||
       frame->frame_number >= encoder->au_frame + encoder->au_distance) {
     frame->start_sequence_header = TRUE;
     encoder->au_frame = frame->frame_number;
+    encoder->force_sequence_header = FALSE;
   }
 }
 

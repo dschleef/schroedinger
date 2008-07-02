@@ -160,6 +160,7 @@ void
 schro_encoder_start (SchroEncoder *encoder)
 {
   encoder->engine_init = 1;
+  encoder->force_sequence_header = TRUE;
 
   if (encoder->video_format.luma_excursion >= 256 ||
       encoder->video_format.chroma_excursion >= 256) {
@@ -339,6 +340,12 @@ schro_encoder_push_ready (SchroEncoder *encoder)
   schro_async_unlock (encoder->async);
 
   return ret;
+}
+
+void
+schro_encoder_force_sequence_header (SchroEncoder *encoder)
+{
+  encoder->force_sequence_header = TRUE;
 }
 
 void

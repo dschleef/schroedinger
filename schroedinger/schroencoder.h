@@ -273,6 +273,7 @@ struct _SchroEncoder {
   int end_of_stream_pulled;
   int completed_eos;
   int prev_offset;
+  int force_sequence_header;
 
   SchroPictureNumber au_frame;
   int next_slot;
@@ -386,6 +387,7 @@ void schro_encoder_end_of_stream (SchroEncoder *encoder);
 int schro_encoder_push_ready (SchroEncoder *encoder);
 void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
 void schro_encoder_push_frame_full (SchroEncoder *encoder, SchroFrame *frame, void *priv);
+void schro_encoder_force_sequence_header (SchroEncoder *encoder);
 
 SchroBuffer * schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
     SchroAuxiliaryDataID id, void *data, int size);
