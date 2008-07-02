@@ -76,7 +76,6 @@ schro_parse_decode_sequence_header (uint8_t *data, int length,
   /* frame rate */
   bit = schro_unpack_decode_bit (unpack);
   if (bit) {
-    int index;
     index = schro_unpack_decode_uint (unpack);
     if (index == 0) {
       format->frame_rate_numerator = schro_unpack_decode_uint (unpack);
@@ -91,7 +90,6 @@ schro_parse_decode_sequence_header (uint8_t *data, int length,
   /* aspect ratio */
   bit = schro_unpack_decode_bit (unpack);
   if (bit) {
-    int index;
     index = schro_unpack_decode_uint (unpack);
     if (index == 0) {
       format->aspect_ratio_numerator =
@@ -121,7 +119,6 @@ schro_parse_decode_sequence_header (uint8_t *data, int length,
   /* signal range */
   bit = schro_unpack_decode_bit (unpack);
   if (bit) {
-    int index;
     index = schro_unpack_decode_uint (unpack);
     if (index == 0) {
       format->luma_offset = schro_unpack_decode_uint (unpack);
@@ -145,7 +142,6 @@ schro_parse_decode_sequence_header (uint8_t *data, int length,
   /* colour spec */
   bit = schro_unpack_decode_bit (unpack);
   if (bit) {
-    int index;
     index = schro_unpack_decode_uint (unpack);
     if (index <= SCHRO_COLOUR_SPEC_CINEMA) {
       schro_video_format_set_std_colour_spec (format, index);

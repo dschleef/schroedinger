@@ -19,11 +19,11 @@ schro_list_new (void)
 }
 
 SchroList *
-schro_list_new_full (SchroListFreeFunc free, void *priv)
+schro_list_new_full (SchroListFreeFunc freefunc, void *priv)
 {
   SchroList *list = schro_list_new ();
 
-  list->free = free;
+  list->free = freefunc;
   list->priv = priv;
 
   return list;

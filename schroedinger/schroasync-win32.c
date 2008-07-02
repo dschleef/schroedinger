@@ -77,7 +77,7 @@ schro_async_new(int n_threads,
   int i;
 
   if (n_threads == 0) {
-    char *s;
+    const char *s;
 
     s = getenv ("SCHRO_THREADS");
     if (s && s[0]) {
@@ -89,7 +89,7 @@ schro_async_new(int n_threads,
       }
     }
     if (n_threads == 0) {
-      const char *s = getenv("NUMBER_OF_PROCESSORS");
+      s = getenv("NUMBER_OF_PROCESSORS");
       if (s) {
         n_threads = atoi(s);
       }

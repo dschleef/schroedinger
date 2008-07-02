@@ -1433,11 +1433,11 @@ schro_encoder_encode_prediction_modes (SchroEncoderFrame *frame)
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
       int k,l;
-      SchroMotionVector *mv =
+      SchroMotionVector *mv1 =
         &frame->motion->motion_vectors[j*params->x_num_blocks + i];
 
-      for(l=0;l<4;l+=(4>>mv->split)) {
-        for(k=0;k<4;k+=(4>>mv->split)) {
+      for(l=0;l<4;l+=(4>>mv1->split)) {
+        for(k=0;k<4;k+=(4>>mv1->split)) {
           SchroMotionVector *mv =
             &frame->motion->motion_vectors[(j+l)*params->x_num_blocks + i + k];
           int pred_mode;
@@ -1536,11 +1536,11 @@ schro_encoder_encode_vector_data (SchroEncoderFrame *frame, int ref, int xy)
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
       int k,l;
-      SchroMotionVector *mv =
+      SchroMotionVector *mv1 =
         &frame->motion->motion_vectors[j*params->x_num_blocks + i];
 
-      for(l=0;l<4;l+=(4>>mv->split)) {
-        for(k=0;k<4;k+=(4>>mv->split)) {
+      for(l=0;l<4;l+=(4>>mv1->split)) {
+        for(k=0;k<4;k+=(4>>mv1->split)) {
           int pred_x, pred_y;
           int x, y;
           SchroMotionVector *mv =
@@ -1607,11 +1607,11 @@ schro_encoder_encode_dc_data (SchroEncoderFrame *frame, int comp)
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
       int k,l;
-      SchroMotionVector *mv =
+      SchroMotionVector *mv1 =
         &frame->motion->motion_vectors[j*params->x_num_blocks + i];
 
-      for(l=0;l<4;l+=(4>>mv->split)) {
-        for(k=0;k<4;k+=(4>>mv->split)) {
+      for(l=0;l<4;l+=(4>>mv1->split)) {
+        for(k=0;k<4;k+=(4>>mv1->split)) {
           SchroMotionVector *mv =
             &frame->motion->motion_vectors[(j+l)*params->x_num_blocks + i + k];
 
