@@ -254,8 +254,10 @@ gst_schro_enc_sink_setcaps (GstPad *pad, GstCaps *caps)
       schro_enc->video_format->chroma_format = SCHRO_CHROMA_422;
       break;
     case GST_VIDEO_FORMAT_AYUV:
-    case GST_VIDEO_FORMAT_ARGB:
       schro_enc->video_format->chroma_format = SCHRO_CHROMA_444;
+      break;
+    case GST_VIDEO_FORMAT_ARGB:
+      schro_enc->video_format->chroma_format = SCHRO_CHROMA_420;
       break;
     default:
       g_assert_not_reached();
@@ -452,16 +454,19 @@ gst_schro_buffer_wrap (GstSchroEnc *schro_enc, GstBuffer *buf,
         SchroFrame *rgbframe = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA (buf), width, height);
         SchroFrame *vframe1;
         SchroFrame *vframe2;
+        SchroFrame *vframe3;
 
         vframe1 = schro_virt_frame_new_unpack (rgbframe);
         vframe2 = schro_virt_frame_new_color_matrix (vframe1);
+        vframe3 = schro_virt_frame_new_subsample (vframe2, SCHRO_FRAME_FORMAT_U8_420);
 
-        frame = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_444,
+        frame = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420,
             width, height);
-        schro_virt_frame_render (vframe2, frame);
+        schro_virt_frame_render (vframe3, frame);
         schro_frame_unref (rgbframe);
         schro_frame_unref (vframe1);
         schro_frame_unref (vframe2);
+        schro_frame_unref (vframe3);
       }
       break;
     default:
