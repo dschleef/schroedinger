@@ -501,3 +501,79 @@ schro_virt_frame_new_color_matrix (SchroFrame *vf)
   return virt_frame;
 }
 
+static void
+convert_444_422 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+  int j;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+
+  if (component == 0) {
+    memcpy (dest, src, frame->width);
+  } else {
+    for(j=0;j<frame->components[component].width;j++){
+      dest[j] = src[j*2];
+    }
+  }
+}
+
+static void
+convert_444_420 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+  int j;
+
+  if (component == 0) {
+    src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+    memcpy (dest, src, frame->components[component].width);
+  } else {
+    src = schro_virt_frame_get_line (frame->virt_frame1, component, i*2);
+    for(j=0;j<frame->components[component].width;j++){
+      dest[j] = src[j*2];
+    }
+  }
+}
+
+static void
+convert_422_420 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+
+  if (component == 0) {
+    src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  } else {
+    src = schro_virt_frame_get_line (frame->virt_frame1, component, i*2);
+  }
+  memcpy (dest, src, frame->components[component].width);
+}
+
+
+SchroFrame *
+schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format)
+{
+  SchroFrame *virt_frame;
+  SchroFrameRenderFunc render_line;
+  
+  if (vf->format == SCHRO_FRAME_FORMAT_U8_422 &&
+      format == SCHRO_FRAME_FORMAT_U8_420) {
+    render_line = convert_422_420;
+  } else if (vf->format == SCHRO_FRAME_FORMAT_U8_444 &&
+      format == SCHRO_FRAME_FORMAT_U8_420) {
+    render_line = convert_444_420;
+  } else if (vf->format == SCHRO_FRAME_FORMAT_U8_444 &&
+      format == SCHRO_FRAME_FORMAT_U8_422) {
+    render_line = convert_444_422;
+  } else {
+    return NULL;
+  }
+  virt_frame = schro_frame_new_virtual (NULL, format, vf->width, vf->height);
+  virt_frame->virt_frame1 = vf;
+  virt_frame->render_line = render_line;
+
+  return virt_frame;
+}
+
