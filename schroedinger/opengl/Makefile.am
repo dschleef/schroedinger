@@ -8,6 +8,7 @@ libopengl_la_SOURCES = \
 	schroopenglframe_convert.c \
 	schroopenglframe_pull.c \
 	schroopenglframe_push.c \
+	schroopenglmotion.c \
 	schroopenglshader.c \
 	schroopenglwavelet.c
 

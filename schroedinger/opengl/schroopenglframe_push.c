@@ -40,7 +40,7 @@ schro_opengl_frame_push_convert (SchroFrameData *dest, SchroFrameData *src,
       ? 1 : dest_opengl_data->texture.components;
 
   if (depth == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-    if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_AS_F32) {
+    if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_U8_AS_F32)) {
       texture_data_f32 = (float *) texture_data;
       frame_data_u8 = SCHRO_FRAME_DATA_GET_LINE (src, y_offset);
 
@@ -76,7 +76,7 @@ schro_opengl_frame_push_convert (SchroFrameData *dest, SchroFrameData *src,
       }
     }
   } else if (depth == SCHRO_FRAME_FORMAT_DEPTH_S16) {
-    if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_AS_U16) {
+    if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_S16_AS_U16)) {
       texture_data_u16 = (uint16_t *) texture_data;
       frame_data_s16 = SCHRO_FRAME_DATA_GET_LINE (src, y_offset);
 
@@ -89,8 +89,7 @@ schro_opengl_frame_push_convert (SchroFrameData *dest, SchroFrameData *src,
         texture_data_u16 = OFFSET (texture_data_u16, texture_byte_stride);
         frame_data_s16 = OFFSET (frame_data_s16, frame_byte_stride);
       }
-    } else if (_schro_opengl_frame_flags
-        & SCHRO_OPENGL_FRAME_PUSH_S16_AS_F32) {
+    } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_S16_AS_F32)) {
       texture_data_f32 = (float *) texture_data;
       frame_data_s16 = SCHRO_FRAME_DATA_GET_LINE (src, y_offset);
 
@@ -141,7 +140,9 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
   int pixelbuffer_y_offset, pixelbuffer_height;
   SchroOpenGLFrameData *dest_opengl_data = NULL;
   SchroOpenGL *opengl = NULL;
-  GLuint src_texture = 0;
+  GLuint src_texture = 0; // FIXME: don't create a new locale texture here
+                          // but use a single global texture for such temporary
+                          // purpose
   void *mapped_data = NULL;
   void *tmp_data = NULL;
   SchroOpenGLShader *shader;
@@ -184,7 +185,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
     start = schro_utils_get_time ();
 #endif
 
-    if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD) {
+    if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_RENDER_QUAD)) {
       glGenTextures (1, &src_texture);
       glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_texture);
       glTexImage2D (GL_TEXTURE_RECTANGLE_ARB, 0,
@@ -208,9 +209,9 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 #endif
     }
 
-    if ((_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_U8_PIXELBUFFER &&
+    if ((SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_U8_PIXELBUFFER) &&
         depth == SCHRO_FRAME_FORMAT_DEPTH_U8) ||
-        (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_S16_PIXELBUFFER &&
+        (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_S16_PIXELBUFFER) &&
         depth == SCHRO_FRAME_FORMAT_DEPTH_S16)) {
       pixelbuffer_y_offset = 0;
 
@@ -246,7 +247,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
         SCHRO_OPENGL_CHECK_ERROR
       }
 
-      if (!(_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD)) {
+      if (!SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_RENDER_QUAD)) {
         glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
             dest_opengl_data->texture.handles[0]);
       }
@@ -278,7 +279,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
         SCHRO_OPENGL_CHECK_ERROR
 
-        if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS) {
+        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_DRAWPIXELS)) {
           glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
               dest_opengl_data->framebuffers[0]);
 
@@ -319,7 +320,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
       schro_opengl_frame_push_convert (dest->components + i,
           src->components + i, tmp_data, 0, height);
 
-      if (!(_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD)) {
+      if (!SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_RENDER_QUAD)) {
         glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
             dest_opengl_data->texture.handles[0]);
       }
@@ -337,7 +338,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
         glPixelTransferf (GL_RED_BIAS, 0.5);
       }
 
-      if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_DRAWPIXELS) {
+      if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_DRAWPIXELS)) {
         glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
             dest_opengl_data->framebuffers[0]);
 
@@ -366,7 +367,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
     SCHRO_OPENGL_CHECK_ERROR
 
-    if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD) {
+    if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_RENDER_QUAD)) {
       schro_opengl_setup_viewport (width, height);
 
       glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
@@ -380,7 +381,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
       start = schro_utils_get_time ();
 #endif
 
-      if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_SHADER) {
+      if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_SHADER)) {
         shader = schro_opengl_shader_get (opengl,
             SCHRO_OPENGL_SHADER_IDENTITY);
 
@@ -390,7 +391,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
       schro_opengl_render_quad (0, 0, width, height);
 
-      if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_SHADER) {
+      if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_SHADER)) {
         glUseProgramObjectARB (0);
       }
 
@@ -409,7 +410,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
     glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
 
-    if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PUSH_RENDER_QUAD) {
+    if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_RENDER_QUAD)) {
       glDeleteTextures (1, &src_texture);
     }
 

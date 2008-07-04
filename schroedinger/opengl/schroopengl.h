@@ -2,6 +2,8 @@
 #ifndef __SCHRO_OPENGL_H__
 #define __SCHRO_OPENGL_H__
 
+#include <GL/glew.h>
+
 SCHRO_BEGIN_DECLS
 
 #define SCHRO_OPENGL_CHECK_ERROR \
@@ -31,6 +33,8 @@ void schro_opengl_check_framebuffer (const char *file, int line,
 void schro_opengl_set_visible (SchroOpenGL *opengl, int visible);
 SchroOpenGLShaderLibrary *schro_opengl_get_library (SchroOpenGL *opengl);
 void *schro_opengl_get_tmp (SchroOpenGL *opengl, int size);
+GLuint schro_opengl_get_obmc_weight_texture (SchroOpenGL *opengl, int width,
+    int height);
 void schro_opengl_setup_viewport (int width, int height);
 void schro_opengl_render_quad (int x, int y, int width, int height);
 

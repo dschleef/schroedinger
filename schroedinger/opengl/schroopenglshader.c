@@ -137,6 +137,7 @@ schro_opengl_shader_new (const char* code)
   UNIFORM_LOCATION (sampler2DRect, texture2, textures[1]);
   UNIFORM_LOCATION (sampler2DRect, texture3, textures[2]);
   UNIFORM_LOCATION (vec2, offset, offset);
+  UNIFORM_LOCATION (vec2, origin, origin);
   UNIFORM_LOCATION (vec2, four_decrease, four_decrease);
   UNIFORM_LOCATION (vec2, three_decrease, three_decrease);
   UNIFORM_LOCATION (vec2, two_decrease, two_decrease);
@@ -145,6 +146,10 @@ schro_opengl_shader_new (const char* code)
   UNIFORM_LOCATION (vec2, two_increase, two_increase);
   UNIFORM_LOCATION (vec2, three_increase, three_increase);
   UNIFORM_LOCATION (vec2, four_increase, four_increase);
+  UNIFORM_LOCATION (float, dc, dc);
+  UNIFORM_LOCATION (float, weight, weight);
+  UNIFORM_LOCATION (float, addend, addend);
+  UNIFORM_LOCATION (float, divisor, divisor);
 
   #undef UNIFORM_LOCATION
 
@@ -169,6 +174,52 @@ struct IndexToShader {
 #define SHADER_HEADER \
     "#version 110\n" \
     "#extension GL_ARB_texture_rectangle : require\n"
+
+#define SHADER_READ_U8(_texture, _postfix) \
+    "uniform sampler2DRect "_texture";\n" \
+    "float read"_postfix"_u8 (vec2 offset = vec2 (0.0)) {\n" \
+    "  float fp = texture2DRect ("_texture", gl_TexCoord[0].xy + offset).r;\n" \
+    /* scale from FP [0..1] to real U8 [0..255] and apply proper rounding */ \
+    "  return floor (fp * 255.0 + 0.5);\n" \
+    "}\n"
+
+#define SHADER_WRITE_U8 \
+    "void write_u8 (float u8) {\n" \
+    /* scale from real U8 [0..255] to FP [0..1] */ \
+    "  gl_FragColor = vec4 (u8 / 255.0);\n" \
+    "}\n"
+
+#define SHADER_READ_S16(_texture, _postfix) \
+    "uniform sampler2DRect "_texture";\n" \
+    "float read"_postfix"_s16 (vec2 offset = vec2 (0.0)) {\n" \
+    "  const float bias = -32768.0 / 65535.0;\n" \
+    /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
+       so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
+       leading to S16 zero <op> S16 zero != S16 zero if calculation is done in
+       FP space */ \
+    /*"  float fp = texture2DRect ("_texture", gl_TexCoord[0].xy + offset).r\n"*/ \
+    /*"      + bias;\n"*/ \
+    /* scale from FP [-0.5..0.5] to real S16 [-32768..32767] and apply
+       proper rounding */ \
+    /*"  return floor (fp * 65535.0 + 0.5);\n"*/ \
+    "  return floor (texture2DRect ("_texture", gl_TexCoord[0].xy + offset).r * 65535.0 + 0.5) - 32768.0;\n" \
+    "}\n"
+
+#define SHADER_WRITE_S16 \
+    "void write_s16 (float s16) {\n" \
+/*    "  const float bias = -32768.0 / 65535.0;\n"*/ \
+    /* scale from real S16 [-32768..32767] to FP [-0.5..0.5] */ \
+/*    "  float fp = s16 / 65535.0;\n"*/ \
+    /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
+       to undo the initial bias */ \
+/*    "  gl_FragColor = vec4 (fp - bias);\n"*/ \
+    "  gl_FragColor = vec4 ((s16 + 32768.0) / 65535.0);\n"/**/ \
+    "}\n"
+
+#define SHADER_RSHIFT(_a, _b) \
+      "float rshift (float value) {\n" \
+      "  return floor ((value + ("#_a")) / ("#_b"));\n" \
+      "}\n"
 
 static struct IndexToShader schro_opengl_shader_list[] = {
   { SCHRO_OPENGL_SHADER_IDENTITY,
@@ -417,34 +468,6 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "  gl_FragColor = (a - b) - bias;\n"
       "}\n" },
 
-  #define SHADER_IIWT_S16_READ_WRITE_BIASED \
-      "uniform sampler2DRect texture1;\n" \
-      "const float bias = -32768.0 / 65535.0;\n" \
-      "float read_biased (vec2 offset = vec2 (0.0)) {\n" \
-      /* bias from [-32768..32767] == [0..1] to [-32768..32767] ~= [-0.5..0.5]
-         so that S16 zero maps to FP zero, otherwise S16 zero maps to FP ~0.5
-         leading to S16 zero <op> S16 zero != S16 zero if calculation is done in
-         FP space */ \
-      "  return texture2DRect (texture1, gl_TexCoord[0].xy + offset).r\n" \
-      "      + bias;\n" \
-      "}\n" \
-      "void write_biased (float value) {\n" \
-      /* bias from [-32768..32767] ~= [-0.5..0.5] to [-32768..32767] == [0..1]
-         to undo the initial bias */ \
-      "  gl_FragColor = vec4 (value - bias);\n" \
-      "}\n"
-
-  #define SHADER_IIWT_S16_SCALE \
-      "float scale_s16_fp (float value) {\n" \
-      /* scale from FP [-0.5..0.5] to real S16 [-32768..32767] and apply
-         proper rounding */ \
-      "  return floor (value * 65535.0 + 0.5);\n" \
-      "}\n" \
-      "float scale_fp_s16 (float value) {\n" \
-      /* scale from real S16 [-32768..32767] to FP [-0.5..0.5] */ \
-      "  return value / 65535.0;\n" \
-      "}\n"
-
   /* 1 = Deslauriers-Debuc (9,7)
      2 = LeGall (5,3)
      3 = Deslauriers-Debuc (13,7)
@@ -484,28 +507,25 @@ static struct IndexToShader schro_opengl_shader_list[] = {
 
   { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIERS_DUBUC_9_7_Lp,
       SHADER_HEADER
-      SHADER_IIWT_S16_READ_WRITE_BIASED
-      SHADER_IIWT_S16_SCALE
+      SHADER_READ_S16 ("texture1", "")
+      SHADER_WRITE_S16
       /* distance between two corresponding texels from subbands L and H in
          texels = vec2 (width / 2.0, 0.0) or vec2 (0.0, height / 2.0) */
       "uniform vec2 offset;\n"
       "uniform vec2 one_decrease;\n"
       "float filter (float h1m, float h0) {\n"
-      "  float sh1m = scale_s16_fp (h1m);\n" /* A[2 ∗ n - 1] */
-      "  float sh0 = scale_s16_fp (h0);\n"   /* A[2 ∗ n + 1] */
-      "  float output = floor ((sh1m + sh0 + 2.0) / 4.0);\n"
-      "  return scale_fp_s16 (output);\n"
+      "  return floor ((h1m + h0 + 2.0) / 4.0);\n"
       "}\n"
       "void main (void) {\n"
-      "  float l0 = read_biased ();\n"                       /* A[2 ∗ n] */
-      "  float h1m = read_biased (offset - one_decrease);\n" /* A[2 ∗ n - 1] */
-      "  float h0 = read_biased (offset);\n"                 /* A[2 ∗ n + 1] */
-      "  write_biased (l0 - filter (h1m, h0));\n"
+      "  float l0 = read_s16 ();\n"                       /* A[2 ∗ n] */
+      "  float h1m = read_s16 (offset - one_decrease);\n" /* A[2 ∗ n - 1] */
+      "  float h0 = read_s16 (offset);\n"                 /* A[2 ∗ n + 1] */
+      "  write_s16 (l0 - filter (h1m, h0));\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIERS_DUBUC_9_7_Hp,
       SHADER_HEADER
-      SHADER_IIWT_S16_READ_WRITE_BIASED
-      SHADER_IIWT_S16_SCALE
+      SHADER_READ_S16 ("texture1", "")
+      SHADER_WRITE_S16
       /* distance between two corresponding texels from subbands L' and H in
          texels = vec2 (width / 2.0, 0.0) or vec2 (0.0, height / 2.0) */
       "uniform vec2 offset;\n"
@@ -513,71 +533,54 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "uniform vec2 one_increase;\n"
       "uniform vec2 two_increase;\n"
       "float filter (float l1m, float l0, float l1p, float l2p) {\n"
-#if 1
-      "  float sl1m = scale_s16_fp (l1m);\n" /* A[2 ∗ n - 2] */
-      "  float sl0 = scale_s16_fp (l0);\n"   /* A[2 ∗ n] */
-      "  float sl1p = scale_s16_fp (l1p);\n" /* A[2 ∗ n + 2] */
-      "  float sl2p = scale_s16_fp (l2p);\n" /* A[2 ∗ n + 4] */
-      "  float output = floor ((-sl1m + 9.0 * (sl0 + sl1p) - sl2p + 8.0) / 16.0);\n"
-      //"  float output = floor (-sl1m / 16.0 + (9.0 / 16.0) * sl0 + (9.0 / 16.0) * sl1p - sl2p / 16.0 + 8.0 / 16.0);\n"
-      "  return scale_fp_s16 (output);\n"
-#else
-      "  float output = floor (scale_s16_fp (-l1m + 9.0 * (l0 + l1p) - l2p + scale_fp_s16 (8.0)) / 16.0);\n"
-      "  return scale_fp_s16 (output);\n"
-#endif
+      "  return floor ((-l1m + 9.0 * (l0 + l1p) - l2p + 8.0) / 16.0);\n"
       "}\n"
       "void main (void) {\n"
-      "  float l1m = read_biased (-offset - one_decrease);\n" /* A[2 ∗ n - 2] */
-      "  float l0 = read_biased (-offset);\n"                 /* A[2 ∗ n] */
-      "  float l1p = read_biased (-offset + one_increase);\n" /* A[2 ∗ n + 2] */
-      "  float l2p = read_biased (-offset + two_increase);\n" /* A[2 ∗ n + 4] */
-      "  float h0 = read_biased ();\n"                        /* A[2 ∗ n + 1] */
-      "  write_biased (h0 + filter (l1m, l0, l1p, l2p));\n"
+      "  float l1m = read_s16 (-offset - one_decrease);\n" /* A[2 ∗ n - 2] */
+      "  float l0 = read_s16 (-offset);\n"                 /* A[2 ∗ n] */
+      "  float l1p = read_s16 (-offset + one_increase);\n" /* A[2 ∗ n + 2] */
+      "  float l2p = read_s16 (-offset + two_increase);\n" /* A[2 ∗ n + 4] */
+      "  float h0 = read_s16 ();\n"                        /* A[2 ∗ n + 1] */
+      "  write_s16 (h0 + filter (l1m, l0, l1p, l2p));\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_LE_GALL_5_3_Lp,
       SHADER_HEADER
-      SHADER_IIWT_S16_READ_WRITE_BIASED
-      SHADER_IIWT_S16_SCALE
+      SHADER_READ_S16 ("texture1", "")
+      SHADER_WRITE_S16
       /* distance between two corresponding texels from subbands L and H in
          texels = vec2 (width / 2.0, 0.0) or vec2 (0.0, height / 2.0) */
       "uniform vec2 offset;\n"
       "uniform vec2 one_decrease;\n"
       "float filter (float h1m, float h0) {\n"
-      "  float sh1m = scale_s16_fp (h1m);\n" /* A[2 ∗ n - 1] */
-      "  float sh0 = scale_s16_fp (h0);\n"   /* A[2 ∗ n + 1] */
-      "  float output = floor ((sh1m + sh0 + 2.0) / 4.0);\n"
-      "  return scale_fp_s16 (output);\n"
+      "  return floor ((h1m + h0 + 2.0) / 4.0);\n"
       "}\n"
       "void main (void) {\n"
-      "  float l0 = read_biased ();\n"                       /* A[2 ∗ n] */
-      "  float h1m = read_biased (offset - one_decrease);\n" /* A[2 ∗ n - 1] */
-      "  float h0 = read_biased (offset);\n"                 /* A[2 ∗ n + 1] */
-      "  write_biased (l0 - filter (h1m, h0));\n"
+      "  float l0 = read_s16 ();\n"                       /* A[2 ∗ n] */
+      "  float h1m = read_s16 (offset - one_decrease);\n" /* A[2 ∗ n - 1] */
+      "  float h0 = read_s16 (offset);\n"                 /* A[2 ∗ n + 1] */
+      "  write_s16 (l0 - filter (h1m, h0));\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_LE_GALL_5_3_Hp,
       SHADER_HEADER
-      SHADER_IIWT_S16_READ_WRITE_BIASED
-      SHADER_IIWT_S16_SCALE
+      SHADER_READ_S16 ("texture1", "")
+      SHADER_WRITE_S16
       /* distance between two corresponding texels from subbands L' and H in
          texels = vec2 (width / 2.0, 0.0) or vec2 (0.0, height / 2.0) */
       "uniform vec2 offset;\n"
       "uniform vec2 one_increase;\n"
       "float filter (float l0, float l1p) {\n"
-      "  float sl0 = scale_s16_fp (l0);\n"   /* A[2 ∗ n] */
-      "  float sl1p = scale_s16_fp (l1p);\n" /* A[2 ∗ n + 2] */
-      "  float output = floor ((sl0 + sl1p + 1.0) / 2.0);\n"
-      "  return scale_fp_s16 (output);\n"
+      "  return floor ((l0 + l1p + 1.0) / 2.0);\n"
       "}\n"
       "void main (void) {\n"
-      "  float l0 = read_biased (-offset);\n"                 /* A[2 ∗ n] */
-      "  float l1p = read_biased (-offset + one_increase);\n" /* A[2 ∗ n + 2] */
-      "  float h0 = read_biased ();\n"                        /* A[2 ∗ n + 1] */
-      "  write_biased (h0 + filter (l0, l1p));\n"
+      "  float l0 = read_s16 (-offset);\n"                 /* A[2 ∗ n] */
+      "  float l1p = read_s16 (-offset + one_increase);\n" /* A[2 ∗ n + 2] */
+      "  float h0 = read_s16 ();\n"                        /* A[2 ∗ n + 1] */
+      "  write_s16 (h0 + filter (l0, l1p));\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIERS_DUBUC_13_7_Lp,
       SHADER_HEADER
-      SHADER_IIWT_S16_READ_WRITE_BIASED
-      SHADER_IIWT_S16_SCALE
+      SHADER_READ_S16 ("texture1", "")
+      SHADER_WRITE_S16
       /* distance between two corresponding texels from subbands L and H in
          texels = vec2 (width / 2.0, 0.0) or vec2 (0.0, height / 2.0) */
       "uniform vec2 offset;\n"
@@ -585,31 +588,20 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "uniform vec2 one_decrease;\n"
       "uniform vec2 one_increase;\n"
       "float filter (float h2m, float h1m, float h0, float h1p) {\n"
-#if 1
-      "  float sh2m = scale_s16_fp (h2m);\n" /* A[2 ∗ n - 3] */
-      "  float sh1m = scale_s16_fp (h1m);\n" /* A[2 ∗ n - 1] */
-      "  float sh0 = scale_s16_fp (h0);\n"   /* A[2 ∗ n + 1] */
-      "  float sh1p = scale_s16_fp (h1p);\n" /* A[2 ∗ n + 3] */
-      "  float output = floor ((-sh2m + 9.0 * (sh1m + sh0) - sh1p + 16.0) / 32.0);\n"
-      //"  float output = floor (-sh2m / 32.0 + (9.0 / 32.0) * sh1m + (9.0 / 32.0) * sh0 - sh1p / 32.0 + 16.0 / 32.0);\n"
-      "  return scale_fp_s16 (output);\n"
-#else
-      "  float output = floor (scale_s16_fp (-h2m + 9.0 * (h1m + h0) - h1p + scale_fp_s16 (16.0)) / 32.0);\n"
-      "  return scale_fp_s16 (output);\n"
-#endif
+      "  return floor ((-h2m + 9.0 * (h1m + h0) - h1p + 16.0) / 32.0);\n"
       "}\n"
       "void main (void) {\n"
-      "  float l0 = read_biased ();\n"                       /* A[2 ∗ n] */
-      "  float h2m = read_biased (offset - two_decrease);\n" /* A[2 ∗ n - 3] */
-      "  float h1m = read_biased (offset - one_decrease);\n" /* A[2 ∗ n - 1] */
-      "  float h0 = read_biased (offset);\n"                 /* A[2 ∗ n + 1] */
-      "  float h1p = read_biased (offset + one_increase);\n" /* A[2 ∗ n + 3] */
-      "  write_biased (l0 - filter (h2m, h1m, h0, h1p));\n"
+      "  float l0 = read_s16 ();\n"                       /* A[2 ∗ n] */
+      "  float h2m = read_s16 (offset - two_decrease);\n" /* A[2 ∗ n - 3] */
+      "  float h1m = read_s16 (offset - one_decrease);\n" /* A[2 ∗ n - 1] */
+      "  float h0 = read_s16 (offset);\n"                 /* A[2 ∗ n + 1] */
+      "  float h1p = read_s16 (offset + one_increase);\n" /* A[2 ∗ n + 3] */
+      "  write_s16 (l0 - filter (h2m, h1m, h0, h1p));\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_DESLAURIERS_DUBUC_13_7_Hp,
       SHADER_HEADER
-      SHADER_IIWT_S16_READ_WRITE_BIASED
-      SHADER_IIWT_S16_SCALE
+      SHADER_READ_S16 ("texture1", "")
+      SHADER_WRITE_S16
       /* distance between two corresponding texels from subbands L' and H in
          texels = vec2 (width / 2.0, 0.0) or vec2 (0.0, height / 2.0) */
       "uniform vec2 offset;\n"
@@ -617,56 +609,43 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "uniform vec2 one_increase;\n"
       "uniform vec2 two_increase;\n"
       "float filter (float l1m, float l0, float l1p, float l2p) {\n"
-#if 1
-      "  float sl1m = scale_s16_fp (l1m);\n" /* A[2 ∗ n - 2] */
-      "  float sl0 = scale_s16_fp (l0);\n"   /* A[2 ∗ n] */
-      "  float sl1p = scale_s16_fp (l1p);\n" /* A[2 ∗ n + 2] */
-      "  float sl2p = scale_s16_fp (l2p);\n" /* A[2 ∗ n + 4] */
-      "  float output = floor ((-sl1m + 9.0 * (sl0 + sl1p) - sl2p + 8.0) / 16.0);\n"
-      //"  float output = floor (-sl1m / 16.0 + (9.0 / 16.0) * sl0 + (9.0 / 16.0) * sl1p - sl2p / 16.0 + 8.0 / 16.0);\n"
-      "  return scale_fp_s16 (output);\n"
-#else
-      "  float output = floor (scale_s16_fp (-l1m + 9.0 * (l0 + l1p) - l2p + scale_fp_s16 (8.0)) / 16.0);\n"
-      "  return scale_fp_s16 (output);\n"
-#endif
+      "  return floor ((-l1m + 9.0 * (l0 + l1p) - l2p + 8.0) / 16.0);\n"
       "}\n"
       "void main (void) {\n"
-      "  float l1m = read_biased (-offset - one_decrease);\n" /* A[2 ∗ n - 2] */
-      "  float l0 = read_biased (-offset);\n"                 /* A[2 ∗ n] */
-      "  float l1p = read_biased (-offset + one_increase);\n" /* A[2 ∗ n + 2] */
-      "  float l2p = read_biased (-offset + two_increase);\n" /* A[2 ∗ n + 4] */
-      "  float h0 = read_biased ();\n"                        /* A[2 ∗ n + 1] */
-      "  write_biased (h0 + filter (l1m, l0, l1p, l2p));\n"
+      "  float l1m = read_s16 (-offset - one_decrease);\n" /* A[2 ∗ n - 2] */
+      "  float l0 = read_s16 (-offset);\n"                 /* A[2 ∗ n] */
+      "  float l1p = read_s16 (-offset + one_increase);\n" /* A[2 ∗ n + 2] */
+      "  float l2p = read_s16 (-offset + two_increase);\n" /* A[2 ∗ n + 4] */
+      "  float h0 = read_s16 ();\n"                        /* A[2 ∗ n + 1] */
+      "  write_s16 (h0 + filter (l1m, l0, l1p, l2p));\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_HAAR_Lp,
       SHADER_HEADER
-      SHADER_IIWT_S16_READ_WRITE_BIASED
-      SHADER_IIWT_S16_SCALE
+      SHADER_READ_S16 ("texture1", "")
+      SHADER_WRITE_S16
       /* distance between two corresponding texels from subbands L and H in
          texels = vec2 (width / 2.0, 0.0) or vec2 (0.0, height / 2.0) */
       "uniform vec2 offset;\n"
       "float filter (float h0) {\n"
-      "  float sh0 = scale_s16_fp (h0);\n" /* A[2 ∗ n + 1] */
-      "  float output = floor ((sh0 + 1.0) / 2.0);\n"
-      "  return scale_fp_s16 (output);\n"
+      "  return floor ((h0 + 1.0) / 2.0);\n"
       "}\n"
       "void main (void) {\n"
-      "  float l0 = read_biased ();\n"       /* A[2 ∗ n] */
-      "  float h0 = read_biased (offset);\n" /* A[2 ∗ n + 1] */
-      "  write_biased (l0 - filter (h0));\n"
+      "  float l0 = read_s16 ();\n"       /* A[2 ∗ n] */
+      "  float h0 = read_s16 (offset);\n" /* A[2 ∗ n + 1] */
+      "  write_s16 (l0 - filter (h0));\n"
       "}\n" },
   { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_HAAR_Hp,
       SHADER_HEADER
-      SHADER_IIWT_S16_READ_WRITE_BIASED
+      SHADER_READ_S16 ("texture1", "")
+      SHADER_WRITE_S16
       /* distance between two corresponding texels from subbands L' and H in
          texels = vec2 (width / 2.0, 0.0) or vec2 (0.0, height / 2.0) */
       "uniform vec2 offset;\n"
       "void main (void) {\n"
-      "  float l0 = read_biased (-offset);\n" /* A[2 ∗ n] */
-      "  float h0 = read_biased ();\n"        /* A[2 ∗ n + 1] */
-      "  write_biased (h0 + l0);\n"
+      "  float l0 = read_s16 (-offset);\n" /* A[2 ∗ n] */
+      "  float h0 = read_s16 ();\n"        /* A[2 ∗ n + 1] */
+      "  write_s16 (h0 + l0);\n"
       "}\n" },
-
   { SCHRO_OPENGL_SHADER_IIWT_S16_VERTICAL_DEINTERLEAVE_L,
       SHADER_HEADER
       "uniform sampler2DRect texture1;\n"
@@ -733,44 +712,17 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "}\n" },
   { SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_SHIFT,
       SHADER_HEADER
-      SHADER_IIWT_S16_READ_WRITE_BIASED
-      SHADER_IIWT_S16_SCALE
-      "float rshift (float value) {\n"
-      "  float input = scale_s16_fp (value);\n"
-      "  float output = floor ((input + 1.0) / 2.0);\n"
-      "  return scale_fp_s16 (output);\n"
-      "}\n"
+      SHADER_READ_S16 ("texture1", "")
+      SHADER_WRITE_S16
+      SHADER_RSHIFT (1.0, 2.0)
       "void main (void) {\n"
-      "  float value = read_biased ();\n"
-      "  write_biased (rshift (value));\n"
+      "  write_s16 (rshift (read_s16 ()));\n"
       "}\n" },
-
-  #undef SHADER_IIWT_S16_READ_WRITE_BIASED
-  #undef SHADER_IIWT_S16_SCALE
-
-  #define SHADER_UPSAMPLE_U8_READ_WRITE \
-      "uniform sampler2DRect texture1;\n" \
-      "float read (vec2 offset = vec2 (0.0)) {\n" \
-      "  return texture2DRect (texture1, gl_TexCoord[0].xy + offset).r;\n" \
-      "}\n" \
-      "void write (float value) {\n" \
-      "  gl_FragColor = vec4 (value);\n" \
-      "}\n"
-
-  #define SHADER_UPSAMPLE_U8_SCALE \
-      "float scale_u8_fp (float value) {\n" \
-      /* scale from FP [0..1] to real U8 [0..255] and apply proper rounding */ \
-      "  return floor (value * 255.0 + 0.5);\n" \
-      "}\n" \
-      "float scale_fp_u8 (float value) {\n" \
-      /* scale from real U8 [0..255] to FP [0..1] */ \
-      "  return value / 255.0;\n" \
-      "}\n"
 
   { SCHRO_OPENGL_SHADER_UPSAMPLE_U8,
       SHADER_HEADER
-      SHADER_UPSAMPLE_U8_READ_WRITE
-      SHADER_UPSAMPLE_U8_SCALE
+      SHADER_READ_U8 ("texture1", "")
+      SHADER_WRITE_U8
       "uniform vec2 three_decrease;\n"
       "uniform vec2 two_decrease;\n"
       "uniform vec2 one_decrease;\n"
@@ -779,25 +731,108 @@ static struct IndexToShader schro_opengl_shader_list[] = {
       "uniform vec2 three_increase;\n"
       "uniform vec2 four_increase;\n"
       "void main (void) {\n"
-      "  float s3m = scale_u8_fp (read (-three_decrease));\n" /* S[n - 3] */
-      "  float s2m = scale_u8_fp (read (-two_decrease));\n"   /* S[n - 2] */
-      "  float s1m = scale_u8_fp (read (-one_decrease));\n"   /* S[n - 1] */
-      "  float s0 = scale_u8_fp (read ());\n"                 /* S[n] */
-      "  float s1p = scale_u8_fp (read (one_increase));\n"    /* S[n + 1] */
-      "  float s2p = scale_u8_fp (read (two_increase));\n"    /* S[n + 2] */
-      "  float s3p = scale_u8_fp (read (three_increase));\n"  /* S[n + 3] */
-      "  float s4p = scale_u8_fp (read (four_increase));\n"   /* S[n + 4] */
-      "  float sum = floor ((-s3m + 3.0 * s2m - 7.0 * s1m + 21.0 * s0 + 21.0 * s1p - 7.0 * s2p + 3.0 * s3p - s4p + 16.0) / 32.0);"
-      "  write (scale_fp_u8 (clamp (sum, 0.0, 255.0)));\n"
+      "  float s3m = read_u8 (-three_decrease);\n" /* S[n - 3] */
+      "  float s2m = read_u8 (-two_decrease);\n"   /* S[n - 2] */
+      "  float s1m = read_u8 (-one_decrease);\n"   /* S[n - 1] */
+      "  float s0 = read_u8 ();\n"                 /* S[n] */
+      "  float s1p = read_u8 (one_increase);\n"    /* S[n + 1] */
+      "  float s2p = read_u8 (two_increase);\n"    /* S[n + 2] */
+      "  float s3p = read_u8 (three_increase);\n"  /* S[n + 3] */
+      "  float s4p = read_u8 (four_increase);\n"   /* S[n + 4] */
+      "  float sum = floor ((-s3m + 3.0 * s2m - 7.0 * s1m + 21.0 * s0\n"
+      "      + 21.0 * s1p - 7.0 * s2p + 3.0 * s3p - s4p + 16.0) / 32.0);"
+      "  write_u8 (clamp (sum, 0.0, 255.0));\n"
       "}\n" },
 
-  #undef SHADER_UPSAMPLE_U8_READ_WRITE
-  #undef SHADER_UPSAMPLE_U8_SCALE
+  { SCHRO_OPENGL_SHADER_MC_CLEAR,
+      SHADER_HEADER
+      SHADER_WRITE_S16
+      "void main (void) {\n"
+      "  write_s16 (0.0);\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_MC_RENDER_DC,
+      SHADER_HEADER
+      SHADER_READ_S16 ("texture1", "_previous") /* previous to blend with */
+      SHADER_READ_S16 ("texture2", "_obmc_weight") /* obmc weight */
+      SHADER_WRITE_S16
+      "uniform vec2 origin;\n" /* block origin */
+      "uniform float dc;\n"
+      "void main (void) {\n"
+      "  float previous = read_previous_s16 ();\n"
+      "  float obmc_weight = read_obmc_weight_s16 (-origin);\n"
+      "  write_s16 (previous + dc * obmc_weight);\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_0,
+      SHADER_HEADER
+      SHADER_READ_S16 ("texture1", "_previous") /* previous to blend with */
+      SHADER_READ_S16 ("texture2", "_obmc_weight") /* obmc weight */
+      SHADER_READ_U8 ("texture3", "_sub0") /* upsampled sub frame 0 */
+      SHADER_WRITE_S16
+      "uniform vec2 offset;\n"
+      "uniform vec2 origin;\n" /* block origin */
+      "void main (void) {\n"
+      "  float previous = read_previous_s16 ();\n"
+      "  float obmc_weight = read_obmc_weight_s16 (-origin);\n"
+      "  float sub0 = read_sub0_u8 (offset);\n"
+      "  write_s16 (previous + sub0 * obmc_weight);\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_0_WEIGHT,
+      SHADER_HEADER
+      SHADER_READ_S16 ("texture1", "_previous") /* previous to blend with */
+      SHADER_READ_S16 ("texture2", "_obmc_weight") /* obmc weight */
+      SHADER_READ_U8 ("texture3", "_sub0") /* upsampled sub frame 0 */
+      SHADER_WRITE_S16
+      "uniform vec2 offset;\n"
+      "uniform vec2 origin;\n" /* block origin */
+      "uniform float weight;\n"
+      "uniform float addend;\n" /* 1 << (shift - 1 */
+      "uniform float divisor;\n" /* 1 << shift */
+      "void main (void) {\n"
+      "  float previous = read_previous_s16 ();\n"
+      "  float obmc_weight = read_obmc_weight_s16 (-origin);\n"
+      "  float sub0 = read_sub0_u8 (offset);\n"
+      "  write_s16 (previous + floor ((sub0 * weight + addend) / divisor)\n"
+      "      * obmc_weight);\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_1,
+      SHADER_HEADER
+      SHADER_READ_S16 ("texture1", "_obmc_weight") /* obmc weights */
+      SHADER_READ_U8 ("texture2", "_subx") /* upsampled sub frame x */
+      SHADER_WRITE_S16
+      "uniform vec2 offset;\n"
+      "uniform vec2 origin;\n" /* block origin */
+      "void main (void) {\n"
+      "  float obmc_weight = read_obmc_weight_s16 (-origin);\n"
+      "  float subx = read_subx_u8 (offset);\n"
+      "  write_s16 (subx * obmc_weight);\n"
+      /* FIXME: ref weighting */
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_3,
+      SHADER_HEADER
+      "void main (void) {\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_MC_RENDER_BIREF,
+      SHADER_HEADER
+      "void main (void) {\n"
+      "}\n" },
+  { SCHRO_OPENGL_SHADER_MC_SHIFT,
+      SHADER_HEADER
+      SHADER_READ_S16 ("texture1", "")
+      SHADER_WRITE_S16
+      SHADER_RSHIFT (-8160.0, 64.0)
+      "void main (void) {\n"
+      "  write_s16 (rshift (read_s16 ()));\n"
+      "}\n" },
 
   { -1, NULL }
 };
 
 #undef SHADER_HEADER
+#undef SHADER_READ_U8
+#undef SHADER_WRITE_U8
+#undef SHADER_READ_S16
+#undef SHADER_WRITE_S16
+#undef SHADER_RSHIFT
 
 struct _SchroOpenGLShaderLibrary {
   SchroOpenGL *opengl;

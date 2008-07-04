@@ -605,7 +605,7 @@ schro_motion_block_accumulate_slow (SchroMotion *motion, SchroFrameData *comp,
 }
 
 void
-init_obmc_weight (SchroMotion *motion)
+schro_motion_init_obmc_weight (SchroMotion *motion)
 {
   int i;
   int j;
@@ -716,7 +716,7 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
     motion->tmp_block_ref[1].width = motion->xblen;
     motion->tmp_block_ref[1].height = motion->yblen;
 
-    init_obmc_weight(motion);
+    schro_motion_init_obmc_weight (motion);
 
     for(j=0;j<comp->height;j++){
       memset (SCHRO_FRAME_DATA_GET_LINE(comp, j), 0, comp->width * sizeof(int16_t));

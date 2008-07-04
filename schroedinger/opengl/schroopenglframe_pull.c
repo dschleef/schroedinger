@@ -42,7 +42,7 @@ schro_opengl_frame_pull_convert (SchroFrameData *dest, SchroFrameData *src,
   }
 
   if (depth == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-    if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_U8_AS_F32) {
+    if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PULL_U8_AS_F32)) {
       frame_data_u8 = SCHRO_FRAME_DATA_GET_LINE (dest, y_offset);
       texture_data_f32 = (float *) texture_data;
 
@@ -78,7 +78,7 @@ schro_opengl_frame_pull_convert (SchroFrameData *dest, SchroFrameData *src,
       }
     }
   } else if (depth == SCHRO_FRAME_FORMAT_DEPTH_S16) {
-    if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_S16_AS_F32) {
+    if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PULL_S16_AS_F32)) {
       frame_data_s16 = SCHRO_FRAME_DATA_GET_LINE (dest, y_offset);
       texture_data_f32 = (float *) texture_data;
 
@@ -96,8 +96,7 @@ schro_opengl_frame_pull_convert (SchroFrameData *dest, SchroFrameData *src,
         frame_data_s16 = OFFSET (frame_data_s16, frame_byte_stride);
         texture_data_f32 = OFFSET (texture_data_f32, texture_byte_stride);
       }
-    } else if (_schro_opengl_frame_flags
-        & SCHRO_OPENGL_FRAME_PULL_S16_AS_U16) {
+    } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PULL_S16_AS_U16)) {
       frame_data_s16 = SCHRO_FRAME_DATA_GET_LINE (dest, y_offset);
       texture_data_u16 = (uint16_t *) texture_data;
 
@@ -185,7 +184,7 @@ schro_opengl_frame_pull (SchroFrame *dest, SchroFrame *src)
     SCHRO_ASSERT (dest->components[i].width == width);
     SCHRO_ASSERT (dest->components[i].height == height);
 
-    if (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_PULL_PIXELBUFFER) {
+    if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PULL_PIXELBUFFER)) {
       glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
                             src_opengl_data->framebuffers[0]);
 

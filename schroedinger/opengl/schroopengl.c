@@ -7,7 +7,6 @@
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <schroedinger/opengl/schroopenglshader.h>
 #include <limits.h>
-#include <GL/glew.h>
 #include <GL/glxew.h>
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
@@ -39,6 +38,8 @@ typedef pthread_mutex_t SchroMutex;
 #define schro_mutex_unlock(_mutex) do {} while (0)
 #endif
 
+#define REQUIRED_TEXTURE_UNITS 9
+
 struct _SchroOpenGL {
   int is_usable;
   int is_visible;
@@ -53,6 +54,9 @@ struct _SchroOpenGL {
   SchroOpenGLShaderLibrary *library;
   void *tmp;
   int tmp_size;
+  GLuint obmc_weight_texture;
+  int obmc_weight_texture_width;
+  int obmc_weight_texture_height;
 };
 
 static int
@@ -226,6 +230,7 @@ static int
 schro_opengl_check_essential_extensions (SchroOpenGL *opengl)
 {
   int ok = TRUE;
+  //GLint texture_units;
 
   schro_opengl_lock (opengl);
 
@@ -250,6 +255,17 @@ schro_opengl_check_essential_extensions (SchroOpenGL *opengl)
 
   #undef CHECK_EXTENSION
   #undef CHECK_EXTENSION_GROUPS
+
+  if (ok) {
+    /*glGetIntegerv (GL_MAX_TEXTURE_UNITS_ARB, &texture_units);
+
+    if (texture_units < REQUIRED_TEXTURE_UNITS) {
+      SCHRO_ERROR ("GL_MAX_TEXTURE_UNITS_ARB >= %i required, have %i",
+          REQUIRED_TEXTURE_UNITS, texture_units);
+
+      ok = FALSE;
+    }*/
+  }
 
   schro_opengl_unlock (opengl);
 
@@ -278,6 +294,9 @@ schro_opengl_new (void)
   opengl->library = NULL;
   opengl->tmp = NULL;
   opengl->tmp_size = 0;
+  opengl->obmc_weight_texture = 0;
+  opengl->obmc_weight_texture_width = 0;
+  opengl->obmc_weight_texture_height = 0;
 
   schro_mutex_init_recursive (opengl->mutex);
 
@@ -326,6 +345,12 @@ void
 schro_opengl_free (SchroOpenGL *opengl)
 {
   SCHRO_ASSERT (opengl->lock_count == 0);
+
+  schro_opengl_lock (opengl);
+
+  glDeleteTextures (1, &opengl->obmc_weight_texture);
+
+  schro_opengl_unlock (opengl);
 
   if (opengl->library) {
     schro_opengl_shader_library_free (opengl->library);
@@ -379,22 +404,30 @@ schro_opengl_lock (SchroOpenGL *opengl)
 void
 schro_opengl_unlock (SchroOpenGL *opengl)
 {
-  int texture, framebuffer;
+  int i;
+  GLint texture, framebuffer;
 
   SCHRO_ASSERT (opengl->display != NULL);
   SCHRO_ASSERT (opengl->lock_count > 0);
 
   SCHRO_OPENGL_CHECK_ERROR
 
-  glGetIntegerv (GL_TEXTURE_BINDING_RECTANGLE_ARB, &texture);
-  glGetIntegerv (GL_FRAMEBUFFER_BINDING_EXT, &framebuffer);
-
-  SCHRO_ASSERT (texture == 0);
-  SCHRO_ASSERT (framebuffer == 0);
-
   --opengl->lock_count;
 
   if (opengl->lock_count == 0) {
+    for (i = 0; i < REQUIRED_TEXTURE_UNITS; ++i) {
+      glActiveTextureARB (GL_TEXTURE0_ARB + i);
+      glGetIntegerv (GL_TEXTURE_BINDING_RECTANGLE_ARB, &texture);
+
+      SCHRO_ASSERT (!glIsTexture (texture));
+      SCHRO_ASSERT (texture == 0);
+    }
+
+    glActiveTextureARB (GL_TEXTURE0_ARB);
+    glGetIntegerv (GL_FRAMEBUFFER_BINDING_EXT, &framebuffer);
+
+    SCHRO_ASSERT (framebuffer == 0);
+
     XLockDisplay (opengl->display);
 
     if (!glXMakeCurrent (opengl->display, None, NULL)) {
@@ -500,6 +533,46 @@ schro_opengl_get_tmp (SchroOpenGL *opengl, int size)
   }
 
   return opengl->tmp;
+}
+
+GLuint
+schro_opengl_get_obmc_weight_texture (SchroOpenGL *opengl, int width,
+    int height)
+{
+  static int created = FALSE;
+
+  SCHRO_ASSERT (!created);
+
+  schro_opengl_lock (opengl);
+
+  if (width > opengl->obmc_weight_texture_width ||
+      height > opengl->obmc_weight_texture_height) {
+    glDeleteTextures (1, &opengl->obmc_weight_texture);
+    opengl->obmc_weight_texture = 0;
+  }
+
+  if (opengl->obmc_weight_texture == 0) {
+    opengl->obmc_weight_texture_width = MAX (width, 32);
+    opengl->obmc_weight_texture_height = MAX (height, 32);
+
+    glGenTextures (1, &opengl->obmc_weight_texture);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl->obmc_weight_texture);
+    glTexImage2D (GL_TEXTURE_RECTANGLE_ARB, 0,
+        GL_RGBA16, opengl->obmc_weight_texture_width,
+        opengl->obmc_weight_texture_height, 0, GL_RED, GL_SHORT, NULL);
+    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
+        GL_NEAREST);
+    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
+        GL_NEAREST);
+    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
+  }
+
+  schro_opengl_unlock (opengl);
+
+  return opengl->obmc_weight_texture;
 }
 
 void

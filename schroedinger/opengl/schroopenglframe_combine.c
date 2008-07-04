@@ -135,7 +135,7 @@ schro_opengl_frame_combine_with_shader (SchroFrame *dest, SchroFrame *src,
   SCHRO_ASSERT (src_opengl_data != NULL);
   SCHRO_ASSERT (dest_opengl_data->opengl == src_opengl_data->opengl);
 
-  opengl = src_opengl_data->opengl;
+  opengl = dest_opengl_data->opengl;
 
   schro_opengl_lock (opengl);
 
@@ -156,27 +156,27 @@ schro_opengl_frame_combine_with_shader (SchroFrame *dest, SchroFrame *src,
     schro_opengl_setup_viewport (width, height);
 
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-                          dest_opengl_data->framebuffers[1]);
+        dest_opengl_data->framebuffers[1]);
     glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-                   dest_opengl_data->texture.handles[0]);
+        dest_opengl_data->texture.handles[0]);
 
     schro_opengl_render_quad (0, 0, width, height);
 
     glFlush ();
 
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-                          dest_opengl_data->framebuffers[0]);
+        dest_opengl_data->framebuffers[0]);
 
     glUseProgramObjectARB (shader->program);
 
     glActiveTextureARB (GL_TEXTURE0_ARB);
     glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-                   dest_opengl_data->texture.handles[1]);
+        dest_opengl_data->texture.handles[1]);
     glUniform1iARB (shader->textures[0], 0);
 
     glActiveTextureARB (GL_TEXTURE1_ARB);
     glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-                   src_opengl_data->texture.handles[0]);
+        src_opengl_data->texture.handles[0]);
     glUniform1iARB (shader->textures[1], 1);
 
     glActiveTextureARB (GL_TEXTURE0_ARB);
@@ -188,10 +188,14 @@ schro_opengl_frame_combine_with_shader (SchroFrame *dest, SchroFrame *src,
     glUseProgramObjectARB (0);
 
     glFlush ();
-
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
   }
+
+  glActiveTextureARB (GL_TEXTURE0_ARB);
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
+  glActiveTextureARB (GL_TEXTURE1_ARB);
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
+  glActiveTextureARB (GL_TEXTURE0_ARB);
+  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
   schro_opengl_unlock (opengl);
 }

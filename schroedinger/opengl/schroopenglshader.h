@@ -12,16 +12,21 @@ typedef struct _SchroOpenGLShader SchroOpenGLShader;
 
 struct _SchroOpenGLShader {
   GLhandleARB program;
-  GLint textures[3];
-  GLint offset;
-  GLint four_decrease;
-  GLint three_decrease;
-  GLint two_decrease;
-  GLint one_decrease;
-  GLint one_increase;
-  GLint two_increase;
-  GLint three_increase;
-  GLint four_increase;
+  GLint textures[3];    /* sampler2DRect */
+  GLint offset;         /* vec2 */
+  GLint origin;         /* vec2 */
+  GLint four_decrease;  /* vec2 */
+  GLint three_decrease; /* vec2 */
+  GLint two_decrease;   /* vec2 */
+  GLint one_decrease;   /* vec2 */
+  GLint one_increase;   /* vec2 */
+  GLint two_increase;   /* vec2 */
+  GLint three_increase; /* vec2 */
+  GLint four_increase;  /* vec2 */
+  GLint dc;             /* float */
+  GLint weight;         /* float */
+  GLint addend;         /* float */
+  GLint divisor;        /* float */
 };
 
 #define SCHRO_OPENGL_SHADER_IDENTITY             0
@@ -59,9 +64,17 @@ struct _SchroOpenGLShader {
 #define SCHRO_OPENGL_SHADER_IIWT_S16_HORIZONTAL_INTERLEAVE            32
 #define SCHRO_OPENGL_SHADER_IIWT_S16_FILTER_SHIFT                     33
 #define SCHRO_OPENGL_SHADER_UPSAMPLE_U8                               34
+#define SCHRO_OPENGL_SHADER_MC_CLEAR                                  35
+#define SCHRO_OPENGL_SHADER_MC_RENDER_DC                              36
+#define SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_0                      37
+#define SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_0_WEIGHT               38
+#define SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_1                      39
+#define SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_3                      40
+#define SCHRO_OPENGL_SHADER_MC_RENDER_BIREF                           41
+#define SCHRO_OPENGL_SHADER_MC_SHIFT                                  42
 
 #define SCHRO_OPENGL_SHADER_COUNT \
-    ((SCHRO_OPENGL_SHADER_UPSAMPLE_U8) + 1)
+    ((SCHRO_OPENGL_SHADER_MC_SHIFT) + 1)
 
 SchroOpenGLShaderLibrary *schro_opengl_shader_library_new (SchroOpenGL *opengl);
 void schro_opengl_shader_library_free (SchroOpenGLShaderLibrary *library);

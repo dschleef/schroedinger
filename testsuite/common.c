@@ -436,9 +436,9 @@ frame_data_dump_u8 (SchroFrameData *test, SchroFrameData *ref)
     rline = SCHRO_FRAME_DATA_GET_LINE(ref, j);
     for(i=0;i<test->width;i++){
       if (tline[i] == rline[i]) {
-        printf("%3d ", tline[i]);
+        printf("%4d ", tline[i]);
       } else {
-        printf("\033[00;01;37;41m%3d\033[00m ", tline[i]);
+        printf("\033[00;01;37;41m%4d\033[00m ", tline[i]);
       }
     }
     printf("\n");
@@ -461,9 +461,9 @@ frame_data_dump_s16 (SchroFrameData *test, SchroFrameData *ref)
     rline = SCHRO_FRAME_DATA_GET_LINE(ref, j);
     for(i=0;i<test->width;i++){
       if (tline[i] == rline[i]) {
-        printf("%3d ", tline[i]);
+        printf("%4d ", tline[i]);
       } else {
-        printf("\033[00;01;37;41m%3d\033[00m ", tline[i]);
+        printf("\033[00;01;37;41m%4d\033[00m ", tline[i]);
       }
     }
     printf("\n");

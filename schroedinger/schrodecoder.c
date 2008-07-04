@@ -8,6 +8,7 @@
 #include <schroedinger/schrogpuframe.h>
 #include <schroedinger/opengl/schroopengl.h>
 #include <schroedinger/opengl/schroopenglframe.h>
+#include <schroedinger/opengl/schroopenglmotion.h>
 #include <liboil/liboil.h>
 #include <schroedinger/schrooil.h>
 #include <string.h>
@@ -1098,8 +1099,6 @@ schro_decoder_x_render_motion (SchroPicture *picture)
       int picture_width;
       int picture_height;
 
-      SCHRO_ERROR (">>> === schro_motion_render === >>>");
-
       frame_format = schro_params_get_frame_format (16,
           params->video_format->chroma_format);
       picture_width = params->video_format->width;
@@ -1108,16 +1107,7 @@ schro_decoder_x_render_motion (SchroPicture *picture)
       picture->mc_tmp_frame = schro_opengl_frame_new (decoder->opengl,
           decoder->opengl_domain, frame_format, picture_width, picture_height);
 
-      SchroFrame* mc_tmp_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
-          frame_format, picture_width, picture_height);
-
-      schro_motion_render (picture->motion, mc_tmp_frame);
-
-      schro_opengl_frame_push (picture->mc_tmp_frame, mc_tmp_frame);
-
-      schro_frame_unref (mc_tmp_frame);
-
-      SCHRO_ERROR ("<<< === schro_motion_render === <<<");
+      schro_opengl_motion_render (picture->motion, picture->mc_tmp_frame);
 #else
       SCHRO_ASSERT(0);
 #endif
@@ -1157,16 +1147,12 @@ schro_decoder_x_wavelet_transform (SchroPicture *picture)
 #endif
     } else if (picture->decoder->use_opengl) {
 #ifdef HAVE_OPENGL
-      SCHRO_ERROR (">>> === schro_opengl_frame_inverse_iwt_transform === >>>");
-
       picture->frame
           = schro_opengl_frame_clone_and_push (picture->decoder->opengl,
           picture->decoder->opengl_domain, picture->transform_frame);
 
       schro_opengl_frame_inverse_iwt_transform (picture->frame,
           &picture->params);
-
-      SCHRO_ERROR ("<<< === schro_opengl_frame_inverse_iwt_transform === <<<");
 #else
       SCHRO_ASSERT(0);
 #endif
@@ -1182,13 +1168,11 @@ schro_decoder_x_combine (SchroPicture *picture)
 {
   SchroParams *params = &picture->params;
   SchroDecoder *decoder = picture->decoder;
-  SchroFrame *combined_opengl_frame;
-  SchroFrame *output_opengl_frame;
-  SchroFrame *combined_cpu_frame;
-  SchroFrame *output_cpu_frame;
+  SchroFrame *combined_frame;
+  SchroFrame *output_frame;
 
   if (picture->zero_residual) {
-    combined_opengl_frame = picture->mc_tmp_frame;
+    combined_frame = picture->mc_tmp_frame;
   } else {
     if (params->num_refs > 0) {
       if (picture->decoder->use_cuda) {
@@ -1207,39 +1191,18 @@ schro_decoder_x_combine (SchroPicture *picture)
         schro_frame_add (picture->frame, picture->mc_tmp_frame);
       }
     }
-    combined_opengl_frame = picture->frame;
+    combined_frame = picture->frame;
   }
 
   if (_schro_decode_prediction_only) {
     if (params->num_refs > 0 && !picture->is_ref) {
-      output_opengl_frame = picture->mc_tmp_frame;
+      output_frame = picture->mc_tmp_frame;
     } else {
-      output_opengl_frame = combined_opengl_frame;
+      output_frame = combined_frame;
     }
   } else {
-    output_opengl_frame = combined_opengl_frame;
+    output_frame = combined_frame;
   }
-
-  // FIXME: remove {{
-  if (picture->decoder->use_opengl) {
-#ifdef HAVE_OPENGL
-    SCHRO_ERROR (">>> === schro_opengl_frame_pull === >>>");
-
-    combined_cpu_frame = schro_frame_clone (picture->decoder->cpu_domain, combined_opengl_frame);
-    output_cpu_frame = schro_frame_clone (picture->decoder->cpu_domain, output_opengl_frame);
-
-    schro_opengl_frame_pull (combined_cpu_frame, combined_opengl_frame);
-    schro_opengl_frame_pull (output_cpu_frame, output_opengl_frame);
-
-    SCHRO_ERROR ("<<< === schro_opengl_frame_pull === <<<");
-#else
-    SCHRO_ASSERT(0);
-#endif
-  } else {
-    combined_cpu_frame = combined_opengl_frame;
-    output_cpu_frame = output_opengl_frame;
-  }
-  // FIXME: remove }}
 
   if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
     if (picture->decoder->use_cuda) {
@@ -1254,8 +1217,24 @@ schro_decoder_x_combine (SchroPicture *picture)
 #else
       SCHRO_ASSERT(0);
 #endif
+    } else if (picture->decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+      SchroFrame *tmp_opengl_output_frame;
+
+      tmp_opengl_output_frame = schro_opengl_frame_new (decoder->opengl,
+          decoder->opengl_domain, picture->planar_output_frame->format,
+          picture->planar_output_frame->width, picture->planar_output_frame->height);
+
+      schro_opengl_frame_convert (tmp_opengl_output_frame, output_frame);
+      schro_opengl_frame_pull (picture->planar_output_frame, tmp_opengl_output_frame);
+      schro_frame_unref (tmp_opengl_output_frame);
+
+      schro_frame_convert (picture->output_picture, picture->planar_output_frame);
+#else
+      SCHRO_ASSERT(0);
+#endif
     } else {
-      schro_frame_convert (picture->planar_output_frame, output_cpu_frame);
+      schro_frame_convert (picture->planar_output_frame, output_frame);
       schro_frame_convert (picture->output_picture, picture->planar_output_frame);
     }
   } else {
@@ -1270,8 +1249,22 @@ schro_decoder_x_combine (SchroPicture *picture)
 #else
       SCHRO_ASSERT(0);
 #endif
+    } else if (picture->decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+      SchroFrame *tmp_opengl_output_frame;
+
+      tmp_opengl_output_frame = schro_opengl_frame_new (decoder->opengl,
+          decoder->opengl_domain, picture->output_picture->format,
+          picture->output_picture->width, picture->output_picture->height);
+
+      schro_opengl_frame_convert (tmp_opengl_output_frame, output_frame);
+      schro_opengl_frame_pull (picture->output_picture, tmp_opengl_output_frame);
+      schro_frame_unref (tmp_opengl_output_frame);
+#else
+      SCHRO_ASSERT(0);
+#endif
     } else {
-      schro_frame_convert (picture->output_picture, output_cpu_frame);
+      schro_frame_convert (picture->output_picture, output_frame);
     }
   }
 
@@ -1281,7 +1274,7 @@ schro_decoder_x_combine (SchroPicture *picture)
 
     frame_format = schro_params_get_frame_format (8,
         params->video_format->chroma_format);
-    
+
     if (picture->decoder->use_cuda) {
 #ifdef HAVE_CUDA
       ref = schro_frame_new_and_alloc (decoder->cuda_domain, frame_format,
@@ -1291,11 +1284,20 @@ schro_decoder_x_combine (SchroPicture *picture)
 #else
       SCHRO_ASSERT(0);
 #endif
+    } else if (picture->decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+      ref = schro_opengl_frame_new (decoder->opengl, decoder->opengl_domain,
+          frame_format, decoder->video_format.width,
+          schro_video_format_get_picture_height(&decoder->video_format));
+      schro_opengl_frame_convert (ref, combined_frame);
+#else
+      SCHRO_ASSERT(0);
+#endif
     } else {
       ref = schro_frame_new_and_alloc (decoder->cpu_domain, frame_format,
           decoder->video_format.width,
           schro_video_format_get_picture_height(&decoder->video_format));
-      schro_frame_convert (ref, combined_cpu_frame);
+      schro_frame_convert (ref, combined_frame);
     }
     picture->upsampled_frame = schro_upsampled_frame_new (ref);
   }
@@ -1324,21 +1326,6 @@ schro_decoder_x_combine (SchroPicture *picture)
       SCHRO_ERROR("MD5 checksum mismatch (%s should be %s)", a, b);
     }
   }
-
-  // FIXME: remove {{
-  if (picture->decoder->use_opengl) {
-#ifdef HAVE_OPENGL
-    SCHRO_ERROR (">>> === schro_frame_unref === >>>");
-
-    schro_frame_unref (combined_cpu_frame);
-    schro_frame_unref (output_cpu_frame);
-
-    SCHRO_ERROR ("<<< === schro_frame_unref === <<<");
-#else
-    SCHRO_ASSERT(0);
-#endif
-  }
-  // FIXME: remove }}
 }
 
 void
@@ -1350,13 +1337,13 @@ schro_decoder_x_upsample (SchroPicture *picture)
 #else
     SCHRO_ASSERT (0);
 #endif
-  } /*else if (picture->decoder->use_opengl) {
+  } else if (picture->decoder->use_opengl) {
 #ifdef HAVE_OPENGL
     schro_opengl_upsampled_frame_upsample (picture->upsampled_frame);
 #else
     SCHRO_ASSERT (0);
 #endif
-  }*/ else  {
+  } else {
     schro_upsampled_frame_upsample (picture->upsampled_frame);
   }
 }

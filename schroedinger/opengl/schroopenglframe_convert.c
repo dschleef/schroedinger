@@ -201,9 +201,9 @@ schro_opengl_frame_unpack_with_shader (SchroFrame *dest, SchroFrame *src,
     schro_opengl_setup_viewport (width, height);
 
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-                          dest_opengl_data->framebuffers[0]);
+        dest_opengl_data->framebuffers[0]);
     glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-                   src_opengl_data->texture.handles[0]);
+        src_opengl_data->texture.handles[0]);
 
     SCHRO_OPENGL_CHECK_ERROR
 
@@ -229,9 +229,9 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
 {
   int width, height;
   SchroOpenGLFrameData *dest_opengl_data = NULL;
-  SchroOpenGLFrameData *src_opengl_y_data = NULL;
-  SchroOpenGLFrameData *src_opengl_u_data = NULL;
-  SchroOpenGLFrameData *src_opengl_v_data = NULL;
+  SchroOpenGLFrameData *src_y_opengl_data = NULL;
+  SchroOpenGLFrameData *src_u_opengl_data = NULL;
+  SchroOpenGLFrameData *src_v_opengl_data = NULL;
   SchroOpenGL *opengl = NULL;
   SchroOpenGLShader *shader;
 
@@ -239,15 +239,19 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
 
   SCHRO_ASSERT (dest_opengl_data != NULL);
 
-  src_opengl_y_data = (SchroOpenGLFrameData *) src->components[0].data;
-  src_opengl_u_data = (SchroOpenGLFrameData *) src->components[1].data;
-  src_opengl_v_data = (SchroOpenGLFrameData *) src->components[2].data;
+  src_y_opengl_data = (SchroOpenGLFrameData *) src->components[0].data;
+  src_u_opengl_data = (SchroOpenGLFrameData *) src->components[1].data;
+  src_v_opengl_data = (SchroOpenGLFrameData *) src->components[2].data;
 
-  SCHRO_ASSERT (src_opengl_y_data != NULL);
-  SCHRO_ASSERT (src_opengl_u_data != NULL);
-  SCHRO_ASSERT (src_opengl_v_data != NULL);
+  SCHRO_ASSERT (src_y_opengl_data != NULL);
+  SCHRO_ASSERT (src_u_opengl_data != NULL);
+  SCHRO_ASSERT (src_v_opengl_data != NULL);
 
-  opengl = src_opengl_y_data->opengl;
+  opengl = dest_opengl_data->opengl;
+
+  SCHRO_ASSERT (src_y_opengl_data->opengl == opengl);
+  SCHRO_ASSERT (src_u_opengl_data->opengl == opengl);
+  SCHRO_ASSERT (src_v_opengl_data->opengl == opengl);
 
   schro_opengl_lock (opengl);
 
@@ -264,23 +268,27 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
   schro_opengl_setup_viewport (width, height);
 
   glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_opengl_data->framebuffers[0]);
+
+  glUseProgramObjectARB (shader->program);
+
   glActiveTextureARB (GL_TEXTURE0_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-      src_opengl_y_data->texture.handles[0]);
+      src_y_opengl_data->texture.handles[0]);
+  glUniform1iARB (shader->textures[0], 0);
+
   glActiveTextureARB (GL_TEXTURE1_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-      src_opengl_u_data->texture.handles[0]);
+      src_u_opengl_data->texture.handles[0]);
+  glUniform1iARB (shader->textures[1], 1);
+
   glActiveTextureARB (GL_TEXTURE2_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-      src_opengl_v_data->texture.handles[0]);
+      src_v_opengl_data->texture.handles[0]);
+  glUniform1iARB (shader->textures[2], 2);
+
   glActiveTextureARB (GL_TEXTURE0_ARB);
 
   SCHRO_OPENGL_CHECK_ERROR
-
-  glUseProgramObjectARB (shader->program);
-  glUniform1iARB (shader->textures[0], 0);
-  glUniform1iARB (shader->textures[1], 1);
-  glUniform1iARB (shader->textures[2], 2);
 
   schro_opengl_render_quad (0, 0, width, height);
 
@@ -288,7 +296,13 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
 
   glFlush ();
 
+  glActiveTextureARB (GL_TEXTURE0_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
+  glActiveTextureARB (GL_TEXTURE1_ARB);
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
+  glActiveTextureARB (GL_TEXTURE2_ARB);
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
+  glActiveTextureARB (GL_TEXTURE0_ARB);
   glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
   schro_opengl_unlock (opengl);

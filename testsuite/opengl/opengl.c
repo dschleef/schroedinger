@@ -5,6 +5,7 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
 #include <schroedinger/opengl/schroopenglframe.h>
+#include <schroedinger/opengl/schroopenglmotion.h>
 #include <schroedinger/opengl/schroopenglwavelet.h>
 #include <string.h>
 #include "../common.h"
@@ -415,6 +416,137 @@ opengl_test_upsample (SchroFrameFormat format, int width, int height,
   printf ("==========================================================\n");
 }
 
+void
+opengl_test_motion (int width, int height,
+    int custom_pattern)
+{
+  SchroVideoFormat video_format;
+  SchroParams params;
+  SchroFrame *cpu_src_frame;
+  SchroFrame *opengl_src_frame;
+  SchroFrame *cpu_dest_ref_frame;
+  SchroFrame *cpu_dest_test_frame;
+  SchroFrame *opengl_dest_frame;
+  SchroUpsampledFrame *upsampled_cpu_frame;
+  SchroUpsampledFrame *upsampled_opengl_frame;
+  SchroMotionVectorDC *motion_vectors_dc;
+  SchroMotion motion_cpu;
+  SchroMotion motion_opengl;
+  char pattern_name[TEST_PATTERN_NAME_SIZE];
+  int i, u, v;
+  int ok;
+
+ /* video_format.width = width;
+  video_format.height = height;
+  video_format.chroma_format = SCHRO_CHROMA_444;*/
+
+  schro_video_format_set_std_video_format (&video_format, SCHRO_VIDEO_FORMAT_QSIF);
+
+  schro_video_format_validate (&video_format);
+
+  video_format.width = 32;
+  video_format.height = 32;
+
+  printf ("==========================================================\n");
+  printf ("opengl_test_motion: %ix%i\n", video_format.width, video_format.height);
+
+  params.video_format = &video_format;
+  params.xbsep_luma = 4;
+  params.ybsep_luma = 4;
+  params.xblen_luma = 6;
+  params.yblen_luma = 6;
+
+  schro_params_calculate_mc_sizes (&params);
+
+  cpu_src_frame = schro_frame_new_and_alloc (_cpu_domain,
+      SCHRO_FRAME_FORMAT_U8_420, video_format.width, video_format.height);
+  opengl_src_frame = schro_opengl_frame_new (_opengl, _opengl_domain,
+      SCHRO_FRAME_FORMAT_U8_420, video_format.width, video_format.height);
+  cpu_dest_ref_frame = schro_frame_new_and_alloc (_cpu_domain,
+      SCHRO_FRAME_FORMAT_S16_420, video_format.width, video_format.height);
+  cpu_dest_test_frame = schro_frame_new_and_alloc (_cpu_domain,
+      SCHRO_FRAME_FORMAT_S16_420,video_format.width, video_format.height);
+  opengl_dest_frame = schro_opengl_frame_new (_opengl, _opengl_domain,
+      SCHRO_FRAME_FORMAT_S16_420, video_format.width, video_format.height);
+
+  printf ("  patterns\n");
+
+  for (i = 0; i < 1; ++i) {
+    opengl_custom_pattern_generate (cpu_src_frame, custom_pattern, i,
+        pattern_name);
+
+    schro_opengl_frame_push (opengl_src_frame, cpu_src_frame);
+
+    upsampled_cpu_frame = schro_upsampled_frame_new (schro_frame_ref (cpu_src_frame));
+    upsampled_opengl_frame = schro_upsampled_frame_new (schro_frame_ref (opengl_src_frame));
+
+    schro_upsampled_frame_upsample (upsampled_cpu_frame);
+    schro_opengl_upsampled_frame_upsample (upsampled_opengl_frame);
+
+    motion_vectors_dc = schro_malloc0 (sizeof (SchroMotionVectorDC) *
+        params.x_num_blocks * params.y_num_blocks);
+
+    for (v = 0; v < params.y_num_blocks; ++v) {
+      for (u = 0; u < params.x_num_blocks; ++u) {
+        if (u == 1 && (v == 1/* || v == 2*/)) {
+          motion_vectors_dc[v * params.x_num_blocks + u].pred_mode = 0;
+          motion_vectors_dc[v * params.x_num_blocks + u].using_global = FALSE;
+          motion_vectors_dc[v * params.x_num_blocks + u].dc[0] = 64;
+          motion_vectors_dc[v * params.x_num_blocks + u].dc[1] = 0;
+          motion_vectors_dc[v * params.x_num_blocks + u].dc[2] = 0;
+        } else {
+          motion_vectors_dc[v * params.x_num_blocks + u].pred_mode = 0;
+          motion_vectors_dc[v * params.x_num_blocks + u].using_global = FALSE;
+          motion_vectors_dc[v * params.x_num_blocks + u].dc[0] = 0;
+          motion_vectors_dc[v * params.x_num_blocks + u].dc[1] = 0;
+          motion_vectors_dc[v * params.x_num_blocks + u].dc[2] = 0;
+        }
+      }
+    }
+
+    motion_cpu.src1 = upsampled_cpu_frame;
+    motion_cpu.src2 = NULL;
+    motion_cpu.motion_vectors = (SchroMotionVector *) motion_vectors_dc;
+    motion_cpu.params = &params;
+
+    motion_opengl.src1 = upsampled_opengl_frame;
+    motion_opengl.src2 = NULL;
+    motion_opengl.motion_vectors = (SchroMotionVector *) motion_vectors_dc;
+    motion_opengl.params = &params;
+
+    schro_motion_render (&motion_cpu, cpu_dest_ref_frame);
+    schro_opengl_motion_render (&motion_opengl, opengl_dest_frame);
+
+    schro_opengl_frame_pull (cpu_dest_test_frame, opengl_dest_frame);
+
+    ok = frame_compare (cpu_dest_ref_frame, cpu_dest_test_frame);
+
+    printf ("    %s: %s\n", pattern_name, ok ? "OK" : "broken");
+
+    if (!ok) {
+      _failed = TRUE;
+
+      /*if (width <= 32 && height <= 32)*/ {
+        printf ("ref frame\n");
+        frame_dump (cpu_dest_ref_frame, cpu_dest_ref_frame);
+        printf ("test frame <-> ref frame\n");
+        frame_dump (cpu_dest_test_frame, cpu_dest_ref_frame);
+      }
+    }
+
+    schro_upsampled_frame_free (upsampled_cpu_frame);
+    schro_upsampled_frame_free (upsampled_opengl_frame);
+  }
+
+  schro_frame_unref (cpu_src_frame);
+  schro_frame_unref (opengl_src_frame);
+  schro_frame_unref (cpu_dest_ref_frame);
+  schro_frame_unref (cpu_dest_test_frame);
+  schro_frame_unref (opengl_dest_frame);
+
+  printf ("==========================================================\n");
+}
+
 struct ConvertTest {
   SchroFrameFormat dest_format;
   SchroFrameFormat src_format;
@@ -617,8 +749,9 @@ main (int argc, char *argv[])
         1920, 1080, 1920, 1080, 50, OPENGL_CUSTOM_PATTERN_CONST_MIDDLE,
         OPENGL_CUSTOM_PATTERN_RANDOM, 0);
   } else if (special) {
-    opengl_test_upsample (SCHRO_FRAME_FORMAT_U8_444, 16, 16,
-        OPENGL_CUSTOM_PATTERN_RANDOM);
+    /*opengl_test_upsample (SCHRO_FRAME_FORMAT_U8_444, 16, 16,
+        OPENGL_CUSTOM_PATTERN_RANDOM);*/
+    opengl_test_motion (720, 480, OPENGL_CUSTOM_PATTERN_RANDOM);
   } else {
     opengl_test_push_pull_run ();
 
