@@ -267,16 +267,13 @@ schro_opengl_frame_print_flags (const char* indent)
 void
 schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame)
 {
-  int i, k;
-  int width, height;
+  int i;
   int components;
-  int create_push_pixelbuffers = FALSE;
-  SchroOpenGLFrameData *opengl_data = NULL;
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-  double start, end;
-#endif
+  int width, height;
+  SchroFrameFormat format;
+  SchroOpenGLCanvasPool *canvas_pool;
+  SchroOpenGLCanvas *canvas;
 
-  //SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
   SCHRO_ASSERT (frame != NULL);
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (frame));
 
@@ -284,369 +281,30 @@ schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame)
 
   schro_opengl_lock (opengl);
 
+  canvas_pool = schro_opengl_get_canvas_pool (opengl);
+
   schro_opengl_frame_check_flags ();
 
   for (i = 0; i < components; ++i) {
+    format = frame->components[i].format;
     width = frame->components[i].width;
     height = frame->components[i].height;
 
+    SCHRO_ASSERT (frame->format == format);
+
+    if (!schro_opengl_canvas_pool_is_empty (canvas_pool)) {
+      canvas = schro_opengl_canvas_pool_pull (canvas_pool, format, width,
+          height);
+    } else {
+      canvas = NULL;
+    }
+
+    if (!canvas) {
+      canvas = schro_opengl_canvas_new (opengl, format, width, height);
+    }
+
     // FIXME: hack to store custom data per frame component
-    opengl_data = (SchroOpenGLFrameData *) frame->components[i].data;
-
-    SCHRO_ASSERT (opengl_data != NULL);
-    SCHRO_ASSERT (opengl_data->opengl == NULL);
-    SCHRO_ASSERT (opengl_data->texture.handles[0] == 0);
-    SCHRO_ASSERT (opengl_data->texture.handles[1] == 0);
-    SCHRO_ASSERT (opengl_data->framebuffers[0] == 0);
-    SCHRO_ASSERT (opengl_data->framebuffers[1] == 0);
-
-    opengl_data->opengl = opengl;
-
-    switch (SCHRO_FRAME_FORMAT_DEPTH (frame->format)) {
-      case SCHRO_FRAME_FORMAT_DEPTH_U8:
-        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_U8_AS_F16)) {
-          if (!SCHRO_FRAME_IS_PACKED (frame->format) && GLEW_NV_float_buffer) {
-            opengl_data->texture.internal_format = GL_FLOAT_R16_NV;
-          } else {
-            opengl_data->texture.internal_format = GL_RGBA16F_ARB;
-          }
-
-          opengl_data->texture.type = GL_FLOAT;
-        } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_U8_AS_F32)) {
-          if (!SCHRO_FRAME_IS_PACKED (frame->format) && GLEW_NV_float_buffer) {
-            opengl_data->texture.internal_format = GL_FLOAT_R32_NV;
-          } else {
-            opengl_data->texture.internal_format = GL_RGBA32F_ARB;
-          }
-
-          opengl_data->texture.type = GL_FLOAT;
-        } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_U8_AS_UI8)) {
-          if (SCHRO_FRAME_IS_PACKED (frame->format)) {
-            opengl_data->texture.internal_format = GL_RGBA8UI_EXT;
-          } else {
-            opengl_data->texture.internal_format = GL_ALPHA8UI_EXT;
-          }
-
-          opengl_data->texture.type = GL_UNSIGNED_BYTE;
-        } else {
-          /* must use RGBA format here, because other formats are in general
-             not supported by framebuffers */
-          opengl_data->texture.internal_format = GL_RGBA8;
-          opengl_data->texture.type = GL_UNSIGNED_BYTE;
-        }
-
-        if (SCHRO_FRAME_IS_PACKED (frame->format)) {
-          if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_BGRA)) {
-            if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_U8_AS_UI8)) {
-              opengl_data->texture.pixel_format = GL_BGRA_INTEGER_EXT;
-            } else {
-              opengl_data->texture.pixel_format = GL_BGRA;
-            }
-
-            opengl_data->texture.components = 4;
-          } else {
-            if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_U8_AS_UI8)) {
-              opengl_data->texture.pixel_format = GL_RGBA_INTEGER_EXT;
-            } else {
-              opengl_data->texture.pixel_format = GL_RGBA;
-            }
-
-            opengl_data->texture.components = 4;
-          }
-        } else {
-          if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_U8_AS_UI8)) {
-            opengl_data->texture.pixel_format = GL_ALPHA_INTEGER_EXT;
-          } else {
-            opengl_data->texture.pixel_format = GL_RED;
-          }
-
-          opengl_data->texture.components = 1;
-        }
-
-        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_U8_AS_F32)) {
-          opengl_data->push.type = GL_FLOAT;
-          opengl_data->push.bytes_per_texel
-              = opengl_data->texture.components * sizeof (float);
-        } else {
-          opengl_data->push.type = GL_UNSIGNED_BYTE;
-          opengl_data->push.bytes_per_texel
-              = opengl_data->texture.components * sizeof (uint8_t);
-        }
-
-        opengl_data->push.byte_stride
-            = ROUND_UP_4 (width * opengl_data->push.bytes_per_texel);
-        opengl_data->push.texel_stride
-            = width;/*opengl_data->push.byte_stride
-            / opengl_data->push.bytes_per_texel*/;
-
-        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PULL_U8_AS_F32)) {
-          opengl_data->pull.type = GL_FLOAT;
-          opengl_data->pull.bytes_per_texel
-              = opengl_data->texture.components * sizeof (float);
-        } else {
-          opengl_data->pull.type = GL_UNSIGNED_BYTE;
-          opengl_data->pull.bytes_per_texel
-              = opengl_data->texture.components * sizeof (uint8_t);
-        }
-
-        opengl_data->pull.byte_stride
-            = ROUND_UP_4 (width * opengl_data->pull.bytes_per_texel);
-        opengl_data->pull.texel_stride
-            = width;/*opengl_data->pull.byte_stride
-            / opengl_data->pull.bytes_per_texel*/;
-
-        //printf ("byte_stride %i texel_stride %i\n",
-        //    opengl_data->pull.byte_stride, opengl_data->pull.texel_stride);
-
-        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_U8_PIXELBUFFER)) {
-          create_push_pixelbuffers = TRUE;
-        }
-
-        break;
-      case SCHRO_FRAME_FORMAT_DEPTH_S16:
-        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_F16)) {
-          if (!SCHRO_FRAME_IS_PACKED (frame->format) && GLEW_NV_float_buffer) {
-            opengl_data->texture.internal_format = GL_FLOAT_R16_NV;
-          } else {
-            opengl_data->texture.internal_format = GL_RGBA16F_ARB;
-          }
-
-          opengl_data->texture.type = GL_FLOAT;
-        } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_F32)) {
-          if (!SCHRO_FRAME_IS_PACKED (frame->format) && GLEW_NV_float_buffer) {
-            opengl_data->texture.internal_format = GL_FLOAT_R32_NV;
-          } else {
-            opengl_data->texture.internal_format = GL_RGBA32F_ARB;
-          }
-
-          opengl_data->texture.type = GL_FLOAT;
-        } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_UI16)) {
-          if (SCHRO_FRAME_IS_PACKED (frame->format)) {
-            opengl_data->texture.internal_format = GL_RGBA16UI_EXT;
-          } else {
-            opengl_data->texture.internal_format = GL_ALPHA16UI_EXT;
-          }
-
-          opengl_data->texture.type = GL_UNSIGNED_SHORT;
-        } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_I16)) {
-          if (SCHRO_FRAME_IS_PACKED (frame->format)) {
-            opengl_data->texture.internal_format = GL_RGBA16I_EXT;
-          } else {
-            opengl_data->texture.internal_format = GL_ALPHA16I_EXT;
-          }
-
-          opengl_data->texture.type = GL_SHORT;
-        } else {
-          /* must use RGBA format here, because other formats are in general
-             not supported by framebuffers */
-          opengl_data->texture.internal_format = GL_RGBA16;
-          opengl_data->texture.type = GL_SHORT;
-        }
-
-        if (SCHRO_FRAME_IS_PACKED (frame->format)) {
-          if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_BGRA)) {
-            if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_UI16) ||
-                SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_I16)) {
-              opengl_data->texture.pixel_format = GL_BGRA_INTEGER_EXT;
-            } else {
-              opengl_data->texture.pixel_format = GL_BGRA;
-            }
-
-            opengl_data->texture.components = 4;
-          } else {
-            if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_UI16) ||
-                SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_I16)) {
-              opengl_data->texture.pixel_format = GL_RGBA_INTEGER_EXT;
-            } else {
-              opengl_data->texture.pixel_format = GL_RGBA;
-            }
-
-            opengl_data->texture.components = 4;
-          }
-        } else {
-          if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_UI16) ||
-              SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_I16)) {
-            opengl_data->texture.pixel_format = GL_ALPHA_INTEGER_EXT;
-          } else {
-            opengl_data->texture.pixel_format = GL_RED;
-          }
-
-          opengl_data->texture.components = 1;
-        }
-
-        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_S16_AS_U16)) {
-          opengl_data->push.type = GL_UNSIGNED_SHORT;
-          opengl_data->push.bytes_per_texel
-              = opengl_data->texture.components * sizeof (uint16_t);
-        } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_S16_AS_F32)) {
-          opengl_data->push.type = GL_FLOAT;
-          opengl_data->push.bytes_per_texel
-              = opengl_data->texture.components * sizeof (float);
-        } else {
-          opengl_data->push.type = GL_SHORT;
-          opengl_data->push.bytes_per_texel
-              = opengl_data->texture.components * sizeof (int16_t);
-        }
-
-        opengl_data->push.byte_stride
-            = ROUND_UP_4 (width * opengl_data->push.bytes_per_texel);
-        opengl_data->push.texel_stride
-            = width;/*opengl_data->push.byte_stride
-            / opengl_data->push.bytes_per_texel*/;
-
-        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PULL_S16_AS_U16)) {
-          /* must pull S16 as GL_UNSIGNED_SHORT instead of GL_SHORT because
-             the OpenGL mapping form internal float represenation into S16
-             values with GL_SHORT maps 0.0 to 0 and 1.0 to 32767 clamping all
-             negative values to 0, see glReadPixel documentation. so the pull
-             is done with GL_UNSIGNED_SHORT and the resulting U16 values are
-             manually shifted to S16 */
-          opengl_data->pull.type = GL_UNSIGNED_SHORT;
-          opengl_data->pull.bytes_per_texel
-              = opengl_data->texture.components * sizeof (uint16_t);
-        } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PULL_S16_AS_F32)) {
-          opengl_data->pull.type = GL_FLOAT;
-          opengl_data->pull.bytes_per_texel
-              = opengl_data->texture.components * sizeof (float);
-        } else {
-          // FIXME: pulling S16 as GL_SHORT doesn't work in general, maybe
-          // it's the right mode if the internal format is an integer format
-          // but for some reason storing as I16 doesn't work either and only
-          // gives garbage pull results
-          opengl_data->pull.type = GL_SHORT;
-          opengl_data->pull.bytes_per_texel
-              = opengl_data->texture.components * sizeof (int16_t);
-        }
-
-        opengl_data->pull.byte_stride
-            = ROUND_UP_4 (width * opengl_data->pull.bytes_per_texel);
-        opengl_data->pull.texel_stride
-            = width;/*opengl_data->pull.byte_stride
-            / opengl_data->pull.bytes_per_texel*/;
-
-        //printf ("byte_stride %i texel_stride %i\n",
-        //    opengl_data->pull.byte_stride, opengl_data->pull.texel_stride);
-
-        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_S16_PIXELBUFFER)) {
-          create_push_pixelbuffers = TRUE;
-        }
-
-        break;
-      default:
-        SCHRO_ASSERT (0);
-        break;
-    }
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-    start = schro_utils_get_time ();
-#endif
-
-    /* textures */
-    for (k = 0; k < 2; ++k) {
-      glGenTextures (1, &opengl_data->texture.handles[k]);
-      glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data->texture.handles[k]);
-      glTexImage2D (GL_TEXTURE_RECTANGLE_ARB, 0,
-          opengl_data->texture.internal_format, width, height, 0,
-          opengl_data->texture.pixel_format, opengl_data->texture.type, NULL);
-      glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
-          GL_NEAREST);
-      glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
-          GL_NEAREST);
-      glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);
-      glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
-      glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
-      SCHRO_OPENGL_CHECK_ERROR
-    }
-
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-    end = schro_utils_get_time ();
-    SCHRO_INFO ("tex %f", end - start);
-    start = schro_utils_get_time ();
-#endif
-
-    /* framebuffers */
-    for (k = 0; k < 2; ++k) {
-      glGenFramebuffersEXT (1, &opengl_data->framebuffers[k]);
-      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data->framebuffers[k]);
-      glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
-          GL_TEXTURE_RECTANGLE_ARB, opengl_data->texture.handles[k], 0);
-      glDrawBuffer (GL_COLOR_ATTACHMENT0_EXT);
-      glReadBuffer (GL_COLOR_ATTACHMENT0_EXT);
-
-      SCHRO_OPENGL_CHECK_ERROR
-      // FIXME: checking framebuffer status is an expensive operation
-      SCHRO_OPENGL_CHECK_FRAMEBUFFER
-    }
-
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-    end = schro_utils_get_time ();
-    SCHRO_INFO ("fbo %f", end - start);
-    start = schro_utils_get_time ();
-#endif
-
-    SCHRO_ASSERT (height >= SCHRO_OPENGL_FRAME_PIXELBUFFERS);
-
-    /* push pixelbuffers */
-    if (create_push_pixelbuffers) {
-      for (k = 0; k < SCHRO_OPENGL_FRAME_PIXELBUFFERS; ++k) {
-        SCHRO_ASSERT (opengl_data->push.pixelbuffers[k] == 0);
-
-        if (k == SCHRO_OPENGL_FRAME_PIXELBUFFERS - 1) {
-          opengl_data->push.heights[k]
-              = height - (height / SCHRO_OPENGL_FRAME_PIXELBUFFERS) * k;
-        } else {
-          opengl_data->push.heights[k]
-              = height / SCHRO_OPENGL_FRAME_PIXELBUFFERS;
-        }
-
-        glGenBuffersARB (1, &opengl_data->push.pixelbuffers[k]);
-        glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_ARB,
-            opengl_data->push.pixelbuffers[k]);
-        glBufferDataARB (GL_PIXEL_UNPACK_BUFFER_ARB,
-            opengl_data->push.byte_stride * opengl_data->push.heights[k],
-            NULL, GL_STREAM_DRAW_ARB);
-
-        SCHRO_OPENGL_CHECK_ERROR
-      }
-
-      glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    }
-
-    /* pull pixelbuffers */
-    if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PULL_PIXELBUFFER)) {
-      for (k = 0; k < SCHRO_OPENGL_FRAME_PIXELBUFFERS; ++k) {
-        SCHRO_ASSERT (opengl_data->pull.pixelbuffers[k] == 0);
-
-        if (k == SCHRO_OPENGL_FRAME_PIXELBUFFERS - 1) {
-          opengl_data->pull.heights[k]
-              = height - (height / SCHRO_OPENGL_FRAME_PIXELBUFFERS) * k;
-        } else {
-          opengl_data->pull.heights[k]
-              = height / SCHRO_OPENGL_FRAME_PIXELBUFFERS;
-        }
-
-        glGenBuffersARB (1, &opengl_data->pull.pixelbuffers[k]);
-        glBindBufferARB (GL_PIXEL_PACK_BUFFER_ARB,
-            opengl_data->pull.pixelbuffers[k]);
-        glBufferDataARB (GL_PIXEL_PACK_BUFFER_ARB,
-            opengl_data->pull.byte_stride * opengl_data->pull.heights[k], NULL,
-            GL_STATIC_READ_ARB);
-
-        SCHRO_OPENGL_CHECK_ERROR
-      }
-
-      glBindBufferARB (GL_PIXEL_PACK_BUFFER_ARB, 0);
-    }
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-    end = schro_utils_get_time ();
-    SCHRO_INFO ("pbo %f", end - start);
-#endif
+    *((SchroOpenGLCanvas **) frame->components[i].data) = canvas;
   }
 
   schro_opengl_unlock (opengl);
@@ -655,97 +313,39 @@ schro_opengl_frame_setup (SchroOpenGL *opengl, SchroFrame *frame)
 void
 schro_opengl_frame_cleanup (SchroFrame *frame)
 {
-  int i, k;
+  int i;
   int components;
   SchroOpenGL *opengl;
-  SchroOpenGLFrameData *opengl_data;
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-  double start, end;
-#endif
+  SchroOpenGLCanvasPool *canvas_pool;
+  SchroOpenGLCanvas *canvas;
 
-  //SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
   SCHRO_ASSERT (frame != NULL);
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (frame));
 
   components = SCHRO_FRAME_IS_PACKED (frame->format) ? 1 : 3;
-  opengl_data = (SchroOpenGLFrameData *) frame->components[0].data;
+  // FIXME: hack to store custom data per frame component
+  canvas = *((SchroOpenGLCanvas **) frame->components[0].data);
 
-  SCHRO_ASSERT (opengl_data != NULL);
+  SCHRO_ASSERT (canvas != NULL);
 
-  opengl = opengl_data->opengl;
+  opengl = canvas->opengl;
 
   schro_opengl_lock (opengl);
 
+  canvas_pool = schro_opengl_get_canvas_pool (opengl);
+
   for (i = 0; i < components; ++i) {
     // FIXME: hack to store custom data per frame component
-    opengl_data = (SchroOpenGLFrameData *) frame->components[i].data;
+    canvas = *((SchroOpenGLCanvas **) frame->components[i].data);
 
-    SCHRO_ASSERT (opengl_data != NULL);
-    SCHRO_ASSERT (opengl_data->opengl == opengl);
+    SCHRO_ASSERT (canvas != NULL);
+    SCHRO_ASSERT (canvas->opengl == opengl);
 
-    opengl_data->opengl = NULL;
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-    start = schro_utils_get_time ();
-#endif
-
-    /* textures */
-    for (k = 0; k < 2; ++k) {
-      if (opengl_data->texture.handles[k]) {
-        glDeleteTextures (1, &opengl_data->texture.handles[k]);
-
-        opengl_data->texture.handles[k] = 0;
-
-        SCHRO_OPENGL_CHECK_ERROR
-      }
+    if (!schro_opengl_canvas_pool_is_full (canvas_pool)) {
+      schro_opengl_canvas_pool_push (canvas_pool, canvas);
+    } else {
+      schro_opengl_canvas_free (canvas);
     }
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-    end = schro_utils_get_time ();
-    SCHRO_INFO ("tex %f", end - start);
-    start = schro_utils_get_time ();
-#endif
-
-    /* framebuffers */
-    for (k = 0; k < 2; ++k) {
-      if (opengl_data->framebuffers[k]) {
-        glDeleteFramebuffersEXT (1, &opengl_data->framebuffers[k]);
-
-        opengl_data->framebuffers[k] = 0;
-
-        SCHRO_OPENGL_CHECK_ERROR
-      }
-    }
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-    end = schro_utils_get_time ();
-    SCHRO_INFO ("fbo %f", end - start);
-    start = schro_utils_get_time ();
-#endif
-
-    /* pixelbuffers */
-    for (k = 0; k < SCHRO_OPENGL_FRAME_PIXELBUFFERS; ++k) {
-      if (opengl_data->push.pixelbuffers[k]) {
-        glDeleteBuffersARB (1, &opengl_data->push.pixelbuffers[k]);
-
-        opengl_data->push.pixelbuffers[k] = 0;
-
-        SCHRO_OPENGL_CHECK_ERROR
-      }
-
-      if (opengl_data->pull.pixelbuffers[k]) {
-        glDeleteBuffersARB (1, &opengl_data->pull.pixelbuffers[k]);
-
-        opengl_data->pull.pixelbuffers[k] = 0;
-
-        SCHRO_OPENGL_CHECK_ERROR
-      }
-    }
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-    end = schro_utils_get_time ();
-    SCHRO_INFO ("pbo %f", end - start);
-#endif
   }
 
   schro_opengl_unlock (opengl);
@@ -771,19 +371,17 @@ schro_opengl_frame_new (SchroOpenGL *opengl,
 SchroFrame *
 schro_opengl_frame_clone (SchroFrame *opengl_frame)
 {
-  SchroOpenGL *opengl;
-  SchroOpenGLFrameData *opengl_data;
+  SchroOpenGLCanvas *canvas;
 
   SCHRO_ASSERT (opengl_frame != NULL);
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (opengl_frame));
 
-  opengl_data = (SchroOpenGLFrameData *) opengl_frame->components[0].data;
+  // FIXME: hack to store custom data per frame component
+  canvas = *((SchroOpenGLCanvas **) opengl_frame->components[0].data);
 
-  SCHRO_ASSERT (opengl_data != NULL);
+  SCHRO_ASSERT (canvas != NULL);
 
-  opengl = opengl_data->opengl;
-
-  return schro_opengl_frame_new (opengl, opengl_frame->domain,
+  return schro_opengl_frame_new (canvas->opengl, opengl_frame->domain,
       opengl_frame->format, opengl_frame->width, opengl_frame->height);
 }
 
@@ -812,20 +410,23 @@ schro_opengl_frame_inverse_iwt_transform (SchroFrame *frame,
   int width, height;
   int level;
   SchroOpenGL *opengl;
-  SchroOpenGLFrameData *opengl_data;
+  SchroOpenGLCanvas *canvas;
 
-  opengl_data = (SchroOpenGLFrameData *) frame->components[0].data;
+  // FIXME: hack to store custom data per frame component
+  canvas = *((SchroOpenGLCanvas **) frame->components[0].data);
 
-  SCHRO_ASSERT (opengl_data != NULL);
+  SCHRO_ASSERT (canvas != NULL);
 
-  opengl = opengl_data->opengl;
+  opengl = canvas->opengl;
 
   schro_opengl_lock (opengl);
 
   for (i = 0; i < 3; ++i) {
-    opengl_data = (SchroOpenGLFrameData *) frame->components[i].data;
+    // FIXME: hack to store custom data per frame component
+    canvas = *((SchroOpenGLCanvas **) frame->components[i].data);
 
-    SCHRO_ASSERT (opengl_data->opengl == opengl);
+    SCHRO_ASSERT (canvas != NULL);
+    SCHRO_ASSERT (canvas->opengl == opengl);
 
     if (i == 0) {
       width = params->iwt_luma_width;
@@ -924,7 +525,7 @@ schro_opengl_upsampled_frame_upsample (SchroUpsampledFrame *upsampled_frame)
 {
   int i;
   int width, height;
-  SchroOpenGLFrameData *opengl_data[4];
+  SchroOpenGLCanvas *canvases[4];
   SchroOpenGL *opengl;
   SchroOpenGLShader *shader = NULL;
 
@@ -935,11 +536,12 @@ schro_opengl_upsampled_frame_upsample (SchroUpsampledFrame *upsampled_frame)
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (upsampled_frame->frames[0]));
   SCHRO_ASSERT (!SCHRO_FRAME_IS_PACKED (upsampled_frame->frames[0]->format));
 
-  opengl_data[0] = (SchroOpenGLFrameData *) upsampled_frame->frames[0]->components[0].data;
+  // FIXME: hack to store custom data per frame component
+  canvases[0] = *((SchroOpenGLCanvas **) upsampled_frame->frames[0]->components[0].data);
 
-  SCHRO_ASSERT (opengl_data != NULL);
+  SCHRO_ASSERT (canvases[0] != NULL);
 
-  opengl = opengl_data[0]->opengl;
+  opengl = canvases[0]->opengl;
 
   schro_opengl_lock (opengl);
 
@@ -958,10 +560,19 @@ schro_opengl_upsampled_frame_upsample (SchroUpsampledFrame *upsampled_frame)
 
   for (i = 0; i < 3; ++i) {
     // FIXME: hack to store custom data per frame component
-    opengl_data[0] = (SchroOpenGLFrameData *) upsampled_frame->frames[0]->components[i].data;
-    opengl_data[1] = (SchroOpenGLFrameData *) upsampled_frame->frames[1]->components[i].data;
-    opengl_data[2] = (SchroOpenGLFrameData *) upsampled_frame->frames[2]->components[i].data;
-    opengl_data[3] = (SchroOpenGLFrameData *) upsampled_frame->frames[3]->components[i].data;
+    canvases[0] = *((SchroOpenGLCanvas **) upsampled_frame->frames[0]->components[i].data);
+    canvases[1] = *((SchroOpenGLCanvas **) upsampled_frame->frames[1]->components[i].data);
+    canvases[2] = *((SchroOpenGLCanvas **) upsampled_frame->frames[2]->components[i].data);
+    canvases[3] = *((SchroOpenGLCanvas **) upsampled_frame->frames[3]->components[i].data);
+
+    SCHRO_ASSERT (canvases[0] != NULL);
+    SCHRO_ASSERT (canvases[1] != NULL);
+    SCHRO_ASSERT (canvases[2] != NULL);
+    SCHRO_ASSERT (canvases[3] != NULL);
+    SCHRO_ASSERT (canvases[0]->opengl == opengl);
+    SCHRO_ASSERT (canvases[1]->opengl == opengl);
+    SCHRO_ASSERT (canvases[2]->opengl == opengl);
+    SCHRO_ASSERT (canvases[3]->opengl == opengl);
 
     width = upsampled_frame->frames[0]->components[i].width;
     height = upsampled_frame->frames[0]->components[i].height;
@@ -974,8 +585,8 @@ schro_opengl_upsampled_frame_upsample (SchroUpsampledFrame *upsampled_frame)
     schro_opengl_setup_viewport (width, height);
 
     /* horizontal filter 0 -> 1 */
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data[1]->framebuffers[0]);
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data[0]->texture.handles[0]);
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, canvases[1]->framebuffers[0]);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, canvases[0]->texture.handles[0]);
 
     SCHRO_OPENGL_CHECK_ERROR
 
@@ -1012,8 +623,8 @@ schro_opengl_upsampled_frame_upsample (SchroUpsampledFrame *upsampled_frame)
     #undef RENDER_QUAD_HORIZONTAL
 
     /* vertical filter 0 -> 2 */
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data[2]->framebuffers[0]);
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data[0]->texture.handles[0]);
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, canvases[2]->framebuffers[0]);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, canvases[0]->texture.handles[0]);
 
     SCHRO_OPENGL_CHECK_ERROR
 
@@ -1050,8 +661,8 @@ schro_opengl_upsampled_frame_upsample (SchroUpsampledFrame *upsampled_frame)
     #undef RENDER_QUAD_VERTICAL
 
     /* horizontal filter 2 -> 3 */
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, opengl_data[3]->framebuffers[0]);
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_data[2]->texture.handles[0]);
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, canvases[3]->framebuffers[0]);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, canvases[2]->texture.handles[0]);
 
     SCHRO_OPENGL_CHECK_ERROR
 
@@ -1093,6 +704,468 @@ schro_opengl_upsampled_frame_upsample (SchroUpsampledFrame *upsampled_frame)
   glUseProgramObjectARB (0);
 
   schro_opengl_unlock (opengl);
+}
+
+SchroOpenGLCanvas *
+schro_opengl_canvas_new (SchroOpenGL *opengl, SchroFrameFormat format,
+    int width, int height)
+{
+  int i;
+  int create_push_pixelbuffers = FALSE;
+  SchroOpenGLCanvas *canvas = schro_malloc0 (sizeof (SchroOpenGLCanvas));
+
+  schro_opengl_frame_check_flags (); // FIXME
+
+  schro_opengl_lock (opengl);
+
+  canvas->opengl = opengl;
+  canvas->format = format;
+  canvas->width = width;
+  canvas->height = height;
+
+  SCHRO_ERROR ("+++++++++++++++++++++++++++");
+
+  switch (SCHRO_FRAME_FORMAT_DEPTH (format)) {
+    case SCHRO_FRAME_FORMAT_DEPTH_U8:
+      if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_U8_AS_F16)) {
+        if (!SCHRO_FRAME_IS_PACKED (format) && GLEW_NV_float_buffer) {
+          canvas->texture.internal_format = GL_FLOAT_R16_NV;
+        } else {
+          canvas->texture.internal_format = GL_RGBA16F_ARB;
+        }
+
+        canvas->texture.type = GL_FLOAT;
+      } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_U8_AS_F32)) {
+        if (!SCHRO_FRAME_IS_PACKED (format) && GLEW_NV_float_buffer) {
+          canvas->texture.internal_format = GL_FLOAT_R32_NV;
+        } else {
+          canvas->texture.internal_format = GL_RGBA32F_ARB;
+        }
+
+        canvas->texture.type = GL_FLOAT;
+      } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_U8_AS_UI8)) {
+        if (SCHRO_FRAME_IS_PACKED (format)) {
+          canvas->texture.internal_format = GL_RGBA8UI_EXT;
+        } else {
+          canvas->texture.internal_format = GL_ALPHA8UI_EXT;
+        }
+
+        canvas->texture.type = GL_UNSIGNED_BYTE;
+      } else {
+        /* must use RGBA format here, because other formats are in general
+           not supported by framebuffers */
+        canvas->texture.internal_format = GL_RGBA8;
+        canvas->texture.type = GL_UNSIGNED_BYTE;
+      }
+
+      if (SCHRO_FRAME_IS_PACKED (format)) {
+        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_BGRA)) {
+          if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_U8_AS_UI8)) {
+            canvas->texture.pixel_format = GL_BGRA_INTEGER_EXT;
+          } else {
+            canvas->texture.pixel_format = GL_BGRA;
+          }
+
+          canvas->texture.channels = 4;
+        } else {
+          if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_U8_AS_UI8)) {
+            canvas->texture.pixel_format = GL_RGBA_INTEGER_EXT;
+          } else {
+            canvas->texture.pixel_format = GL_RGBA;
+          }
+
+          canvas->texture.channels = 4;
+        }
+      } else {
+        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_U8_AS_UI8)) {
+          canvas->texture.pixel_format = GL_ALPHA_INTEGER_EXT;
+        } else {
+          canvas->texture.pixel_format = GL_RED;
+        }
+
+        canvas->texture.channels = 1;
+      }
+
+      if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_U8_PIXELBUFFER)) {
+        create_push_pixelbuffers = TRUE;
+      }
+
+      if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_U8_AS_F32)) {
+        canvas->push.type = GL_FLOAT;
+        canvas->push.stride = ROUND_UP_4 (width * canvas->texture.channels
+            * sizeof (float));
+      } else {
+        canvas->push.type = GL_UNSIGNED_BYTE;
+        canvas->push.stride = ROUND_UP_4 (width * canvas->texture.channels
+            * sizeof (uint8_t));
+      }
+
+      if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PULL_U8_AS_F32)) {
+        canvas->pull.type = GL_FLOAT;
+        canvas->pull.stride = ROUND_UP_4 (width * canvas->texture.channels
+            * sizeof (float));
+      } else {
+        canvas->pull.type = GL_UNSIGNED_BYTE;
+        canvas->pull.stride = ROUND_UP_4 (width * canvas->texture.channels
+            * sizeof (uint8_t));
+      }
+
+      break;
+    case SCHRO_FRAME_FORMAT_DEPTH_S16:
+      if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_F16)) {
+        if (!SCHRO_FRAME_IS_PACKED (format) && GLEW_NV_float_buffer) {
+          canvas->texture.internal_format = GL_FLOAT_R16_NV;
+        } else {
+          canvas->texture.internal_format = GL_RGBA16F_ARB;
+        }
+
+        canvas->texture.type = GL_FLOAT;
+      } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_F32)) {
+        if (!SCHRO_FRAME_IS_PACKED (format) && GLEW_NV_float_buffer) {
+          canvas->texture.internal_format = GL_FLOAT_R32_NV;
+        } else {
+          canvas->texture.internal_format = GL_RGBA32F_ARB;
+        }
+
+        canvas->texture.type = GL_FLOAT;
+      } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_UI16)) {
+        if (SCHRO_FRAME_IS_PACKED (format)) {
+          canvas->texture.internal_format = GL_RGBA16UI_EXT;
+        } else {
+          canvas->texture.internal_format = GL_ALPHA16UI_EXT;
+        }
+
+        canvas->texture.type = GL_UNSIGNED_SHORT;
+      } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_I16)) {
+        if (SCHRO_FRAME_IS_PACKED (format)) {
+          canvas->texture.internal_format = GL_RGBA16I_EXT;
+        } else {
+          canvas->texture.internal_format = GL_ALPHA16I_EXT;
+        }
+
+        canvas->texture.type = GL_SHORT;
+      } else {
+        /* must use RGBA format here, because other formats are in general
+           not supported by framebuffers */
+        canvas->texture.internal_format = GL_RGBA16;
+        canvas->texture.type = GL_SHORT;
+      }
+
+      if (SCHRO_FRAME_IS_PACKED (format)) {
+        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_BGRA)) {
+          if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_UI16) ||
+              SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_I16)) {
+            canvas->texture.pixel_format = GL_BGRA_INTEGER_EXT;
+          } else {
+            canvas->texture.pixel_format = GL_BGRA;
+          }
+
+          canvas->texture.channels = 4;
+        } else {
+          if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_UI16) ||
+              SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_I16)) {
+            canvas->texture.pixel_format = GL_RGBA_INTEGER_EXT;
+          } else {
+            canvas->texture.pixel_format = GL_RGBA;
+          }
+
+          canvas->texture.channels = 4;
+        }
+      } else {
+        if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_UI16) ||
+            SCHRO_OPENGL_FRAME_IS_FLAG_SET (STORE_S16_AS_I16)) {
+          canvas->texture.pixel_format = GL_ALPHA_INTEGER_EXT;
+        } else {
+          canvas->texture.pixel_format = GL_RED;
+        }
+
+        canvas->texture.channels = 1;
+      }
+
+      if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_S16_AS_U16)) {
+        canvas->push.type = GL_UNSIGNED_SHORT;
+        canvas->push.stride = ROUND_UP_4 (width * canvas->texture.channels
+            * sizeof (uint16_t));
+      } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_S16_AS_F32)) {
+        canvas->push.type = GL_FLOAT;
+        canvas->push.stride = ROUND_UP_4 (width * canvas->texture.channels
+            * sizeof (float));
+      } else {
+        canvas->push.type = GL_SHORT;
+        canvas->push.stride = ROUND_UP_4 (width * canvas->texture.channels
+            * sizeof (int16_t));
+      }
+
+      if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_S16_PIXELBUFFER)) {
+        create_push_pixelbuffers = TRUE;
+      }
+
+      if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PULL_S16_AS_U16)) {
+        /* must pull S16 as GL_UNSIGNED_SHORT instead of GL_SHORT because
+           the OpenGL mapping form internal float represenation into S16
+           values with GL_SHORT maps 0.0 to 0 and 1.0 to 32767 clamping all
+           negative values to 0, see glReadPixel documentation. so the pull
+           is done with GL_UNSIGNED_SHORT and the resulting U16 values are
+           manually shifted to S16 */
+        canvas->pull.type = GL_UNSIGNED_SHORT;
+        canvas->pull.stride = ROUND_UP_4 (width * canvas->texture.channels
+            * sizeof (uint16_t));
+      } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PULL_S16_AS_F32)) {
+        canvas->pull.type = GL_FLOAT;
+        canvas->pull.stride = ROUND_UP_4 (width * canvas->texture.channels
+            * sizeof (float));
+      } else {
+        // FIXME: pulling S16 as GL_SHORT doesn't work in general, maybe
+        // it's the right mode if the internal format is an integer format
+        // but for some reason storing as I16 doesn't work either and only
+        // gives garbage pull results
+        canvas->pull.type = GL_SHORT;
+        canvas->pull.stride = ROUND_UP_4 (width * canvas->texture.channels
+            * sizeof (int16_t));
+      }
+
+      break;
+    default:
+      SCHRO_ASSERT (0);
+      break;
+  }
+
+  /* textures */
+  for (i = 0; i < 2; ++i) {
+    glGenTextures (1, &canvas->texture.handles[i]);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, canvas->texture.handles[i]);
+    glTexImage2D (GL_TEXTURE_RECTANGLE_ARB, 0,
+        canvas->texture.internal_format, width, height, 0,
+        canvas->texture.pixel_format, canvas->texture.type, NULL);
+    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
+        GL_NEAREST);
+    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
+        GL_NEAREST);
+    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+    SCHRO_OPENGL_CHECK_ERROR
+  }
+
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
+
+  /* framebuffers */
+  for (i = 0; i < 2; ++i) {
+    glGenFramebuffersEXT (1, &canvas->framebuffers[i]);
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, canvas->framebuffers[i]);
+    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+        GL_TEXTURE_RECTANGLE_ARB, canvas->texture.handles[i], 0);
+    glDrawBuffer (GL_COLOR_ATTACHMENT0_EXT);
+    glReadBuffer (GL_COLOR_ATTACHMENT0_EXT);
+
+    SCHRO_OPENGL_CHECK_ERROR
+    // FIXME: checking framebuffer status is an expensive operation
+    SCHRO_OPENGL_CHECK_FRAMEBUFFER
+  }
+
+  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
+
+  SCHRO_ASSERT (height >= SCHRO_OPENGL_TRANSFER_PIXELBUFFERS);
+
+  /* push pixelbuffers */
+  if (create_push_pixelbuffers) {
+    for (i = 0; i < SCHRO_OPENGL_TRANSFER_PIXELBUFFERS; ++i) {
+      SCHRO_ASSERT (canvas->push.pixelbuffers[i] == 0);
+
+      if (i == SCHRO_OPENGL_TRANSFER_PIXELBUFFERS - 1) {
+        canvas->push.heights[i]
+            = height - (height / SCHRO_OPENGL_TRANSFER_PIXELBUFFERS) * i;
+      } else {
+        canvas->push.heights[i] = height / SCHRO_OPENGL_TRANSFER_PIXELBUFFERS;
+      }
+
+      glGenBuffersARB (1, &canvas->push.pixelbuffers[i]);
+      glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_ARB,
+          canvas->push.pixelbuffers[i]);
+      glBufferDataARB (GL_PIXEL_UNPACK_BUFFER_ARB,
+          canvas->push.stride * canvas->push.heights[i], NULL,
+          GL_STREAM_DRAW_ARB);
+
+      SCHRO_OPENGL_CHECK_ERROR
+    }
+
+    glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+  }
+
+  /* pull pixelbuffers */
+  if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PULL_PIXELBUFFER)) {
+    for (i = 0; i < SCHRO_OPENGL_TRANSFER_PIXELBUFFERS; ++i) {
+      SCHRO_ASSERT (canvas->pull.pixelbuffers[i] == 0);
+
+      if (i == SCHRO_OPENGL_TRANSFER_PIXELBUFFERS - 1) {
+        canvas->pull.heights[i]
+            = height - (height / SCHRO_OPENGL_TRANSFER_PIXELBUFFERS) * i;
+      } else {
+        canvas->pull.heights[i] = height / SCHRO_OPENGL_TRANSFER_PIXELBUFFERS;
+      }
+
+      glGenBuffersARB (1, &canvas->pull.pixelbuffers[i]);
+      glBindBufferARB (GL_PIXEL_PACK_BUFFER_ARB, canvas->pull.pixelbuffers[i]);
+      glBufferDataARB (GL_PIXEL_PACK_BUFFER_ARB,
+          canvas->pull.stride * canvas->pull.heights[i], NULL,
+          GL_STATIC_READ_ARB);
+
+      SCHRO_OPENGL_CHECK_ERROR
+    }
+
+    glBindBufferARB (GL_PIXEL_PACK_BUFFER_ARB, 0);
+  }
+
+  schro_opengl_unlock (opengl);
+
+  return canvas;
+}
+
+void
+schro_opengl_canvas_free (SchroOpenGLCanvas *canvas)
+{
+  int i;
+  SchroOpenGL *opengl;
+
+  SCHRO_ASSERT (canvas != NULL);
+
+  opengl = canvas->opengl;
+  canvas->opengl = NULL;
+
+  schro_opengl_lock (opengl);
+
+  SCHRO_ERROR ("-----------------------------");
+
+  /* textures */
+  for (i = 0; i < 2; ++i) {
+    if (canvas->texture.handles[i]) {
+      glDeleteTextures (1, &canvas->texture.handles[i]);
+
+      canvas->texture.handles[i] = 0;
+
+      SCHRO_OPENGL_CHECK_ERROR
+    }
+  }
+
+  /* framebuffers */
+  for (i = 0; i < 2; ++i) {
+    if (canvas->framebuffers[i]) {
+      glDeleteFramebuffersEXT (1, &canvas->framebuffers[i]);
+
+      canvas->framebuffers[i] = 0;
+
+      SCHRO_OPENGL_CHECK_ERROR
+    }
+  }
+
+  /* pixelbuffers */
+  for (i = 0; i < SCHRO_OPENGL_TRANSFER_PIXELBUFFERS; ++i) {
+    if (canvas->push.pixelbuffers[i]) {
+      glDeleteBuffersARB (1, &canvas->push.pixelbuffers[i]);
+
+      canvas->push.pixelbuffers[i] = 0;
+
+      SCHRO_OPENGL_CHECK_ERROR
+    }
+
+    if (canvas->pull.pixelbuffers[i]) {
+      glDeleteBuffersARB (1, &canvas->pull.pixelbuffers[i]);
+
+      canvas->pull.pixelbuffers[i] = 0;
+
+      SCHRO_OPENGL_CHECK_ERROR
+    }
+  }
+
+  schro_opengl_unlock (opengl);
+
+  schro_free (canvas);
+}
+
+SchroOpenGLCanvasPool *schro_opengl_canvas_pool_new (void)
+{
+  SchroOpenGLCanvasPool *canvas_pool;
+
+  canvas_pool = schro_malloc0 (sizeof (SchroOpenGLCanvasPool));
+
+  canvas_pool->size = 0;
+
+  return canvas_pool;
+}
+
+void schro_opengl_canvas_pool_free (SchroOpenGLCanvasPool* canvas_pool)
+{
+  int i;
+
+  SCHRO_ASSERT (canvas_pool->size >= 0);
+  SCHRO_ASSERT (canvas_pool->size <= SCHRO_OPENGL_CANVAS_POOL_SIZE);
+
+  for (i = 0; i < canvas_pool->size; ++i) {
+    schro_opengl_canvas_free (canvas_pool->canvases[i]);
+  }
+
+  schro_free (canvas_pool);
+}
+
+int
+schro_opengl_canvas_pool_is_empty (SchroOpenGLCanvasPool* canvas_pool)
+{
+  SCHRO_ASSERT (canvas_pool->size >= 0);
+  SCHRO_ASSERT (canvas_pool->size <= SCHRO_OPENGL_CANVAS_POOL_SIZE);
+
+  return canvas_pool->size == 0;
+}
+
+int
+schro_opengl_canvas_pool_is_full (SchroOpenGLCanvasPool* canvas_pool)
+{
+  SCHRO_ASSERT (canvas_pool->size >= 0);
+  SCHRO_ASSERT (canvas_pool->size <= SCHRO_OPENGL_CANVAS_POOL_SIZE);
+
+  return canvas_pool->size == SCHRO_OPENGL_CANVAS_POOL_SIZE;
+}
+
+SchroOpenGLCanvas *
+schro_opengl_canvas_pool_pull (SchroOpenGLCanvasPool* canvas_pool,
+    SchroFrameFormat format, int width, int height)
+{
+  int i;
+  SchroOpenGLCanvas *canvas;
+
+  SCHRO_ASSERT (canvas_pool->size >= 1);
+  SCHRO_ASSERT (canvas_pool->size <= SCHRO_OPENGL_CANVAS_POOL_SIZE);
+
+  for (i = 0; i < canvas_pool->size; ++i) {
+    canvas = canvas_pool->canvases[i];
+
+    if (canvas->format == format && canvas->width == width &&
+        canvas->height == height) {
+      --canvas_pool->size;
+
+      /* move the last canvas in the pool to the slot of the pulled one to
+         maintain the pool continuous in memory */
+      canvas_pool->canvases[i] = canvas_pool->canvases[canvas_pool->size];
+
+      return canvas;
+    }
+  }
+
+  SCHRO_ERROR ("NOT FOUND");
+
+  return NULL;
+}
+
+void
+schro_opengl_canvas_pool_push (SchroOpenGLCanvasPool* canvas_pool,
+    SchroOpenGLCanvas *canvas)
+{
+  SCHRO_ASSERT (canvas_pool->size >= 0);
+  SCHRO_ASSERT (canvas_pool->size <= SCHRO_OPENGL_CANVAS_POOL_SIZE - 1);
+
+  canvas_pool->canvases[canvas_pool->size] = canvas;
+
+  ++canvas_pool->size;
 }
 
 void

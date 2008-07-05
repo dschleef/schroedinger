@@ -14,8 +14,8 @@ schro_opengl_frame_push_convert (SchroFrameData *dest, SchroFrameData *src,
 {
   int x, y;
   int width, depth;
-  int frame_byte_stride, texture_byte_stride, texture_components;
-  SchroOpenGLFrameData *dest_opengl_data = NULL;
+  int frame_stride, texture_stride, texture_channels;
+  SchroOpenGLCanvas *dest_canvas = NULL;
   uint8_t *frame_data_u8 = NULL;
   int16_t *frame_data_s16 = NULL;
   uint8_t *texture_data_u8 = NULL;
@@ -32,96 +32,95 @@ schro_opengl_frame_push_convert (SchroFrameData *dest, SchroFrameData *src,
 
   width = src->width;
   depth = SCHRO_FRAME_FORMAT_DEPTH (src->format);
-  frame_byte_stride = src->stride;
-  dest_opengl_data = (SchroOpenGLFrameData *) dest->data;
-  texture_byte_stride = dest_opengl_data->push.byte_stride;
-
-  texture_components = SCHRO_FRAME_IS_PACKED (src->format)
-      ? 1 : dest_opengl_data->texture.components;
+  frame_stride = src->stride;
+  // FIXME: hack to store custom data per frame component
+  dest_canvas = *((SchroOpenGLCanvas **) dest->data);
+  texture_stride = dest_canvas->push.stride;
+  texture_channels = SCHRO_FRAME_IS_PACKED (src->format)
+      ? 1 : dest_canvas->texture.channels;
 
   if (depth == SCHRO_FRAME_FORMAT_DEPTH_U8) {
+    frame_data_u8 = SCHRO_FRAME_DATA_GET_LINE (src, y_offset);
+
     if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_U8_AS_F32)) {
       texture_data_f32 = (float *) texture_data;
-      frame_data_u8 = SCHRO_FRAME_DATA_GET_LINE (src, y_offset);
 
       for (y = 0; y < height; ++y) {
         for (x = 0; x < width; ++x) {
-          texture_data_f32[x * texture_components]
+          texture_data_f32[x * texture_channels]
               = (float) frame_data_u8[x] / 255.0;
         }
 
-        texture_data_f32 = OFFSET (texture_data_f32, texture_byte_stride);
-        frame_data_u8 = OFFSET (frame_data_u8, frame_byte_stride);
+        texture_data_f32 = OFFSET (texture_data_f32, texture_stride);
+        frame_data_u8 = OFFSET (frame_data_u8, frame_stride);
       }
     } else {
       texture_data_u8 = (uint8_t *) texture_data;
-      frame_data_u8 = SCHRO_FRAME_DATA_GET_LINE (src, y_offset);
 
-      if (texture_components > 1) {
+      if (texture_channels > 1) {
         for (y = 0; y < height; ++y) {
           for (x = 0; x < width; ++x) {
-            texture_data_u8[x * texture_components] = frame_data_u8[x];
+            texture_data_u8[x * texture_channels] = frame_data_u8[x];
           }
 
-          texture_data_u8 = OFFSET (texture_data_u8, texture_byte_stride);
-          frame_data_u8 = OFFSET (frame_data_u8, frame_byte_stride);
+          texture_data_u8 = OFFSET (texture_data_u8, texture_stride);
+          frame_data_u8 = OFFSET (frame_data_u8, frame_stride);
         }
       } else {
         for (y = 0; y < height; ++y) {
           oil_memcpy (texture_data_u8, frame_data_u8, width);
 
-          texture_data_u8 = OFFSET (texture_data_u8, texture_byte_stride);
-          frame_data_u8 = OFFSET (frame_data_u8, frame_byte_stride);
+          texture_data_u8 = OFFSET (texture_data_u8, texture_stride);
+          frame_data_u8 = OFFSET (frame_data_u8, frame_stride);
         }
       }
     }
   } else if (depth == SCHRO_FRAME_FORMAT_DEPTH_S16) {
+    frame_data_s16 = SCHRO_FRAME_DATA_GET_LINE (src, y_offset);
+
     if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_S16_AS_U16)) {
       texture_data_u16 = (uint16_t *) texture_data;
-      frame_data_s16 = SCHRO_FRAME_DATA_GET_LINE (src, y_offset);
 
       for (y = 0; y < height; ++y) {
         for (x = 0; x < width; ++x) {
-          texture_data_u16[x * texture_components]
+          texture_data_u16[x * texture_channels]
               = (uint16_t) ((int32_t) frame_data_s16[x] + 32768);
         }
 
-        texture_data_u16 = OFFSET (texture_data_u16, texture_byte_stride);
-        frame_data_s16 = OFFSET (frame_data_s16, frame_byte_stride);
+        texture_data_u16 = OFFSET (texture_data_u16, texture_stride);
+        frame_data_s16 = OFFSET (frame_data_s16, frame_stride);
       }
     } else if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_S16_AS_F32)) {
       texture_data_f32 = (float *) texture_data;
-      frame_data_s16 = SCHRO_FRAME_DATA_GET_LINE (src, y_offset);
 
       for (y = 0; y < height; ++y) {
         for (x = 0; x < width; ++x) {
-          texture_data_f32[x * texture_components]
+          texture_data_f32[x * texture_channels]
               = (float) ((int32_t) frame_data_s16[x] + 32768) / 65535.0;
         }
 
-        texture_data_f32 = OFFSET (texture_data_f32, texture_byte_stride);
-        frame_data_s16 = OFFSET (frame_data_s16, frame_byte_stride);
+        texture_data_f32 = OFFSET (texture_data_f32, texture_stride);
+        frame_data_s16 = OFFSET (frame_data_s16, frame_stride);
       }
     } else {
       texture_data_s16 = (int16_t *) texture_data;
-      frame_data_s16 = SCHRO_FRAME_DATA_GET_LINE (src, y_offset);
 
-      if (texture_components > 1) {
+      if (texture_channels > 1) {
         for (y = 0; y < height; ++y) {
           for (x = 0; x < width; ++x) {
-            texture_data_s16[x * texture_components] = frame_data_s16[x];
+            texture_data_s16[x * texture_channels] = frame_data_s16[x];
           }
 
-          texture_data_s16 = OFFSET (texture_data_s16, texture_byte_stride);
-          frame_data_s16 = OFFSET (frame_data_s16, frame_byte_stride);
+          texture_data_s16 = OFFSET (texture_data_s16, texture_stride);
+          frame_data_s16 = OFFSET (frame_data_s16, frame_stride);
         }
       } else {
         for (y = 0; y < height; ++y) {
           oil_memcpy (texture_data_s16, frame_data_s16,
               width * sizeof (int16_t));
 
-          texture_data_s16 = OFFSET (texture_data_s16, texture_byte_stride);
-          frame_data_s16 = OFFSET (frame_data_s16, frame_byte_stride);
+          texture_data_s16 = OFFSET (texture_data_s16, texture_stride);
+          frame_data_s16 = OFFSET (frame_data_s16, frame_stride);
         }
       }
     }
@@ -138,7 +137,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
   int width, height, depth;
   int components;
   int pixelbuffer_y_offset, pixelbuffer_height;
-  SchroOpenGLFrameData *dest_opengl_data = NULL;
+  SchroOpenGLCanvas *dest_canvas = NULL;
   SchroOpenGL *opengl = NULL;
   GLuint src_texture = 0; // FIXME: don't create a new locale texture here
                           // but use a single global texture for such temporary
@@ -146,11 +145,7 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
   void *mapped_data = NULL;
   void *tmp_data = NULL;
   SchroOpenGLShader *shader;
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-  double start, end;
-#endif
 
-  //SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
   SCHRO_ASSERT (dest != NULL);
   SCHRO_ASSERT (src != NULL);
   SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (dest));
@@ -158,20 +153,21 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
   SCHRO_ASSERT (dest->format == src->format);
 
   components = SCHRO_FRAME_IS_PACKED (src->format) ? 1 : 3;
-  dest_opengl_data = (SchroOpenGLFrameData *) dest->components[0].data;
+  // FIXME: hack to store custom data per frame component
+  dest_canvas = *((SchroOpenGLCanvas **) dest->components[0].data);
 
-  SCHRO_ASSERT (dest_opengl_data != NULL);
+  SCHRO_ASSERT (dest_canvas != NULL);
 
-  opengl = dest_opengl_data->opengl;
+  opengl = dest_canvas->opengl;
 
   schro_opengl_lock (opengl);
 
   for (i = 0; i < components; ++i) {
     // FIXME: hack to store custom data per frame component
-    dest_opengl_data = (SchroOpenGLFrameData *) dest->components[i].data;
+    dest_canvas = *((SchroOpenGLCanvas **) dest->components[i].data);
 
-    SCHRO_ASSERT (dest_opengl_data != NULL);
-    SCHRO_ASSERT (dest_opengl_data->opengl == opengl);
+    SCHRO_ASSERT (dest_canvas != NULL);
+    SCHRO_ASSERT (dest_canvas->opengl == opengl);
 
     width = dest->components[i].width;
     height = dest->components[i].height;
@@ -181,17 +177,12 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
     SCHRO_ASSERT (width == src->components[i].width);
     SCHRO_ASSERT (height == src->components[i].height);
 
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-    start = schro_utils_get_time ();
-#endif
-
     if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_RENDER_QUAD)) {
       glGenTextures (1, &src_texture);
       glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_texture);
       glTexImage2D (GL_TEXTURE_RECTANGLE_ARB, 0,
-          dest_opengl_data->texture.internal_format, width, height, 0,
-          dest_opengl_data->texture.pixel_format,
-          dest_opengl_data->texture.type, NULL);
+          dest_canvas->texture.internal_format, width, height, 0,
+          dest_canvas->texture.pixel_format, dest_canvas->texture.type, NULL);
       glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
           GL_NEAREST);
       glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
@@ -201,12 +192,6 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
       glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
       SCHRO_OPENGL_CHECK_ERROR
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-      end = schro_utils_get_time ();
-      SCHRO_INFO ("tex %f", end - start);
-      start = schro_utils_get_time ();
-#endif
     }
 
     if ((SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_U8_PIXELBUFFER) &&
@@ -215,26 +200,17 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
         depth == SCHRO_FRAME_FORMAT_DEPTH_S16)) {
       pixelbuffer_y_offset = 0;
 
-      for (k = 0; k < SCHRO_OPENGL_FRAME_PIXELBUFFERS; ++k) {
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-        start = schro_utils_get_time ();
-#endif
-        pixelbuffer_height = dest_opengl_data->push.heights[k];
+      for (k = 0; k < SCHRO_OPENGL_TRANSFER_PIXELBUFFERS; ++k) {
+        pixelbuffer_height = dest_canvas->push.heights[k];
 
         glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT,
-            dest_opengl_data->push.pixelbuffers[k]);
+            dest_canvas->push.pixelbuffers[k]);
         glBufferDataARB (GL_PIXEL_UNPACK_BUFFER_ARB,
-            dest_opengl_data->push.byte_stride * pixelbuffer_height, NULL,
+            dest_canvas->push.stride * pixelbuffer_height, NULL,
             GL_STREAM_DRAW_ARB);
 
         mapped_data = glMapBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT,
             GL_WRITE_ONLY_ARB);
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-        end = schro_utils_get_time ();
-        SCHRO_INFO ("map %i %f %i", i, end - start, k);
-        start = schro_utils_get_time ();
-#endif
 
         schro_opengl_frame_push_convert (dest->components + i,
             src->components + i, mapped_data, pixelbuffer_y_offset,
@@ -249,12 +225,12 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
 
       if (!SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_RENDER_QUAD)) {
         glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-            dest_opengl_data->texture.handles[0]);
+            dest_canvas->texture.handles[0]);
       }
 
       pixelbuffer_y_offset = 0;
 
-      if (dest_opengl_data->push.type == GL_SHORT) {
+      if (dest_canvas->push.type == GL_SHORT) {
         /* OpenGL maps signed values different to float values than unsigned
            values. for S16 -32768 is mapped to -1.0 and 32767 to 1.0, for U16
            0 is mapped to 0.0 and 65535 to 1.0. after this mapping scale and
@@ -267,33 +243,27 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
         glPixelTransferf (GL_RED_BIAS, 0.5);
       }
 
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-      start = schro_utils_get_time ();
-#endif
-
-      for (k = 0; k < SCHRO_OPENGL_FRAME_PIXELBUFFERS; ++k) {
-        pixelbuffer_height = dest_opengl_data->push.heights[k];
+      for (k = 0; k < SCHRO_OPENGL_TRANSFER_PIXELBUFFERS; ++k) {
+        pixelbuffer_height = dest_canvas->push.heights[k];
 
         glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT,
-            dest_opengl_data->push.pixelbuffers[k]);
+            dest_canvas->push.pixelbuffers[k]);
 
         SCHRO_OPENGL_CHECK_ERROR
 
         if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_DRAWPIXELS)) {
           glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-              dest_opengl_data->framebuffers[0]);
+              dest_canvas->framebuffers[0]);
 
           glWindowPos2iARB (0, pixelbuffer_y_offset);
           glDrawPixels (width, pixelbuffer_height,
-              dest_opengl_data->texture.pixel_format,
-              dest_opengl_data->push.type, NULL);
+              dest_canvas->texture.pixel_format, dest_canvas->push.type, NULL);
 
           glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
         } else {
           glTexSubImage2D (GL_TEXTURE_RECTANGLE_ARB, 0, 0,
               pixelbuffer_y_offset, width, pixelbuffer_height,
-              dest_opengl_data->texture.pixel_format,
-              dest_opengl_data->push.type, NULL);
+              dest_canvas->texture.pixel_format, dest_canvas->push.type, NULL);
         }
 
         SCHRO_OPENGL_CHECK_ERROR
@@ -301,31 +271,25 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
         pixelbuffer_y_offset += pixelbuffer_height;
       }
 
-      if (dest_opengl_data->push.type == GL_SHORT) {
+      if (dest_canvas->push.type == GL_SHORT) {
         glPixelTransferf (GL_RED_SCALE, 1);
         glPixelTransferf (GL_RED_BIAS, 0);
       }
 
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-      end = schro_utils_get_time ();
-      SCHRO_INFO ("upl %f", end - start);
-      start = schro_utils_get_time ();
-#endif
-
       glBindBufferARB (GL_PIXEL_UNPACK_BUFFER_EXT, 0);
     } else {
       tmp_data = schro_opengl_get_tmp (opengl,
-          dest_opengl_data->push.byte_stride * height);
+          dest_canvas->push.stride * height);
 
       schro_opengl_frame_push_convert (dest->components + i,
           src->components + i, tmp_data, 0, height);
 
       if (!SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_RENDER_QUAD)) {
         glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-            dest_opengl_data->texture.handles[0]);
+            dest_canvas->texture.handles[0]);
       }
 
-      if (dest_opengl_data->push.type == GL_SHORT) {
+      if (dest_canvas->push.type == GL_SHORT) {
         /* OpenGL maps signed values different to float values than unsigned
            values. for S16 -32768 is mapped to -1.0 and 32767 to 1.0, for U16
            0 is mapped to 0.0 and 65535 to 1.0. after this mapping scale and
@@ -339,30 +303,23 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
       }
 
       if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_DRAWPIXELS)) {
-        glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-            dest_opengl_data->framebuffers[0]);
+        glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[0]);
 
         glWindowPos2iARB (0, 0);
-        glDrawPixels (width, height, dest_opengl_data->texture.pixel_format,
-            dest_opengl_data->push.type, tmp_data);
+        glDrawPixels (width, height, dest_canvas->texture.pixel_format,
+            dest_canvas->push.type, tmp_data);
 
         glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
       } else {
         glTexSubImage2D (GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, width, height,
-            dest_opengl_data->texture.pixel_format,
-            dest_opengl_data->push.type, tmp_data);
+            dest_canvas->texture.pixel_format, dest_canvas->push.type,
+            tmp_data);
       }
 
-      if (dest_opengl_data->push.type == GL_SHORT) {
+      if (dest_canvas->push.type == GL_SHORT) {
         glPixelTransferf (GL_RED_SCALE, 1);
         glPixelTransferf (GL_RED_BIAS, 0);
       }
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-      end = schro_utils_get_time ();
-      SCHRO_INFO ("upl %f", end - start);
-      start = schro_utils_get_time ();
-#endif
     }
 
     SCHRO_OPENGL_CHECK_ERROR
@@ -370,16 +327,9 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
     if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_RENDER_QUAD)) {
       schro_opengl_setup_viewport (width, height);
 
-      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-                            dest_opengl_data->framebuffers[0]);
+      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[0]);
 
       SCHRO_OPENGL_CHECK_ERROR
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-      end = schro_utils_get_time ();
-      SCHRO_INFO ("fbo %f", end - start);
-      start = schro_utils_get_time ();
-#endif
 
       if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_SHADER)) {
         shader = schro_opengl_shader_get (opengl,
@@ -400,12 +350,6 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
       glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
       SCHRO_OPENGL_CHECK_ERROR
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-      end = schro_utils_get_time ();
-      SCHRO_INFO ("drw %f", end - start);
-      start = schro_utils_get_time ();
-#endif
     }
 
     glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
@@ -413,11 +357,6 @@ schro_opengl_frame_push (SchroFrame *dest, SchroFrame *src)
     if (SCHRO_OPENGL_FRAME_IS_FLAG_SET (PUSH_RENDER_QUAD)) {
       glDeleteTextures (1, &src_texture);
     }
-
-#ifdef OPENGL_INTERNAL_TIME_MEASUREMENT
-    end = schro_utils_get_time ();
-    SCHRO_INFO ("fin %f +++", end - start);
-#endif
   }
 
   schro_opengl_unlock (opengl);

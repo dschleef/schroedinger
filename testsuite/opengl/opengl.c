@@ -483,6 +483,7 @@ opengl_test_motion (int width, int height,
     schro_upsampled_frame_upsample (upsampled_cpu_frame);
     schro_opengl_upsampled_frame_upsample (upsampled_opengl_frame);
 
+
     motion_vectors_dc = schro_malloc0 (sizeof (SchroMotionVectorDC) *
         params.x_num_blocks * params.y_num_blocks);
 
@@ -504,18 +505,27 @@ opengl_test_motion (int width, int height,
       }
     }
 
+    memset (&motion_cpu, 0, sizeof (SchroMotion));
+    memset (&motion_opengl, 0, sizeof (SchroMotion));
+
     motion_cpu.src1 = upsampled_cpu_frame;
     motion_cpu.src2 = NULL;
     motion_cpu.motion_vectors = (SchroMotionVector *) motion_vectors_dc;
     motion_cpu.params = &params;
+    motion_cpu.mv_precision = 0;
 
     motion_opengl.src1 = upsampled_opengl_frame;
     motion_opengl.src2 = NULL;
     motion_opengl.motion_vectors = (SchroMotionVector *) motion_vectors_dc;
     motion_opengl.params = &params;
+    motion_opengl.mv_precision = 0;
+
+
 
     schro_motion_render (&motion_cpu, cpu_dest_ref_frame);
     schro_opengl_motion_render (&motion_opengl, opengl_dest_frame);
+
+    schro_free (motion_vectors_dc);
 
     schro_opengl_frame_pull (cpu_dest_test_frame, opengl_dest_frame);
 

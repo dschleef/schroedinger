@@ -12,7 +12,7 @@ typedef struct _SchroOpenGLMotion SchroOpenGLMotion;
 
 struct _SchroOpenGLMotion {
   SchroMotion *motion;
-  SchroOpenGLFrameData *src_opengl_data[2][4];
+  SchroOpenGLCanvas *src_canvases[2][4];
   SchroOpenGLShader *shader_dc;
   SchroOpenGLShader *shader_ref_prec0;
   SchroOpenGLShader *shader_ref_prec0_weight;
@@ -117,7 +117,7 @@ schro_opengl_motion_render_ref_block (SchroOpenGLMotion *opengl_motion,
 
       glActiveTextureARB (GL_TEXTURE2_ARB);
       glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-          opengl_motion->src_opengl_data[ref][0]->texture.handles[0]);
+          opengl_motion->src_canvases[ref][0]->texture.handles[0]);
       glUniform1iARB (opengl_motion->shader_ref_prec0->textures[2], 2);
 
       glActiveTextureARB (GL_TEXTURE0_ARB);
@@ -147,7 +147,7 @@ schro_opengl_motion_render_ref_block (SchroOpenGLMotion *opengl_motion,
 
       glActiveTextureARB (GL_TEXTURE1_ARB);
       glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-          opengl_motion->src_opengl_data[ref][s]->texture.handles[0]);
+          opengl_motion->src_canvases[ref][s]->texture.handles[0]);
       glUniform1iARB (opengl_motion->shader_ref_prec1->textures[1], 0);
 
       glActiveTextureARB (GL_TEXTURE0_ARB);
@@ -174,7 +174,7 @@ schro_opengl_motion_render_ref_block (SchroOpenGLMotion *opengl_motion,
           s = ((hy & 1) << 1) | (hx & 1);
 
           glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-              opengl_motion->src_opengl_data[ref][s]->texture.handles[0]);
+              opengl_motion->src_canvases[ref][s]->texture.handles[0]);
 
           glUseProgramObjectARB (opengl_motion->shader_ref_prec1->program);
           glUniform1iARB (opengl_motion->shader_ref_prec1->textures[0], 0);
@@ -293,7 +293,7 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
   int i, k, u, v;
   int x, y;
   SchroParams *params = motion->params;
-  SchroOpenGLFrameData *dest_opengl_data;
+  SchroOpenGLCanvas *dest_canvas;
   SchroOpenGL *opengl;
   SchroChromaFormat chroma_format;
   SchroOpenGLShader *shader_clear;
@@ -308,11 +308,12 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
     SCHRO_ASSERT(params->picture_weight_2 == 1);
   }
 
-  dest_opengl_data = (SchroOpenGLFrameData *) dest->components[0].data;
+  // FIXME: hack to store custom data per frame component
+  dest_canvas = *((SchroOpenGLCanvas **) dest->components[0].data);
 
-  SCHRO_ASSERT (dest_opengl_data != NULL);
+  SCHRO_ASSERT (dest_canvas != NULL);
 
-  opengl = dest_opengl_data->opengl;
+  opengl = dest_canvas->opengl;
 
   schro_opengl_lock (opengl);
 
@@ -345,22 +346,24 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
   chroma_format = params->video_format->chroma_format;
 
   for (i = 0; i < 3; ++i) {
-    dest_opengl_data = (SchroOpenGLFrameData *) dest->components[i].data;
+    // FIXME: hack to store custom data per frame component
+    dest_canvas = *((SchroOpenGLCanvas **) dest->components[i].data);
 
-    SCHRO_ASSERT (dest_opengl_data != NULL);
-    SCHRO_ASSERT (dest_opengl_data->opengl == opengl);
+    SCHRO_ASSERT (dest_canvas != NULL);
+    SCHRO_ASSERT (dest_canvas->opengl == opengl);
 
     for (k = 0; k < 4; ++k) {
       if (motion->src1->frames[k]) {
         SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (motion->src1->frames[k]));
 
-        opengl_motion.src_opengl_data[0][k]
-            = (SchroOpenGLFrameData *) motion->src1->frames[k]->components[i].data;
+        // FIXME: hack to store custom data per frame component
+        opengl_motion.src_canvases[0][k] = *((SchroOpenGLCanvas **)
+            motion->src1->frames[k]->components[i].data);
 
-        SCHRO_ASSERT (opengl_motion.src_opengl_data[0][k] != NULL);
-        SCHRO_ASSERT (opengl_motion.src_opengl_data[0][k]->opengl == opengl);
+        SCHRO_ASSERT (opengl_motion.src_canvases[0][k] != NULL);
+        SCHRO_ASSERT (opengl_motion.src_canvases[0][k]->opengl == opengl);
       } else {
-        opengl_motion.src_opengl_data[0][k] = NULL;
+        opengl_motion.src_canvases[0][k] = NULL;
       }
     }
 
@@ -369,13 +372,14 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
         if (motion->src2->frames[k]) {
           SCHRO_ASSERT (SCHRO_FRAME_IS_OPENGL (motion->src2->frames[k]));
 
-          opengl_motion.src_opengl_data[1][k]
-              = (SchroOpenGLFrameData *) motion->src2->frames[k]->components[i].data;
+          // FIXME: hack to store custom data per frame component
+          opengl_motion.src_canvases[1][k] = *((SchroOpenGLCanvas **)
+              motion->src2->frames[k]->components[i].data);
 
-          SCHRO_ASSERT (opengl_motion.src_opengl_data[1][k] != NULL);
-          SCHRO_ASSERT (opengl_motion.src_opengl_data[1][k]->opengl == opengl);
+          SCHRO_ASSERT (opengl_motion.src_canvases[1][k] != NULL);
+          SCHRO_ASSERT (opengl_motion.src_canvases[1][k]->opengl == opengl);
         } else {
-          opengl_motion.src_opengl_data[1][k] = NULL;
+          opengl_motion.src_canvases[1][k] = NULL;
         }
       }
     }
@@ -444,8 +448,7 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
     /* clear */
     schro_opengl_setup_viewport (motion->width, motion->height);
 
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-        dest_opengl_data->framebuffers[1]);
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[1]);
 
     glUseProgramObjectARB (shader_clear->program);
 
@@ -459,10 +462,8 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
     int passes[4][2] = { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };
 
     for (k = 0; k < 4; ++k) {
-      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-          dest_opengl_data->framebuffers[0]);
-      glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-          dest_opengl_data->texture.handles[1]);
+      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[0]);
+      glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dest_canvas->texture.handles[1]);
 
       glUseProgramObjectARB (0);
 
@@ -472,10 +473,9 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
 
       glFlush();
 
-      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-          dest_opengl_data->framebuffers[1]);
+      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[1]);
 
-      opengl_motion.previous_texture = dest_opengl_data->texture.handles[0];
+      opengl_motion.previous_texture = dest_canvas->texture.handles[0];
 
       for (v = passes[k][0]; v < params->y_num_blocks; v += 2) {
         y = motion->ybsep * v - motion->yoffset;
@@ -493,10 +493,8 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
     }
 
     /* shift */
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-        dest_opengl_data->framebuffers[0]);
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-        dest_opengl_data->texture.handles[1]);
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[0]);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dest_canvas->texture.handles[1]);
 
     glUseProgramObjectARB (shader_shift->program);
     glUniform1iARB (shader_shift->textures[0], 0);

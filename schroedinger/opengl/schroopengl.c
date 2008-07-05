@@ -51,12 +51,13 @@ struct _SchroOpenGL {
   XVisualInfo *visual_info;
   GLXContext context;
   Window window;
-  SchroOpenGLShaderLibrary *library;
+  SchroOpenGLShaderLibrary *shader_library;
   void *tmp;
   int tmp_size;
   GLuint obmc_weight_texture;
   int obmc_weight_texture_width;
   int obmc_weight_texture_height;
+  SchroOpenGLCanvasPool* canvas_pool;
 };
 
 static int
@@ -291,12 +292,13 @@ schro_opengl_new (void)
   opengl->visual_info = NULL;
   opengl->context = NULL;
   opengl->window = None;
-  opengl->library = NULL;
+  opengl->shader_library = NULL;
   opengl->tmp = NULL;
   opengl->tmp_size = 0;
   opengl->obmc_weight_texture = 0;
   opengl->obmc_weight_texture_width = 0;
   opengl->obmc_weight_texture_height = 0;
+  opengl->canvas_pool = NULL;
 
   schro_mutex_init_recursive (opengl->mutex);
 
@@ -320,7 +322,9 @@ schro_opengl_new (void)
     return opengl;
   }
 
-  opengl->library = schro_opengl_shader_library_new (opengl);
+  opengl->shader_library = schro_opengl_shader_library_new (opengl);
+
+  opengl->canvas_pool = schro_opengl_canvas_pool_new ();
 
   schro_opengl_frame_check_flags ();
 
@@ -352,17 +356,24 @@ schro_opengl_free (SchroOpenGL *opengl)
 
   schro_opengl_unlock (opengl);
 
-  if (opengl->library) {
-    schro_opengl_shader_library_free (opengl->library);
+  if (opengl->shader_library) {
+    schro_opengl_shader_library_free (opengl->shader_library);
+    opengl->shader_library = NULL;
   }
 
   SCHRO_ASSERT (opengl->lock_count == 0);
+
+  if (opengl->canvas_pool) {
+    schro_opengl_canvas_pool_free (opengl->canvas_pool);
+    opengl->canvas_pool = NULL;
+  }
 
   schro_opengl_destroy_window (opengl);
   schro_opengl_close_display (opengl);
 
   if (opengl->tmp) {
     schro_free (opengl->tmp);
+    opengl->tmp = NULL;
   }
 
   schro_mutex_destroy (opengl->mutex);
@@ -382,7 +393,6 @@ schro_opengl_lock (SchroOpenGL *opengl)
   SCHRO_ASSERT (opengl->window != None);
   SCHRO_ASSERT (opengl->context != NULL);
   SCHRO_ASSERT (opengl->lock_count < (INT_MAX - 1));
-  //SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
 
   schro_mutex_lock (opengl->mutex);
 
@@ -510,11 +520,30 @@ schro_opengl_set_visible (SchroOpenGL *opengl, int visible)
   XSync (opengl->display, FALSE);
 }
 
+void
+schro_opengl_setup_viewport (int width, int height)
+{
+  glViewport (0, 0, width, height);
+
+  glLoadIdentity ();
+  glOrtho (0, width, 0, height, -1, 1);
+}
+
+void
+schro_opengl_render_quad (int x, int y, int width, int height)
+{
+  glBegin (GL_QUADS);
+  glTexCoord2f (x,         y);          glVertex3f (x,         y,          0);
+  glTexCoord2f (x + width, y);          glVertex3f (x + width, y,          0);
+  glTexCoord2f (x + width, y + height); glVertex3f (x + width, y + height, 0);
+  glTexCoord2f (x,         y + height); glVertex3f (x,         y + height, 0);
+  glEnd ();
+}
 
 SchroOpenGLShaderLibrary *
-schro_opengl_get_library (SchroOpenGL *opengl)
+schro_opengl_get_shader_library (SchroOpenGL *opengl)
 {
-  return opengl->library;
+  return opengl->shader_library;
 }
 
 void *
@@ -575,41 +604,21 @@ schro_opengl_get_obmc_weight_texture (SchroOpenGL *opengl, int width,
   return opengl->obmc_weight_texture;
 }
 
-void
-schro_opengl_setup_viewport (int width, int height)
+SchroOpenGLCanvasPool *
+schro_opengl_get_canvas_pool (SchroOpenGL *opengl)
 {
-  glViewport (0, 0, width, height);
-
-  glLoadIdentity ();
-  glOrtho (0, width, 0, height, -1, 1);
-}
-
-void
-schro_opengl_render_quad (int x, int y, int width, int height)
-{
-  glBegin (GL_QUADS);
-  glTexCoord2f (x,         y);          glVertex3f (x,         y,          0);
-  glTexCoord2f (x + width, y);          glVertex3f (x + width, y,          0);
-  glTexCoord2f (x + width, y + height); glVertex3f (x + width, y + height, 0);
-  glTexCoord2f (x,         y + height); glVertex3f (x,         y + height, 0);
-  glEnd ();
+  return opengl->canvas_pool;
 }
 
 static void *
 schro_opengl_domain_alloc (int size)
 {
-  //SCHRO_DEBUG ("domain is %d", schro_async_get_exec_domain ());
-  //SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
-
   return schro_malloc0 (size);
 }
 
 static void
 schro_opengl_domain_free (void *ptr, int size)
 {
-  //SCHRO_DEBUG ("domain is %d", schro_async_get_exec_domain ());
-  //SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_OPENGL);
-
   schro_free (ptr);
 }
 

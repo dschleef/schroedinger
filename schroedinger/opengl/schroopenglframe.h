@@ -2,47 +2,54 @@
 #ifndef __SCHRO_OPENGL_FRAME_H__
 #define __SCHRO_OPENGL_FRAME_H__
 
-#include <schroedinger/schro-stdint.h>
 #include <schroedinger/schroframe.h>
 #include <schroedinger/opengl/schroopengl.h>
 #include <GL/glew.h>
 
 SCHRO_BEGIN_DECLS
 
-//#define OPENGL_INTERNAL_TIME_MEASUREMENT
-
 #define SCHRO_FRAME_IS_OPENGL(_frame) \
     ((_frame)->domain && ((_frame)->domain->flags & SCHRO_MEMORY_DOMAIN_OPENGL))
 
-#define SCHRO_OPENGL_FRAME_PIXELBUFFERS 4
+#define SCHRO_OPENGL_TRANSFER_PIXELBUFFERS 4
 
 typedef struct _SchroOpenGLTexture SchroOpenGLTexture;
 typedef struct _SchroOpenGLTransfer SchroOpenGLTransfer;
-typedef struct _SchroOpenGLFrameData SchroOpenGLFrameData;
+typedef struct _SchroOpenGLCanvas SchroOpenGLCanvas;/*
+typedef struct _SchroOpenGLCanvasPool SchroOpenGLCanvasPool;*/
 
 struct _SchroOpenGLTexture {
   GLuint handles[2];
   GLenum internal_format;
   GLenum pixel_format;
   GLenum type;
-  int components;
+  int channels;
 };
 
 struct _SchroOpenGLTransfer {
   GLenum type;
-  int bytes_per_texel;
-  int byte_stride;
-  int texel_stride;
-  GLuint pixelbuffers[SCHRO_OPENGL_FRAME_PIXELBUFFERS];
-  int heights[SCHRO_OPENGL_FRAME_PIXELBUFFERS];
+  int stride;
+  GLuint pixelbuffers[SCHRO_OPENGL_TRANSFER_PIXELBUFFERS];
+  int heights[SCHRO_OPENGL_TRANSFER_PIXELBUFFERS];
 };
 
-struct _SchroOpenGLFrameData {
+struct _SchroOpenGLCanvas {
   SchroOpenGL *opengl;
+  SchroFrameFormat format;
+  int width;
+  int height;
   SchroOpenGLTexture texture;
   GLuint framebuffers[2];
   SchroOpenGLTransfer push;
   SchroOpenGLTransfer pull;
+};
+
+#define SCHRO_OPENGL_CANVAS_POOL_SIZE 150
+
+// FIXME: add a mechanism to drop long time unused canvases from the pool
+struct _SchroOpenGLCanvasPool {
+  SchroOpenGLCanvas *canvases[SCHRO_OPENGL_CANVAS_POOL_SIZE];
+  int size;
 };
 
 #define SCHRO_OPENGL_FRAME_STORE_BGRA           (1 <<  0)
@@ -68,7 +75,7 @@ struct _SchroOpenGLFrameData {
 #define SCHRO_OPENGL_FRAME_PULL_S16_AS_U16      (1 << 18)
 #define SCHRO_OPENGL_FRAME_PULL_S16_AS_F32      (1 << 19)
 
-extern unsigned int _schro_opengl_frame_flags;
+extern unsigned int _schro_opengl_frame_flags; // FIXME: s/frame/canvas
 
 #define SCHRO_OPENGL_FRAME_IS_FLAG_SET(_flag) \
     (_schro_opengl_frame_flags & SCHRO_OPENGL_FRAME_##_flag)
@@ -101,6 +108,19 @@ void schro_opengl_frame_inverse_iwt_transform (SchroFrame *frame,
     SchroParams *params);
 
 void schro_opengl_upsampled_frame_upsample (SchroUpsampledFrame *upsampled_frame);
+
+SchroOpenGLCanvas *schro_opengl_canvas_new (SchroOpenGL *opengl,
+    SchroFrameFormat format, int width, int height);
+void schro_opengl_canvas_free (SchroOpenGLCanvas *canvas);
+
+SchroOpenGLCanvasPool *schro_opengl_canvas_pool_new (void);
+void schro_opengl_canvas_pool_free (SchroOpenGLCanvasPool* canvas_pool);
+int schro_opengl_canvas_pool_is_empty (SchroOpenGLCanvasPool* canvas_pool);
+int schro_opengl_canvas_pool_is_full (SchroOpenGLCanvasPool* canvas_pool);
+SchroOpenGLCanvas *schro_opengl_canvas_pool_pull (SchroOpenGLCanvasPool* canvas_pool,
+    SchroFrameFormat format, int width, int height);
+void schro_opengl_canvas_pool_push (SchroOpenGLCanvasPool* canvas_pool,
+    SchroOpenGLCanvas *canvas);
 
 void schro_frame_print (SchroFrame *frame, const char* name);
 

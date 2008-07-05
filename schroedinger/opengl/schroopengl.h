@@ -18,6 +18,7 @@ typedef struct _SchroOpenGL SchroOpenGL;
 #endif
 
 typedef struct _SchroOpenGLShaderLibrary SchroOpenGLShaderLibrary;
+typedef struct _SchroOpenGLCanvasPool SchroOpenGLCanvasPool;
 
 void schro_opengl_init (void);
 
@@ -31,12 +32,14 @@ void schro_opengl_check_error (const char *file, int line, const char *func);
 void schro_opengl_check_framebuffer (const char *file, int line,
     const char *func);
 void schro_opengl_set_visible (SchroOpenGL *opengl, int visible);
-SchroOpenGLShaderLibrary *schro_opengl_get_library (SchroOpenGL *opengl);
+void schro_opengl_setup_viewport (int width, int height);
+void schro_opengl_render_quad (int x, int y, int width, int height);
+
+SchroOpenGLShaderLibrary *schro_opengl_get_shader_library (SchroOpenGL *opengl);
 void *schro_opengl_get_tmp (SchroOpenGL *opengl, int size);
 GLuint schro_opengl_get_obmc_weight_texture (SchroOpenGL *opengl, int width,
     int height);
-void schro_opengl_setup_viewport (int width, int height);
-void schro_opengl_render_quad (int x, int y, int width, int height);
+SchroOpenGLCanvasPool *schro_opengl_get_canvas_pool (SchroOpenGL *opengl);
 
 SchroMemoryDomain *schro_memory_domain_new_opengl (void);
 

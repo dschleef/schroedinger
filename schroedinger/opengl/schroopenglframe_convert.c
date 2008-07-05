@@ -103,18 +103,19 @@ schro_opengl_frame_convert_with_shader (SchroFrame *dest, SchroFrame *src,
   int i;
   int width, height;
   SchroOpenGL *opengl = NULL;
-  SchroOpenGLFrameData *dest_opengl_data = NULL;
-  SchroOpenGLFrameData *src_opengl_data = NULL;
+  SchroOpenGLCanvas *dest_canvas = NULL;
+  SchroOpenGLCanvas *src_canvas = NULL;
   SchroOpenGLShader *shader;
 
-  dest_opengl_data = (SchroOpenGLFrameData *) dest->components[0].data;
-  src_opengl_data = (SchroOpenGLFrameData *) src->components[0].data;
+  // FIXME: hack to store custom data per frame component
+  dest_canvas = *((SchroOpenGLCanvas **) dest->components[0].data);
+  src_canvas = *((SchroOpenGLCanvas **) src->components[0].data);
 
-  SCHRO_ASSERT (dest_opengl_data != NULL);
-  SCHRO_ASSERT (src_opengl_data != NULL);
-  SCHRO_ASSERT (dest_opengl_data->opengl == src_opengl_data->opengl);
+  SCHRO_ASSERT (dest_canvas != NULL);
+  SCHRO_ASSERT (src_canvas != NULL);
+  SCHRO_ASSERT (dest_canvas->opengl == src_canvas->opengl);
 
-  opengl = src_opengl_data->opengl;
+  opengl = src_canvas->opengl;
 
   schro_opengl_lock (opengl);
 
@@ -123,23 +124,22 @@ schro_opengl_frame_convert_with_shader (SchroFrame *dest, SchroFrame *src,
   SCHRO_ASSERT (shader);
 
   for (i = 0; i < 3; ++i) {
-    dest_opengl_data = (SchroOpenGLFrameData *) dest->components[i].data;
-    src_opengl_data = (SchroOpenGLFrameData *) src->components[i].data;
+    // FIXME: hack to store custom data per frame component
+    dest_canvas = *((SchroOpenGLCanvas **) dest->components[i].data);
+    src_canvas = *((SchroOpenGLCanvas **) src->components[i].data);
 
-    SCHRO_ASSERT (dest_opengl_data != NULL);
-    SCHRO_ASSERT (src_opengl_data != NULL);
-    SCHRO_ASSERT (dest_opengl_data->opengl == src_opengl_data->opengl);
-    SCHRO_ASSERT (src_opengl_data->opengl == opengl);
+    SCHRO_ASSERT (dest_canvas != NULL);
+    SCHRO_ASSERT (src_canvas != NULL);
+    SCHRO_ASSERT (dest_canvas->opengl == opengl);
+    SCHRO_ASSERT (src_canvas->opengl == opengl);
 
     width = MAX (dest->components[i].width, src->components[i].width);
     height = MAX (dest->components[i].height, src->components[i].height);
 
     schro_opengl_setup_viewport (width, height);
 
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-                          dest_opengl_data->framebuffers[0]);
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-                   src_opengl_data->texture.handles[0]);
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[0]);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_canvas->texture.handles[0]);
 
     SCHRO_OPENGL_CHECK_ERROR
 
@@ -166,27 +166,29 @@ schro_opengl_frame_unpack_with_shader (SchroFrame *dest, SchroFrame *src,
   int i;
   int width, height;
   SchroOpenGL *opengl = NULL;
-  SchroOpenGLFrameData *dest_opengl_data = NULL;
-  SchroOpenGLFrameData *src_opengl_data = NULL;
+  SchroOpenGLCanvas *dest_canvas = NULL;
+  SchroOpenGLCanvas *src_canvas = NULL;
   SchroOpenGLShader *shader;
   int shader_indices[] = { shader_y_index, shader_u_index, shader_v_index };
 
-  dest_opengl_data = (SchroOpenGLFrameData *) dest->components[0].data;
-  src_opengl_data = (SchroOpenGLFrameData *) src->components[0].data;
+  // FIXME: hack to store custom data per frame component
+  dest_canvas = *((SchroOpenGLCanvas **) dest->components[0].data);
+  src_canvas = *((SchroOpenGLCanvas **) src->components[0].data);
 
-  SCHRO_ASSERT (dest_opengl_data != NULL);
-  SCHRO_ASSERT (src_opengl_data != NULL);
-  SCHRO_ASSERT (dest_opengl_data->opengl == src_opengl_data->opengl);
+  SCHRO_ASSERT (dest_canvas != NULL);
+  SCHRO_ASSERT (src_canvas != NULL);
+  SCHRO_ASSERT (dest_canvas->opengl == src_canvas->opengl);
 
-  opengl = src_opengl_data->opengl;
+  opengl = src_canvas->opengl;
 
   schro_opengl_lock (opengl);
 
   for (i = 0; i < 3; ++i) {
-    dest_opengl_data = (SchroOpenGLFrameData *) dest->components[i].data;
+    // FIXME: hack to store custom data per frame component
+    dest_canvas = *((SchroOpenGLCanvas **) dest->components[i].data);
 
-    SCHRO_ASSERT (dest_opengl_data != NULL);
-    SCHRO_ASSERT (dest_opengl_data->opengl == opengl);
+    SCHRO_ASSERT (dest_canvas != NULL);
+    SCHRO_ASSERT (dest_canvas->opengl == opengl);
 
     shader = schro_opengl_shader_get (opengl, shader_indices[i]);
 
@@ -200,10 +202,8 @@ schro_opengl_frame_unpack_with_shader (SchroFrame *dest, SchroFrame *src,
 
     schro_opengl_setup_viewport (width, height);
 
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
-        dest_opengl_data->framebuffers[0]);
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-        src_opengl_data->texture.handles[0]);
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[0]);
+    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_canvas->texture.handles[0]);
 
     SCHRO_OPENGL_CHECK_ERROR
 
@@ -228,30 +228,32 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
     int shader_index)
 {
   int width, height;
-  SchroOpenGLFrameData *dest_opengl_data = NULL;
-  SchroOpenGLFrameData *src_y_opengl_data = NULL;
-  SchroOpenGLFrameData *src_u_opengl_data = NULL;
-  SchroOpenGLFrameData *src_v_opengl_data = NULL;
+  SchroOpenGLCanvas *dest_canvas = NULL;
+  SchroOpenGLCanvas *src_y_canvas = NULL;
+  SchroOpenGLCanvas *src_u_canvas = NULL;
+  SchroOpenGLCanvas *src_v_canvas = NULL;
   SchroOpenGL *opengl = NULL;
   SchroOpenGLShader *shader;
 
-  dest_opengl_data = (SchroOpenGLFrameData *) dest->components[0].data;
+  // FIXME: hack to store custom data per frame component
+  dest_canvas = *((SchroOpenGLCanvas **) dest->components[0].data);
 
-  SCHRO_ASSERT (dest_opengl_data != NULL);
+  SCHRO_ASSERT (dest_canvas != NULL);
 
-  src_y_opengl_data = (SchroOpenGLFrameData *) src->components[0].data;
-  src_u_opengl_data = (SchroOpenGLFrameData *) src->components[1].data;
-  src_v_opengl_data = (SchroOpenGLFrameData *) src->components[2].data;
+  // FIXME: hack to store custom data per frame component
+  src_y_canvas = *((SchroOpenGLCanvas **) src->components[0].data);
+  src_u_canvas = *((SchroOpenGLCanvas **) src->components[1].data);
+  src_v_canvas = *((SchroOpenGLCanvas **) src->components[2].data);
 
-  SCHRO_ASSERT (src_y_opengl_data != NULL);
-  SCHRO_ASSERT (src_u_opengl_data != NULL);
-  SCHRO_ASSERT (src_v_opengl_data != NULL);
+  SCHRO_ASSERT (src_y_canvas != NULL);
+  SCHRO_ASSERT (src_u_canvas != NULL);
+  SCHRO_ASSERT (src_v_canvas != NULL);
 
-  opengl = dest_opengl_data->opengl;
+  opengl = dest_canvas->opengl;
 
-  SCHRO_ASSERT (src_y_opengl_data->opengl == opengl);
-  SCHRO_ASSERT (src_u_opengl_data->opengl == opengl);
-  SCHRO_ASSERT (src_v_opengl_data->opengl == opengl);
+  SCHRO_ASSERT (src_y_canvas->opengl == opengl);
+  SCHRO_ASSERT (src_u_canvas->opengl == opengl);
+  SCHRO_ASSERT (src_v_canvas->opengl == opengl);
 
   schro_opengl_lock (opengl);
 
@@ -267,23 +269,20 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
 
   schro_opengl_setup_viewport (width, height);
 
-  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_opengl_data->framebuffers[0]);
+  glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[0]);
 
   glUseProgramObjectARB (shader->program);
 
   glActiveTextureARB (GL_TEXTURE0_ARB);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-      src_y_opengl_data->texture.handles[0]);
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_y_canvas->texture.handles[0]);
   glUniform1iARB (shader->textures[0], 0);
 
   glActiveTextureARB (GL_TEXTURE1_ARB);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-      src_u_opengl_data->texture.handles[0]);
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_u_canvas->texture.handles[0]);
   glUniform1iARB (shader->textures[1], 1);
 
   glActiveTextureARB (GL_TEXTURE2_ARB);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-      src_v_opengl_data->texture.handles[0]);
+  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_v_canvas->texture.handles[0]);
   glUniform1iARB (shader->textures[2], 2);
 
   glActiveTextureARB (GL_TEXTURE0_ARB);

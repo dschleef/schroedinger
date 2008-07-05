@@ -879,7 +879,7 @@ schro_opengl_shader_get (SchroOpenGL *opengl, int index)
   SCHRO_ASSERT (index >= 0);
   SCHRO_ASSERT (index < SCHRO_OPENGL_SHADER_COUNT);
 
-  library = schro_opengl_get_library (opengl);
+  library = schro_opengl_get_shader_library (opengl);
 
   for (i = 0; schro_opengl_shader_list[i].code; ++i) {
     if (schro_opengl_shader_list[i].index == index) {

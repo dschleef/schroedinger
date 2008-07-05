@@ -20,7 +20,7 @@ schro_opengl_wavelet_vertical_deinterleave (SchroFrameData *frame_data)
 {
   int width, height;
   int framebuffer_index, texture_index;
-  SchroOpenGLFrameData *opengl_data = NULL;
+  SchroOpenGLCanvas *canvas = NULL;
   SchroOpenGL *opengl = NULL;
   SchroOpenGLShader *shader_vertical_deinterleave_l = NULL;
   SchroOpenGLShader *shader_vertical_deinterleave_h = NULL;
@@ -32,11 +32,12 @@ schro_opengl_wavelet_vertical_deinterleave (SchroFrameData *frame_data)
 
   width = frame_data->width;
   height = frame_data->height;
-  opengl_data = (SchroOpenGLFrameData *) frame_data->data;
+  // FIXME: hack to store custom data per frame component
+  canvas = *((SchroOpenGLCanvas **) frame_data->data);
 
-  SCHRO_ASSERT (opengl_data != NULL);
+  SCHRO_ASSERT (canvas != NULL);
 
-  opengl = opengl_data->opengl;
+  opengl = canvas->opengl;
 
   schro_opengl_lock (opengl);
 
@@ -59,9 +60,9 @@ schro_opengl_wavelet_vertical_deinterleave (SchroFrameData *frame_data)
 
   #define BIND_FRAMEBUFFER_AND_TEXTURE \
       glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, \
-          opengl_data->framebuffers[framebuffer_index]); \
+          canvas->framebuffers[framebuffer_index]); \
       glBindTexture (GL_TEXTURE_RECTANGLE_ARB, \
-          opengl_data->texture.handles[texture_index]); \
+          canvas->texture.handles[texture_index]); \
       SCHRO_OPENGL_CHECK_ERROR
 
   framebuffer_index = 1;
@@ -156,7 +157,7 @@ schro_opengl_wavelet_inverse_transform (SchroFrameData *frame_data,
   int width, height, subband_width, subband_height;
   int framebuffer_index, texture_index;
   int filter_shift = FALSE;
-  SchroOpenGLFrameData *opengl_data = NULL;
+  SchroOpenGLCanvas *canvas = NULL;
   SchroOpenGL *opengl = NULL;
   SchroOpenGLShader *shader_filter_lp = NULL;
   SchroOpenGLShader *shader_filter_hp = NULL;
@@ -175,11 +176,12 @@ schro_opengl_wavelet_inverse_transform (SchroFrameData *frame_data,
   height = frame_data->height;
   subband_width = width / 2;
   subband_height = height / 2;
-  opengl_data = (SchroOpenGLFrameData *) frame_data->data;
+  // FIXME: hack to store custom data per frame component
+  canvas = *((SchroOpenGLCanvas **) frame_data->data);
 
-  SCHRO_ASSERT (opengl_data != NULL);
+  SCHRO_ASSERT (canvas != NULL);
 
-  opengl = opengl_data->opengl;
+  opengl = canvas->opengl;
 
   schro_opengl_lock (opengl);
 
@@ -273,9 +275,9 @@ schro_opengl_wavelet_inverse_transform (SchroFrameData *frame_data,
 
   #define BIND_FRAMEBUFFER_AND_TEXTURE \
       glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, \
-          opengl_data->framebuffers[framebuffer_index]); \
+          canvas->framebuffers[framebuffer_index]); \
       glBindTexture (GL_TEXTURE_RECTANGLE_ARB, \
-          opengl_data->texture.handles[texture_index]); \
+          canvas->texture.handles[texture_index]); \
       SCHRO_OPENGL_CHECK_ERROR
 
   framebuffer_index = 1;
