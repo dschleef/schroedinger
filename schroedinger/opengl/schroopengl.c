@@ -4,9 +4,10 @@
 #endif
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
-#include <schroedinger/opengl/schroopenglframe.h>
+#include <schroedinger/opengl/schroopenglcanvas.h>
 #include <schroedinger/opengl/schroopenglshader.h>
 #include <limits.h>
+#include <GL/glew.h>
 #include <GL/glxew.h>
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
@@ -51,13 +52,11 @@ struct _SchroOpenGL {
   XVisualInfo *visual_info;
   GLXContext context;
   Window window;
-  SchroOpenGLShaderLibrary *shader_library;
   void *tmp;
   int tmp_size;
-  GLuint obmc_weight_texture;
-  int obmc_weight_texture_width;
-  int obmc_weight_texture_height;
+  SchroOpenGLShaderLibrary *shader_library;
   SchroOpenGLCanvasPool* canvas_pool;
+  SchroOpenGLCanvas *obmc_weight_canvas;
 };
 
 static int
@@ -292,13 +291,11 @@ schro_opengl_new (void)
   opengl->visual_info = NULL;
   opengl->context = NULL;
   opengl->window = None;
-  opengl->shader_library = NULL;
   opengl->tmp = NULL;
   opengl->tmp_size = 0;
-  opengl->obmc_weight_texture = 0;
-  opengl->obmc_weight_texture_width = 0;
-  opengl->obmc_weight_texture_height = 0;
+  opengl->shader_library = NULL;
   opengl->canvas_pool = NULL;
+  opengl->obmc_weight_canvas = NULL;
 
   schro_mutex_init_recursive (opengl->mutex);
 
@@ -324,9 +321,12 @@ schro_opengl_new (void)
 
   opengl->shader_library = schro_opengl_shader_library_new (opengl);
 
-  opengl->canvas_pool = schro_opengl_canvas_pool_new ();
+  opengl->canvas_pool = schro_opengl_canvas_pool_new (opengl);
 
-  schro_opengl_frame_check_flags ();
+  schro_opengl_canvas_check_flags ();
+
+  opengl->obmc_weight_canvas = schro_opengl_canvas_new (opengl,
+      SCHRO_FRAME_FORMAT_S16_444, 32, 32);
 
   schro_opengl_lock (opengl);
 
@@ -350,15 +350,14 @@ schro_opengl_free (SchroOpenGL *opengl)
 {
   SCHRO_ASSERT (opengl->lock_count == 0);
 
-  schro_opengl_lock (opengl);
-
-  glDeleteTextures (1, &opengl->obmc_weight_texture);
-
-  schro_opengl_unlock (opengl);
-
   if (opengl->shader_library) {
     schro_opengl_shader_library_free (opengl->shader_library);
     opengl->shader_library = NULL;
+  }
+
+  if (opengl->obmc_weight_canvas) {
+    schro_opengl_canvas_free (opengl->obmc_weight_canvas);
+    opengl->obmc_weight_canvas = NULL;
   }
 
   SCHRO_ASSERT (opengl->lock_count == 0);
@@ -414,8 +413,11 @@ schro_opengl_lock (SchroOpenGL *opengl)
 void
 schro_opengl_unlock (SchroOpenGL *opengl)
 {
+#if SCHRO_OPENGL_UNBIND_TEXTURES
   int i;
-  GLint texture, framebuffer;
+  GLint texture;
+#endif
+  GLint framebuffer;
 
   SCHRO_ASSERT (opengl->display != NULL);
   SCHRO_ASSERT (opengl->lock_count > 0);
@@ -425,6 +427,7 @@ schro_opengl_unlock (SchroOpenGL *opengl)
   --opengl->lock_count;
 
   if (opengl->lock_count == 0) {
+#if SCHRO_OPENGL_UNBIND_TEXTURES
     for (i = 0; i < REQUIRED_TEXTURE_UNITS; ++i) {
       glActiveTextureARB (GL_TEXTURE0_ARB + i);
       glGetIntegerv (GL_TEXTURE_BINDING_RECTANGLE_ARB, &texture);
@@ -434,9 +437,24 @@ schro_opengl_unlock (SchroOpenGL *opengl)
     }
 
     glActiveTextureARB (GL_TEXTURE0_ARB);
+#endif
+
     glGetIntegerv (GL_FRAMEBUFFER_BINDING_EXT, &framebuffer);
 
+    SCHRO_ASSERT (!glIsFramebufferEXT (framebuffer));
     SCHRO_ASSERT (framebuffer == 0);
+
+    if (GLEW_EXT_framebuffer_blit) {
+      glGetIntegerv (GL_READ_FRAMEBUFFER_BINDING_EXT, &framebuffer);
+
+      SCHRO_ASSERT (!glIsFramebufferEXT (framebuffer));
+      SCHRO_ASSERT (framebuffer == 0);
+
+      glGetIntegerv (GL_DRAW_FRAMEBUFFER_BINDING_EXT, &framebuffer);
+
+      SCHRO_ASSERT (!glIsFramebufferEXT (framebuffer));
+      SCHRO_ASSERT (framebuffer == 0);
+    }
 
     XLockDisplay (opengl->display);
 
@@ -456,7 +474,7 @@ schro_opengl_check_error (const char* file, int line, const char* func)
   GLenum error = glGetError ();
 
   if (error) {
-    SCHRO_ERROR ("GL Error 0x%x in %s(%d) %s", (int) error, file, line, func);
+    SCHRO_ERROR ("GL Error 0x%04x in %s(%d) %s", (int) error, file, line, func);
     //SCHRO_ASSERT (0);
   }
 }
@@ -564,44 +582,19 @@ schro_opengl_get_tmp (SchroOpenGL *opengl, int size)
   return opengl->tmp;
 }
 
-GLuint
-schro_opengl_get_obmc_weight_texture (SchroOpenGL *opengl, int width,
+SchroOpenGLCanvas *
+schro_opengl_get_obmc_weight_canvas (SchroOpenGL *opengl, int width,
     int height)
 {
-  static int created = FALSE;
+  if (width > opengl->obmc_weight_canvas->width ||
+      height > opengl->obmc_weight_canvas->height) {
+    schro_opengl_canvas_free (opengl->obmc_weight_canvas);
 
-  SCHRO_ASSERT (!created);
-
-  schro_opengl_lock (opengl);
-
-  if (width > opengl->obmc_weight_texture_width ||
-      height > opengl->obmc_weight_texture_height) {
-    glDeleteTextures (1, &opengl->obmc_weight_texture);
-    opengl->obmc_weight_texture = 0;
+    opengl->obmc_weight_canvas = schro_opengl_canvas_new (opengl,
+        SCHRO_FRAME_FORMAT_S16_444, MAX (width, 64), MAX (height, 64));
   }
 
-  if (opengl->obmc_weight_texture == 0) {
-    opengl->obmc_weight_texture_width = MAX (width, 32);
-    opengl->obmc_weight_texture_height = MAX (height, 32);
-
-    glGenTextures (1, &opengl->obmc_weight_texture);
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl->obmc_weight_texture);
-    glTexImage2D (GL_TEXTURE_RECTANGLE_ARB, 0,
-        GL_RGBA16, opengl->obmc_weight_texture_width,
-        opengl->obmc_weight_texture_height, 0, GL_RED, GL_SHORT, NULL);
-    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
-        GL_NEAREST);
-    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
-        GL_NEAREST);
-    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
-  }
-
-  schro_opengl_unlock (opengl);
-
-  return opengl->obmc_weight_texture;
+  return opengl->obmc_weight_canvas;
 }
 
 SchroOpenGLCanvasPool *

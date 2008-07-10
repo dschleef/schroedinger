@@ -4,6 +4,7 @@
 #endif
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
+#include <schroedinger/opengl/schroopenglcanvas.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <string.h>
 #include "../common.h"
@@ -39,7 +40,7 @@ opengl_test_push_pull (SchroFrameFormat format, int width, int height,
   printf ("opengl_test_push_pull: %ix%i %s\n", width, height, format_name);
 
   if (_benchmark) {
-    schro_opengl_frame_print_flags ("  ");
+    schro_opengl_canvas_print_flags ("  ");
   }
 
   cpu_ref_frame = schro_frame_new_and_alloc (_cpu_domain, format, width,
@@ -77,12 +78,12 @@ opengl_test_push_pull (SchroFrameFormat format, int width, int height,
     printf ("    %s: %s\n", pattern_name, ok ? "OK" : "broken");
 
     if (!ok) {
-      _failed = TRUE;
-
       if (width <= 32 && height <= 32) {
         frame_dump (cpu_ref_frame, cpu_ref_frame);
         frame_dump (cpu_test_frame, cpu_ref_frame);
       }
+
+      opengl_test_failed ();
     }
   }
 

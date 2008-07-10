@@ -4,6 +4,7 @@
 #endif
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
+#include <schroedinger/opengl/schroopenglcanvas.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <schroedinger/opengl/schroopenglshader.h>
 #include <stdio.h>
@@ -17,8 +18,7 @@ struct _SchroOpenGLMotion {
   SchroOpenGLShader *shader_ref_prec0;
   SchroOpenGLShader *shader_ref_prec0_weight;
   SchroOpenGLShader *shader_ref_prec1;
-  GLuint previous_texture;
-  GLuint obmc_weight_texture;
+  SchroOpenGLCanvas *obmc_weight_canvas;
 };
 /*
 static*/ void
@@ -37,16 +37,8 @@ schro_opengl_motion_render_dc_block (SchroOpenGLMotion *opengl_motion, int i,
 
   glUseProgramObjectARB (opengl_motion->shader_dc->program);
 
-  glActiveTextureARB (GL_TEXTURE0_ARB);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_motion->previous_texture);
-  glUniform1iARB (opengl_motion->shader_dc->textures[0], 0);
-
-  glActiveTextureARB (GL_TEXTURE1_ARB);
-  glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_motion->obmc_weight_texture);
-  glUniform1iARB (opengl_motion->shader_dc->textures[1], 1);
-
-  glActiveTextureARB (GL_TEXTURE0_ARB);
-
+  glUniform1iARB (opengl_motion->shader_dc->textures[0], 0); /* input */
+  glUniform1iARB (opengl_motion->shader_dc->textures[1], 1); /* obmc_weight */
   glUniform2fARB (opengl_motion->shader_dc->origin, x, y);
   glUniform1fARB (opengl_motion->shader_dc->dc, dc);
 
@@ -107,13 +99,8 @@ schro_opengl_motion_render_ref_block (SchroOpenGLMotion *opengl_motion,
         glUseProgramObjectARB (opengl_motion->shader_ref_prec0->program);
       }
 
-      glActiveTextureARB (GL_TEXTURE0_ARB);
-      glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_motion->previous_texture);
-      glUniform1iARB (opengl_motion->shader_ref_prec0->textures[0], 0);
-
-      glActiveTextureARB (GL_TEXTURE1_ARB);
-      glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_motion->obmc_weight_texture);
-      glUniform1iARB (opengl_motion->shader_ref_prec0->textures[1], 1);
+      glUniform1iARB (opengl_motion->shader_ref_prec0->textures[0], 0); /* input */
+      glUniform1iARB (opengl_motion->shader_ref_prec0->textures[1], 1); /* obmc_weight */
 
       glActiveTextureARB (GL_TEXTURE2_ARB);
       glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
@@ -139,19 +126,8 @@ schro_opengl_motion_render_ref_block (SchroOpenGLMotion *opengl_motion,
   SCHRO_ERROR ("1");
 
       glUseProgramObjectARB (opengl_motion->shader_ref_prec1->program);
-
-      glActiveTextureARB (GL_TEXTURE0_ARB);
-      glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-          opengl_motion->obmc_weight_texture);
       glUniform1iARB (opengl_motion->shader_ref_prec1->textures[0], 0);
-
-      glActiveTextureARB (GL_TEXTURE1_ARB);
-      glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
-          opengl_motion->src_canvases[ref][s]->texture.handles[0]);
-      glUniform1iARB (opengl_motion->shader_ref_prec1->textures[1], 0);
-
-      glActiveTextureARB (GL_TEXTURE0_ARB);
-
+      glUniform1iARB (opengl_motion->shader_ref_prec1->textures[1], 1);
       glUniform2fARB (opengl_motion->shader_ref_prec1->offset, (px >> 1) - x, (py >> 1) - y);
       glUniform2fARB (opengl_motion->shader_ref_prec1->origin, x, y);
 
@@ -276,7 +252,7 @@ schro_opengl_motion_render_block (SchroOpenGLMotion *opengl_motion, int i,
       schro_opengl_motion_render_ref_block (opengl_motion, i, x, y, u, v, 0);
       break;
     case 2:
-      schro_opengl_motion_render_ref_block (opengl_motion, i, x, y, u, v, 1);
+      //schro_opengl_motion_render_ref_block (opengl_motion, i, x, y, u, v, 1);
       break;
     case 3:
       //schro_opengl_motion_render_biref_block (opengl_motion, i, x, y, u, v);
@@ -296,6 +272,8 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
   SchroOpenGLCanvas *dest_canvas;
   SchroOpenGL *opengl;
   SchroChromaFormat chroma_format;
+  SchroOpenGLShader *shader_copy;
+  SchroOpenGLShader *shader_obmc_weight;
   SchroOpenGLShader *shader_clear;
   SchroOpenGLShader *shader_shift;
   SchroOpenGLMotion opengl_motion;
@@ -317,9 +295,13 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
 
   schro_opengl_lock (opengl);
 
+  shader_copy = schro_opengl_shader_get (opengl, SCHRO_OPENGL_SHADER_COPY_S16);
+  shader_obmc_weight = schro_opengl_shader_get (opengl, SCHRO_OPENGL_SHADER_MC_OBMC_WEIGHT);
   shader_clear = schro_opengl_shader_get (opengl, SCHRO_OPENGL_SHADER_MC_CLEAR);
   shader_shift = schro_opengl_shader_get (opengl, SCHRO_OPENGL_SHADER_MC_SHIFT);
 
+  SCHRO_ASSERT (shader_copy != NULL);
+  SCHRO_ASSERT (shader_obmc_weight != NULL);
   SCHRO_ASSERT (shader_clear != NULL);
   SCHRO_ASSERT (shader_shift != NULL);
 
@@ -329,14 +311,14 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
   opengl_motion.shader_ref_prec0 = schro_opengl_shader_get (opengl,
       SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_0);
   opengl_motion.shader_ref_prec0_weight = schro_opengl_shader_get (opengl,
-      SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_0_WEIGHT);
+      SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_0_WEIGHT);/*
   opengl_motion.shader_ref_prec1 = schro_opengl_shader_get (opengl,
-      SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_1);
+      SCHRO_OPENGL_SHADER_MC_RENDER_REF_PREC_1);*/
 
   SCHRO_ASSERT (opengl_motion.shader_dc != NULL);
   SCHRO_ASSERT (opengl_motion.shader_ref_prec0 != NULL);
   SCHRO_ASSERT (opengl_motion.shader_ref_prec0_weight != NULL);
-  SCHRO_ASSERT (opengl_motion.shader_ref_prec1 != NULL);
+  //SCHRO_ASSERT (opengl_motion.shader_ref_prec1 != NULL);
 
   motion->ref_weight_precision = params->picture_weight_bits;
   motion->ref1_weight = params->picture_weight_1;
@@ -406,44 +388,40 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
     motion->yoffset = (motion->yblen - motion->ybsep) / 2;
     motion->max_fast_x = (motion->width - motion->xblen) << motion->mv_precision;
     motion->max_fast_y = (motion->height - motion->yblen) << motion->mv_precision;
-    motion->obmc_weight.data = schro_malloc (motion->xblen * motion->yblen * sizeof (int16_t));
-    motion->obmc_weight.stride = motion->xblen * sizeof (int16_t);
-    motion->obmc_weight.width = motion->xblen;
-    motion->obmc_weight.height = motion->yblen;
+
+    /* push obmc weight to texture */
+    opengl_motion.obmc_weight_canvas
+        = schro_opengl_get_obmc_weight_canvas (opengl, motion->xblen,
+        motion->yblen);
+
+#if 0
+    motion->obmc_weight.format = SCHRO_FRAME_FORMAT_S16_444;
+    motion->obmc_weight.width = opengl_motion.obmc_weight_canvas->width;
+    motion->obmc_weight.height = opengl_motion.obmc_weight_canvas->height;
+    motion->obmc_weight.stride = motion->obmc_weight.width * sizeof (int16_t);
+    motion->obmc_weight.data = schro_malloc (motion->obmc_weight.stride
+        * motion->obmc_weight.height);
 
     schro_motion_init_obmc_weight (motion);
 
-    /* push obmc weight to texture */
-    opengl_motion.obmc_weight_texture
-         = schro_opengl_get_obmc_weight_texture (opengl,
-         motion->obmc_weight.width, motion->obmc_weight.height);
+    schro_opengl_canvas_push (opengl_motion.obmc_weight_canvas,
+        &motion->obmc_weight);
+#else
+    schro_opengl_setup_viewport (motion->xblen, motion->yblen);
 
-    uint16_t *obmc_weight_u16 = schro_malloc (motion->obmc_weight.width
-        * motion->obmc_weight.height * sizeof (uint16_t));
-    uint16_t *obmc_weight_line_u16 = obmc_weight_u16;
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT,
+        opengl_motion.obmc_weight_canvas->framebuffers[0]);
 
-    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, opengl_motion.obmc_weight_texture);
+    glUseProgramObjectARB (shader_obmc_weight->program);
+    glUniform2fARB (shader_obmc_weight->size, motion->xblen, motion->yblen);
+    glUniform2fARB (shader_obmc_weight->offset, motion->xoffset, motion->yoffset);
 
-    SCHRO_OPENGL_CHECK_ERROR
-
-    int16_t *obmc_weight_line_s16 = (int16_t *) motion->obmc_weight.data;
-
-    for (y = 0; y < motion->obmc_weight.height; ++y) {
-      for (x = 0; x < motion->obmc_weight.width; ++x) {
-        obmc_weight_line_u16[x] = (uint16_t) ((int32_t) obmc_weight_line_s16[x] + 32768);
-      }
-
-      obmc_weight_line_u16 = OFFSET (obmc_weight_line_u16, motion->obmc_weight.stride);
-      obmc_weight_line_s16 = OFFSET (obmc_weight_line_s16, motion->obmc_weight.stride);
-    }
-
-    glTexSubImage2D (GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0,
-        motion->obmc_weight.width, motion->obmc_weight.height, GL_RED,
-        GL_UNSIGNED_SHORT, obmc_weight_u16);
+    schro_opengl_render_quad (0, 0, motion->xblen, motion->yblen);
 
     SCHRO_OPENGL_CHECK_ERROR
 
-    schro_free (obmc_weight_u16);
+    glFlush();
+#endif
 
     /* clear */
     schro_opengl_setup_viewport (motion->width, motion->height);
@@ -462,20 +440,45 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
     int passes[4][2] = { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };
 
     for (k = 0; k < 4; ++k) {
-      glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[0]);
-      glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dest_canvas->texture.handles[1]);
+      /* copy */
+      /*if (GLEW_EXT_framebuffer_blit) {
+        glBindFramebufferEXT (GL_READ_FRAMEBUFFER_EXT,
+            dest_canvas->framebuffers[1]);
+        glBindFramebufferEXT (GL_DRAW_FRAMEBUFFER_EXT,
+            dest_canvas->framebuffers[0]);
+        glBlitFramebufferEXT (0, 0, motion->width, motion->height, 0, 0,
+            motion->width, motion->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-      glUseProgramObjectARB (0);
+        SCHRO_OPENGL_CHECK_ERROR
 
-      schro_opengl_render_quad (0, 0, motion->width, motion->height);
+        glFlush();
+      } else*/ {
+        glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
+            dest_canvas->texture.handles[1]);
 
-      SCHRO_OPENGL_CHECK_ERROR
+        glUseProgramObjectARB (shader_copy->program);
 
-      glFlush();
+        schro_opengl_render_quad (0, 0, motion->width, motion->height);
 
+        SCHRO_OPENGL_CHECK_ERROR
+
+        glFlush();
+      }
+
+      /* render */
       glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[1]);
 
-      opengl_motion.previous_texture = dest_canvas->texture.handles[0];
+      //glActiveTextureARB (GL_TEXTURE0_ARB);
+      glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dest_canvas->texture.handles[0]);
+
+      glActiveTextureARB (GL_TEXTURE1_ARB);
+      glBindTexture (GL_TEXTURE_RECTANGLE_ARB,
+          opengl_motion.obmc_weight_canvas->texture.handles[0]);
+
+      glActiveTextureARB (GL_TEXTURE0_ARB);
+
+      SCHRO_OPENGL_CHECK_ERROR
 
       for (v = passes[k][0]; v < params->y_num_blocks; v += 2) {
         y = motion->ybsep * v - motion->yoffset;
@@ -509,14 +512,20 @@ schro_opengl_motion_render (SchroMotion *motion, SchroFrame *dest)
   }
 
   glUseProgramObjectARB (0);
-  glActiveTextureARB (GL_TEXTURE0_ARB);
+#if SCHRO_OPENGL_UNBIND_TEXTURES
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
   glActiveTextureARB (GL_TEXTURE1_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
   glActiveTextureARB (GL_TEXTURE2_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
   glActiveTextureARB (GL_TEXTURE0_ARB);
+#endif
   glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
+
+  /*if (GLEW_EXT_framebuffer_blit) {
+    glBindFramebufferEXT (GL_READ_FRAMEBUFFER_EXT, 0);
+    glBindFramebufferEXT (GL_DRAW_FRAMEBUFFER_EXT, 0);
+  }*/
 
   schro_opengl_unlock (opengl);
 }

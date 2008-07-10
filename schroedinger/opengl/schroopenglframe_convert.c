@@ -4,6 +4,7 @@
 #endif
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
+#include <schroedinger/opengl/schroopenglcanvas.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <schroedinger/opengl/schroopenglshader.h>
 #include <liboil/liboil.h>
@@ -152,7 +153,9 @@ schro_opengl_frame_convert_with_shader (SchroFrame *dest, SchroFrame *src,
 
     glFlush ();
 
+#if SCHRO_OPENGL_UNBIND_TEXTURES
     glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
+#endif
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
   }
 
@@ -216,7 +219,9 @@ schro_opengl_frame_unpack_with_shader (SchroFrame *dest, SchroFrame *src,
 
     glFlush ();
 
+#if SCHRO_OPENGL_UNBIND_TEXTURES
     glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
+#endif
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
   }
 
@@ -273,7 +278,7 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
 
   glUseProgramObjectARB (shader->program);
 
-  glActiveTextureARB (GL_TEXTURE0_ARB);
+  //glActiveTextureARB (GL_TEXTURE0_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_y_canvas->texture.handles[0]);
   glUniform1iARB (shader->textures[0], 0);
 
@@ -291,17 +296,17 @@ schro_opengl_frame_pack_with_shader (SchroFrame *dest, SchroFrame *src,
 
   schro_opengl_render_quad (0, 0, width, height);
 
-  glUseProgramObjectARB (0);
-
   glFlush ();
 
-  glActiveTextureARB (GL_TEXTURE0_ARB);
+  glUseProgramObjectARB (0);
+#if SCHRO_OPENGL_UNBIND_TEXTURES
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
   glActiveTextureARB (GL_TEXTURE1_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
   glActiveTextureARB (GL_TEXTURE2_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
   glActiveTextureARB (GL_TEXTURE0_ARB);
+#endif
   glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
   schro_opengl_unlock (opengl);

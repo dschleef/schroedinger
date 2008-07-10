@@ -19,8 +19,10 @@ typedef struct _SchroPicture SchroPicture;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
+#ifndef SCHRO_OPENGL_TYPEDEF
 #define SCHRO_OPENGL_TYPEDEF
 typedef struct _SchroOpenGL SchroOpenGL;
+#endif
 
 struct _SchroDecoder {
   /*< private >*/
@@ -189,6 +191,7 @@ void schro_decoder_parse_transform_parameters (SchroPicture *picture);
 void schro_decoder_parse_transform_data (SchroPicture *picture);
 void schro_decoder_parse_lowdelay_transform_data (SchroPicture *picture);
 void schro_decoder_init_subband_frame_data_interleaved (SchroPicture *picture);
+void schro_decoder_init_subband_frame_data (SchroPicture *picture);
 void schro_decoder_decode_block_data (SchroPicture *picture);
 void schro_decoder_decode_transform_data (SchroPicture *picture);
 void schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture);

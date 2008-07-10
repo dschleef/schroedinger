@@ -2,6 +2,8 @@
 #ifndef __SCHRO_OPENGL_WAVELET_H__
 #define __SCHRO_OPENGL_WAVELET_H__
 
+#include <schroedinger/schroutils.h>
+
 SCHRO_BEGIN_DECLS
 
 void schro_opengl_wavelet_transform (SchroFrameData *frame_data, int filter);

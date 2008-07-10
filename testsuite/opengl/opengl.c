@@ -4,6 +4,7 @@
 #endif
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
+#include <schroedinger/opengl/schroopenglcanvas.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <schroedinger/opengl/schroopenglmotion.h>
 #include <schroedinger/opengl/schroopenglwavelet.h>
@@ -40,7 +41,7 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
     printf ("  unhandled dest_format 0x%x\n", dest_format);
     printf ("==========================================================\n");
 
-    _failed = TRUE;
+    opengl_test_failed ();
     return;
   }
 
@@ -50,7 +51,7 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
     printf ("  unhandled src_format 0x%x\n", src_format);
     printf ("==========================================================\n");
 
-    _failed = TRUE;
+    opengl_test_failed ();
     return;
   }
 
@@ -105,8 +106,6 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
     printf ("    %s: %s\n", pattern_name, ok ? "OK" : "broken");
 
     if (!ok) {
-      _failed = TRUE;
-
       if (dest_width <= 32 && dest_height <= 32 && src_width <= 32
           && src_height <= 32) {
         printf ("dest ref frame\n");
@@ -118,6 +117,8 @@ opengl_test_convert (SchroFrameFormat dest_format, SchroFrameFormat src_format,
         printf ("dest test frame <-> dest ref frame\n");
         frame_dump (cpu_dest_test_frame, cpu_dest_ref_frame);
       }
+
+      opengl_test_failed ();
     }
   }
 
@@ -198,7 +199,7 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
       transform_depth > 1 ? 's' : ' ');
 
   if (_benchmark) {
-    schro_opengl_frame_print_flags ("  ");
+    schro_opengl_canvas_print_flags ("  ");
   }
 
   cpu_preref_frame = schro_frame_new_and_alloc (_cpu_domain, format, width,
@@ -301,8 +302,6 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
     printf ("    %s: %s\n", pattern_name, ok ? "OK" : "broken");
 
     if (!ok) {
-      _failed = TRUE;
-
       if (width <= 32 && height <= 32) {
         printf ("preref frame\n");
         frame_data_dump (cpu_preref_frame_data, cpu_preref_frame_data);
@@ -313,6 +312,8 @@ opengl_test_wavelet_inverse (SchroFrameFormat format, int width, int height,
         printf ("test frame <-> postref frame\n");
         frame_data_dump (cpu_test_frame_data, cpu_postref_frame_data);
       }
+
+      opengl_test_failed ();
     }
   }
 
@@ -361,7 +362,7 @@ opengl_test_upsample (SchroFrameFormat format, int width, int height,
     printf ("  unhandled format 0x%x\n", format);
     printf ("==========================================================\n");
 
-    _failed = TRUE;
+    opengl_test_failed ();
     return;
   }
 
@@ -396,12 +397,12 @@ opengl_test_upsample (SchroFrameFormat format, int width, int height,
       printf ("    %s: %s (%i)\n", pattern_name, ok ? "OK" : "broken", k);
 
       if (!ok) {
-        _failed = TRUE;
-
         if (width <= 32 && height <= 32) {
           printf ("test frame %i <-> ref frame %i\n", k ,k);
           frame_dump (cpu_test_frame, upsampled_cpu_ref_frame->frames[1]);
         }
+
+        opengl_test_failed ();
       }
     }
 
@@ -455,6 +456,8 @@ opengl_test_motion (int width, int height,
   params.ybsep_luma = 4;
   params.xblen_luma = 6;
   params.yblen_luma = 6;
+  params.num_refs = 1;
+  params.picture_weight_2 = 1;
 
   schro_params_calculate_mc_sizes (&params);
 
@@ -534,14 +537,14 @@ opengl_test_motion (int width, int height,
     printf ("    %s: %s\n", pattern_name, ok ? "OK" : "broken");
 
     if (!ok) {
-      _failed = TRUE;
-
       /*if (width <= 32 && height <= 32)*/ {
         printf ("ref frame\n");
         frame_dump (cpu_dest_ref_frame, cpu_dest_ref_frame);
         printf ("test frame <-> ref frame\n");
         frame_dump (cpu_dest_test_frame, cpu_dest_ref_frame);
       }
+
+      opengl_test_failed ();
     }
 
     schro_upsampled_frame_free (upsampled_cpu_frame);
@@ -696,6 +699,8 @@ main (int argc, char *argv[])
     }
   }
 
+  _abort_on_failure = TRUE;
+
   schro_init ();
 
   _generators = test_pattern_get_n_generators ();
@@ -759,9 +764,24 @@ main (int argc, char *argv[])
         1920, 1080, 1920, 1080, 50, OPENGL_CUSTOM_PATTERN_CONST_MIDDLE,
         OPENGL_CUSTOM_PATTERN_RANDOM, 0);
   } else if (special) {
+    /*opengl_test_push_pull (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
+        OPENGL_CUSTOM_PATTERN_RANDOM);*/
+    /*opengl_test_convert (SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444,
+        16, 16, 16, 16, 1, OPENGL_CUSTOM_PATTERN_RANDOM);*/
+    /*opengl_test_convert (SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_S16_444,
+        16, 16, 16, 16, 1, OPENGL_CUSTOM_PATTERN_RANDOM);*/
     /*opengl_test_upsample (SCHRO_FRAME_FORMAT_U8_444, 16, 16,
         OPENGL_CUSTOM_PATTERN_RANDOM);*/
     opengl_test_motion (720, 480, OPENGL_CUSTOM_PATTERN_RANDOM);
+
+    /*opengl_test_convert (SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_S16_444,
+        16, 16, 16, 16, 1, OPENGL_CUSTOM_PATTERN_RANDOM);*/
+
+    /*opengl_test_wavelet_inverse (SCHRO_FRAME_FORMAT_S16_444, 16, 16, 1,
+        OPENGL_CUSTOM_PATTERN_RANDOM_U8, SCHRO_WAVELET_LE_GALL_5_3, 1);*/
+
+    /*opengl_test_convert (SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_YUYV,
+        32 / 2, 16, 32, 16, 1, OPENGL_CUSTOM_PATTERN_RANDOM);*/
   } else {
     opengl_test_push_pull_run ();
 

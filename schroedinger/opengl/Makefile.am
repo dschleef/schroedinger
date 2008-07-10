@@ -3,6 +3,7 @@ noinst_LTLIBRARIES = libopengl.la
 
 libopengl_la_SOURCES = \
 	schroopengl.c \
+	schroopenglcanvas.c \
 	schroopenglframe.c \
 	schroopenglframe_combine.c \
 	schroopenglframe_convert.c \
@@ -13,7 +14,7 @@ libopengl_la_SOURCES = \
 	schroopenglwavelet.c
 
 libopengl_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(OPENGL_CFLAGS) $(ERROR_CFLAGS) \
-	-DSCHRO_ENABLE_UNSTABLE_API -D_GNU_SOURCE
+	-DSCHRO_ENABLE_UNSTABLE_API -D_GNU_SOURCE -DSCHRO_OPENGL_UNBIND_TEXTURES=1
 
 libopengl_la_LIBADD = $(OPENGL_LIBS)
 

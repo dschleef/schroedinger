@@ -40,7 +40,7 @@ opengl_test_add (SchroFrameFormat dest_format, SchroFrameFormat src_format,
     printf ("  unhandled dest_format 0x%x\n", dest_format);
     printf ("==========================================================\n");
 
-    _failed = TRUE;
+    opengl_test_failed ();
     return;
   }
 
@@ -50,7 +50,7 @@ opengl_test_add (SchroFrameFormat dest_format, SchroFrameFormat src_format,
     printf ("  unhandled src_format 0x%x\n", src_format);
     printf ("==========================================================\n");
 
-    _failed = TRUE;
+    opengl_test_failed ();
     return;
   }
 
@@ -115,8 +115,6 @@ opengl_test_add (SchroFrameFormat dest_format, SchroFrameFormat src_format,
         ok ? "OK" : "broken");
 
     if (!ok) {
-      _failed = TRUE;
-
       if (dest_width <= 32 && dest_height <= 32 && src_width <= 32
           && src_height <= 32) {
         printf ("dest preref frame\n");
@@ -131,6 +129,8 @@ opengl_test_add (SchroFrameFormat dest_format, SchroFrameFormat src_format,
         printf ("dest test frame <-> dest postref frame\n");
         frame_dump (cpu_dest_test_frame, cpu_dest_postref_frame);
       }
+
+      opengl_test_failed ();
     }
   }
 
@@ -193,7 +193,7 @@ opengl_test_subtract (SchroFrameFormat dest_format,
     printf ("  unhandled dest_format 0x%x\n", dest_format);
     printf ("==========================================================\n");
 
-    _failed = TRUE;
+    opengl_test_failed ();
     return;
   }
 
@@ -203,7 +203,7 @@ opengl_test_subtract (SchroFrameFormat dest_format,
     printf ("  unhandled src_format 0x%x\n", src_format);
     printf ("==========================================================\n");
 
-    _failed = TRUE;
+    opengl_test_failed ();
     return;
   }
 
@@ -268,8 +268,6 @@ opengl_test_subtract (SchroFrameFormat dest_format,
         ok ? "OK" : "broken");
 
     if (!ok) {
-      _failed = TRUE;
-
       if (dest_width <= 32 && dest_height <= 32 && src_width <= 32
           && src_height <= 32) {
         printf ("dest preref frame\n");
@@ -284,6 +282,8 @@ opengl_test_subtract (SchroFrameFormat dest_format,
         printf ("dest test frame <-> dest postref frame\n");
         frame_dump (cpu_dest_test_frame, cpu_dest_postref_frame);
       }
+
+      opengl_test_failed ();
     }
   }
 

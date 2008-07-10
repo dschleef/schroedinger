@@ -6,15 +6,28 @@
 #include <liboil/liboil.h>
 #include <liboil/liboilrandom.h>
 #include <string.h>
+#include <stdlib.h>
 #include "../common.h"
 #include "opengl_util.h"
 
 int _benchmark = FALSE;
 int _failed = FALSE;
 int _generators = 0;
+int _abort_on_failure = FALSE;
 SchroMemoryDomain *_cpu_domain = NULL;
 SchroMemoryDomain *_opengl_domain = NULL;
 SchroOpenGL *_opengl = NULL;
+
+
+void
+opengl_test_failed (void)
+{
+  _failed = TRUE;
+
+  if (_abort_on_failure) {
+    abort ();
+  }
+}
 
 int
 opengl_format_name (SchroFrameFormat format, char *format_name, int size)
@@ -234,6 +247,16 @@ opengl_custom_pattern_const_min_u8 (SchroFrameData *frame_data)
 }
 
 static void
+opengl_custom_pattern_const_min_s8 (SchroFrameData *frame_data)
+{
+  CUSTOM_PATTERN_CONST({
+    data_u8[i] = -128;
+  },{
+    data_s16[i] = -128;
+  })
+}
+
+static void
 opengl_custom_pattern_const_middle (SchroFrameData *frame_data)
 {
   CUSTOM_PATTERN_CONST({
@@ -351,6 +374,13 @@ opengl_custom_pattern_generate (SchroFrame *cpu_frame,
       opengl_custom_pattern_const_min_u8 (cpu_frame->components + 0);
       opengl_custom_pattern_const_min_u8 (cpu_frame->components + 1);
       opengl_custom_pattern_const_min_u8 (cpu_frame->components + 2);
+      break;
+    case OPENGL_CUSTOM_PATTERN_CONST_MIN_S8:
+      strcpy (pattern_name, "custom const min S8");
+
+      opengl_custom_pattern_const_min_s8 (cpu_frame->components + 0);
+      opengl_custom_pattern_const_min_s8 (cpu_frame->components + 1);
+      opengl_custom_pattern_const_min_s8 (cpu_frame->components + 2);
       break;
     case OPENGL_CUSTOM_PATTERN_CONST_MIDDLE:
       strcpy (pattern_name, "custom const middle");

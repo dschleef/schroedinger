@@ -4,6 +4,7 @@
 #endif
 #include <schroedinger/schro.h>
 #include <schroedinger/opengl/schroopengl.h>
+#include <schroedinger/opengl/schroopenglcanvas.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <schroedinger/opengl/schroopenglshader.h>
 #include <liboil/liboil.h>
@@ -121,7 +122,9 @@ schro_opengl_frame_combine_with_shader (SchroFrame *dest, SchroFrame *src,
   SchroOpenGLCanvas *dest_canvas = NULL;
   SchroOpenGLCanvas *src_canvas = NULL;
   SchroOpenGL *opengl = NULL;
-  SchroOpenGLShader *shader;
+  SchroOpenGLShader *shader_copy_u8;
+  SchroOpenGLShader *shader_copy_s16;
+  SchroOpenGLShader *shader_combine;
 
   SCHRO_ASSERT (dest != NULL);
   SCHRO_ASSERT (src != NULL);
@@ -140,9 +143,15 @@ schro_opengl_frame_combine_with_shader (SchroFrame *dest, SchroFrame *src,
 
   schro_opengl_lock (opengl);
 
-  shader = schro_opengl_shader_get (opengl, shader_index);
+  shader_copy_u8 = schro_opengl_shader_get (opengl,
+      SCHRO_OPENGL_SHADER_COPY_U8);
+  shader_copy_s16 = schro_opengl_shader_get (opengl,
+      SCHRO_OPENGL_SHADER_COPY_S16);
+  shader_combine = schro_opengl_shader_get (opengl, shader_index);
 
-  SCHRO_ASSERT (shader);
+  SCHRO_ASSERT (shader_copy_u8);
+  SCHRO_ASSERT (shader_copy_s16);
+  SCHRO_ASSERT (shader_combine);
 
   for (i = 0; i < 3; ++i) {
     // FIXME: hack to store custom data per frame component
@@ -160,38 +169,55 @@ schro_opengl_frame_combine_with_shader (SchroFrame *dest, SchroFrame *src,
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[1]);
     glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dest_canvas->texture.handles[0]);
 
+    switch (SCHRO_FRAME_FORMAT_DEPTH (dest_canvas->format)) {
+      case SCHRO_FRAME_FORMAT_DEPTH_U8:
+        glUseProgramObjectARB (shader_copy_u8->program);
+        glUniform1iARB (shader_copy_u8->textures[0], 0);
+        break;
+      case SCHRO_FRAME_FORMAT_DEPTH_S16:
+        glUseProgramObjectARB (shader_copy_s16->program);
+        glUniform1iARB (shader_copy_s16->textures[0], 0);
+        break;
+      default:
+        SCHRO_ASSERT (0);
+        break;
+    }
+
     schro_opengl_render_quad (0, 0, width, height);
+
+    SCHRO_OPENGL_CHECK_ERROR
 
     glFlush ();
 
     glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dest_canvas->framebuffers[0]);
 
-    glUseProgramObjectARB (shader->program);
+    glUseProgramObjectARB (shader_combine->program);
 
-    glActiveTextureARB (GL_TEXTURE0_ARB);
+    //glActiveTextureARB (GL_TEXTURE0_ARB);
     glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dest_canvas->texture.handles[1]);
-    glUniform1iARB (shader->textures[0], 0);
+    glUniform1iARB (shader_combine->textures[0], 0);
 
     glActiveTextureARB (GL_TEXTURE1_ARB);
     glBindTexture (GL_TEXTURE_RECTANGLE_ARB, src_canvas->texture.handles[0]);
-    glUniform1iARB (shader->textures[1], 1);
+    glUniform1iARB (shader_combine->textures[1], 1);
 
     glActiveTextureARB (GL_TEXTURE0_ARB);
-
-    SCHRO_OPENGL_CHECK_ERROR
 
     schro_opengl_render_quad (0, 0, width, height);
 
     glUseProgramObjectARB (0);
 
+    SCHRO_OPENGL_CHECK_ERROR
+
     glFlush ();
   }
 
-  glActiveTextureARB (GL_TEXTURE0_ARB);
+#if SCHRO_OPENGL_UNBIND_TEXTURES
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
   glActiveTextureARB (GL_TEXTURE1_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, 0);
   glActiveTextureARB (GL_TEXTURE0_ARB);
+#endif
   glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
   schro_opengl_unlock (opengl);
