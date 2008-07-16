@@ -9,35 +9,6 @@
 #include <limits.h>
 #include <GL/glew.h>
 #include <GL/glxew.h>
-#ifdef HAVE_PTHREAD
-#include <pthread.h>
-
-typedef pthread_mutex_t SchroMutex;
-#define schro_mutex_init_recursive(_mutex) \
-    do { \
-      pthread_mutexattr_t mutexattr; \
-      pthread_mutexattr_init (&mutexattr); \
-      pthread_mutexattr_settype (&mutexattr, PTHREAD_MUTEX_RECURSIVE); \
-      pthread_mutex_init (&(_mutex), &mutexattr); \
-      pthread_mutexattr_destroy (&mutexattr); \
-    } while (0)
-#define schro_mutex_destroy(_mutex) pthread_mutex_destroy (&(_mutex))
-#define schro_mutex_lock(_mutex) pthread_mutex_lock (&(_mutex))
-#define schro_mutex_unlock(_mutex) pthread_mutex_unlock (&(_mutex))
-#elif defined HAVE_GTHREAD
-#error add code for a gthread recursive mutex here
-#define schro_mutex_init_recursive(_mutex) do {} while (0)
-#define schro_mutex_destroy(_mutex) do {} while (0)
-#define schro_mutex_lock(_mutex) do {} while (0)
-#define schro_mutex_unlock(_mutex) do {} while (0)
-//#elif defined WIN32
-// FIXME: add code for a critical section here
-#else
-#define schro_mutex_init_recursive(_mutex) do {} while (0)
-#define schro_mutex_destroy(_mutex) do {} while (0)
-#define schro_mutex_lock(_mutex) do {} while (0)
-#define schro_mutex_unlock(_mutex) do {} while (0)
-#endif
 
 #define REQUIRED_TEXTURE_UNITS 9
 
@@ -45,7 +16,7 @@ struct _SchroOpenGL {
   int is_usable;
   int is_visible;
   int lock_count;
-  SchroMutex mutex;
+  SchroMutex *mutex;
   Display *display;
   Window root;
   int screen;
@@ -297,7 +268,7 @@ schro_opengl_new (void)
   opengl->canvas_pool = NULL;
   opengl->obmc_weight_canvas = NULL;
 
-  schro_mutex_init_recursive (opengl->mutex);
+  opengl->mutex = schro_mutex_new_recursive ();
 
   if (!schro_opengl_open_display (opengl, NULL)) {
     opengl->is_usable = FALSE;
@@ -375,7 +346,7 @@ schro_opengl_free (SchroOpenGL *opengl)
     opengl->tmp = NULL;
   }
 
-  schro_mutex_destroy (opengl->mutex);
+  schro_mutex_free (opengl->mutex);
 
   schro_free (opengl);
 }

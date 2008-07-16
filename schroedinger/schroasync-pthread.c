@@ -3,6 +3,9 @@
 #include "config.h"
 #endif
 
+/* required for recursive mutex (ugh) */
+#define _GNU_SOURCE
+
 #include <schroedinger/schro.h>
 #include <schroedinger/schroasync.h>
 #include <schroedinger/schrodebug.h>
@@ -400,6 +403,21 @@ schro_mutex_new (void)
 
   mutex = malloc(sizeof(SchroMutex));
   pthread_mutexattr_init (&mutexattr);
+  pthread_mutex_init (&mutex->mutex, &mutexattr);
+  pthread_mutexattr_destroy (&mutexattr);
+
+  return mutex;
+}
+
+SchroMutex *
+schro_mutex_new_recursive (void)
+{
+  SchroMutex *mutex;
+  pthread_mutexattr_t mutexattr;
+
+  mutex = malloc(sizeof(SchroMutex));
+  pthread_mutexattr_init (&mutexattr);
+  pthread_mutexattr_settype (&mutexattr, PTHREAD_MUTEX_RECURSIVE);
   pthread_mutex_init (&mutex->mutex, &mutexattr);
   pthread_mutexattr_destroy (&mutexattr);
 

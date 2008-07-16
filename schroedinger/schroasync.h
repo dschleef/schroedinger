@@ -42,6 +42,7 @@ void schro_async_add_exec_domain (SchroAsync *async,
     SchroExecDomain exec_domain);
 
 SchroMutex *schro_mutex_new (void);
+SchroMutex *schro_mutex_new_recursive (void);
 void schro_mutex_lock (SchroMutex *mutex);
 void schro_mutex_unlock (SchroMutex *mutex);
 void schro_mutex_free (SchroMutex *mutex);
