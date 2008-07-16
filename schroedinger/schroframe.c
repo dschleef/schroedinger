@@ -348,9 +348,11 @@ schro_frame_unref (SchroFrame *frame)
       frame->free (frame, frame->priv);
     }
 
+#ifdef HAVE_OPENGL
     if (SCHRO_FRAME_IS_OPENGL (frame)) {
       schro_opengl_frame_cleanup (frame);
     }
+#endif
 
     if (frame->regions[0]) {
       if (frame->domain) {
