@@ -210,7 +210,7 @@ AC_SUBST(NVCCFLAGS)
 AM_CONDITIONAL(HAVE_CUDA, test "x$HAVE_CUDA" = "xyes")
 
 ########################
-# Check for OpenGL
+# Check for OpenGL/GLEW
 ########################
 if test "x$with_opengl" = xyes; then
   save_CPPFLAGS="$CPPFLAGS"
@@ -221,7 +221,18 @@ if test "x$with_opengl" = xyes; then
     OPENGL_CFLAGS=
     OPENGL_LIBS=-lGL
     HAVE_OPENGL=yes
+    AC_DEFINE(HAVE_OPENGL, 1, [Compile in OpenGL rendering backend])
   ], [HAVE_OPENGL=no])
+  if test "x${HAVE_OPENGL}" = xyes ; then
+    AC_CHECK_LIB(GLEW, glewInit, [
+      OPENGL_CFLAGS=
+      OPENGL_LIBS="-lGL -lGLEW"
+      HAVE_LIBGLEW=yes
+    ], [HAVE_LIBGLEW=no])
+    if test "x${HAVE_LIBGLEW}" != xyes ; then
+      AC_ERROR([libglew1.5 is required])
+    fi
+  fi
   CPPFLAGS="$save_CPPFLAGS"
   LIBS="$save_LIBS"
 fi
@@ -234,7 +245,7 @@ AM_CONDITIONAL(BUILD_BROKEN_TESTS, false)
 
 SCHRO_LIBS="\$(top_builddir)/schroedinger/libschroedinger-$SCHRO_MAJORMINOR.la"
 # hack around ld bug
-SCHRO_LIBS="$SCHRO_LIBS $LIBOIL_LIBS $CUDA_LIBS $PTHREAD_LIBS $GTHREAD_LIBS $LIBM"
+SCHRO_LIBS="$SCHRO_LIBS $LIBOIL_LIBS $CUDA_LIBS $OPENGL_LIBS $PTHREAD_LIBS $GTHREAD_LIBS $LIBM"
 #SCHRO_LIBS="$SCHRO_LIBS -lprofiler"
 AC_SUBST(SCHRO_LIBS)
 

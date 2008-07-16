@@ -9,6 +9,7 @@
 #include <schroedinger/schrogpuframe.h>
 #include <schroedinger/schrocog.h>
 #include <schroedinger/schrooil.h>
+#include <schroedinger/opengl/schroopenglframe.h>
 #include <liboil/liboil.h>
 
 #include <stdlib.h>
@@ -144,6 +145,7 @@ schro_frame_new_from_data_YUY2 (void *data, int width, int height)
   frame->width = width;
   frame->height = height;
 
+  frame->components[0].format = frame->format;
   frame->components[0].width = width;
   frame->components[0].height = height;
   frame->components[0].stride = ROUND_UP_POW2(width,1) * 2;
@@ -165,6 +167,7 @@ schro_frame_new_from_data_UYVY (void *data, int width, int height)
   frame->width = width;
   frame->height = height;
 
+  frame->components[0].format = frame->format;
   frame->components[0].width = width;
   frame->components[0].height = height;
   frame->components[0].stride = ROUND_UP_POW2(width,1) * 2;
@@ -207,6 +210,7 @@ schro_frame_new_from_data_AYUV (void *data, int width, int height)
   frame->width = width;
   frame->height = height;
 
+  frame->components[0].format = frame->format;
   frame->components[0].width = width;
   frame->components[0].height = height;
   frame->components[0].stride = width * 4;
@@ -228,6 +232,7 @@ schro_frame_new_from_data_I420 (void *data, int width, int height)
   frame->width = width;
   frame->height = height;
 
+  frame->components[0].format = frame->format;
   frame->components[0].width = width;
   frame->components[0].height = height;
   frame->components[0].stride = ROUND_UP_POW2(width,2);
@@ -237,6 +242,7 @@ schro_frame_new_from_data_I420 (void *data, int width, int height)
   frame->components[0].v_shift = 0;
   frame->components[0].h_shift = 0;
 
+  frame->components[1].format = frame->format;
   frame->components[1].width = ROUND_UP_SHIFT(width,1);
   frame->components[1].height = ROUND_UP_SHIFT(height,1);
   frame->components[1].stride = ROUND_UP_POW2(frame->components[1].width,2);
@@ -247,6 +253,7 @@ schro_frame_new_from_data_I420 (void *data, int width, int height)
   frame->components[1].v_shift = 1;
   frame->components[1].h_shift = 1;
 
+  frame->components[2].format = frame->format;
   frame->components[2].width = ROUND_UP_SHIFT(width,1);
   frame->components[2].height = ROUND_UP_SHIFT(height,1);
   frame->components[2].stride = ROUND_UP_POW2(frame->components[2].width,2);
@@ -270,6 +277,7 @@ schro_frame_new_from_data_YV12 (void *data, int width, int height)
   frame->width = width;
   frame->height = height;
 
+  frame->components[0].format = frame->format;
   frame->components[0].width = width;
   frame->components[0].height = height;
   frame->components[0].stride = ROUND_UP_POW2(width,2);
@@ -279,6 +287,7 @@ schro_frame_new_from_data_YV12 (void *data, int width, int height)
   frame->components[0].v_shift = 0;
   frame->components[0].h_shift = 0;
 
+  frame->components[2].format = frame->format;
   frame->components[2].width = ROUND_UP_SHIFT(width,1);
   frame->components[2].height = ROUND_UP_SHIFT(height,1);
   frame->components[2].stride = ROUND_UP_POW2(frame->components[2].width,2);
@@ -289,6 +298,7 @@ schro_frame_new_from_data_YV12 (void *data, int width, int height)
   frame->components[2].v_shift = 1;
   frame->components[2].h_shift = 1;
 
+  frame->components[1].format = frame->format;
   frame->components[1].width = ROUND_UP_SHIFT(width,1);
   frame->components[1].height = ROUND_UP_SHIFT(height,1);
   frame->components[1].stride = ROUND_UP_POW2(frame->components[1].width,2);
@@ -337,6 +347,11 @@ schro_frame_unref (SchroFrame *frame)
     if (frame->free) {
       frame->free (frame, frame->priv);
     }
+
+    if (SCHRO_FRAME_IS_OPENGL (frame)) {
+      schro_opengl_frame_cleanup (frame);
+    }
+
     if (frame->regions[0]) {
       if (frame->domain) {
         schro_memory_domain_memfree(frame->domain, frame->regions[0]);
@@ -430,9 +445,9 @@ static struct binary_struct schro_frame_add_func_list[] = {
   { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_S16_422, schro_frame_add_s16_s16 },
   { SCHRO_FRAME_FORMAT_S16_420, SCHRO_FRAME_FORMAT_S16_420, schro_frame_add_s16_s16 },
 
-  { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444, schro_frame_add_s16_u8 },
-  { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_U8_422, schro_frame_add_s16_u8 },
-  { SCHRO_FRAME_FORMAT_S16_420, SCHRO_FRAME_FORMAT_U8_420, schro_frame_add_s16_u8 },
+  { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_S16_444, schro_frame_add_s16_u8 },
+  { SCHRO_FRAME_FORMAT_U8_422, SCHRO_FRAME_FORMAT_S16_422, schro_frame_add_s16_u8 },
+  { SCHRO_FRAME_FORMAT_U8_420, SCHRO_FRAME_FORMAT_S16_420, schro_frame_add_s16_u8 },
 
   { 0 }
 };

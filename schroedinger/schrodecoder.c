@@ -6,6 +6,9 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schrocuda.h>
 #include <schroedinger/schrogpuframe.h>
+#include <schroedinger/opengl/schroopengl.h>
+#include <schroedinger/opengl/schroopenglframe.h>
+#include <schroedinger/opengl/schroopenglmotion.h>
 #include <liboil/liboil.h>
 #include <schroedinger/schrooil.h>
 #include <string.h>
@@ -114,6 +117,9 @@ schro_decoder_new (void)
 #ifdef HAVE_CUDA
   decoder->cuda_domain = schro_memory_domain_new_cuda ();
 #endif
+#ifdef HAVE_OPENGL
+  decoder->opengl_domain = schro_memory_domain_new_opengl ();
+#endif
 
   decoder->async = schro_async_new (0,
       (SchroAsyncScheduleFunc)schro_decoder_async_schedule,
@@ -121,8 +127,23 @@ schro_decoder_new (void)
       decoder);
 
 #ifdef HAVE_CUDA
-  schro_async_add_cuda (decoder->async);
+  schro_async_add_exec_domain (decoder->async, SCHRO_EXEC_DOMAIN_CUDA);
   decoder->use_cuda = TRUE;
+#endif
+
+#ifdef HAVE_OPENGL
+  decoder->opengl = schro_opengl_new ();
+
+  if (schro_opengl_is_usable (decoder->opengl)) {
+    schro_async_add_exec_domain (decoder->async, SCHRO_EXEC_DOMAIN_OPENGL);
+
+    decoder->use_opengl = TRUE;
+  } else {
+    schro_opengl_free (decoder->opengl);
+
+    decoder->opengl = NULL;
+    decoder->use_opengl = FALSE;
+  }
 #endif
 
   return decoder;
@@ -147,8 +168,13 @@ schro_decoder_free (SchroDecoder *decoder)
 
   if (decoder->error_message) schro_free (decoder->error_message);
 
+#ifdef HAVE_OPENGL
+  if (decoder->opengl) schro_opengl_free (decoder->opengl);
+#endif
+
   if (decoder->cpu_domain) schro_memory_domain_free (decoder->cpu_domain);
   if (decoder->cuda_domain) schro_memory_domain_free (decoder->cuda_domain);
+  if (decoder->opengl_domain) schro_memory_domain_free (decoder->opengl_domain);
 
   if (decoder->sequence_header_buffer) schro_buffer_unref (decoder->sequence_header_buffer);
 
@@ -180,7 +206,16 @@ schro_picture_new (SchroDecoder *decoder)
 
   picture->decoder = decoder;
 
-  picture->tmpbuf = schro_malloc(sizeof(int16_t) * (video_format->width + 16));
+  if (decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+    picture->tmpbuf = NULL;
+#else
+    SCHRO_ASSERT (0);
+#endif
+  } else {
+    picture->tmpbuf
+        = schro_malloc (sizeof (int16_t) * (video_format->width + 16));
+  }
 
   picture->params.video_format = video_format;
 
@@ -207,6 +242,12 @@ schro_picture_new (SchroDecoder *decoder)
     picture->planar_output_frame = schro_frame_new_and_alloc (decoder->cuda_domain,
         frame_format, video_format->width, video_format->height);
 #endif
+  } else if (decoder->use_opengl) {
+    picture->transform_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
+        frame_format, iwt_width, iwt_height);
+    picture->planar_output_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
+        schro_params_get_frame_format (8, video_format->chroma_format),
+        video_format->width, video_format->height);
   } else {
     picture->mc_tmp_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
         frame_format, picture_width, picture_height);
@@ -908,7 +949,16 @@ schro_decoder_parse_picture (SchroPicture *picture)
       schro_decoder_parse_lowdelay_transform_data (picture);
     } else {
       schro_decoder_parse_transform_data (picture);
-      schro_decoder_init_subband_frame_data_interleaved (picture);
+
+      if (picture->decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+        schro_decoder_init_subband_frame_data (picture);
+#else
+        SCHRO_ASSERT (0);
+#endif
+      } else {
+        schro_decoder_init_subband_frame_data_interleaved (picture);
+      }
     }
   }
 
@@ -945,8 +995,9 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
 
   SCHRO_DEBUG("schedule");
 
-  if (decoder->use_cuda) {
-    if (exec_domain == SCHRO_EXEC_DOMAIN_CUDA) {
+  if (decoder->use_cuda || decoder->use_opengl) {
+    if (exec_domain == SCHRO_EXEC_DOMAIN_CUDA ||
+        exec_domain == SCHRO_EXEC_DOMAIN_OPENGL) {
       decode_ok = FALSE;
       render_ok = TRUE;
     } else {
@@ -1079,10 +1130,11 @@ void
 schro_decoder_x_render_motion (SchroPicture *picture)
 {
   SchroParams *params = &picture->params;
+  SchroDecoder *decoder = picture->decoder;
 
   if (params->num_refs > 0) {
     SCHRO_WARNING("motion render with %p and %p", picture->ref0, picture->ref1);
-    if (picture->decoder->use_cuda) {
+    if (decoder->use_cuda) {
 #ifdef HAVE_CUDA
       int frame_width;
       int frame_height;
@@ -1096,9 +1148,27 @@ schro_decoder_x_render_motion (SchroPicture *picture)
       frame_height = ROUND_UP_POW2(video_format->height,
           SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_v_shift);
 
-      picture->mc_tmp_frame = schro_frame_new_and_alloc (picture->decoder->cuda_domain,
+      picture->mc_tmp_frame = schro_frame_new_and_alloc (decoder->cuda_domain,
           frame_format, frame_width, frame_height);
       schro_motion_render_cuda (picture->motion, picture->mc_tmp_frame);
+#else
+      SCHRO_ASSERT(0);
+#endif
+    } else if (decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+      SchroFrameFormat frame_format;
+      int picture_width;
+      int picture_height;
+
+      frame_format = schro_params_get_frame_format (16,
+          params->video_format->chroma_format);
+      picture_width = params->video_format->width;
+      picture_height = schro_video_format_get_picture_height (params->video_format);
+
+      picture->mc_tmp_frame = schro_opengl_frame_new (decoder->opengl,
+          decoder->opengl_domain, frame_format, picture_width, picture_height);
+
+      schro_opengl_motion_render (picture->motion, picture->mc_tmp_frame);
 #else
       SCHRO_ASSERT(0);
 #endif
@@ -1136,6 +1206,17 @@ schro_decoder_x_wavelet_transform (SchroPicture *picture)
 #else
       SCHRO_ASSERT(0);
 #endif
+    } else if (picture->decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+      picture->frame
+          = schro_opengl_frame_clone_and_push (picture->decoder->opengl,
+          picture->decoder->opengl_domain, picture->transform_frame);
+
+      schro_opengl_frame_inverse_iwt_transform (picture->frame,
+          &picture->params);
+#else
+      SCHRO_ASSERT(0);
+#endif
     } else {
       schro_frame_inverse_iwt_transform (picture->frame, &picture->params,
           picture->tmpbuf);
@@ -1158,6 +1239,12 @@ schro_decoder_x_combine (SchroPicture *picture)
       if (picture->decoder->use_cuda) {
 #ifdef HAVE_CUDA
         schro_gpuframe_add (picture->frame, picture->mc_tmp_frame);
+#else
+        SCHRO_ASSERT(0);
+#endif
+      } else if (picture->decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+        schro_opengl_frame_add (picture->frame, picture->mc_tmp_frame);
 #else
         SCHRO_ASSERT(0);
 #endif
@@ -1191,6 +1278,22 @@ schro_decoder_x_combine (SchroPicture *picture)
 #else
       SCHRO_ASSERT(0);
 #endif
+    } else if (picture->decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+      SchroFrame *tmp_opengl_output_frame;
+
+      tmp_opengl_output_frame = schro_opengl_frame_new (decoder->opengl,
+          decoder->opengl_domain, picture->planar_output_frame->format,
+          picture->planar_output_frame->width, picture->planar_output_frame->height);
+
+      schro_opengl_frame_convert (tmp_opengl_output_frame, output_frame);
+      schro_opengl_frame_pull (picture->planar_output_frame, tmp_opengl_output_frame);
+      schro_frame_unref (tmp_opengl_output_frame);
+
+      schro_frame_convert (picture->output_picture, picture->planar_output_frame);
+#else
+      SCHRO_ASSERT(0);
+#endif
     } else {
       schro_frame_convert (picture->planar_output_frame, output_frame);
       schro_frame_convert (picture->output_picture, picture->planar_output_frame);
@@ -1207,6 +1310,20 @@ schro_decoder_x_combine (SchroPicture *picture)
 #else
       SCHRO_ASSERT(0);
 #endif
+    } else if (picture->decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+      SchroFrame *tmp_opengl_output_frame;
+
+      tmp_opengl_output_frame = schro_opengl_frame_new (decoder->opengl,
+          decoder->opengl_domain, picture->output_picture->format,
+          picture->output_picture->width, picture->output_picture->height);
+
+      schro_opengl_frame_convert (tmp_opengl_output_frame, output_frame);
+      schro_opengl_frame_pull (picture->output_picture, tmp_opengl_output_frame);
+      schro_frame_unref (tmp_opengl_output_frame);
+#else
+      SCHRO_ASSERT(0);
+#endif
     } else {
       schro_frame_convert (picture->output_picture, output_frame);
     }
@@ -1218,13 +1335,22 @@ schro_decoder_x_combine (SchroPicture *picture)
 
     frame_format = schro_params_get_frame_format (8,
         params->video_format->chroma_format);
-    
+
     if (picture->decoder->use_cuda) {
 #ifdef HAVE_CUDA
       ref = schro_frame_new_and_alloc (decoder->cuda_domain, frame_format,
           decoder->video_format.width,
           schro_video_format_get_picture_height(&decoder->video_format));
       schro_gpuframe_convert (ref, combined_frame);
+#else
+      SCHRO_ASSERT(0);
+#endif
+    } else if (picture->decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+      ref = schro_opengl_frame_new (decoder->opengl, decoder->opengl_domain,
+          frame_format, decoder->video_format.width,
+          schro_video_format_get_picture_height(&decoder->video_format));
+      schro_opengl_frame_convert (ref, combined_frame);
 #else
       SCHRO_ASSERT(0);
 #endif
@@ -1266,11 +1392,21 @@ schro_decoder_x_combine (SchroPicture *picture)
 void
 schro_decoder_x_upsample (SchroPicture *picture)
 {
+  if (picture->decoder->use_cuda) {
 #ifdef HAVE_CUDA
-  schro_upsampled_gpuframe_upsample (picture->upsampled_frame);
+    schro_upsampled_gpuframe_upsample (picture->upsampled_frame);
 #else
-  schro_upsampled_frame_upsample (picture->upsampled_frame);
+    SCHRO_ASSERT (0);
 #endif
+  } else if (picture->decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+    schro_opengl_upsampled_frame_upsample (picture->upsampled_frame);
+#else
+    SCHRO_ASSERT (0);
+#endif
+  } else {
+    schro_upsampled_frame_upsample (picture->upsampled_frame);
+  }
 }
 
 void
@@ -2010,6 +2146,54 @@ schro_decoder_init_subband_frame_data_interleaved (SchroPicture *picture)
       }
       if (position & 1) {
         fd->data = OFFSET(fd->data, fd->width*sizeof(int16_t));
+      }
+    }
+  }
+}
+
+void
+schro_decoder_init_subband_frame_data (SchroPicture *picture)
+{
+  int i;
+  int component;
+  SchroFrameData *comp;
+  SchroFrameData *fd;
+  SchroParams *params = &picture->params;
+  int shift;
+  int position;
+
+  if (picture->error)
+     return;
+
+  for (component = 0; component < 3; ++component) {
+    comp = &picture->transform_frame->components[component];
+
+    for (i = 0; i < 1 + 3 * params->transform_depth; ++i) {
+      position = schro_subband_get_position (i);
+      fd = &picture->subband_data[component][i];
+      shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
+
+      fd->format = picture->transform_frame->format;
+      fd->h_shift = comp->h_shift + shift;
+      fd->v_shift = comp->v_shift + shift;
+      fd->stride = comp->stride;
+
+      if (component == 0) {
+        fd->width = params->iwt_luma_width >> shift;
+        fd->height = params->iwt_luma_height >> shift;
+      } else {
+        fd->width = params->iwt_chroma_width >> shift;
+        fd->height = params->iwt_chroma_height >> shift;
+      }
+
+      fd->data = comp->data;
+
+      if (position & 2) {
+        fd->data = OFFSET(fd->data, fd->stride * fd->height);
+      }
+
+      if (position & 1) {
+        fd->data = OFFSET(fd->data, fd->width * sizeof(int16_t));
       }
     }
   }

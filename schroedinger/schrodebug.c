@@ -39,12 +39,12 @@ schro_debug_log_valist (int level, const char *file, const char *func,
       schro_debug_level_names[level], file, line, func, s);
   g_free (s);
 #else
-  char s[1000];
+  char s[4096];
 
   if (level > schro_debug_level)
     return;
 
-  vsnprintf (s, 999, format, varargs);
+  vsnprintf (s, sizeof (s) - 1, format, varargs);
 
   fprintf (stderr, "SCHRO: %s: %s(%d): %s: %s\n",
       schro_debug_level_names[level], file, line, func, s);
