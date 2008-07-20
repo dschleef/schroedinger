@@ -219,6 +219,7 @@ color_matrix_build (ColorMatrix *dst)
 
   color_matrix_RGB_to_YCbCr (dst, 0.2990, 0.1140); // SD
   //color_matrix_RGB_to_YCbCr (dst, 0.2126, 0.0722); // HD
+  color_matrix_RGB_to_YCbCr (dst, 0.212, 0.087); // SMPTE 240M
 
   color_matrix_scale_components (dst, 219.0, 224.0, 224.0);
 
@@ -256,4 +257,43 @@ color_matrix_apply_f64_u8 (ColorMatrix *m, double *dest, uint8_t *src)
     //dest[i] = x;
   }
 }
+
+/* 
+ * SMPTE 170M
+ * ==========
+ *
+ * NTSC, SD, 525 lines
+ *
+ * color primaries:
+ * "SMPTE C set"
+ *  r 0.630 0.340
+ *  g 0.310 0.595
+ *  b 0.155 0.070
+ * w D65
+ *
+ * "NTSC 1953"
+ * r 0.67 0.33
+ * g 0.21 0.71
+ * b 0.14 0.08
+ * w D65
+ *
+ * transfer function:
+ *
+ * LT= [(Vr + 0.099)/1.099]^(1/0.4500) for 0.0812 ≤ Vr ≤ 1
+ * LT = Vr/4.500                       for 0 ≤ Vr < 0.0812
+ *
+ * also defines SD SMPTE color bars
+ */
+
+/*
+ * EBU 3213-E
+ * ==========
+ *
+ *  r 0.64 0.33
+ *  g 0.29 0.60
+ *  b 0.15 0.06
+ *  w D65
+ *
+ */
+
 
