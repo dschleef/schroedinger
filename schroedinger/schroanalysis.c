@@ -32,13 +32,26 @@ schro_encoder_frame_downsample (SchroEncoderFrame *frame)
       frame->downsampled_frames[3]);
 }
 
+void
+schro_encoder_frame_upsample (SchroEncoderFrame* frame)
+{
+  SCHRO_ASSERT (frame);
+  SCHRO_DEBUG ("upsampling frame %d", frame->frame_number);
+
+  if (frame->upsampled_original_frame) {
+    return;
+  }
+  frame->upsampled_original_frame = schro_upsampled_frame_new (frame->original_frame);
+  schro_upsampled_frame_upsample (frame->upsampled_original_frame);
+}
+
 static double
 schro_frame_component_squared_error (SchroFrameData *a,
     SchroFrameData *b)
 {
   int j;
   double sum;
-  
+
   SCHRO_ASSERT(a->width == b->width);
   SCHRO_ASSERT(a->height == b->height);
 

@@ -1066,6 +1066,11 @@ schro_encoder_analyse_picture (SchroEncoderFrame *frame)
     schro_encoder_frame_downsample (frame);
     frame->have_downsampling = TRUE;
   }
+  /* Added by Andrea */
+  if (frame->need_upsampling) {
+    schro_encoder_frame_upsample (frame);
+    frame->have_upsampling = TRUE;
+  }
 
   if (frame->need_average_luma) {
     if (frame->have_downsampling) {
@@ -2478,6 +2483,18 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
     if (frame->reconstructed_frame) {
       schro_upsampled_frame_free (frame->reconstructed_frame);
     }
+
+    /* Added by Andrea */
+    if (frame->upsampled_original_frame) {
+      schro_upsampled_frame_free (frame->upsampled_original_frame);
+    }
+    /* Added by Andrea */
+    for (i=0;2>i;++i) {
+      if (frame->mf[i]) {
+        schro_motion_field_free (frame->mf[i]);
+      }
+    }
+
     for(i=0;i<5;i++){
       if (frame->downsampled_frames[i]) {
         schro_frame_unref (frame->downsampled_frames[i]);
