@@ -15,12 +15,18 @@ function encode {
 }
 
 
-width=640
-height=480
-format=I420
+width=320
+height=240
+format=YUY2
+
 
 testname="default"
 schroopts=""
+encode
+
+# for testing java decoder
+testname="java"
+schroopts="noise-threshold=40 gop-structure=1 intra-wavelet=1 enable-noarith=1 transform-depth=4"
 encode
 
 # gop structure
