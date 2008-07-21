@@ -38,6 +38,13 @@ static void schro_encoder_init_perceptual_weighting (SchroEncoder *encoder);
 void schro_encoder_encode_sequence_header_header (SchroEncoder *encoder,
     SchroPack *pack);
 
+/**
+ * schro_encoder_new:
+ *
+ * Create a new encoder object.
+ *
+ * Returns: a new encoder object
+ */
 SchroEncoder *
 schro_encoder_new (void)
 {
@@ -163,6 +170,14 @@ handle_gop_enum (SchroEncoder *encoder)
   }
 }
 
+/**
+ * schro_encoder_start:
+ * @encoder: an encoder object
+ *
+ * Locks in encoder configuration and causes the encoder to start
+ * encoding pictures.  At this point, the encoder will start worker
+ * threads to do the actual encoding.
+ */
 void
 schro_encoder_start (SchroEncoder *encoder)
 {
@@ -241,6 +256,12 @@ schro_encoder_start (SchroEncoder *encoder)
   encoder->start_time = schro_utils_get_time ();
 }
 
+/**
+ * schro_encoder_free:
+ * @encoder: an encoder object
+ *
+ * Frees an encoder object and all its resources.
+ */
 void
 schro_encoder_free (SchroEncoder *encoder)
 {
@@ -299,6 +320,18 @@ schro_encoder_init_perceptual_weighting (SchroEncoder *encoder)
   }
 }
 
+/**
+ * schro_encoder_get_video_format:
+ * @encoder: an encoder object
+ *
+ * Creates a new SchroVideoFormat structure and copies the
+ * video format information of @decoder into it.
+ *
+ * When no longer needed, the returned pointer should be
+ * freed using free().
+ *
+ * Returns: a pointer to a SchroVideoFormat structure
+ */
 SchroVideoFormat *
 schro_encoder_get_video_format (SchroEncoder *encoder)
 {
@@ -310,6 +343,15 @@ schro_encoder_get_video_format (SchroEncoder *encoder)
   return format;
 }
 
+/**
+ * schro_encoder_set_video_format:
+ * @encoder: an encoder object
+ * @format: the video format to use
+ *
+ * Sets the video format used by @encoder to the values specified
+ * in @format.  This function may only be called before schro_encoder_start()
+ * is called on the encoder.
+ */
 void
 schro_encoder_set_video_format (SchroEncoder *encoder,
     SchroVideoFormat *format)
@@ -339,6 +381,16 @@ schro_encoder_push_is_ready_locked (SchroEncoder *encoder)
   }
 }
 
+/**
+ * schro_encoder_push_ready:
+ * @encoder: an encoder object
+ *
+ * Returns true if the encoder has available space for additional
+ * video frames.
+ *
+ * Returns: TRUE if the encoder is ready for another video frame to
+ * be pushed.
+ */
 int
 schro_encoder_push_ready (SchroEncoder *encoder)
 {
@@ -351,18 +403,42 @@ schro_encoder_push_ready (SchroEncoder *encoder)
   return ret;
 }
 
+/**
+ * schro_encoder_force_sequence_header:
+ * @encoder: an encoder object
+ *
+ * Indicates to the encoder that the next frame pushed should be
+ * encoded with a sequence header.
+ */
 void
 schro_encoder_force_sequence_header (SchroEncoder *encoder)
 {
   encoder->force_sequence_header = TRUE;
 }
 
+/**
+ * schro_encoder_push_frame:
+ * @encoder: an encoder object
+ * @frame: a frame to encode
+ *
+ * Provides a frame to the encoder to encode.
+ */
 void
 schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
 {
   schro_encoder_push_frame_full (encoder, frame, NULL);
 }
 
+/**
+ * schro_encoder_push_frame_full:
+ * @encoder: an encoder object
+ * @frame: a frame to encode
+ * @priv: a private tag
+ *
+ * Provides a frame to the encoder to encode.  The value of @priv is
+ * returned when schro_encoder_pull_full() is called for the encoded
+ * frame.
+ */
 void
 schro_encoder_push_frame_full (SchroEncoder *encoder, SchroFrame *frame, void *priv)
 {
@@ -469,12 +545,37 @@ schro_encoder_shift_frame_queue (SchroEncoder *encoder)
   }
 }
 
+/**
+ * schro_encoder_pull:
+ * @encoder: an encoder object
+ * @presentation_frame: (output) latest decodable frame
+ *
+ * Pulls a buffer of compressed video from the encoder.  If
+ * @presentation_frame is not NULL, the frame number of the
+ * latest decodable frame is returned.
+ *
+ * Returns: a buffer containing compressed video
+ */
 SchroBuffer *
 schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
 {
   return schro_encoder_pull_full (encoder, presentation_frame, NULL);
 }
 
+/**
+ * schro_encoder_pull_full:
+ * @encoder: an encoder object
+ * @presentation_frame: (output) latest decodable frame
+ * @priv: (output)
+ *
+ * Pulls a buffer of compressed video from the encoder.  If
+ * @presentation_frame is not NULL, the frame number of the
+ * latest decodable frame is returned.  If @priv is not NULL,
+ * the private tag attached to the pushed uncompressed frame
+ * is returned.
+ *
+ * Returns: a buffer containing compressed video
+ */
 SchroBuffer *
 schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
     void **priv)
@@ -609,6 +710,14 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
   return NULL;
 }
 
+/**
+ * schro_encoder_end_of_stream:
+ * @encoder: an encoder object
+ *
+ * Tells the encoder that the end of the stream has been reached, and
+ * no more frames are available to encode.  The encoder will then
+ * finish encoding.
+ */
 void
 schro_encoder_end_of_stream (SchroEncoder *encoder)
 {
@@ -710,12 +819,27 @@ schro_encoder_encode_md5_checksum (SchroEncoderFrame *frame)
   schro_encoder_frame_insert_buffer (frame, buffer);
 }
 
+/**
+ * schro_encoder_insert_buffer:
+ * @encoder: an encoder object
+ * @buffer: a buffer
+ *
+ * Inserts an application-provided buffer into the encoded video stream
+ * with the next frame that is pushed.
+ */
 void
 schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer)
 {
   schro_list_append (encoder->inserted_buffers, buffer);
 }
 
+/**
+ * schro_encoder_frame_insert_buffer:
+ * @frame: an encoder frame
+ * @buffer: a buffer
+ *
+ * Inserts a buffer into an encoder frame.
+ */
 void
 schro_encoder_frame_insert_buffer (SchroEncoderFrame *frame,
     SchroBuffer *buffer)
@@ -723,6 +847,17 @@ schro_encoder_frame_insert_buffer (SchroEncoderFrame *frame,
   schro_list_append (frame->inserted_buffers, buffer);
 }
 
+/**
+ * schro_encoder_encode_auxiliary_data:
+ * @encoder:
+ * @id:
+ * @data:
+ * @size:
+ *
+ * Packs data into a Dirac auxiliary data packet.
+ *
+ * Returns: a buffer
+ */
 SchroBuffer *
 schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
     SchroAuxiliaryDataID id, void *data, int size)
@@ -744,6 +879,14 @@ schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
   return buffer;
 }
 
+/**
+ * schro_encoder_encode_sequence_header:
+ * @encoder: an encoder object
+ *
+ * Creates a buffer containing a sequence header.
+ *
+ * Returns: a buffer
+ */
 SchroBuffer *
 schro_encoder_encode_sequence_header (SchroEncoder *encoder)
 {
@@ -768,6 +911,14 @@ schro_encoder_encode_sequence_header (SchroEncoder *encoder)
   return subbuffer;
 }
 
+/**
+ * schro_encoder_encode_end_of_stream:
+ * @encoder:
+ *
+ * Creates an end-of-stream packet.
+ *
+ * Returns: a buffer
+ */
 SchroBuffer *
 schro_encoder_encode_end_of_stream (SchroEncoder *encoder)
 {
@@ -786,6 +937,17 @@ schro_encoder_encode_end_of_stream (SchroEncoder *encoder)
   return buffer;
 }
 
+/**
+ * schro_encoder_wait:
+ * @encoder: an encoder object
+ *
+ * Checks the state of the encoder.  If the encoder requires the
+ * application to do something, an appropriate state code is returned.
+ * Otherwise, this function waits until the encoder requires the
+ * application to do something.
+ *
+ * Returns: a state code
+ */
 SchroStateEnum
 schro_encoder_wait (SchroEncoder *encoder)
 {
