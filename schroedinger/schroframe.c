@@ -15,6 +15,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * schro_frame_new:
+ * 
+ * Creates a new SchroFrame object.  The created frame is uninitialized
+ * and has no data storage associated with it.  The caller must fill
+ * in the required information.
+ *
+ * Returns: a new SchroFrame object
+ */
 SchroFrame *
 schro_frame_new (void)
 {
@@ -26,6 +35,13 @@ schro_frame_new (void)
   return frame;
 }
 
+/**
+ * schro_frame_new_and_alloc:
+ *
+ * Creates a new SchroFrame object with the requested size and format.
+ *
+ * Returns: a new SchroFrame object
+ */
 SchroFrame *
 schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
     int width, int height)
@@ -135,6 +151,17 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
   return frame;
 }
 
+/**
+ * schro_frame_new_from_data_YUY2:
+ *
+ * Creates a new SchroFrame object with the requested size using
+ * the data pointed to by @data.  The data must be in YUY2 format.
+ * The data must remain for the lifetime of the SchroFrame object.
+ * It is recommended to use schro_frame_set_free_callback() for
+ * notification when the data is no longer needed.
+ *
+ * Returns: a new SchroFrame object
+ */
 SchroFrame *
 schro_frame_new_from_data_YUY2 (void *data, int width, int height)
 {
@@ -157,6 +184,17 @@ schro_frame_new_from_data_YUY2 (void *data, int width, int height)
   return frame;
 }
 
+/**
+ * schro_frame_new_from_data_YUY2:
+ *
+ * Creates a new SchroFrame object with the requested size using
+ * the data pointed to by @data.  The data must be in UYVY format.
+ * The data must remain for the lifetime of the SchroFrame object.
+ * It is recommended to use schro_frame_set_free_callback() for
+ * notification when the data is no longer needed.
+ *
+ * Returns: a new SchroFrame object
+ */
 SchroFrame *
 schro_frame_new_from_data_UYVY (void *data, int width, int height)
 {
@@ -179,6 +217,19 @@ schro_frame_new_from_data_UYVY (void *data, int width, int height)
   return frame;
 }
 
+/**
+ * schro_frame_new_from_data_YUY2:
+ *
+ * Creates a new SchroFrame object with the requested size using
+ * the data pointed to by @data.  The data must be in UYVY format,
+ * although the row stride is allowed to be different than what
+ * would normally be calculated from @width.
+ * The data must remain for the lifetime of the SchroFrame object.
+ * It is recommended to use schro_frame_set_free_callback() for
+ * notification when the data is no longer needed.
+ *
+ * Returns: a new SchroFrame object
+ */
 SchroFrame *
 schro_frame_new_from_data_UYVY_full (void *data, int width, int height, int stride)
 {
@@ -200,6 +251,17 @@ schro_frame_new_from_data_UYVY_full (void *data, int width, int height, int stri
   return frame;
 }
 
+/**
+ * schro_frame_new_from_data_AYUV:
+ *
+ * Creates a new SchroFrame object with the requested size using
+ * the data pointed to by @data.  The data must be in AYUV format.
+ * The data must remain for the lifetime of the SchroFrame object.
+ * It is recommended to use schro_frame_set_free_callback() for
+ * notification when the data is no longer needed.
+ *
+ * Returns: a new SchroFrame object
+ */
 SchroFrame *
 schro_frame_new_from_data_AYUV (void *data, int width, int height)
 {
@@ -222,6 +284,17 @@ schro_frame_new_from_data_AYUV (void *data, int width, int height)
   return frame;
 }
 
+/**
+ * schro_frame_new_from_data_I420:
+ *
+ * Creates a new SchroFrame object with the requested size using
+ * the data pointed to by @data.  The data must be in I420 format.
+ * The data must remain for the lifetime of the SchroFrame object.
+ * It is recommended to use schro_frame_set_free_callback() for
+ * notification when the data is no longer needed.
+ *
+ * Returns: a new SchroFrame object
+ */
 SchroFrame *
 schro_frame_new_from_data_I420 (void *data, int width, int height)
 {
@@ -267,6 +340,17 @@ schro_frame_new_from_data_I420 (void *data, int width, int height)
   return frame;
 }
 
+/**
+ * schro_frame_new_from_data_YV12:
+ *
+ * Creates a new SchroFrame object with the requested size using
+ * the data pointed to by @data.  The data must be in YV12 format.
+ * The data must remain for the lifetime of the SchroFrame object.
+ * It is recommended to use schro_frame_set_free_callback() for
+ * notification when the data is no longer needed.
+ *
+ * Returns: a new SchroFrame object
+ */
 SchroFrame *
 schro_frame_new_from_data_YV12 (void *data, int width, int height)
 {
@@ -312,6 +396,14 @@ schro_frame_new_from_data_YV12 (void *data, int width, int height)
   return frame;
 }
 
+/**
+ * schro_frame_dup:
+ *
+ * Creates a new SchroFrame object with the same dimensions and format
+ * as @frame, and copies the data from the @frame to the new object.
+ *
+ * Returns: a new SchroFrame object
+ */
 SchroFrame *
 schro_frame_dup (SchroFrame *frame)
 {
@@ -324,6 +416,15 @@ schro_frame_dup (SchroFrame *frame)
   return dup_frame;
 }
 
+/**
+ * schro_frame_clone:
+ *
+ * Creates a new SchroFrame object with the same dimensions and format
+ * as @frame.  This function leaves the data in the new object
+ * uninitialized.
+ *
+ * Returns: a new SchroFrame object
+ */
 SchroFrame *
 schro_frame_clone (SchroMemoryDomain *domain, SchroFrame *frame)
 {
@@ -331,6 +432,14 @@ schro_frame_clone (SchroMemoryDomain *domain, SchroFrame *frame)
       frame->format, frame->width, frame->height);
 }
 
+/**
+ * schro_frame_ref:
+ * @frame: a frame object
+ *
+ * Increases the reference count of @frame.
+ *
+ * Returns: the value of @frame
+ */
 SchroFrame *
 schro_frame_ref (SchroFrame *frame)
 {
@@ -338,6 +447,16 @@ schro_frame_ref (SchroFrame *frame)
   return frame;
 }
 
+/**
+ * schro_frame_unref:
+ * @frame: a frame object
+ *
+ * Decreases the reference count of @frame.  If the new reference
+ * count is 0, the frame is freed.  If a frame free callback was
+ * set, this function is called.
+ *
+ * Returns: the value of @frame
+ */
 void
 schro_frame_unref (SchroFrame *frame)
 {
@@ -366,6 +485,15 @@ schro_frame_unref (SchroFrame *frame)
   }
 }
 
+/**
+ * schro_frame_set_free_callback:
+ * @frame: a frame object
+ * @free_func: the function to call when the frame is freed
+ * @priv: callback key
+ *
+ * Sets a function that will be called when the object reference
+ * count drops to zero and the object is freed.
+ */
 void schro_frame_set_free_callback (SchroFrame *frame,
     SchroFrameFreeFunc free_func, void *priv)
 {
@@ -418,6 +546,14 @@ static struct binary_struct schro_frame_convert_func_list[] = {
   { 0 }
 };
 
+/**
+ * schro_frame_convert:
+ * @dest: destination frame
+ * @src: source frame
+ *
+ * Copies data from the source frame to the destination frame, converting
+ * formats if necessary.  Only a few conversions are supported.
+ */
 void
 schro_frame_convert (SchroFrame *dest, SchroFrame *src)
 {
@@ -454,6 +590,15 @@ static struct binary_struct schro_frame_add_func_list[] = {
   { 0 }
 };
 
+/**
+ * schro_frame_add:
+ * @dest: destination frame
+ * @src: source frame
+ *
+ * Adds data from the source frame to the destination frame.  The
+ * frames must have the same chroma subsampling, and only a few
+ * combinations of bit depths are supported.
+ */
 void
 schro_frame_add (SchroFrame *dest, SchroFrame *src)
 {
@@ -489,6 +634,15 @@ static struct binary_struct schro_frame_subtract_func_list[] = {
   { 0 }
 };
 
+/**
+ * schro_frame_subtract:
+ * @dest: destination frame
+ * @src: source frame
+ *
+ * Subtracts data from the source frame to the destination frame.  The
+ * frames must have the same chroma subsampling, and only a few
+ * combinations of bit depths are supported.
+ */
 void
 schro_frame_subtract (SchroFrame *dest, SchroFrame *src)
 {
@@ -979,6 +1133,15 @@ schro_frame_subtract_s16_u8 (SchroFrame *dest, SchroFrame *src)
   }
 }
 
+/**
+ * schro_frame_iwt_transform:
+ * @frame: frame
+ * @params: transform parameters
+ * @tmp: temporary storage
+ *
+ * Performs an in-place integer wavelet transform on @frame.  The
+ * frame must have a bit depth of 16.
+ */
 void
 schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp)
@@ -1016,6 +1179,15 @@ schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
   }
 }
 
+/**
+ * schro_frame_inverse_iwt_transform:
+ * @frame: frame
+ * @params: transform parameters
+ * @tmp: temporary storage
+ *
+ * Performs an in-place inverse integer wavelet transform on @frame.  The
+ * frame must have a bit depth of 16.
+ */
 void
 schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
     int16_t *tmp)
@@ -1053,7 +1225,14 @@ schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
   }
 }
 
-
+/**
+ * schro_frame_shift_left:
+ * @frame: frame
+ * @shift: number of bits to shift
+ *
+ * Shifts each value in @frame to the left by @shift bits.  This
+ * operation happens in-place.
+ */
 void schro_frame_shift_left (SchroFrame *frame, int shift)
 {
   SchroFrameData *comp;
@@ -1073,6 +1252,14 @@ void schro_frame_shift_left (SchroFrame *frame, int shift)
   }
 }
 
+/**
+ * schro_frame_shift_right:
+ * @frame: frame
+ * @shift: number of bits to shift
+ *
+ * Shifts each value in @frame to the right by @shift bits.  This
+ * operation happens in-place.
+ */
 void schro_frame_shift_right (SchroFrame *frame, int shift)
 {
   SchroFrameData *comp;
@@ -1092,7 +1279,15 @@ void schro_frame_shift_right (SchroFrame *frame, int shift)
   }
 }
 
-
+/**
+ * schro_frame_edge_extend:
+ * @frame: frame
+ * @width: width of subpicture
+ * @height: height of subpicture
+ *
+ * Extends the edges of the subpicture defined from 0,0 to @width,@height
+ * to the size of @frame.
+ */
 void
 schro_frame_edge_extend (SchroFrame *frame, int width, int height)
 {
