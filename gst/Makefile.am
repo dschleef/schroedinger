@@ -4,12 +4,9 @@ plugin_LTLIBRARIES = libgstschro.la
 
 libgstschro_la_SOURCES = \
 	gstschro.c \
-	gstschroenc.c \
 	gstschrodec.c \
 	gstschroparse.c \
 	gstschrotoy.c \
-	gstschrofilter.c \
-	gstschrodownsample.c \
 	gstschroscale.c \
 	gstframestore.c \
 	vs_image.c \
@@ -18,6 +15,13 @@ libgstschro_la_SOURCES = \
 	vs_4tap.h \
 	vs_scanline.c \
 	vs_scanline.h
+
+if ENABLE_ENCODER
+libgstschro_la_SOURCES += \
+	gstschroenc.c \
+	gstschrodownsample.c \
+	gstschrofilter.c
+endif
 
 libgstschro_la_CFLAGS = $(GST_CFLAGS) $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 libgstschro_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)

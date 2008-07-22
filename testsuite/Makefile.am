@@ -14,17 +14,20 @@ buildnoinstdir = $(libdir)
 buildnoinst_LTLIBRARIES = libschrotest.la
 
 noinst_PROGRAMS = arith arith_encode \
-	 encode wavelet wavelet_2d \
+	 wavelet wavelet_2d \
 	 phasecorrelation motion \
 	 quant decode decode_coded_order decode_loop divide \
-	 global_motion upsample \
-	 motion2 sort filter ssim gaussian fft \
-	 wavelet_gain wavelet_noise_gain \
-	 wavelet_gain_curve \
-	 perceptual_weight perceptual_curves \
-	 wavelet_noise_2d \
-	 unpack downsample hist_noise_level taps ramp \
-	 abi colorspace
+	 upsample \
+	 motion2 sort gaussian fft \
+	 wavelet_noise_gain \
+	 downsample hist_noise_level taps ramp \
+	 colorspace
+
+if ENABLE_ENCODER
+noinst_PROGRAMS += encode global_motion filter ssim wavelet_gain \
+	wavelet_gain_curve perceptual_weight perceptual_curves \
+	wavelet_noise_2d unpack abi
+endif
 
 noinst_HEADERS = common.h
 

@@ -77,32 +77,20 @@ endif
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schro.c \
-	schroanalysis.c \
 	schroarith.c \
 	schrocog.c \
 	schrodecoder.c \
 	schrodebug.c \
 	schrodomain.c \
-	schroencoder.c \
-	schroengine.c \
-	schrofft.c \
-	schrofilter.c \
 	schroframe.c \
 	schrohistogram.c \
 	schrobuffer.c \
-	schrolist.c \
 	schrolowdelay.c \
-	schrometric.c \
 	schromotion.c \
-	schromotionest.c \
 	schrooil.c \
-	schropack.c \
 	schroparams.c \
 	schroparse.c \
-	schrophasecorrelation.c \
-	schroquantiser.c \
 	schroqueue.c \
-	schrossim.c \
 	schrotables.c \
 	schrounpack.c \
 	schrounpacktables.c \
@@ -110,9 +98,25 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrovideoformat.c \
 	schrovirtframe.c \
 	schrowavelet.c \
-	schrowavelettables.c \
 	$(cuda_sources) \
 	schroasync-@THREAD_IMPL@.c
+
+if ENABLE_ENCODER
+libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
+	schroanalysis.c \
+	schroencoder.c \
+	schroengine.c \
+	schrofft.c \
+	schrofilter.c \
+	schrolist.c \
+	schrometric.c \
+	schromotionest.c \
+	schropack.c \
+	schrophasecorrelation.c \
+	schroquantiser.c \
+	schrossim.c \
+	schrowavelettables.c
+endif
 
 if HAVE_ORC
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += schroorc.c

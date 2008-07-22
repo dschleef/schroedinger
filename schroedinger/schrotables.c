@@ -1,4 +1,6 @@
 
+#include "config.h"
+
 #include <schroedinger/schrotables.h>
 
 const uint32_t schro_table_offset_3_8[61] = {
@@ -145,6 +147,7 @@ const uint16_t schro_table_division_factor[257] = {
     256
 };
 
+#ifdef ENABLE_ENCODER
 const double schro_table_error_hist_shift3_1_2[60][104] = {
   { /* 0 */
     0, 0, 0, 0, 0, 0, 0, 0, 
@@ -2853,4 +2856,5 @@ const double schro_table_zerobits_hist_shift3_1_2[60][104] = {
     0, 0, 0, 0, 0, 0.54541, 1, 1, 
   },
 };
+#endif
 

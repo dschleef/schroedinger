@@ -264,6 +264,7 @@ schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture)
   schro_lowdelay_cleanup (&lowdelay);
 }
 
+#ifdef ENABLE_ENCODER
 static int
 schro_dc_predict (int16_t *line, int stride, int x, int y)
 {
@@ -765,6 +766,7 @@ schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame)
 
   schro_lowdelay_cleanup (&lowdelay);
 }
+#endif
 
 
 

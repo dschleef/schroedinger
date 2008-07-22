@@ -2,8 +2,11 @@
 noinst_PROGRAMS = \
 	lowdelay_tables \
 	quant_tables \
-	unpack_tables \
+	unpack_tables
+
+if ENABLE_ENCODER
 	wavelet_tables
+endif
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS) -I$(srcdir)/.. \
 	    -DSCHRO_ENABLE_UNSTABLE_API
