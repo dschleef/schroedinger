@@ -31,7 +31,7 @@ static int schro_encoder_encode_padding (SchroEncoder *encoder, int n);
 static void schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame,
     int component, int index);
 static void schro_encoder_fixup_offsets (SchroEncoder *encoder,
-    SchroBuffer *buffer);
+    SchroBuffer *buffer, schro_bool is_eos);
 static void schro_encoder_frame_complete (SchroEncoderFrame *frame);
 static int schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain);
 static void schro_encoder_init_perceptual_weighting (SchroEncoder *encoder);
@@ -527,6 +527,11 @@ schro_encoder_pull_is_ready_locked (SchroEncoder *encoder)
     }
   }
 
+  if (schro_queue_is_empty(encoder->frame_queue) && encoder->end_of_stream
+      && !encoder->end_of_stream_pulled) {
+    return TRUE;
+  }
+
   return FALSE;
 }
 
@@ -688,7 +693,7 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
         }
       }
 
-      schro_encoder_fixup_offsets (encoder, buffer);
+      schro_encoder_fixup_offsets (encoder, buffer, FALSE);
 
       SCHRO_DEBUG("got buffer length=%d", buffer->length);
       schro_async_unlock (encoder->async);
@@ -698,7 +703,7 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
 
   if (schro_queue_is_empty(encoder->frame_queue) && encoder->end_of_stream) {
     buffer = schro_encoder_encode_end_of_stream (encoder);
-    schro_encoder_fixup_offsets (encoder, buffer);
+    schro_encoder_fixup_offsets (encoder, buffer, TRUE);
     encoder->end_of_stream_pulled = TRUE;
 
     schro_async_unlock (encoder->async);
@@ -733,24 +738,32 @@ schro_encoder_end_of_stream (SchroEncoder *encoder)
 }
 
 static void
-schro_encoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer)
+schro_encoder_fixup_offsets (SchroEncoder *encoder, SchroBuffer *buffer,
+    schro_bool is_eos)
 {
   uint8_t *data = buffer->data;
+  unsigned int next_offset;
 
   if (buffer->length < 13) {
     SCHRO_ERROR("packet too short (%d < 13)", buffer->length);
   }
 
-  data[5] = (buffer->length >> 24) & 0xff;
-  data[6] = (buffer->length >> 16) & 0xff;
-  data[7] = (buffer->length >> 8) & 0xff;
-  data[8] = (buffer->length >> 0) & 0xff;
+  if (is_eos) {
+    next_offset = 0;
+  } else {
+    next_offset = buffer->length;
+  }
+
+  data[5] = (next_offset >> 24) & 0xff;
+  data[6] = (next_offset >> 16) & 0xff;
+  data[7] = (next_offset >> 8) & 0xff;
+  data[8] = (next_offset >> 0) & 0xff;
   data[9] = (encoder->prev_offset >> 24) & 0xff;
   data[10] = (encoder->prev_offset >> 16) & 0xff;
   data[11] = (encoder->prev_offset >> 8) & 0xff;
   data[12] = (encoder->prev_offset >> 0) & 0xff;
 
-  encoder->prev_offset = buffer->length;
+  encoder->prev_offset = next_offset;
 }
 
 static int
@@ -965,7 +978,7 @@ schro_encoder_wait (SchroEncoder *encoder)
       ret = SCHRO_STATE_NEED_FRAME;
       break;
     }
-    if (schro_queue_is_empty(encoder->frame_queue) && encoder->end_of_stream) {
+    if (schro_queue_is_empty(encoder->frame_queue) && encoder->end_of_stream_pulled) {
       ret = SCHRO_STATE_END_OF_STREAM;
       break;
     }
