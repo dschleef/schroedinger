@@ -2,7 +2,18 @@
 #ifndef __SCHRO_UTILS_H__
 #define __SCHRO_UTILS_H__
 
-#include <schroedinger/schro-stdint.h>
+#if defined(_MSC_VER)
+#ifndef SCHRO_NO_STDINT_TYPEDEFS
+typedef __int8 int8_t;
+typedef __int16 int16_t;
+typedef __int32 int32_t;
+typedef unsigned __int8 int8_t;
+typedef unsigned __int16 int16_t;
+typedef unsigned __int32 int32_t;
+#endif
+#else
+#include <stdint.h>
+#endif
 
 #ifndef TRUE
 #define TRUE 1

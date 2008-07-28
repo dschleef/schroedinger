@@ -126,8 +126,6 @@ if test "x$cross_compiling" = "xyes" ; then
 fi
 GTK_DOC_CHECK([1.0])
 
-AX_CREATE_STDINT_H([schroedinger/schro-stdint.h])
-
 AS_COMPILER_FLAG(-Wall, SCHRO_CFLAGS="$SCHRO_CFLAGS -Wall")
 if test "x$SCHRO_CVS" = "xyes"
 then

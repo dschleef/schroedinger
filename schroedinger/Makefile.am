@@ -11,8 +11,6 @@ pkgincludedir = $(includedir)/schroedinger-@SCHRO_MAJORMINOR@/schroedinger
 
 lib_LTLIBRARIES = libschroedinger-@SCHRO_MAJORMINOR@.la
 
-DISTCLEANFILES = schro-stdint.h
-
 EXTRA_DIST = schroarith-i386.c \
 	schroasync-none.c \
 	schroasync-pthread.c \
