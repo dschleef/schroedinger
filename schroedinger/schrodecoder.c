@@ -1396,6 +1396,14 @@ schro_decoder_x_combine (SchroPicture *picture)
       SCHRO_ERROR("MD5 checksum mismatch (%s should be %s)", a, b);
     }
   }
+
+  /* eagerly unreference any storage that is nolonger required */
+  schro_frame_unref(picture->mc_tmp_frame);
+  picture->mc_tmp_frame = NULL;
+  schro_frame_unref(picture->transform_frame);
+  picture->transform_frame = NULL;
+  schro_frame_unref(picture->frame);
+  picture->frame = NULL;
 }
 
 void
