@@ -1133,7 +1133,7 @@ schro_decoder_x_render_motion (SchroPicture *picture)
   SchroDecoder *decoder = picture->decoder;
 
   if (params->num_refs > 0) {
-    SCHRO_WARNING("motion render with %p and %p", picture->ref0, picture->ref1);
+    SCHRO_DEBUG("motion render with %p and %p", picture->ref0, picture->ref1);
     if (decoder->use_cuda) {
 #ifdef HAVE_CUDA
       int frame_width;
@@ -1175,7 +1175,6 @@ schro_decoder_x_render_motion (SchroPicture *picture)
     } else {
       schro_motion_render (picture->motion, picture->mc_tmp_frame);
     }
-    SCHRO_WARNING("render done with %p and %p", picture->ref0, picture->ref1);
   }
 }
 
@@ -1841,11 +1840,11 @@ schro_decoder_decode_block_data (SchroPicture *picture)
       if (arith[i] == NULL) continue;
 
       if (arith[i]->offset < arith[i]->buffer->length) {
-        SCHRO_WARNING("arith decoding %d didn't consume buffer (%d < %d)", i,
+        SCHRO_DEBUG("arith decoding %d didn't consume buffer (%d < %d)", i,
             arith[i]->offset, arith[i]->buffer->length);
       }
       if (arith[i]->offset > arith[i]->buffer->length + 6) {
-        SCHRO_ERROR("arith decoding %d overran buffer (%d > %d)", i,
+        SCHRO_WARNING("arith decoding %d overran buffer (%d > %d)", i,
             arith[i]->offset, arith[i]->buffer->length);
       }
       schro_arith_free (arith[i]);
