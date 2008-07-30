@@ -49,7 +49,6 @@ schro_motionest_new (SchroEncoderFrame *frame)
   me->encoder_frame = frame;
   me->params = &frame->params;
 
-  me->src0 = frame->ref_frame[0]->reconstructed_frame;
   me->downsampled_src0[0] = frame->ref_frame[0]->filtered_frame;
   me->downsampled_src0[1] = frame->ref_frame[0]->downsampled_frames[0];
   me->downsampled_src0[2] = frame->ref_frame[0]->downsampled_frames[1];
@@ -57,7 +56,6 @@ schro_motionest_new (SchroEncoderFrame *frame)
   me->downsampled_src0[4] = frame->ref_frame[0]->downsampled_frames[3];
 
   if (me->params->num_refs > 1) {
-    me->src1 = frame->ref_frame[1]->reconstructed_frame;
     me->downsampled_src1[0] = frame->ref_frame[1]->filtered_frame;
     me->downsampled_src1[1] = frame->ref_frame[1]->downsampled_frames[0];
     me->downsampled_src1[2] = frame->ref_frame[1]->downsampled_frames[1];

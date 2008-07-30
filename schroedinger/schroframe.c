@@ -51,7 +51,7 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
   int h_shift, v_shift;
   int chroma_width;
   int chroma_height;
-  
+
   SCHRO_ASSERT(width > 0);
   SCHRO_ASSERT(height > 0);
 
@@ -1516,7 +1516,7 @@ schro_frame_component_downsample (SchroFrameData *dest,
     downsample_horiz_u8 (tmplist[11], dest->width,
         src->data + src->stride * CLAMP(j*2+6,0,src->height-1), src->width,
         taps, offsetshift);
-    
+
     oil_mas12across_addc_rshift_u8 (dest->data + dest->stride * j, tmplist,
         taps, offsetshift, dest->width);
   }
@@ -1781,23 +1781,6 @@ schro_frame_md5 (SchroFrame *frame, uint32_t *state)
       (state[2]>>24)&0xff,
       state[3]&0xff, (state[3]>>8)&0xff, (state[3]>>16)&0xff,
       (state[3]>>24)&0xff);
-}
-
-void
-schro_frame_mark (SchroFrame *frame, int value)
-{
-  uint8_t *line;
-  int y;
-  int i;
-
-  for(y=0;y<MIN(10,frame->components[0].height);y++){
-    line = OFFSET(frame->components[0].data,
-        frame->components[0].stride * y);
-    for(i=0;i<10;i++){
-      line[i] = value;
-    }
-  }
-
 }
 
 void

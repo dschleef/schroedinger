@@ -815,7 +815,7 @@ schro_encoder_encode_bitrate_comment (SchroEncoder *encoder,
   s[3] = (bitrate>>0)&0xff;
   buffer = schro_encoder_encode_auxiliary_data (encoder,
       SCHRO_AUX_DATA_BITRATE, s, 4);
-  
+
   schro_encoder_insert_buffer (encoder, buffer);
 }
 
@@ -828,7 +828,7 @@ schro_encoder_encode_md5_checksum (SchroEncoderFrame *frame)
   schro_frame_md5 (frame->reconstructed_frame->frames[0], checksum);
   buffer = schro_encoder_encode_auxiliary_data (frame->encoder,
       SCHRO_AUX_DATA_MD5_CHECKSUM, checksum, 16);
-  
+
   schro_encoder_frame_insert_buffer (frame, buffer);
 }
 
@@ -1068,8 +1068,17 @@ run_stage (SchroEncoderFrame *frame, SchroEncoderFrameStateEnum state)
     case SCHRO_ENCODER_FRAME_STATE_ANALYSE:
       func = schro_encoder_analyse_picture;
       break;
-    case SCHRO_ENCODER_FRAME_STATE_PREDICT:
-      func = schro_encoder_predict_picture;
+    case SCHRO_ENCODER_FRAME_STATE_PREDICT_ROUGH:
+      func = schro_encoder_predict_rough_picture;
+      break;
+    case SCHRO_ENCODER_FRAME_STATE_PREDICT_PEL:
+      func = schro_encoder_predict_pel_picture;
+      break;
+    case SCHRO_ENCODER_FRAME_STATE_PREDICT_SUBPEL:
+      func = schro_encoder_predict_subpel_picture;
+      break;
+    case SCHRO_ENCODER_FRAME_STATE_MODE_DECISION:
+      func = schro_encoder_mode_decision;
       break;
     case SCHRO_ENCODER_FRAME_STATE_ENCODING:
       func = schro_encoder_encode_picture;
@@ -1162,12 +1171,33 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
           frame->state |= SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
         }
       }
-      if (todo & SCHRO_ENCODER_FRAME_STATE_PREDICT &&
-          frame->state & SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS) {
+
+      if (todo & SCHRO_ENCODER_FRAME_STATE_PREDICT_ROUGH
+          && frame->state & SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS) {
         if (!check_refs(frame)) continue;
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT);
+        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT_ROUGH);
         return TRUE;
       }
+
+      if (todo & SCHRO_ENCODER_FRAME_STATE_PREDICT_PEL
+          && frame->state & SCHRO_ENCODER_FRAME_STATE_PREDICT_ROUGH) {
+        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT_PEL);
+        return TRUE;
+      }
+
+      if (todo & SCHRO_ENCODER_FRAME_STATE_PREDICT_SUBPEL
+          && frame->state & SCHRO_ENCODER_FRAME_STATE_PREDICT_PEL) {
+        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT_SUBPEL);
+        return TRUE;
+      }
+
+      if (todo & SCHRO_ENCODER_FRAME_STATE_MODE_DECISION
+          && frame->state & SCHRO_ENCODER_FRAME_STATE_PREDICT_SUBPEL) {
+        if (!check_refs (frame)) continue;
+        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_MODE_DECISION);
+        return TRUE;
+      }
+
     }
   }
 
@@ -1261,12 +1291,9 @@ schro_encoder_analyse_picture (SchroEncoderFrame *frame)
 }
 
 void
-schro_encoder_predict_picture (SchroEncoderFrame *frame)
+schro_encoder_predict_rough_picture (SchroEncoderFrame *frame)
 {
   SCHRO_INFO("predict picture %d", frame->frame_number);
-
-  frame->tmpbuf = schro_malloc(sizeof(int16_t) *
-      (frame->encoder->video_format.width + 16));
 
   if (frame->params.num_refs > 0) {
     schro_encoder_motion_predict (frame);
@@ -1275,9 +1302,50 @@ schro_encoder_predict_picture (SchroEncoderFrame *frame)
   schro_encoder_render_picture (frame);
 }
 
+/* should perform fullpel ME without "rendering",
+ * ie without mode decision and motion compensation and DWT */
+void
+schro_encoder_predict_pel_picture (SchroEncoderFrame* frame)
+{
+  SCHRO_ASSERT (frame && frame->state & SCHRO_ENCODER_FRAME_STATE_HAVE_GOP);
+  SCHRO_INFO ("fullpel predict picture %d", frame->frame_number);
+
+#if 0
+  if (frame->params.num_refs > 0) {
+    schro_encoder_motion_predict_only (frame);
+  }
+#endif
+}
+
+void
+schro_encoder_predict_subpel_picture (SchroEncoderFrame* frame)
+{
+
+}
+
+/* performs mode decision and superblock splitting
+ * finally it does DWT */
+void
+schro_encoder_mode_decision (SchroEncoderFrame* frame)
+{
+  SCHRO_ASSERT(frame && frame->state & SCHRO_ENCODER_FRAME_STATE_PREDICT_PEL);
+  SCHRO_INFO("mode decision and superblock splitting picture %d", frame->frame_number);
+
+#if 0
+  if (frame->params.num_refs > 0) {
+    schro_encoder_do_mode_decision (frame);
+ }
+#endif
+
+  //schro_encoder_render_picture (frame);
+}
+
+
 void
 schro_encoder_render_picture (SchroEncoderFrame *frame)
 {
+  int16_t *tmpbuf;
+
   SCHRO_INFO("render picture %d", frame->frame_number);
 
   if (frame->params.num_refs > 0) {
@@ -1314,19 +1382,12 @@ schro_encoder_render_picture (SchroEncoderFrame *frame)
     schro_frame_convert (frame->iwt_frame, frame->filtered_frame);
   }
 
-  schro_frame_iwt_transform (frame->iwt_frame, &frame->params,
-      frame->tmpbuf);
-  schro_encoder_clean_up_transform (frame);
-}
+  tmpbuf = schro_malloc(sizeof(int16_t) *
+      (frame->encoder->video_format.width + 16));
+  schro_frame_iwt_transform (frame->iwt_frame, &frame->params, tmpbuf);
+  schro_free (tmpbuf);
 
-void
-schro_encoder_encode_picture_all (SchroEncoderFrame *frame)
-{
-  schro_encoder_analyse_picture (frame);
-  schro_encoder_predict_picture (frame);
-  schro_encoder_encode_picture (frame);
-  schro_encoder_reconstruct_picture (frame);
-  schro_encoder_postanalyse_picture (frame);
+  schro_encoder_clean_up_transform (frame);
 }
 
 void
@@ -1415,9 +1476,14 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
 {
   SchroFrameFormat frame_format;
   SchroFrame *frame;
+  int16_t *tmpbuf;
 
+  tmpbuf = schro_malloc(sizeof(int16_t) *
+      (encoder_frame->encoder->video_format.width + 16));
   schro_frame_inverse_iwt_transform (encoder_frame->iwt_frame, &encoder_frame->params,
-      encoder_frame->tmpbuf);
+      tmpbuf);
+  schro_free (tmpbuf);
+
   if (encoder_frame->params.num_refs > 0) {
     schro_frame_add (encoder_frame->iwt_frame, encoder_frame->prediction_frame);
   }
@@ -2613,7 +2679,7 @@ schro_encoder_frame_new (SchroEncoder *encoder)
 
   encoder_frame = schro_malloc0 (sizeof(SchroEncoderFrame));
   encoder_frame->state = SCHRO_ENCODER_FRAME_STATE_NEW;
-  encoder_frame->needed_state = 0xfff;
+  encoder_frame->needed_state = 0xffff;
   encoder_frame->refcount = 1;
 
   frame_format = schro_params_get_frame_format (16,
@@ -2623,7 +2689,7 @@ schro_encoder_frame_new (SchroEncoder *encoder)
       &iwt_width, &iwt_height);
   encoder_frame->iwt_frame = schro_frame_new_and_alloc (NULL, frame_format,
       iwt_width, iwt_height);
-  
+
   schro_video_format_get_picture_luma_size (&encoder->video_format,
       &picture_width, &picture_height);
   encoder_frame->prediction_frame = schro_frame_new_and_alloc (NULL, frame_format,
@@ -2686,8 +2752,11 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
       schro_motion_free (frame->motion);
     }
 
-    if (frame->tmpbuf) schro_free (frame->tmpbuf);
     schro_list_free (frame->inserted_buffers);
+
+    if (frame->me) {
+      schro_motionest_free (frame->me);
+    }
 
     schro_free (frame);
   }
