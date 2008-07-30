@@ -176,6 +176,9 @@ schro_metric_scan_setup (SchroMetricScan *scan, int dx, int dy, int dist)
   scan->ref_y = ymin;
   scan->scan_width = xmax - xmin + 1;
   scan->scan_height = ymax - ymin + 1;
+
+  SCHRO_ASSERT (scan->scan_width <= SCHRO_LIMIT_METRIC_SCAN);
+  SCHRO_ASSERT (scan->scan_height <= SCHRO_LIMIT_METRIC_SCAN);
 }
 
 int
