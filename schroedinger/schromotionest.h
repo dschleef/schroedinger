@@ -44,7 +44,8 @@ SchroMotionEst *schro_motionest_new (SchroEncoderFrame *frame);
 void schro_motionest_free (SchroMotionEst *me);
 
 
-void schro_encoder_motion_predict (SchroEncoderFrame *frame);
+void schro_encoder_motion_predict_rough (SchroEncoderFrame *frame);
+void schro_encoder_motion_predict_pel (SchroEncoderFrame *frame);
 
 void schro_encoder_global_estimation (SchroMotionEst *me);
 

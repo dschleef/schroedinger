@@ -1296,10 +1296,8 @@ schro_encoder_predict_rough_picture (SchroEncoderFrame *frame)
   SCHRO_INFO("predict picture %d", frame->frame_number);
 
   if (frame->params.num_refs > 0) {
-    schro_encoder_motion_predict (frame);
+    schro_encoder_motion_predict_rough (frame);
   }
-
-  schro_encoder_render_picture (frame);
 }
 
 /* should perform fullpel ME without "rendering",
@@ -1307,14 +1305,12 @@ schro_encoder_predict_rough_picture (SchroEncoderFrame *frame)
 void
 schro_encoder_predict_pel_picture (SchroEncoderFrame* frame)
 {
-  SCHRO_ASSERT (frame && frame->state & SCHRO_ENCODER_FRAME_STATE_HAVE_GOP);
+  SCHRO_ASSERT (frame && frame->state & SCHRO_ENCODER_FRAME_STATE_PREDICT_ROUGH);
   SCHRO_INFO ("fullpel predict picture %d", frame->frame_number);
 
-#if 0
   if (frame->params.num_refs > 0) {
-    schro_encoder_motion_predict_only (frame);
+    schro_encoder_motion_predict_pel (frame);
   }
-#endif
 }
 
 void
@@ -1337,7 +1333,7 @@ schro_encoder_mode_decision (SchroEncoderFrame* frame)
  }
 #endif
 
-  //schro_encoder_render_picture (frame);
+  schro_encoder_render_picture (frame);
 }
 
 

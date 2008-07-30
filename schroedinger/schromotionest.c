@@ -92,10 +92,9 @@ schro_motionest_free (SchroMotionEst *me)
 
 
 void
-schro_encoder_motion_predict (SchroEncoderFrame *frame)
+schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
-  SchroMotionEst *me;
   int n;
   int ref;
 
@@ -103,28 +102,40 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
   SCHRO_ASSERT(params->y_num_blocks != 0);
   SCHRO_ASSERT(params->num_refs > 0);
 
-  me = schro_motionest_new (frame);
+  frame->me = schro_motionest_new (frame);
 
   frame->motion = schro_motion_new (params, NULL, NULL);
-  me->motion = frame->motion;
+  frame->me->motion = frame->motion;
 
   frame->motion_field_list = schro_list_new_full ((SchroListFreeFunc)schro_motion_field_free, NULL);
   n = 0;
 
   for(ref=0;ref<params->num_refs;ref++){
-    schro_motionest_rough_scan_nohint (me, 3, ref, 12);
-    schro_motionest_rough_scan_hint (me, 2, ref, 2);
-    schro_motionest_rough_scan_hint (me, 1, ref, 2);
+    schro_motionest_rough_scan_nohint (frame->me, 3, ref, 12);
+    schro_motionest_rough_scan_hint (frame->me, 2, ref, 2);
+    schro_motionest_rough_scan_hint (frame->me, 1, ref, 2);
   }
 
-  schro_encoder_bigblock_estimation (me);
+}
+
+
+void
+schro_encoder_motion_predict_pel (SchroEncoderFrame *frame)
+{
+  SchroParams *params = &frame->params;
+
+  SCHRO_ASSERT(params->x_num_blocks != 0);
+  SCHRO_ASSERT(params->y_num_blocks != 0);
+  SCHRO_ASSERT(params->num_refs > 0);
+
+  schro_encoder_bigblock_estimation (frame->me);
 
 #if 0
     if (frame->encoder->enable_phasecorr_estimation) {
-      schro_encoder_phasecorr_estimation (me);
+      schro_encoder_phasecorr_estimation (frame->me);
     }
     if (params->have_global_motion) {
-      schro_encoder_global_estimation (me);
+      schro_encoder_global_estimation (frame->me);
 #endif
 
   schro_motion_calculate_stats (frame->motion, frame);
@@ -132,9 +143,7 @@ schro_encoder_motion_predict (SchroEncoderFrame *frame)
 
   schro_list_free (frame->motion_field_list);
 
-  frame->badblock_ratio = (double)me->badblocks/(params->x_num_blocks*params->y_num_blocks/16);
-
-  schro_motionest_free (me);
+  frame->badblock_ratio = (double)frame->me->badblocks/(params->x_num_blocks*params->y_num_blocks/16);
 }
 
 void
