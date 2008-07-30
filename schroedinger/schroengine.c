@@ -210,8 +210,8 @@ schro_engine_get_scene_change_score (SchroEncoder *encoder, int i)
   luma = frame1->average_luma - 16.0;
   if (luma > 0.01) {
     double mse[3];
-    schro_frame_mean_squared_error (frame1->downsampled_frames[3],
-        frame2->downsampled_frames[3], mse);
+    schro_frame_mean_squared_error (frame1->downsampled_frames[encoder->downsample_levels-1],
+        frame2->downsampled_frames[encoder->downsample_levels-1], mse);
     frame1->scene_change_score = mse[0] / (luma * luma);
   } else {
     frame1->scene_change_score = 1.0;

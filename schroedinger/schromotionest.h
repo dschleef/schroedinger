@@ -17,14 +17,14 @@ struct _SchroMotionEst {
 
   double lambda;
 
-  SchroFrame *downsampled_src0[5];
-  SchroFrame *downsampled_src1[5];
+  SchroFrame *downsampled_src0[8];
+  SchroFrame *downsampled_src1[8];
 
   SchroMotion *motion;
 
   SchroBlock *sblocks;
 
-  SchroMotionField *downsampled_mf[2][5];
+  SchroMotionField *downsampled_mf[2][8];
 
   int badblocks;
   double hier_score;

@@ -117,6 +117,8 @@ schro_encoder_new (void)
   encoder->magic_badblock_multiplier_nonref = 4.0;
   encoder->magic_badblock_multiplier_ref = 8.0;
 
+  encoder->downsample_levels = 5;
+
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
 
@@ -1281,7 +1283,8 @@ schro_encoder_analyse_picture (SchroEncoderFrame *frame)
   if (frame->need_average_luma) {
     if (frame->have_downsampling) {
       frame->average_luma =
-        schro_frame_calculate_average_luma (frame->downsampled_frames[3]);
+        schro_frame_calculate_average_luma (
+            frame->downsampled_frames[frame->encoder->downsample_levels-1]);
     } else {
       frame->average_luma =
         schro_frame_calculate_average_luma (frame->filtered_frame);

@@ -110,7 +110,7 @@ struct _SchroEncoderFrame {
   SchroPictureNumber frame_number;
   SchroFrame *original_frame;
   SchroFrame *filtered_frame;
-  SchroFrame *downsampled_frames[5];
+  SchroFrame *downsampled_frames[8];
   SchroUpsampledFrame *reconstructed_frame;
   SchroUpsampledFrame *upsampled_original_frame;
 
@@ -297,6 +297,7 @@ struct _SchroEncoder {
   int quantiser_engine;
 
   double start_time;
+  int downsample_levels;
 
 #if 0
   int prefs[SCHRO_PREF_LAST];
