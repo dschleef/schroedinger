@@ -1435,90 +1435,54 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
 }
 
 static void
-mas12_edgeextend_u8 (uint8_t *dest, uint8_t *src, const int16_t *taps,
-    const int16_t *offsetshift, int n, int i)
-{
-  int j;
-  int x;
-
-  x = 0;
-  for(j=0;j<12;j++){
-    //x += taps[j]*src[CLAMP(i*2 + j - 5, 0, n-1)];
-    x += taps[j]*src[CLAMP(i + j, 0, n-1)];
-  }
-  dest[0] = CLAMP((x + 128) >> 8,0,255);
-}
-
-static void
-downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src,
-    const int16_t *taps, const int16_t *offsetshift)
+downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src)
 {
   int i;
 
-  if (n_dest < 7) {
-    for(i=0;i<n_dest;i++){
-      mas12_edgeextend_u8 (dest + i, src, taps, offsetshift, n_src, 2*i - 5);
-    }
-  } else {
-    mas12_edgeextend_u8 (dest + 0, src, taps, offsetshift, n_src, -5);
-    mas12_edgeextend_u8 (dest + 1, src, taps, offsetshift, n_src, -3);
-    mas12_edgeextend_u8 (dest + 2, src, taps, offsetshift, n_src, -1);
-
-    oil_mas12_addc_rshift_decim2_u8 (dest + 3, src + 1, taps, offsetshift,
-        n_dest - 7);
-
-    mas12_edgeextend_u8 (dest + n_dest - 4, src, taps, offsetshift, n_src, 2*n_dest - 13);
-    mas12_edgeextend_u8 (dest + n_dest - 3, src, taps, offsetshift, n_src, 2*n_dest - 11);
-    mas12_edgeextend_u8 (dest + n_dest - 2, src, taps, offsetshift, n_src, 2*n_dest - 9);
-    mas12_edgeextend_u8 (dest + n_dest - 1, src, taps, offsetshift, n_src, 2*n_dest - 7);
+  for(i=0;i<n_dest;i++){
+    int x = 0;
+    x += -1*src[CLAMP(i*2 - 1, 0, n_src-1)];
+    x +=  9*src[CLAMP(i*2 + 0, 0, n_src-1)];
+    x +=  9*src[CLAMP(i*2 + 1, 0, n_src-1)];
+    x += -1*src[CLAMP(i*2 + 2, 0, n_src-1)];
+    dest[i] = CLAMP((x+8)>>4, 0, 255);
   }
+}
 
+static void
+downsample_vert_u8 (uint8_t *dest, int n_dest, uint8_t *src1,
+    uint8_t *src2, uint8_t *src3, uint8_t *src4)
+{
+  int i;
+
+  for(i=0;i<n_dest;i++){
+    int x = 0;
+    x += -1*src1[i];
+    x +=  9*src2[i];
+    x +=  9*src3[i];
+    x += -1*src4[i];
+    dest[i] = CLAMP((x+8)>>4, 0, 255);
+  }
 }
 
 static void
 schro_frame_component_downsample (SchroFrameData *dest,
     SchroFrameData *src)
 {
-  const int16_t taps[12] = { 4, -4, -8, 4, 46, 86, 86, 46, 4, -8, -4, 4 };
-  const int16_t offsetshift[2] = { 128, 8 };
-  int i,j;
-  uint8_t *tmp, *tmp0, *tmp1;
-  uint8_t *tmplist[12];
+  int i;
+  uint8_t *tmp;
 
-  tmp = schro_malloc(dest->width * 12);
-  for(i=0;i<12;i++){
-    tmplist[i] = tmp + dest->width * i;
-  }
+  tmp = schro_malloc(src->width);
 
-  for(i=0;i<7;i++){
-    downsample_horiz_u8 (tmplist[i+5], dest->width,
-        src->data + src->stride * CLAMP(i, 0, src->height - 1), src->width,
-        taps, offsetshift);
-  }
-  for(i=0;i<5;i++){
-    oil_memcpy (tmplist[i], tmplist[5], dest->width);
-  }
-  oil_mas12across_addc_rshift_u8 (dest->data + dest->stride * 0, tmplist,
-      taps, offsetshift, dest->width);
-
-  for (j=1;j<dest->height;j++){
-    tmp0 = tmplist[0];
-    tmp1 = tmplist[1];
-    for(i=0;i<10;i++){
-      tmplist[i] = tmplist[i+2];
-    }
-    tmplist[10] = tmp0;
-    tmplist[11] = tmp1;
-
-    downsample_horiz_u8 (tmplist[10], dest->width,
-        src->data + src->stride * CLAMP(j*2+5,0,src->height-1), src->width,
-        taps, offsetshift);
-    downsample_horiz_u8 (tmplist[11], dest->width,
-        src->data + src->stride * CLAMP(j*2+6,0,src->height-1), src->width,
-        taps, offsetshift);
-
-    oil_mas12across_addc_rshift_u8 (dest->data + dest->stride * j, tmplist,
-        taps, offsetshift, dest->width);
+  for(i=0;i<dest->height;i++){
+    downsample_vert_u8 (tmp, src->width,
+        SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2-1,0,src->height - 1)),
+        SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+0,0,src->height - 1)),
+        SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+1,0,src->height - 1)),
+        SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+2,0,src->height - 1)));
+    downsample_horiz_u8 (
+        SCHRO_FRAME_DATA_GET_LINE(dest, i), dest->width,
+        tmp, src->width);
   }
 
   schro_free (tmp);

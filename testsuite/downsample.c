@@ -71,8 +71,8 @@ main (int argc, char *argv[])
 
   schro_init();
 
-  for(width=1;width<40;width++){
-    for(height=1;height<40;height++){
+  for(width=10;width<40;width++){
+    for(height=10;height<40;height++){
       test (width, height);
     }
   }
@@ -103,7 +103,7 @@ void
 ref_frame_component_downsample (SchroFrameData *dest,
     SchroFrameData *src)
 {
-  static const int taps[12] = { 4, -4, -8, 4, 46, 86, 86, 46, 4, -8, -4, 4 };
+  static const int taps[4] = { -1, 9, 9, -1 };
   int i,j;
   int k,l;
   uint8_t *ddata;
@@ -112,14 +112,14 @@ ref_frame_component_downsample (SchroFrameData *dest,
     ddata = OFFSET(dest->data, dest->stride * j);
     for(i=0;i<dest->width;i++){
       int x = 0;
-      for(l=0;l<12;l++){
+      for(l=0;l<4;l++){
         int y = 0;
-        for(k=0;k<12;k++){
-          y += component_get (src, (i*2-5) + k, (j*2-5) + l) * taps[k];
+        for(k=0;k<4;k++){
+          y += component_get (src, (i*2-1) + l, (j*2-1) + k) * taps[k];
         }
-        x += CLAMP((y + 128) >> 8,0,255) * taps[l];
+        x += CLAMP((y + 8) >> 4,0,255) * taps[l];
       }
-      ddata[i] = CLAMP((x + 128) >> 8,0,255);
+      ddata[i] = CLAMP((x + 8) >> 4,0,255);
     }
   }
 }
