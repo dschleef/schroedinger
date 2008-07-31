@@ -1175,6 +1175,16 @@ schro_decoder_x_render_motion (SchroPicture *picture)
     } else {
       schro_motion_render (picture->motion, picture->mc_tmp_frame);
     }
+    /* Eagerly unreference the ref picures.  Otherwise they are kept
+     * until the picture dependency chain terminates (worst case, Ponly
+     * coding = infinite dependency chain = -ENOMEM) */
+    if (picture->ref0) {
+      schro_picture_unref(picture->ref0);
+    }
+    if (picture->ref1) {
+      schro_picture_unref(picture->ref1);
+    }
+    picture->ref0 = picture->ref1 = NULL;
   }
 }
 
