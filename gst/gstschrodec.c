@@ -906,12 +906,13 @@ gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer)
   int go = 1;
 
   if (input_buffer) {
-    ret = schro_decoder_push (schro_dec->decoder, input_buffer);
-    if (ret == SCHRO_DECODER_FIRST_ACCESS_UNIT) {
+    int schro_ret;
+    schro_ret = schro_decoder_push (schro_dec->decoder, input_buffer);
+    if (schro_ret == SCHRO_DECODER_FIRST_ACCESS_UNIT) {
       handle_first_access_unit (schro_dec);
     }
   } else {
-    ret = schro_decoder_push_end_of_stream (schro_dec->decoder);
+    schro_decoder_push_end_of_stream (schro_dec->decoder);
   }
 
   if (schro_dec->have_access_unit) {
