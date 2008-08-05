@@ -70,13 +70,13 @@ schro_encoder_new (void)
   encoder->noise_threshold = 25.0;
   encoder->gop_structure = 0;
   encoder->queue_depth = 20;
-  encoder->perceptual_weighting = 0;
+  encoder->perceptual_weighting = 1;
   encoder->perceptual_distance = 4.0;
   encoder->filtering = 0;
   encoder->filter_value = 5.0;
   encoder->profile = 0;
   encoder->level = 0;
-  encoder->au_distance = 30;
+  encoder->au_distance = 120;
   encoder->enable_psnr = TRUE;
   encoder->enable_ssim = FALSE;
   encoder->enable_md5 = FALSE;
@@ -100,9 +100,9 @@ schro_encoder_new (void)
   encoder->vert_slices = 6;
 
   encoder->magic_dc_metric_offset = 1.0;
-  encoder->magic_subband0_lambda_scale = 2.0;
-  encoder->magic_chroma_lambda_scale = 1.0;
-  encoder->magic_nonref_lambda_scale = 0.5;
+  encoder->magic_subband0_lambda_scale = 10.0;
+  encoder->magic_chroma_lambda_scale = 0.01;
+  encoder->magic_nonref_lambda_scale = 0.01;
   encoder->magic_allocation_scale = 1.1;
   encoder->magic_keyframe_weight = 7.5;
   encoder->magic_scene_change_threshold = 0.2;
@@ -110,8 +110,8 @@ schro_encoder_new (void)
   encoder->magic_inter_b_weight = 0.2;
   encoder->magic_mc_bailout_limit = 0.5;
   encoder->magic_bailout_weight = 4.0;
-  encoder->magic_error_power = 2.0;
-  encoder->magic_mc_lambda = 0.5;
+  encoder->magic_error_power = 4.0;
+  encoder->magic_mc_lambda = 0.1;
   encoder->magic_subgroup_length = 4;
   encoder->magic_lambda = 1.0;
   encoder->magic_badblock_multiplier_nonref = 4.0;
