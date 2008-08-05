@@ -56,12 +56,14 @@ struct _GstSchroParse
   GstElement element;
 
   GstPad *sinkpad, *srcpad;
-  GstAdapter *adapter;
+  GstAdapter *input_adapter;
+  GstAdapter *output_adapter;
 
   int wavelet_type;
   int level;
 
   SchroDecoder *decoder;
+  int output_format;
 
   /* video properties */
   int fps_n, fps_d;
@@ -89,6 +91,10 @@ struct _GstSchroParseClass
   GstElementClass element_class;
 };
 
+enum {
+  GST_SCHRO_PARSE_OUTPUT_DIRAC,
+  GST_SCHRO_PARSE_OUTPUT_QT
+};
 
 /* GstSchroParse signals and args */
 enum
@@ -118,6 +124,8 @@ static GstStateChangeReturn gst_schro_parse_change_state (GstElement *element,
     GstStateChange transition);
 static GstFlowReturn gst_schro_parse_push_all (GstSchroParse *schro_parse, 
     gboolean at_eos);
+static GstFlowReturn gst_schro_parse_handle_packet_ogg (GstSchroParse *schro_parse, GstBuffer *buf);
+static void gst_schro_parse_set_output_caps (GstSchroParse *schro_parse);
 static GstFlowReturn gst_schro_parse_chain (GstPad *pad, GstBuffer *buf);
 
 static GstStaticPadTemplate gst_schro_parse_sink_template =
@@ -131,7 +139,7 @@ static GstStaticPadTemplate gst_schro_parse_src_template =
     GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS ("video/x-dirac")
+    GST_STATIC_CAPS ("video/x-dirac;video/x-qt-part")
     );
 
 GST_BOILERPLATE (GstSchroParse, gst_schro_parse, GstElement, GST_TYPE_ELEMENT);
@@ -187,7 +195,8 @@ gst_schro_parse_init (GstSchroParse *schro_parse, GstSchroParseClass *klass)
   gst_pad_set_event_function (schro_parse->srcpad, gst_schro_parse_src_event);
   gst_element_add_pad (GST_ELEMENT(schro_parse), schro_parse->srcpad);
 
-  schro_parse->adapter = gst_adapter_new ();
+  schro_parse->input_adapter = gst_adapter_new ();
+  schro_parse->output_adapter = gst_adapter_new ();
 }
 
 static void
@@ -210,7 +219,8 @@ gst_schro_parse_reset (GstSchroParse *dec)
   dec->height = -1;
 
   gst_segment_init (&dec->segment, GST_FORMAT_TIME);
-  gst_adapter_clear (dec->adapter);
+  gst_adapter_clear (dec->input_adapter);
+  gst_adapter_clear (dec->output_adapter);
 }
 
 static void
@@ -224,8 +234,11 @@ gst_schro_parse_finalize (GObject *object)
   if (schro_parse->decoder) {
     schro_decoder_free (schro_parse->decoder);
   }
-  if (schro_parse->adapter) {
-    g_object_unref (schro_parse->adapter);
+  if (schro_parse->input_adapter) {
+    g_object_unref (schro_parse->input_adapter);
+  }
+  if (schro_parse->output_adapter) {
+    g_object_unref (schro_parse->output_adapter);
   }
 
   G_OBJECT_CLASS (parent_class)->finalize (object);
@@ -661,19 +674,16 @@ gst_schro_parse_push_all (GstSchroParse *schro_parse, gboolean at_eos)
   GstFlowReturn ret = GST_FLOW_OK;
   GstBuffer *outbuf;
 
-  while (TRUE) {
+  while (ret == GST_FLOW_OK) {
     int size;
     unsigned char header[SCHRO_PARSE_HEADER_SIZE];
-    guint8 *data;
-    int parse_code;
-    int presentation_frame;
 
-    if (gst_adapter_available (schro_parse->adapter) <
+    if (gst_adapter_available (schro_parse->input_adapter) <
         SCHRO_PARSE_HEADER_SIZE) {
       /* Need more data */
       return GST_FLOW_OK;
     }
-    gst_adapter_copy (schro_parse->adapter, header, 0, SCHRO_PARSE_HEADER_SIZE);
+    gst_adapter_copy (schro_parse->input_adapter, header, 0, SCHRO_PARSE_HEADER_SIZE);
 
     if (memcmp (header, "BBCD", 4) != 0) {
       /* bad header or lost sync */
@@ -689,82 +699,108 @@ gst_schro_parse_push_all (GstSchroParse *schro_parse, gboolean at_eos)
       size = 13;
     }
 
-    if (gst_adapter_available (schro_parse->adapter) < size) {
+    if (gst_adapter_available (schro_parse->input_adapter) < size) {
       return GST_FLOW_OK;
     }
 
-    outbuf = gst_adapter_take_buffer (schro_parse->adapter, size);
+    outbuf = gst_adapter_take_buffer (schro_parse->input_adapter, size);
 
-    data = GST_BUFFER_DATA(outbuf);
-    parse_code = data[4];
-    presentation_frame = schro_parse->picture_number;
-
-    if (SCHRO_PARSE_CODE_IS_SEQ_HEADER(parse_code)) {
-      if (!schro_parse->have_seq_header) {
-        handle_sequence_header (schro_parse, data, GST_BUFFER_SIZE(outbuf));
-        schro_parse->have_seq_header = TRUE;
-      }
-
-      schro_parse->update_granulepos = TRUE;
-    }
-    if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
-      if (schro_parse->update_granulepos) {
-        schro_parse->granulepos_hi = schro_parse->granulepos_offset +
-          presentation_frame + 1;
-        schro_parse->update_granulepos = FALSE;
-      }
-      schro_parse->granulepos_low = schro_parse->granulepos_offset +
-        presentation_frame + 1 - schro_parse->granulepos_hi;
-    }
-    
-    GST_BUFFER_OFFSET_END (outbuf) =
-      (schro_parse->granulepos_hi<<OGG_DIRAC_GRANULE_SHIFT) +
-      schro_parse->granulepos_low;
-    GST_BUFFER_OFFSET (outbuf) = gst_util_uint64_scale (
-        (schro_parse->granulepos_hi + schro_parse->granulepos_low),
-        schro_parse->fps_d * GST_SECOND, schro_parse->fps_n);
-    if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
-      GST_BUFFER_DURATION (outbuf) = schro_parse->duration;
-      GST_BUFFER_TIMESTAMP (outbuf) =
-        schro_parse->timestamp_offset + gst_util_uint64_scale (
-          schro_parse->picture_number,
-          schro_parse->fps_d * GST_SECOND, schro_parse->fps_n);
-      schro_parse->picture_number++;
-      if (!SCHRO_PARSE_CODE_IS_INTRA(parse_code)) {
-        GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
-      } else {
-        GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
-      }
-    } else {
-      GST_BUFFER_DURATION (outbuf) = -1;
-      GST_BUFFER_TIMESTAMP (outbuf) =
-        schro_parse->timestamp_offset + gst_util_uint64_scale (
-          schro_parse->picture_number,
-          schro_parse->fps_d * GST_SECOND, schro_parse->fps_n);
-      GST_BUFFER_FLAG_UNSET (outbuf, GST_BUFFER_FLAG_DELTA_UNIT);
-    }
-
-    if (!schro_parse->caps) {
-      schro_parse->caps = gst_caps_new_simple ("video/x-dirac",
-              "width", G_TYPE_INT, schro_parse->width,
-              "height", G_TYPE_INT, schro_parse->height,
-              "framerate", GST_TYPE_FRACTION, schro_parse->fps_n,
-              schro_parse->fps_d, NULL);
-      
-      if (schro_parse->par_d != 1 || schro_parse->par_n != 1)
-          gst_caps_set_simple (schro_parse->caps, "pixel-aspect-ratio",
-	      GST_TYPE_FRACTION, schro_parse->par_n, schro_parse->par_d, NULL);
-
-      gst_pad_set_caps (schro_parse->srcpad, schro_parse->caps);
-    }
-    gst_buffer_set_caps (outbuf, schro_parse->caps);
-
-    ret = gst_pad_push (schro_parse->srcpad, outbuf);
-    if (ret != GST_FLOW_OK)
-      break;
+    ret = gst_schro_parse_handle_packet_ogg (schro_parse, outbuf);
   }
 
   return ret;
+}
+
+static GstFlowReturn
+gst_schro_parse_handle_packet_ogg (GstSchroParse *schro_parse, GstBuffer *buf)
+{
+  guint8 *data;
+  int parse_code;
+  int presentation_frame;
+  GstFlowReturn ret;
+
+  data = GST_BUFFER_DATA(buf);
+  parse_code = data[4];
+  presentation_frame = schro_parse->picture_number;
+
+  if (SCHRO_PARSE_CODE_IS_SEQ_HEADER(parse_code)) {
+    if (!schro_parse->have_seq_header) {
+      handle_sequence_header (schro_parse, data, GST_BUFFER_SIZE(buf));
+      schro_parse->have_seq_header = TRUE;
+    }
+
+    schro_parse->update_granulepos = TRUE;
+  }
+  if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
+    if (schro_parse->update_granulepos) {
+      schro_parse->granulepos_hi = schro_parse->granulepos_offset +
+        presentation_frame + 1;
+      schro_parse->update_granulepos = FALSE;
+    }
+    schro_parse->granulepos_low = schro_parse->granulepos_offset +
+      presentation_frame + 1 - schro_parse->granulepos_hi;
+  }
+  
+  GST_BUFFER_OFFSET_END (buf) =
+    (schro_parse->granulepos_hi<<OGG_DIRAC_GRANULE_SHIFT) +
+    schro_parse->granulepos_low;
+  GST_BUFFER_OFFSET (buf) = gst_util_uint64_scale (
+      (schro_parse->granulepos_hi + schro_parse->granulepos_low),
+      schro_parse->fps_d * GST_SECOND, schro_parse->fps_n);
+  if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
+    GST_BUFFER_DURATION (buf) = schro_parse->duration;
+    GST_BUFFER_TIMESTAMP (buf) =
+      schro_parse->timestamp_offset + gst_util_uint64_scale (
+        schro_parse->picture_number,
+        schro_parse->fps_d * GST_SECOND, schro_parse->fps_n);
+    schro_parse->picture_number++;
+    if (!SCHRO_PARSE_CODE_IS_INTRA(parse_code)) {
+      GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
+    } else {
+      GST_BUFFER_FLAG_UNSET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
+    }
+  } else {
+    GST_BUFFER_DURATION (buf) = -1;
+    GST_BUFFER_TIMESTAMP (buf) =
+      schro_parse->timestamp_offset + gst_util_uint64_scale (
+        schro_parse->picture_number,
+        schro_parse->fps_d * GST_SECOND, schro_parse->fps_n);
+    GST_BUFFER_FLAG_UNSET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
+  }
+
+  if (!schro_parse->caps) {
+    gst_schro_parse_set_output_caps (schro_parse);
+  }
+  gst_buffer_set_caps (buf, schro_parse->caps);
+
+  ret = gst_pad_push (schro_parse->srcpad, buf);
+
+  return ret;
+}
+
+static void
+gst_schro_parse_set_output_caps (GstSchroParse *schro_parse)
+{
+  if (schro_parse->output_format == GST_SCHRO_PARSE_OUTPUT_DIRAC) {
+    schro_parse->caps = gst_caps_new_simple ("video/x-dirac",
+        "width", G_TYPE_INT, schro_parse->width,
+        "height", G_TYPE_INT, schro_parse->height,
+        "framerate", GST_TYPE_FRACTION, schro_parse->fps_n,
+        schro_parse->fps_d,
+        "pixel-aspect-ratio", GST_TYPE_FRACTION, schro_parse->par_n,
+        schro_parse->par_d, NULL);
+  } else if (schro_parse->output_format == GST_SCHRO_PARSE_OUTPUT_QT) {
+    schro_parse->caps = gst_caps_new_simple ("video/x-qt-part",
+        "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('d','r','a','c'),
+        "width", G_TYPE_INT, schro_parse->width,
+        "height", G_TYPE_INT, schro_parse->height,
+        "framerate", GST_TYPE_FRACTION, schro_parse->fps_n,
+        schro_parse->fps_d,
+        "pixel-aspect-ratio", GST_TYPE_FRACTION, schro_parse->par_n,
+        schro_parse->par_d, NULL);
+  }
+
+  gst_pad_set_caps (schro_parse->srcpad, schro_parse->caps);
 }
 
 static GstFlowReturn
@@ -781,7 +817,7 @@ gst_schro_parse_chain (GstPad *pad, GstBuffer *buf)
     schro_parse->discont = TRUE;
   }
 
-  gst_adapter_push (schro_parse->adapter, buf);
+  gst_adapter_push (schro_parse->input_adapter, buf);
 
   return gst_schro_parse_push_all (schro_parse, FALSE);
 }
