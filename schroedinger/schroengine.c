@@ -748,6 +748,7 @@ schro_encoder_setup_frame_lossless (SchroEncoderFrame *frame)
   params->xblen_luma = 8;
   params->ybsep_luma = 8;
   params->yblen_luma = 8;
+  schro_params_calculate_mc_sizes (params);
 
   return TRUE;
 }
