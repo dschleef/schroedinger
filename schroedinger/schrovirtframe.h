@@ -16,14 +16,25 @@ void schro_virt_frame_render_line (SchroFrame *frame, void *dest,
 
 void schro_virt_frame_render (SchroFrame *frame, SchroFrame *dest);
 
-SchroFrame *schro_virt_frame_new_horiz_downsample (SchroFrame *vf);
-SchroFrame *schro_virt_frame_new_vert_downsample (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_horiz_downsample (SchroFrame *vf, int cosite);
+SchroFrame *schro_virt_frame_new_vert_downsample (SchroFrame *vf, int cosite);
+SchroFrame *schro_virt_frame_new_vert_resample (SchroFrame *vf, int height);
+SchroFrame *schro_virt_frame_new_horiz_resample (SchroFrame *vf, int width);
 SchroFrame *schro_virt_frame_new_unpack (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_YUY2 (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_UYVY (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_AYUV (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_color_matrix (SchroFrame *vf);
-SchroFrame * schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format);
+SchroFrame *schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format);
+
+SchroFrame *schro_virt_frame_new_horiz_downsample_take (SchroFrame *vf, int cosite);
+SchroFrame *schro_virt_frame_new_vert_downsample_take (SchroFrame *vf, int cosite);
+SchroFrame *schro_virt_frame_new_vert_resample_take (SchroFrame *vf, int height);
+SchroFrame *schro_virt_frame_new_horiz_resample_take (SchroFrame *vf, int width);
+SchroFrame *schro_virt_frame_new_unpack_take (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_YUY2_take (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_UYVY_take (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_AYUV_take (SchroFrame *vf);
 
 SCHRO_END_DECLS
 

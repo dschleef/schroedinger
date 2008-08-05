@@ -460,7 +460,10 @@ schro_frame_ref (SchroFrame *frame)
 void
 schro_frame_unref (SchroFrame *frame)
 {
+  int i;
+
   SCHRO_ASSERT(frame->refcount > 0);
+
   frame->refcount--;
   if (frame->refcount == 0) {
     if (frame->free) {
@@ -473,12 +476,21 @@ schro_frame_unref (SchroFrame *frame)
     }
 #endif
 
-    if (frame->regions[0]) {
-      if (frame->domain) {
-        schro_memory_domain_memfree(frame->domain, frame->regions[0]);
-      } else {
-        free (frame->regions[0]);
+    for(i=0;i<4;i++) {
+      if (frame->regions[i]) {
+        if (frame->domain) {
+          schro_memory_domain_memfree(frame->domain, frame->regions[i]);
+        } else {
+          free (frame->regions[i]);
+        }
       }
+    }
+
+    if (frame->virt_frame1) {
+      schro_frame_unref (frame->virt_frame1);
+    }
+    if (frame->virt_frame2) {
+      schro_frame_unref (frame->virt_frame2);
     }
 
     schro_free(frame);
