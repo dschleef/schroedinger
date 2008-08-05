@@ -81,6 +81,7 @@ struct _SchroFrame {
   SchroFrame *virt_frame1;
   SchroFrame *virt_frame2;
   void (*render_line) (SchroFrame *frame, void *dest, int component, int i);
+  void *virt_priv;
 };
 
 struct _SchroUpsampledFrame {

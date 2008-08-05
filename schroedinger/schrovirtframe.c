@@ -333,7 +333,7 @@ schro_virt_frame_render_resample_vert (SchroFrame *frame, void *_dest,
   int j;
   int n_src;
   double taps[4];
-  double *scale = (double *)frame->regions[3];
+  double *scale = (double *)frame->virt_priv;
   double x;
   int src_i;
 
@@ -372,7 +372,7 @@ schro_virt_frame_new_vert_resample (SchroFrame *vf, int height)
   virt_frame->render_line = schro_virt_frame_render_resample_vert;
 
   scale = malloc(sizeof(double));
-  virt_frame->regions[3] = scale;
+  virt_frame->virt_priv = scale;
 
   *scale = (double)vf->height / height;
 
@@ -388,7 +388,7 @@ schro_virt_frame_render_resample_horiz (SchroFrame *frame, void *_dest,
   int j;
   int n_src;
   double taps[4];
-  double *scale = (double *)frame->regions[3];
+  double *scale = (double *)frame->virt_priv;
   int src_i;
 
   n_src = frame->virt_frame1->components[component].width;
@@ -422,7 +422,7 @@ schro_virt_frame_new_horiz_resample (SchroFrame *vf, int width)
   virt_frame->render_line = schro_virt_frame_render_resample_horiz;
 
   scale = malloc(sizeof(double));
-  virt_frame->regions[3] = scale;
+  virt_frame->virt_priv = scale;
 
   *scale = (double)vf->width / width;
 

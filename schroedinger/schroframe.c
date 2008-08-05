@@ -476,7 +476,7 @@ schro_frame_unref (SchroFrame *frame)
     }
 #endif
 
-    for(i=0;i<4;i++) {
+    for(i=0;i<3;i++) {
       if (frame->regions[i]) {
         if (frame->domain) {
           schro_memory_domain_memfree(frame->domain, frame->regions[i]);
@@ -491,6 +491,9 @@ schro_frame_unref (SchroFrame *frame)
     }
     if (frame->virt_frame2) {
       schro_frame_unref (frame->virt_frame2);
+    }
+    if (frame->virt_priv) {
+      schro_free (frame->virt_priv);
     }
 
     schro_free(frame);
