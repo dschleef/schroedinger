@@ -175,6 +175,79 @@ schro_engine_code_BBBP (SchroEncoder *encoder, int i, int gop_length)
   }
 }
 
+void
+schro_engine_code_IBBBI (SchroEncoder *encoder, int i, int gop_length)
+{
+  SchroEncoderFrame *frame;
+  SchroEncoderFrame *f;
+  SchroEncoderFrame *ref2;
+  int j;
+
+  frame = encoder->frame_queue->elements[i].data;
+
+  /* IBBBI */
+  schro_engine_code_picture (frame, TRUE, encoder->intra_ref, 0, -1, -1);
+  encoder->intra_ref = frame->frame_number;
+
+  frame->presentation_frame = frame->frame_number;
+  //frame->picture_weight = 1 + (gop_length - 1) * 0.6;
+  frame->picture_weight = encoder->magic_keyframe_weight;
+  frame->gop_length = gop_length;
+
+  f = encoder->frame_queue->elements[i+gop_length-1].data;
+  schro_engine_code_picture (f, TRUE, encoder->last_ref, 0, -1, -1);
+
+  f->presentation_frame = frame->frame_number;
+  f->picture_weight = encoder->magic_inter_p_weight;
+  //f->picture_weight += (gop_length - 2) * (1 - encoder->magic_inter_b_weight);
+  encoder->last_ref = encoder->last_ref2;
+  encoder->last_ref2 = f->frame_number;
+  ref2 = f;
+
+  for (j = 1; j < gop_length - 1; j++) {
+    f = encoder->frame_queue->elements[i+j].data;
+    schro_engine_code_picture (f, FALSE, -1,
+        2, frame->frame_number, ref2->frame_number);
+    f->presentation_frame = f->frame_number;
+    if (j == gop_length-2) {
+      f->presentation_frame++;
+    }
+    f->picture_weight = encoder->magic_inter_b_weight;
+  }
+}
+
+void
+schro_engine_code_BBBI (SchroEncoder *encoder, int i, int gop_length)
+{
+  SchroEncoderFrame *frame;
+  SchroEncoderFrame *f;
+  int j;
+
+  frame = encoder->frame_queue->elements[i].data;
+
+  /* BBBI */
+  frame->gop_length = gop_length;
+
+  f = encoder->frame_queue->elements[i+gop_length-1].data;
+  schro_engine_code_picture (f, TRUE, encoder->last_ref, 0, -1, -1);
+  f->presentation_frame = encoder->last_ref2;
+  f->picture_weight = encoder->magic_inter_p_weight;
+  //f->picture_weight += (gop_length - 1) * (1 - encoder->magic_inter_b_weight);
+  encoder->last_ref = encoder->last_ref2;
+  encoder->last_ref2 = f->frame_number;
+
+  for (j = 0; j < gop_length - 1; j++) {
+    f = encoder->frame_queue->elements[i+j].data;
+    schro_engine_code_picture (f, FALSE, -1,
+        2, encoder->last_ref, encoder->last_ref2);
+    f->presentation_frame = f->frame_number;
+    if (j == gop_length-2) {
+      f->presentation_frame++;
+    }
+    f->picture_weight = encoder->magic_inter_b_weight;
+  }
+}
+
 /**
  * schro_engine_get_scene_change_score:
  * @frame: encoder frame
