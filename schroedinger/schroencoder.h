@@ -76,6 +76,7 @@ typedef int (*SchroEngineIterateFunc) (SchroEncoder *encoder);
 
 /* forward declaration */
 struct _SchroMotionEst;
+struct _SchroRoughME;
 
 struct _SchroEncoderFrame {
   /*< private >*/
@@ -163,7 +164,8 @@ struct _SchroEncoderFrame {
 
   SchroEncoderFrame *ref_frame[2];
 
-  struct _SchroMotionEst* me;
+  struct _SchroMotionEst *me;
+  struct _SchroRoughME *rme[2];
 
   SchroMotion *motion;
   SchroList *motion_field_list;

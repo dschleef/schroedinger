@@ -2756,6 +2756,8 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
     if (frame->me) {
       schro_motionest_free (frame->me);
     }
+    if (frame->rme[0]) schro_rough_me_free (frame->rme[0]);
+    if (frame->rme[1]) schro_rough_me_free (frame->rme[1]);
 
     schro_free (frame);
   }

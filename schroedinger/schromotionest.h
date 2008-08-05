@@ -7,9 +7,12 @@
 SCHRO_BEGIN_DECLS
 
 typedef struct _SchroMotionEst SchroMotionEst;
+typedef struct _SchroRoughME SchroRoughME;
 typedef struct _SchroBlock SchroBlock;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
+
+#define SCHRO_MAX_HIER_LEVELS 8
 
 struct _SchroMotionEst {
   SchroEncoderFrame *encoder_frame;
@@ -17,17 +20,24 @@ struct _SchroMotionEst {
 
   double lambda;
 
-  SchroFrame *downsampled_src0[8];
-  SchroFrame *downsampled_src1[8];
+  SchroFrame *downsampled_src0[SCHRO_MAX_HIER_LEVELS];
+  SchroFrame *downsampled_src1[SCHRO_MAX_HIER_LEVELS];
 
   SchroMotion *motion;
 
   SchroBlock *sblocks;
 
-  SchroMotionField *downsampled_mf[2][8];
+  //SchroMotionField *downsampled_mf[2][8];
 
   int badblocks;
   double hier_score;
+};
+
+struct _SchroRoughME {
+  SchroEncoderFrame *encoder_frame;
+  SchroEncoderFrame *ref_frame;
+
+  SchroMotionField *motion_fields[SCHRO_MAX_HIER_LEVELS];
 };
 
 struct _SchroBlock {
@@ -42,6 +52,10 @@ struct _SchroBlock {
 
 SchroMotionEst *schro_motionest_new (SchroEncoderFrame *frame);
 void schro_motionest_free (SchroMotionEst *me);
+
+SchroRoughME * schro_rough_me_new (SchroEncoderFrame *frame, SchroEncoderFrame *ref);
+void schro_rough_me_free (SchroRoughME *rme);
+void schro_rough_me_heirarchical_scan (SchroRoughME *rme);
 
 
 void schro_encoder_motion_predict_rough (SchroEncoderFrame *frame);
