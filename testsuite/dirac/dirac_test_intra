@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 dirac_srcdir=~/dirac/compress/encoder
 
@@ -22,8 +22,7 @@ gst-inspect pngenc &>/dev/null || \
 
 file=pr0n
 
-function encode
-{
+encode() {
   ${dirac_srcdir}/dirac_encoder -SD576 -qf 7 -num_L1 0 \
     -cformat 2 \
     -wlt_depth $2 -iwlt_filter $1 \

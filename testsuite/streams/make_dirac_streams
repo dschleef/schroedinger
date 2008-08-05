@@ -1,6 +1,6 @@
 #!/bin/sh
 
-function encode {
+encode() {
   echo "ENCODING $testname with $diracopts"
   gst-launch-0.10 \
     videotestsrc num-buffers=300 ! \
