@@ -14,7 +14,7 @@ list=SD-2Mb
 
 trap exit INT
 
-function get_profile {
+get_profile() {
   case $1 in
     SD-default) schroopts="" ;;
     SD-VBR-10dB) schroopts="rate-control=0 noise-threshold=10" ;;
@@ -33,7 +33,7 @@ function get_profile {
   esac
 }
 
-function encode {
+encode() {
   # engine3
   get_profile $prof
   output=$file.$prof.drc
@@ -48,7 +48,7 @@ function encode {
     filesink location=$output >/dev/null 2>/dev/null
 }
 
-function encode_all {
+encode_all() {
   for each in $list
   do
     prof=$each

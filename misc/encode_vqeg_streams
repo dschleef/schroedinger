@@ -19,7 +19,7 @@ extraopts="enable-psnr=true"
 
 trap exit INT
 
-function get_profile {
+get_profile() {
   case $1 in
     SD-default) schroopts="" ;;
     SD-VBR-10dB) schroopts="rate-control=0 noise-threshold=10" ;;
@@ -47,7 +47,7 @@ function get_profile {
   esac
 }
 
-function encode {
+encode() {
   # engine3
   get_profile $prof
   output=$file.$prof.drc
@@ -59,7 +59,7 @@ function encode {
     filesink location=$output
 }
 
-function encode_all {
+encode_all() {
   input=$mediadir/$subdir/$file.yuv
   size=$(($height*$width*2))
 
