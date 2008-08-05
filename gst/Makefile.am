@@ -8,13 +8,7 @@ libgstschro_la_SOURCES = \
 	gstschroparse.c \
 	gstschrotoy.c \
 	gstschroscale.c \
-	gstframestore.c \
-	vs_image.c \
-	vs_image.h \
-	vs_4tap.c \
-	vs_4tap.h \
-	vs_scanline.c \
-	vs_scanline.h
+	gstframestore.c
 
 if ENABLE_ENCODER
 libgstschro_la_SOURCES += \
