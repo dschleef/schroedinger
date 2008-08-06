@@ -262,8 +262,8 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
       /* This overly clever bit of code checks the parents of the diagonal
        * neighbors, which corresponds to the nearest parents. */
       for(m=0;m<4;m++) {
-        int l = (i-1 + 2*(m&1))&hint_mask;
-        int k = (j-1 + (m&2))&hint_mask;
+        int l = (i + skip*(-1 + 2*(m&1)))&hint_mask;
+        int k = (j + skip*(-1 + (m&2)))&hint_mask;
         if (l >= 0 && l < params->x_num_blocks &&
             k >= 0 && k < params->y_num_blocks) {
           hint_mv[n] = motion_field_get (hint_mf, l, k);
@@ -273,15 +273,15 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
 
       /* inherit from neighbors (only towards SE) */
       if (i > 0) {
-        hint_mv[n] = motion_field_get (mf, i-1, j);
+        hint_mv[n] = motion_field_get (mf, i-skip, j);
         n++;
       }
       if (j > 0) {
-        hint_mv[n] = motion_field_get (mf, i, j - 1);
+        hint_mv[n] = motion_field_get (mf, i, j - skip);
         n++;
       }
       if (i > 0 && j > 0) {
-        hint_mv[n] = motion_field_get (mf, i - 1, j - 1);
+        hint_mv[n] = motion_field_get (mf, i - skip, j - skip);
         n++;
       }
 
@@ -292,9 +292,18 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
       for(m = 0; m < n; m++) {
         int metric;
         int width, height;
+        int x,y;
 
         dx = hint_mv[m]->dx[0];
         dy = hint_mv[m]->dy[0];
+
+
+        x = (i*params->xbsep_luma + dx) >> shift;
+        y = (j*params->ybsep_luma + dy) >> shift;
+        if (x < 0 || y < 0) {
+          //SCHRO_ERROR("ij %d %d dx dy %d %d", i, j, dx, dy);
+          continue;
+        }
 
         schro_frame_get_subdata (scan.ref_frame,
             &ref_data, 0,
