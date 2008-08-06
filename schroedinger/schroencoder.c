@@ -2916,7 +2916,7 @@ static SchroEncoderSetting encoder_settings[] = {
   DOUB("magic_subgroup_length", 2.0, 10.0, 4.0),
   DOUB("magic_lambda", 0.0, 1000.0, 1.0),
   DOUB("magic_badblock_multiplier_nonref", 0.0, 1000.0, 1.0),
-  DOUB("magic_badblock_multiplier_nref", 0.0, 1000.0, 1.0),
+  DOUB("magic_badblock_multiplier_ref", 0.0, 1000.0, 1.0),
   DOUB("magic_block_search_threshold", 0.0, 1000.0, 1.0),
 };
 
