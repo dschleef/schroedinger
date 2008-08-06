@@ -786,6 +786,7 @@ gst_schro_scale_transform (GstBaseTransform * trans, GstBuffer * in,
   SchroFrame *outframe;
   SchroFrame *frame;
   gint method;
+  int w, h;
 
   videoscale = GST_SCHRO_SCALE (trans);
 
@@ -817,10 +818,27 @@ gst_schro_scale_transform (GstBaseTransform * trans, GstBuffer * in,
   }
 
   frame = schro_virt_frame_new_unpack_take (frame);
-  frame = schro_virt_frame_new_horiz_resample_take (frame,
-      videoscale->to_width);
-  frame = schro_virt_frame_new_vert_resample_take (frame,
-      videoscale->to_height);
+  
+  w = videoscale->from_width;
+  h = videoscale->from_height;
+  while (w >= 2*videoscale->to_width || h >= 2*videoscale->to_height) {
+    if (w >= 2*videoscale->to_width) {
+      frame = schro_virt_frame_new_horiz_downsample_take (frame, TRUE);
+      w /= 2;
+    }
+    if (h >= 2*videoscale->to_height) {
+      frame = schro_virt_frame_new_vert_downsample_take (frame, TRUE);
+      h /= 2;
+    }
+  }
+  if (w != videoscale->to_width) {
+    frame = schro_virt_frame_new_horiz_resample_take (frame,
+        videoscale->to_width);
+  }
+  if (h != videoscale->to_height) {
+    frame = schro_virt_frame_new_vert_resample_take (frame,
+        videoscale->to_height);
+  }
 
   switch (videoscale->format) {
     case GST_SCHRO_SCALE_YUY2:
