@@ -373,7 +373,7 @@ schro_encoder_push_is_ready_locked (SchroEncoder *encoder)
   if (encoder->end_of_stream){
     return FALSE;
   }
-  
+
   n = schro_queue_slots_available (encoder->frame_queue);
 
   if (encoder->video_format.interlaced_coding) {
@@ -732,7 +732,7 @@ schro_encoder_end_of_stream (SchroEncoder *encoder)
   schro_async_lock (encoder->async);
   if (encoder->frame_queue->n > 0) {
     SchroEncoderFrame *encoder_frame;
-    
+
     encoder_frame = encoder->frame_queue->elements[encoder->frame_queue->n-1].data;
     encoder_frame->last_frame = TRUE;
   }
@@ -782,7 +782,7 @@ schro_encoder_encode_padding (SchroEncoder *encoder, int n)
   schro_pack_encode_init (pack, buffer);
 
   schro_encoder_encode_parse_info (pack, SCHRO_PARSE_CODE_PADDING);
-  
+
   schro_pack_append_zero (pack, n - SCHRO_PARSE_HEADER_SIZE);
 
   schro_pack_free (pack);
@@ -800,7 +800,7 @@ schro_encoder_encode_codec_comment (SchroEncoder *encoder)
 
   buffer = schro_encoder_encode_auxiliary_data (encoder,
       SCHRO_AUX_DATA_ENCODER_STRING, s, strlen(s));
-  
+
   schro_encoder_insert_buffer (encoder, buffer);
 }
 
@@ -984,7 +984,7 @@ schro_encoder_wait (SchroEncoder *encoder)
       ret = SCHRO_STATE_END_OF_STREAM;
       break;
     }
- 
+
     SCHRO_DEBUG("encoder waiting");
     ret = schro_async_wait_locked (encoder->async);
     if (!ret) {
@@ -1697,7 +1697,7 @@ schro_encoder_encode_prediction_modes (SchroEncoderFrame *frame)
             &frame->motion->motion_vectors[(j+l)*params->x_num_blocks + i + k];
           int pred_mode;
 
-          pred_mode = mv->pred_mode ^ 
+          pred_mode = mv->pred_mode ^
             schro_motion_get_mode_prediction(frame->motion, i+k,j+l);
 
           if (params->is_noarith) {
@@ -1935,7 +1935,7 @@ schro_encoder_encode_sequence_header_header (SchroEncoder *encoder,
   int i;
 
   schro_encoder_encode_parse_info (pack, SCHRO_PARSE_CODE_SEQUENCE_HEADER);
-  
+
   /* parse parameters */
   schro_pack_encode_uint (pack, encoder->version_major);
   schro_pack_encode_uint (pack, encoder->version_minor);
@@ -2476,7 +2476,7 @@ out:
         nhood_or |= quant_data[(j-1)*width + i - 1];
       }
 //nhood_or = 0;
-      
+
       previous_value = 0;
       if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position)) {
         if (i > 0) {
@@ -2786,7 +2786,7 @@ schro_encoder_reference_get (SchroEncoder *encoder,
 {
   int i;
   for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
-    if (encoder->reference_pictures[i] && 
+    if (encoder->reference_pictures[i] &&
         encoder->reference_pictures[i]->frame_number == frame_number) {
       return encoder->reference_pictures[i];
     }
@@ -2981,7 +2981,7 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(horiz_slices);
   VAR_SET(vert_slices);
   //VAR_SET();
-  
+
   VAR_SET(magic_dc_metric_offset);
   VAR_SET(magic_subband0_lambda_scale);
   VAR_SET(magic_chroma_lambda_scale);

@@ -528,20 +528,20 @@ generate_coeff (double *coeff, double sigma)
 {
   double q;
   double b0, b0inv, b1, b2, b3, B;
-  
+
   if (sigma >= 2.5) {
     q = 0.98711 * sigma - 0.96330;
-  } else { 
+  } else {
     q = 3.97156 - 4.41554 * sqrt (1 - 0.26891 * sigma);
-  } 
-  
+  }
+
   b0 = 1.57825 + 2.44413*q + 1.4281*q*q + 0.422205*q*q*q;
   b0inv = 1.0/b0;
   b1 = 2.44413*q + 2.85619*q*q + 1.26661*q*q*q;
   b2 = -1.4281*q*q - 1.26661*q*q*q;
   b3 = 0.422205*q*q*q;
   B = 1 - (b1 + b2 + b3)/b0;
-  
+
   coeff[0] = B;
   coeff[1] = b1 * b0inv;
   coeff[2] = b2 * b0inv;

@@ -17,7 +17,7 @@
 
 /**
  * schro_frame_new:
- * 
+ *
  * Creates a new SchroFrame object.  The created frame is uninitialized
  * and has no data storage associated with it.  The caller must fill
  * in the required information.
@@ -110,7 +110,7 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
   frame->components[0].width = width;
   frame->components[0].height = height;
   frame->components[0].stride = ROUND_UP_4(width * bytes_pp);
-  frame->components[0].length = 
+  frame->components[0].length =
     frame->components[0].stride * frame->components[0].height;
   frame->components[0].v_shift = 0;
   frame->components[0].h_shift = 0;
@@ -119,7 +119,7 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
   frame->components[1].width = chroma_width;
   frame->components[1].height = chroma_height;
   frame->components[1].stride = ROUND_UP_4(chroma_width * bytes_pp);
-  frame->components[1].length = 
+  frame->components[1].length =
     frame->components[1].stride * frame->components[1].height;
   frame->components[1].v_shift = v_shift;
   frame->components[1].h_shift = h_shift;
@@ -128,7 +128,7 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
   frame->components[2].width = chroma_width;
   frame->components[2].height = chroma_height;
   frame->components[2].stride = ROUND_UP_4(chroma_width * bytes_pp);
-  frame->components[2].length = 
+  frame->components[2].length =
     frame->components[2].stride * frame->components[2].height;
   frame->components[2].v_shift = v_shift;
   frame->components[2].h_shift = h_shift;
@@ -322,7 +322,7 @@ schro_frame_new_from_data_I420 (void *data, int width, int height)
   frame->components[1].length =
     frame->components[1].stride * frame->components[1].height;
   frame->components[1].data =
-    frame->components[0].data + frame->components[0].length; 
+    frame->components[0].data + frame->components[0].length;
   frame->components[1].v_shift = 1;
   frame->components[1].h_shift = 1;
 
@@ -333,7 +333,7 @@ schro_frame_new_from_data_I420 (void *data, int width, int height)
   frame->components[2].length =
     frame->components[2].stride * frame->components[2].height;
   frame->components[2].data =
-    frame->components[1].data + frame->components[1].length; 
+    frame->components[1].data + frame->components[1].length;
   frame->components[2].v_shift = 1;
   frame->components[2].h_shift = 1;
 
@@ -378,7 +378,7 @@ schro_frame_new_from_data_YV12 (void *data, int width, int height)
   frame->components[2].length =
     frame->components[2].stride * frame->components[2].height;
   frame->components[2].data =
-    frame->components[0].data + frame->components[0].length; 
+    frame->components[0].data + frame->components[0].length;
   frame->components[2].v_shift = 1;
   frame->components[2].h_shift = 1;
 
@@ -389,7 +389,7 @@ schro_frame_new_from_data_YV12 (void *data, int width, int height)
   frame->components[1].length =
     frame->components[1].stride * frame->components[1].height;
   frame->components[1].data =
-    frame->components[2].data + frame->components[2].length; 
+    frame->components[2].data + frame->components[2].length;
   frame->components[1].v_shift = 1;
   frame->components[1].h_shift = 1;
 
@@ -1178,7 +1178,7 @@ schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
       width = params->iwt_chroma_width;
       height = params->iwt_chroma_height;
     }
-    
+
     for(level=0;level<params->transform_depth;level++) {
       SchroFrameData fd;
 
@@ -1224,7 +1224,7 @@ schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
       width = params->iwt_chroma_width;
       height = params->iwt_chroma_height;
     }
-    
+
     for(level=params->transform_depth-1; level >=0;level--) {
       SchroFrameData fd;
 
@@ -1322,7 +1322,7 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
 
   SCHRO_DEBUG("chroma %d %d -> %d %d", chroma_width, chroma_height,
       frame->components[1].width, frame->components[1].height);
-  
+
   switch(SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
     case SCHRO_FRAME_FORMAT_DEPTH_U8:
       for(i=0;i<3;i++){
@@ -1406,7 +1406,7 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
 
         w = (i>0) ? chroma_width : width;
         h = (i>0) ? chroma_height : height;
-        
+
         if (w < comp->width) {
           for(y = 0; y<h; y++) {
             data = OFFSET(comp->data, comp->stride * y);
@@ -1430,7 +1430,7 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
 
         w = (i>0) ? chroma_width : width;
         h = (i>0) ? chroma_height : height;
-        
+
         if (w < comp->width) {
           for(y = 0; y<h; y++) {
             data = OFFSET(comp->data, comp->stride * y);
@@ -1705,7 +1705,7 @@ schro_frame_convert_to_444 (SchroFrame *frame)
   SchroFrame *dest;
 
   SCHRO_ASSERT (frame->format == SCHRO_FRAME_FORMAT_U8_420);
-  
+
   dest = schro_frame_new_and_alloc (frame->domain, SCHRO_FRAME_FORMAT_U8_444,
       frame->width, frame->height);
 
@@ -1729,7 +1729,7 @@ schro_frame_md5 (SchroFrame *frame, uint32_t *state)
   state[1] = 0xefcdab89;
   state[2] = 0x98badcfe;
   state[3] = 0x10325476;
-  
+
   x = 0;
   y = 0;
   k = 0;

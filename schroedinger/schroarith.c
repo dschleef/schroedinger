@@ -124,7 +124,7 @@ SchroArith *
 schro_arith_new (void)
 {
   SchroArith *arith;
-  
+
   arith = schro_malloc0 (sizeof(*arith));
 
   return arith;
@@ -262,7 +262,7 @@ arith->range[0] |= ((1<<i)-1);
   }
 }
 
-  
+
 #if 0
 int
 _schro_arith_decode_bit (SchroArith *arith, int i)

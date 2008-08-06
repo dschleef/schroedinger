@@ -108,7 +108,7 @@ _schro_unpack_shift_in (SchroUnpack *unpack)
   if (unpack->n_bits_left > 0 &&
       unpack->n_bits_in_shift_register + unpack->n_bits_left <= 32) {
     unsigned int value;
-    
+
     value = unpack->data[0]>>(8-unpack->n_bits_left);
     unpack->shift_register |=
       value<<(32 - unpack->n_bits_in_shift_register - unpack->n_bits_left);
@@ -210,8 +210,8 @@ unsigned int
 schro_unpack_decode_uint (SchroUnpack *unpack)
 {
   int count;
-  int value; 
-  
+  int value;
+
   count = 0;
   value = 0;
   while(!schro_unpack_decode_bit (unpack)) {

@@ -321,7 +321,7 @@ schro_histogram_estimate_entropy (SchroHistogram *hist, int quant_index,
       estimated_entropy += 2*bin[i];
     }
   }
-  
+
   return estimated_entropy;
 }
 

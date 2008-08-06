@@ -37,7 +37,7 @@ fft_stage (float *d1, float *d2, const float *s1, const float *s2,
   int half_n;
   int offset;
 
-  half_n = 1<<i; 
+  half_n = 1<<i;
   skip = 1<<(shift - i - 1);
   for(j=0;j<skip; j++) {
     for(k=0;k<half_n;k++){
@@ -46,12 +46,12 @@ fft_stage (float *d1, float *d2, const float *s1, const float *s2,
           costable[k*skip], sintable[k*skip]);
       y = COMPLEX_MULT_I(s1[offset + skip + j], s2[offset + skip + j],
           costable[k*skip], sintable[k*skip]);
-    
+
       d1[k*skip + j] = s1[offset + j] + x;
       d2[k*skip + j] = s2[offset + j] + y;
       d1[k*skip + half_n*skip + j] = s1[offset + j] - x;
       d2[k*skip + half_n*skip + j] = s2[offset + j] - y;
-    } 
+    }
   }
 }
 
@@ -64,9 +64,9 @@ schro_fft_fwd_f32 (float *d_real, float *d_imag, const float *s_real,
   int n = 1<<shift;
   float *tmp;
   float *tmp1_1, *tmp1_2, *tmp2_1, *tmp2_2;
-    
+
   tmp = schro_malloc (4*sizeof(float)*n);
-  tmp1_1 = tmp; 
+  tmp1_1 = tmp;
   tmp1_2 = tmp + n;
   tmp2_1 = tmp + 2*n;
   tmp2_2 = tmp + 3*n;

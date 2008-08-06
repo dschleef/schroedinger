@@ -14,25 +14,25 @@ struct _SchroVideoFormat {
   int width;
   int height;
   SchroChromaFormat chroma_format;
-  
+
   schro_bool interlaced;
   schro_bool top_field_first;
-  
+
   int frame_rate_numerator;
   int frame_rate_denominator;
   int aspect_ratio_numerator;
   int aspect_ratio_denominator;
-    
+
   int clean_width;
   int clean_height;
   int left_offset;
   int top_offset;
-    
+
   int luma_offset;
   int luma_excursion;
   int chroma_offset;
   int chroma_excursion;
-    
+
   SchroColourPrimaries colour_primaries;
   SchroColourMatrix colour_matrix;
   SchroTransferFunction transfer_function;
@@ -42,7 +42,7 @@ struct _SchroVideoFormat {
   int unused0;
   int unused1;
   int unused2;
-};  
+};
 
 int schro_video_format_validate (SchroVideoFormat *format);
 

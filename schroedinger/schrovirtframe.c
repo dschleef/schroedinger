@@ -366,7 +366,7 @@ schro_virt_frame_new_vert_resample (SchroFrame *vf, int height)
 {
   SchroFrame *virt_frame;
   double *scale;
-  
+
   virt_frame = schro_frame_new_virtual (NULL, vf->format, vf->width, height);
   virt_frame->virt_frame1 = schro_frame_ref(vf);
   virt_frame->render_line = schro_virt_frame_render_resample_vert;
@@ -416,7 +416,7 @@ schro_virt_frame_new_horiz_resample (SchroFrame *vf, int width)
 {
   SchroFrame *virt_frame;
   double *scale;
-  
+
   virt_frame = schro_frame_new_virtual (NULL, vf->format, width, vf->height);
   virt_frame->virt_frame1 = schro_frame_ref(vf);
   virt_frame->render_line = schro_virt_frame_render_resample_horiz;
@@ -516,7 +516,7 @@ schro_virt_frame_new_unpack (SchroFrame *vf)
   SchroFrame *virt_frame;
   SchroFrameFormat format;
   SchroFrameRenderFunc render_line;
-  
+
   switch (vf->format) {
     case SCHRO_FRAME_FORMAT_YUYV:
       format = SCHRO_FRAME_FORMAT_U8_422;
@@ -691,7 +691,7 @@ SchroFrame *
 schro_virt_frame_new_color_matrix (SchroFrame *vf)
 {
   SchroFrame *virt_frame;
-  
+
   virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_U8_444,
       vf->width, vf->height);
   virt_frame->virt_frame1 = schro_frame_ref(vf);
@@ -756,7 +756,7 @@ schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format)
 {
   SchroFrame *virt_frame;
   SchroFrameRenderFunc render_line;
-  
+
   if (vf->format == SCHRO_FRAME_FORMAT_U8_422 &&
       format == SCHRO_FRAME_FORMAT_U8_420) {
     render_line = convert_422_420;

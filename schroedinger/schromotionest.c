@@ -322,7 +322,7 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
           min_m = m;
         }
       }
-      
+
       dx = hint_mv[min_m]->dx[0] >> shift;
       dy = hint_mv[min_m]->dy[0] >> shift;
 
@@ -782,8 +782,8 @@ schro_motion_vector_scan (SchroMotionVector *mv, SchroFrame *frame,
           mv->metric = metric;
         }
       }
-    }  
-  }  
+    }
+  }
 }
 
 
@@ -973,7 +973,7 @@ schro_encoder_dc_estimation (SchroMotionEst *me)
       int x,y;
       uint8_t const_data[16];
 #endif
-      
+
       mvdc = (SchroMotionVectorDC *)(motion_field->motion_vectors + j*motion_field->x_num_blocks + i);
 
       memset(mvdc, 0, sizeof(*mvdc));
@@ -1021,7 +1021,7 @@ schro_frame_get_metric (SchroFrame *frame1, int x1, int y1,
       frame2->components[0].data + x2 + y2*frame2->components[0].stride,
       frame2->components[0].stride, 8, 8);
   //metric += abs(x1 - x2) + abs(y1 - y2);
-  
+
   return metric;
 }
 
@@ -1204,7 +1204,7 @@ schro_motionest_rough_scan_hint (SchroMotionEst *me, int shift, int ref,
           min_m = m;
         }
       }
-      
+
       dx = hint_mv[min_m]->dx[ref] >> shift;
       dy = hint_mv[min_m]->dy[ref] >> shift;
 
@@ -1263,7 +1263,7 @@ schro_motionest_superblock_scan_one (SchroMotionEst *me, int ref, int distance,
 
   mv = &block->mv[0][0];
   hint_mv = motion_field_get (hint_mf, i, j);
-  
+
   dx = hint_mv->dx[ref];
   dy = hint_mv->dy[ref];
 
@@ -1471,7 +1471,7 @@ schro_motionest_block_scan_one (SchroMotionEst *me, int ref, int distance,
     for(ii=0;ii<4;ii++){
       mv = &block->mv[jj][ii];
       hint_mv = motion_field_get (hint_mf, i + (ii&2), j + (jj&2));
-      
+
       dx = hint_mv->dx[ref];
       dy = hint_mv->dy[ref];
 
@@ -1581,7 +1581,7 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
 
       schro_block_fixup (&block);
       schro_motion_copy_to (me->motion, i, j, &block);
-      
+
       total_error += (double)block.error*block.error/(double)(block_size * block_size);
     }
   }
@@ -1772,7 +1772,7 @@ schro_block_check (SchroBlock *block)
   for(j=0;j<4;j++){
     for(i=0;i<4;i++){
       mv = &block->mv[j][i];
-      
+
       switch (sbmv->split) {
         case 0:
           if (!schro_motion_vector_is_equal (mv, sbmv)) {

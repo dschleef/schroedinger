@@ -14,7 +14,7 @@ SchroPack *
 schro_pack_new (void)
 {
   SchroPack *pack;
-  
+
   pack = schro_malloc0 (sizeof(*pack));
 
   return pack;

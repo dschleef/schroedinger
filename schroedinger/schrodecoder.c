@@ -757,7 +757,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
 
     schro_buffer_unref (decoder->input_buffer);
     decoder->input_buffer = NULL;
-    
+
     return SCHRO_DECODER_OK;
   }
 
@@ -981,7 +981,7 @@ schro_decoder_picture_complete (SchroPicture *picture)
   schro_picture_unref (picture);
 }
 
-static int 
+static int
 schro_decoder_async_schedule (SchroDecoder *decoder,
     SchroExecDomain exec_domain)
 {
@@ -1427,7 +1427,7 @@ schro_decoder_decode_parse_header (SchroDecoder *decoder)
 {
   SchroUnpack *unpack = &decoder->unpack;
   int v1, v2, v3, v4;
-  
+
   v1 = schro_unpack_decode_bits (unpack, 8);
   v2 = schro_unpack_decode_bits (unpack, 8);
   v3 = schro_unpack_decode_bits (unpack, 8);
@@ -1948,11 +1948,11 @@ schro_decoder_decode_prediction_unit(SchroPicture *picture, SchroArith **arith,
   mv->pred_mode = schro_motion_get_mode_prediction (motion,
       x, y);
   if (!params->is_noarith) {
-    mv->pred_mode ^= 
+    mv->pred_mode ^=
       _schro_arith_decode_bit (arith[SCHRO_DECODER_ARITH_PRED_MODE],
           SCHRO_CTX_BLOCK_MODE_REF1);
   } else {
-    mv->pred_mode ^= 
+    mv->pred_mode ^=
       schro_unpack_decode_bit (unpack + SCHRO_DECODER_ARITH_PRED_MODE);
   }
   if (params->num_refs > 1) {
@@ -1961,7 +1961,7 @@ schro_decoder_decode_prediction_unit(SchroPicture *picture, SchroArith **arith,
         _schro_arith_decode_bit (arith[SCHRO_DECODER_ARITH_PRED_MODE],
             SCHRO_CTX_BLOCK_MODE_REF2) << 1;
     } else {
-      mv->pred_mode ^= 
+      mv->pred_mode ^=
         schro_unpack_decode_bit (unpack + SCHRO_DECODER_ARITH_PRED_MODE) << 1;
     }
   }
@@ -2288,7 +2288,7 @@ schro_decoder_decode_transform_data (SchroPicture *picture)
   SchroParams *params = &picture->params;
   SchroPictureSubbandContext context = { 0 }, *ctx = &context;
   int skip_subbands;
-  
+
   /* FIXME some day, hook this up into automatic degraded decoding */
   skip_subbands = 0;
 
@@ -2560,7 +2560,7 @@ schro_decoder_subband_dc_predict (SchroFrameData *fd)
     pred_value = line[i-1];
     line[i] += pred_value;
   }
-  
+
   for(j=1;j<fd->height;j++){
     line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
     prev_line = SCHRO_FRAME_DATA_GET_LINE(fd, j-1);
@@ -2738,7 +2738,7 @@ schro_decoder_decode_subband (SchroPicture *picture,
 
       ctx->xmin = (ctx->frame_data->width*x)/ctx->horiz_codeblocks;
       ctx->xmax = (ctx->frame_data->width*(x+1))/ctx->horiz_codeblocks;
-      
+
       schro_decoder_decode_codeblock (picture, ctx);
     }
   }

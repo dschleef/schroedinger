@@ -780,7 +780,7 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
       weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
         [frame->params.transform_depth-1][i];
       lambda /= weight*weight;
-      
+
       frame->quant_index[component][i] = schro_subband_pick_quant (frame,
           component, i, lambda);
     }
@@ -854,7 +854,7 @@ schro_subband_pick_quant (SchroEncoderFrame *frame, int component, int i,
   for(j=0;j<60;j++){
     entropy = frame->est_entropy[component][i][j];
     error = frame->est_error[component][i][j];
-    
+
     x = entropy + lambda * error;
     if (j == 0 || x < min) {
       j_min = j;
@@ -920,7 +920,7 @@ base_lambda = 0.1;
       weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
         [frame->params.transform_depth-1][i];
       lambda /= weight*weight;
-      
+
       quant_index = schro_subband_pick_quant (frame, component, i, lambda);
       n += frame->est_entropy[component][i][quant_index];
       qsum += quant_index;
@@ -958,7 +958,7 @@ schro_encoder_lambda_to_entropy (SchroEncoderFrame *frame, double base_lambda)
       weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
         [frame->params.transform_depth-1][i];
       lambda /= weight*weight;
-      
+
       quant_index = schro_subband_pick_quant (frame, component, i, lambda);
       entropy += frame->est_entropy[component][i][quant_index];
       frame->quant_index[component][i] = quant_index;
@@ -1085,7 +1085,7 @@ schro_encoder_lambda_to_error (SchroEncoderFrame *frame, double base_lambda)
       weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
         [frame->params.transform_depth-1][i];
       lambda /= weight*weight;
-      
+
       quant_index = schro_subband_pick_quant (frame, component, i, lambda);
       error += frame->est_error[component][i][quant_index];
       frame->quant_index[component][i] = quant_index;
