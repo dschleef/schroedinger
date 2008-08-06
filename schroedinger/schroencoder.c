@@ -116,6 +116,7 @@ schro_encoder_new (void)
   encoder->magic_lambda = 1.0;
   encoder->magic_badblock_multiplier_nonref = 4.0;
   encoder->magic_badblock_multiplier_ref = 8.0;
+  encoder->magic_block_search_threshold = 15.0;
 
   encoder->downsample_levels = 5;
 
@@ -2914,6 +2915,9 @@ static SchroEncoderSetting encoder_settings[] = {
   DOUB("magic_mc_lambda", 0.0, 1000.0, 0.0),
   DOUB("magic_subgroup_length", 2.0, 10.0, 4.0),
   DOUB("magic_lambda", 0.0, 1000.0, 1.0),
+  DOUB("magic_badblock_multiplier_nonref", 0.0, 1000.0, 1.0),
+  DOUB("magic_badblock_multiplier_nref", 0.0, 1000.0, 1.0),
+  DOUB("magic_block_search_threshold", 0.0, 1000.0, 1.0),
 };
 
 int
@@ -2997,6 +3001,9 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(magic_mc_lambda);
   VAR_SET(magic_subgroup_length);
   VAR_SET(magic_lambda);
+  VAR_SET(magic_badblock_multiplier_nonref);
+  VAR_SET(magic_badblock_multiplier_ref);
+  VAR_SET(magic_block_search_threshold);
 }
 
 double
@@ -3055,6 +3062,9 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(magic_mc_lambda);
   VAR_GET(magic_subgroup_length);
   VAR_GET(magic_lambda);
+  VAR_GET(magic_badblock_multiplier_nonref);
+  VAR_GET(magic_badblock_multiplier_ref);
+  VAR_GET(magic_block_search_threshold);
 
   return 0;
 }

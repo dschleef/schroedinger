@@ -1516,10 +1516,13 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
   int i,j;
   double total_error = 0;
   int block_size;
+  int block_threshold;
 
   me->lambda = me->encoder_frame->encoder->magic_mc_lambda;
 
   block_size = 16 * params->xbsep_luma * params->ybsep_luma;
+  block_threshold = params->xbsep_luma * params->ybsep_luma *
+    me->encoder_frame->encoder->magic_block_search_threshold;
 
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
@@ -1564,7 +1567,7 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
         TRYBLOCK
       }
 
-      if (min_score > 1000) {
+      if (min_score > block_threshold) {
         min_score1 = min_score;
         schro_motionest_block_scan_one (me, 0, 4, &tryblock, i, j);
         TRYBLOCK
