@@ -60,11 +60,13 @@ schro_engine_code_picture (SchroEncoderFrame *frame,
   frame->slot = encoder->next_slot++;
 
   if (num_refs > 0) {
+    SCHRO_ASSERT(ref0 >= encoder->au_frame);
     frame->ref_frame[0] = schro_encoder_reference_get (encoder, ref0);
     SCHRO_ASSERT(frame->ref_frame[0]);
     schro_encoder_frame_ref (frame->ref_frame[0]);
   }
   if (num_refs > 1) {
+    SCHRO_ASSERT(ref0 >= encoder->au_frame);
     frame->ref_frame[1] = schro_encoder_reference_get (encoder, ref1);
     SCHRO_ASSERT(frame->ref_frame[1]);
     schro_encoder_frame_ref (frame->ref_frame[1]);
@@ -148,6 +150,7 @@ schro_engine_code_BBBP (SchroEncoder *encoder, int i, int gop_length)
   SchroEncoderFrame *frame;
   SchroEncoderFrame *f;
   int j;
+  int ref;
 
   frame = encoder->frame_queue->elements[i].data;
 
@@ -155,18 +158,37 @@ schro_engine_code_BBBP (SchroEncoder *encoder, int i, int gop_length)
   frame->gop_length = gop_length;
 
   f = encoder->frame_queue->elements[i+gop_length-1].data;
-  schro_engine_code_picture (f, TRUE, encoder->last_ref,
-      2, encoder->last_ref2, encoder->intra_ref);
-  f->presentation_frame = encoder->last_ref2;
-  f->picture_weight = encoder->magic_inter_p_weight;
-  //f->picture_weight += (gop_length - 1) * (1 - encoder->magic_inter_b_weight);
-  encoder->last_ref = encoder->last_ref2;
-  encoder->last_ref2 = f->frame_number;
+  if (f->start_sequence_header) {
+    schro_engine_code_picture (f, TRUE, encoder->intra_ref, 0, -1, -1);
+    f->presentation_frame = encoder->last_ref2;
+    f->picture_weight = encoder->magic_keyframe_weight;
+    encoder->intra_ref = f->frame_number;
+  } else {
+    if (encoder->intra_ref >= encoder->last_ref2) {
+      schro_engine_code_picture (f, TRUE, encoder->last_ref,
+          1, encoder->intra_ref, -1);
+      f->presentation_frame = encoder->intra_ref;
+    } else {
+      schro_engine_code_picture (f, TRUE, encoder->last_ref,
+          2, encoder->last_ref2, encoder->intra_ref);
+      f->presentation_frame = encoder->last_ref2;
+      f->picture_weight = encoder->magic_inter_p_weight;
+    }
+
+    encoder->last_ref = encoder->last_ref2;
+    encoder->last_ref2 = f->frame_number;
+  }
+
+  if (encoder->intra_ref > encoder->last_ref) {
+    ref = encoder->intra_ref;
+  } else {
+    ref = encoder->last_ref;
+  }
 
   for (j = 0; j < gop_length - 1; j++) {
     f = encoder->frame_queue->elements[i+j].data;
     schro_engine_code_picture (f, FALSE, -1,
-        2, encoder->last_ref, encoder->last_ref2);
+        2, ref, encoder->last_ref2);
     f->presentation_frame = f->frame_number;
     if (j == gop_length-2) {
       f->presentation_frame++;
@@ -455,7 +477,6 @@ schro_encoder_handle_gop_tworef (SchroEncoder *encoder, int i)
   SchroEncoderFrame *f;
   int j;
   int gop_length;
-  schro_bool intra_start;
   double scs_sum;
 
   frame = encoder->frame_queue->elements[i].data;
@@ -465,25 +486,24 @@ schro_encoder_handle_gop_tworef (SchroEncoder *encoder, int i)
   if (frame->busy || !(frame->state & SCHRO_ENCODER_FRAME_STATE_ANALYSE))
     return;
 
-  schro_engine_check_new_sequence_header (encoder, frame);
+  //schro_engine_check_new_sequence_header (encoder, frame);
 
   gop_length = encoder->magic_subgroup_length;
   SCHRO_DEBUG("handling gop from %d to %d (index %d)", encoder->gop_picture,
       encoder->gop_picture + gop_length - 1, i);
 
-  if (i + gop_length >= encoder->frame_queue->n) {
-    if (encoder->end_of_stream) {
-      gop_length = encoder->frame_queue->n - i;
-    } else {
+  if (encoder->end_of_stream) {
+    gop_length = MIN(gop_length, encoder->frame_queue->n - i);
+  }
+
+  //intra_start = frame->start_sequence_header;
+  scs_sum = 0;
+  for (j = 0; j < gop_length; j++) {
+    if (i + j >= encoder->frame_queue->n) {
       SCHRO_DEBUG("not enough pictures in queue");
       return;
     }
-  }
 
-  intra_start = frame->start_sequence_header;
-  scs_sum = 0;
-  for (j = 0; j < gop_length; j++) {
-    /* FIXME set the gop length correctly for IBBBP */
     f = encoder->frame_queue->elements[i+j].data;
 
     SCHRO_ASSERT(!(f->state & SCHRO_ENCODER_FRAME_STATE_HAVE_GOP));
@@ -493,6 +513,13 @@ schro_encoder_handle_gop_tworef (SchroEncoder *encoder, int i)
       return;
     }
 
+    if (f->start_sequence_header ||
+        f->frame_number >= encoder->au_frame + encoder->au_distance) {
+      f->start_sequence_header = TRUE;
+      gop_length = j + 1;
+      break;
+    }
+
     schro_engine_get_scene_change_score (encoder, i+j);
 
     schro_dump (SCHRO_DUMP_SCENE_CHANGE, "%d %g %g\n",
@@ -500,31 +527,46 @@ schro_encoder_handle_gop_tworef (SchroEncoder *encoder, int i)
         f->average_luma);
     SCHRO_DEBUG("scene change score %g", f->scene_change_score);
 
-    if (j==0) {
-      if (f->scene_change_score > encoder->magic_scene_change_threshold) {
-        intra_start = TRUE;
+    if (f->scene_change_score > encoder->magic_scene_change_threshold) {
+      if (j == 0) {
+        f->start_sequence_header = TRUE;
+        gop_length = 1;
+        break;
+      } else {
+        f->start_sequence_header = TRUE;
+        gop_length = j;
       }
-    } else {
+    }
+
+#if 0
       scs_sum += f->scene_change_score;
       if (scs_sum > encoder->magic_scene_change_threshold) {
         /* matching is getting bad.  terminate gop */
         gop_length = j;
       }
-    }
+#endif
   }
 
   SCHRO_DEBUG("gop length %d", gop_length);
 
-  /* looks like we only deal with closed GOP structures; is it true ?
-   * FIXME */
+  for(j=0;j<gop_length-1;j++){
+    f = encoder->frame_queue->elements[i+j].data;
+    SCHRO_ASSERT(f->start_sequence_header == FALSE);
+  }
+
   if (gop_length == 1) {
-    schro_engine_code_intra (frame, encoder->magic_bailout_weight);
-  } else {
-    if (intra_start) {
-      schro_engine_code_IBBBP (encoder, i, gop_length);
-    } else {
+    if (frame->start_sequence_header) {
       schro_engine_code_BBBP (encoder, i, gop_length);
+    } else {
+      schro_engine_code_intra (frame, encoder->magic_bailout_weight);
     }
+  } else {
+    schro_engine_code_BBBP (encoder, i, gop_length);
+  }
+
+  f = encoder->frame_queue->elements[i+gop_length-1].data;
+  if (f->start_sequence_header) {
+    encoder->au_frame = f->frame_number;
   }
 
   encoder->gop_picture += gop_length;
