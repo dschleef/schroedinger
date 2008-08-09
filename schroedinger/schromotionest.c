@@ -141,6 +141,8 @@ void
 schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
     int distance)
 {
+  SCHRO_ASSERT(rme && rme->encoder_frame && rme->ref_frame);
+
   SchroMetricScan scan;
   SchroMotionVector *mv;
   SchroMotionField *mf;
@@ -148,6 +150,12 @@ schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
   int i;
   int j;
   int skip;
+  /* I need to determine which reference I'm working on
+   * to process the candidates MVs - note I've already checked
+   * that ref_frame != NULL */
+  int ref = rme->ref_frame == rme->encoder_frame->ref_frame[0] ? 0
+    : (rme->ref_frame == rme->encoder_frame->ref_frame[1] ? 1 : -1);
+  SCHRO_ASSERT(ref != -1);
 
   scan.frame = get_downsampled (rme->encoder_frame, shift);
   scan.ref_frame = get_downsampled (rme->ref_frame, shift);
@@ -197,8 +205,8 @@ schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
       dx <<= shift;
       dy <<= shift;
 
-      mv->dx[0] = dx;
-      mv->dy[0] = dy;
+      mv->dx[ref] = dx;
+      mv->dy[ref] = dy;
     }
   }
 
@@ -209,6 +217,8 @@ void
 schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
     int distance)
 {
+  SCHRO_ASSERT (rme && rme->encoder_frame && rme->ref_frame);
+
   SchroMetricScan scan;
   SchroMotionVector *mv;
   SchroMotionField *mf;
@@ -219,6 +229,13 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
   int j;
   int skip;
   unsigned int hint_mask;
+  /* I need to determine which reference I'm working on
+   * to process the candidates MVs - note I've already checked
+   * that ref_frame != NULL */
+  int ref = rme->ref_frame == rme->encoder_frame->ref_frame[0] ? 0
+    : (rme->ref_frame == rme->encoder_frame->ref_frame[1] ? 1 : -1);
+  SCHRO_ASSERT(ref != -1);
+
 
   scan.frame = get_downsampled (rme->encoder_frame, shift);
   scan.ref_frame = get_downsampled (rme->ref_frame, shift);
@@ -294,8 +311,8 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
         int width, height;
         int x,y;
 
-        dx = hint_mv[m]->dx[0];
-        dy = hint_mv[m]->dy[0];
+        dx = hint_mv[m]->dx[ref];
+        dy = hint_mv[m]->dy[ref];
 
 
         x = (i*params->xbsep_luma + dx) >> shift;
@@ -323,8 +340,8 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
         }
       }
 
-      dx = hint_mv[min_m]->dx[0] >> shift;
-      dy = hint_mv[min_m]->dy[0] >> shift;
+      dx = hint_mv[min_m]->dx[ref] >> shift;
+      dy = hint_mv[min_m]->dy[ref] >> shift;
 
       scan.x = (i>>shift) * params->xbsep_luma;
       scan.y = (j>>shift) * params->ybsep_luma;
@@ -334,8 +351,8 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
 
       mv = motion_field_get (mf, i, j);
       if (scan.scan_width <= 0 || scan.scan_height <= 0) {
-        mv->dx[0] = 0;
-        mv->dy[0] = 0;
+        mv->dx[ref] = 0;
+        mv->dy[ref] = 0;
         mv->metric = SCHRO_METRIC_INVALID;
         continue;
       }
@@ -345,8 +362,8 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
       dx <<= shift;
       dy <<= shift;
 
-      mv->dx[0] = dx;
-      mv->dy[0] = dy;
+      mv->dx[ref] = dx;
+      mv->dy[ref] = dy;
     }
   }
 
@@ -365,7 +382,7 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
   SCHRO_ASSERT(params->num_refs > 0);
 
   for(ref=0;ref<params->num_refs;ref++){
-    frame->rme[ref] = schro_rough_me_new (frame, frame->ref_frame[0]);
+    frame->rme[ref] = schro_rough_me_new (frame, frame->ref_frame[ref]);
     schro_rough_me_heirarchical_scan (frame->rme[ref]);
   }
 
