@@ -410,8 +410,8 @@ gst_schrodownsample_transform (GstBaseTransform * base_transform,
   }
 
   frame = schro_virt_frame_new_unpack_take (frame);
-  frame = schro_virt_frame_new_horiz_downsample_take (frame, TRUE);
-  frame = schro_virt_frame_new_vert_downsample_take (frame, TRUE);
+  frame = schro_virt_frame_new_horiz_downsample_take (frame, FALSE);
+  frame = schro_virt_frame_new_vert_downsample_take (frame, FALSE);
 
   switch (format) {
     case GST_MAKE_FOURCC('Y','U','Y','2'):

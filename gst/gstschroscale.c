@@ -823,11 +823,11 @@ gst_schro_scale_transform (GstBaseTransform * trans, GstBuffer * in,
   h = videoscale->from_height;
   while (w >= 2*videoscale->to_width || h >= 2*videoscale->to_height) {
     if (w >= 2*videoscale->to_width) {
-      frame = schro_virt_frame_new_horiz_downsample_take (frame, TRUE);
+      frame = schro_virt_frame_new_horiz_downsample_take (frame, FALSE);
       w /= 2;
     }
     if (h >= 2*videoscale->to_height) {
-      frame = schro_virt_frame_new_vert_downsample_take (frame, TRUE);
+      frame = schro_virt_frame_new_vert_downsample_take (frame, FALSE);
       h /= 2;
     }
   }
