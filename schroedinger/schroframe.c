@@ -1456,11 +1456,11 @@ downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src)
 
   for(i=0;i<n_dest;i++){
     int x = 0;
-    x += -1*src[CLAMP(i*2 - 1, 0, n_src-1)];
-    x +=  9*src[CLAMP(i*2 + 0, 0, n_src-1)];
-    x +=  9*src[CLAMP(i*2 + 1, 0, n_src-1)];
-    x += -1*src[CLAMP(i*2 + 2, 0, n_src-1)];
-    dest[i] = CLAMP((x+8)>>4, 0, 255);
+    x +=  6*src[CLAMP(i*2 - 1, 0, n_src-1)];
+    x += 26*src[CLAMP(i*2 + 0, 0, n_src-1)];
+    x += 26*src[CLAMP(i*2 + 1, 0, n_src-1)];
+    x +=  6*src[CLAMP(i*2 + 2, 0, n_src-1)];
+    dest[i] = CLAMP((x+32)>>6, 0, 255);
   }
 }
 
@@ -1472,11 +1472,11 @@ downsample_vert_u8 (uint8_t *dest, int n_dest, uint8_t *src1,
 
   for(i=0;i<n_dest;i++){
     int x = 0;
-    x += -1*src1[i];
-    x +=  9*src2[i];
-    x +=  9*src3[i];
-    x += -1*src4[i];
-    dest[i] = CLAMP((x+8)>>4, 0, 255);
+    x +=  6*src1[i];
+    x += 26*src2[i];
+    x += 26*src3[i];
+    x +=  6*src4[i];
+    dest[i] = CLAMP((x+32)>>6, 0, 255);
   }
 }
 
