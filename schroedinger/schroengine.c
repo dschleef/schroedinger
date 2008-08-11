@@ -93,6 +93,7 @@ schro_engine_code_picture (SchroEncoderFrame *frame,
  * Sets up coding parameters for encoding as a completely independent
  * non-ref intra picture.
  */
+#if 0
 static void
 schro_engine_code_intra (SchroEncoderFrame *frame, double weight)
 {
@@ -101,6 +102,7 @@ schro_engine_code_intra (SchroEncoderFrame *frame, double weight)
   frame->picture_weight = weight;
   frame->gop_length = 1;
 }
+#endif
 
 void
 schro_engine_code_IBBBP (SchroEncoder *encoder, int i, int gop_length)
@@ -529,10 +531,16 @@ schro_encoder_handle_gop_tworef (SchroEncoder *encoder, int i)
 
     if (f->scene_change_score > encoder->magic_scene_change_threshold) {
       if (j == 0) {
+        /* If the first picture of the proposed subgroup is first
+         * picture of a new shot, we want to encode a sequence header
+         * and an I frame. */
         f->start_sequence_header = TRUE;
         gop_length = 1;
         break;
       } else {
+        /* If there's a shot change in the middle of the proposed
+         * subgroup, terminate the subgroup early.  Also flag that
+         * picture as a new sequence header (not really necessary). */
         f->start_sequence_header = TRUE;
         gop_length = j;
       }
@@ -555,11 +563,7 @@ schro_encoder_handle_gop_tworef (SchroEncoder *encoder, int i)
   }
 
   if (gop_length == 1) {
-    if (frame->start_sequence_header) {
-      schro_engine_code_BBBP (encoder, i, gop_length);
-    } else {
-      schro_engine_code_intra (frame, encoder->magic_bailout_weight);
-    }
+    schro_engine_code_BBBP (encoder, i, gop_length);
   } else {
     schro_engine_code_BBBP (encoder, i, gop_length);
   }
