@@ -24,7 +24,6 @@
 #include <gst/gst.h>
 #include <schroedinger/schro.h>
 
-GType gst_schrotoy_get_type (void);
 GType gst_schrofilter_get_type (void);
 GType gst_schrodownsample_get_type (void);
 GType gst_schro_enc_get_type (void);
@@ -55,8 +54,6 @@ plugin_init (GstPlugin * plugin)
   gst_element_register (plugin, "schrodownsample", GST_RANK_NONE,
       gst_schrodownsample_get_type ());
 #endif
-  gst_element_register (plugin, "schrotoy", GST_RANK_NONE,
-      gst_schrotoy_get_type ());
   gst_element_register (plugin, "framestore", GST_RANK_NONE,
       gst_frame_store_get_type ());
   gst_element_register (plugin, "schroscale", GST_RANK_NONE,

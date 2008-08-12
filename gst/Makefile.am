@@ -6,7 +6,6 @@ libgstschro_la_SOURCES = \
 	gstschro.c \
 	gstschrodec.c \
 	gstschroparse.c \
-	gstschrotoy.c \
 	gstschroscale.c \
 	gstframestore.c
 
