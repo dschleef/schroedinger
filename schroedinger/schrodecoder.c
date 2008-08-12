@@ -2127,7 +2127,6 @@ schro_decoder_init_subband_frame_data_interleaved (SchroPicture *picture)
   SchroFrameData *comp;
   SchroFrameData *fd;
   SchroParams *params = &picture->params;
-  int shift;
   int position;
 
   if (picture->error) return;
@@ -2139,27 +2138,8 @@ schro_decoder_init_subband_frame_data_interleaved (SchroPicture *picture)
 
       fd = &picture->subband_data[component][i];
 
-      shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
-
-      fd->format = picture->transform_frame->format;
-      fd->h_shift = comp->h_shift + shift;
-      fd->v_shift = comp->v_shift + shift;
-      fd->stride = comp->stride << shift;
-      if (component == 0) {
-        fd->width = params->iwt_luma_width >> shift;
-        fd->height = params->iwt_luma_height >> shift;
-      } else {
-        fd->width = params->iwt_chroma_width >> shift;
-        fd->height = params->iwt_chroma_height >> shift;
-      }
-
-      fd->data = comp->data;
-      if (position & 2) {
-        fd->data = OFFSET(fd->data, fd->stride>>1);
-      }
-      if (position & 1) {
-        fd->data = OFFSET(fd->data, fd->width*sizeof(int16_t));
-      }
+      schro_subband_get_frame_data (fd, picture->transform_frame,
+          component, position, params);
     }
   }
 }

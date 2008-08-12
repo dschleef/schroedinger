@@ -331,34 +331,6 @@ schro_subband_get_frame_data (SchroFrameData *fd,
   }
 }
 
-void
-schro_subband_get (SchroFrame *frame, int component, int position,
-    SchroParams *params,
-    int16_t **data, int *stride, int *width, int *height)
-{
-  int shift;
-  SchroFrameData *comp = &frame->components[component];
-
-  shift = params->transform_depth - SCHRO_SUBBAND_SHIFT(position);
-
-  *stride = comp->stride << shift;
-  if (component == 0) {
-    *width = params->iwt_luma_width >> shift;
-    *height = params->iwt_luma_height >> shift;
-  } else {
-    *width = params->iwt_chroma_width >> shift;
-    *height = params->iwt_chroma_height >> shift;
-  }
-
-  *data = comp->data;
-  if (position & 2) {
-    *data = OFFSET(*data, (*stride)>>1);
-  }
-  if (position & 1) {
-    *data = OFFSET(*data, (*width)*sizeof(int16_t));
-  }
-}
-
 int
 schro_subband_get_position (int index)
 {
