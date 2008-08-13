@@ -57,9 +57,7 @@ schro_encoder_new (void)
 
   encoder->au_frame = -1;
 
-  encoder->intra_ref = -1;
   encoder->last_ref = -1;
-  encoder->last_ref2 = -1;
 
   encoder->rate_control = 0;
   encoder->bitrate = 13824000;

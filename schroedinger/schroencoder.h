@@ -88,6 +88,8 @@ struct _SchroEncoderFrame {
 
   void *priv;
 
+  unsigned int expired_reference;
+
   /* Bits telling the engine stages which stuff needs to happen */
   unsigned int need_downsampling;
   unsigned int need_upsampling;
@@ -326,12 +328,7 @@ struct _SchroEncoder {
   int gop_picture;
   int quant_slot;
 
-  int intra_ref;
   int last_ref;
-  int last_ref2;
-  //int next_ref;
-  //int mid1_ref;
-  //int mid2_ref;
 };
 #endif
 

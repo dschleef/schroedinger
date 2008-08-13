@@ -104,49 +104,116 @@ schro_engine_code_intra (SchroEncoderFrame *frame, double weight)
 }
 #endif
 
-#if 0
 void
-schro_engine_code_IBBBP (SchroEncoder *encoder, int i, int gop_length)
+schro_encoder_pick_refs (SchroEncoderFrame *frame,
+    SchroPictureNumber *ptr_ref0, SchroPictureNumber *ptr_ref1)
 {
-  SchroEncoderFrame *frame;
-  SchroEncoderFrame *f;
-  SchroEncoderFrame *ref2;
-  int j;
+  SchroEncoder *encoder = frame->encoder;
+  SchroPictureNumber ref0;
+  SchroPictureNumber ref1;
+  int i;
 
-  frame = encoder->frame_queue->elements[i].data;
-
-  /* IBBBP */
-  schro_engine_code_picture (frame, TRUE, encoder->intra_ref, 0, -1, -1);
-  encoder->intra_ref = frame->frame_number;
-
-  frame->presentation_frame = frame->frame_number;
-  //frame->picture_weight = 1 + (gop_length - 1) * 0.6;
-  frame->picture_weight = encoder->magic_keyframe_weight;
-  frame->gop_length = gop_length;
-
-  f = encoder->frame_queue->elements[i+gop_length-1].data;
-  schro_engine_code_picture (f, TRUE, encoder->last_ref,
-      1, frame->frame_number, -1);
-
-  f->presentation_frame = frame->frame_number;
-  f->picture_weight = encoder->magic_inter_p_weight;
-  //f->picture_weight += (gop_length - 2) * (1 - encoder->magic_inter_b_weight);
-  encoder->last_ref = encoder->last_ref2;
-  encoder->last_ref2 = f->frame_number;
-  ref2 = f;
-
-  for (j = 1; j < gop_length - 1; j++) {
-    f = encoder->frame_queue->elements[i+j].data;
-    schro_engine_code_picture (f, FALSE, -1,
-        2, frame->frame_number, ref2->frame_number);
-    f->presentation_frame = f->frame_number;
-    if (j == gop_length-2) {
-      f->presentation_frame++;
+  ref0 = SCHRO_PICTURE_NUMBER_INVALID;
+  /* pick the most recent back ref */
+  for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
+    if (encoder->reference_pictures[i] == NULL) continue;
+    if (encoder->reference_pictures[i]->frame_number < frame->frame_number &&
+        (ref0 == SCHRO_PICTURE_NUMBER_INVALID ||
+         encoder->reference_pictures[i]->frame_number > ref0)) {
+      ref0 = encoder->reference_pictures[i]->frame_number;
     }
-    f->picture_weight = encoder->magic_inter_b_weight;
+  }
+  SCHRO_ASSERT(ref0 != SCHRO_PICTURE_NUMBER_INVALID);
+
+  /* pick the earliest forward ref */
+  ref1 = SCHRO_PICTURE_NUMBER_INVALID;
+  for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
+    if (encoder->reference_pictures[i] == NULL) continue;
+    if (!encoder->reference_pictures[i]->expired_reference &&
+        encoder->reference_pictures[i]->frame_number > frame->frame_number &&
+        (ref1 == SCHRO_PICTURE_NUMBER_INVALID ||
+         encoder->reference_pictures[i]->frame_number < ref1)) {
+      ref1 = encoder->reference_pictures[i]->frame_number;
+    }
+  }
+  if (ref1 == SCHRO_PICTURE_NUMBER_INVALID) {
+    /* if there's no fwd ref, pick an older back ref */
+    for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
+      if (encoder->reference_pictures[i] == NULL) continue;
+      if (!encoder->reference_pictures[i]->expired_reference &&
+          encoder->reference_pictures[i]->frame_number < ref0 &&
+          (ref1 == SCHRO_PICTURE_NUMBER_INVALID ||
+           encoder->reference_pictures[i]->frame_number > ref1)) {
+        ref1 = encoder->reference_pictures[i]->frame_number;
+      }
+    }
+  }
+
+  *ptr_ref0 = ref0;
+  *ptr_ref1 = ref1;
+}
+
+void
+schro_encoder_pick_retire (SchroEncoderFrame *frame,
+    SchroPictureNumber *ptr_retire)
+{
+  SchroEncoder *encoder = frame->encoder;
+  SchroPictureNumber retire;
+  int n_refs = 0;
+  int i;
+
+  retire = SCHRO_PICTURE_NUMBER_INVALID;
+  /* pick the oldest expired ref */
+  for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
+    if (encoder->reference_pictures[i] == NULL) continue;
+    n_refs++;
+    if (encoder->reference_pictures[i]->expired_reference &&
+        (retire == SCHRO_PICTURE_NUMBER_INVALID ||
+         encoder->reference_pictures[i]->frame_number < retire)) {
+      retire = encoder->reference_pictures[i]->frame_number;
+    }
+  }
+
+  if (retire == SCHRO_PICTURE_NUMBER_INVALID && n_refs == 3) {
+    /* if we have a full queue, forceably retire something */
+    for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
+      if (encoder->reference_pictures[i] == NULL) continue;
+      if (retire == SCHRO_PICTURE_NUMBER_INVALID ||
+           encoder->reference_pictures[i]->frame_number < retire) {
+        retire = encoder->reference_pictures[i]->frame_number;
+      }
+    }
+    SCHRO_ASSERT (retire != SCHRO_PICTURE_NUMBER_INVALID);
+  }
+
+  *ptr_retire = retire;
+}
+
+void
+schro_encoder_expire_reference (SchroEncoder *encoder, SchroPictureNumber ref)
+{
+  int i;
+
+  for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
+    if (encoder->reference_pictures[i] == NULL) continue;
+    if (encoder->reference_pictures[i]->frame_number == ref) {
+      encoder->reference_pictures[i]->expired_reference = TRUE;
+    }
   }
 }
-#endif
+
+void
+schro_encoder_expire_refs_before (SchroEncoder *encoder, SchroPictureNumber ref)
+{
+  int i;
+
+  for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
+    if (encoder->reference_pictures[i] == NULL) continue;
+    if (encoder->reference_pictures[i]->frame_number < ref) {
+      encoder->reference_pictures[i]->expired_reference = TRUE;
+    }
+  }
+}
 
 void
 schro_engine_code_BBBP (SchroEncoder *encoder, int i, int gop_length)
@@ -154,7 +221,9 @@ schro_engine_code_BBBP (SchroEncoder *encoder, int i, int gop_length)
   SchroEncoderFrame *frame;
   SchroEncoderFrame *f;
   int j;
-  int ref;
+  SchroPictureNumber ref0;
+  SchroPictureNumber ref1;
+  SchroPictureNumber retire;
 
   frame = encoder->frame_queue->elements[i].data;
 
@@ -163,41 +232,37 @@ schro_engine_code_BBBP (SchroEncoder *encoder, int i, int gop_length)
 
   f = encoder->frame_queue->elements[i+gop_length-1].data;
   if (f->start_sequence_header) {
-    schro_engine_code_picture (f, TRUE, encoder->intra_ref, 0, -1, -1);
-    f->presentation_frame = encoder->last_ref2;
+    schro_encoder_pick_retire (f, &retire);
+
+    schro_engine_code_picture (f, TRUE, retire, 0, -1, -1);
     f->picture_weight = encoder->magic_keyframe_weight;
-    encoder->intra_ref = f->frame_number;
   } else {
-    if (encoder->intra_ref >= encoder->last_ref2) {
-      schro_engine_code_picture (f, TRUE, encoder->last_ref,
-          1, encoder->intra_ref, -1);
-      f->presentation_frame = encoder->intra_ref;
-    } else {
-      schro_engine_code_picture (f, TRUE, encoder->last_ref,
-          2, encoder->last_ref2, encoder->intra_ref);
-      f->presentation_frame = encoder->last_ref2;
-      f->picture_weight = encoder->magic_inter_p_weight;
-    }
+    schro_encoder_pick_retire (f, &retire);
+    schro_encoder_pick_refs (f, &ref0, &ref1);
 
-    encoder->last_ref = encoder->last_ref2;
-    encoder->last_ref2 = f->frame_number;
-  }
+    schro_engine_code_picture (f, TRUE, retire,
+        (ref1 == SCHRO_PICTURE_NUMBER_INVALID)?1:2, ref0, ref1);
+    f->picture_weight = encoder->magic_inter_p_weight;
 
-  if (encoder->intra_ref > encoder->last_ref) {
-    ref = encoder->intra_ref;
-  } else {
-    ref = encoder->last_ref;
+    schro_encoder_expire_reference (encoder, encoder->last_ref);
+    encoder->last_ref = f->frame_number;
   }
 
   for (j = 0; j < gop_length - 1; j++) {
     f = encoder->frame_queue->elements[i+j].data;
-    schro_engine_code_picture (f, FALSE, -1,
-        2, ref, encoder->last_ref2);
+    schro_encoder_pick_refs (f, &ref0, &ref1);
+
+    schro_engine_code_picture (f, FALSE, -1, 2, ref0, ref1);
     f->presentation_frame = f->frame_number;
     if (j == gop_length-2) {
       f->presentation_frame++;
     }
     f->picture_weight = encoder->magic_inter_b_weight;
+  }
+
+  f = encoder->frame_queue->elements[i+gop_length-1].data;
+  if (f->start_sequence_header) {
+    schro_encoder_expire_refs_before (encoder, f->frame_number);
   }
 }
 
