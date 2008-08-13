@@ -1090,6 +1090,7 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
   return FALSE;
 }
 
+#if 0
 void
 schro_decoder_decode_picture (SchroPicture *picture)
 {
@@ -1101,6 +1102,7 @@ schro_decoder_decode_picture (SchroPicture *picture)
   schro_decoder_x_combine (picture);
   schro_decoder_x_upsample (picture);
 }
+#endif
 
 void
 schro_decoder_x_check_references (SchroPicture *picture)

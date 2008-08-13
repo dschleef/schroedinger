@@ -104,6 +104,7 @@ schro_engine_code_intra (SchroEncoderFrame *frame, double weight)
 }
 #endif
 
+#if 0
 void
 schro_engine_code_IBBBP (SchroEncoder *encoder, int i, int gop_length)
 {
@@ -145,6 +146,7 @@ schro_engine_code_IBBBP (SchroEncoder *encoder, int i, int gop_length)
     f->picture_weight = encoder->magic_inter_b_weight;
   }
 }
+#endif
 
 void
 schro_engine_code_BBBP (SchroEncoder *encoder, int i, int gop_length)

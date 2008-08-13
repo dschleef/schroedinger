@@ -432,6 +432,7 @@ schro_encoder_motion_predict_pel (SchroEncoderFrame *frame)
   frame->badblock_ratio = (double)frame->me->badblocks/(params->x_num_blocks*params->y_num_blocks/16);
 }
 
+/* FIXME unused */
 void
 schro_motion_field_lshift (SchroMotionField *mf, int n)
 {
@@ -741,6 +742,7 @@ schro_motion_field_global_estimation (SchroMotionField *mf,
 }
 
 
+/* FIXME unused */
 static void
 schro_motion_vector_scan (SchroMotionVector *mv, SchroFrame *frame,
     SchroFrame *ref, int x, int y, int dist)
@@ -843,6 +845,7 @@ schro_motion_field_set (SchroMotionField *field, int split, int pred_mode)
   }
 }
 
+/* FIXME unused */
 void
 schro_motion_field_scan (SchroMotionField *field, SchroParams *params,
     SchroFrame *frame, SchroFrame *ref, int dist)
@@ -861,6 +864,7 @@ schro_motion_field_scan (SchroMotionField *field, SchroParams *params,
   }
 }
 
+#ifdef unused
 void
 schro_motion_field_inherit (SchroMotionField *field,
     SchroMotionField *parent)
@@ -880,6 +884,7 @@ schro_motion_field_inherit (SchroMotionField *field,
     }
   }
 }
+#endif
 
 #if 0
 void
@@ -964,6 +969,7 @@ schro_block_average (int16_t *dest, SchroFrameData *comp,
   return sum;
 }
 
+#ifdef unused
 void
 schro_encoder_dc_estimation (SchroMotionEst *me)
 {
@@ -1019,7 +1025,9 @@ schro_encoder_dc_estimation (SchroMotionEst *me)
 
   schro_list_append (me->encoder_frame->motion_field_list, motion_field);
 }
+#endif
 
+/* FIXME unused */
 int
 schro_frame_get_metric (SchroFrame *frame1, int x1, int y1,
     SchroFrame *frame2, int x2, int y2)
@@ -1780,6 +1788,7 @@ schro_motionest_superblock_get_metric (SchroMotionEst *me,
   return SCHRO_METRIC_INVALID_2;
 }
 
+#ifdef unused
 int
 schro_block_check (SchroBlock *block)
 {
@@ -1819,6 +1828,7 @@ schro_block_check (SchroBlock *block)
 
   return 1;
 }
+#endif
 
 void
 schro_block_fixup (SchroBlock *block)

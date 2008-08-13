@@ -157,6 +157,7 @@ __schro_quantise (int value, int quant_factor, int quant_offset)
 {
   unsigned int x;
 
+  if (value == 0) return 0;
   if (value < 0) {
     x = (-value)<<2;
     if (x < quant_factor) {

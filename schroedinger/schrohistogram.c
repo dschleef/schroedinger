@@ -100,6 +100,7 @@ schro_histogram_apply_table (SchroHistogram *hist,
   return sum;
 }
 
+#ifdef unused
 double
 schro_histogram_apply_table_range (SchroHistogram *hist,
     SchroHistogramTable *table, int start, int end)
@@ -127,6 +128,7 @@ schro_histogram_apply_table_range (SchroHistogram *hist,
 
   return sum;
 }
+#endif
 
 
 void
@@ -162,6 +164,7 @@ schro_histogram_scale (SchroHistogram *hist, double scale)
   hist->n*=scale;
 }
 
+#ifdef unused
 static double
 pow2 (int i, void *priv)
 {
@@ -196,6 +199,7 @@ schro_histogram_estimate_noise_level (SchroHistogram *hist)
 
   return sigma;
 }
+#endif
 
 double
 schro_histogram_estimate_slope (SchroHistogram *hist)

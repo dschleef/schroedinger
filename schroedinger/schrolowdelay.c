@@ -36,36 +36,7 @@ struct _SchroLowDelay {
 };
 
 
-void
-dump_frame (SchroLowDelay *lowdelay)
-{
-  int i, j, k;
-  int16_t *line;
-  SchroFrameData *fd;
-  SchroParams *params = lowdelay->params;
-
-  for(k=0;k<1+3*params->transform_depth;k++) {
-    fd = lowdelay->chroma1_subbands + k;
-    for(j=0;j<fd->height;j++){
 #if 0
-      int checksum = 0;
-      line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
-      for(i=0;i<fd->width;i++){
-        checksum *= 12345;
-        checksum += line[i];
-      }
-      SCHRO_ERROR("%d %d %d", k, j, checksum);
-#else
-      line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
-      for(i=0;i<fd->width;i++){
-        SCHRO_ERROR("%d %d %d %d", k, j, i, line[i]);
-      }
-#endif
-    }
-  }
-}
-
-
 void
 schro_encoder_init_subbands (SchroEncoderFrame *frame)
 {
@@ -84,6 +55,7 @@ schro_encoder_init_subbands (SchroEncoderFrame *frame)
         frame->iwt_frame, 0, pos, params);
   }
 }
+#endif
 
 
 static int
@@ -258,8 +230,6 @@ schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture)
   schro_decoder_subband_dc_predict (lowdelay.luma_subbands + 0);
   schro_decoder_subband_dc_predict (lowdelay.chroma1_subbands + 0);
   schro_decoder_subband_dc_predict (lowdelay.chroma2_subbands + 0);
-
-  //dump_frame (&lowdelay);
 
   schro_lowdelay_cleanup (&lowdelay);
 }
@@ -758,7 +728,6 @@ schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame)
           x, y, n_bytes + extra, base_index);
     }
   }
-  //dump_frame (&lowdelay);
 
   SCHRO_INFO("used bits %d of %d", total_bits,
       lowdelay.n_horiz_slices * lowdelay.n_vert_slices * params->slice_bytes_num * 8 /
