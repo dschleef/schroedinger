@@ -1779,12 +1779,12 @@ schro_frame_split_fields (SchroFrame *dest1, SchroFrame *dest2,
 
   schro_frame_convert (dest1, &src_tmp);
 
-  src_tmp.components[0].data =
-    SCHRO_FRAME_DATA_GET_LINE (&src_tmp.components[0], 1);
-  src_tmp.components[1].data =
-    SCHRO_FRAME_DATA_GET_LINE (&src_tmp.components[1], 1);
-  src_tmp.components[2].data =
-    SCHRO_FRAME_DATA_GET_LINE (&src_tmp.components[2], 1);
+  src_tmp.components[0].data = OFFSET(src_tmp.components[0].data,
+      src->components[0].stride);
+  src_tmp.components[1].data = OFFSET(src_tmp.components[1].data,
+      src->components[1].stride);
+  src_tmp.components[2].data = OFFSET(src_tmp.components[2].data,
+      src->components[2].stride);
 
   schro_frame_convert (dest2, &src_tmp);
 }
@@ -1898,7 +1898,7 @@ schro_upsampled_frame_get_pixel_prec0 (SchroUpsampledFrame *upframe, int k,
   x = CLAMP(x, 0, comp->width - 1);
   y = CLAMP(y, 0, comp->height - 1);
 
-  line = SCHRO_FRAME_DATA_GET_LINE (comp, y);
+  line = OFFSET(comp->data, y*comp->stride);
 
   return line[x];
 }
@@ -1962,7 +1962,7 @@ schro_upsampled_frame_get_pixel_prec1 (SchroUpsampledFrame *upframe, int k,
   y >>= 1;
 
   comp = upframe->frames[i]->components + k;
-  line = SCHRO_FRAME_DATA_GET_LINE (comp, y);
+  line = OFFSET(comp->data, y*comp->stride);
 
   return line[x];
 }

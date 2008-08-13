@@ -415,7 +415,7 @@ measure_error_subband (SchroEncoderFrame *frame, int component, int index,
   error = 0;
   if (index == 0) {
     for(j=0;j<fd.height;j+=skip){
-      line = OFFSET(fd.data, j*fd.stride);
+      line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
       for(i=1;i<fd.width;i+=skip){
         q = schro_quantise(abs(line[i] - line[i-1]), quant_factor, quant_offset);
         value = schro_dequantise(q, quant_factor, quant_offset);
@@ -424,7 +424,7 @@ measure_error_subband (SchroEncoderFrame *frame, int component, int index,
     }
   } else {
     for(j=0;j<fd.height;j+=skip){
-      line = OFFSET(fd.data, j*fd.stride);
+      line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
       for(i=0;i<fd.width;i+=skip){
         q = schro_quantise(line[i], quant_factor, quant_offset);
         value = schro_dequantise(q, quant_factor, quant_offset);
@@ -524,7 +524,7 @@ schro_encoder_estimate_subband_arith (SchroEncoderFrame *frame, int component,
 
   if (index == 0) {
     for(j=0;j<fd.height;j++) {
-      line = OFFSET(fd.data, j*fd.stride);
+      line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
       schro_arith_estimate_sint (arith,
           SCHRO_CTX_ZPZN_F1, SCHRO_CTX_COEFF_DATA, SCHRO_CTX_SIGN_ZERO, 0);
       for(i=1;i<fd.width;i++) {
@@ -535,7 +535,7 @@ schro_encoder_estimate_subband_arith (SchroEncoderFrame *frame, int component,
     }
   } else {
     for(j=0;j<fd.height;j++) {
-      line = OFFSET(fd.data, j*fd.stride);
+      line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
       for(i=0;i<fd.width;i++) {
         q = schro_quantise(line[i], quant_factor, quant_offset);
         schro_arith_estimate_sint (arith,
@@ -581,13 +581,13 @@ schro_encoder_generate_subband_histogram (SchroEncoderFrame *frame,
 
   if (index > 0) {
     for(j=0;j<fd.height;j+=skip){
-      schro_histogram_add_array_s16 (hist, OFFSET(fd.data, j*fd.stride),
-          fd.width);
+      schro_histogram_add_array_s16 (hist,
+          SCHRO_FRAME_DATA_GET_LINE (&fd, j), fd.width);
     }
     schro_histogram_scale (hist, skip);
   } else {
     for(j=0;j<fd.height;j+=skip){
-      line = OFFSET(fd.data, j*fd.stride);
+      line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
       for(i=1;i<fd.width;i+=skip){
         schro_histogram_add(hist, (line[i] - line[i-1]));
       }

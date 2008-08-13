@@ -2215,14 +2215,14 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame, int componen
 
   if (w < fd.width) {
     for(j=0;j<h;j++){
-      line = OFFSET(fd.data, j*fd.stride);
+      line = SCHRO_FRAME_DATA_GET_LINE(&fd, j);
       for(i=w;i<fd.width;i++){
         line[i] = 0;
       }
     }
   }
   for(j=h;j<fd.height;j++){
-    line = OFFSET(fd.data, j*fd.stride);
+    line = SCHRO_FRAME_DATA_GET_LINE(&fd, j);
     for(i=0;i<fd.width;i++){
       line[i] = 0;
     }
@@ -2281,8 +2281,8 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component, int ind
 
   if (index == 0) {
     for(j=0;j<fd.height;j++){
-      line = OFFSET(fd.data, j*fd.stride);
-      prev_line = OFFSET(fd.data, (j-1)*fd.stride);
+      line = SCHRO_FRAME_DATA_GET_LINE(&fd, j);
+      prev_line = SCHRO_FRAME_DATA_GET_LINE(&fd, j-1);
 
       for(i=0;i<fd.width;i++){
         int q;
@@ -2318,7 +2318,7 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component, int ind
     }
   } else {
     for(j=0;j<fd.height;j++){
-      line = OFFSET(fd.data, j*fd.stride);
+      line = SCHRO_FRAME_DATA_GET_LINE(&fd, j);
 
       schro_quantise_s16 (quant_data + j*fd.width, line, quant_factor,
           quant_offset, fd.width);
@@ -2434,7 +2434,7 @@ out:
   }
 
   for(j=ymin;j<ymax;j++){
-    int16_t *parent_line = OFFSET(parent_fd.data, (j>>1)*parent_fd.stride);
+    int16_t *parent_line = SCHRO_FRAME_DATA_GET_LINE(&parent_fd, (j>>1));
 
     for(i=xmin;i<xmax;i++){
       int parent;

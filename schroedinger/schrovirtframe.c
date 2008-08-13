@@ -147,7 +147,8 @@ schro_virt_frame_get_line (SchroFrame *frame, int component, int i)
   frame->cached_lines[component][min_j] = i;
 
   schro_virt_frame_render_line (frame,
-      SCHRO_OFFSET(frame->regions[component], comp->stride * min_j), component, i);
+      SCHRO_OFFSET(frame->regions[component], comp->stride * min_j),
+      component, i);
 
   return SCHRO_OFFSET(frame->regions[component], comp->stride * min_j);
 }
