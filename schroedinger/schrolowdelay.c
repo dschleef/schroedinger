@@ -145,7 +145,7 @@ schro_decoder_decode_slice (SchroPicture *picture,
     quant_offset = schro_table_offset_1_2[quant_index];
 
     for(y=0;y<block.height;y++){
-      line = OFFSET(block.data, block.stride * y);
+      line = SCHRO_FRAME_DATA_GET_LINE(&block, y);
       for (x=0; x<block.width; x++){
         value = schro_unpack_decode_sint (&y_unpack);
         line[x] = schro_dequantise (value, quant_factor, quant_offset);
@@ -174,8 +174,8 @@ schro_decoder_decode_slice (SchroPicture *picture,
     quant_offset = schro_table_offset_1_2[quant_index];
 
     for(y=0;y<block1.height;y++){
-      line1 = OFFSET(block1.data, block1.stride * y);
-      line2 = OFFSET(block2.data, block2.stride * y);
+      line1 = SCHRO_FRAME_DATA_GET_LINE (&block1, y);
+      line2 = SCHRO_FRAME_DATA_GET_LINE (&block2, y);
       for (x=0; x<block1.width; x++){
         value = schro_unpack_decode_sint (&uv_unpack);
         line1[x] = schro_dequantise (value, quant_factor, quant_offset);
@@ -364,7 +364,7 @@ quantise_block (SchroFrameData *block, int16_t *quant_data, int quant_index)
   quant_offset = schro_table_offset_1_2[quant_index];
 
   for(y=0;y<block->height;y++){
-    line = OFFSET(block->data, block->stride * y);
+    line = SCHRO_FRAME_DATA_GET_LINE (block, y);
     for (x=0; x<block->width; x++){
       quant_data[n] = schro_quantise (line[x], quant_factor, quant_offset);
       n++;
@@ -387,7 +387,7 @@ quantise_dc_block (SchroFrameData *block, int16_t *quant_data,
   quant_offset = schro_table_offset_1_2[quant_index];
 
   for(y=0;y<block->height;y++){
-    line = OFFSET(block->data, block->stride * y);
+    line = SCHRO_FRAME_DATA_GET_LINE (block, y);
     for (x=0; x<block->width; x++){
       pred_value = schro_dc_predict (line + x, block->stride,
           slice_x + x, slice_y + y);
@@ -413,7 +413,7 @@ dequantise_block (SchroFrameData *block, int16_t *quant_data, int quant_index)
   quant_offset = schro_table_offset_1_2[quant_index];
 
   for(y=0;y<block->height;y++){
-    line = OFFSET(block->data, block->stride * y);
+    line = SCHRO_FRAME_DATA_GET_LINE (block, y);
     for (x=0; x<block->width; x++){
       line[x] = schro_dequantise (quant_data[n], quant_factor, quant_offset);
       n++;
@@ -430,7 +430,7 @@ copy_block_out (int16_t *dest, SchroFrameData *block)
 
   i = 0;
   for(y=0;y<block->height;y++){
-    line = OFFSET(block->data, block->stride * y);
+    line = SCHRO_FRAME_DATA_GET_LINE (block, y);
     for (x=0; x<block->width; x++){
       dest[i] = line[x];
       i++;
@@ -447,7 +447,7 @@ copy_block_in (SchroFrameData *block, int16_t *src)
 
   i = 0;
   for(y=0;y<block->height;y++){
-    line = OFFSET(block->data, block->stride * y);
+    line = SCHRO_FRAME_DATA_GET_LINE (block, y);
     for (x=0; x<block->width; x++){
       line[x] = src[i];
       i++;
