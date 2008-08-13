@@ -20,7 +20,7 @@ noinst_PROGRAMS = arith arith_encode \
 	 upsample \
 	 motion2 sort gaussian fft \
 	 wavelet_noise_gain \
-	 downsample hist_noise_level taps ramp \
+	 downsample taps ramp \
 	 colorspace filter_coeff
 
 if ENABLE_ENCODER
