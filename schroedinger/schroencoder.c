@@ -2262,6 +2262,7 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component, int ind
   int16_t *prev_line;
   int subband_zero_flag;
   int position;
+  SchroParams *params = &frame->params;
 
   subband_zero_flag = 1;
 
@@ -2269,7 +2270,7 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component, int ind
 
   quant_index = frame->quant_index[component][index];
   quant_factor = schro_table_quant[quant_index];
-  if (frame->params.num_refs > 0) {
+  if (params->num_refs > 0) {
     quant_offset = schro_table_offset_3_8[quant_index];
   } else {
     quant_offset = schro_table_offset_1_2[quant_index];
@@ -2277,7 +2278,7 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component, int ind
 
   position = schro_subband_get_position (index);
   schro_subband_get_frame_data (&fd, frame->iwt_frame, component,
-      position, &frame->params);
+      position, params);
 
   if (index == 0) {
     for(j=0;j<fd.height;j++){
@@ -2287,7 +2288,7 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component, int ind
       for(i=0;i<fd.width;i++){
         int q;
 
-        if (frame->params.num_refs == 0) {
+        if (params->num_refs == 0) {
           if (j>0) {
             if (i>0) {
               pred_value = schro_divide(line[i - 1] +
@@ -2317,18 +2318,37 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component, int ind
       }
     }
   } else {
-    for(j=0;j<fd.height;j++){
-      line = SCHRO_FRAME_DATA_GET_LINE(&fd, j);
+    int horiz_codeblocks;
+    int vert_codeblocks;
+    int x,y;
 
-      schro_quantise_s16 (quant_data + j*fd.width, line, quant_factor,
-          quant_offset, fd.width);
+    horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
+    vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
 
-      /* FIXME do this in a better way */
-      for(i=0;i<fd.width;i++){
-        if (line[i] != 0) {
-          subband_zero_flag = 0;
+    for(y=0;y<vert_codeblocks;y++){
+      int ymin = (fd.height*y)/vert_codeblocks;
+      int ymax = (fd.height*(y+1))/vert_codeblocks;
+
+      for(x=0;x<horiz_codeblocks;x++){
+        int xmin = (fd.width*x)/horiz_codeblocks;
+        int xmax = (fd.width*(x+1))/horiz_codeblocks;
+
+        for(j=ymin;j<ymax;j++){
+          line = SCHRO_FRAME_DATA_GET_LINE(&fd, j);
+
+          schro_quantise_s16 (quant_data + j*fd.width + xmin,
+              line + xmin, quant_factor, quant_offset, xmax - xmin);
+
+          /* FIXME do this in a better way */
+          if (subband_zero_flag) {
+            for(i=xmin;i<xmax;i++){
+              if (line[i] != 0) {
+                subband_zero_flag = 0;
+                break;
+              }
+            }
+          }
         }
-
       }
     }
   }
