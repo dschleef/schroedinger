@@ -93,8 +93,6 @@ schro_bool schro_params_is_default_codeblock (SchroParams *params);
 
 void schro_subband_get_frame_data (SchroFrameData *dest,
     SchroFrame *frame, int component, int position, SchroParams *params);
-void schro_subband_get (SchroFrame *frame, int component, int position,
-    SchroParams *params, int16_t **data, int *stride, int *width, int *height);
 int schro_subband_get_position (int index);
 void schro_params_set_default_quant_matrix (SchroParams *params);
 schro_bool schro_params_is_default_quant_matrix (SchroParams *params);

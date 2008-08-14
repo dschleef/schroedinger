@@ -12,7 +12,7 @@
  * schro_split_ext_desl93:
  * @hi: array of even components / high subband components
  * @lo: array of odd components / low subband components
- * @n: number of 
+ * @n: number of
  *
  * Performs an in-place Deslauries 9,3 wavelet transformation on
  * the arrays @hi and @lo containing the even and odd components
@@ -884,7 +884,7 @@ void schro_iiwt_5_3 (int16_t *data, int stride, int width, int height,
           d,
           stage1_weights, stage1_offset_shift, width);
 #endif
-    } 
+    }
     if (i >=0 && i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
@@ -982,7 +982,7 @@ schro_iiwt_haar (int16_t *data, int stride, int width, int height,
   int i;
   int j;
   int16_t as[2];
-  
+
   as[0] = (1<<shift)>>1;
   as[1] = shift;
 

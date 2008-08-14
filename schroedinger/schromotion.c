@@ -574,7 +574,7 @@ schro_motion_block_accumulate_slow (SchroMotion *motion, SchroFrameData *comp,
   for(j=0;j<motion->yblen;j++) {
     int16_t *d = SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y + j);
     uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->block, j);
-    
+
     if (y + j < 0 || y + j >= comp->height) continue;
 
     w_y = motion->weight_y[j];

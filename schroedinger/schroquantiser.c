@@ -391,11 +391,7 @@ measure_error_subband (SchroEncoderFrame *frame, int component, int index,
 {
   int i;
   int j;
-  int16_t *data;
   int16_t *line;
-  int stride;
-  int width;
-  int height;
   int skip = 1;
   double error = 0;
   int q;
@@ -403,10 +399,11 @@ measure_error_subband (SchroEncoderFrame *frame, int component, int index,
   int quant_offset;
   int value;
   int position;
+  SchroFrameData fd;
 
   position = schro_subband_get_position (index);
-  schro_subband_get (frame->iwt_frame, component, position,
-      &frame->params, &data, &stride, &width, &height);
+  schro_subband_get_frame_data (&fd, frame->iwt_frame, component, position,
+      &frame->params);
 
   quant_factor = schro_table_quant[quant_index];
   if (frame->params.num_refs > 0) {
@@ -417,18 +414,18 @@ measure_error_subband (SchroEncoderFrame *frame, int component, int index,
 
   error = 0;
   if (index == 0) {
-    for(j=0;j<height;j+=skip){
-      line = OFFSET(data, j*stride);
-      for(i=1;i<width;i+=skip){
+    for(j=0;j<fd.height;j+=skip){
+      line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
+      for(i=1;i<fd.width;i+=skip){
         q = schro_quantise(abs(line[i] - line[i-1]), quant_factor, quant_offset);
         value = schro_dequantise(q, quant_factor, quant_offset);
         error += pow2(value - abs(line[i] - line[i-1]));
       }
     }
   } else {
-    for(j=0;j<height;j+=skip){
-      line = OFFSET(data, j*stride);
-      for(i=0;i<width;i+=skip){
+    for(j=0;j<fd.height;j+=skip){
+      line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
+      for(i=0;i<fd.width;i+=skip){
         q = schro_quantise(line[i], quant_factor, quant_offset);
         value = schro_dequantise(q, quant_factor, quant_offset);
         error += pow2(value - line[i]);
@@ -506,43 +503,40 @@ schro_encoder_estimate_subband_arith (SchroEncoderFrame *frame, int component,
 {
   int i;
   int j;
-  int16_t *data;
   int16_t *line;
-  int stride;
-  int width;
-  int height;
   int q;
   int quant_factor;
   int quant_offset;
   int estimated_entropy;
   SchroArith *arith;
   int position;
+  SchroFrameData fd;
 
   arith = schro_arith_new ();
   schro_arith_estimate_init (arith);
 
   position = schro_subband_get_position (index);
-  schro_subband_get (frame->iwt_frame, component, position,
-      &frame->params, &data, &stride, &width, &height);
+  schro_subband_get_frame_data (&fd, frame->iwt_frame, component, position,
+      &frame->params);
 
   quant_factor = schro_table_quant[quant_index];
   quant_offset = schro_table_offset_1_2[quant_index];
 
   if (index == 0) {
-    for(j=0;j<height;j++) {
-      line = OFFSET(data, j*stride);
+    for(j=0;j<fd.height;j++) {
+      line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
       schro_arith_estimate_sint (arith,
           SCHRO_CTX_ZPZN_F1, SCHRO_CTX_COEFF_DATA, SCHRO_CTX_SIGN_ZERO, 0);
-      for(i=1;i<width;i++) {
+      for(i=1;i<fd.width;i++) {
         q = schro_quantise(line[i] - line[i-1], quant_factor, quant_offset);
         schro_arith_estimate_sint (arith,
             SCHRO_CTX_ZPZN_F1, SCHRO_CTX_COEFF_DATA, SCHRO_CTX_SIGN_ZERO, q);
       }
     }
   } else {
-    for(j=0;j<height;j++) {
-      line = OFFSET(data, j*stride);
-      for(i=0;i<width;i++) {
+    for(j=0;j<fd.height;j++) {
+      line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
+      for(i=0;i<fd.width;i++) {
         q = schro_quantise(line[i], quant_factor, quant_offset);
         schro_arith_estimate_sint (arith,
             SCHRO_CTX_ZPZN_F1, SCHRO_CTX_COEFF_DATA, SCHRO_CTX_SIGN_ZERO, q);
@@ -575,28 +569,26 @@ schro_encoder_generate_subband_histogram (SchroEncoderFrame *frame,
 {
   int i;
   int j;
-  int16_t *data;
   int16_t *line;
-  int stride;
-  int width;
-  int height;
   int position;
+  SchroFrameData fd;
 
   schro_histogram_init (hist);
 
   position = schro_subband_get_position (index);
-  schro_subband_get (frame->iwt_frame, component, position,
-      &frame->params, &data, &stride, &width, &height);
+  schro_subband_get_frame_data (&fd, frame->iwt_frame, component, position,
+      &frame->params);
 
   if (index > 0) {
-    for(j=0;j<height;j+=skip){
-      schro_histogram_add_array_s16 (hist, OFFSET(data, j*stride), width);
+    for(j=0;j<fd.height;j+=skip){
+      schro_histogram_add_array_s16 (hist,
+          SCHRO_FRAME_DATA_GET_LINE (&fd, j), fd.width);
     }
     schro_histogram_scale (hist, skip);
   } else {
-    for(j=0;j<height;j+=skip){
-      line = OFFSET(data, j*stride);
-      for(i=1;i<width;i+=skip){
+    for(j=0;j<fd.height;j+=skip){
+      line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
+      for(i=1;i<fd.width;i+=skip){
         schro_histogram_add(hist, (line[i] - line[i-1]));
       }
     }
@@ -632,23 +624,21 @@ schro_encoder_dump_subband_curves (SchroEncoderFrame *frame)
   SchroParams *params = &frame->params;
   int i;
   int component;
-  int pos;
+  int position;
 
   SCHRO_ASSERT(frame->have_histograms);
 
   for(component=0;component<3;component++){
     for(i=0;i<1 + 3*params->transform_depth; i++) {
       int vol;
-      int16_t *data;
-      int stride;
-      int width, height;
+      SchroFrameData fd;
       int j;
       SchroHistogram *hist;
 
-      pos = schro_subband_get_position (i);
-      schro_subband_get (frame->iwt_frame, component, pos,
-          &frame->params, &data, &stride, &width, &height);
-      vol = width * height;
+      position = schro_subband_get_position (i);
+      schro_subband_get_frame_data (&fd, frame->iwt_frame, component,
+          position, &frame->params);
+      vol = fd.width * fd.height;
       hist = &frame->subband_hists[component][i];
 
       for(j=0;j<60;j++){
@@ -692,16 +682,14 @@ schro_encoder_calc_estimates (SchroEncoderFrame *frame)
     for(i=0;i<1 + 3*params->transform_depth; i++) {
       for(j=0;j<60;j++){
         int vol;
-        int16_t *data;
-        int stride;
-        int width, height;
         int position;
         SchroHistogram *hist;
+        SchroFrameData fd;
 
         position = schro_subband_get_position (i);
-        schro_subband_get (frame->iwt_frame, component, position,
-            &frame->params, &data, &stride, &width, &height);
-        vol = width * height;
+        schro_subband_get_frame_data (&fd, frame->iwt_frame, component,
+            position, &frame->params);
+        vol = fd.width * fd.height;
 
         hist = &frame->subband_hists[component][i];
         frame->est_entropy[component][i][j] =
@@ -780,7 +768,7 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
       weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
         [frame->params.transform_depth-1][i];
       lambda /= weight*weight;
-      
+
       frame->quant_index[component][i] = schro_subband_pick_quant (frame,
           component, i, lambda);
     }
@@ -854,7 +842,7 @@ schro_subband_pick_quant (SchroEncoderFrame *frame, int component, int i,
   for(j=0;j<60;j++){
     entropy = frame->est_entropy[component][i][j];
     error = frame->est_error[component][i][j];
-    
+
     x = entropy + lambda * error;
     if (j == 0 || x < min) {
       j_min = j;
@@ -864,73 +852,6 @@ schro_subband_pick_quant (SchroEncoderFrame *frame, int component, int i,
 
   return j_min;
 }
-
-#if 0
-void
-schro_encoder_rate_distortion_test (SchroEncoderFrame *frame)
-{
-  SchroParams *params = &frame->params;
-  int i;
-  int component;
-  int j;
-  double lambda_mult;
-  double n;
-  double base_lambda;
-  int qsum;
-
-base_lambda = 0.1;
-  schro_encoder_generate_subband_histograms (frame);
-  schro_encoder_calc_estimates (frame);
-
-  for(j=0;j<40;j++){
-    lambda_mult = pow(1.1, j-20);
-    n = 0;
-    qsum = 0;
-
-  for(component=0;component<3;component++){
-    for(i=0;i<1 + 3*params->transform_depth; i++) {
-      int vol;
-      int16_t *data;
-      int stride;
-      int width, height;
-      double lambda;
-      int position;
-      double weight;
-      int quant_index;
-
-      position = schro_subband_get_position (i);
-      schro_subband_get (frame->iwt_frame, component, position,
-          &frame->params, &data, &stride, &width, &height);
-      vol = width * height;
-
-      lambda = base_lambda;
-      lambda *= lambda_mult;
-      if (i == 0) {
-        //lambda *= 10;
-      }
-#if 0
-      if (component > 0) {
-        lambda *= 0.3;
-      }
-#endif
-      if (frame->is_ref) {
-        lambda *= 10;
-      }
-
-      weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
-        [frame->params.transform_depth-1][i];
-      lambda /= weight*weight;
-      
-      quant_index = schro_subband_pick_quant (frame, component, i, lambda);
-      n += frame->est_entropy[component][i][quant_index];
-      qsum += quant_index;
-    }
-  }
-    schro_dump (SCHRO_DUMP_LAMBDA_CURVE, "%d %g %g %d",
-        j, lambda_mult * base_lambda, n, qsum);
-  }
-}
-#endif
 
 static double
 schro_encoder_lambda_to_entropy (SchroEncoderFrame *frame, double base_lambda)
@@ -958,7 +879,7 @@ schro_encoder_lambda_to_entropy (SchroEncoderFrame *frame, double base_lambda)
       weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
         [frame->params.transform_depth-1][i];
       lambda /= weight*weight;
-      
+
       quant_index = schro_subband_pick_quant (frame, component, i, lambda);
       entropy += frame->est_entropy[component][i][quant_index];
       frame->quant_index[component][i] = quant_index;
@@ -1085,7 +1006,7 @@ schro_encoder_lambda_to_error (SchroEncoderFrame *frame, double base_lambda)
       weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
         [frame->params.transform_depth-1][i];
       lambda /= weight*weight;
-      
+
       quant_index = schro_subband_pick_quant (frame, component, i, lambda);
       error += frame->est_error[component][i][quant_index];
       frame->quant_index[component][i] = quant_index;

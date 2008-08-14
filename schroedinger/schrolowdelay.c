@@ -36,36 +36,7 @@ struct _SchroLowDelay {
 };
 
 
-void
-dump_frame (SchroLowDelay *lowdelay)
-{
-  int i, j, k;
-  int16_t *line;
-  SchroFrameData *fd;
-  SchroParams *params = lowdelay->params;
-
-  for(k=0;k<1+3*params->transform_depth;k++) {
-    fd = lowdelay->chroma1_subbands + k;
-    for(j=0;j<fd->height;j++){
 #if 0
-      int checksum = 0;
-      line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
-      for(i=0;i<fd->width;i++){
-        checksum *= 12345;
-        checksum += line[i];
-      }
-      SCHRO_ERROR("%d %d %d", k, j, checksum);
-#else
-      line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
-      for(i=0;i<fd->width;i++){
-        SCHRO_ERROR("%d %d %d %d", k, j, i, line[i]);
-      }
-#endif
-    }
-  }
-}
-
-
 void
 schro_encoder_init_subbands (SchroEncoderFrame *frame)
 {
@@ -84,6 +55,7 @@ schro_encoder_init_subbands (SchroEncoderFrame *frame)
         frame->iwt_frame, 0, pos, params);
   }
 }
+#endif
 
 
 static int
@@ -145,7 +117,7 @@ schro_decoder_decode_slice (SchroPicture *picture,
     quant_offset = schro_table_offset_1_2[quant_index];
 
     for(y=0;y<block.height;y++){
-      line = OFFSET(block.data, block.stride * y);
+      line = SCHRO_FRAME_DATA_GET_LINE(&block, y);
       for (x=0; x<block.width; x++){
         value = schro_unpack_decode_sint (&y_unpack);
         line[x] = schro_dequantise (value, quant_factor, quant_offset);
@@ -174,8 +146,8 @@ schro_decoder_decode_slice (SchroPicture *picture,
     quant_offset = schro_table_offset_1_2[quant_index];
 
     for(y=0;y<block1.height;y++){
-      line1 = OFFSET(block1.data, block1.stride * y);
-      line2 = OFFSET(block2.data, block2.stride * y);
+      line1 = SCHRO_FRAME_DATA_GET_LINE (&block1, y);
+      line2 = SCHRO_FRAME_DATA_GET_LINE (&block2, y);
       for (x=0; x<block1.width; x++){
         value = schro_unpack_decode_sint (&uv_unpack);
         line1[x] = schro_dequantise (value, quant_factor, quant_offset);
@@ -258,8 +230,6 @@ schro_decoder_decode_lowdelay_transform_data (SchroPicture *picture)
   schro_decoder_subband_dc_predict (lowdelay.luma_subbands + 0);
   schro_decoder_subband_dc_predict (lowdelay.chroma1_subbands + 0);
   schro_decoder_subband_dc_predict (lowdelay.chroma2_subbands + 0);
-
-  //dump_frame (&lowdelay);
 
   schro_lowdelay_cleanup (&lowdelay);
 }
@@ -364,7 +334,7 @@ quantise_block (SchroFrameData *block, int16_t *quant_data, int quant_index)
   quant_offset = schro_table_offset_1_2[quant_index];
 
   for(y=0;y<block->height;y++){
-    line = OFFSET(block->data, block->stride * y);
+    line = SCHRO_FRAME_DATA_GET_LINE (block, y);
     for (x=0; x<block->width; x++){
       quant_data[n] = schro_quantise (line[x], quant_factor, quant_offset);
       n++;
@@ -387,7 +357,7 @@ quantise_dc_block (SchroFrameData *block, int16_t *quant_data,
   quant_offset = schro_table_offset_1_2[quant_index];
 
   for(y=0;y<block->height;y++){
-    line = OFFSET(block->data, block->stride * y);
+    line = SCHRO_FRAME_DATA_GET_LINE (block, y);
     for (x=0; x<block->width; x++){
       pred_value = schro_dc_predict (line + x, block->stride,
           slice_x + x, slice_y + y);
@@ -413,7 +383,7 @@ dequantise_block (SchroFrameData *block, int16_t *quant_data, int quant_index)
   quant_offset = schro_table_offset_1_2[quant_index];
 
   for(y=0;y<block->height;y++){
-    line = OFFSET(block->data, block->stride * y);
+    line = SCHRO_FRAME_DATA_GET_LINE (block, y);
     for (x=0; x<block->width; x++){
       line[x] = schro_dequantise (quant_data[n], quant_factor, quant_offset);
       n++;
@@ -430,7 +400,7 @@ copy_block_out (int16_t *dest, SchroFrameData *block)
 
   i = 0;
   for(y=0;y<block->height;y++){
-    line = OFFSET(block->data, block->stride * y);
+    line = SCHRO_FRAME_DATA_GET_LINE (block, y);
     for (x=0; x<block->width; x++){
       dest[i] = line[x];
       i++;
@@ -447,7 +417,7 @@ copy_block_in (SchroFrameData *block, int16_t *src)
 
   i = 0;
   for(y=0;y<block->height;y++){
-    line = OFFSET(block->data, block->stride * y);
+    line = SCHRO_FRAME_DATA_GET_LINE (block, y);
     for (x=0; x<block->width; x++){
       line[x] = src[i];
       i++;
@@ -758,7 +728,6 @@ schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame)
           x, y, n_bytes + extra, base_index);
     }
   }
-  //dump_frame (&lowdelay);
 
   SCHRO_INFO("used bits %d of %d", total_bits,
       lowdelay.n_horiz_slices * lowdelay.n_vert_slices * params->slice_bytes_num * 8 /

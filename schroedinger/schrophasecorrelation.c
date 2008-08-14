@@ -145,14 +145,14 @@ get_image (float *image, SchroFrame *frame, int x, int y, int width,
 
   sum = 0;
   for(j=0;j<height;j++){
-    line = OFFSET(frame->components[0].data, frame->components[0].stride*(j+y));
+    line = SCHRO_FRAME_DATA_GET_LINE (&frame->components[0], j+y);
     for(i=0;i<width;i++){
       sum += line[i+x] * weight[j*width + i];
     }
   }
   weight2 = 1.0/sum;
   for(j=0;j<height;j++){
-    line = OFFSET(frame->components[0].data, frame->components[0].stride*(j+y));
+    line = SCHRO_FRAME_DATA_GET_LINE (&frame->components[0], j+y);
     for(i=0;i<width;i++){
       image[j*width+i] = line[i+x] * weight[j*width+i] * weight2;
     }

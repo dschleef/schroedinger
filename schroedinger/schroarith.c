@@ -124,7 +124,7 @@ SchroArith *
 schro_arith_new (void)
 {
   SchroArith *arith;
-  
+
   arith = schro_malloc0 (sizeof(*arith));
 
   return arith;
@@ -189,6 +189,7 @@ schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer)
   }
 }
 
+#ifdef unused
 void
 schro_arith_estimate_init (SchroArith *arith)
 {
@@ -201,6 +202,7 @@ schro_arith_estimate_init (SchroArith *arith)
     arith->probabilities[i] = 0x8000;
   }
 }
+#endif
 
 void
 schro_arith_decode_flush (SchroArith *arith)
@@ -262,7 +264,7 @@ arith->range[0] |= ((1<<i)-1);
   }
 }
 
-  
+
 #if 0
 int
 _schro_arith_decode_bit (SchroArith *arith, int i)
@@ -424,6 +426,7 @@ _schro_arith_encode_bit (SchroArith *arith, int i, int value)
   }
 }
 
+#ifdef unused
 void
 schro_arith_estimate_bit (SchroArith *arith, int i, int value)
 {
@@ -450,6 +453,7 @@ schro_arith_estimate_bit (SchroArith *arith, int i, int value)
     arith->contexts[i].n_bits++;
   }
 }
+#endif
 
 static int
 maxbit (unsigned int x)
@@ -497,6 +501,7 @@ _schro_arith_encode_sint (SchroArith *arith, int cont_context,
   }
 }
 
+#ifdef unused
 void
 schro_arith_estimate_uint (SchroArith *arith, int cont_context,
     int value_context, int value)
@@ -514,7 +519,9 @@ schro_arith_estimate_uint (SchroArith *arith, int cont_context,
   }
   schro_arith_estimate_bit (arith, cont_context, 1);
 }
+#endif
 
+#ifdef unused
 void
 schro_arith_estimate_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value)
@@ -532,6 +539,7 @@ schro_arith_estimate_sint (SchroArith *arith, int cont_context,
     schro_arith_estimate_bit (arith, sign_context, sign);
   }
 }
+#endif
 
 #if 0
 int

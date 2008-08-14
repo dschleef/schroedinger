@@ -11,7 +11,7 @@ schro_frame_dup16 (SchroFrame *frame)
 {
   SchroFrame *newframe;
   SchroFrameFormat format;
-  
+
   /* FIXME hack */
   format = SCHRO_FRAME_FORMAT_S16_444 | frame->format;
   newframe = schro_frame_new_and_alloc (NULL, format,
@@ -42,8 +42,8 @@ schro_frame_multiply_s16 (SchroFrame *dest, SchroFrame *src)
     height = (dcomp->height < scomp->height) ? dcomp->height : scomp->height;
 
     for(y=0;y<height;y++){
-      ddata = OFFSET(dcomp->data, y*dcomp->stride);
-      sdata = OFFSET(scomp->data, y*scomp->stride);
+      ddata = SCHRO_FRAME_DATA_GET_LINE (dcomp, y);
+      sdata = SCHRO_FRAME_DATA_GET_LINE (scomp, y);
       for(x=0;x<width;x++){
         int z;
         z = ddata[x] * sdata[x];

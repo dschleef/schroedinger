@@ -67,7 +67,7 @@ schro_memory_domain_new_cuda (void)
   domain->flags = SCHRO_MEMORY_DOMAIN_CUDA;
   domain->alloc = schro_cuda_alloc;
   domain->free = schro_cuda_free;
-  
+
   return domain;
 }
 

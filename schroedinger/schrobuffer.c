@@ -30,7 +30,7 @@ schro_buffer_new_and_alloc (int size)
   buffer->data = schro_malloc (size);
   buffer->length = size;
   buffer->free = schro_buffer_free_mem;
-  
+
   SCHRO_DEBUG("%p %i", buffer, size);
 
   return buffer;

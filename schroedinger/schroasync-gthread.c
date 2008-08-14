@@ -102,7 +102,7 @@ schro_async_new(int n_threads,
       }
 #else
       n_threads = sysconf(_SC_NPROCESSORS_CONF);
-#endif        
+#endif
     }
     if (n_threads == 0) {
       n_threads = 1;
@@ -309,7 +309,7 @@ schro_thread_main (void *ptr)
         g_mutex_lock (async->mutex);
 
         async->complete (priv);
-      
+
         g_cond_signal (async->app_cond);
 #ifdef HAVE_CUDA
         /* FIXME */

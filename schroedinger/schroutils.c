@@ -123,7 +123,7 @@ int
 schro_utils_multiplier_to_quant_index (double x)
 {
   int i = 0;
-  
+
   x *= x;
   x *= x;
   while (x*x > 2) {
@@ -157,6 +157,7 @@ __schro_quantise (int value, int quant_factor, int quant_offset)
 {
   unsigned int x;
 
+  if (value == 0) return 0;
   if (value < 0) {
     x = (-value)<<2;
     if (x < quant_factor) {
@@ -211,19 +212,19 @@ schro_dequantise_s16 (int16_t *dest, int16_t *src, int quant_factor,
 
 double
 schro_utils_probability_to_entropy (double x)
-{ 
+{
   if (x <= 0 || x >= 1.0) return 0;
-  
+
   return -(x * log(x) + (1-x) * log(1-x))*INV_LOG_2;
 }
 
 double
 schro_utils_entropy (double a, double total)
-{ 
+{
   double x;
-  
+
   if (total == 0) return 0;
-  
+
   x = a / total;
   return schro_utils_probability_to_entropy (x) * total;
 }

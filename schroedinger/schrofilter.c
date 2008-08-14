@@ -528,20 +528,20 @@ generate_coeff (double *coeff, double sigma)
 {
   double q;
   double b0, b0inv, b1, b2, b3, B;
-  
+
   if (sigma >= 2.5) {
     q = 0.98711 * sigma - 0.96330;
-  } else { 
+  } else {
     q = 3.97156 - 4.41554 * sqrt (1 - 0.26891 * sigma);
-  } 
-  
+  }
+
   b0 = 1.57825 + 2.44413*q + 1.4281*q*q + 0.422205*q*q*q;
   b0inv = 1.0/b0;
   b1 = 2.44413*q + 2.85619*q*q + 1.26661*q*q*q;
   b2 = -1.4281*q*q - 1.26661*q*q*q;
   b3 = 0.422205*q*q*q;
   B = 1 - (b1 + b2 + b3)/b0;
-  
+
   coeff[0] = B;
   coeff[1] = b1 * b0inv;
   coeff[2] = b2 * b0inv;
@@ -701,27 +701,23 @@ schro_frame_filter_wavelet (SchroFrame *frame)
     schro_wavelet_transform_2d (comp, SCHRO_WAVELET_LE_GALL_5_3, tmp);
 
     for(i=1;i<4;i++){
-      int width;
-      int height;
-      int stride;
-      int16_t *data;
+      SchroFrameData fd;
       int y;
       int cutoff;
 
-      schro_subband_get (tmpframe, component, i, &params, &data, &stride,
-          &width, &height);
+      schro_subband_get_frame_data (&fd, tmpframe, component, i, &params);
       schro_histogram_init (&hist);
 
-      for(y=0;y<height;y++){
-        schro_histogram_add_array_s16 (&hist, OFFSET(data, y*stride),
-            width);
+      for(y=0;y<fd.height;y++){
+        schro_histogram_add_array_s16 (&hist, OFFSET(fd.data, y*fd.stride),
+            fd.width);
       }
 
       cutoff = 100;
-      for(y=0;y<height;y++){
-        int16_t *line = OFFSET(data, stride*y);
+      for(y=0;y<fd.height;y++){
+        int16_t *line = OFFSET(fd.data, fd.stride*y);
         int x;
-        for(x=0;x<width;x++){
+        for(x=0;x<fd.width;x++){
           if (line[x] > -cutoff && line[x] < cutoff) line[x] = 0;
         }
       }

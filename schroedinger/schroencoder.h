@@ -76,6 +76,7 @@ typedef int (*SchroEngineIterateFunc) (SchroEncoder *encoder);
 
 /* forward declaration */
 struct _SchroMotionEst;
+struct _SchroRoughME;
 
 struct _SchroEncoderFrame {
   /*< private >*/
@@ -86,6 +87,8 @@ struct _SchroEncoderFrame {
   int busy;
 
   void *priv;
+
+  unsigned int expired_reference;
 
   /* Bits telling the engine stages which stuff needs to happen */
   unsigned int need_downsampling;
@@ -163,7 +166,8 @@ struct _SchroEncoderFrame {
 
   SchroEncoderFrame *ref_frame[2];
 
-  struct _SchroMotionEst* me;
+  struct _SchroMotionEst *me;
+  struct _SchroRoughME *rme[2];
 
   SchroMotion *motion;
   SchroList *motion_field_list;
@@ -267,6 +271,7 @@ struct _SchroEncoder {
   double magic_lambda;
   double magic_badblock_multiplier_nonref;
   double magic_badblock_multiplier_ref;
+  double magic_block_search_threshold;
 
   /* hooks */
 
@@ -323,12 +328,7 @@ struct _SchroEncoder {
   int gop_picture;
   int quant_slot;
 
-  int intra_ref;
   int last_ref;
-  int last_ref2;
-  //int next_ref;
-  //int mid1_ref;
-  //int mid2_ref;
 };
 #endif
 

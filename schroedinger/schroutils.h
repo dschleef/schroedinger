@@ -68,7 +68,7 @@ typedef int SchroCUDAStream;
 #else
 #define SCHRO_GNUC_PREREQ(maj, min) 0
 #endif
-  
+
 #if SCHRO_GNUC_PREREQ(3,3) && defined(__ELF__)
 #define SCHRO_INTERNAL __attribute__ ((visibility ("internal")))
 #else

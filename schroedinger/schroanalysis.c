@@ -52,8 +52,9 @@ schro_frame_component_squared_error (SchroFrameData *a,
   for(j=0;j<a->height;j++){
     int32_t linesum;
 
-    oil_sum_square_diff_u8 (&linesum, OFFSET(a->data, a->stride * j),
-        OFFSET(b->data, b->stride * j), a->width);
+    oil_sum_square_diff_u8 (&linesum,
+        SCHRO_FRAME_DATA_GET_LINE (a, j),
+        SCHRO_FRAME_DATA_GET_LINE (b, j), a->width);
     sum += linesum;
   }
   return sum;

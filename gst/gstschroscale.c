@@ -69,8 +69,6 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schrovirtframe.h>
 
-#include "vs_image.h"
-
 GST_DEBUG_CATEGORY_EXTERN (schro_scale_debug);
 #define GST_CAT_DEFAULT schro_scale_debug
 
@@ -114,8 +112,6 @@ struct _GstSchroScale {
 
   /* negotiated stuff */
   int format;
-  VSImage src;
-  VSImage dest;
   guint src_size;
   guint dest_size;
   gint to_width;
@@ -124,7 +120,6 @@ struct _GstSchroScale {
   gint from_height;
   
   /*< private >*/
-  guint8 *tmp_buf;
 };
 
 struct _GstSchroScaleClass {
@@ -132,10 +127,6 @@ struct _GstSchroScaleClass {
 };
 
 GType gst_schro_scale_get_type(void);
-
-
-#include "vs_image.h"
-#include "vs_4tap.h"
 
 
 /* debug variable definition */
@@ -359,16 +350,12 @@ static void
 gst_schro_scale_init (GstSchroScale * videoscale)
 {
   gst_base_transform_set_qos_enabled (GST_BASE_TRANSFORM (videoscale), TRUE);
-  videoscale->tmp_buf = NULL;
   videoscale->method = DEFAULT_PROP_METHOD;
 }
 
 static void
 gst_schro_scale_finalize (GstSchroScale * videoscale)
 {
-  if (videoscale->tmp_buf)
-    g_free (videoscale->tmp_buf);
-
   G_OBJECT_CLASS (parent_class)->finalize (G_OBJECT (videoscale));
 }
 
@@ -501,12 +488,10 @@ gst_schro_scale_get_format (GstCaps * caps)
 /* calculate the size of a buffer */
 static gboolean
 gst_schro_scale_prepare_size (GstSchroScale * videoscale, gint format,
-    VSImage * img, gint width, gint height, guint * size)
+    gint width, gint height, guint * size)
 {
   gboolean res = TRUE;
-
-  img->width = width;
-  img->height = height;
+  int stride;
 
   switch (format) {
     case GST_SCHRO_SCALE_RGBx:
@@ -518,45 +503,45 @@ gst_schro_scale_prepare_size (GstSchroScale * videoscale, gint format,
     case GST_SCHRO_SCALE_BGRA:
     case GST_SCHRO_SCALE_ABGR:
     case GST_SCHRO_SCALE_AYUV:
-      img->stride = img->width * 4;
-      *size = img->stride * img->height;
+      stride = width * 4;
+      *size = stride * height;
       break;
     case GST_SCHRO_SCALE_RGB:
     case GST_SCHRO_SCALE_BGR:
-      img->stride = GST_ROUND_UP_4 (img->width * 3);
-      *size = img->stride * img->height;
+      stride = GST_ROUND_UP_4 (width * 3);
+      *size = stride * height;
       break;
     case GST_SCHRO_SCALE_YUY2:
     case GST_SCHRO_SCALE_YVYU:
     case GST_SCHRO_SCALE_UYVY:
-      img->stride = GST_ROUND_UP_4 (img->width * 2);
-      *size = img->stride * img->height;
+      stride = GST_ROUND_UP_4 (width * 2);
+      *size = stride * height;
       break;
     case GST_SCHRO_SCALE_Y:
-      img->stride = GST_ROUND_UP_4 (img->width);
-      *size = img->stride * img->height;
+      stride = GST_ROUND_UP_4 (width);
+      *size = stride * height;
       break;
     case GST_SCHRO_SCALE_I420:
     case GST_SCHRO_SCALE_YV12:
     {
       gulong img_u_stride, img_u_height;
 
-      img->stride = GST_ROUND_UP_4 (img->width);
+      stride = GST_ROUND_UP_4 (width);
 
-      img_u_height = GST_ROUND_UP_2 (img->height) / 2;
-      img_u_stride = GST_ROUND_UP_4 (img->stride / 2);
+      img_u_height = GST_ROUND_UP_2 (height) / 2;
+      img_u_stride = GST_ROUND_UP_4 (stride / 2);
 
-      *size = img->stride * GST_ROUND_UP_2 (img->height) +
+      *size = stride * GST_ROUND_UP_2 (height) +
           2 * img_u_stride * img_u_height;
       break;
     }
     case GST_SCHRO_SCALE_RGB565:
-      img->stride = GST_ROUND_UP_4 (img->width * 2);
-      *size = img->stride * img->height;
+      stride = GST_ROUND_UP_4 (width * 2);
+      *size = stride * height;
       break;
     case GST_SCHRO_SCALE_RGB555:
-      img->stride = GST_ROUND_UP_4 (img->width * 2);
-      *size = img->stride * img->height;
+      stride = GST_ROUND_UP_4 (width * 2);
+      *size = stride * height;
       break;
     default:
       goto unknown_format;
@@ -604,21 +589,16 @@ gst_schro_scale_set_caps (GstBaseTransform * trans, GstCaps * in, GstCaps * out)
     goto done;
 
   if (!(ret = gst_schro_scale_prepare_size (videoscale, videoscale->format,
-              &videoscale->src, videoscale->from_width, videoscale->from_height,
+              videoscale->from_width, videoscale->from_height,
               &videoscale->src_size)))
     /* prepare size has posted an error when it returns FALSE */
     goto done;
 
   if (!(ret = gst_schro_scale_prepare_size (videoscale, videoscale->format,
-              &videoscale->dest, videoscale->to_width, videoscale->to_height,
+              videoscale->to_width, videoscale->to_height,
               &videoscale->dest_size)))
     /* prepare size has posted an error when it returns FALSE */
     goto done;
-
-  if (videoscale->tmp_buf)
-    g_free (videoscale->tmp_buf);
-
-  videoscale->tmp_buf = g_malloc (videoscale->dest.stride * 4);
 
   /* FIXME: par */
   GST_DEBUG_OBJECT (videoscale, "from=%dx%d, size %d -> to=%dx%d, size %d",
@@ -635,7 +615,6 @@ gst_schro_scale_get_unit_size (GstBaseTransform * trans, GstCaps * caps,
 {
   GstSchroScale *videoscale;
   gint format, width, height;
-  VSImage img;
 
   g_assert (size);
 
@@ -644,7 +623,7 @@ gst_schro_scale_get_unit_size (GstBaseTransform * trans, GstCaps * caps,
   if (!parse_caps (caps, &format, &width, &height))
     return FALSE;
 
-  if (!gst_schro_scale_prepare_size (videoscale, format, &img, width, height,
+  if (!gst_schro_scale_prepare_size (videoscale, format, width, height,
           size))
     return FALSE;
 
@@ -807,6 +786,7 @@ gst_schro_scale_transform (GstBaseTransform * trans, GstBuffer * in,
   SchroFrame *outframe;
   SchroFrame *frame;
   gint method;
+  int w, h;
 
   videoscale = GST_SCHRO_SCALE (trans);
 
@@ -838,10 +818,27 @@ gst_schro_scale_transform (GstBaseTransform * trans, GstBuffer * in,
   }
 
   frame = schro_virt_frame_new_unpack_take (frame);
-  frame = schro_virt_frame_new_horiz_resample_take (frame,
-      videoscale->to_width);
-  frame = schro_virt_frame_new_vert_resample_take (frame,
-      videoscale->to_height);
+  
+  w = videoscale->from_width;
+  h = videoscale->from_height;
+  while (w >= 2*videoscale->to_width || h >= 2*videoscale->to_height) {
+    if (w >= 2*videoscale->to_width) {
+      frame = schro_virt_frame_new_horiz_downsample_take (frame, FALSE);
+      w /= 2;
+    }
+    if (h >= 2*videoscale->to_height) {
+      frame = schro_virt_frame_new_vert_downsample_take (frame, FALSE);
+      h /= 2;
+    }
+  }
+  if (w != videoscale->to_width) {
+    frame = schro_virt_frame_new_horiz_resample_take (frame,
+        videoscale->to_width);
+  }
+  if (h != videoscale->to_height) {
+    frame = schro_virt_frame_new_vert_resample_take (frame,
+        videoscale->to_height);
+  }
 
   switch (videoscale->format) {
     case GST_SCHRO_SCALE_YUY2:
