@@ -2431,109 +2431,107 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
     for(x=0;x<horiz_codeblocks;x++){
       int xmin = (fd.width*x)/horiz_codeblocks;
       int xmax = (fd.width*(x+1))/horiz_codeblocks;
+      SchroFrameData quant_cb;
+      SchroFrameData cb;
 
-  if (have_zero_flags) {
-    int zero_codeblock = 1;
-    for(j=ymin;j<ymax;j++){
-      int16_t *quant_line = SCHRO_FRAME_DATA_GET_LINE(&qd, j);
-      for(i=xmin;i<xmax;i++){
-        if (quant_line[i] != 0) {
-          zero_codeblock = 0;
-          goto out;
+      schro_frame_data_get_codeblock (&cb, &fd, x, y, horiz_codeblocks,
+          vert_codeblocks);
+      schro_frame_data_get_codeblock (&quant_cb, &qd, x, y, horiz_codeblocks,
+          vert_codeblocks);
+
+      if (have_zero_flags) {
+        int zero_codeblock = schro_frame_data_is_zero (&quant_cb);
+
+        _schro_arith_encode_bit (arith, SCHRO_CTX_ZERO_CODEBLOCK,
+            zero_codeblock);
+        if (zero_codeblock) {
+          continue;
         }
       }
-    }
-out:
-    _schro_arith_encode_bit (arith, SCHRO_CTX_ZERO_CODEBLOCK,
-        zero_codeblock);
-    if (zero_codeblock) {
-      continue;
-    }
-  }
 
-  if (have_quant_offset) {
-    _schro_arith_encode_sint (arith,
-        SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
-        SCHRO_CTX_QUANTISER_SIGN, 0);
-  }
-
-  for(j=ymin;j<ymax;j++){
-    int16_t *prev_quant_line = SCHRO_FRAME_DATA_GET_LINE(&qd, j-1);
-    int16_t *quant_line = SCHRO_FRAME_DATA_GET_LINE(&qd, j);
-    int16_t *parent_line = SCHRO_FRAME_DATA_GET_LINE(&parent_fd, (j>>1));
-
-    for(i=xmin;i<xmax;i++){
-      int parent;
-      int cont_context;
-      int value_context;
-      int nhood_or;
-      int previous_value;
-      int sign_context;
-
-      /* FIXME This code is so ugly.  Most of these if statements
-       * are constant over the entire codeblock. */
-
-      if (position >= 4) {
-        parent = parent_line[(i>>1)];
-      } else {
-        parent = 0;
+      if (have_quant_offset) {
+        _schro_arith_encode_sint (arith,
+            SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
+            SCHRO_CTX_QUANTISER_SIGN, 0);
       }
+
+      for(j=ymin;j<ymax;j++){
+        int16_t *prev_quant_line = SCHRO_FRAME_DATA_GET_LINE(&qd, j-1);
+        int16_t *quant_line = SCHRO_FRAME_DATA_GET_LINE(&qd, j);
+        int16_t *parent_line = SCHRO_FRAME_DATA_GET_LINE(&parent_fd, (j>>1));
+
+        for(i=xmin;i<xmax;i++){
+          int parent;
+          int cont_context;
+          int value_context;
+          int nhood_or;
+          int previous_value;
+          int sign_context;
+
+          /* FIXME This code is so ugly.  Most of these if statements
+           * are constant over the entire codeblock. */
+
+          if (position >= 4) {
+            parent = parent_line[(i>>1)];
+          } else {
+            parent = 0;
+          }
 //parent = 0;
 
-      nhood_or = 0;
-      if (j>0) {
-        nhood_or |= prev_quant_line[i];
-      }
-      if (i>0) {
-        nhood_or |= quant_line[i - 1];
-      }
-      if (i>0 && j>0) {
-        nhood_or |= prev_quant_line[i - 1];
-      }
+          nhood_or = 0;
+          if (j>0) {
+            nhood_or |= prev_quant_line[i];
+          }
+          if (i>0) {
+            nhood_or |= quant_line[i - 1];
+          }
+          if (i>0 && j>0) {
+            nhood_or |= prev_quant_line[i - 1];
+          }
 //nhood_or = 0;
 
-      previous_value = 0;
-      if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position)) {
-        if (i > 0) {
-          previous_value = quant_line[i - 1];
-        }
-      } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position)) {
-        if (j > 0) {
-          previous_value = prev_quant_line[i];
-        }
-      }
+          previous_value = 0;
+          if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position)) {
+            if (i > 0) {
+              previous_value = quant_line[i - 1];
+            }
+          } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position)) {
+            if (j > 0) {
+              previous_value = prev_quant_line[i];
+            }
+          }
 //previous_value = 0;
 
-      if (previous_value < 0) {
-        sign_context = SCHRO_CTX_SIGN_NEG;
-      } else {
-        if (previous_value > 0) {
-          sign_context = SCHRO_CTX_SIGN_POS;
-        } else {
-          sign_context = SCHRO_CTX_SIGN_ZERO;
+          if (previous_value < 0) {
+            sign_context = SCHRO_CTX_SIGN_NEG;
+          } else {
+            if (previous_value > 0) {
+              sign_context = SCHRO_CTX_SIGN_POS;
+            } else {
+              sign_context = SCHRO_CTX_SIGN_ZERO;
+            }
+          }
+
+          if (parent == 0) {
+            if (nhood_or == 0) {
+              cont_context = SCHRO_CTX_ZPZN_F1;
+            } else {
+              cont_context = SCHRO_CTX_ZPNN_F1;
+            }
+          } else {
+            if (nhood_or == 0) {
+              cont_context = SCHRO_CTX_NPZN_F1;
+            } else {
+              cont_context = SCHRO_CTX_NPNN_F1;
+            }
+          }
+
+          value_context = SCHRO_CTX_COEFF_DATA;
+
+          _schro_arith_encode_sint (arith, cont_context, value_context,
+              sign_context, quant_line[i]);
         }
       }
-
-      if (parent == 0) {
-        if (nhood_or == 0) {
-          cont_context = SCHRO_CTX_ZPZN_F1;
-        } else {
-          cont_context = SCHRO_CTX_ZPNN_F1;
-        }
-      } else {
-        if (nhood_or == 0) {
-          cont_context = SCHRO_CTX_NPZN_F1;
-        } else {
-          cont_context = SCHRO_CTX_NPNN_F1;
-        }
-      }
-
-      value_context = SCHRO_CTX_COEFF_DATA;
-
-      _schro_arith_encode_sint (arith, cont_context, value_context,
-          sign_context, quant_line[i]);
-    }
-  }
     }
   }
 
