@@ -162,6 +162,7 @@ struct _SchroEncoderFrame {
   SchroParams params;
   SchroEncoder *encoder;
   SchroFrame *iwt_frame;
+  SchroFrame *quant_frame;
   SchroFrame *prediction_frame;
 
   SchroEncoderFrame *ref_frame[2];
