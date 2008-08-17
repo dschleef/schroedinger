@@ -2310,6 +2310,25 @@ schro_frame_data_quantise_dc_predict (SchroFrameData *quant_fd,
 }
 
 static int
+schro_encoder_frame_get_quant_index (SchroEncoderFrame *frame, int component,
+    int index, int x, int y)
+{
+  SchroParams *params = &frame->params;
+  int *codeblock_quants;
+  int position;
+  int horiz_codeblocks;
+  
+  position = schro_subband_get_position (index);
+  horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
+
+  codeblock_quants = frame->quant_indices[component][index];
+  if (codeblock_quants) {
+    return codeblock_quants[y*horiz_codeblocks + x];
+  }
+  return frame->quant_index[component][index];
+}
+
+static int
 schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component,
     int index)
 {
@@ -2326,7 +2345,8 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component,
 
   /* FIXME doesn't handle quantisation of codeblocks */
 
-  quant_index = frame->quant_index[component][index];
+  quant_index = schro_encoder_frame_get_quant_index (frame, component,
+      index, 0, 0);
   quant_factor = schro_table_quant[quant_index];
   if (params->num_refs > 0) {
     quant_offset = schro_table_offset_3_8[quant_index];
@@ -2555,15 +2575,15 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
 
   SCHRO_ASSERT(arith->offset < frame->subband_buffer->length);
 
-  schro_dump(SCHRO_DUMP_SUBBAND_EST, "%d %d %d %g %d %g\n",
+  schro_dump(SCHRO_DUMP_SUBBAND_EST, "%d %d %d %g %d\n",
       frame->frame_number, component, index,
       frame->est_entropy[component][index][frame->quant_index[component][index]],
-      arith->offset*8, frame->subband_info[component][index]);
+      arith->offset*8);
 
   schro_pack_encode_uint (frame->pack, arith->offset);
   if (arith->offset > 0) {
     schro_pack_encode_uint (frame->pack,
-        frame->quant_index[component][index]);
+        schro_encoder_frame_get_quant_index (frame, component, index, 0, 0));
 
     schro_pack_sync (frame->pack);
 
@@ -2682,7 +2702,7 @@ schro_encoder_encode_subband_noarith (SchroEncoderFrame *frame,
   schro_pack_encode_uint (frame->pack, schro_pack_get_offset(pack));
   if (schro_pack_get_offset(pack) > 0) {
     schro_pack_encode_uint (frame->pack,
-        frame->quant_index[component][index]);
+        schro_encoder_frame_get_quant_index (frame, component, index, 0, 0));
 
     schro_pack_sync (frame->pack);
     schro_pack_append (frame->pack, pack->buffer->data,
@@ -2786,6 +2806,12 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
     }
     if (frame->rme[0]) schro_rough_me_free (frame->rme[0]);
     if (frame->rme[1]) schro_rough_me_free (frame->rme[1]);
+
+    for(i=0;i<SCHRO_LIMIT_SUBBANDS;i++){
+      if (frame->quant_indices[0][i]) schro_free (frame->quant_indices[0][i]);
+      if (frame->quant_indices[1][i]) schro_free (frame->quant_indices[1][i]);
+      if (frame->quant_indices[2][i]) schro_free (frame->quant_indices[2][i]);
+    }
 
     schro_free (frame);
   }

@@ -154,10 +154,11 @@ struct _SchroEncoderFrame {
 
   int16_t *quant_data;
 
-  int quant_index[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3];
-  double est_entropy[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3][60];
-  double est_error[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3][60];
-  double subband_info[3][1+SCHRO_LIMIT_TRANSFORM_DEPTH*3];
+  int *quant_indices[3][SCHRO_LIMIT_SUBBANDS];
+
+  int quant_index[3][SCHRO_LIMIT_SUBBANDS];
+  double est_entropy[3][SCHRO_LIMIT_SUBBANDS][60];
+  double est_error[3][SCHRO_LIMIT_SUBBANDS][60];
   SchroPack *pack;
   SchroParams params;
   SchroEncoder *encoder;
