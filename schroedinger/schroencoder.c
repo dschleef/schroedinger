@@ -2251,20 +2251,73 @@ schro_encoder_encode_transform_data (SchroEncoderFrame *frame)
   }
 }
 
+static void
+schro_frame_data_quantise (SchroFrameData *quant_fd,
+    SchroFrameData *fd, int quant_factor, int quant_offset)
+{
+  int j;
+  int16_t *line;
+  int16_t *quant_line;
+
+  for(j=0;j<fd->height;j++){
+    line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
+
+    schro_quantise_s16 (quant_line, line, quant_factor, quant_offset,
+        fd->width);
+  }
+}
+
+static void
+schro_frame_data_quantise_dc_predict (SchroFrameData *quant_fd,
+    SchroFrameData *fd, int quant_factor, int quant_offset)
+{
+  int i,j;
+  int16_t *line;
+  int16_t *prev_line;
+  int16_t *quant_line;
+
+  for(j=0;j<fd->height;j++){
+    line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    prev_line = SCHRO_FRAME_DATA_GET_LINE(fd, j-1);
+    quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
+
+    for(i=0;i<fd->width;i++){
+      int q;
+      int pred_value;
+
+      if (j>0) {
+        if (i>0) {
+          pred_value = schro_divide(line[i - 1] +
+              prev_line[i] + prev_line[i - 1] + 1,3);
+        } else {
+          pred_value = prev_line[i];
+        }
+      } else {
+        if (i>0) {
+          pred_value = line[i - 1];
+        } else {
+          pred_value = 0;
+        }
+      }
+
+      q = schro_quantise(line[i] - pred_value, quant_factor, quant_offset);
+      line[i] = schro_dequantise(q, quant_factor, quant_offset) +
+        pred_value;
+      quant_line[i] = q;
+    }
+  }
+}
+
 static int
 schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component,
     int index)
 {
-  int pred_value;
   int quant_index;
   int quant_factor;
   int quant_offset;
   SchroFrameData fd;
   SchroFrameData qd;
-  int i,j;
-  int16_t *line;
-  int16_t *quant_line;
-  int16_t *prev_line;
   int subband_zero_flag;
   int position;
   SchroParams *params = &frame->params;
@@ -2288,42 +2341,11 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component,
       position, params);
 
   if (index == 0) {
-    for(j=0;j<fd.height;j++){
-      line = SCHRO_FRAME_DATA_GET_LINE(&fd, j);
-      quant_line = SCHRO_FRAME_DATA_GET_LINE(&qd, j);
-      prev_line = SCHRO_FRAME_DATA_GET_LINE(&fd, j-1);
-
-      for(i=0;i<fd.width;i++){
-        int q;
-
-        if (params->num_refs == 0) {
-          if (j>0) {
-            if (i>0) {
-              pred_value = schro_divide(line[i - 1] +
-                  prev_line[i] + prev_line[i - 1] + 1,3);
-            } else {
-              pred_value = prev_line[i];
-            }
-          } else {
-            if (i>0) {
-              pred_value = line[i - 1];
-            } else {
-              pred_value = 0;
-            }
-          }
-        } else {
-          pred_value = 0;
-        }
-
-        q = schro_quantise(line[i] - pred_value, quant_factor, quant_offset);
-        line[i] = schro_dequantise(q, quant_factor, quant_offset) +
-          pred_value;
-        quant_line[i] = q;
-        if (line[i] != 0) {
-          subband_zero_flag = 0;
-        }
-
-      }
+    if (params->num_refs == 0) {
+      schro_frame_data_quantise_dc_predict (&qd, &fd, quant_factor,
+          quant_offset);
+    } else {
+      schro_frame_data_quantise (&qd, &fd, quant_factor, quant_offset);
     }
   } else {
     int horiz_codeblocks;
@@ -2344,13 +2366,7 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component,
         schro_frame_data_get_codeblock (&quant_cb, &qd, x, y, horiz_codeblocks,
             vert_codeblocks);
 
-        for(j=0;j<cb.height;j++){
-          line = SCHRO_FRAME_DATA_GET_LINE(&cb, j);
-          quant_line = SCHRO_FRAME_DATA_GET_LINE(&quant_cb, j);
-
-          schro_quantise_s16 (quant_line, line, quant_factor, quant_offset,
-              cb.width);
-        }
+        schro_frame_data_quantise (&quant_cb, &cb, quant_factor, quant_offset);
       }
     }
   }
