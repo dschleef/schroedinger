@@ -830,7 +830,7 @@ schro_frame_filter_adaptive_lowpass (SchroFrame *frame)
   /* good for 2 Mb DVD intra-only rip */
   sigma = -1.0/slope;
   if (sigma > 1.0) {
-    SCHRO_ERROR("enabling filtering (slope %g)", slope);
+    SCHRO_DEBUG("enabling filtering (slope %g)", slope);
 
     schro_frame_filter_lowpass2 (frame, sigma);
   }
