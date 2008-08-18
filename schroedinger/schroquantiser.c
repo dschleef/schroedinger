@@ -882,7 +882,8 @@ schro_encoder_lambda_to_entropy (SchroEncoderFrame *frame, double base_lambda)
 
       quant_index = schro_subband_pick_quant (frame, component, i, lambda);
       entropy += frame->est_entropy[component][i][quant_index];
-      frame->quant_index[component][i] = quant_index;
+      schro_encoder_frame_set_quant_index (frame, component, i, 0, 0,
+          quant_index);
     }
   }
 

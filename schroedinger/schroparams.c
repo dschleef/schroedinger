@@ -260,6 +260,7 @@ schro_params_verify_block_params (SchroParams *params)
   return TRUE;
 }
 
+#ifdef unused
 /**
  * schro_params_set_default_codeblock:
  * @params: pointer to SchroParams structure
@@ -276,8 +277,10 @@ schro_params_set_default_codeblock (SchroParams *params)
     params->horiz_codeblocks[i] = 1;
     params->vert_codeblocks[i] = 1;
   }
+  /* FIXME default in Dirac is 0 */
   params->codeblock_mode_index = 1;
 }
+#endif
 
 /**
  * schro_params_is_default_codeblock:

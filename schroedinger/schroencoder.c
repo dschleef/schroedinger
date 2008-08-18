@@ -95,6 +95,7 @@ schro_encoder_new (void)
   encoder->enable_zero_estimation = FALSE;
   encoder->enable_phasecorr_estimation = FALSE;
   encoder->enable_bigblock_estimation = TRUE;
+  encoder->enable_multiquant = TRUE;
   encoder->horiz_slices = 8;
   encoder->vert_slices = 6;
 
@@ -2270,7 +2271,7 @@ schro_frame_data_quantise (SchroFrameData *quant_fd,
 
 static void
 schro_frame_data_quantise_dc_predict (SchroFrameData *quant_fd,
-    SchroFrameData *fd, int quant_factor, int quant_offset)
+    SchroFrameData *fd, int quant_factor, int quant_offset, int x, int y)
 {
   int i,j;
   int16_t *line;
@@ -2286,15 +2287,15 @@ schro_frame_data_quantise_dc_predict (SchroFrameData *quant_fd,
       int q;
       int pred_value;
 
-      if (j>0) {
-        if (i>0) {
+      if (y+j>0) {
+        if (x+i>0) {
           pred_value = schro_divide(line[i - 1] +
               prev_line[i] + prev_line[i - 1] + 1,3);
         } else {
           pred_value = prev_line[i];
         }
       } else {
-        if (i>0) {
+        if (x+i>0) {
           pred_value = line[i - 1];
         } else {
           pred_value = 0;
@@ -2314,18 +2315,50 @@ schro_encoder_frame_get_quant_index (SchroEncoderFrame *frame, int component,
     int index, int x, int y)
 {
   SchroParams *params = &frame->params;
-  int *codeblock_quants;
   int position;
   int horiz_codeblocks;
   
   position = schro_subband_get_position (index);
   horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
 
-  codeblock_quants = frame->quant_indices[component][index];
-  if (codeblock_quants) {
+  if (params->codeblock_mode_index == 1) {
+    int *codeblock_quants = frame->quant_indices[component][index];
+
+    /* FIXME */
+    if (codeblock_quants == NULL) {
+      return frame->quant_index[component][index];
+    }
+
     return codeblock_quants[y*horiz_codeblocks + x];
+  } else {
+    return frame->quant_index[component][index];
   }
-  return frame->quant_index[component][index];
+}
+
+void
+schro_encoder_frame_set_quant_index (SchroEncoderFrame *frame, int component,
+    int index, int x, int y, int quant_index)
+{
+  SchroParams *params = &frame->params;
+  int *codeblock_quants;
+  int position;
+  int horiz_codeblocks;
+  int vert_codeblocks;
+  int i;
+  
+  position = schro_subband_get_position (index);
+  horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
+  vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
+
+  if (frame->quant_indices[component][index] == NULL) {
+    frame->quant_indices[component][index] =
+      schro_malloc (horiz_codeblocks * vert_codeblocks * sizeof(int));
+  }
+
+  codeblock_quants = frame->quant_indices[component][index];
+  for(i=0;i<horiz_codeblocks*vert_codeblocks;i++){
+    codeblock_quants[i] = quant_index;
+  }
 }
 
 static int
@@ -2340,19 +2373,11 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component,
   int subband_zero_flag;
   int position;
   SchroParams *params = &frame->params;
+  int horiz_codeblocks;
+  int vert_codeblocks;
+  int x,y;
 
   subband_zero_flag = 1;
-
-  /* FIXME doesn't handle quantisation of codeblocks */
-
-  quant_index = schro_encoder_frame_get_quant_index (frame, component,
-      index, 0, 0);
-  quant_factor = schro_table_quant[quant_index];
-  if (params->num_refs > 0) {
-    quant_offset = schro_table_offset_3_8[quant_index];
-  } else {
-    quant_offset = schro_table_offset_1_2[quant_index];
-  }
 
   position = schro_subband_get_position (index);
   schro_subband_get_frame_data (&fd, frame->iwt_frame, component,
@@ -2360,32 +2385,33 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component,
   schro_subband_get_frame_data (&qd, frame->quant_frame, component,
       position, params);
 
-  if (index == 0) {
-    if (params->num_refs == 0) {
-      schro_frame_data_quantise_dc_predict (&qd, &fd, quant_factor,
-          quant_offset);
-    } else {
-      schro_frame_data_quantise (&qd, &fd, quant_factor, quant_offset);
-    }
-  } else {
-    int horiz_codeblocks;
-    int vert_codeblocks;
-    int x,y;
+  horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
+  vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
 
-    horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
-    vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
+  for(y=0;y<vert_codeblocks;y++){
 
-    for(y=0;y<vert_codeblocks;y++){
+    for(x=0;x<horiz_codeblocks;x++){
+      SchroFrameData quant_cb;
+      SchroFrameData cb;
 
-      for(x=0;x<horiz_codeblocks;x++){
-        SchroFrameData quant_cb;
-        SchroFrameData cb;
+      quant_index = schro_encoder_frame_get_quant_index (frame, component,
+          index, x, y);
+      quant_factor = schro_table_quant[quant_index];
+      if (params->num_refs > 0) {
+        quant_offset = schro_table_offset_3_8[quant_index];
+      } else {
+        quant_offset = schro_table_offset_1_2[quant_index];
+      }
 
-        schro_frame_data_get_codeblock (&cb, &fd, x, y, horiz_codeblocks,
-            vert_codeblocks);
-        schro_frame_data_get_codeblock (&quant_cb, &qd, x, y, horiz_codeblocks,
-            vert_codeblocks);
+      schro_frame_data_get_codeblock (&cb, &fd, x, y, horiz_codeblocks,
+          vert_codeblocks);
+      schro_frame_data_get_codeblock (&quant_cb, &qd, x, y, horiz_codeblocks,
+          vert_codeblocks);
 
+      if (params->num_refs == 0 && index == 0) {
+        schro_frame_data_quantise_dc_predict (&quant_cb, &cb, quant_factor,
+            quant_offset, x, y);
+      } else {
         schro_frame_data_quantise (&quant_cb, &cb, quant_factor, quant_offset);
       }
     }
@@ -2410,6 +2436,7 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
   SchroFrameData fd;
   SchroFrameData qd;
   SchroFrameData parent_fd;
+  int quant_index;
 
   position = schro_subband_get_position (index);
   schro_subband_get_frame_data (&fd, frame->iwt_frame, component,
@@ -2460,6 +2487,8 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
     have_quant_offset = FALSE;
   }
 
+  quant_index = schro_encoder_frame_get_quant_index (frame, component,
+      index, 0, 0);
   for(y=0;y<vert_codeblocks;y++){
     int ymin = (fd.height*y)/vert_codeblocks;
     int ymax = (fd.height*(y+1))/vert_codeblocks;
@@ -2486,9 +2515,16 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
       }
 
       if (have_quant_offset) {
+        int new_quant_index;
+
+        new_quant_index = schro_encoder_frame_get_quant_index (frame,
+            component, index, x, y);
+
         _schro_arith_encode_sint (arith,
             SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
-            SCHRO_CTX_QUANTISER_SIGN, 0);
+            SCHRO_CTX_QUANTISER_SIGN, new_quant_index - quant_index);
+
+        quant_index = new_quant_index;
       }
 
       for(j=ymin;j<ymax;j++){
@@ -2950,6 +2986,7 @@ static SchroEncoderSetting encoder_settings[] = {
   BOOL("enable_zero_estimation", FALSE),
   BOOL("enable_phasecorr_estimation", FALSE),
   BOOL("enable_bigblock_estimation", FALSE),
+  BOOL("enable_multiquant", TRUE),
   INT ("horiz_slices", 1, INT_MAX, 16),
   INT ("vert_slices", 1, INT_MAX, 16),
 
@@ -3035,6 +3072,7 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(enable_zero_estimation);
   VAR_SET(enable_phasecorr_estimation);
   VAR_SET(enable_bigblock_estimation);
+  VAR_SET(enable_multiquant);
   VAR_SET(horiz_slices);
   VAR_SET(vert_slices);
   //VAR_SET();
@@ -3096,6 +3134,7 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(enable_zero_estimation);
   VAR_GET(enable_phasecorr_estimation);
   VAR_GET(enable_bigblock_estimation);
+  VAR_GET(enable_multiquant);
   VAR_GET(horiz_slices);
   VAR_GET(vert_slices);
   //VAR_GET();

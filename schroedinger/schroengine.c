@@ -361,6 +361,7 @@ init_params (SchroEncoderFrame *frame)
   SchroParams *params = &frame->params;
   SchroEncoder *encoder = frame->encoder;
   SchroVideoFormat *video_format = params->video_format;
+  int i;
 
   params->video_format = &encoder->video_format;
 
@@ -422,8 +423,19 @@ init_params (SchroEncoderFrame *frame)
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
 
+  {
+    int shift = params->transform_depth;
+    params->horiz_codeblocks[0] = params->iwt_luma_width >> (shift + 3);
+    params->vert_codeblocks[0] = params->iwt_luma_height >> (shift + 3);
+    for(i=1;i<params->transform_depth+1;i++){
+      shift = params->transform_depth + 1 - i;
+
+      params->horiz_codeblocks[i] = params->iwt_luma_width >> (shift + 3);
+      params->vert_codeblocks[i] = params->iwt_luma_height >> (shift + 3);
+    }
+  }
+
   if (frame->params.is_noarith) {
-    int i;
     int shift;
 
     params->horiz_codeblocks[0] = 1;
@@ -440,7 +452,11 @@ init_params (SchroEncoderFrame *frame)
 
   params->mv_precision = encoder->mv_precision;
   //params->have_global_motion = TRUE;
-  params->codeblock_mode_index = 0;
+  if (encoder->enable_multiquant) {
+    params->codeblock_mode_index = 1;
+  } else {
+    params->codeblock_mode_index = 0;
+  }
 }
 
 static double

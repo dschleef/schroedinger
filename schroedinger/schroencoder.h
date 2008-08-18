@@ -253,6 +253,7 @@ struct _SchroEncoder {
   schro_bool enable_zero_estimation;
   schro_bool enable_phasecorr_estimation;
   schro_bool enable_bigblock_estimation;
+  schro_bool enable_multiquant;
   int horiz_slices;
   int vert_slices;
 
@@ -472,6 +473,9 @@ void schro_encoder_recalculate_allocations (SchroEncoder *encoder);
 void schro_encoder_calculate_test_info (SchroEncoderFrame *frame);
 
 void schro_encoder_init_error_tables (SchroEncoder *encoder);
+
+void schro_encoder_frame_set_quant_index (SchroEncoderFrame *frame, int component,
+    int index, int x, int y, int quant_index);
 
 #endif
 
