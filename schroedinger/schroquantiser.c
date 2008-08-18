@@ -567,32 +567,17 @@ static void
 schro_encoder_generate_subband_histogram (SchroEncoderFrame *frame,
     int component, int index, SchroHistogram *hist, int skip)
 {
-  int i;
-  int j;
-  int16_t *line;
   int position;
   SchroFrameData fd;
-
-  schro_histogram_init (hist);
 
   position = schro_subband_get_position (index);
   schro_subband_get_frame_data (&fd, frame->iwt_frame, component, position,
       &frame->params);
 
-  if (index > 0) {
-    for(j=0;j<fd.height;j+=skip){
-      schro_histogram_add_array_s16 (hist,
-          SCHRO_FRAME_DATA_GET_LINE (&fd, j), fd.width);
-    }
-    schro_histogram_scale (hist, skip);
+  if (index == 0 && frame->num_refs == 0) {
+    schro_frame_data_generate_histogram_dc_predict (&fd, hist, skip, 0, 0);
   } else {
-    for(j=0;j<fd.height;j+=skip){
-      line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
-      for(i=1;i<fd.width;i+=skip){
-        schro_histogram_add(hist, (line[i] - line[i-1]));
-      }
-    }
-    schro_histogram_scale (hist, skip*skip);
+    schro_frame_data_generate_histogram (&fd, hist, skip);
   }
 }
 

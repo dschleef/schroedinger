@@ -329,3 +329,51 @@ schro_histogram_estimate_entropy (SchroHistogram *hist, int quant_index,
   return estimated_entropy;
 }
 
+void
+schro_frame_data_generate_histogram (SchroFrameData *fd,
+    SchroHistogram *hist, int skip)
+{
+  int j;
+
+  schro_histogram_init (hist);
+  for(j=0;j<fd->height;j+=skip){
+    schro_histogram_add_array_s16 (hist,
+        SCHRO_FRAME_DATA_GET_LINE (fd, j), fd->width);
+  }
+  schro_histogram_scale (hist, skip);
+}
+
+void
+schro_frame_data_generate_histogram_dc_predict (SchroFrameData *fd,
+    SchroHistogram *hist, int skip, int x, int y)
+{
+  int i,j;
+  int16_t *prev_line;
+  int16_t *line;
+
+  schro_histogram_init (hist);
+  for(j=0;j<fd->height;j+=skip){
+    prev_line = SCHRO_FRAME_DATA_GET_LINE (fd, j-1);
+    line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+    for(i=0;i<fd->width;i++){
+      int pred_value;
+      if (y+j>0) {
+        if (x+i>0) {
+          pred_value = schro_divide(line[i - 1] +
+              prev_line[i] + prev_line[i - 1] + 1,3);
+        } else {
+          pred_value = prev_line[i];
+        }
+      } else {
+        if (x+i>0) {
+          pred_value = line[i - 1];
+        } else {
+          pred_value = 0;
+        }
+      }
+      schro_histogram_add(hist, line[i] - pred_value);
+    }
+  }
+  schro_histogram_scale (hist, skip);
+}
+
