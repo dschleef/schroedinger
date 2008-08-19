@@ -2547,7 +2547,7 @@ schro_decoder_setup_codeblocks (SchroPicture *picture,
     ctx->vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(ctx->position)+1];
     ctx->horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(ctx->position)+1];
   }
-  if ((ctx->horiz_codeblocks > 1 || ctx->vert_codeblocks > 1) && ctx->position > 0) {
+  if (ctx->horiz_codeblocks > 1 || ctx->vert_codeblocks > 1) {
     ctx->have_zero_flags = TRUE;
   } else {
     ctx->have_zero_flags = FALSE;

@@ -2472,7 +2472,7 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
     horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
     vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
   }
-  if ((horiz_codeblocks > 1 || vert_codeblocks > 1) && index > 0) {
+  if (horiz_codeblocks > 1 || vert_codeblocks > 1) {
     have_zero_flags = TRUE;
   } else {
     have_zero_flags = FALSE;
