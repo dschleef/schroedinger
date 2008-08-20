@@ -3,6 +3,7 @@
 #define __SCHRO_SCHRO_HISTOGRAM_H__
 
 #include <schroedinger/schroutils.h>
+#include <schroedinger/schroframe.h>
 
 SCHRO_BEGIN_DECLS
 
