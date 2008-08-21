@@ -425,8 +425,14 @@ init_params (SchroEncoderFrame *frame)
 
   {
     int shift = params->transform_depth;
-    params->horiz_codeblocks[0] = params->iwt_luma_width >> (shift + 3);
-    params->vert_codeblocks[0] = params->iwt_luma_height >> (shift + 3);
+    if (encoder->enable_dc_multiquant) {
+      params->horiz_codeblocks[0] = params->iwt_luma_width >> (shift + 3);
+      params->vert_codeblocks[0] = params->iwt_luma_height >> (shift + 3);
+    } else {
+      /* This is to work around a bug in the decoder that was fixed 8/2008. */
+      params->horiz_codeblocks[0] = 1;
+      params->vert_codeblocks[0] = 1;
+    }
     for(i=1;i<params->transform_depth+1;i++){
       shift = params->transform_depth + 1 - i;
 

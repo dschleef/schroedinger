@@ -254,6 +254,7 @@ struct _SchroEncoder {
   schro_bool enable_phasecorr_estimation;
   schro_bool enable_bigblock_estimation;
   schro_bool enable_multiquant;
+  schro_bool enable_dc_multiquant;
   int horiz_slices;
   int vert_slices;
 
