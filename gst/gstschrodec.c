@@ -258,16 +258,29 @@ gst_schro_dec_get_property (GObject * object, guint prop_id, GValue * value,
   }
 }
 
-#define OGG_DIRAC_GRANULE_SHIFT 32
+#define OGG_DIRAC_GRANULE_SHIFT 22
 #define OGG_DIRAC_GRANULE_LOW_MASK ((1ULL<<OGG_DIRAC_GRANULE_SHIFT)-1)
 
 static gint64
 granulepos_to_frame (gint64 granulepos)
 {
+  guint64 pt;
+  int dist_h;
+  int dist_l;
+  int dist;
+  int delay;
+  guint64 dt;
+
   if (granulepos == -1) return -1;
 
-  return (granulepos >> OGG_DIRAC_GRANULE_SHIFT) +
-    (granulepos & OGG_DIRAC_GRANULE_LOW_MASK);
+  pt = ((granulepos >> 22) + (granulepos & OGG_DIRAC_GRANULE_LOW_MASK)) >> 9;
+  dist_h = (granulepos >> 22) & 0xff;
+  dist_l = granulepos & 0xff;
+  dist = (dist_h << 8) | dist_l;
+  delay = (granulepos >> 9) & 0x1fff;
+  dt = pt - delay;
+
+  return pt >> 1;
 }
 
 static const GstQueryType *
