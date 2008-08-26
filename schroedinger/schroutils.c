@@ -122,16 +122,7 @@ muldiv64 (int a, int b, int c)
 int
 schro_utils_multiplier_to_quant_index (double x)
 {
-  int i = 0;
-
-  x *= x;
-  x *= x;
-  while (x*x > 2) {
-    x *= 0.5;
-    i++;
-  }
-
-  return i;
+  return CLAMP(rint(log(x)/log(2)*4.0),0,60);
 }
 
 
