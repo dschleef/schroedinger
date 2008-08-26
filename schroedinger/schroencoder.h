@@ -211,6 +211,7 @@ struct _SchroEncoder {
 
   SchroEncoderFrame *reference_pictures[SCHRO_LIMIT_REFERENCE_FRAMES];
 
+  int assemble_packets;
   int need_rap;
 
   SchroVideoFormat video_format;
@@ -411,6 +412,7 @@ void schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_frame_insert_buffer (SchroEncoderFrame *frame, SchroBuffer *buffer);
 void schro_encoder_start (SchroEncoder *encoder);
 
+void schro_encoder_set_packet_assembly (SchroEncoder *encoder, int value);
 SchroStateEnum schro_encoder_wait (SchroEncoder *encoder);
 SchroBuffer * schro_encoder_pull (SchroEncoder *encoder,
     int *n_decodable_frames);

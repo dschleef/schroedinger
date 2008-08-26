@@ -367,6 +367,24 @@ schro_encoder_set_video_format (SchroEncoder *encoder,
   schro_video_format_validate (&encoder->video_format);
 }
 
+/**
+ * schro_encoder_set_packet_assembly:
+ * @encoder: an encoder object
+ * @value: 
+ *
+ * If @value is TRUE, all subsequent calls to schro_encoder_pull()
+ * will return a buffer that contains all Dirac packets related to
+ * a frame.  If @value is FALSE, each buffer will be one Dirac packet.
+ *
+ * It is recommended that users always call this function with TRUE
+ * immediately after creating an encoder object.
+ */
+void
+schro_encoder_set_packet_assembly (SchroEncoder *encoder, int value)
+{
+  encoder->assemble_packets = value;
+}
+
 static int
 schro_encoder_push_is_ready_locked (SchroEncoder *encoder)
 {
@@ -571,6 +589,65 @@ schro_encoder_pull (SchroEncoder *encoder, int *presentation_frame)
   return schro_encoder_pull_full (encoder, presentation_frame, NULL);
 }
 
+static int
+schro_encoder_frame_get_encoded_size (SchroEncoderFrame *frame)
+{
+  SchroBuffer *buffer;
+  int size = 0;
+  int i;
+
+  if (frame->sequence_header_buffer) {
+    size += frame->sequence_header_buffer->length;
+  }
+
+  for(i=0;i<schro_list_get_size (frame->inserted_buffers);i++){
+    buffer = schro_list_get (frame->inserted_buffers, i);
+    size += buffer->length;
+  }
+  for(i=0;i<schro_list_get_size (frame->encoder->inserted_buffers);i++){
+    buffer = schro_list_get (frame->encoder->inserted_buffers, i);
+    size += buffer->length;
+  }
+
+  size += frame->output_buffer->length;
+
+  return size;
+}
+
+static void
+schro_encoder_frame_assemble_buffer (SchroEncoderFrame *frame,
+    SchroBuffer *buffer)
+{
+  SchroBuffer *buf;
+  int offset = 0;
+  int i;
+
+  if (frame->sequence_header_buffer) {
+    buf = frame->sequence_header_buffer;
+    schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
+    memcpy (buffer->data + offset, buf->data, buf->length);
+    offset += frame->sequence_header_buffer->length;
+  }
+
+  for(i=0;i<schro_list_get_size (frame->inserted_buffers);i++){
+    buf = schro_list_get (frame->inserted_buffers, i);
+    schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
+    memcpy (buffer->data + offset, buf->data, buf->length);
+    offset += buf->length;
+  }
+  for(i=0;i<schro_list_get_size (frame->encoder->inserted_buffers);i++){
+    buf = schro_list_get (frame->encoder->inserted_buffers, i);
+    schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
+    memcpy (buffer->data + offset, buf->data, buf->length);
+    offset += buf->length;
+  }
+
+  buf = frame->output_buffer;
+  schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
+  memcpy (buffer->data + offset, buf->data, buf->length);
+  offset += buf->length;
+}
+
 /**
  * schro_encoder_pull_full:
  * @encoder: an encoder object
@@ -591,6 +668,7 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
 {
   SchroBuffer *buffer;
   int i;
+  int done = FALSE;
 
   SCHRO_DEBUG("pulling slot %d", encoder->output_slot);
 
@@ -605,22 +683,38 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
       if (presentation_frame) {
         *presentation_frame = frame->presentation_frame;
       }
-      if (frame->sequence_header_buffer) {
-        buffer = frame->sequence_header_buffer;
-        frame->sequence_header_buffer = NULL;
-      } else if (schro_list_get_size(frame->inserted_buffers)>0) {
-        buffer = schro_list_remove (frame->inserted_buffers, 0);
-      } else if (schro_list_get_size(encoder->inserted_buffers)>0) {
-        buffer = schro_list_remove (encoder->inserted_buffers, 0);
-      } else {
-        double elapsed_time;
+
+      if (encoder->assemble_packets) {
+        int size;
+
+        size = schro_encoder_frame_get_encoded_size (frame);
+        buffer = schro_buffer_new_and_alloc (size);
+        schro_encoder_frame_assemble_buffer (frame, buffer);
 
         if (priv) {
           *priv = frame->priv;
         }
+        done = TRUE;
+      } else {
+        if (frame->sequence_header_buffer) {
+          buffer = frame->sequence_header_buffer;
+          frame->sequence_header_buffer = NULL;
+        } else if (schro_list_get_size(frame->inserted_buffers)>0) {
+          buffer = schro_list_remove (frame->inserted_buffers, 0);
+        } else if (schro_list_get_size(encoder->inserted_buffers)>0) {
+          buffer = schro_list_remove (encoder->inserted_buffers, 0);
+        } else {
+          if (priv) {
+            *priv = frame->priv;
+          }
+          buffer = frame->output_buffer;
+          frame->output_buffer = NULL;
 
-        buffer = frame->output_buffer;
-        frame->output_buffer = NULL;
+          done = TRUE;
+        }
+      }
+      if (done) {
+        double elapsed_time;
 
         is_picture = TRUE;
         frame->state |= SCHRO_ENCODER_FRAME_STATE_FREE;
@@ -697,7 +791,9 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
         }
       }
 
-      schro_encoder_fixup_offsets (encoder, buffer, FALSE);
+      if (!encoder->assemble_packets) {
+        schro_encoder_fixup_offsets (encoder, buffer, FALSE);
+      }
 
       SCHRO_DEBUG("got buffer length=%d", buffer->length);
       schro_async_unlock (encoder->async);
@@ -2837,6 +2933,12 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
     }
 
     schro_list_free (frame->inserted_buffers);
+    if (frame->output_buffer) {
+      schro_buffer_unref (frame->output_buffer);
+    }
+    if (frame->sequence_header_buffer) {
+      schro_buffer_unref (frame->sequence_header_buffer);
+    }
 
     if (frame->me) {
       schro_motionest_free (frame->me);
