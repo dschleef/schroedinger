@@ -429,7 +429,7 @@ schro_params_set_default_quant_matrix (SchroParams *params)
   const int *table;
 
   table = schro_tables_lowdelay_quants[params->wavelet_filter_index]
-      [params->transform_depth-1];
+      [MAX(0,params->transform_depth-1)];
 
   params->quant_matrix[0] = table[0];
   for(i=0;i<params->transform_depth; i++) {
@@ -445,7 +445,7 @@ schro_params_is_default_quant_matrix (SchroParams *params)
   int i;
   const int *table;
 
-  if (params->transform_depth > 4) return FALSE;
+  if (params->transform_depth < 1 || params->transform_depth > 4) return FALSE;
 
   table = schro_tables_lowdelay_quants[params->wavelet_filter_index]
       [params->transform_depth-1];

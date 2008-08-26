@@ -2076,8 +2076,7 @@ schro_decoder_parse_transform_parameters (SchroPicture *picture)
   /* transform depth */
   params->transform_depth = schro_unpack_decode_uint (unpack);
   SCHRO_DEBUG ("transform depth %d", params->transform_depth);
-  if (params->transform_depth < 1 ||
-      params->transform_depth > SCHRO_LIMIT_TRANSFORM_DEPTH) {
+  if (params->transform_depth > SCHRO_LIMIT_TRANSFORM_DEPTH) {
     picture->error = TRUE;
     return;
   }

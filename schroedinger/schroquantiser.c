@@ -289,13 +289,13 @@ schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame)
   SCHRO_DEBUG("noise %g", noise_amplitude);
 
   table = frame->encoder->subband_weights[params->wavelet_filter_index]
-    [params->transform_depth-1];
+    [MAX(0,params->transform_depth-1)];
 
   for(component=0;component<3;component++){
     for(i=0;i<1 + 3*params->transform_depth; i++) {
       a = noise_amplitude *
         frame->encoder->subband_weights[params->wavelet_filter_index]
-          [params->transform_depth-1][i];
+          [MAX(0,params->transform_depth-1)][i];
 
       frame->quant_index[component][i] = schro_utils_multiplier_to_quant_index (a);
     }
@@ -322,7 +322,7 @@ schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame)
   base = 12 + (30 - frame->encoder->noise_threshold)/2;
 
   table = schro_tables_lowdelay_quants[params->wavelet_filter_index]
-      [params->transform_depth-1];
+      [MAX(0,params->transform_depth-1)];
 
   for(component=0;component<3;component++){
     frame->quant_index[component][0] = base - table[0];
@@ -768,7 +768,7 @@ schro_encoder_lambda_to_entropy (SchroEncoderFrame *frame, double base_lambda)
       }
 
       weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
-        [frame->params.transform_depth-1][i];
+        [MAX(0,frame->params.transform_depth-1)][i];
       lambda /= weight*weight;
 
       quant_index = schro_subband_pick_quant (frame, component, i, lambda);
@@ -887,7 +887,7 @@ schro_encoder_lambda_to_error (SchroEncoderFrame *frame, double base_lambda)
       }
 
       weight = frame->encoder->subband_weights[frame->params.wavelet_filter_index]
-        [frame->params.transform_depth-1][i];
+        [MAX(0,frame->params.transform_depth-1)][i];
       lambda /= weight*weight;
 
       quant_index = schro_subband_pick_quant (frame, component, i, lambda);

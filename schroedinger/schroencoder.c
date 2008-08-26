@@ -3074,7 +3074,7 @@ static SchroEncoderSetting encoder_settings[] = {
   BOOL("enable_ssim", FALSE),
 
   INT ("ref_distance", 2, 20, 4),
-  INT ("transform_depth", 1, SCHRO_LIMIT_ENCODER_TRANSFORM_DEPTH, 4),
+  INT ("transform_depth", 0, SCHRO_LIMIT_ENCODER_TRANSFORM_DEPTH, 4),
   ENUM("intra_wavelet", wavelet_list, SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7),
   ENUM("inter_wavelet", wavelet_list, SCHRO_WAVELET_LE_GALL_5_3),
   INT ("mv_precision", 0, 3, 0),
