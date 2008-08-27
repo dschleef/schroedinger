@@ -635,8 +635,8 @@ schro_encoder_frame_assemble_buffer (SchroEncoderFrame *frame,
     memcpy (buffer->data + offset, buf->data, buf->length);
     offset += buf->length;
   }
-  for(i=0;i<schro_list_get_size (frame->encoder->inserted_buffers);i++){
-    buf = schro_list_get (frame->encoder->inserted_buffers, i);
+  while(schro_list_get_size (frame->encoder->inserted_buffers)>0){
+    buf = schro_list_remove (frame->encoder->inserted_buffers, 0);
     schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
     memcpy (buffer->data + offset, buf->data, buf->length);
     offset += buf->length;
