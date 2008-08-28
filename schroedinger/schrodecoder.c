@@ -842,6 +842,12 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
     picture->skip = TRUE;
   }
 
+  if (picture->picture_number < decoder->next_frame_number) {
+    SCHRO_DEBUG("picture out of order, skipping");
+    schro_picture_unref (picture);
+    return SCHRO_DECODER_OK;
+  }
+
   if (!decoder->video_format.interlaced_coding &&
       !picture->is_ref && decoder->skip_value > decoder->skip_ratio) {
     decoder->skip_value = (1-SCHRO_SKIP_TIME_CONSTANT) * decoder->skip_value;
