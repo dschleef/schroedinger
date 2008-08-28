@@ -367,42 +367,15 @@ gst_schro_dec_sink_convert (GstPad *pad,
 
   /* FIXME: check if we are in a decoding state */
 
-  switch (src_format) {
-    case GST_FORMAT_DEFAULT:
-      switch (*dest_format) {
-        case GST_FORMAT_TIME:
-          if (dec->fps_d != 0) {
-            *dest_value = gst_util_uint64_scale (granulepos_to_frame (src_value),
-                dec->fps_d * GST_SECOND, dec->fps_n);
-          } else {
-            res = FALSE;
-          }
-          break;
-        default:
-          res = FALSE;
-      }
-      break;
-    case GST_FORMAT_TIME:
-      switch (*dest_format) {
-        case GST_FORMAT_DEFAULT:
-        {
-          GST_ERROR("fps %d %d", dec->fps_n, dec->fps_d);
-          if (dec->fps_d != 0) {
-            *dest_value = gst_util_uint64_scale (src_value,
-                dec->fps_n, dec->fps_d * GST_SECOND);
-          } else {
-            res = FALSE;
-          }
-          break;
-        }
-        default:
-          res = FALSE;
-          break;
-      }
-      break;
-    default:
+  res = FALSE;
+  if (src_format == GST_FORMAT_DEFAULT && *dest_format == GST_FORMAT_TIME) {
+    if (dec->fps_d != 0) {
+      *dest_value = gst_util_uint64_scale (granulepos_to_frame (src_value),
+          dec->fps_d * GST_SECOND, dec->fps_n);
+      res = TRUE;
+    } else {
       res = FALSE;
-      break;
+    }
   }
 
   gst_object_unref (dec);

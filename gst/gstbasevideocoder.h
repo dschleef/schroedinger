@@ -91,6 +91,11 @@ struct _GstBaseVideoCoder
 
   int bytes_per_picture;
   guint64 presentation_frame_number;
+  guint64 system_frame_number;
+  int distance_from_sync;
+
+  GstCaps *caps;
+  gboolean set_output_caps;
 };
 
 struct _GstBaseVideoCoderClass
@@ -102,8 +107,10 @@ struct _GstBaseVideoCoderClass
       int par_n, int par_d);
   gboolean (*start) (GstBaseVideoCoder *coder);
   gboolean (*stop) (GstBaseVideoCoder *coder);
-  gboolean (*finish) (GstBaseVideoCoder *coder);
+  gboolean (*finish) (GstBaseVideoCoder *coder, GstVideoFrame *frame);
   gboolean (*handle_frame) (GstBaseVideoCoder *coder, GstVideoFrame *frame);
+  GstFlowReturn (*shape_output) (GstBaseVideoCoder *coder, GstVideoFrame *frame);
+  GstCaps *(*get_caps) (GstBaseVideoCoder *coder);
 
 };
 
@@ -111,17 +118,20 @@ struct _GstVideoFrame
 {
   guint64 decode_timestamp;
   guint64 presentation_timestamp;
+  guint64 presentation_duration;
 
-  guint64 decode_frame_number;
-  guint64 presentation_frame_number;
+  gint system_frame_number;
+  gint decode_frame_number;
+  gint presentation_frame_number;
 
   int distance_from_sync;
+  gboolean is_sync_point;
+  gboolean is_eos;
 
   GstBuffer *sink_buffer;
   GstBuffer *src_buffer;
 
   void *coder_hook;
-
 };
 
 GType gst_base_video_coder_get_type (void);
@@ -135,6 +145,8 @@ GstVideoFrame *gst_base_video_coder_get_frame (GstBaseVideoCoder *coder,
     int frame_number);
 GstFlowReturn gst_base_video_coder_finish_frame (GstBaseVideoCoder *base_video_coder,
     GstVideoFrame *frame);
+GstFlowReturn gst_base_video_coder_end_of_stream (GstBaseVideoCoder *base_video_coder,
+    GstBuffer *buffer);
 
 #endif
 
