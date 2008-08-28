@@ -275,6 +275,10 @@ schro_encoder_free (SchroEncoder *encoder)
     schro_async_free(encoder->async);
   }
 
+  if (encoder->last_frame) {
+    schro_encoder_frame_unref (encoder->last_frame);
+  }
+
   for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
     if (encoder->reference_pictures[i]) {
       schro_encoder_frame_unref (encoder->reference_pictures[i]);
@@ -472,6 +476,10 @@ schro_encoder_push_frame_full (SchroEncoder *encoder, SchroFrame *frame, void *p
     encoder_frame->encoder = encoder;
 
     encoder_frame->priv = priv;
+
+    encoder_frame->previous_frame = encoder->last_frame;
+    schro_encoder_frame_ref (encoder_frame);
+    encoder->last_frame = encoder_frame;
 
     format = schro_params_get_frame_format (8, encoder->video_format.chroma_format);
     if (format == frame->format) {
@@ -2896,6 +2904,9 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
 
   frame->refcount--;
   if (frame->refcount == 0) {
+    if (frame->previous_frame) {
+      schro_encoder_frame_unref (frame->previous_frame);
+    }
     if (frame->original_frame) {
       schro_frame_unref (frame->original_frame);
     }

@@ -283,15 +283,12 @@ schro_engine_get_scene_change_score (SchroEncoder *encoder, int i)
   frame1 = encoder->frame_queue->elements[i].data;
   if (frame1->have_scene_change_score) return TRUE;
 
-  /* FIXME Just because it's the first picture in the queue doesn't
-   * mean it's a scene change.  (But likely is.) */
-  if (i == 0) {
+  frame2 = frame1->previous_frame;
+  if (frame2 == NULL) {
     frame1->scene_change_score = 1.0;
     frame1->have_scene_change_score = TRUE;
     return TRUE;
   }
-
-  frame2 = encoder->frame_queue->elements[i-1].data;
   if (!(frame2->state & SCHRO_ENCODER_FRAME_STATE_ANALYSE)) {
     return FALSE;
   }
@@ -309,6 +306,9 @@ schro_engine_get_scene_change_score (SchroEncoder *encoder, int i)
   }
 
   SCHRO_DEBUG("scene change score %g", frame1->scene_change_score);
+
+  schro_encoder_frame_unref (frame1->previous_frame);
+  frame1->previous_frame = NULL;
 
   frame1->have_scene_change_score = TRUE;
   return TRUE;

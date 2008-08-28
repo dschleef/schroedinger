@@ -166,6 +166,7 @@ struct _SchroEncoderFrame {
   SchroFrame *quant_frame;
   SchroFrame *prediction_frame;
 
+  SchroEncoderFrame *previous_frame;
   SchroEncoderFrame *ref_frame[2];
 
   struct _SchroMotionEst *me;
@@ -210,6 +211,7 @@ struct _SchroEncoder {
   SchroQueue *frame_queue;
 
   SchroEncoderFrame *reference_pictures[SCHRO_LIMIT_REFERENCE_FRAMES];
+  SchroEncoderFrame *last_frame;
 
   int assemble_packets;
   int need_rap;
