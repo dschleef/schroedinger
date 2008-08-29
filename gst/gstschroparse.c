@@ -665,7 +665,7 @@ gst_schro_parse_change_state (GstElement *element, GstStateChange transition)
 
 static guint64
 gst_schro_parse_get_timestamp (GstSchroParse *schro_parse,
-    guint32 picture_number)
+    int picture_number)
 {
   if (picture_number < 0) {
     return schro_parse->timestamp_offset -
