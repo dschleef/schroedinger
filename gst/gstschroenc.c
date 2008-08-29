@@ -100,15 +100,12 @@ enum
   ARG_0
 };
 
-static void gst_schro_enc_finalize (GObject *object);
 static void gst_schro_enc_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec);
 static void gst_schro_enc_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec);
 
 static GstFlowReturn gst_schro_enc_process (GstSchroEnc *schro_enc);
-static GstStateChangeReturn gst_schro_enc_change_state (GstElement *element,
-    GstStateChange transition);
 
 static gboolean gst_schro_enc_set_format (GstBaseVideoCoder *base_video_coder,
     GstVideoFormat format, int width, int height,
@@ -174,7 +171,6 @@ gst_schro_enc_class_init (GstSchroEncClass * klass)
 
   gobject_class->set_property = gst_schro_enc_set_property;
   gobject_class->get_property = gst_schro_enc_get_property;
-  gobject_class->finalize = gst_schro_enc_finalize;
 
   for(i=0;i<schro_encoder_get_n_settings();i++){
     const SchroEncoderSetting *setting;
@@ -210,8 +206,6 @@ gst_schro_enc_class_init (GstSchroEncClass * klass)
     }
   }
 
-  gstelement_class->change_state = gst_schro_enc_change_state;
-
   basevideocoder_class->set_format = GST_DEBUG_FUNCPTR(gst_schro_enc_set_format);
   basevideocoder_class->start = GST_DEBUG_FUNCPTR(gst_schro_enc_start);
   basevideocoder_class->stop = GST_DEBUG_FUNCPTR(gst_schro_enc_stop);
@@ -230,20 +224,6 @@ gst_schro_enc_init (GstSchroEnc *schro_enc, GstSchroEncClass *klass)
   schro_encoder_set_packet_assembly (schro_enc->encoder, TRUE);
   schro_enc->video_format =
     schro_encoder_get_video_format (schro_enc->encoder);
-
-#if 0
-  schro_enc->sinkpad = gst_pad_new_from_static_template (&gst_schro_enc_sink_template, "sink");
-  gst_pad_set_chain_function (schro_enc->sinkpad, gst_schro_enc_chain);
-  gst_pad_set_event_function (schro_enc->sinkpad, gst_schro_enc_sink_event);
-  gst_pad_set_setcaps_function (schro_enc->sinkpad, gst_schro_enc_sink_setcaps);
-  //gst_pad_set_query_function (schro_enc->sinkpad, gst_schro_enc_sink_query);
-  gst_element_add_pad (GST_ELEMENT(schro_enc), schro_enc->sinkpad);
-
-  schro_enc->srcpad = gst_pad_new_from_static_template (&gst_schro_enc_src_template, "src");
-  gst_pad_set_query_type_function (schro_enc->srcpad, gst_schro_enc_get_query_types);
-  gst_pad_set_query_function (schro_enc->srcpad, gst_schro_enc_src_query);
-  gst_element_add_pad (GST_ELEMENT(schro_enc), schro_enc->srcpad);
-#endif
 }
 
 static gboolean
@@ -302,24 +282,9 @@ gst_schro_enc_set_format (GstBaseVideoCoder *base_video_coder,
       SCHRO_COLOUR_SPEC_HDTV);
 
   schro_encoder_set_video_format (schro_enc->encoder, schro_enc->video_format);
+  schro_encoder_start (schro_enc->encoder);
 
   return TRUE;
-}
-
-static void
-gst_schro_enc_finalize (GObject *object)
-{
-  GstSchroEnc *schro_enc;
-
-  g_return_if_fail (GST_IS_SCHRO_ENC (object));
-  schro_enc = GST_SCHRO_ENC (object);
-
-  if (schro_enc->encoder) {
-    schro_encoder_free (schro_enc->encoder);
-    schro_enc->encoder = NULL;
-  }
-
-  G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
 static void
@@ -442,15 +407,10 @@ gst_schro_buffer_wrap (GstSchroEnc *schro_enc, GstBuffer *buf)
   return frame;
 }
 
-#define OGG_DIRAC_GRANULE_SHIFT 32
-#define OGG_DIRAC_GRANULE_LOW_MASK ((1ULL<<OGG_DIRAC_GRANULE_SHIFT)-1)
-
 static gboolean
 gst_schro_enc_start (GstBaseVideoCoder *base_video_coder)
 {
-  GstSchroEnc *schro_enc = GST_SCHRO_ENC(base_video_coder);
-
-  schro_encoder_start (schro_enc->encoder);
+  //GstSchroEnc *schro_enc = GST_SCHRO_ENC(base_video_coder);
 
   return TRUE;
 }
@@ -458,7 +418,12 @@ gst_schro_enc_start (GstBaseVideoCoder *base_video_coder)
 static gboolean
 gst_schro_enc_stop (GstBaseVideoCoder *base_video_coder)
 {
-  //GstSchroEnc *schro_enc = GST_SCHRO_ENC(base_video_coder);
+  GstSchroEnc *schro_enc = GST_SCHRO_ENC(base_video_coder);
+  
+  if (schro_enc->encoder) {
+    schro_encoder_free (schro_enc->encoder);
+    schro_enc->encoder = NULL;
+  }
 
   return TRUE;
 }
@@ -560,7 +525,7 @@ gst_schro_enc_shape_output (GstBaseVideoCoder *base_video_coder,
   delay = pt - st + 2;
   dist = frame->distance_from_sync;
 
-  GST_ERROR("sys %d dpn %d pt %d delay %d dist %d",
+  GST_DEBUG("sys %d dpn %d pt %d delay %d dist %d",
       (int)frame->system_frame_number,
       (int)frame->decode_frame_number,
       pt, delay, dist);
@@ -593,7 +558,7 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
       case SCHRO_STATE_NEED_FRAME:
         return GST_FLOW_OK;
       case SCHRO_STATE_END_OF_STREAM:
-        GST_ERROR("EOS");
+        GST_DEBUG("EOS");
         return GST_FLOW_OK;
       case SCHRO_STATE_HAVE_BUFFER:
         voidptr = NULL;
@@ -601,13 +566,13 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
             &presentation_frame, &voidptr);
         frame = voidptr;
         if (encoded_buffer == NULL) {
-          GST_ERROR("encoder_pull returned NULL");
+          GST_DEBUG("encoder_pull returned NULL");
           /* FIXME This shouldn't happen */
           return GST_FLOW_ERROR;
         }
 
         if (voidptr == NULL) {
-          GST_ERROR("got eos");
+          GST_DEBUG("got eos");
           frame = schro_enc->eos_frame;
         }
 
@@ -634,7 +599,7 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
         ret = gst_base_video_coder_finish_frame (base_video_coder, frame);
 
         if (ret != GST_FLOW_OK) {
-          GST_ERROR("pad_push returned %d", ret);
+          GST_DEBUG("pad_push returned %d", ret);
           return ret;
         }
         break;
@@ -645,26 +610,4 @@ gst_schro_enc_process (GstSchroEnc *schro_enc)
   return GST_FLOW_OK;
 }
 
-static GstStateChangeReturn
-gst_schro_enc_change_state (GstElement *element, GstStateChange transition)
-{
-  GstSchroEnc *schro_enc;
-  GstStateChangeReturn ret;
-
-  schro_enc = GST_SCHRO_ENC (element);
-
-  switch (transition) {
-    default:
-      break;
-  }
-
-  ret = GST_ELEMENT_CLASS(parent_class)->change_state (element, transition);
-
-  switch (transition) {
-    default:
-      break;
-  }
-
-  return ret;
-}
 

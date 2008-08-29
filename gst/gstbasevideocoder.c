@@ -122,7 +122,6 @@ gst_base_video_coder_sink_setcaps (GstPad *pad, GstCaps *caps)
       base_video_coder->par_n,
       base_video_coder->par_d);
 
-  /* FIXME move? */
   base_video_coder_class->start (base_video_coder);
 
   g_object_unref (base_video_coder);

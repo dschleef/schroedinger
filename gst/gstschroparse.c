@@ -667,9 +667,15 @@ static guint64
 gst_schro_parse_get_timestamp (GstSchroParse *schro_parse,
     guint32 picture_number)
 {
-  return schro_parse->timestamp_offset +
-    gst_util_uint64_scale (picture_number,
-        schro_parse->fps_d * GST_SECOND, schro_parse->fps_n);
+  if (picture_number < 0) {
+    return schro_parse->timestamp_offset -
+      (gint64)gst_util_uint64_scale (-picture_number,
+          schro_parse->fps_d * GST_SECOND, schro_parse->fps_n);
+  } else {
+    return schro_parse->timestamp_offset +
+      gst_util_uint64_scale (picture_number,
+          schro_parse->fps_d * GST_SECOND, schro_parse->fps_n);
+  }
 }
 
 static void
@@ -935,8 +941,9 @@ gst_schro_parse_push_packet_qt (GstSchroParse *schro_parse)
       schro_parse->buf_picture_number);
   GST_BUFFER_DURATION (buf) = gst_schro_parse_get_timestamp (schro_parse,
         schro_parse->buf_picture_number + 1) - GST_BUFFER_TIMESTAMP (buf);
-  GST_BUFFER_OFFSET_END (buf) = gst_schro_parse_get_timestamp (schro_parse,
-      schro_parse->picture_number);
+  GST_BUFFER_OFFSET (buf) = gst_schro_parse_get_timestamp (schro_parse,
+      schro_parse->picture_number - 1);
+  GST_BUFFER_OFFSET_END (buf) = GST_CLOCK_TIME_NONE;
 
   if (schro_parse->have_seq_header &&
       schro_parse->picture_number == schro_parse->buf_picture_number) {
