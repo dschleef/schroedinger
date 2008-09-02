@@ -154,8 +154,8 @@ static int
 _schro_arith_decode_bit (SchroArith *arith, int i)
 {
   unsigned int range_x_prob;
-  int value;
-  int lut_index;
+  unsigned int value;
+  unsigned int lut_index;
 
   range_x_prob = (arith->range[1] * arith->probabilities[i]) >> 16;
   lut_index = arith->probabilities[i]>>8;
