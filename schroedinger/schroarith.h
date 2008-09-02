@@ -175,11 +175,9 @@ _schro_arith_decode_bit (SchroArith *arith, int i)
     arith->range[1] <<= 1;
 
     arith->code <<= 1;
-    arith->code |= arith->shift >> (7-arith->cntr)&1;
+    arith->code |= (arith->shift >> (arith->cntr-1))&1;
 
-    arith->cntr++;
-
-    if (arith->cntr == 8) {
+    if (!--arith->cntr) {
       arith->offset++;
       if (arith->offset < arith->buffer->length) {
         arith->shift = arith->dataptr[arith->offset];
@@ -192,7 +190,7 @@ _schro_arith_decode_bit (SchroArith *arith, int i)
       if (arith->code < arith->range[0]) {
         arith->code |= (1<<16);
       }
-      arith->cntr = 0;
+      arith->cntr = 8;
     }
   }
 

@@ -147,6 +147,7 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
   arith->range[1] = 0xffff;
   arith->range_size = arith->range[1] - arith->range[0];
   arith->code = 0;
+  arith->cntr = 8;
 
   arith->buffer = buffer;
 
@@ -207,7 +208,7 @@ schro_arith_estimate_init (SchroArith *arith)
 void
 schro_arith_decode_flush (SchroArith *arith)
 {
-  if (arith->cntr > 0) {
+  if (arith->cntr < 8) {
     arith->offset++;
   }
 }
@@ -300,9 +301,7 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
     arith->code <<= 1;
     arith->code |= arith->shift >> (7-arith->cntr)&1;
 
-    arith->cntr++;
-
-    if (arith->cntr == 8) {
+    if (!--arith->cntr) {
       arith->offset++;
       if (arith->offset < arith->buffer->length) {
         arith->shift = arith->dataptr[arith->offset];
@@ -315,7 +314,7 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
       if (arith->code < arith->range[0]) {
         arith->code |= (1<<16);
       }
-      arith->cntr = 0;
+      arith->cntr = 8;
     }
   }
 
@@ -353,9 +352,7 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
     arith->code <<= 1;
     arith->code |= (arith->dataptr[arith->offset] >> (7-arith->cntr))&1;
 
-    arith->cntr++;
-
-    if (arith->cntr == 8) {
+    if (!--arith->cntr) {
       arith->offset++;
       arith->range[0] &= 0xffff;
       arith->code &= 0xffff;
@@ -363,7 +360,7 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
       if (arith->code < arith->range[0]) {
         arith->code |= (1<<16);
       }
-      arith->cntr = 0;
+      arith->cntr = 8;
     }
   }
 
