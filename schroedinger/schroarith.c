@@ -266,13 +266,7 @@ arith->range[0] |= ((1<<i)-1);
 }
 
 
-#if 0
-int
-_schro_arith_decode_bit (SchroArith *arith, unsigned int i)
-{
-  return __schro_arith_decode_bit (arith, i);
-}
-
+#ifndef SCHRO_ARITH_DEFINE_INLINE
 #define faster
 #ifdef faster
 static int
@@ -367,6 +361,11 @@ __schro_arith_decode_bit (SchroArith *arith, unsigned int i)
   return value;
 }
 #endif
+int
+_schro_arith_decode_bit (SchroArith *arith, unsigned int i)
+{
+  return __schro_arith_decode_bit (arith, i);
+}
 #endif
 
 void
@@ -538,7 +537,7 @@ schro_arith_estimate_sint (SchroArith *arith, int cont_context,
 }
 #endif
 
-#if 0
+#ifndef SCHRO_ARITH_DEFINE_INLINE
 int
 _schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
     unsigned int value_context)

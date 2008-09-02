@@ -215,7 +215,11 @@ _schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
   }
   return bits - 1;
 }
-#endif
+#else /* SCHRO_ARITH_DEFINE_INLINE */
+int _schro_arith_decode_bit (SchroArith *arith, unsigned int context);
+int _schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context);
+#endif /* SCHRO_ARITH_DEFINE_INLINE */
 
 #endif
 
