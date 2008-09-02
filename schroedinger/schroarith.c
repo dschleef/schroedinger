@@ -163,8 +163,8 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
   }
 
   for(i=0;i<256;i++){
-    arith->lut[i] = lut[255-i];
-    arith->lut[256+i] = -lut[i];
+    arith->lut[2*i] = lut[255-i];
+    arith->lut[2*i+1] = -lut[i];
   }
 }
 
