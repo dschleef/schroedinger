@@ -88,7 +88,7 @@ typedef struct _SchroArith SchroArith;
 typedef struct _SchroArithContext SchroArithContext;
 
 struct _SchroArithContext {
-  int next;
+  unsigned int next;
   int stat_range;
   int n_bits;
   int n_symbols;
@@ -99,12 +99,12 @@ struct _SchroArithContext {
 struct _SchroArith {
   SchroBuffer *buffer;
   uint8_t *dataptr;
+  uintptr_t offset;
 
   uint32_t range[2];
   uint32_t code;
   uint32_t range_size;
   int cntr;
-  int offset;
   int carry;
   uint8_t shift;
 
@@ -127,11 +127,11 @@ void schro_arith_encode_uint (SchroArith *arith, int cont_context,
 void schro_arith_encode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value);
 
-int schro_arith_decode_bit (SchroArith *arith, int context);
-int schro_arith_decode_uint (SchroArith *arith, int cont_context,
-    int value_context);
-int schro_arith_decode_sint (SchroArith *arith, int cont_context,
-    int value_context, int sign_context);
+int schro_arith_decode_bit (SchroArith *arith, unsigned int context);
+int schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context);
+int schro_arith_decode_sint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context, unsigned int sign_context);
 
 void _schro_arith_encode_bit (SchroArith *arith, int context, int
     value) SCHRO_INTERNAL;
@@ -140,8 +140,8 @@ void _schro_arith_encode_uint (SchroArith *arith, int cont_context,
 void _schro_arith_encode_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value) SCHRO_INTERNAL;
 
-int _schro_arith_decode_sint (SchroArith *arith, int cont_context,
-    int value_context, int sign_context) SCHRO_INTERNAL;
+int _schro_arith_decode_sint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context, unsigned int sign_context) SCHRO_INTERNAL;
 
 void schro_arith_estimate_bit (SchroArith *arith, int i, int value);
 void schro_arith_estimate_uint (SchroArith *arith, int cont_context,
@@ -151,7 +151,7 @@ void schro_arith_estimate_sint (SchroArith *arith, int cont_context,
 
 #ifdef SCHRO_ARITH_DEFINE_INLINE
 static int
-_schro_arith_decode_bit (SchroArith *arith, int i)
+_schro_arith_decode_bit (SchroArith *arith, unsigned int i)
 {
   unsigned int range_x_prob;
   unsigned int value;
@@ -198,8 +198,8 @@ _schro_arith_decode_bit (SchroArith *arith, int i)
 }
 
 static int
-_schro_arith_decode_uint (SchroArith *arith, int cont_context,
-    int value_context)
+_schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context)
 {
   int bits;
   int count=0;

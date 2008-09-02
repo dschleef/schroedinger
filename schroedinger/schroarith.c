@@ -11,7 +11,7 @@
 #include <schroedinger/schrotables.h>
 #include <schroedinger/schrodebug.h>
 
-static const int next_list[] = {
+static const unsigned int next_list[] = {
   0,
   SCHRO_CTX_QUANTISER_CONT,
   0,
@@ -268,7 +268,7 @@ arith->range[0] |= ((1<<i)-1);
 
 #if 0
 int
-_schro_arith_decode_bit (SchroArith *arith, int i)
+_schro_arith_decode_bit (SchroArith *arith, unsigned int i)
 {
   return __schro_arith_decode_bit (arith, i);
 }
@@ -276,7 +276,7 @@ _schro_arith_decode_bit (SchroArith *arith, int i)
 #define faster
 #ifdef faster
 static int
-__schro_arith_decode_bit (SchroArith *arith, int i)
+__schro_arith_decode_bit (SchroArith *arith, unsigned int i)
 {
   unsigned int range_x_prob;
   int value;
@@ -322,7 +322,7 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
 }
 #else
 static int
-__schro_arith_decode_bit (SchroArith *arith, int i)
+__schro_arith_decode_bit (SchroArith *arith, unsigned int i)
 {
   unsigned int range;
   unsigned int probability0;
@@ -540,8 +540,8 @@ schro_arith_estimate_sint (SchroArith *arith, int cont_context,
 
 #if 0
 int
-_schro_arith_decode_uint (SchroArith *arith, int cont_context,
-    int value_context)
+_schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context)
 {
   int bits;
   int count=0;
@@ -561,8 +561,8 @@ _schro_arith_decode_uint (SchroArith *arith, int cont_context,
 #endif
 
 int
-_schro_arith_decode_sint (SchroArith *arith, int cont_context,
-    int value_context, int sign_context)
+_schro_arith_decode_sint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context, unsigned int sign_context)
 {
   int bits;
   int count=0;
@@ -613,21 +613,21 @@ schro_arith_encode_sint (SchroArith *arith, int cont_context,
 }
 
 int
-schro_arith_decode_bit (SchroArith *arith, int context)
+schro_arith_decode_bit (SchroArith *arith, unsigned int context)
 {
   return _schro_arith_decode_bit (arith, context);
 }
 
 int
-schro_arith_decode_uint (SchroArith *arith, int cont_context,
-    int value_context)
+schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context)
 {
   return _schro_arith_decode_uint (arith, cont_context, value_context);
 }
 
 int
-schro_arith_decode_sint (SchroArith *arith, int cont_context,
-    int value_context, int sign_context)
+schro_arith_decode_sint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context, unsigned int sign_context)
 {
   return _schro_arith_decode_sint (arith, cont_context,
       value_context, sign_context);
