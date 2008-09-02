@@ -201,10 +201,9 @@ static int
 _schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
     unsigned int value_context)
 {
-  int bits;
+  unsigned int bits=1;
   int count=0;
 
-  bits = 0;
   while(!_schro_arith_decode_bit (arith, cont_context)) {
     bits <<= 1;
     bits |= _schro_arith_decode_bit (arith, value_context);
@@ -214,7 +213,7 @@ _schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
     /* FIXME being careful */
     if (count == 30) break;
   }
-  return (1<<count) - 1 + bits;
+  return bits - 1;
 }
 #endif
 
