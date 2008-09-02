@@ -12,7 +12,7 @@ struct _SchroBuffer
 {
   /*< private >*/
   unsigned char *data;
-  int length;
+  unsigned int length;
 
   int ref_count;
 
