@@ -11,6 +11,7 @@
 #include <schroedinger/schrooil.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <liboil/liboil.h>
+#include <schroedinger/schrovirtframe.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -516,6 +517,7 @@ void schro_frame_set_free_callback (SchroFrame *frame,
   frame->priv = priv;
 }
 
+#if 0
 static void schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_s16_s16 (SchroFrame *dest, SchroFrame *src);
@@ -526,6 +528,7 @@ static void schro_frame_convert_u8_444_ayuv (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_yuyv_u8_422 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_uyvy_u8_422 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_ayuv_u8_444 (SchroFrame *dest, SchroFrame *src);
+#endif
 
 typedef void (*SchroFrameBinaryFunc) (SchroFrame *dest, SchroFrame *src);
 
@@ -534,6 +537,7 @@ struct binary_struct {
   SchroFrameFormat to;
   SchroFrameBinaryFunc func;
 };
+#if 0
 static struct binary_struct schro_frame_convert_func_list[] = {
   { SCHRO_FRAME_FORMAT_S16_444, SCHRO_FRAME_FORMAT_U8_444, schro_frame_convert_u8_s16 },
   { SCHRO_FRAME_FORMAT_S16_422, SCHRO_FRAME_FORMAT_U8_422, schro_frame_convert_u8_s16 },
@@ -560,6 +564,7 @@ static struct binary_struct schro_frame_convert_func_list[] = {
   { SCHRO_FRAME_FORMAT_U8_444, SCHRO_FRAME_FORMAT_AYUV, schro_frame_convert_ayuv_u8_444 },
   { 0 }
 };
+#endif
 
 /**
  * schro_frame_convert:
@@ -572,11 +577,76 @@ static struct binary_struct schro_frame_convert_func_list[] = {
 void
 schro_frame_convert (SchroFrame *dest, SchroFrame *src)
 {
-  int i;
+  SchroFrame *frame;
+  SchroFrameFormat dest_format;
 
   SCHRO_ASSERT(dest != NULL);
   SCHRO_ASSERT(src != NULL);
 
+  switch (dest->format) {
+    case SCHRO_FRAME_FORMAT_YUYV:
+    case SCHRO_FRAME_FORMAT_UYVY:
+      dest_format = SCHRO_FRAME_FORMAT_U8_422;
+      break;
+    case SCHRO_FRAME_FORMAT_AYUV:
+    case SCHRO_FRAME_FORMAT_ARGB:
+      dest_format = SCHRO_FRAME_FORMAT_U8_444;
+      break;
+    default:
+      dest_format = dest->format;
+      break;
+  }
+  schro_frame_ref (src);
+
+  frame = schro_virt_frame_new_unpack_take (src);
+  SCHRO_DEBUG("unpack %p", frame);
+
+  if (SCHRO_FRAME_FORMAT_DEPTH(dest_format) != SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
+    if (SCHRO_FRAME_FORMAT_DEPTH(dest_format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
+      frame = schro_virt_frame_new_convert_u8_take (frame);
+      SCHRO_DEBUG("convert_u8 %p", frame);
+    } else if (SCHRO_FRAME_FORMAT_DEPTH(dest_format) ==
+        SCHRO_FRAME_FORMAT_DEPTH_S16) {
+      frame = schro_virt_frame_new_convert_s16_take (frame);
+      SCHRO_DEBUG("convert_s16 %p", frame);
+    }
+  }
+
+  if ((dest_format & 3) != (frame->format & 3)) {
+    frame = schro_virt_frame_new_subsample_take (frame, dest_format);
+    SCHRO_DEBUG("subsample %p", frame);
+  }
+
+  switch (dest->format) {
+    case SCHRO_FRAME_FORMAT_YUYV:
+      frame = schro_virt_frame_new_pack_YUY2_take (frame);
+      SCHRO_DEBUG("pack_YUY2 %p", frame);
+      break;
+    case SCHRO_FRAME_FORMAT_UYVY:
+      frame = schro_virt_frame_new_pack_UYVY_take (frame);
+      SCHRO_DEBUG("pack_UYVY %p", frame);
+      break;
+    case SCHRO_FRAME_FORMAT_AYUV:
+      frame = schro_virt_frame_new_pack_AYUV_take (frame);
+      SCHRO_DEBUG("pack_AYUV %p", frame);
+      break;
+    default:
+      break;
+  }
+
+  if (dest->width <= src->width || dest->height <= src->height) {
+    frame = schro_virt_frame_new_crop_take (frame, dest->width, dest->height);
+    SCHRO_DEBUG("crop %p", frame);
+  }
+  if (dest->width >= src->width || dest->height >= src->height) {
+    frame = schro_virt_frame_new_edgeextend_take (frame, dest->width, dest->height);
+    SCHRO_DEBUG("edgeextend %p", frame);
+  }
+
+  schro_virt_frame_render (frame, dest);
+  schro_frame_unref (frame);
+
+#if 0
   for(i=0;schro_frame_convert_func_list[i].func;i++){
     if (schro_frame_convert_func_list[i].from == src->format &&
         schro_frame_convert_func_list[i].to == dest->format) {
@@ -588,6 +658,7 @@ schro_frame_convert (SchroFrame *dest, SchroFrame *src)
   SCHRO_ERROR("conversion unimplemented (%d -> %d)",
       src->format, dest->format);
   SCHRO_ASSERT(0);
+#endif
 }
 
 static void schro_frame_add_s16_s16 (SchroFrame *dest, SchroFrame *src);
@@ -678,6 +749,7 @@ schro_frame_subtract (SchroFrame *dest, SchroFrame *src)
   SCHRO_ASSERT("subtract function unimplemented");
 }
 
+#if 0
 static void
 schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src)
 {
@@ -1022,6 +1094,7 @@ schro_frame_convert_ayuv_u8_444 (SchroFrame *dest, SchroFrame *src)
   /* FIXME edge extend */
   //schro_frame_edge_extend (dest, src->width, src->height);
 }
+#endif
 
 
 static void

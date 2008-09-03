@@ -35,6 +35,12 @@ SchroFrame *schro_virt_frame_new_unpack_take (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_YUY2_take (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_UYVY_take (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_AYUV_take (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_subsample_take (SchroFrame *vf, SchroFrameFormat format);
+
+SchroFrame * schro_virt_frame_new_convert_u8_take (SchroFrame *vf);
+SchroFrame * schro_virt_frame_new_convert_s16_take (SchroFrame *vf);
+SchroFrame * schro_virt_frame_new_crop_take (SchroFrame *vf, int width, int height);
+SchroFrame * schro_virt_frame_new_edgeextend_take (SchroFrame *vf, int width, int height);
 
 SCHRO_END_DECLS
 

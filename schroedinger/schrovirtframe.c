@@ -160,20 +160,51 @@ schro_virt_frame_render_line (SchroFrame *frame, void *dest,
   frame->render_line (frame, dest, component, i);
 }
 
+static void
+copy (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+
+  src = schro_virt_frame_get_line (frame, component, i);
+  switch (SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
+    case SCHRO_FRAME_FORMAT_DEPTH_U8:
+      memcpy (dest, src, frame->components[component].width);
+      break;
+    case SCHRO_FRAME_FORMAT_DEPTH_S16:
+      memcpy (dest, src, frame->components[component].width * 2);
+      break;
+    default:
+      SCHRO_ASSERT(0);
+      break;
+  }
+}
+
 void
 schro_virt_frame_render (SchroFrame *frame, SchroFrame *dest)
 {
   int i,k;
 
   SCHRO_ASSERT(frame->width == dest->width);
-  SCHRO_ASSERT(frame->height == dest->height);
+  SCHRO_ASSERT(frame->height >= dest->height);
 
-  for(k=0;k<3;k++){
-    SchroFrameData *comp = dest->components + k;
+  if (frame->is_virtual) {
+    for(k=0;k<3;k++){
+      SchroFrameData *comp = dest->components + k;
 
-    for(i=0;i<frame->components[k].height;i++){
-      schro_virt_frame_render_line (frame,
-          SCHRO_FRAME_DATA_GET_LINE (comp, i), k, i);
+      for(i=0;i<dest->components[k].height;i++){
+        schro_virt_frame_render_line (frame,
+            SCHRO_FRAME_DATA_GET_LINE (comp, i), k, i);
+      }
+    }
+  } else {
+    for(k=0;k<3;k++){
+      SchroFrameData *comp = dest->components + k;
+
+      for(i=0;i<dest->components[k].height;i++){
+        copy (frame,
+            SCHRO_FRAME_DATA_GET_LINE (comp, i), k, i);
+      }
     }
   }
 }
@@ -844,6 +875,7 @@ schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format)
       format == SCHRO_FRAME_FORMAT_U8_422) {
     render_line = convert_444_422;
   } else {
+    SCHRO_ASSERT(0);
     return NULL;
   }
   virt_frame = schro_frame_new_virtual (NULL, format, vf->width, vf->height);
@@ -927,4 +959,183 @@ schro_virt_frame_new_pack_AYUV_take (SchroFrame *vf)
   schro_frame_unref (vf);
   return virt_frame;
 }
+
+SchroFrame *
+schro_virt_frame_new_subsample_take (SchroFrame *vf, SchroFrameFormat format)
+{
+  SchroFrame *virt_frame;
+  virt_frame = schro_virt_frame_new_subsample (vf, format);
+  schro_frame_unref (vf);
+  return virt_frame;
+}
+
+static void
+convert_u8_s16 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  int16_t *src;
+  int j;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  for(j=0;j<frame->components[component].width;j++){
+    dest[j] = CLAMP(src[j] + 128, 0, 255);
+  }
+}
+
+SchroFrame *
+schro_virt_frame_new_convert_u8_take (SchroFrame *vf)
+{
+  SchroFrame *virt_frame;
+  SchroFrameFormat format;
+
+  format = (vf->format & 3) | SCHRO_FRAME_FORMAT_U8_444;
+
+  virt_frame = schro_frame_new_virtual (NULL, format, vf->width, vf->height);
+  virt_frame->virt_frame1 = vf;
+  virt_frame->render_line = convert_u8_s16;
+
+  return virt_frame;
+}
+
+static void
+convert_s16_u8 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  int16_t *dest = _dest;
+  uint8_t *src;
+  int j;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  for(j=0;j<frame->components[component].width;j++){
+    dest[j] = src[j] - 128;
+  }
+}
+
+SchroFrame *
+schro_virt_frame_new_convert_s16_take (SchroFrame *vf)
+{
+  SchroFrame *virt_frame;
+  SchroFrameFormat format;
+
+  format = (vf->format & 3) | SCHRO_FRAME_FORMAT_S16_444;
+
+  virt_frame = schro_frame_new_virtual (NULL, format, vf->width, vf->height);
+  virt_frame->virt_frame1 = vf;
+  virt_frame->render_line = convert_s16_u8;
+
+  return virt_frame;
+}
+
+static void
+crop_u8 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  memcpy (dest, src, frame->components[component].width);
+}
+
+static void
+crop_s16 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  int16_t *dest = _dest;
+  int16_t *src;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  memcpy (dest, src, frame->components[component].width * sizeof(int16_t));
+}
+
+SchroFrame *
+schro_virt_frame_new_crop_take (SchroFrame *vf, int width, int height)
+{
+  SchroFrame *virt_frame;
+
+  if (width == vf->width && height == vf->height) return vf;
+
+  SCHRO_ASSERT (width <= vf->width);
+  SCHRO_ASSERT (height <= vf->height);
+
+  virt_frame = schro_frame_new_virtual (NULL, vf->format, width, height);
+  virt_frame->virt_frame1 = vf;
+  switch (SCHRO_FRAME_FORMAT_DEPTH(vf->format)) {
+    case SCHRO_FRAME_FORMAT_DEPTH_U8:
+      virt_frame->render_line = crop_u8;
+      break;
+    case SCHRO_FRAME_FORMAT_DEPTH_S16:
+      virt_frame->render_line = crop_s16;
+      break;
+    default:
+      SCHRO_ASSERT(0);
+      break;
+  }
+
+  return virt_frame;
+}
+
+static void
+edge_extend_u8 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+  SchroFrame *srcframe = frame->virt_frame1;
+  int j;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component,
+      MIN(i,srcframe->components[component].height-1));
+  for(j=0;j<srcframe->components[component].width;j++){
+    dest[j] = src[j];
+  }
+  for(j=srcframe->components[component].width;
+      j<frame->components[component].width;j++){
+    dest[j] = dest[srcframe->components[component].width-1];
+  }
+}
+
+static void
+edge_extend_s16 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  int16_t *dest = _dest;
+  int16_t *src;
+  SchroFrame *srcframe = frame->virt_frame1;
+  int j;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component,
+      MIN(i,srcframe->components[component].height-1));
+  for(j=0;j<srcframe->components[component].width;j++){
+    dest[j] = src[j];
+  }
+  for(j=srcframe->components[component].width;
+      j<frame->components[component].width;j++){
+    dest[j] = dest[srcframe->components[component].width-1];
+  }
+}
+
+SchroFrame *
+schro_virt_frame_new_edgeextend_take (SchroFrame *vf, int width, int height)
+{
+  SchroFrame *virt_frame;
+
+  if (width == vf->width && height == vf->height) return vf;
+
+  SCHRO_ASSERT (width >= vf->width);
+  SCHRO_ASSERT (height >= vf->height);
+
+  virt_frame = schro_frame_new_virtual (NULL, vf->format, width, height);
+  virt_frame->virt_frame1 = vf;
+  switch (SCHRO_FRAME_FORMAT_DEPTH(vf->format)) {
+    case SCHRO_FRAME_FORMAT_DEPTH_U8:
+      virt_frame->render_line = edge_extend_u8;
+      break;
+    case SCHRO_FRAME_FORMAT_DEPTH_S16:
+      virt_frame->render_line = edge_extend_s16;
+      break;
+    default:
+      SCHRO_ASSERT(0);
+      break;
+  }
+
+  return virt_frame;
+}
+
+
 
