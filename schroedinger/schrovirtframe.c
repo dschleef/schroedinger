@@ -9,6 +9,7 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schroutils.h>
 #include <liboil/liboil.h>
+#include <schroedinger/schrooil.h>
 #include <string.h>
 #include <math.h>
 
@@ -974,12 +975,13 @@ convert_u8_s16 (SchroFrame *frame, void *_dest, int component, int i)
 {
   uint8_t *dest = _dest;
   int16_t *src;
-  int j;
+  int16_t c = 128;
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-  for(j=0;j<frame->components[component].width;j++){
-    dest[j] = CLAMP(src[j] + 128, 0, 255);
-  }
+  oil_addc_s16 (frame->virt_priv, src, &c,
+      frame->components[component].width);
+  oil_convert_u8_s16 (dest, frame->virt_priv,
+      frame->components[component].width);
 }
 
 SchroFrame *
@@ -993,6 +995,7 @@ schro_virt_frame_new_convert_u8_take (SchroFrame *vf)
   virt_frame = schro_frame_new_virtual (NULL, format, vf->width, vf->height);
   virt_frame->virt_frame1 = vf;
   virt_frame->render_line = convert_u8_s16;
+  virt_frame->virt_priv = schro_malloc (sizeof(int16_t) * vf->width);
 
   return virt_frame;
 }
@@ -1002,12 +1005,12 @@ convert_s16_u8 (SchroFrame *frame, void *_dest, int component, int i)
 {
   int16_t *dest = _dest;
   uint8_t *src;
-  int j;
+  int16_t c = -128;
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-  for(j=0;j<frame->components[component].width;j++){
-    dest[j] = src[j] - 128;
-  }
+
+  oil_convert_s16_u8 (dest, src, frame->components[component].width);
+  oil_addc_s16 (dest, dest, &c, frame->components[component].width);
 }
 
 SchroFrame *
@@ -1032,7 +1035,7 @@ crop_u8 (SchroFrame *frame, void *_dest, int component, int i)
   uint8_t *src;
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-  memcpy (dest, src, frame->components[component].width);
+  oil_memcpy (dest, src, frame->components[component].width);
 }
 
 static void
@@ -1042,7 +1045,7 @@ crop_s16 (SchroFrame *frame, void *_dest, int component, int i)
   int16_t *src;
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-  memcpy (dest, src, frame->components[component].width * sizeof(int16_t));
+  oil_memcpy (dest, src, frame->components[component].width * sizeof(int16_t));
 }
 
 SchroFrame *
@@ -1078,17 +1081,14 @@ edge_extend_u8 (SchroFrame *frame, void *_dest, int component, int i)
   uint8_t *dest = _dest;
   uint8_t *src;
   SchroFrame *srcframe = frame->virt_frame1;
-  int j;
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component,
       MIN(i,srcframe->components[component].height-1));
-  for(j=0;j<srcframe->components[component].width;j++){
-    dest[j] = src[j];
-  }
-  for(j=srcframe->components[component].width;
-      j<frame->components[component].width;j++){
-    dest[j] = dest[srcframe->components[component].width-1];
-  }
+  oil_memcpy (dest, src, srcframe->components[component].width);
+  oil_splat_u8_ns (dest + srcframe->components[component].width,
+      dest + srcframe->components[component].width - 1,
+      frame->components[component].width -
+      srcframe->components[component].width);
 }
 
 static void
@@ -1097,17 +1097,15 @@ edge_extend_s16 (SchroFrame *frame, void *_dest, int component, int i)
   int16_t *dest = _dest;
   int16_t *src;
   SchroFrame *srcframe = frame->virt_frame1;
-  int j;
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component,
       MIN(i,srcframe->components[component].height-1));
-  for(j=0;j<srcframe->components[component].width;j++){
-    dest[j] = src[j];
-  }
-  for(j=srcframe->components[component].width;
-      j<frame->components[component].width;j++){
-    dest[j] = dest[srcframe->components[component].width-1];
-  }
+  oil_memcpy (dest, src,
+      srcframe->components[component].width * sizeof(int16_t));
+  oil_splat_s16_ns (dest + srcframe->components[component].width,
+      dest + srcframe->components[component].width - 1,
+      frame->components[component].width -
+      srcframe->components[component].width);
 }
 
 SchroFrame *
