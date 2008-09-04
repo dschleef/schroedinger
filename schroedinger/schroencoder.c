@@ -648,6 +648,7 @@ schro_encoder_frame_assemble_buffer (SchroEncoderFrame *frame,
     schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
     memcpy (buffer->data + offset, buf->data, buf->length);
     offset += buf->length;
+    schro_buffer_unref (buf);
   }
 
   buf = frame->output_buffer;
@@ -1140,11 +1141,17 @@ schro_encoder_frame_complete (SchroEncoderFrame *frame)
 
     SCHRO_ASSERT(frame->output_buffer_size > 0);
 
+    if (frame->previous_frame) {
+      schro_encoder_frame_unref (frame->previous_frame);
+      frame->previous_frame = NULL;
+    }
     if (frame->ref_frame[0]) {
       schro_encoder_frame_unref (frame->ref_frame[0]);
+      frame->ref_frame[0] = NULL;
     }
     if (frame->ref_frame[1]) {
       schro_encoder_frame_unref (frame->ref_frame[1]);
+      frame->ref_frame[1] = NULL;
     }
 
     if (frame->start_sequence_header) {
@@ -1275,6 +1282,7 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
 
       if (todo & SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS &&
           frame->state & SCHRO_ENCODER_FRAME_STATE_HAVE_GOP) {
+
         if (encoder->setup_frame (frame)) {
           frame->state |= SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
         }
