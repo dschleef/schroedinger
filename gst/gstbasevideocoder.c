@@ -133,9 +133,13 @@ static void
 gst_base_video_coder_finalize (GObject *object)
 {
   GstBaseVideoCoder *base_video_coder;
+  GstBaseVideoCoderClass *base_video_coder_class;
 
   g_return_if_fail (GST_IS_BASE_VIDEO_CODER (object));
   base_video_coder = GST_BASE_VIDEO_CODER (object);
+  base_video_coder_class = GST_BASE_VIDEO_CODER_GET_CLASS (object);
+
+  GST_DEBUG("finalize");
 
   G_OBJECT_CLASS (parent_class)->finalize (object);
 }
@@ -164,7 +168,7 @@ gst_base_video_coder_sink_event (GstPad *pad, GstEvent *event)
         base_video_coder->frames = g_list_append(base_video_coder->frames, frame);
         base_video_coder_class->finish (base_video_coder, frame);
 
-        return gst_pad_push_event (base_video_coder->srcpad, event);
+        ret = gst_pad_push_event (base_video_coder->srcpad, event);
       }
       break;
     case GST_EVENT_NEWSEGMENT:
@@ -429,9 +433,11 @@ static GstStateChangeReturn
 gst_base_video_coder_change_state (GstElement *element, GstStateChange transition)
 {
   GstBaseVideoCoder *base_video_coder;
+  GstBaseVideoCoderClass *base_video_coder_class;
   GstStateChangeReturn ret;
 
   base_video_coder = GST_BASE_VIDEO_CODER (element);
+  base_video_coder_class = GST_BASE_VIDEO_CODER_GET_CLASS (element);
 
   switch (transition) {
     default:
@@ -441,6 +447,11 @@ gst_base_video_coder_change_state (GstElement *element, GstStateChange transitio
   ret = GST_ELEMENT_CLASS(parent_class)->change_state (element, transition);
 
   switch (transition) {
+    case GST_STATE_CHANGE_PAUSED_TO_READY:
+      if (base_video_coder_class->stop) {
+        base_video_coder_class->stop (base_video_coder);
+      }
+      break;
     default:
       break;
   }
