@@ -157,19 +157,6 @@ _schro_arith_decode_bit (SchroArith *arith, unsigned int i)
   unsigned int value;
   unsigned int lut_index;
 
-  range_x_prob = (arith->range[1] * arith->probabilities[i]) >> 16;
-  lut_index = arith->probabilities[i]>>7 & ~1;
-
-  value = (arith->code - arith->range[0] >= range_x_prob);
-  arith->probabilities[i] += arith->lut[lut_index | value];
-
-  if (value) {
-    arith->range[0] += range_x_prob;
-    arith->range[1] -= range_x_prob;
-  } else {
-    arith->range[1] = range_x_prob;
-  }
-
   while (arith->range[1] <= 0x4000) {
     arith->range[0] <<= 1;
     arith->range[1] <<= 1;
@@ -193,6 +180,20 @@ _schro_arith_decode_bit (SchroArith *arith, unsigned int i)
       arith->cntr = 8;
     }
   }
+
+  range_x_prob = (arith->range[1] * arith->probabilities[i]) >> 16;
+  lut_index = arith->probabilities[i]>>7 & ~1;
+
+  value = (arith->code - arith->range[0] >= range_x_prob);
+  arith->probabilities[i] += arith->lut[lut_index | value];
+
+  if (value) {
+    arith->range[0] += range_x_prob;
+    arith->range[1] -= range_x_prob;
+  } else {
+    arith->range[1] = range_x_prob;
+  }
+
 
   return value;
 }
