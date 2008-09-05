@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# source, either dv or vts
+source=vts
+#source=dv
+
+
+
+if test "$source" = "dv" ; then
+  gst-launch-0.10 dv1394src ! dvdemux ! dvdec ! \
+    schroenc au-distance=10 magic-subgroup-length=1 ! \
+    oggmux ! tcpserversink
+else
+  gst-launch-0.10 videotestsrc ! timeoverlay ! \
+    video/x-raw-yuv,width=320,height=240 ! \
+    schroenc au-distance=10 magic-subgroup-length=1 ! \
+    oggmux ! tcpserversink
+fi
+
+

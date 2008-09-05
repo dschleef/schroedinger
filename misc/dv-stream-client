@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# delay is in milliseconds.
+# 200 seems to work ok without being too laggy
+delay=200
+
+# server
+server=127.0.0.1
+
+
+if test $delay = 0 ; then
+  gst-launch tcpclientsrc host=$server ! queue ! oggdemux ! schrodec ! \
+    ffmpegcolorspace ! xvimagesink sync=false
+else
+  gst-launch tcpclientsrc host=$server ! queue ! oggdemux ! schrodec ! \
+    ffmpegcolorspace ! xvimagesink ts-offset=$(($delay*1000000))
+fi
+
