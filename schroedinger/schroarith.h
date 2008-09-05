@@ -156,36 +156,41 @@ _schro_arith_decode_bit (SchroArith *arith, unsigned int i)
   unsigned int range_x_prob;
   unsigned int value;
   unsigned int lut_index;
+  register unsigned int range = arith->range[1];
+  register unsigned int code_minus_low = arith->code;
 
-  while (arith->range[1] <= 0x4000) {
+  while (range <= 0x4000) {
 
-    arith->range[1] <<= 1;
-    arith->code <<= 1;
+    range <<= 1;
+    code_minus_low <<= 1;
 
     if (!--arith->cntr) {
       arith->offset++;
       if (arith->offset < arith->buffer->length) {
-        arith->code |= arith->dataptr[arith->offset];
+        code_minus_low |= arith->dataptr[arith->offset];
       } else {
-        arith->code |= 0xff;
+        code_minus_low |= 0xff;
       }
 
       arith->cntr = 8;
     }
   }
 
-  range_x_prob = (arith->range[1] * arith->probabilities[i]) >> 16;
+  range_x_prob = (range * arith->probabilities[i]) >> 16;
   lut_index = arith->probabilities[i]>>7 & ~1;
 
-  value = ((arith->code >> 8) >= range_x_prob);
+  value = ((code_minus_low >> 8) >= range_x_prob);
   arith->probabilities[i] += arith->lut[lut_index | value];
 
   if (value) {
-    arith->code -= range_x_prob << 8;
-    arith->range[1] -= range_x_prob;
+    code_minus_low -= range_x_prob << 8;
+    range -= range_x_prob;
   } else {
-    arith->range[1] = range_x_prob;
+    range = range_x_prob;
   }
+
+  arith->range[1] = range;
+  arith->code = code_minus_low;
 
   return value;
 }
