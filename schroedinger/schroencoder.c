@@ -3126,7 +3126,7 @@ static SchroEncoderSetting encoder_settings[] = {
   DOUB("magic_bailout_weight", 0.0, 1000.0, 0.0),
   DOUB("magic_error_power", 0.0, 1000.0, 0.0),
   DOUB("magic_mc_lambda", 0.0, 1000.0, 0.0),
-  DOUB("magic_subgroup_length", 2.0, 10.0, 4.0),
+  DOUB("magic_subgroup_length", 1.0, 10.0, 4.0),
   DOUB("magic_lambda", 0.0, 1000.0, 1.0),
   DOUB("magic_badblock_multiplier_nonref", 0.0, 1000.0, 1.0),
   DOUB("magic_badblock_multiplier_ref", 0.0, 1000.0, 1.0),
