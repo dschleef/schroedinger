@@ -159,7 +159,7 @@ _schro_arith_decode_bit (SchroArith *arith, unsigned int i)
   register unsigned int range = arith->range[1];
   register unsigned int code_minus_low = arith->code;
 
-  while (range <= 0x4000) {
+  while (range <= 0x40000000) {
 
     range <<= 1;
     code_minus_low <<= 1;
@@ -183,14 +183,14 @@ _schro_arith_decode_bit (SchroArith *arith, unsigned int i)
     }
   }
 
-  range_x_prob = (range * arith->probabilities[i]) >> 16;
+  range_x_prob = ((range >> 16) * arith->probabilities[i]) & 0xFFFF0000;
   lut_index = arith->probabilities[i]>>7 & ~1;
 
-  value = ((code_minus_low >> 16) >= range_x_prob);
+  value = (code_minus_low  >= range_x_prob);
   arith->probabilities[i] += arith->lut[lut_index | value];
 
   if (value) {
-    code_minus_low -= range_x_prob << 16;
+    code_minus_low -= range_x_prob;
     range -= range_x_prob;
   } else {
     range = range_x_prob;

@@ -144,7 +144,7 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
 
   memset(arith, 0, sizeof(SchroArith));
   arith->range[0] = 0;
-  arith->range[1] = 0xffff;
+  arith->range[1] = 0xffff0000;
   arith->range_size = arith->range[1] - arith->range[0];
   arith->code = 0;
   arith->cntr = 16;
