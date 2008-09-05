@@ -78,6 +78,9 @@ struct _GstSchroDec
   GstClockTime earliest_time;
   GstClockTime timestamp_offset;
   gint64 granulepos_offset;
+
+  gboolean dropping;
+  gboolean waiting_for_picture;
 };
 
 struct _GstSchroDecClass
@@ -891,11 +894,33 @@ gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer)
   GstBuffer *outbuf;
   int go = 1;
 
+  if (schro_dec->dropping) {
+    int parse_code = input_buffer->data[4];
+    if (SCHRO_PARSE_CODE_IS_SEQ_HEADER (parse_code)) {
+      schro_dec->dropping = FALSE;
+    } else {
+      return GST_FLOW_OK;
+    }
+  }
+  if (schro_dec->waiting_for_picture) {
+    int parse_code = input_buffer->data[4];
+    if (SCHRO_PARSE_CODE_IS_PICTURE (parse_code)) {
+      if (SCHRO_PARSE_CODE_NUM_REFS(parse_code) == 0) {
+        schro_dec->waiting_for_picture = FALSE;
+      } else {
+        schro_dec->waiting_for_picture = FALSE;
+        schro_dec->dropping = TRUE;
+        return GST_FLOW_OK;
+      }
+    }
+  }
+
   if (input_buffer) {
     int schro_ret;
     schro_ret = schro_decoder_push (schro_dec->decoder, input_buffer);
     if (schro_ret == SCHRO_DECODER_FIRST_ACCESS_UNIT) {
       handle_first_access_unit (schro_dec);
+      schro_dec->waiting_for_picture = TRUE;
     }
   } else {
     schro_decoder_push_end_of_stream (schro_dec->decoder);
