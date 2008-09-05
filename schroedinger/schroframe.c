@@ -634,11 +634,14 @@ schro_frame_convert (SchroFrame *dest, SchroFrame *src)
       break;
   }
 
-  if (dest->width <= src->width || dest->height <= src->height) {
+  if (dest->width < frame->width || dest->height < frame->height) {
+    SCHRO_DEBUG("crop %d %d to %d %d",
+        frame->width, frame->height, dest->width, dest->height);
+
     frame = schro_virt_frame_new_crop_take (frame, dest->width, dest->height);
     SCHRO_DEBUG("crop %p", frame);
   }
-  if (dest->width >= src->width || dest->height >= src->height) {
+  if (dest->width > src->width || dest->height > src->height) {
     frame = schro_virt_frame_new_edgeextend_take (frame, dest->width, dest->height);
     SCHRO_DEBUG("edgeextend %p", frame);
   }
