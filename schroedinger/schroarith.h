@@ -167,23 +167,30 @@ _schro_arith_decode_bit (SchroArith *arith, unsigned int i)
     if (!--arith->cntr) {
       arith->offset++;
       if (arith->offset < arith->buffer->length) {
+        code_minus_low |= arith->dataptr[arith->offset] << 8;
+      } else {
+        code_minus_low |= 0xff00;
+      }
+
+      arith->offset++;
+      if (arith->offset < arith->buffer->length) {
         code_minus_low |= arith->dataptr[arith->offset];
       } else {
         code_minus_low |= 0xff;
       }
 
-      arith->cntr = 8;
+      arith->cntr = 16;
     }
   }
 
   range_x_prob = (range * arith->probabilities[i]) >> 16;
   lut_index = arith->probabilities[i]>>7 & ~1;
 
-  value = ((code_minus_low >> 8) >= range_x_prob);
+  value = ((code_minus_low >> 16) >= range_x_prob);
   arith->probabilities[i] += arith->lut[lut_index | value];
 
   if (value) {
-    code_minus_low -= range_x_prob << 8;
+    code_minus_low -= range_x_prob << 16;
     range -= range_x_prob;
   } else {
     range = range_x_prob;

@@ -147,16 +147,17 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
   arith->range[1] = 0xffff;
   arith->range_size = arith->range[1] - arith->range[0];
   arith->code = 0;
-  arith->cntr = 8;
+  arith->cntr = 16;
 
   arith->buffer = buffer;
 
   size = arith->buffer->length;
   arith->dataptr = arith->buffer->data;
-  arith->code = ((size > 0) ? arith->dataptr[0] : 0xff) << 16;
-  arith->code |= ((size > 1) ? arith->dataptr[1] : 0xff) << 8;
-  arith->code |= ((size > 2) ? arith->dataptr[2] : 0xff);
-  arith->offset = 2;
+  arith->code = ((size > 0) ? arith->dataptr[0] : 0xff) << 24;
+  arith->code |= ((size > 1) ? arith->dataptr[1] : 0xff) << 16;
+  arith->code |= ((size > 2) ? arith->dataptr[2] : 0xff) << 8;
+  arith->code |= ((size > 3) ? arith->dataptr[3] : 0xff);
+  arith->offset = 3;
 
   for(i=0;i<SCHRO_CTX_LAST;i++){
     arith->contexts[i].next = next_list[i];
