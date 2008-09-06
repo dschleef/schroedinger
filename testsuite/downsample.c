@@ -103,7 +103,7 @@ void
 ref_frame_component_downsample (SchroFrameData *dest,
     SchroFrameData *src)
 {
-  static const int taps[4] = { -1, 9, 9, -1 };
+  static const int taps[4] = { 6, 26, 26, 6 };
   int i,j;
   int k,l;
   uint8_t *ddata;
@@ -117,9 +117,9 @@ ref_frame_component_downsample (SchroFrameData *dest,
         for(k=0;k<4;k++){
           y += component_get (src, (i*2-1) + l, (j*2-1) + k) * taps[k];
         }
-        x += CLAMP((y + 8) >> 4,0,255) * taps[l];
+        x += CLAMP((y + 32) >> 6,0,255) * taps[l];
       }
-      ddata[i] = CLAMP((x + 8) >> 4,0,255);
+      ddata[i] = CLAMP((x + 32) >> 6,0,255);
     }
   }
 }
