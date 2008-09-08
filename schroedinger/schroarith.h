@@ -207,16 +207,11 @@ _schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
     unsigned int value_context)
 {
   unsigned int bits=1;
-  int count=0;
 
   while(!_schro_arith_decode_bit (arith, cont_context)) {
     bits <<= 1;
     bits |= _schro_arith_decode_bit (arith, value_context);
     cont_context = arith->contexts[cont_context].next;
-    count++;
-
-    /* FIXME being careful */
-    if (count == 30) break;
   }
   return bits - 1;
 }
