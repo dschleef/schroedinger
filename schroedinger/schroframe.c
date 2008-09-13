@@ -2218,6 +2218,10 @@ schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
           oil_avg2_16xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
           break;
+        case 32:
+          oil_avg2_32xn_u8 (fd->data, fd->stride,
+              fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
+          break;
         default:
           for(j=0;j<fd->height;j++) {
             uint8_t *data = SCHRO_FRAME_DATA_GET_LINE (fd, j);
@@ -2266,6 +2270,13 @@ schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
           break;
         case 16:
           oil_combine4_16xn_u8 (fd->data, fd->stride,
+              fd00.data, fd00.stride,
+              fd01.data, fd01.stride,
+              fd10.data, fd10.stride,
+              fd11.data, fd11.stride, p, fd->height);
+          break;
+        case 32:
+          oil_combine4_32xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride,
               fd01.data, fd01.stride,
               fd10.data, fd10.stride,

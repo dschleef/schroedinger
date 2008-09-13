@@ -430,6 +430,12 @@ get_biref_block (SchroMotion *motion, int i, int j, int k, int x, int y)
             motion->tmp_block_ref[1].data, motion->tmp_block_ref[1].stride,
             motion->yblen);
         break;
+      case 32:
+        oil_avg2_32xn_u8(motion->block.data, motion->block.stride,
+            motion->tmp_block_ref[0].data, motion->tmp_block_ref[0].stride,
+            motion->tmp_block_ref[1].data, motion->tmp_block_ref[1].stride,
+            motion->yblen);
+        break;
       default:
         for(jj=0;jj<motion->yblen;jj++) {
           uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
