@@ -47,11 +47,20 @@ SchroFrame *
 schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
     int width, int height)
 {
+  return schro_frame_new_and_alloc_extended (domain, format, width, height, 0);
+}
+
+SchroFrame *
+schro_frame_new_and_alloc_extended (SchroMemoryDomain *domain,
+    SchroFrameFormat format, int width, int height, int extension)
+{
   SchroFrame *frame = schro_frame_new();
   int bytes_pp;
   int h_shift, v_shift;
   int chroma_width;
   int chroma_height;
+  int ext_width;
+  int ext_height;
 
   SCHRO_ASSERT(width > 0);
   SCHRO_ASSERT(height > 0);
@@ -60,8 +69,14 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
   frame->width = width;
   frame->height = height;
   frame->domain = domain;
+  frame->extension = extension;
+
+  ext_width = width + extension*2;
+  ext_height = height + extension*2;
 
   if (SCHRO_FRAME_IS_PACKED (format)) {
+    SCHRO_ASSERT(extension == 0);
+
     frame->components[0].format = format;
     frame->components[0].width = width;
     frame->components[0].height = height;
@@ -110,27 +125,27 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
   frame->components[0].format = format;
   frame->components[0].width = width;
   frame->components[0].height = height;
-  frame->components[0].stride = ROUND_UP_4(width * bytes_pp);
+  frame->components[0].stride = ROUND_UP_4((width + extension*2) * bytes_pp);
   frame->components[0].length =
-    frame->components[0].stride * frame->components[0].height;
+    frame->components[0].stride * (frame->components[0].height + extension * 2);
   frame->components[0].v_shift = 0;
   frame->components[0].h_shift = 0;
 
   frame->components[1].format = format;
   frame->components[1].width = chroma_width;
   frame->components[1].height = chroma_height;
-  frame->components[1].stride = ROUND_UP_4(chroma_width * bytes_pp);
+  frame->components[1].stride = ROUND_UP_4((chroma_width + extension*2) * bytes_pp);
   frame->components[1].length =
-    frame->components[1].stride * frame->components[1].height;
+    frame->components[1].stride * (frame->components[1].height + extension * 2);
   frame->components[1].v_shift = v_shift;
   frame->components[1].h_shift = h_shift;
 
   frame->components[2].format = format;
   frame->components[2].width = chroma_width;
   frame->components[2].height = chroma_height;
-  frame->components[2].stride = ROUND_UP_4(chroma_width * bytes_pp);
+  frame->components[2].stride = ROUND_UP_4((chroma_width + extension*2) * bytes_pp);
   frame->components[2].length =
-    frame->components[2].stride * frame->components[2].height;
+    frame->components[2].stride * (frame->components[2].height + extension * 2);
   frame->components[2].v_shift = v_shift;
   frame->components[2].h_shift = h_shift;
 
@@ -143,11 +158,14 @@ schro_frame_new_and_alloc (SchroMemoryDomain *domain, SchroFrameFormat format,
         frame->components[1].length + frame->components[2].length);
   }
 
-  frame->components[0].data = frame->regions[0];
-  frame->components[1].data = frame->components[0].data +
-    frame->components[0].length;
-  frame->components[2].data = frame->components[1].data +
-    frame->components[1].length;
+  frame->components[0].data = frame->regions[0] +
+    frame->components[0].stride * extension + bytes_pp * extension;
+  frame->components[1].data = frame->regions[0] +
+    frame->components[0].length +
+    frame->components[1].stride * extension + bytes_pp * extension;
+  frame->components[2].data = frame->regions[0] +
+    frame->components[0].length + frame->components[1].length +
+    frame->components[2].stride * extension + bytes_pp * extension;
 
   return frame;
 }
@@ -1892,22 +1910,58 @@ schro_upsampled_frame_free (SchroUpsampledFrame *df)
 }
 
 void
+schro_frame_mc_edgeextend (SchroFrame *frame)
+{
+  int k;
+  int j;
+
+  for(k=0;k<3;k++){
+    int height = frame->components[k].height;
+    int width = frame->components[k].width;
+
+    for(j=0;j<frame->components[k].height;j++){
+      uint8_t *line = SCHRO_FRAME_DATA_GET_LINE(frame->components + k, j);
+
+      memset (line - frame->extension, line[0], frame->extension);
+      memset (line + width, line[width-1], frame->extension);
+    }
+    for(j=0;j<frame->extension;j++){
+      memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, -j) - frame->extension,
+          SCHRO_FRAME_DATA_GET_LINE(frame->components + k, 0) - frame->extension,
+          width + frame->extension*2);
+      memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height + j) - frame->extension,
+          SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height - 1) - frame->extension,
+          width + frame->extension*2);
+    }
+  }
+
+}
+
+void
 schro_upsampled_frame_upsample (SchroUpsampledFrame *df)
 {
   if (df->frames[1]) return;
 
-  df->frames[1] = schro_frame_new_and_alloc (df->frames[0]->domain,
-      df->frames[0]->format, df->frames[0]->width, df->frames[0]->height);
-  df->frames[2] = schro_frame_new_and_alloc (df->frames[0]->domain,
-      df->frames[0]->format, df->frames[0]->width, df->frames[0]->height);
-  df->frames[3] = schro_frame_new_and_alloc (df->frames[0]->domain,
-      df->frames[0]->format, df->frames[0]->width, df->frames[0]->height);
+  df->frames[1] = schro_frame_new_and_alloc_extended (df->frames[0]->domain,
+      df->frames[0]->format, df->frames[0]->width, df->frames[0]->height,
+      df->frames[0]->extension);
+  df->frames[2] = schro_frame_new_and_alloc_extended (df->frames[0]->domain,
+      df->frames[0]->format, df->frames[0]->width, df->frames[0]->height,
+      df->frames[0]->extension);
+  df->frames[3] = schro_frame_new_and_alloc_extended (df->frames[0]->domain,
+      df->frames[0]->format, df->frames[0]->width, df->frames[0]->height,
+      df->frames[0]->extension);
 
   schro_frame_upsample_horiz (df->frames[1], df->frames[0]);
   schro_frame_upsample_vert (df->frames[2], df->frames[0]);
   schro_frame_upsample_horiz (df->frames[3], df->frames[2]);
+
+  schro_frame_mc_edgeextend (df->frames[1]);
+  schro_frame_mc_edgeextend (df->frames[2]);
+  schro_frame_mc_edgeextend (df->frames[3]);
 }
 
+#ifdef ENABLE_MOTION_REF
 int
 schro_upsampled_frame_get_pixel_prec0 (SchroUpsampledFrame *upframe, int k,
     int x, int y)
@@ -1939,6 +1993,7 @@ schro_upsampled_frame_get_block_prec0 (SchroUpsampledFrame *upframe, int k,
     }
   }
 }
+#endif
 
 void
 schro_upsampled_frame_get_block_fast_prec0 (SchroUpsampledFrame *upframe, int k,
@@ -1966,6 +2021,7 @@ schro_upsampled_frame_get_subdata_prec0 (SchroUpsampledFrame *upframe,
   fd->stride = comp->stride;
 }
 
+#ifdef ENABLE_MOTION_REF
 int
 schro_upsampled_frame_get_pixel_prec1 (SchroUpsampledFrame *upframe, int k,
     int x, int y)
@@ -2003,6 +2059,7 @@ schro_upsampled_frame_get_block_prec1 (SchroUpsampledFrame *upframe, int k,
     }
   }
 }
+#endif
 
 void
 schro_upsampled_frame_get_block_fast_prec1 (SchroUpsampledFrame *upframe, int k,
@@ -2047,6 +2104,7 @@ schro_upsampled_frame_get_subdata_prec1 (SchroUpsampledFrame *upframe,
   __schro_upsampled_frame_get_subdata_prec1 (upframe, k, x, y, fd);
 }
 
+#ifdef ENABLE_MOTION_REF
 int
 schro_upsampled_frame_get_pixel_prec3 (SchroUpsampledFrame *upframe, int k,
     int x, int y)
@@ -2115,6 +2173,7 @@ schro_upsampled_frame_get_block_prec3 (SchroUpsampledFrame *upframe, int k,
     }
   }
 }
+#endif
 
 void
 schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
@@ -2249,6 +2308,7 @@ schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
   }
 }
 
+#ifdef ENABLE_MOTION_REF
 int
 schro_upsampled_frame_get_pixel_precN (SchroUpsampledFrame *upframe, int k,
     int x, int y, int prec)
@@ -2288,6 +2348,7 @@ schro_upsampled_frame_get_block_precN (SchroUpsampledFrame *upframe, int k,
 
   SCHRO_ASSERT(0);
 }
+#endif
 
 void
 schro_upsampled_frame_get_block_fast_precN (SchroUpsampledFrame *upframe, int k,

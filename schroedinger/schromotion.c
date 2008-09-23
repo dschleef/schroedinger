@@ -9,6 +9,7 @@
 
 int _schro_motion_ref = FALSE;
 
+#ifdef ENABLE_MOTION_REF
 static int
 get_pixel (SchroMotion *motion, int k, SchroUpsampledFrame *upframe,
     int x, int y, int dx, int dy);
@@ -16,6 +17,7 @@ get_pixel (SchroMotion *motion, int k, SchroUpsampledFrame *upframe,
 int
 schro_motion_pixel_predict_block (SchroMotion *motion, int x, int y, int k,
     int i, int j);
+#endif
 
 
 SchroMotion *
@@ -46,6 +48,7 @@ schro_motion_free (SchroMotion *motion)
   schro_free (motion);
 }
 
+#ifdef ENABLE_MOTION_REF
 static void
 schro_motion_get_global_vector (SchroMotion *motion, int ref, int x, int y,
     int *dx, int *dy)
@@ -168,7 +171,6 @@ get_biref_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
   return ROUND_SHIFT(value, motion->ref_weight_precision);
 }
 
-
 static int
 get_pixel (SchroMotion *motion, int k, SchroUpsampledFrame *upframe,
     int x, int y, int dx, int dy)
@@ -186,6 +188,7 @@ get_pixel (SchroMotion *motion, int k, SchroUpsampledFrame *upframe,
   return schro_upsampled_frame_get_pixel_precN (upframe, k, px, py,
       motion->mv_precision);
 }
+#endif
 
 static int
 get_ramp (int x, int offset)
@@ -197,7 +200,7 @@ get_ramp (int x, int offset)
   return 1 + (6 * x + offset - 1)/(2*offset - 1);
 }
 
-
+#ifdef ENABLE_MOTION_REF
 int
 schro_motion_pixel_predict_block (SchroMotion *motion, int x, int y, int k,
     int i, int j)
@@ -268,6 +271,7 @@ schro_motion_pixel_predict_block (SchroMotion *motion, int x, int y, int k,
 
   return value * wx * wy;
 }
+#endif
 
 /* motion render (faster) */
 
@@ -277,6 +281,7 @@ get_block (SchroMotion *motion, int k, int ref, int i, int j, int dx, int dy)
   int px, py;
   int x, y;
   SchroUpsampledFrame *upframe;
+  int exp;
 
   if (k > 0) {
     dx >>= SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
@@ -292,15 +297,13 @@ get_block (SchroMotion *motion, int k, int ref, int i, int j, int dx, int dy)
   y = motion->ybsep * j - motion->yoffset;
   px = (x << motion->mv_precision) + dx;
   py = (y << motion->mv_precision) + dy;
+  exp = 32 << motion->mv_precision;
 
-  if (px >= 0 && py >= 0 &&
-      px < motion->max_fast_x && py < motion->max_fast_y) {
-    schro_upsampled_frame_get_block_fast_precN (upframe, k, px, py,
-        motion->mv_precision, &motion->tmp_block_ref[ref]);
-  } else {
-    schro_upsampled_frame_get_block_precN (upframe, k, px, py,
-        motion->mv_precision, &motion->tmp_block_ref[ref]);
-  }
+  px = CLAMP (px, -exp, motion->max_fast_x + exp-1);
+  py = CLAMP (py, -exp, motion->max_fast_y + exp-1);
+
+  schro_upsampled_frame_get_block_fast_precN (upframe, k, px, py,
+      motion->mv_precision, &motion->tmp_block_ref[ref]);
 }
 
 static void
@@ -663,10 +666,12 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
   int max_x_blocks;
   int max_y_blocks;
 
+#ifdef ENABLE_MOTION_REF
   if (_schro_motion_ref) {
     schro_motion_render_ref (motion, dest);
     return;
   }
+#endif
 
   if (params->num_refs == 1) {
     SCHRO_ASSERT(params->picture_weight_2 == 1);
@@ -1105,6 +1110,7 @@ schro_motion_verify (SchroMotion *motion)
   return 1;
 }
 
+#ifdef ENABLE_MOTION_REF
 void
 schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest)
 {
@@ -1156,4 +1162,5 @@ schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest)
     }
   }
 }
+#endif
 

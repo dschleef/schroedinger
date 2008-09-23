@@ -1373,10 +1373,12 @@ schro_decoder_x_combine (SchroPicture *picture)
       SCHRO_ASSERT(0);
 #endif
     } else {
-      ref = schro_frame_new_and_alloc (decoder->cpu_domain, frame_format,
-          decoder->video_format.width,
-          schro_video_format_get_picture_height(&decoder->video_format));
+      ref = schro_frame_new_and_alloc_extended (decoder->cpu_domain,
+          frame_format, decoder->video_format.width,
+          schro_video_format_get_picture_height(&decoder->video_format),
+          32);
       schro_frame_convert (ref, combined_frame);
+      schro_frame_mc_edgeextend (ref);
     }
     picture->upsampled_frame = schro_upsampled_frame_new (ref);
   }

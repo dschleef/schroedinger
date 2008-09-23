@@ -1607,10 +1607,12 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
 
   frame_format = schro_params_get_frame_format (8,
       encoder_frame->encoder->video_format.chroma_format);
-  frame = schro_frame_new_and_alloc (NULL, frame_format,
+  frame = schro_frame_new_and_alloc_extended (NULL, frame_format,
       encoder_frame->encoder->video_format.width,
-      schro_video_format_get_picture_height(&encoder_frame->encoder->video_format));
+      schro_video_format_get_picture_height(&encoder_frame->encoder->video_format),
+      32);
   schro_frame_convert (frame, encoder_frame->iwt_frame);
+  schro_frame_mc_edgeextend (frame);
   encoder_frame->reconstructed_frame =
     schro_upsampled_frame_new (frame);
 

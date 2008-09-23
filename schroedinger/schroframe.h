@@ -82,6 +82,8 @@ struct _SchroFrame {
   SchroFrame *virt_frame2;
   void (*render_line) (SchroFrame *frame, void *dest, int component, int i);
   void *virt_priv;
+
+  int extension;
 };
 
 struct _SchroUpsampledFrame {
@@ -125,9 +127,12 @@ void schro_frame_md5 (SchroFrame *frame, uint32_t *state);
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
+SchroFrame * schro_frame_new_and_alloc_extended (SchroMemoryDomain *domain,
+    SchroFrameFormat format, int width, int height, int extension);
 void schro_frame_edge_extend (SchroFrame *frame, int width, int height);
 void schro_frame_zero_extend (SchroFrame *frame, int width, int height);
 void schro_frame_mark (SchroFrame *frame, int value);
+void schro_frame_mc_edgeextend (SchroFrame *frame);
 
 void schro_frame_data_get_codeblock (SchroFrameData *dest, SchroFrameData *src,
         int x, int y, int horiz_codeblocks, int vert_codeblocks);
@@ -135,6 +140,7 @@ void schro_frame_data_get_codeblock (SchroFrameData *dest, SchroFrameData *src,
 SchroUpsampledFrame * schro_upsampled_frame_new (SchroFrame *frame);
 void schro_upsampled_frame_free (SchroUpsampledFrame *df);
 void schro_upsampled_frame_upsample (SchroUpsampledFrame *df);
+#ifdef ENABLE_MOTION_REF
 int schro_upsampled_frame_get_pixel_prec0 (SchroUpsampledFrame *upframe, int k,
     int x, int y);
 int schro_upsampled_frame_get_pixel_prec1 (SchroUpsampledFrame *upframe, int k,
@@ -143,6 +149,7 @@ int schro_upsampled_frame_get_pixel_prec3 (SchroUpsampledFrame *upframe, int k,
     int x, int y);
 int schro_upsampled_frame_get_pixel_precN (SchroUpsampledFrame *upframe, int k,
     int x, int y, int mv_precision);
+#endif
 void schro_upsampled_frame_get_block_precN (SchroUpsampledFrame *upframe, int k,
     int x, int y, int prec, SchroFrameData *fd);
 void schro_upsampled_frame_get_block_fast_precN (SchroUpsampledFrame *upframe, int k,
