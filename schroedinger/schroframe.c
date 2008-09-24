@@ -1926,7 +1926,7 @@ schro_frame_mc_edgeextend (SchroFrame *frame)
       memset (line + width, line[width-1], frame->extension);
     }
     for(j=0;j<frame->extension;j++){
-      memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, -j) - frame->extension,
+      memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, -j-1) - frame->extension,
           SCHRO_FRAME_DATA_GET_LINE(frame->components + k, 0) - frame->extension,
           width + frame->extension*2);
       memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height + j) - frame->extension,
