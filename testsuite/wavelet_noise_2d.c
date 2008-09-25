@@ -25,8 +25,6 @@
 
 int fail = 0;
 
-int16_t tmp[SIZE*2];
-
 float costable[SIZE*SIZE];
 float sintable[SIZE*SIZE];
 float dr[SIZE*SIZE];
@@ -122,7 +120,7 @@ main (int argc, char *argv[])
     generate_noise (frame, transform_depth,
         encoder->subband_weights[filter][transform_depth-1]);
 
-    schro_frame_inverse_iwt_transform (frame, &params, tmp);
+    schro_frame_inverse_iwt_transform (frame, &params);
 
     for(j=0;j<SIZE;j++){
       int16_t *line;

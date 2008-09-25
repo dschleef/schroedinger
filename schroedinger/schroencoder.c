@@ -1457,8 +1457,6 @@ schro_encoder_mode_decision (SchroEncoderFrame* frame)
 void
 schro_encoder_render_picture (SchroEncoderFrame *frame)
 {
-  int16_t *tmpbuf;
-
   SCHRO_INFO("render picture %d", frame->frame_number);
 
   if (frame->params.num_refs > 0) {
@@ -1495,10 +1493,7 @@ schro_encoder_render_picture (SchroEncoderFrame *frame)
     schro_frame_convert (frame->iwt_frame, frame->filtered_frame);
   }
 
-  tmpbuf = schro_malloc(sizeof(int16_t) *
-      (frame->encoder->video_format.width + 16));
-  schro_frame_iwt_transform (frame->iwt_frame, &frame->params, tmpbuf);
-  schro_free (tmpbuf);
+  schro_frame_iwt_transform (frame->iwt_frame, &frame->params);
 
   schro_encoder_clean_up_transform (frame);
 }
@@ -1593,13 +1588,8 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
 {
   SchroFrameFormat frame_format;
   SchroFrame *frame;
-  int16_t *tmpbuf;
 
-  tmpbuf = schro_malloc(sizeof(int16_t) *
-      (encoder_frame->encoder->video_format.width + 16));
-  schro_frame_inverse_iwt_transform (encoder_frame->iwt_frame, &encoder_frame->params,
-      tmpbuf);
-  schro_free (tmpbuf);
+  schro_frame_inverse_iwt_transform (encoder_frame->iwt_frame, &encoder_frame->params);
 
   if (encoder_frame->params.num_refs > 0) {
     schro_frame_add (encoder_frame->iwt_frame, encoder_frame->prediction_frame);

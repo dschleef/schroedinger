@@ -1230,21 +1230,20 @@ schro_frame_subtract_s16_u8 (SchroFrame *dest, SchroFrame *src)
  * schro_frame_iwt_transform:
  * @frame: frame
  * @params: transform parameters
- * @tmp: temporary storage
  *
  * Performs an in-place integer wavelet transform on @frame.  The
  * frame must have a bit depth of 16.
  */
 void
-schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
-    int16_t *tmp)
+schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params)
 {
   int component;
   int width;
   int height;
   int level;
+  int16_t *tmp;
 
-  //SCHRO_ASSERT(frame->format == SCHRO_FRAME_FORMAT_S16_420);
+  tmp = schro_malloc (sizeof(int16_t) * (params->iwt_luma_width + 16));
 
   for(component=0;component<3;component++){
     SchroFrameData *comp = &frame->components[component];
@@ -1270,27 +1269,28 @@ schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
           tmp);
     }
   }
+
+  schro_free (tmp);
 }
 
 /**
  * schro_frame_inverse_iwt_transform:
  * @frame: frame
  * @params: transform parameters
- * @tmp: temporary storage
  *
  * Performs an in-place inverse integer wavelet transform on @frame.  The
  * frame must have a bit depth of 16.
  */
 void
-schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
-    int16_t *tmp)
+schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params)
 {
   int width;
   int height;
   int level;
   int component;
+  int16_t *tmp;
 
-  //SCHRO_ASSERT(frame->format == SCHRO_FRAME_FORMAT_S16_420);
+  tmp = schro_malloc (sizeof(int16_t) * (params->iwt_luma_width + 16));
 
   for(component=0;component<3;component++){
     SchroFrameData *comp = &frame->components[component];
@@ -1316,6 +1316,8 @@ schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
           tmp);
     }
   }
+
+  schro_free (tmp);
 }
 
 /**

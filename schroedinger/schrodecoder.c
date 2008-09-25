@@ -206,17 +206,6 @@ schro_picture_new (SchroDecoder *decoder)
 
   picture->decoder = decoder;
 
-  if (decoder->use_opengl) {
-#ifdef HAVE_OPENGL
-    picture->tmpbuf = NULL;
-#else
-    SCHRO_ASSERT (0);
-#endif
-  } else {
-    picture->tmpbuf
-        = schro_malloc (sizeof (int16_t) * (video_format->width + 16));
-  }
-
   picture->params.video_format = video_format;
 
   frame_format = schro_params_get_frame_format (16,
@@ -298,7 +287,6 @@ schro_picture_unref (SchroPicture *picture)
     if (picture->mc_tmp_frame) schro_frame_unref (picture->mc_tmp_frame);
     if (picture->planar_output_frame) schro_frame_unref (picture->planar_output_frame);
     if (picture->output_picture) schro_frame_unref (picture->output_picture);
-    if (picture->tmpbuf) schro_free (picture->tmpbuf);
     if (picture->motion) schro_motion_free (picture->motion);
     if (picture->input_buffer) schro_buffer_unref (picture->input_buffer);
     if (picture->upsampled_frame) schro_upsampled_frame_free (picture->upsampled_frame);
@@ -1231,8 +1219,7 @@ schro_decoder_x_wavelet_transform (SchroPicture *picture)
       SCHRO_ASSERT(0);
 #endif
     } else {
-      schro_frame_inverse_iwt_transform (picture->frame, &picture->params,
-          picture->tmpbuf);
+      schro_frame_inverse_iwt_transform (picture->frame, &picture->params);
     }
   }
 }

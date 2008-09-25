@@ -106,8 +106,6 @@ struct _SchroPicture {
 
   int is_ref;
 
-  int16_t *tmpbuf;
-
   int zero_residual;
 
   SchroFrame *transform_frame;

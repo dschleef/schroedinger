@@ -102,10 +102,8 @@ int schro_params_get_frame_format (int depth,
     SchroChromaFormat chroma_format);
 
 /* FIXME should be moved */
-void schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params,
-    int16_t *tmp);
-void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params,
-    int16_t *tmp);
+void schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params);
+void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params);
 
 #endif
 
