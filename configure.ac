@@ -116,6 +116,12 @@ AM_CONDITIONAL(ENABLE_ENCODER, test "x$enable_encoder" != "xno")
 if [ test "x$enable_encoder" != "xno" ] ; then
   AC_DEFINE(ENABLE_ENCODER, 1, [Enable encoder])
 fi
+AC_ARG_ENABLE(motion-ref, AC_HELP_STRING([--disable-motion-ref],
+              [disable motion reference code (default=enabled)]))
+AM_CONDITIONAL(ENABLE_MOTION_REF, test "x$enable_motion_ref" != "xno")
+if [ test "x$enable_motion_ref" != "xno" ] ; then
+  AC_DEFINE(ENABLE_MOTION_REF, 1, [Enable motion reference code])
+fi
 
 ##################################################
 # Check for gtk-doc.
