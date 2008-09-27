@@ -1,5 +1,5 @@
 // declare texture references
-typedef texture<float, 2, cudaReadModeNormalizedFloat> RefTex;
+typedef texture<float, 2, cudaReadModeElementType> RefTex;
 typedef texture<short4, 2, cudaReadModeElementType> BlockTex;
 
 typedef int worktype;

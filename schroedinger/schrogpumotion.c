@@ -174,8 +174,8 @@ schro_gpumotion_render (SchroGPUMotion * self, SchroMotion * motion,
 
   fwidth = motion->params->video_format->width;
   fheight = motion->params->video_format->height;
-  hshift = motion->params->video_format->chroma_h_shift;
-  vshift = motion->params->video_format->chroma_v_shift;
+  hshift = SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
+  vshift = SCHRO_CHROMA_FORMAT_V_SHIFT(motion->params->video_format->chroma_format);
 
   SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
 

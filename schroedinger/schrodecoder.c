@@ -1136,9 +1136,11 @@ schro_decoder_x_render_motion (SchroPicture *picture)
       frame_format = schro_params_get_frame_format (16,
           video_format->chroma_format);
       frame_width = ROUND_UP_POW2(video_format->width,
-          SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_h_shift);
+          SCHRO_LIMIT_TRANSFORM_DEPTH +
+          SCHRO_CHROMA_FORMAT_H_SHIFT(video_format->chroma_format));
       frame_height = ROUND_UP_POW2(video_format->height,
-          SCHRO_LIMIT_TRANSFORM_DEPTH + video_format->chroma_v_shift);
+          SCHRO_LIMIT_TRANSFORM_DEPTH +
+          SCHRO_CHROMA_FORMAT_V_SHIFT(video_format->chroma_format));
 
       picture->mc_tmp_frame = schro_frame_new_and_alloc (decoder->cuda_domain,
           frame_format, frame_width, frame_height);

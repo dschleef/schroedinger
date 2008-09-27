@@ -32,8 +32,6 @@ int dump_all = FALSE;
 SchroMemoryDomain *cpu_domain;
 SchroMemoryDomain *cuda_domain;
 
-int16_t tmp[SCHRO_LIMIT_WIDTH];
-
 int
 main (int argc, char *argv[])
 {
@@ -98,7 +96,7 @@ void test (int width, int height)
     schro_frame_convert (frame, frame_u8);
 
     schro_frame_convert (frame_ref, frame_u8);
-    schro_frame_inverse_iwt_transform (frame_ref, &params, tmp);
+    schro_frame_inverse_iwt_transform (frame_ref, &params);
 
     schro_frame_to_gpu (frame_cuda, frame);
     schro_gpuframe_inverse_iwt_transform (frame_cuda, &params);
