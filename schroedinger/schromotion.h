@@ -48,11 +48,7 @@ struct _SchroMotion {
   SchroMotionVector *motion_vectors;
   SchroParams *params;
 
-  int sx_max;
-  int sy_max;
   uint8_t *tmpdata;
-  uint8_t *blocks[3];
-  int strides[3];
 
   int ref_weight_precision;
   int ref1_weight;
@@ -66,8 +62,12 @@ struct _SchroMotion {
   int yblen;
 
   SchroFrameData block;
+  SchroFrameData alloc_block;
   SchroFrameData obmc_weight;
-  SchroFrameData tmp_block_ref[2];
+
+  SchroFrameData alloc_block_ref[2];
+  SchroFrameData block_ref[2];
+
   int weight_x[SCHRO_LIMIT_BLOCK_SIZE];
   int weight_y[SCHRO_LIMIT_BLOCK_SIZE];
   int width;

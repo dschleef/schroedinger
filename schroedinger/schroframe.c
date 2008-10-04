@@ -2354,20 +2354,22 @@ schro_upsampled_frame_get_block_precN (SchroUpsampledFrame *upframe, int k,
 
 void
 schro_upsampled_frame_get_block_fast_precN (SchroUpsampledFrame *upframe, int k,
-    int x, int y, int prec, SchroFrameData *fd)
+    int x, int y, int prec, SchroFrameData *dest, SchroFrameData *fd)
 {
   switch (prec) {
     case 0:
-      schro_upsampled_frame_get_block_fast_prec0 (upframe, k, x, y, fd);
+      schro_upsampled_frame_get_subdata_prec0 (upframe, k, x, y, dest);
       return;
     case 1:
-      schro_upsampled_frame_get_block_fast_prec1 (upframe, k, x, y, fd);
+      schro_upsampled_frame_get_subdata_prec1 (upframe, k, x, y, dest);
       return;
     case 2:
-      schro_upsampled_frame_get_block_fast_prec3 (upframe, k, x<<1, y<<1, fd);
+      memcpy (dest, fd, sizeof(SchroFrameData));
+      schro_upsampled_frame_get_block_fast_prec3 (upframe, k, x<<1, y<<1, dest);
       return;
     case 3:
-      schro_upsampled_frame_get_block_fast_prec3 (upframe, k, x, y, fd);
+      memcpy (dest, fd, sizeof(SchroFrameData));
+      schro_upsampled_frame_get_block_fast_prec3 (upframe, k, x, y, dest);
       return;
   }
 

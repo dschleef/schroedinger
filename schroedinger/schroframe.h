@@ -151,9 +151,9 @@ int schro_upsampled_frame_get_pixel_precN (SchroUpsampledFrame *upframe, int k,
     int x, int y, int mv_precision);
 #endif
 void schro_upsampled_frame_get_block_precN (SchroUpsampledFrame *upframe, int k,
-    int x, int y, int prec, SchroFrameData *fd);
+    int x, int y, int prec, SchroFrameData *dest);
 void schro_upsampled_frame_get_block_fast_precN (SchroUpsampledFrame *upframe, int k,
-    int x, int y, int prec, SchroFrameData *fd);
+    int x, int y, int prec, SchroFrameData *dest, SchroFrameData *fd);
 
 void schro_frame_get_subdata (SchroFrame *frame, SchroFrameData *fd,
         int comp, int x, int y);

@@ -303,7 +303,8 @@ get_block (SchroMotion *motion, int k, int ref, int i, int j, int dx, int dy)
   py = CLAMP (py, -exp, motion->max_fast_y + exp-1);
 
   schro_upsampled_frame_get_block_fast_precN (upframe, k, px, py,
-      motion->mv_precision, &motion->tmp_block_ref[ref]);
+      motion->mv_precision, &motion->block_ref[ref],
+      &motion->alloc_block_ref[ref]);
 }
 
 static void
@@ -317,9 +318,11 @@ get_dc_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   mvdc = (SchroMotionVectorDC *)
     &motion->motion_vectors[j*params->x_num_blocks + i];
 
+  memcpy (&motion->block, &motion->alloc_block, sizeof(SchroFrameData));
   value = mvdc->dc[k];
   for(jj=0;jj<motion->yblen;jj++) {
     uint8_t *data = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
+    /* FIXME splat */
     for(ii=0;ii<motion->xblen;ii++) {
       data[ii] = value + 128;
     }
@@ -344,15 +347,14 @@ get_ref1_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   shift = motion->ref_weight_precision;
 
   if (weight == (1<<shift)) {
-    for(jj=0;jj<motion->yblen;jj++) {
-      uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-      uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[0], jj);
-      memcpy(d,s,motion->xblen);
-    }
+    memcpy (&motion->block, &motion->block_ref[0],
+        sizeof(SchroFrameData));
   } else {
+    memcpy (&motion->block, &motion->alloc_block,
+        sizeof(SchroFrameData));
     for(jj=0;jj<motion->yblen;jj++) {
       uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-      uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[0], jj);
+      uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->block_ref[0], jj);
       for(ii=0;ii<motion->xblen;ii++) {
         d[ii] = ROUND_SHIFT(s[ii] * weight, shift);
       }
@@ -378,15 +380,14 @@ get_ref2_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   shift = motion->ref_weight_precision;
 
   if (weight == (1<<shift)) {
-    for(jj=0;jj<motion->yblen;jj++) {
-      uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-      uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[1], jj);
-      memcpy(d,s,motion->xblen);
-    }
+    memcpy (&motion->block, &motion->block_ref[1],
+        sizeof(SchroFrameData));
   } else {
+    memcpy (&motion->block, &motion->alloc_block,
+        sizeof(SchroFrameData));
     for(jj=0;jj<motion->yblen;jj++) {
       uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-      uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[1], jj);
+      uint8_t *s = SCHRO_FRAME_DATA_GET_LINE (&motion->block_ref[1], jj);
       for(ii=0;ii<motion->xblen;ii++) {
         d[ii] = ROUND_SHIFT(s[ii] * weight, shift);
       }
@@ -413,37 +414,38 @@ get_biref_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   weight1 = motion->ref2_weight;
   shift = motion->ref_weight_precision;
 
+  memcpy (&motion->block, &motion->alloc_block, sizeof(SchroFrameData));
   if (weight0 == 1 && weight1 == 1 && shift == 1) {
     switch (motion->xblen) {
       case 8:
         oil_avg2_8xn_u8(motion->block.data, motion->block.stride,
-            motion->tmp_block_ref[0].data, motion->tmp_block_ref[0].stride,
-            motion->tmp_block_ref[1].data, motion->tmp_block_ref[1].stride,
+            motion->block_ref[0].data, motion->block_ref[0].stride,
+            motion->block_ref[1].data, motion->block_ref[1].stride,
             motion->yblen);
         break;
       case 12:
         oil_avg2_12xn_u8(motion->block.data, motion->block.stride,
-            motion->tmp_block_ref[0].data, motion->tmp_block_ref[0].stride,
-            motion->tmp_block_ref[1].data, motion->tmp_block_ref[1].stride,
+            motion->block_ref[0].data, motion->block_ref[0].stride,
+            motion->block_ref[1].data, motion->block_ref[1].stride,
             motion->yblen);
         break;
       case 16:
         oil_avg2_16xn_u8(motion->block.data, motion->block.stride,
-            motion->tmp_block_ref[0].data, motion->tmp_block_ref[0].stride,
-            motion->tmp_block_ref[1].data, motion->tmp_block_ref[1].stride,
+            motion->block_ref[0].data, motion->block_ref[0].stride,
+            motion->block_ref[1].data, motion->block_ref[1].stride,
             motion->yblen);
         break;
       case 32:
         oil_avg2_32xn_u8(motion->block.data, motion->block.stride,
-            motion->tmp_block_ref[0].data, motion->tmp_block_ref[0].stride,
-            motion->tmp_block_ref[1].data, motion->tmp_block_ref[1].stride,
+            motion->block_ref[0].data, motion->block_ref[0].stride,
+            motion->block_ref[1].data, motion->block_ref[1].stride,
             motion->yblen);
         break;
       default:
         for(jj=0;jj<motion->yblen;jj++) {
           uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-          uint8_t *s0 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[0], jj);
-          uint8_t *s1 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[1], jj);
+          uint8_t *s0 = SCHRO_FRAME_DATA_GET_LINE (&motion->block_ref[0], jj);
+          uint8_t *s1 = SCHRO_FRAME_DATA_GET_LINE (&motion->block_ref[1], jj);
           for(ii=0;ii<motion->xblen;ii++) {
             d[ii] = (s0[ii] + s1[ii] + 1)>>1;
           }
@@ -460,27 +462,27 @@ get_biref_block (SchroMotion *motion, int i, int j, int k, int x, int y)
     switch (motion->xblen) {
       case 8:
         oil_combine2_8xn_u8(motion->block.data, motion->block.stride,
-            motion->tmp_block_ref[0].data, motion->tmp_block_ref[0].stride,
-            motion->tmp_block_ref[1].data, motion->tmp_block_ref[1].stride,
+            motion->block_ref[0].data, motion->block_ref[0].stride,
+            motion->block_ref[1].data, motion->block_ref[1].stride,
             as, motion->yblen);
         break;
       case 12:
         oil_combine2_16xn_u8(motion->block.data, motion->block.stride,
-            motion->tmp_block_ref[0].data, motion->tmp_block_ref[0].stride,
-            motion->tmp_block_ref[1].data, motion->tmp_block_ref[1].stride,
+            motion->block_ref[0].data, motion->block_ref[0].stride,
+            motion->block_ref[1].data, motion->block_ref[1].stride,
             as, motion->yblen);
         break;
       case 16:
         oil_combine2_16xn_u8(motion->block.data, motion->block.stride,
-            motion->tmp_block_ref[0].data, motion->tmp_block_ref[0].stride,
-            motion->tmp_block_ref[1].data, motion->tmp_block_ref[1].stride,
+            motion->block_ref[0].data, motion->block_ref[0].stride,
+            motion->block_ref[1].data, motion->block_ref[1].stride,
             as, motion->yblen);
         break;
       default:
         for(jj=0;jj<motion->yblen;jj++) {
           uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-          uint8_t *s0 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[0], jj);
-          uint8_t *s1 = SCHRO_FRAME_DATA_GET_LINE (&motion->tmp_block_ref[1], jj);
+          uint8_t *s0 = SCHRO_FRAME_DATA_GET_LINE (&motion->block_ref[0], jj);
+          uint8_t *s1 = SCHRO_FRAME_DATA_GET_LINE (&motion->block_ref[1], jj);
           for(ii=0;ii<motion->xblen;ii++) {
             d[ii] = ROUND_SHIFT(s0[ii] * weight0 + s1[ii] * weight1, shift);
           }
@@ -665,6 +667,7 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
   SchroParams *params = motion->params;
   int max_x_blocks;
   int max_y_blocks;
+  int16_t zero = 0;
 
 #ifdef ENABLE_MOTION_REF
   if (_schro_motion_ref) {
@@ -710,27 +713,28 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
     motion->max_fast_x = (motion->width - motion->xblen) << motion->mv_precision;
     motion->max_fast_y = (motion->height - motion->yblen) << motion->mv_precision;
 
-    motion->block.data = schro_malloc (motion->xblen * motion->yblen * sizeof(uint8_t));
-    motion->block.stride = motion->xblen * sizeof(uint8_t);
-    motion->block.width = motion->xblen;
-    motion->block.height = motion->yblen;
+    motion->alloc_block.data = schro_malloc (motion->xblen * motion->yblen * sizeof(uint8_t));
+    motion->alloc_block.stride = motion->xblen * sizeof(uint8_t);
+    motion->alloc_block.width = motion->xblen;
+    motion->alloc_block.height = motion->yblen;
     motion->obmc_weight.data = schro_malloc (motion->xblen * motion->yblen * sizeof(int16_t));
     motion->obmc_weight.stride = motion->xblen * sizeof(int16_t);
     motion->obmc_weight.width = motion->xblen;
     motion->obmc_weight.height = motion->yblen;
-    motion->tmp_block_ref[0].data = schro_malloc (motion->xblen * motion->yblen * sizeof(uint8_t));
-    motion->tmp_block_ref[0].stride = motion->xblen * sizeof(uint8_t);
-    motion->tmp_block_ref[0].width = motion->xblen;
-    motion->tmp_block_ref[0].height = motion->yblen;
-    motion->tmp_block_ref[1].data = schro_malloc (motion->xblen * motion->yblen * sizeof(uint8_t));
-    motion->tmp_block_ref[1].stride = motion->xblen * sizeof(uint8_t);
-    motion->tmp_block_ref[1].width = motion->xblen;
-    motion->tmp_block_ref[1].height = motion->yblen;
+    motion->alloc_block_ref[0].data = schro_malloc (motion->xblen * motion->yblen * sizeof(uint8_t));
+    motion->alloc_block_ref[0].stride = motion->xblen * sizeof(uint8_t);
+    motion->alloc_block_ref[0].width = motion->xblen;
+    motion->alloc_block_ref[0].height = motion->yblen;
+    motion->alloc_block_ref[1].data = schro_malloc (motion->xblen * motion->yblen * sizeof(uint8_t));
+    motion->alloc_block_ref[1].stride = motion->xblen * sizeof(uint8_t);
+    motion->alloc_block_ref[1].width = motion->xblen;
+    motion->alloc_block_ref[1].height = motion->yblen;
 
     schro_motion_init_obmc_weight (motion);
 
     for(j=0;j<comp->height;j++){
-      memset (SCHRO_FRAME_DATA_GET_LINE(comp, j), 0, comp->width * sizeof(int16_t));
+      oil_splat_s16_ns (SCHRO_FRAME_DATA_GET_LINE(comp, j), &zero,
+          comp->width);
     }
 
     max_x_blocks = MIN(params->x_num_blocks - 1,
@@ -792,10 +796,10 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
           SCHRO_FRAME_DATA_GET_LINE(comp, j), as, motion->width);
     }
 
-    schro_free (motion->block.data);
+    schro_free (motion->alloc_block.data);
     schro_free (motion->obmc_weight.data);
-    schro_free (motion->tmp_block_ref[0].data);
-    schro_free (motion->tmp_block_ref[1].data);
+    schro_free (motion->alloc_block_ref[0].data);
+    schro_free (motion->alloc_block_ref[1].data);
   }
 
 }
