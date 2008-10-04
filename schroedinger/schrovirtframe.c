@@ -124,7 +124,7 @@ schro_virt_frame_get_line (SchroFrame *frame, int component, int i)
   int min;
   int min_j;
 
-  SCHRO_ASSERT(i >= 0);
+  //SCHRO_ASSERT(i >= 0);
   //SCHRO_ASSERT(i < comp->height);
 
   if (!frame->is_virtual) {
@@ -170,10 +170,10 @@ copy (SchroFrame *frame, void *_dest, int component, int i)
   src = schro_virt_frame_get_line (frame, component, i);
   switch (SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
     case SCHRO_FRAME_FORMAT_DEPTH_U8:
-      memcpy (dest, src, frame->components[component].width);
+      oil_memcpy (dest, src, frame->components[component].width);
       break;
     case SCHRO_FRAME_FORMAT_DEPTH_S16:
-      memcpy (dest, src, frame->components[component].width * 2);
+      oil_memcpy (dest, src, frame->components[component].width * 2);
       break;
     default:
       SCHRO_ASSERT(0);
@@ -819,7 +819,7 @@ convert_444_422 (SchroFrame *frame, void *_dest, int component, int i)
   src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
 
   if (component == 0) {
-    memcpy (dest, src, frame->width);
+    oil_memcpy (dest, src, frame->width);
   } else {
     for(j=0;j<frame->components[component].width;j++){
       dest[j] = src[j*2];
@@ -836,7 +836,7 @@ convert_444_420 (SchroFrame *frame, void *_dest, int component, int i)
 
   if (component == 0) {
     src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-    memcpy (dest, src, frame->components[component].width);
+    oil_memcpy (dest, src, frame->components[component].width);
   } else {
     src = schro_virt_frame_get_line (frame->virt_frame1, component, i*2);
     for(j=0;j<frame->components[component].width;j++){
@@ -856,7 +856,7 @@ convert_422_420 (SchroFrame *frame, void *_dest, int component, int i)
   } else {
     src = schro_virt_frame_get_line (frame->virt_frame1, component, i*2);
   }
-  memcpy (dest, src, frame->components[component].width);
+  oil_memcpy (dest, src, frame->components[component].width);
 }
 
 
