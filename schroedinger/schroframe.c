@@ -1532,13 +1532,41 @@ downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src)
 {
   int i;
 
-  for(i=0;i<n_dest;i++){
-    int x = 0;
-    x +=  6*src[CLAMP(i*2 - 1, 0, n_src-1)];
-    x += 26*src[CLAMP(i*2 + 0, 0, n_src-1)];
-    x += 26*src[CLAMP(i*2 + 1, 0, n_src-1)];
-    x +=  6*src[CLAMP(i*2 + 2, 0, n_src-1)];
-    dest[i] = CLAMP((x+32)>>6, 0, 255);
+  if (n_dest < 4) {
+    for(i=0;i<n_dest;i++){
+      int x = 0;
+      x +=  6*src[CLAMP(i*2 - 1, 0, n_src-1)];
+      x += 26*src[CLAMP(i*2 + 0, 0, n_src-1)];
+      x += 26*src[CLAMP(i*2 + 1, 0, n_src-1)];
+      x +=  6*src[CLAMP(i*2 + 2, 0, n_src-1)];
+      dest[i] = CLAMP((x+32)>>6, 0, 255);
+    }
+  } else {
+    for(i=0;i<1;i++){
+      int x = 0;
+      x +=  6*src[CLAMP(i*2 - 1, 0, n_src-1)];
+      x += 26*src[CLAMP(i*2 + 0, 0, n_src-1)];
+      x += 26*src[CLAMP(i*2 + 1, 0, n_src-1)];
+      x +=  6*src[CLAMP(i*2 + 2, 0, n_src-1)];
+      dest[i] = CLAMP((x+32)>>6, 0, 255);
+    }
+    for(i=1;i<n_src/2-2;i++){
+      int x = 0;
+      x +=  6*src[i*2 - 1];
+      x += 26*src[i*2 + 0];
+      x += 26*src[i*2 + 1];
+      x +=  6*src[i*2 + 2];
+      dest[i] = (x+32)>>6;
+    }
+    for(i=n_src/2-2;i<n_dest;i++){
+      int x = 0;
+      x +=  6*src[CLAMP(i*2 - 1, 0, n_src-1)];
+      x += 26*src[CLAMP(i*2 + 0, 0, n_src-1)];
+      x += 26*src[CLAMP(i*2 + 1, 0, n_src-1)];
+      x +=  6*src[CLAMP(i*2 + 2, 0, n_src-1)];
+      dest[i] = CLAMP((x+32)>>6, 0, 255);
+    }
+
   }
 }
 
@@ -1928,10 +1956,10 @@ schro_frame_mc_edgeextend (SchroFrame *frame)
       memset (line + width, line[width-1], frame->extension);
     }
     for(j=0;j<frame->extension;j++){
-      memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, -j-1) - frame->extension,
+      oil_memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, -j-1) - frame->extension,
           SCHRO_FRAME_DATA_GET_LINE(frame->components + k, 0) - frame->extension,
           width + frame->extension*2);
-      memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height + j) - frame->extension,
+      oil_memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height + j) - frame->extension,
           SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height - 1) - frame->extension,
           width + frame->extension*2);
     }
@@ -2009,7 +2037,7 @@ schro_upsampled_frame_get_block_fast_prec0 (SchroUpsampledFrame *upframe, int k,
   for(j=0;j<fd->height;j++) {
     uint8_t *dest = SCHRO_FRAME_DATA_GET_LINE (fd, j);
     uint8_t *src = SCHRO_FRAME_DATA_GET_LINE (comp, y + j);
-    oil_memcpy (dest, src + x, fd->width);
+    memcpy (dest, src + x, fd->width);
   }
 }
 
