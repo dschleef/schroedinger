@@ -23,6 +23,10 @@ extern const double schro_tables_wavelet_gain[SCHRO_N_WAVELETS][2];
 
 extern const int schro_table_unpack_sint[256][17];
 
+void schro_tables_init (void);
+int16_t *schro_tables_get_quantise_table (int quant_index);
+int16_t *schro_tables_get_dequantise_table (int quant_index, schro_bool is_intra);
+
 #endif
 
 SCHRO_END_DECLS

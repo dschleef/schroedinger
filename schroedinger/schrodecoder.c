@@ -37,6 +37,7 @@ struct _SchroPictureSubbandContext {
   SchroFrameData *parent_frame_data;
 
   int quant_index;
+  int is_intra;
   int subband_length;
   SchroArith *arith;
   SchroUnpack unpack;
@@ -100,6 +101,8 @@ schro_decoder_new (void)
   SchroDecoder *decoder;
 
   decoder = schro_malloc0 (sizeof(SchroDecoder));
+
+  schro_tables_init ();
 
   decoder->skip_value = 1.0;
   decoder->skip_ratio = 1.0;
@@ -2331,7 +2334,7 @@ codeblock_line_decode_noarith (SchroPictureSubbandContext *ctx,
   line += ctx->xmin;
 
   schro_unpack_decode_sint_s16 (line, &ctx->unpack, n);
-  schro_dequantise_s16 (line, line, ctx->quant_factor, ctx->quant_offset, n);
+  schro_dequantise_s16_table (line, line, ctx->quant_index, ctx->is_intra, n);
 }
 
 #if 0
@@ -2659,6 +2662,7 @@ schro_decoder_decode_subband (SchroPicture *picture,
 
   ctx->subband_length = picture->subband_length[ctx->component][ctx->index];
   ctx->quant_index = picture->subband_quant_index[ctx->component][ctx->index];
+  ctx->is_intra = (params->num_refs == 0);
 
   ctx->frame_data = &picture->subband_data[ctx->component][ctx->index];
   if (ctx->position >= 4) {

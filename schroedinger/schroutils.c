@@ -4,6 +4,7 @@
 #endif
 
 #include <schroedinger/schroutils.h>
+#include <schroedinger/schrotables.h>
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schro-stdint.h>
 #include <string.h>
@@ -183,6 +184,38 @@ schro_quantise_s16 (int16_t *dest, int16_t *src, int quant_factor,
   for(i=0;i<n;i++){
     dest[i] = __schro_quantise (src[i], quant_factor, quant_offset);
     src[i] = __schro_dequantise (dest[i], quant_factor, quant_offset);
+  }
+}
+
+void
+schro_quantise_s16_table (int16_t *dest, int16_t *src, int quant_index,
+    schro_bool is_intra, int n)
+{
+  int i;
+  int16_t *table;
+  
+  table = schro_tables_get_quantise_table(quant_index);
+
+  table += 32768;
+
+  for(i=0;i<n;i++){
+    dest[i] = table[src[i]];
+  }
+}
+
+void
+schro_dequantise_s16_table (int16_t *dest, int16_t *src, int quant_index,
+    schro_bool is_intra, int n)
+{
+  int i;
+  int16_t *table;
+  
+  table = schro_tables_get_dequantise_table(quant_index, is_intra);
+
+  table += 32768;
+
+  for(i=0;i<n;i++){
+    dest[i] = table[src[i]];
   }
 }
 

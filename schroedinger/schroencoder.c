@@ -195,6 +195,7 @@ schro_encoder_start (SchroEncoder *encoder)
 
   schro_encoder_encode_codec_comment (encoder);
 
+  schro_tables_init ();
   schro_encoder_init_perceptual_weighting (encoder);
 
   schro_encoder_init_error_tables (encoder);
@@ -2359,7 +2360,7 @@ schro_encoder_encode_transform_data (SchroEncoderFrame *frame)
 
 static void
 schro_frame_data_quantise (SchroFrameData *quant_fd,
-    SchroFrameData *fd, int quant_factor, int quant_offset)
+    SchroFrameData *fd, int quant_index)
 {
   int j;
   int16_t *line;
@@ -2369,7 +2370,23 @@ schro_frame_data_quantise (SchroFrameData *quant_fd,
     line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
     quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
 
-    schro_quantise_s16 (quant_line, line, quant_factor, quant_offset,
+    schro_quantise_s16_table (quant_line, line, quant_index, FALSE, fd->width);
+  }
+}
+
+static void
+schro_frame_data_dequantise (SchroFrameData *fd,
+    SchroFrameData *quant_fd, int quant_index, schro_bool is_intra)
+{
+  int j;
+  int16_t *line;
+  int16_t *quant_line;
+
+  for(j=0;j<fd->height;j++){
+    line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+    quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
+
+    schro_dequantise_s16_table (line, quant_line, quant_index, is_intra,
         fd->width);
   }
 }
@@ -2517,7 +2534,9 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component,
         schro_frame_data_quantise_dc_predict (&quant_cb, &cb, quant_factor,
             quant_offset, x, y);
       } else {
-        schro_frame_data_quantise (&quant_cb, &cb, quant_factor, quant_offset);
+        schro_frame_data_quantise (&quant_cb, &cb, quant_index);
+        schro_frame_data_dequantise (&cb, &quant_cb, quant_index,
+            (params->num_refs == 0));
       }
     }
   }

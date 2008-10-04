@@ -99,8 +99,12 @@ int schro_dequantise (int q, int quant_factor, int quant_offset);
 int schro_quantise (int value, int quant_factor, int quant_offset);
 void schro_quantise_s16 (int16_t *dest, int16_t *src, int quant_factor,
     int quant_offset, int n);
+void schro_quantise_s16_table (int16_t *dest, int16_t *src, int quant_index,
+    schro_bool is_intra, int n);
 void schro_dequantise_s16 (int16_t *dest, int16_t *src, int quant_factor,
     int quant_offset, int n);
+void schro_dequantise_s16_table (int16_t *dest, int16_t *src, int quant_index,
+    schro_bool is_intra, int n);
 double schro_utils_probability_to_entropy (double x);
 double schro_utils_entropy (double a, double total);
 void schro_utils_reduce_fraction (int *n, int *d);
