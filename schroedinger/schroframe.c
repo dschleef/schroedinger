@@ -426,10 +426,16 @@ schro_frame_new_from_data_YV12 (void *data, int width, int height)
 SchroFrame *
 schro_frame_dup (SchroFrame *frame)
 {
+  return schro_frame_dup_extended (frame, 0);
+}
+
+SchroFrame *
+schro_frame_dup_extended (SchroFrame *frame, int extension)
+{
   SchroFrame *dup_frame;
 
-  dup_frame = schro_frame_new_and_alloc (frame->domain,
-      frame->format, frame->width, frame->height);
+  dup_frame = schro_frame_new_and_alloc_extended (frame->domain,
+      frame->format, frame->width, frame->height, extension);
   schro_frame_convert (dup_frame, frame);
 
   return dup_frame;

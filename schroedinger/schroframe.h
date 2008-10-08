@@ -129,6 +129,7 @@ void schro_frame_md5 (SchroFrame *frame, uint32_t *state);
 
 SchroFrame * schro_frame_new_and_alloc_extended (SchroMemoryDomain *domain,
     SchroFrameFormat format, int width, int height, int extension);
+SchroFrame *schro_frame_dup_extended (SchroFrame *frame, int extension);
 void schro_frame_edge_extend (SchroFrame *frame, int width, int height);
 void schro_frame_zero_extend (SchroFrame *frame, int width, int height);
 void schro_frame_mark (SchroFrame *frame, int value);
