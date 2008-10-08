@@ -60,6 +60,7 @@ void schro_rough_me_heirarchical_scan (SchroRoughME *rme);
 
 void schro_encoder_motion_predict_rough (SchroEncoderFrame *frame);
 void schro_encoder_motion_predict_pel (SchroEncoderFrame *frame);
+void schro_encoder_motion_predict_subpel (SchroEncoderFrame *frame);
 
 void schro_encoder_global_estimation (SchroMotionEst *me);
 

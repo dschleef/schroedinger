@@ -432,6 +432,29 @@ schro_encoder_motion_predict_pel (SchroEncoderFrame *frame)
   frame->badblock_ratio = (double)frame->me->badblocks/(params->x_num_blocks*params->y_num_blocks/16);
 }
 
+void
+schro_encoder_motion_predict_subpel (SchroEncoderFrame *frame)
+{
+  SchroParams *params = &frame->params;
+  SchroMotionVector *mv;
+  int i;
+  int j;
+
+  for(j=0;j<params->y_num_blocks;j++){
+    for(i=0;i<params->x_num_blocks;i++){
+      mv = SCHRO_MOTION_GET_BLOCK (frame->me->motion, i, j);
+
+      if (mv->using_global || mv->pred_mode == 0) continue;
+      if (mv->pred_mode & 3) {
+        mv->dx[0] <<= params->mv_precision;
+        mv->dy[0] <<= params->mv_precision;
+        mv->dx[1] <<= params->mv_precision;
+        mv->dy[1] <<= params->mv_precision;
+      }
+    }
+  }
+}
+
 /* FIXME unused */
 void
 schro_motion_field_lshift (SchroMotionField *mf, int n)
@@ -454,8 +477,7 @@ schro_motion_field_lshift (SchroMotionField *mf, int n)
   }
 }
 
-#if 0
-static void
+void
 schro_motion_predict_subpixel (SchroMotion *motion, SchroFrame *frame,
     SchroMotionField *mf)
 {
@@ -466,42 +488,25 @@ schro_motion_predict_subpixel (SchroMotion *motion, SchroFrame *frame,
 
   for(j=0;j<motion->params->y_num_blocks;j++){
     for(i=0;i<motion->params->x_num_blocks;i++){
-      int metric;
       int dx, dy;
 
       mv = motion_field_get(mf,i,j);
 
       if (mv->pred_mode & 1) {
         uf = motion->src1;
-        dx = mv->x1;
-        dy = mv->y1;
+        dx = mv->dx[0];
+        dy = mv->dy[0];
       } else {
         uf = motion->src2;
-        dx = mv->x2;
-        dy = mv->y2;
+        dx = mv->dx[1];
+        dy = mv->dy[1];
       }
 
       x = i * motion->params->xblen_luma;
       y = j * motion->params->yblen_luma;
-
-      schro_motion_x_get_block (motion, 0, uf, x, y, dx, dy);
-      metric = schro_metric_absdiff_u8 (motion->blocks[0], motion->strides[0],
-          frame->components[0].data + x + y*frame->components[0].stride,
-          frame->components[0].stride, 8, 8);
-
-      SCHRO_ERROR("%d %d", metric, mv->metric);
-
-#if 0
-      for (l=-n;l<=n;l++){
-        for (k=-n;k<=n;k++){
-
-        }
-      }
-#endif
     }
   }
 }
-#endif
 
 void
 schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame)

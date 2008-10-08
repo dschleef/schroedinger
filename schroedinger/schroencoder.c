@@ -1435,6 +1435,9 @@ void
 schro_encoder_predict_subpel_picture (SchroEncoderFrame* frame)
 {
 
+  if (frame->params.num_refs > 0 && frame->params.mv_precision > 0) {
+    schro_encoder_motion_predict_subpel (frame);
+  }
 }
 
 /* performs mode decision and superblock splitting
