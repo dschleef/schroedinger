@@ -433,24 +433,45 @@ schro_encoder_motion_predict_pel (SchroEncoderFrame *frame)
 }
 
 void
+schro_encoder_motion_refine_block_subpel (SchroEncoderFrame *frame,
+    SchroBlock *block)
+{
+  SchroParams *params = &frame->params;
+  int skip;
+  int ii, jj;
+
+  skip = 4 >> block->mv[0][0].split;
+  for(jj=0;jj<4;jj+=skip){
+    for(ii=0;ii<4;ii+=skip){
+      if (block->mv[ii][jj].pred_mode & 1) {
+        block->mv[ii][jj].dx[0] <<= params->mv_precision;
+        block->mv[ii][jj].dy[0] <<= params->mv_precision;
+      }
+      if (block->mv[ii][jj].pred_mode & 2) {
+        block->mv[ii][jj].dx[1] <<= params->mv_precision;
+        block->mv[ii][jj].dy[1] <<= params->mv_precision;
+      }
+    }
+  }
+
+  schro_block_fixup (block);
+}
+
+void
 schro_encoder_motion_predict_subpel (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
-  SchroMotionVector *mv;
   int i;
   int j;
 
-  for(j=0;j<params->y_num_blocks;j++){
-    for(i=0;i<params->x_num_blocks;i++){
-      mv = SCHRO_MOTION_GET_BLOCK (frame->me->motion, i, j);
+  for(j=0;j<params->y_num_blocks;j+=4){
+    for(i=0;i<params->x_num_blocks;i+=4){
+      SchroBlock block = { 0 };
 
-      if (mv->using_global || mv->pred_mode == 0) continue;
-      if (mv->pred_mode & 3) {
-        mv->dx[0] <<= params->mv_precision;
-        mv->dy[0] <<= params->mv_precision;
-        mv->dx[1] <<= params->mv_precision;
-        mv->dy[1] <<= params->mv_precision;
-      }
+      schro_motion_copy_from (frame->me->motion, i, j, &block);
+      schro_encoder_motion_refine_block_subpel (frame, &block);
+      schro_block_fixup (&block);
+      schro_motion_copy_to (frame->me->motion, i, j, &block);
     }
   }
 }
