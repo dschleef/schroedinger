@@ -352,7 +352,7 @@ static void
 gst_frame_store_task (GstPad *pad)
 {
   GstFrameStore *fs;
-  GstBuffer *buffer;
+  GstBuffer *buffer = NULL;
   GstEvent *event = NULL;
 
   fs = GST_FRAME_STORE (gst_pad_get_parent (pad));

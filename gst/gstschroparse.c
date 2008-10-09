@@ -1014,7 +1014,7 @@ gst_schro_parse_handle_packet_avi (GstSchroParse *schro_parse, GstBuffer *buf)
   GST_DEBUG("storing");
   gst_adapter_push (schro_parse->output_adapter, buf);
 
-  GST_DEBUG("returning %d");
+  GST_DEBUG("returning %d", ret);
   return ret;
 }
 
