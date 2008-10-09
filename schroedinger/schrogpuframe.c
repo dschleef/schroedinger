@@ -261,7 +261,7 @@ schro_gpuframe_add (SchroFrame * dest, SchroFrame * src)
   int i;
   int ret;
 
-  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
+  //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
   SCHRO_ASSERT (dest != NULL);
   SCHRO_ASSERT (src != NULL);
   SCHRO_ASSERT (SCHRO_FRAME_IS_CUDA (dest));
@@ -312,7 +312,7 @@ schro_gpuframe_subtract (SchroFrame * dest, SchroFrame * src)
 {
   int i;
 
-  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
+  //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
   SCHRO_ASSERT (dest != NULL);
   SCHRO_ASSERT (src != NULL);
   SCHRO_ASSERT (SCHRO_FRAME_IS_CUDA (dest));
@@ -364,7 +364,7 @@ schro_gpuframe_iwt_transform (SchroFrame * frame, SchroParams * params)
   int height;
   int level;
 
-  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
+  //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
 
   SCHRO_DEBUG ("schro_gpuframe_iwt_transform %ix%i (%i levels)", frame->width,
       frame->height, params->transform_depth);
@@ -408,7 +408,7 @@ schro_gpuframe_inverse_iwt_transform (SchroFrame * frame, SchroParams * params)
   int component;
   int ret;
 
-  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
+  //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
 
   SCHRO_DEBUG
       ("schro_gpuframe_inverse_iwt_transform %ix%i, filter %i, %i levels",
@@ -486,7 +486,7 @@ schro_gpuframe_to_cpu (SchroFrame * dest, SchroFrame * src)
   int bpp;
   int ret;
 
-  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
+  //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
   SCHRO_ASSERT (SCHRO_FRAME_IS_CUDA (src));
   SCHRO_ASSERT (!SCHRO_FRAME_IS_CUDA (dest));
 
@@ -552,7 +552,7 @@ schro_frame_to_gpu (SchroFrame * dest, SchroFrame * src)
   int bpp;
   int ret;
 
-  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
+  //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
   SCHRO_ASSERT (!SCHRO_FRAME_IS_CUDA (src));
   SCHRO_ASSERT (SCHRO_FRAME_IS_CUDA (dest));
 
@@ -737,7 +737,7 @@ schro_upsampled_gpuframe_upsample (SchroUpsampledFrame * uf)
   struct cudaArray *ca;
   int k;
 
-  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
+  //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
   SCHRO_ASSERT (SCHRO_FRAME_IS_CUDA (src));
 
   tmp_frame = schro_frame_new_and_alloc (src->domain, src->format,
