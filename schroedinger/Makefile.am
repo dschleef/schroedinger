@@ -65,7 +65,8 @@ cuda_sources = \
 	schrocuda.c \
 	schrocuda.h \
 	schrogpuframe.c \
-	schrogpumotion.c 
+	schrogpumotion.c \
+	dummy.cc
 cuda_libs = cuda/libdcuda.la
 endif
 
