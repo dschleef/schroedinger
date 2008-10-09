@@ -190,10 +190,12 @@ schro_metric_get (SchroFrameData *src1, SchroFrameData *src2, int width,
   uint8_t *line1;
   uint8_t *line2;
 
+#if 0
   SCHRO_ASSERT(src1->width >= width);
   SCHRO_ASSERT(src1->height >= height);
   SCHRO_ASSERT(src2->width >= width);
   SCHRO_ASSERT(src2->height >= height);
+#endif
 
   if (width == 8 && height == 8) {
     uint32_t m;

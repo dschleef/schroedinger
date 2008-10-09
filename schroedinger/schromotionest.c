@@ -1744,12 +1744,19 @@ schro_motionest_superblock_get_metric (SchroMotionEst *me,
   SchroMotionVector *mv;
   SchroFrameData orig;
   int width, height;
+  int xmin, ymin;
+  int xmax, ymax;
+
+  xmin = MAX(i*me->params->xbsep_luma, 0);
+  ymin = MAX(j*me->params->ybsep_luma, 0);
+  xmax = MIN((i+4)*me->params->xbsep_luma, me->params->video_format->width);
+  ymax = MIN((j+4)*me->params->ybsep_luma, me->params->video_format->height);
 
   schro_frame_get_subdata (get_downsampled (me->encoder_frame, 0), &orig,
-      0, i*me->params->xbsep_luma, j*me->params->ybsep_luma);
+      0, xmin, ymin);
 
-  width = MIN(4*me->params->xbsep_luma, orig.width);
-  height = MIN(4*me->params->ybsep_luma, orig.height);
+  width = xmax - xmin;
+  height = ymax - ymin;
 
   mv = &block->mv[0][0];
 
@@ -1767,44 +1774,45 @@ schro_motionest_superblock_get_metric (SchroMotionEst *me,
 
     ref_frame = get_downsampled (me->encoder_frame->ref_frame[ref], 0);
 
-    if (i*me->params->xbsep_luma + mv->dx[ref] < 0 ||
-        j*me->params->ybsep_luma + mv->dy[ref] < 0) {
+    if (xmin + mv->dx[ref] < -ref_frame->extension ||
+        ymin + mv->dy[ref] < -ref_frame->extension ||
+        xmax + mv->dx[ref] > me->params->video_format->width + ref_frame->extension ||
+        ymax + mv->dy[ref] > me->params->video_format->height + ref_frame->extension) {
+      /* bailing because it's "hard" */
       return SCHRO_METRIC_INVALID_2;
     }
 
     schro_frame_get_subdata (ref_frame, &ref_data,
-        0, i*me->params->xbsep_luma + mv->dx[ref],
-        j*me->params->ybsep_luma + mv->dy[ref]);
-
-    if (ref_data.width < width || ref_data.height < height) {
-      return SCHRO_METRIC_INVALID_2;
-    }
+        0, xmin + mv->dx[ref], ymin + mv->dy[ref]);
 
     return schro_metric_get (&orig, &ref_data, width, height);
   }
 
   if (mv->pred_mode == 3) {
+    SchroFrame *ref0_frame;
+    SchroFrame *ref1_frame;
     SchroFrameData ref0_data;
     SchroFrameData ref1_data;
 
-    if (i*me->params->xbsep_luma + mv->dx[0] < 0 ||
-        j*me->params->ybsep_luma + mv->dy[0] < 0 ||
-        i*me->params->xbsep_luma + mv->dx[1] < 0 ||
-        j*me->params->ybsep_luma + mv->dy[1] < 0) {
+    ref0_frame = get_downsampled (me->encoder_frame->ref_frame[0], 0);
+    ref1_frame = get_downsampled (me->encoder_frame->ref_frame[1], 0);
+
+    if (xmin + mv->dx[0] < -ref0_frame->extension ||
+        ymin + mv->dy[0] < -ref0_frame->extension ||
+        xmax + mv->dx[0] > me->params->video_format->width + ref0_frame->extension ||
+        ymax + mv->dy[0] > me->params->video_format->height + ref0_frame->extension ||
+        xmin + mv->dx[1] < -ref1_frame->extension ||
+        ymin + mv->dy[1] < -ref1_frame->extension ||
+        xmax + mv->dx[1] > me->params->video_format->width + ref1_frame->extension ||
+        ymax + mv->dy[1] > me->params->video_format->height + ref1_frame->extension) {
+      /* bailing because it's "hard" */
       return SCHRO_METRIC_INVALID_2;
     }
 
-    schro_frame_get_subdata (get_downsampled (me->encoder_frame->ref_frame[0], 0),
-        &ref0_data, 0, i*me->params->xbsep_luma + mv->dx[0],
-        j*me->params->ybsep_luma + mv->dy[0]);
-    schro_frame_get_subdata (get_downsampled (me->encoder_frame->ref_frame[1], 0),
-        &ref1_data, 0, i*me->params->xbsep_luma + mv->dx[1],
-        j*me->params->ybsep_luma + mv->dy[1]);
-
-    if (ref0_data.width < width || ref0_data.height < height ||
-        ref1_data.width < width || ref1_data.height < height) {
-      return SCHRO_METRIC_INVALID_2;
-    }
+    schro_frame_get_subdata (ref0_frame,
+        &ref0_data, 0, xmin + mv->dx[0], ymin + mv->dy[0]);
+    schro_frame_get_subdata (ref1_frame,
+        &ref1_data, 0, xmin + mv->dx[1], ymin + mv->dy[1]);
 
     return schro_metric_get_biref (&orig, &ref0_data, 1, &ref1_data, 1, 1, width, height);
   }
