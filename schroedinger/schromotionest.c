@@ -1708,7 +1708,7 @@ schro_motionest_superblock_block (SchroMotionEst *me,
       schro_motionest_block_dc (me, &tryblock, i, j, ii, jj);
       TRYBLOCK
 
-      total_error += block.mv[ii][jj].metric;
+      total_error += block.error;
     }
   }
   block.entropy = schro_motion_superblock_try_estimate_entropy (me->motion,
