@@ -11,7 +11,7 @@
 #include <schroedinger/schrotables.h>
 #include <schroedinger/schrodebug.h>
 
-static const int next_list[] = {
+static const unsigned int next_list[] = {
   0,
   SCHRO_CTX_QUANTISER_CONT,
   0,
@@ -144,18 +144,20 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
 
   memset(arith, 0, sizeof(SchroArith));
   arith->range[0] = 0;
-  arith->range[1] = 0xffff;
+  arith->range[1] = 0xffff0000;
   arith->range_size = arith->range[1] - arith->range[0];
   arith->code = 0;
+  arith->cntr = 16;
 
   arith->buffer = buffer;
 
   size = arith->buffer->length;
   arith->dataptr = arith->buffer->data;
-  arith->code = ((size > 0) ? arith->dataptr[0] : 0xff) << 8;
-  arith->code |= ((size > 1) ? arith->dataptr[1] : 0xff);
-  arith->offset = 2;
-  arith->shift = (size > 2) ? arith->dataptr[2] : 0xff;
+  arith->code = ((size > 0) ? arith->dataptr[0] : 0xff) << 24;
+  arith->code |= ((size > 1) ? arith->dataptr[1] : 0xff) << 16;
+  arith->code |= ((size > 2) ? arith->dataptr[2] : 0xff) << 8;
+  arith->code |= ((size > 3) ? arith->dataptr[3] : 0xff);
+  arith->offset = 3;
 
   for(i=0;i<SCHRO_CTX_LAST;i++){
     arith->contexts[i].next = next_list[i];
@@ -163,8 +165,8 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
   }
 
   for(i=0;i<256;i++){
-    arith->lut[i] = lut[255-i];
-    arith->lut[256+i] = -lut[i];
+    arith->lut[2*i] = lut[255-i];
+    arith->lut[2*i+1] = -lut[i];
   }
 }
 
@@ -207,7 +209,7 @@ schro_arith_estimate_init (SchroArith *arith)
 void
 schro_arith_decode_flush (SchroArith *arith)
 {
-  if (arith->cntr > 0) {
+  if (arith->cntr < 8) {
     arith->offset++;
   }
 }
@@ -265,17 +267,11 @@ arith->range[0] |= ((1<<i)-1);
 }
 
 
-#if 0
-int
-_schro_arith_decode_bit (SchroArith *arith, int i)
-{
-  return __schro_arith_decode_bit (arith, i);
-}
-
+#ifndef SCHRO_ARITH_DEFINE_INLINE
 #define faster
 #ifdef faster
 static int
-__schro_arith_decode_bit (SchroArith *arith, int i)
+__schro_arith_decode_bit (SchroArith *arith, unsigned int i)
 {
   unsigned int range_x_prob;
   int value;
@@ -300,9 +296,7 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
     arith->code <<= 1;
     arith->code |= arith->shift >> (7-arith->cntr)&1;
 
-    arith->cntr++;
-
-    if (arith->cntr == 8) {
+    if (!--arith->cntr) {
       arith->offset++;
       if (arith->offset < arith->buffer->length) {
         arith->shift = arith->dataptr[arith->offset];
@@ -315,7 +309,7 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
       if (arith->code < arith->range[0]) {
         arith->code |= (1<<16);
       }
-      arith->cntr = 0;
+      arith->cntr = 8;
     }
   }
 
@@ -323,7 +317,7 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
 }
 #else
 static int
-__schro_arith_decode_bit (SchroArith *arith, int i)
+__schro_arith_decode_bit (SchroArith *arith, unsigned int i)
 {
   unsigned int range;
   unsigned int probability0;
@@ -353,9 +347,7 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
     arith->code <<= 1;
     arith->code |= (arith->dataptr[arith->offset] >> (7-arith->cntr))&1;
 
-    arith->cntr++;
-
-    if (arith->cntr == 8) {
+    if (!--arith->cntr) {
       arith->offset++;
       arith->range[0] &= 0xffff;
       arith->code &= 0xffff;
@@ -363,13 +355,18 @@ __schro_arith_decode_bit (SchroArith *arith, int i)
       if (arith->code < arith->range[0]) {
         arith->code |= (1<<16);
       }
-      arith->cntr = 0;
+      arith->cntr = 8;
     }
   }
 
   return value;
 }
 #endif
+int
+_schro_arith_decode_bit (SchroArith *arith, unsigned int i)
+{
+  return __schro_arith_decode_bit (arith, i);
+}
 #endif
 
 void
@@ -541,15 +538,14 @@ schro_arith_estimate_sint (SchroArith *arith, int cont_context,
 }
 #endif
 
-#if 0
+#ifndef SCHRO_ARITH_DEFINE_INLINE
 int
-_schro_arith_decode_uint (SchroArith *arith, int cont_context,
-    int value_context)
+_schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context)
 {
-  int bits;
+  unsigned int bits=1;
   int count=0;
 
-  bits = 0;
   while(!__schro_arith_decode_bit (arith, cont_context)) {
     bits <<= 1;
     bits |= __schro_arith_decode_bit (arith, value_context);
@@ -559,19 +555,18 @@ _schro_arith_decode_uint (SchroArith *arith, int cont_context,
     /* FIXME being careful */
     if (count == 30) break;
   }
-  return (1<<count) - 1 + bits;
+  return bits - 1;
 }
 #endif
 
 int
-_schro_arith_decode_sint (SchroArith *arith, int cont_context,
-    int value_context, int sign_context)
+_schro_arith_decode_sint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context, unsigned int sign_context)
 {
-  int bits;
+  unsigned int bits=1;
   int count=0;
   int value;
 
-  bits = 0;
   while(!_schro_arith_decode_bit (arith, cont_context)) {
     bits <<= 1;
     bits |= _schro_arith_decode_bit (arith, value_context);
@@ -581,7 +576,7 @@ _schro_arith_decode_sint (SchroArith *arith, int cont_context,
     /* FIXME being careful */
     if (count == 30) break;
   }
-  value = (1<<count) - 1 + bits;
+  value = bits - 1;
 
   if (value) {
     if (_schro_arith_decode_bit (arith, sign_context)) {
@@ -616,21 +611,21 @@ schro_arith_encode_sint (SchroArith *arith, int cont_context,
 }
 
 int
-schro_arith_decode_bit (SchroArith *arith, int context)
+schro_arith_decode_bit (SchroArith *arith, unsigned int context)
 {
   return _schro_arith_decode_bit (arith, context);
 }
 
 int
-schro_arith_decode_uint (SchroArith *arith, int cont_context,
-    int value_context)
+schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context)
 {
   return _schro_arith_decode_uint (arith, cont_context, value_context);
 }
 
 int
-schro_arith_decode_sint (SchroArith *arith, int cont_context,
-    int value_context, int sign_context)
+schro_arith_decode_sint (SchroArith *arith, unsigned int cont_context,
+    unsigned int value_context, unsigned int sign_context)
 {
   return _schro_arith_decode_sint (arith, cont_context,
       value_context, sign_context);

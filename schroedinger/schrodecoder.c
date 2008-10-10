@@ -2706,12 +2706,16 @@ schro_decoder_decode_subband (SchroPicture *picture,
     if (ctx->arith->offset < ctx->subband_length) {
       SCHRO_WARNING("arith decoding didn't consume buffer (%d < %d)",
           ctx->arith->offset, ctx->subband_length);
+#ifdef DONT_DO_THIS
       ctx->broken = TRUE;
+#endif
     }
     if (ctx->arith->offset > ctx->subband_length + 4) {
       SCHRO_WARNING("arith decoding overran buffer (%d > %d)",
           ctx->arith->offset, ctx->subband_length);
+#ifdef DONT_DO_THIS
       ctx->broken = TRUE;
+#endif
     }
     schro_arith_free (ctx->arith);
   } else {
