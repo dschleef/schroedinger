@@ -39,7 +39,7 @@ schro_cuda_alloc (int size)
   int ret;
 
   SCHRO_DEBUG("domain is %d", schro_async_get_exec_domain ());
-  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
+  //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
 
   ret = cudaMalloc (&ptr, size);
 

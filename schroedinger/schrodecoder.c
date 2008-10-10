@@ -1396,8 +1396,10 @@ schro_decoder_x_combine (SchroPicture *picture)
   schro_frame_unref(planar_output_frame);
 
   /* eagerly unreference any storage that is nolonger required */
-  schro_frame_unref(picture->mc_tmp_frame);
-  picture->mc_tmp_frame = NULL;
+  if (picture->mc_tmp_frame) {
+    schro_frame_unref(picture->mc_tmp_frame);
+    picture->mc_tmp_frame = NULL;
+  }
   schro_frame_unref(picture->transform_frame);
   picture->transform_frame = NULL;
   schro_frame_unref(picture->frame);
