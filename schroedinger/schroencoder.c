@@ -1388,12 +1388,10 @@ schro_encoder_analyse_picture (SchroEncoderFrame *frame)
     schro_encoder_frame_downsample (frame);
     frame->have_downsampling = TRUE;
   }
-#if 0
   if (frame->need_upsampling) {
     schro_encoder_frame_upsample (frame);
     frame->have_upsampling = TRUE;
   }
-#endif
 
   if (frame->need_average_luma) {
     if (frame->have_downsampling) {

@@ -34,7 +34,8 @@ schro_encoder_frame_upsample (SchroEncoderFrame* frame)
   if (frame->upsampled_original_frame) {
     return;
   }
-  frame->upsampled_original_frame = schro_upsampled_frame_new (frame->original_frame);
+  schro_frame_ref (frame->filtered_frame);
+  frame->upsampled_original_frame = schro_upsampled_frame_new (frame->filtered_frame);
   schro_upsampled_frame_upsample (frame->upsampled_original_frame);
 }
 

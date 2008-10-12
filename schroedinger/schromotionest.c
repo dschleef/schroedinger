@@ -434,7 +434,7 @@ schro_encoder_motion_predict_pel (SchroEncoderFrame *frame)
 
 void
 schro_encoder_motion_refine_block_subpel (SchroEncoderFrame *frame,
-    SchroBlock *block)
+    SchroBlock *block, int i, int j)
 {
   SchroParams *params = &frame->params;
   int skip;
@@ -443,13 +443,64 @@ schro_encoder_motion_refine_block_subpel (SchroEncoderFrame *frame,
   skip = 4 >> block->mv[0][0].split;
   for(jj=0;jj<4;jj+=skip){
     for(ii=0;ii<4;ii+=skip){
-      if (block->mv[ii][jj].pred_mode & 1) {
-        block->mv[ii][jj].dx[0] <<= params->mv_precision;
-        block->mv[ii][jj].dy[0] <<= params->mv_precision;
+      if (block->mv[jj][ii].pred_mode & 1) {
+        block->mv[jj][ii].dx[0] <<= params->mv_precision;
+        block->mv[jj][ii].dy[0] <<= params->mv_precision;
       }
-      if (block->mv[ii][jj].pred_mode & 2) {
-        block->mv[ii][jj].dx[1] <<= params->mv_precision;
-        block->mv[ii][jj].dy[1] <<= params->mv_precision;
+      if (block->mv[jj][ii].pred_mode & 2) {
+        block->mv[jj][ii].dx[1] <<= params->mv_precision;
+        block->mv[jj][ii].dy[1] <<= params->mv_precision;
+      }
+    }
+  }
+
+  if (block->mv[0][0].split < 3) {
+    for(jj=0;jj<4;jj+=skip){
+      for(ii=0;ii<4;ii+=skip){
+        if (block->mv[jj][ii].pred_mode == 1 || block->mv[jj][ii].pred_mode == 2) {
+          SchroUpsampledFrame *ref_upframe;
+          SchroFrameData orig;
+          SchroFrameData ref_fd;
+          int dx,dy;
+          int x,y;
+          int metric;
+          int width, height;
+          int min_metric;
+          int min_dx, min_dy;
+          int ref;
+
+          ref = block->mv[jj][ii].pred_mode - 1;
+          ref_upframe = frame->ref_frame[ref]->upsampled_original_frame;
+
+          x = MAX((i+ii)*frame->params.xbsep_luma, 0);
+          y = MAX((j+jj)*frame->params.ybsep_luma, 0);
+          width = skip*frame->params.xbsep_luma;
+          height = skip*frame->params.ybsep_luma;
+
+          schro_frame_get_subdata (get_downsampled (frame, 0), &orig, 0, x, y);
+
+          min_metric = 0x7fffffff;
+          min_dx = 0;
+          min_dy = 0;
+          for(dx=-1;dx<=1;dx++) {
+            for(dy=-1;dy<=1;dy++) {
+              schro_upsampled_frame_get_subdata_prec1 (ref_upframe, 0,
+                  2*x + block->mv[jj][ii].dx[ref] + dx,
+                  2*y + block->mv[jj][ii].dy[ref] + dy,
+                  &ref_fd);
+
+              metric = schro_metric_get (&orig, &ref_fd, width, height);
+              if (metric < min_metric) {
+                min_dx = dx;
+                min_dy = dy;
+                min_metric = metric;
+              }
+            }
+          }
+          block->mv[ii][ii].dx[ref] += min_dx;
+          block->mv[jj][ii].dy[ref] += min_dy;
+          block->error = metric;
+        }
       }
     }
   }
@@ -464,12 +515,18 @@ schro_encoder_motion_predict_subpel (SchroEncoderFrame *frame)
   int i;
   int j;
 
+  SCHRO_ASSERT(frame->upsampled_original_frame);
+  SCHRO_ASSERT(frame->ref_frame[0]->upsampled_original_frame);
+  if (frame->ref_frame[1]) {
+    SCHRO_ASSERT(frame->ref_frame[1]->upsampled_original_frame);
+  }
+
   for(j=0;j<params->y_num_blocks;j+=4){
     for(i=0;i<params->x_num_blocks;i+=4){
       SchroBlock block = { 0 };
 
       schro_motion_copy_from (frame->me->motion, i, j, &block);
-      schro_encoder_motion_refine_block_subpel (frame, &block);
+      schro_encoder_motion_refine_block_subpel (frame, &block, i, j);
       schro_block_fixup (&block);
       schro_motion_copy_to (frame->me->motion, i, j, &block);
     }
@@ -970,6 +1027,8 @@ schro_block_average (int16_t *dest, SchroFrameData *comp,
   int sum = 0;
   int ave;
 
+  if (x >= comp->width || y >= comp->height) return SCHRO_METRIC_INVALID_2;
+
   for(j=y;j<ymax;j++){
     for(i=x;i<xmax;i++){
       sum += SCHRO_GET(comp->data, j*comp->stride + i, uint8_t);
@@ -1404,6 +1463,10 @@ schro_motionest_superblock_dc (SchroMotionEst *me,
   metric = schro_block_average (&mvdc->dc[0], frame->components + 0,
       i * params->xbsep_luma, j * params->ybsep_luma,
       4 * params->xbsep_luma, 4 * params->ybsep_luma);
+  if (metric == SCHRO_METRIC_INVALID_2) {
+    block->valid = FALSE;
+    return;
+  }
   chroma_w = params->xbsep_luma>>SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format);
   chroma_h = params->ybsep_luma>>SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
   schro_block_average (&mvdc->dc[1], frame->components + 1,
@@ -1640,13 +1703,17 @@ schro_motionest_block_dc (SchroMotionEst *me,
 
   frame = get_downsampled (me->encoder_frame, 0);
 
-  mvdc = (SchroMotionVectorDC *)&block->mv[ii][jj];
+  mvdc = (SchroMotionVectorDC *)&(block->mv[jj][ii]);
   mvdc->split = 2;
   mvdc->pred_mode = 0;
 
   metric = schro_block_average (&mvdc->dc[0], frame->components + 0,
       (i + ii) * params->xbsep_luma, (j + jj) * params->ybsep_luma,
       params->xbsep_luma, params->ybsep_luma);
+  if (metric == SCHRO_METRIC_INVALID_2) {
+    block->valid = FALSE;
+    return;
+  }
   chroma_w = params->xbsep_luma>>SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format);
   chroma_h = params->ybsep_luma>>SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
   schro_block_average (&mvdc->dc[1], frame->components + 1,
@@ -1675,10 +1742,10 @@ schro_motionest_superblock_block (SchroMotionEst *me,
 
   for(jj=0;jj<4;jj++){
     for(ii=0;ii<4;ii++){
-      block.mv[ii][jj].split = 2;
-      block.mv[ii][jj].pred_mode = 1;
-      block.mv[ii][jj].dx[0] = 0;
-      block.mv[ii][jj].dy[0] = 0;
+      block.mv[jj][ii].split = 2;
+      block.mv[jj][ii].pred_mode = 1;
+      block.mv[jj][ii].dx[0] = 0;
+      block.mv[jj][ii].dy[0] = 0;
     }
   }
   schro_motion_copy_to (me->motion, i, j, &block);
@@ -1789,13 +1856,17 @@ schro_motionest_subsuperblock_dc (SchroMotionEst *me,
 
   frame = get_downsampled (me->encoder_frame, 0);
 
-  mvdc = (SchroMotionVectorDC *)&block->mv[ii][jj];
+  mvdc = (SchroMotionVectorDC *)&block->mv[jj][ii];
   mvdc->split = 1;
   mvdc->pred_mode = 0;
 
   metric = schro_block_average (&mvdc->dc[0], frame->components + 0,
       (i + ii) * params->xbsep_luma, (j + jj) * params->ybsep_luma,
       2*params->xbsep_luma, 2*params->ybsep_luma);
+  if (metric == SCHRO_METRIC_INVALID_2) {
+    block->valid = FALSE;
+    return;
+  }
   chroma_w = params->xbsep_luma>>SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format);
   chroma_h = params->ybsep_luma>>SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
   schro_block_average (&mvdc->dc[1], frame->components + 1,
@@ -1831,10 +1902,10 @@ schro_motionest_superblock_subsuperblock (SchroMotionEst *me,
 
   for(jj=0;jj<4;jj++){
     for(ii=0;ii<4;ii++){
-      block.mv[ii][jj].split = 1;
-      block.mv[ii][jj].pred_mode = 1;
-      block.mv[ii][jj].dx[0] = 0;
-      block.mv[ii][jj].dy[0] = 0;
+      block.mv[jj][ii].split = 1;
+      block.mv[jj][ii].pred_mode = 1;
+      block.mv[jj][ii].dx[0] = 0;
+      block.mv[jj][ii].dy[0] = 0;
     }
   }
   schro_motion_copy_to (me->motion, i, j, &block);

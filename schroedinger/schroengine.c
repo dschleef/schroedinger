@@ -535,17 +535,20 @@ schro_encoder_init_frame (SchroEncoderFrame *frame)
   switch (encoder->gop_structure) {
     case SCHRO_ENCODER_GOP_INTRA_ONLY:
       frame->need_downsampling = FALSE;
+      frame->need_upsampling = FALSE;
       frame->need_average_luma = FALSE;
       break;
     case SCHRO_ENCODER_GOP_ADAPTIVE:
     case SCHRO_ENCODER_GOP_BACKREF:
     case SCHRO_ENCODER_GOP_CHAINED_BACKREF:
       frame->need_downsampling = TRUE;
+      frame->need_upsampling = (encoder->mv_precision > 0);
       frame->need_average_luma = TRUE;
       break;
     case SCHRO_ENCODER_GOP_BIREF:
     case SCHRO_ENCODER_GOP_CHAINED_BIREF:
       frame->need_downsampling = TRUE;
+      frame->need_upsampling = (encoder->mv_precision > 0);
       frame->need_average_luma = TRUE;
       break;
   }
