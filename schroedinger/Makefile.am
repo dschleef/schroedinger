@@ -89,6 +89,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrooil.c \
 	schroparams.c \
 	schroparse.c \
+	schroroughmotion.c \
 	schroqueue.c \
 	schrotables.c \
 	schrotablesinit.c \

@@ -56,6 +56,10 @@ void schro_motionest_free (SchroMotionEst *me);
 SchroRoughME * schro_rough_me_new (SchroEncoderFrame *frame, SchroEncoderFrame *ref);
 void schro_rough_me_free (SchroRoughME *rme);
 void schro_rough_me_heirarchical_scan (SchroRoughME *rme);
+void schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
+    int distance);
+void schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
+    int distance);
 
 
 void schro_encoder_motion_predict_rough (SchroEncoderFrame *frame);
