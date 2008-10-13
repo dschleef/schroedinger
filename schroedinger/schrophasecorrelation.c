@@ -247,8 +247,11 @@ schro_mvcomp_add (SchroMVComp *mvcomp, int i, int j, int dx, int dy)
 {
   int metric;
 
+#if 0
   metric = schro_frame_get_metric (mvcomp->frame,
       i*8, j*8, mvcomp->ref, i*8 + dx, j*8 + dy);
+#endif
+  metric = 0x7fffffff;
   if (metric < mvcomp->metric) {
     mvcomp->metric = metric;
     mvcomp->dx = dx;
@@ -452,9 +455,9 @@ do_motion_field (SchroPhaseCorr *pc, int i)
       }
     }
 
-    schro_motion_field_scan (mf, params, src, ref, 2);
+    //schro_motion_field_scan (mf, params, src, ref, 2);
 
-    schro_motion_field_lshift (mf, params->mv_precision);
+    //schro_motion_field_lshift (mf, params->mv_precision);
 
     schro_list_append (pc->frame->motion_field_list, mf);
   }
