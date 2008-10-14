@@ -446,6 +446,32 @@ def plot_scs_mse():
 
 	plot.surface.write_to_png('00000-scs-mse.png');
 
+def plot_scs():
+	plot = Plot(800,600);
+	data_x = Numeric.transpose(tpts[0]);
+	data_y = Numeric.transpose(tpts[14]);
+	mx = max(data_x);
+	my = max(data_y);
+	plot.set_x_range(0, mx);
+	plot.set_y_range(0, my);
+
+	plot.set_sane_ticks();
+
+	plot.ctx.set_source_rgb (1, 1, 1);
+	plot.ctx.set_operator (cairo.OPERATOR_SOURCE);
+	plot.ctx.paint();
+
+	plot.draw_border ();
+	plot.draw_ticks ();
+
+	plot.ctx.set_line_width(0.5);
+
+	plot.ctx.set_source_rgb (1, 0, 0);
+	plot.with_lines = 0;
+	plot.draw_plot (Numeric.transpose([data_x,data_y]));
+
+	plot.surface.write_to_png('00000-scs.png');
+
 def plot_badblock_vs_mse():
 	plot = Plot(800,600);
 	data_x = Numeric.transpose(tpts[17]);
@@ -553,17 +579,18 @@ def plot_hist_slope_vs_mse():
 
 
 pts = readdata("schro_dump.picture");
-#pts = pts[1600:2000];
+#pts = pts[100:200];
 tpts = Numeric.transpose(pts);
 
 plot_mse();
 plot_buffer_level();
-#plot_alloc_est_residual();
-#plot_est_act_residual();
-#plot_est_act_mc();
+plot_alloc_est_residual();
+plot_est_act_residual();
+plot_est_act_mc();
 plot_bits_per_pic();
-#plot_scs_mse();
-#plot_est_mc_scs();
+plot_scs_mse();
+plot_scs();
+plot_est_mc_scs();
 plot_badblock_ratio();
 plot_badblock_vs_mse();
 plot_mc_error_vs_mse();

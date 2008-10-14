@@ -1,7 +1,10 @@
 #!/bin/sh
 
 #file=elephants_dream
-file=showreel
+#file=showreel
+#file=ants-1
+file=testfootage
+#file=bbb
 #file=squirrel
 
 mediadir=/home/ds/media/masters
@@ -13,20 +16,41 @@ all="SD-default SD-VBR-10dB SD-VBR-20dB SD-VBR-30dB SD-VBR-40dB \
 list="$all"
 
 #list=HD720-Clam
-list=HD720-CBR-4Mb
+#list=HD720-CBR-4Mb
 #list=SIF-CBR-750kb
 #list=SD-CBR-2Mb
+#list=SD-default
+list=HD720-Clam
 
+extraopts=""
 #extraopts="enable-bigblock-estimation=true enable-hierarchical-estimation=false"
-#extraopts="perceptual-weighting=1 magic-error-power=4.0 magic-mc-lambda=0.01"
-extraopts="perceptual-weighting=2"
-#extraopts="motion-block-size=2"
-#extraopts=""
+#extraopts="$extraopts magic-mc-lambda=0.01"
+#extraopts="$extraopts magic-mc-lambda=0.01"
+#extraopts="$extraopts magic-error-power=4.0"
+#extraopts="$extraopts perceptual-weighting=1 perceptual-distance=3.0"
+#extraopts="$extraopts motion-block-overlap=3"
+extraopts="$extraopts filtering=2 filter-value=1.0"
+#extraopts="$extraopts intra-wavelet=1"
+#extraopts="$extraopts inter-wavelet=0"
+#extraopts="$extraopts transform-depth=3"
+#extraopts="$extraopts motion-block-size=3"
+#extraopts="$extraopts au-distance=100"
+#extraopts="$extraopts magic-chroma-lambda-scale=0.1"
+#extraopts="$extraopts magic-nonref-lambda-scale=0.03"
+#extraopts="$extraopts magic-nonref-lambda-scale=0.00"
+#extraopts="$extraopts magic-subband0-lambda-scale=1000.0"
+#extraopts="$extraopts magic-subgroup-length=3"
+#extraopts="$extraopts magic-block-search-threshold=100"
+extraopts="$extraopts magic-scene-change-threshold=0.05"
+#extraopts="$extraopts enable-md5=1"
 export SCHRO_DUMP=1
+
+#diracopts="qf=4"
+diracopts="targetrate=4000"
 
 trap exit INT
 
-function get_profile {
+get_profile() {
   case $1 in
     SD-default) schroopts="" ;;
     SD-VBR-10dB) schroopts="rate-control=0 noise-threshold=10" ;;
@@ -49,14 +73,15 @@ function get_profile {
     HD720-CBR-4Mb) schroopts="rate-control=1 bitrate=4500000" ;;
     HD720-CBR-5Mb) schroopts="rate-control=1 bitrate=5000000" ;;
     HD720-backref-CBR-5Mb) schroopts="gop-structure=2 rate-control=1 bitrate=5000000" ;;
-    HD720-test) schroopts="gop-structure=2 rate-control=1 bitrate=5000000 magic_inter_b_weight=0.0001" ;;
+    HD720-test) schroopts="rate-control=1 bitrate=2000000 au_distance=24" ;;
     HD720-intra) schroopts="gop-structure=1 rate-control=1 bitrate=10000000" ;;
     SD-CBR-3Mb-tworef) schroopts="rate-control=1 bitrate=3000000" ;;
     HD270-default) schroopts="" ;;
     SIF-CBR-750kb) schroopts="rate-control=1 bitrate=750000" ;;
     SD-Cerr) schroopts="rate-control=5" ;;
-    HD720-Clam) schroopts="rate-control=4 magic-lambda=0.1" ;;
+    HD720-Clam) schroopts="rate-control=4 magic-lambda=0.005" ;;
     HD720-Cerr) schroopts="rate-control=5 noise-threshold=20" ;;
+    HD720-java) schroopts="gop-structure=1" ;;
   esac
   case $1 in
     SIF*) infile="$file.SIF-master.drc" ;;
@@ -66,20 +91,24 @@ function get_profile {
   esac
 }
 
-function encode {
+encode() {
   # engine3
   get_profile $prof
-  output=$file.$prof.drc
+  #output=$file.$prof.$(date '+r%m%d%H%M').drc
+  output=$file.$prof.$(date '+r%m%d%H%M').mpeg
   echo "encoding $file using $prof"
 
   gst-launch-0.10 filesrc location=$mediadir/$infile ! \
     schrodec ! \
+    ffmpegcolorspace ! \
+    video/x-raw-yuv,format=\(fourcc\)YUY2 ! \
     schroenc $schroopts $extraopts ! \
     filesink location=$output
   #>/dev/null 2>/dev/null
+  #  diracenc $diracopts ! \
 }
 
-function encode_all {
+encode_all() {
   for each in $list
   do
     prof=$each

@@ -4,16 +4,20 @@
 #  Creates a raw Dirac sequence from raw YUV pictures.
 #
 
-input=output-%05d
-format=I420
-width=320
-height=240
-framerate=12
+file=$1
+index=0
+
+input=/media/disk/video/originals/1080p-422-25fps-8bit/$file/%05d.uyvy
+format=UYVY
+width=1920
+height=1080
+framerate=25
 output=output.drc
 
-gst-launch multifilesrc location=$input \
-  caps=video/x-raw-yuv,format=\(fourcc\)$format,width=$width,height=$height,framerate=$framerate/1 \
-  ! schroenc ! filesink location=$output
+gst-launch-0.10 multifilesrc location=$input index=$index \
+  caps=video/x-raw-yuv,format=\(fourcc\)$format,width=$width,height=$height,framerate=$framerate/1 ! \
+  schroenc noise-threshold=70 gop-structure=1 enable-noarith=1 ! \
+  filesink location=/media/disk/masters/$file.HD1080-lossless.drc
 
 #
 #  A set of YUV images in I420 format can be created using the command:
