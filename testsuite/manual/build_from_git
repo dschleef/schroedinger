@@ -1,0 +1,21 @@
+#!/bin/sh
+
+
+set -x
+
+rm -rf tmp-build-dir
+mkdir tmp-build-dir
+
+cd tmp-build-dir &&
+  git clone git://diracvideo.org/git/schroedinger.git &&
+  cd schroedinger &&
+  ./autogen.sh &&
+  make &&
+  make distcheck &&
+  cd ../.. &&
+  rm -rf tmp-build-dir &&
+  echo SUCCESS!
+
+
+
+
