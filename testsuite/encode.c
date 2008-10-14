@@ -85,17 +85,20 @@ test (int w, int h)
   schro_encoder_free (encoder);
 }
 
+#define SIZE 128
+
 int
 main (int argc, char *argv[])
 {
   int h, w;
 
+
   schro_init();
 
-  test(128,128);
-  if (0) {
-    for(w=64;w<64+16;w++){
-      for(h=64;h<64+16;h++){
+  //test(853,480);
+  if (1) {
+    for(w=SIZE;w<SIZE+16;w++){
+      for(h=SIZE;h<SIZE+16;h++){
         test(w,h);
       }
     }
