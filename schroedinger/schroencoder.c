@@ -2976,6 +2976,8 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
     }
     if (frame->rme[0]) schro_rough_me_free (frame->rme[0]);
     if (frame->rme[1]) schro_rough_me_free (frame->rme[1]);
+    if (frame->phasecorr[0]) schro_phasecorr_free (frame->phasecorr[0]);
+    if (frame->phasecorr[1]) schro_phasecorr_free (frame->phasecorr[1]);
 
     for(i=0;i<SCHRO_LIMIT_SUBBANDS;i++){
       if (frame->quant_indices[0][i]) schro_free (frame->quant_indices[0][i]);

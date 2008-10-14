@@ -9,40 +9,6 @@
 #include <math.h>
 #include <string.h>
 
-typedef struct _SchroPhaseCorr SchroPhaseCorr;
-struct _SchroPhaseCorr {
-  SchroEncoderFrame *frame;
-
-  int hshift;
-  int vshift;
-  int width;
-  int height;
-  int shift;
-  int n;
-  int picture_shift;
-
-  /* static tables */
-  float *s, *c;
-  float *zero;
-  float *weight;
-
-  float *image1;
-  float *image2;
-  float *ft1r;
-  float *ft1i;
-  float *ft2r;
-  float *ft2i;
-  float *conv_r, *conv_i;
-  float *resr, *resi;
-
-  int num_x;
-  int num_y;
-  int *vecs_dx;
-  int *vecs_dy;
-  int *vecs2_dx;
-  int *vecs2_dy;
-};
-
 
 #define COMPLEX_MULT_R(a,b,c,d) ((a)*(c) - (b)*(d))
 #define COMPLEX_MULT_I(a,b,c,d) ((a)*(d) + (b)*(c))
@@ -224,6 +190,7 @@ get_downsampled(SchroEncoderFrame *frame, int i)
   return frame->downsampled_frames[i-1];
 }
 
+#if 0
 typedef struct _SchroMVComp SchroMVComp;
 struct _SchroMVComp {
   int metric;
@@ -258,22 +225,70 @@ schro_mvcomp_add (SchroMVComp *mvcomp, int i, int j, int dx, int dy)
     mvcomp->dy = dy;
   }
 }
+#endif
 
-static SchroPhaseCorr *
-schro_phasecorr_new (int width, int height, int picture_shift,
-    int hshift, int vshift)
+SchroPhaseCorr *
+schro_phasecorr_new (SchroEncoderFrame *frame, SchroEncoderFrame *ref)
 {
   SchroPhaseCorr *pc;
 
   pc = schro_malloc0 (sizeof(SchroPhaseCorr));
 
+  pc->frame = frame;
+  pc->ref = ref;
+
+  return pc;
+}
+
+void
+schro_phasecorr_free (SchroPhaseCorr *pc)
+{
+  int i;
+
+  for(i=0;i<pc->n_levels;i++) {
+    schro_free (pc->levels[i].vecs_dx);
+    schro_free (pc->levels[i].vecs_dy);
+    schro_free (pc->levels[i].vecs2_dx);
+    schro_free (pc->levels[i].vecs2_dy);
+  }
+
+  schro_free(pc);
+}
+
+void
+schro_phasecorr_cleanup (SchroPhaseCorr *pc)
+{
+  schro_free(pc->s);
+  schro_free(pc->c);
+  schro_free(pc->weight);
+  schro_free(pc->zero);
+
+  schro_free(pc->image1);
+  schro_free(pc->image2);
+
+  schro_free(pc->ft1r);
+  schro_free(pc->ft1i);
+  schro_free(pc->ft2r);
+  schro_free(pc->ft2i);
+  schro_free(pc->conv_r);
+  schro_free(pc->conv_i);
+  schro_free(pc->resr);
+  schro_free(pc->resi);
+}
+
+
+void schro_phasecorr_setup (SchroPhaseCorr *pc,
+    int level,
+    int picture_shift,
+    int hshift, int vshift)
+{
   pc->picture_shift = picture_shift;
 
-  pc->hshift = hshift;
-  pc->vshift = vshift;
-  pc->width = 1<<pc->hshift;
-  pc->height = 1<<pc->vshift;
-  pc->shift = pc->hshift+pc->vshift;
+  pc->levels[level].hshift = hshift;
+  pc->levels[level].vshift = vshift;
+  pc->levels[level].width = 1<<hshift;
+  pc->levels[level].height = 1<<vshift;
+  pc->shift = hshift+vshift;
   pc->n = 1<<pc->shift;
 
   pc->s = schro_malloc(pc->n*sizeof(float));
@@ -294,55 +309,19 @@ schro_phasecorr_new (int width, int height, int picture_shift,
   pc->resr = schro_malloc(pc->n*sizeof(float));
   pc->resi = schro_malloc(pc->n*sizeof(float));
 
-  generate_weights(pc->weight, pc->width, pc->height);
+  generate_weights(pc->weight, pc->levels[level].width, pc->levels[level].height);
   schro_fft_generate_tables_f32 (pc->c, pc->s, pc->shift);
 
-  pc->num_x = ((width>>picture_shift) - pc->width)/(pc->width/2) + 2;
-  pc->num_y = ((height>>picture_shift) - pc->height)/(pc->height/2) + 2;
-  pc->vecs_dx = schro_malloc(sizeof(int)*pc->num_x*pc->num_y);
-  pc->vecs_dy = schro_malloc(sizeof(int)*pc->num_x*pc->num_y);
-  pc->vecs2_dx = schro_malloc(sizeof(int)*pc->num_x*pc->num_y);
-  pc->vecs2_dy = schro_malloc(sizeof(int)*pc->num_x*pc->num_y);
-
-  return pc;
+  pc->levels[level].num_x = ((pc->frame->filtered_frame->width>>picture_shift) - pc->levels[level].width)/(pc->levels[level].width/2) + 2;
+  pc->levels[level].num_y = ((pc->frame->filtered_frame->height>>picture_shift) - pc->levels[level].height)/(pc->levels[level].height/2) + 2;
+  pc->levels[level].vecs_dx = schro_malloc(sizeof(int)*pc->levels[level].num_x*pc->levels[level].num_y);
+  pc->levels[level].vecs_dy = schro_malloc(sizeof(int)*pc->levels[level].num_x*pc->levels[level].num_y);
+  pc->levels[level].vecs2_dx = schro_malloc(sizeof(int)*pc->levels[level].num_x*pc->levels[level].num_y);
+  pc->levels[level].vecs2_dy = schro_malloc(sizeof(int)*pc->levels[level].num_x*pc->levels[level].num_y);
 }
 
 static void
-schro_phasecorr_free (SchroPhaseCorr *pc)
-{
-  schro_free(pc->s);
-  schro_free(pc->c);
-  schro_free(pc->weight);
-  schro_free(pc->zero);
-
-  schro_free(pc->image1);
-  schro_free(pc->image2);
-
-  schro_free(pc->ft1r);
-  schro_free(pc->ft1i);
-  schro_free(pc->ft2r);
-  schro_free(pc->ft2i);
-  schro_free(pc->conv_r);
-  schro_free(pc->conv_i);
-  schro_free(pc->resr);
-  schro_free(pc->resi);
-
-  schro_free(pc->vecs_dx);
-  schro_free(pc->vecs_dy);
-  schro_free(pc->vecs2_dx);
-  schro_free(pc->vecs2_dy);
-
-  schro_free(pc);
-}
-
-static void
-schro_phasecorr_set_frame (SchroPhaseCorr *pc, SchroEncoderFrame *src)
-{
-  pc->frame = src;
-}
-
-static void
-do_phase_corr (SchroPhaseCorr *pc, int ref)
+do_phase_corr (SchroPhaseCorr *pc, int level)
 {
   int ix, iy;
   int x, y;
@@ -350,21 +329,17 @@ do_phase_corr (SchroPhaseCorr *pc, int ref)
   SchroFrame *ref_frame;
 
   src_frame = get_downsampled(pc->frame, pc->picture_shift);
-  if (ref == 0) {
-    ref_frame = get_downsampled(pc->frame->ref_frame[0], pc->picture_shift);
-  } else {
-    ref_frame = get_downsampled(pc->frame->ref_frame[1], pc->picture_shift);
-  }
+  ref_frame = get_downsampled(pc->ref, pc->picture_shift);
 
-  for(iy=0;iy<pc->num_y;iy++){
-    for(ix=0;ix<pc->num_x;ix++){
+  for(iy=0;iy<pc->levels[level].num_y;iy++){
+    for(ix=0;ix<pc->levels[level].num_x;ix++){
       double dx, dy;
 
-      x = ((src_frame->width - pc->width) * ix) / (pc->num_x - 1);
-      y = ((src_frame->height - pc->height) * iy) / (pc->num_y - 1);
+      x = ((src_frame->width - pc->levels[level].width) * ix) / (pc->levels[level].num_x - 1);
+      y = ((src_frame->height - pc->levels[level].height) * iy) / (pc->levels[level].num_y - 1);
 
-      get_image (pc->image1, src_frame, x, y, pc->width, pc->height, pc->weight);
-      get_image (pc->image2, ref_frame, x, y, pc->width, pc->height, pc->weight);
+      get_image (pc->image1, src_frame, x, y, pc->levels[level].width, pc->levels[level].height, pc->weight);
+      get_image (pc->image2, ref_frame, x, y, pc->levels[level].width, pc->levels[level].height, pc->weight);
 
       schro_fft_fwd_f32 (pc->ft1r, pc->ft1i, pc->image1, pc->zero, pc->c, pc->s, pc->shift);
       schro_fft_fwd_f32 (pc->ft2r, pc->ft2i, pc->image2, pc->zero, pc->c, pc->s, pc->shift);
@@ -376,27 +351,28 @@ do_phase_corr (SchroPhaseCorr *pc, int ref)
 
       schro_fft_rev_f32 (pc->resr, pc->resi, pc->conv_r, pc->conv_i, pc->c, pc->s, pc->shift);
 
-      find_peak (pc->resr, pc->hshift, pc->vshift, &dx, &dy);
+      find_peak (pc->resr, pc->levels[level].hshift, pc->levels[level].vshift, &dx, &dy);
 
 #if 0
       schro_dump(SCHRO_DUMP_PHASE_CORR,"%d %d %d %g %g\n",
           frame->frame_number, x, y, dx, dy);
 #endif
 
-      pc->vecs_dx[iy*pc->num_x + ix] = rint(-dx * (1<<pc->picture_shift));
-      pc->vecs_dy[iy*pc->num_x + ix] = rint(-dy * (1<<pc->picture_shift));
+      pc->levels[level].vecs_dx[iy*pc->levels[level].num_x + ix] = rint(-dx * (1<<pc->picture_shift));
+      pc->levels[level].vecs_dy[iy*pc->levels[level].num_x + ix] = rint(-dy * (1<<pc->picture_shift));
 
-      find_peak (pc->resr, pc->hshift, pc->vshift, &dx, &dy);
+      find_peak (pc->resr, pc->levels[level].hshift, pc->levels[level].vshift, &dx, &dy);
 
-      pc->vecs2_dx[iy*pc->num_x + ix] = rint(-dx * (1<<pc->picture_shift));
-      pc->vecs2_dy[iy*pc->num_x + ix] = rint(-dy * (1<<pc->picture_shift));
+      pc->levels[level].vecs2_dx[iy*pc->levels[level].num_x + ix] = rint(-dx * (1<<pc->picture_shift));
+      pc->levels[level].vecs2_dy[iy*pc->levels[level].num_x + ix] = rint(-dy * (1<<pc->picture_shift));
     }
   }
 
 }
 
+#if 0
 static void
-do_motion_field (SchroPhaseCorr *pc, int i)
+do_motion_field (SchroPhaseCorr *pc, int level)
 {
   SchroParams *params = &pc->frame->params;
   SchroMotionField *mf;
@@ -408,11 +384,7 @@ do_motion_field (SchroPhaseCorr *pc, int i)
 
   mf = schro_motion_field_new (params->x_num_blocks, params->y_num_blocks);
     src = get_downsampled(pc->frame, 0);
-    if (i == 0) {
-      ref = get_downsampled(pc->frame->ref_frame[0], 0);
-    } else {
-      ref = get_downsampled(pc->frame->ref_frame[1], 0);
-    }
+    ref = get_downsampled(pc->ref, 0);
     for(l=0;l<params->y_num_blocks;l++){
       for(k=0;k<params->x_num_blocks;k++){
         SchroMotionVector *mv;
@@ -428,21 +400,21 @@ do_motion_field (SchroPhaseCorr *pc, int i)
 
         schro_mvcomp_init (&mvcomp, src, ref);
 
-        for(iy=0;iy<pc->num_y;iy++){
-          for(ix=0;ix<pc->num_x;ix++){
-            x = ((src->width - (pc->width<<pc->picture_shift)) * ix) / (pc->num_x - 1);
-            y = ((src->height - (pc->height<<pc->picture_shift)) * iy) / (pc->num_y - 1);
+        for(iy=0;iy<pc->levels[level].num_y;iy++){
+          for(ix=0;ix<pc->levels[level].num_x;ix++){
+            x = ((src->width - (pc->levels[level].width<<pc->picture_shift)) * ix) / (pc->levels[level].num_x - 1);
+            y = ((src->height - (pc->levels[level].height<<pc->picture_shift)) * iy) / (pc->levels[level].num_y - 1);
 
             if (xmax < x || ymax < y ||
-                xmin >= x + (pc->width<<pc->picture_shift) ||
-                ymin >= y + (pc->height<<pc->picture_shift)) {
+                xmin >= x + (pc->levels[level].width<<pc->picture_shift) ||
+                ymin >= y + (pc->levels[level].height<<pc->picture_shift)) {
               continue;
             }
 
             schro_mvcomp_add (&mvcomp, k, l,
-                pc->vecs_dx[iy*pc->num_x + ix], pc->vecs_dy[iy*pc->num_x + ix]);
+                pc->levels[level].vecs_dx[iy*pc->levels[level].num_x + ix], pc->levels[level].vecs_dy[iy*pc->levels[level].num_x + ix]);
             schro_mvcomp_add (&mvcomp, k, l,
-                pc->vecs2_dx[iy*pc->num_x + ix], pc->vecs2_dy[iy*pc->num_x + ix]);
+                pc->levels[level].vecs2_dx[iy*pc->levels[level].num_x + ix], pc->levels[level].vecs2_dy[iy*pc->levels[level].num_x + ix]);
           }
         }
 
@@ -461,32 +433,90 @@ do_motion_field (SchroPhaseCorr *pc, int i)
 
     schro_list_append (pc->frame->motion_field_list, mf);
   }
+#endif
 
 void
-schro_encoder_phasecorr_estimation (SchroMotionEst *me)
+schro_encoder_phasecorr_estimation (SchroPhaseCorr *pc)
 {
-  SchroParams *params = me->params;
-  SchroPhaseCorr *pc;
+  SchroParams *params = &pc->frame->params;
   int ref;
   int i;
 
   for(i=0;i<4;i++) {
     SCHRO_DEBUG("block size %dx%d", 1<<(2+5+i), 1<<(2+4+i));
-    if (me->encoder_frame->filtered_frame->width < 1<<(2+5+i) ||
-        me->encoder_frame->filtered_frame->height < 1<<(2+4+i)) {
+    if (pc->frame->filtered_frame->width < 1<<(2+5+i) ||
+        pc->frame->filtered_frame->height < 1<<(2+4+i)) {
       continue;
     }
 
-    pc = schro_phasecorr_new (me->encoder_frame->filtered_frame->width,
-        me->encoder_frame->filtered_frame->height, 2, 5+i, 4+i);
-    schro_phasecorr_set_frame (pc, me->encoder_frame);
+    pc->n_levels = i + 1;
+    schro_phasecorr_setup (pc, i, 2, 5+i, 4+i);
 
     for(ref=0;ref<params->num_refs;ref++){
-      do_phase_corr (pc, ref);
-      do_motion_field (pc, ref);
+      do_phase_corr (pc, i);
+      //do_motion_field (pc, i);
     }
 
-    schro_phasecorr_free (pc);
+    schro_phasecorr_cleanup (pc);
   }
+}
+
+#define SCHRO_METRIC_INVALID_2 0x7fffffff
+
+void
+schro_motionest_superblock_phasecorr1 (SchroMotionEst *me, int ref,
+    SchroBlock *block, int i, int j)
+{
+  SchroMotionVector *mv;
+  SchroParams *params = &me->encoder_frame->params;
+  int dx, dy;
+  SchroPhaseCorr *pc = me->encoder_frame->phasecorr[ref];
+  int xmin, xmax, ymin, ymax;
+  int ix, iy;
+  int level;
+  int x,y;
+  int width, height;
+
+  xmin = i*params->xbsep_luma;
+  xmax = (i+4)*params->xbsep_luma;
+  ymin = j*params->ybsep_luma;
+  ymax = (j+4)*params->ybsep_luma;
+
+  level = 0;
+
+  width = params->video_format->width;
+  height = params->video_format->height;
+  for(iy=0;iy<pc->levels[level].num_y;iy++){
+    for(ix=0;ix<pc->levels[level].num_x;ix++){
+      x = ((width - (pc->levels[level].width<<pc->picture_shift)) * ix) / (pc->levels[level].num_x - 1);
+      y = ((height - (pc->levels[level].height<<pc->picture_shift)) * iy) / (pc->levels[level].num_y - 1);
+
+      if (xmax < x || ymax < y ||
+          xmin >= x + (pc->levels[level].width<<pc->picture_shift) ||
+          ymin >= y + (pc->levels[level].height<<pc->picture_shift)) {
+        continue;
+      }
+
+      dx = pc->levels[level].vecs_dx[iy*pc->levels[level].num_x + ix];
+      dy = pc->levels[level].vecs_dy[iy*pc->levels[level].num_x + ix];
+      goto out;
+    }
+  }
+  block->valid = FALSE;
+  return;
+
+out:
+
+  mv = &block->mv[0][0];
+  mv->split = 0;
+  mv->pred_mode = 1<<ref;
+  mv->using_global = 0;
+  mv->dx[ref] = dx;
+  mv->dy[ref] = dy;
+  block->error = schro_motionest_superblock_get_metric (me, block, i, j);
+  block->entropy = 0;
+  schro_block_fixup (block);
+
+  block->valid = (block->error != SCHRO_METRIC_INVALID_2);
 }
 

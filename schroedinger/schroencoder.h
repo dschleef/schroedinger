@@ -171,6 +171,7 @@ struct _SchroEncoderFrame {
 
   struct _SchroMotionEst *me;
   struct _SchroRoughME *rme[2];
+  struct _SchroPhaseCorr *phasecorr[2];
 
   SchroMotion *motion;
   SchroList *motion_field_list;

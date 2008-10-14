@@ -90,6 +90,7 @@ void
 schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
+  SchroEncoder *encoder = frame->encoder;
   int n;
   int ref;
 
@@ -100,6 +101,12 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
   for(ref=0;ref<params->num_refs;ref++){
     frame->rme[ref] = schro_rough_me_new (frame, frame->ref_frame[ref]);
     schro_rough_me_heirarchical_scan (frame->rme[ref]);
+
+    if (encoder->enable_phasecorr_estimation) {
+      frame->phasecorr[ref] = schro_phasecorr_new (frame,
+          frame->ref_frame[ref]);
+      schro_encoder_phasecorr_estimation (frame->phasecorr[ref]);
+    }
   }
 
   frame->me = schro_motionest_new (frame);
@@ -131,14 +138,6 @@ schro_encoder_motion_predict_pel (SchroEncoderFrame *frame)
   SCHRO_ASSERT(params->num_refs > 0);
 
   schro_encoder_bigblock_estimation (frame->me);
-
-#if 0
-    if (frame->encoder->enable_phasecorr_estimation) {
-      schro_encoder_phasecorr_estimation (frame->me);
-    }
-    if (params->have_global_motion) {
-      schro_encoder_global_estimation (frame->me);
-#endif
 
   schro_motion_calculate_stats (frame->motion, frame);
   frame->estimated_mc_bits = schro_motion_estimate_entropy (frame->motion);
@@ -1197,6 +1196,10 @@ if (1) {
 
   memcpy (p_block, &block, sizeof(block));
 }
+
+void schro_motionest_superblock_phasecorr1 (SchroMotionEst *me, int ref,
+    SchroBlock *block, int i, int j);
+
 void
 schro_encoder_bigblock_estimation (SchroMotionEst *me)
 {
@@ -1253,6 +1256,15 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
 
         schro_motionest_superblock_block (me, &tryblock, i, j);
         TRYBLOCK
+      }
+
+      if (me->encoder_frame->encoder->enable_phasecorr_estimation) {
+        schro_motionest_superblock_phasecorr1 (me, 0, &tryblock, i, j);
+        TRYBLOCK
+        if (params->num_refs > 1) {
+          schro_motionest_superblock_phasecorr1 (me, 1, &tryblock, i, j);
+          TRYBLOCK
+        }
       }
 
       if (block.error > 10*block_size) {

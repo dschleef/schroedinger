@@ -19,6 +19,7 @@
 #include <schroedinger/schromotionest.h>
 #include <schroedinger/schropack.h>
 #include <schroedinger/schroparams.h>
+#include <schroedinger/schrophasecorrelation.h>
 #include <schroedinger/schroqueue.h>
 #include <schroedinger/schrossim.h>
 #include <schroedinger/schrotables.h>
