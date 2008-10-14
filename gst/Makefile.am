@@ -8,6 +8,7 @@ libgstschro_la_SOURCES = \
 	gstschroparse.c \
 	gstschroscale.c \
 	gstbasevideocoder.c \
+	gstbasevideocoder.h \
 	gstframestore.c
 
 if ENABLE_ENCODER
