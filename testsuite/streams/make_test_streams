@@ -5,33 +5,37 @@ set -e
 #export SCHRO_DUMP=1
 #export SCHRO_DEBUG=5
 #export G_SLICE=always_malloc
-export SCHRO_MOTION_REF=1
+#export SCHRO_MOTION_REF=1
+
+extraopts="rate-control=4 magic-lambda=0.005"
+#extraopts="$extraopts magic-mc-lambda=0.01"
+extraopts="$extraopts magic-block-search-threshold=0"
 
 encode() {
   echo "ENCODING $testname with $schroopts"
+  valgrind \
   gst-launch-0.10 \
-    videotestsrc num-buffers=15 ! \
-    timeoverlay ! \
-    cairotextoverlay text=$testname halign=left deltay=-100 ! \
-    ffmpegcolorspace ! \
-    video/x-raw-yuv,format=\(fourcc\)"$format",width=$width,height=$height,framerate=30/1 ! \
-    schroenc enable-md5=1 au_distance=30 $schroopts ! \
-    filesink location=vts.$testname.drc
+    filesrc location=test.drc ! \
+    schrodec ! \
+    schroenc enable-md5=1 $extraopts $schroopts ! \
+    filesink location=test.$testname.drc
 }
+#    schrodownsample ! \
+#    timeoverlay ! \
+#    cairotextoverlay text=$testname halign=left deltay=-100 ! \
 
 width=320
 height=240
 format=I420
 
-#testname="test"
-#schroopts="rate-control=4 magic-lambda=0.01 enable-phasecorr-estimation=1"
-#encode
-#exit 0
+testname="test"
+schroopts="enable-phasecorr-estimation=1"
+encode
+exit 0
 
 testname="default"
 schroopts=""
 encode
-
 
 # for testing java decoder
 #testname="java"
