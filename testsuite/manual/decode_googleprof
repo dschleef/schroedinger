@@ -16,6 +16,6 @@ LD_PRELOAD=/usr/lib/libprofiler.so \
 ../.libs/lt-decode $file
 
 pprof ../.libs/lt-decode prof.out >prof
-pprof --pdf ../.libs/lt-decode prof.out >prof.pdf
+pprof --gif  --nodecount=100 --nodefraction=0.0001 --edgefraction=0 ../.libs/lt-decode prof.out >prof.gif
 
 

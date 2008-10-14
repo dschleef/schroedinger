@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 
 GST_LAUNCH=$(type -p gst-launch-0.10)
@@ -11,11 +11,14 @@ if test ! -f /usr/lib/libprofiler.so -o ! -f /usr/bin/pprof ; then
   exit 1
 fi
 
+schroopts="mv-precision=1"
+
 CPUPROFILE=prof.out \
 LD_PRELOAD=/usr/lib/libprofiler.so \
 $GST_LAUNCH \
-	videotestsrc num-buffers=100 ! \
-	schroenc $schroopts ! fakesink
+	filesrc location=~/media/masters/sage.HD720-master.drc ! \
+	schrodec ! \
+	schroenc $schroopts ! filesink location=out.drc
 
 pprof --pdf $GST_LAUNCH prof.out >prof.pdf
 
