@@ -1,9 +1,11 @@
 #!/bin/sh
 
+#export GST_DEBUG=dirac:5
+
 encode() {
   echo "ENCODING $testname with $diracopts"
   gst-launch-0.10 \
-    videotestsrc num-buffers=300 ! \
+    videotestsrc num-buffers=150 ! \
     timeoverlay ! \
     cairotextoverlay text=$testname halign=left deltay=-100 ! \
     ffmpegcolorspace ! \
@@ -13,14 +15,14 @@ encode() {
 }
 
 
-width=640
-height=480
+width=320
+height=240
 format=I420
 
-testname="CBR-2Mb"
-diracopts="targetrate=2000"
-encode
-exit
+#testname="CBR-2Mb"
+#diracopts="targetrate=2000"
+#encode
+#exit
 
 testname="default"
 diracopts=""
@@ -86,9 +88,9 @@ encode
 
 # filtering
 
-testname="denoise"
-diracopts="denoise=true"
-encode
+#testname="denoise"
+#diracopts="denoise=true"
+#encode
 
 # transform depth
 
