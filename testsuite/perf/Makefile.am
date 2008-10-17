@@ -1,7 +1,7 @@
 
 
 noinst_PROGRAMS = wavelet_speed upsample_speed report \
-	quantise_speed dequantise_speed
+	quantise_speed dequantise_speed wavelet
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS) \
 	    -DSCHRO_ENABLE_UNSTABLE_API
