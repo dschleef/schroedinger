@@ -1,7 +1,10 @@
 
 
 noinst_PROGRAMS = wavelet_speed upsample_speed report \
-	quantise_speed dequantise_speed wavelet
+	quantise_speed dequantise_speed
+
+# Doesn't compile on windows
+#noinst_PROGRAMS = wavelet
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS) \
 	    -DSCHRO_ENABLE_UNSTABLE_API
