@@ -200,7 +200,7 @@ quantise_speed (int quant_index)
 
   for(i=0;i<10;i++) {
     for(j=0;j<N;j++){
-      a[j] = (random () & 0xff) - 128;
+      a[j] = (rand () & 0xff) - 128;
     }
     generate_table (table, quant_index, is_intra);
 
