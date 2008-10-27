@@ -40,6 +40,8 @@ schro_cog_mas8_u8_edgeextend (uint8_t *d, const uint8_t *s,
       }
       d[i] = CLAMP((x + offset)>>shift,0,255);
     }
+    i = n-1;
+    d[i] = s[i];
   }
 }
 

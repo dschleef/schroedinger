@@ -21,7 +21,7 @@ noinst_PROGRAMS = arith arith_encode \
 	 motion2 sort gaussian fft \
 	 wavelet_noise_gain \
 	 downsample taps ramp \
-	 colorspace filter_coeff utils
+	 colorspace filter_coeff utils extension
 
 if ENABLE_ENCODER
 noinst_PROGRAMS += encode global_motion filter ssim wavelet_gain \
