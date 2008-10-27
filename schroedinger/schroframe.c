@@ -1660,7 +1660,7 @@ schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
     dcomp = &dest->components[k];
     scomp = &src->components[k];
 
-    for(j=0;j<dcomp->height;j++){
+    for(j=0;j<dcomp->height-1;j++){
       if (j < 3 || j >= scomp->height - 4) {
         for (i=0;i<8;i++) {
           list[i] = SCHRO_FRAME_DATA_GET_LINE(scomp,
@@ -1676,6 +1676,9 @@ schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
             taps, offsetshift, scomp->width);
       }
     }
+    j = dcomp->height - 1;
+    memcpy (SCHRO_FRAME_DATA_GET_LINE(dcomp, j),
+        SCHRO_FRAME_DATA_GET_LINE (scomp, j), dcomp->width);
   }
 }
 
@@ -1912,7 +1915,26 @@ schro_upsampled_frame_free (SchroUpsampledFrame *df)
 }
 
 void
-schro_frame_mc_edgeextend (SchroFrame *frame)
+schro_frame_mc_edgeextend_horiz (SchroFrame *frame, SchroFrame *src)
+{
+  int k;
+  int j;
+
+  for(k=0;k<3;k++){
+    int width = frame->components[k].width;
+
+    for(j=0;j<frame->components[k].height;j++){
+      uint8_t *line = SCHRO_FRAME_DATA_GET_LINE(frame->components + k, j);
+      uint8_t *src_line = SCHRO_FRAME_DATA_GET_LINE(src->components + k, j);
+
+      memset (line - frame->extension, src_line[0], frame->extension);
+      memset (line + width, src_line[width-1], frame->extension);
+    }
+  }
+}
+
+void
+schro_frame_mc_edgeextend_vert (SchroFrame *frame, SchroFrame *src)
 {
   int k;
   int j;
@@ -1921,23 +1943,25 @@ schro_frame_mc_edgeextend (SchroFrame *frame)
     int height = frame->components[k].height;
     int width = frame->components[k].width;
 
-    for(j=0;j<frame->components[k].height;j++){
-      uint8_t *line = SCHRO_FRAME_DATA_GET_LINE(frame->components + k, j);
-
-      memset (line - frame->extension, line[0], frame->extension);
-      memset (line + width, line[width-1], frame->extension);
-    }
     for(j=0;j<frame->extension;j++){
       memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, -j-1) - frame->extension,
-          SCHRO_FRAME_DATA_GET_LINE(frame->components + k, 0) - frame->extension,
+          SCHRO_FRAME_DATA_GET_LINE(src->components + k, 0) - frame->extension,
           width + frame->extension*2);
       memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height + j) - frame->extension,
-          SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height - 1) - frame->extension,
+          SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1) - frame->extension,
           width + frame->extension*2);
     }
   }
 
 }
+
+void
+schro_frame_mc_edgeextend (SchroFrame *frame)
+{
+  schro_frame_mc_edgeextend_horiz (frame, frame);
+  schro_frame_mc_edgeextend_vert (frame, frame);
+}
+
 
 void
 schro_upsampled_frame_upsample (SchroUpsampledFrame *df)
@@ -1954,13 +1978,17 @@ schro_upsampled_frame_upsample (SchroUpsampledFrame *df)
       df->frames[0]->format, df->frames[0]->width, df->frames[0]->height,
       df->frames[0]->extension);
 
-  schro_frame_upsample_horiz (df->frames[1], df->frames[0]);
   schro_frame_upsample_vert (df->frames[2], df->frames[0]);
-  schro_frame_upsample_horiz (df->frames[3], df->frames[2]);
+  schro_frame_mc_edgeextend_horiz (df->frames[2], df->frames[2]);
+  schro_frame_mc_edgeextend_vert (df->frames[2], df->frames[0]);
 
-  schro_frame_mc_edgeextend (df->frames[1]);
-  schro_frame_mc_edgeextend (df->frames[2]);
-  schro_frame_mc_edgeextend (df->frames[3]);
+  schro_frame_upsample_horiz (df->frames[1], df->frames[0]);
+  schro_frame_mc_edgeextend_horiz (df->frames[1], df->frames[0]);
+  schro_frame_mc_edgeextend_vert (df->frames[1], df->frames[1]);
+
+  schro_frame_upsample_horiz (df->frames[3], df->frames[2]);
+  schro_frame_mc_edgeextend_horiz (df->frames[3], df->frames[2]);
+  schro_frame_mc_edgeextend_vert (df->frames[3], df->frames[1]);
 }
 
 #ifdef ENABLE_MOTION_REF
