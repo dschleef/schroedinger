@@ -62,6 +62,7 @@ decode (FILE *file)
   void *packet;
   int size;
   int ret;
+  int width, height;
 
   decoder = schro_decoder_new();
 
@@ -93,9 +94,10 @@ decode (FILE *file)
           go = 0;
           break;
         case SCHRO_DECODER_NEED_FRAME:
+          schro_video_format_get_picture_luma_size (format, &width, &height);
           frame = schro_frame_new_and_alloc (NULL,
               schro_params_get_frame_format(8, format->chroma_format),
-              format->width, format->height);
+              width, height);
           schro_decoder_add_output_picture (decoder, frame);
           break;
         case SCHRO_DECODER_OK:
