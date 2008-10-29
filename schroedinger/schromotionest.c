@@ -1387,8 +1387,8 @@ schro_motionest_superblock_get_metric (SchroMotionEst *me,
 
   xmin = MAX(i*me->params->xbsep_luma, 0);
   ymin = MAX(j*me->params->ybsep_luma, 0);
-  xmax = MIN((i+4)*me->params->xbsep_luma, me->params->video_format->width);
-  ymax = MIN((j+4)*me->params->ybsep_luma, me->params->video_format->height);
+  xmax = MIN((i+4)*me->params->xbsep_luma, me->encoder_frame->filtered_frame->width);
+  ymax = MIN((j+4)*me->params->ybsep_luma, me->encoder_frame->filtered_frame->height);
 
   schro_frame_get_subdata (get_downsampled (me->encoder_frame, 0), &orig,
       0, xmin, ymin);
@@ -1414,8 +1414,8 @@ schro_motionest_superblock_get_metric (SchroMotionEst *me,
 
     if (xmin + mv->dx[ref] < -ref_frame->extension ||
         ymin + mv->dy[ref] < -ref_frame->extension ||
-        xmax + mv->dx[ref] > me->params->video_format->width + ref_frame->extension ||
-        ymax + mv->dy[ref] > me->params->video_format->height + ref_frame->extension) {
+        xmax + mv->dx[ref] > me->encoder_frame->filtered_frame->width + ref_frame->extension ||
+        ymax + mv->dy[ref] > me->encoder_frame->filtered_frame->height + ref_frame->extension) {
       /* bailing because it's "hard" */
       return SCHRO_METRIC_INVALID_2;
     }
@@ -1437,12 +1437,12 @@ schro_motionest_superblock_get_metric (SchroMotionEst *me,
 
     if (xmin + mv->dx[0] < -ref0_frame->extension ||
         ymin + mv->dy[0] < -ref0_frame->extension ||
-        xmax + mv->dx[0] > me->params->video_format->width + ref0_frame->extension ||
-        ymax + mv->dy[0] > me->params->video_format->height + ref0_frame->extension ||
+        xmax + mv->dx[0] > me->encoder_frame->filtered_frame->width + ref0_frame->extension ||
+        ymax + mv->dy[0] > me->encoder_frame->filtered_frame->height + ref0_frame->extension ||
         xmin + mv->dx[1] < -ref1_frame->extension ||
         ymin + mv->dy[1] < -ref1_frame->extension ||
-        xmax + mv->dx[1] > me->params->video_format->width + ref1_frame->extension ||
-        ymax + mv->dy[1] > me->params->video_format->height + ref1_frame->extension) {
+        xmax + mv->dx[1] > me->encoder_frame->filtered_frame->width + ref1_frame->extension ||
+        ymax + mv->dy[1] > me->encoder_frame->filtered_frame->height + ref1_frame->extension) {
       /* bailing because it's "hard" */
       return SCHRO_METRIC_INVALID_2;
     }

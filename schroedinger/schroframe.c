@@ -1913,11 +1913,11 @@ schro_frame_split_fields (SchroFrame *dest1, SchroFrame *dest2,
   schro_frame_convert (dest1, &src_tmp);
 
   src_tmp.components[0].data =
-    SCHRO_FRAME_DATA_GET_LINE (&src_tmp.components[0], 1);
+    SCHRO_FRAME_DATA_GET_LINE (&src->components[0], 1);
   src_tmp.components[1].data =
-    SCHRO_FRAME_DATA_GET_LINE (&src_tmp.components[1], 1);
+    SCHRO_FRAME_DATA_GET_LINE (&src->components[1], 1);
   src_tmp.components[2].data =
-    SCHRO_FRAME_DATA_GET_LINE (&src_tmp.components[2], 1);
+    SCHRO_FRAME_DATA_GET_LINE (&src->components[2], 1);
 
   schro_frame_convert (dest2, &src_tmp);
 }

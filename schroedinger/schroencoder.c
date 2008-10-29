@@ -193,6 +193,8 @@ schro_encoder_start (SchroEncoder *encoder)
     SCHRO_ERROR("luma or chroma excursion is too large for 8 bit");
   }
 
+  encoder->video_format.interlaced_coding = encoder->interlaced_coding;
+
   schro_encoder_encode_codec_comment (encoder);
 
   schro_tables_init ();
@@ -511,8 +513,15 @@ schro_encoder_push_frame_full (SchroEncoder *encoder, SchroFrame *frame, void *p
 
     encoder_frame1 = schro_encoder_frame_new(encoder);
     encoder_frame1->encoder = encoder;
+    encoder_frame1->priv = priv;
     encoder_frame2 = schro_encoder_frame_new(encoder);
     encoder_frame2->encoder = encoder;
+
+    encoder_frame1->previous_frame = encoder->last_frame;
+    schro_encoder_frame_ref (encoder_frame1);
+    encoder_frame2->previous_frame = encoder_frame1;
+    schro_encoder_frame_ref (encoder_frame2);
+    encoder->last_frame = encoder_frame2;
 
     schro_video_format_get_picture_luma_size (&encoder->video_format,
         &width, &height);
