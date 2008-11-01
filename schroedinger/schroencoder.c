@@ -2084,16 +2084,11 @@ schro_encoder_encode_sequence_header_header (SchroEncoder *encoder,
   }
 
   /* scan format */
-  if (std_format->interlaced == format->interlaced &&
-      (!format->interlaced ||
-       (std_format->top_field_first == format->top_field_first))) {
+  if (std_format->interlaced == format->interlaced) {
     schro_pack_encode_bit (pack, FALSE);
   } else {
     schro_pack_encode_bit (pack, TRUE);
-    schro_pack_encode_bit (pack, format->interlaced);
-    if (format->interlaced) {
-      schro_pack_encode_bit (pack, format->top_field_first);
-    }
+    schro_pack_encode_uint (pack, 1);
   }
 
   MARKER(pack);

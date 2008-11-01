@@ -221,11 +221,7 @@ handle_packet(unsigned char *data, int size)
     bit = schro_unpack_decode_bit(&unpack);
     printf("  custom_scan_format_flag: %s\n", bit ? "yes" : "no");
     if (bit) {
-      printf("  interlaced source: %s\n", bit ? "yes" : "no");
-      if (bit) {
-        bit = schro_unpack_decode_bit(&unpack);
-        printf("    top field first: %s\n", bit ? "yes" : "no");
-      }
+      printf("    source sampling: %d\n", schro_unpack_decode_uint(&unpack));
     }
     
     MARKER();
