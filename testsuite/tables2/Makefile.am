@@ -5,6 +5,7 @@ noinst_PROGRAMS = \
 	unpack_tables
 
 if ENABLE_ENCODER
+noinst_PROGRAMS += \
 	wavelet_tables
 endif
 
