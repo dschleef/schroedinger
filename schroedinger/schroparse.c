@@ -130,6 +130,7 @@ schro_parse_decode_sequence_header (uint8_t *data, int length,
       if (index <= SCHRO_SIGNAL_RANGE_12BIT_VIDEO) {
         schro_video_format_set_std_signal_range (format, index);
       } else {
+        SCHRO_DEBUG("signal range index %d out of range", index);
         return FALSE;
       }
     }
@@ -146,6 +147,7 @@ schro_parse_decode_sequence_header (uint8_t *data, int length,
     if (index <= SCHRO_COLOUR_SPEC_CINEMA) {
       schro_video_format_set_std_colour_spec (format, index);
     } else {
+      SCHRO_DEBUG("colour spec index %d out of range", index);
       return FALSE;
     }
     if (index == 0) {
