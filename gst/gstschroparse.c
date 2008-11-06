@@ -380,7 +380,7 @@ gst_schro_parse_parse_data (GstBaseVideoParse *base_video_parse,
   if (SCHRO_PARSE_CODE_IS_END_OF_SEQUENCE (parse_code)) {
     GstVideoFrame *frame;
 
-    if (next != 0 && next != 13) {
+    if (next != 0 && next != SCHRO_PARSE_HEADER_SIZE) {
       GST_WARNING("next is not 0 or 13 in EOS packet (%d)", next);
     }
 
@@ -424,7 +424,7 @@ gst_schro_parse_parse_data (GstBaseVideoParse *base_video_parse,
     }
 #endif
 
-    gst_adapter_copy_full (base_video_parse->input_adapter, tmp, 13, 4);
+    gst_adapter_copy_full (base_video_parse->input_adapter, tmp, SCHRO_PARSE_HEADER_SIZE, 4);
 
     frame->presentation_frame_number = GST_READ_UINT32_BE (tmp);
 
@@ -446,7 +446,7 @@ gst_schro_parse_shape_output_ogg (GstBaseVideoParse *base_video_parse,
   int delay;
   int dist;
   int pt;
-  int st;
+  int dt;
   guint64 granulepos_hi;
   guint64 granulepos_low;
   GstBuffer *buf = frame->src_buffer;
@@ -454,14 +454,14 @@ gst_schro_parse_shape_output_ogg (GstBaseVideoParse *base_video_parse,
   dpn = frame->decode_frame_number;
 
   pt = frame->presentation_frame_number * 2;
-  st = frame->system_frame_number * 2;
-  delay = pt - st + 2;
+  dt = frame->decode_frame_number * 2;
+  delay = pt - dt;
   dist = frame->distance_from_sync;
 
-  GST_ERROR("sys %d dpn %d pt %d delay %d dist %d",
+  GST_ERROR("sys %d dpn %d pt %d dt %d delay %d dist %d",
       (int)frame->system_frame_number,
       (int)frame->decode_frame_number,
-      pt, delay, dist);
+      pt, dt, delay, dist);
 
   granulepos_hi = (((guint64)pt - delay)<<9) | ((dist>>8));
   granulepos_low = (delay << 9) | (dist & 0xff);
@@ -842,10 +842,18 @@ gst_schro_parse_get_caps (GstBaseVideoParse *base_video_parse)
       GValue array = { 0 };
       GValue value = { 0 };
       GstBuffer *buf;
+      int size;
 
       g_value_init (&array, GST_TYPE_ARRAY);
       g_value_init (&value, GST_TYPE_BUFFER);
-      buf = gst_buffer_copy (schro_parse->seq_header_buffer);
+      size = GST_BUFFER_SIZE(schro_parse->seq_header_buffer);
+      buf = gst_buffer_new_and_alloc (size + SCHRO_PARSE_HEADER_SIZE);
+      memcpy (GST_BUFFER_DATA(buf),
+          GST_BUFFER_DATA(schro_parse->seq_header_buffer), size);
+      GST_WRITE_UINT32_BE (GST_BUFFER_DATA(buf) + size + 0, 0x42424344);
+      GST_WRITE_UINT8 (GST_BUFFER_DATA(buf) + size + 4, SCHRO_PARSE_CODE_END_OF_SEQUENCE);
+      GST_WRITE_UINT32_BE (GST_BUFFER_DATA(buf) + size + 5, 0);
+      GST_WRITE_UINT32_BE (GST_BUFFER_DATA(buf) + size + 9, size);
       gst_value_set_buffer (&value, buf);
       gst_buffer_unref (buf);
       gst_value_array_append_value (&array, &value);

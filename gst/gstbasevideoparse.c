@@ -712,7 +712,11 @@ gst_base_video_parse_finish_frame (GstBaseVideoParse *base_video_parse)
 
   GST_BUFFER_TIMESTAMP (buffer) = frame->presentation_timestamp;
   GST_BUFFER_DURATION (buffer) = frame->presentation_duration;
-  GST_BUFFER_OFFSET (buffer) = frame->decode_timestamp;
+  if (frame->decode_frame_number < 0) {
+    GST_BUFFER_OFFSET (buffer) = 0;
+  } else {
+    GST_BUFFER_OFFSET (buffer) = frame->decode_timestamp;
+  }
   GST_BUFFER_OFFSET_END (buffer) = GST_CLOCK_TIME_NONE;
 
   GST_DEBUG("pts %" GST_TIME_FORMAT,
