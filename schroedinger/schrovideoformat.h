@@ -70,6 +70,8 @@ void schro_video_format_get_picture_chroma_size (SchroVideoFormat *format,
 void schro_video_format_get_iwt_alloc_size (SchroVideoFormat *format,
     int *width, int *height);
 int schro_video_format_get_bit_depth (SchroVideoFormat *format);
+schro_bool schro_video_format_check_MP_DL (SchroVideoFormat *format);
+schro_bool schro_video_format_check_VC2_DL (SchroVideoFormat *format);
 
 #endif
 

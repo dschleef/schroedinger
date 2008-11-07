@@ -230,51 +230,48 @@ schro_video_format_get_video_format_metric (SchroVideoFormat *format, int i)
 
   std_format = schro_video_formats + i;
 
-  if (format->width != std_format->width) {
-    metric++;
+  /* this is really important because it can't be overrided */
+  if (format->interlaced && 
+      format->top_field_first == std_format->top_field_first) {
+    metric |= 0x8000;
   }
-  if (format->height != std_format->height) {
-    metric++;
+
+  /* things that contribute to MP_DL */
+  if (format->width <= std_format->width &&
+      format->height <= std_format->height) {
+    metric |= 0x800;
   }
-  if (format->interlaced != std_format->interlaced) {
-    metric++;
+  if (format->frame_rate_numerator == std_format->frame_rate_numerator &&
+      format->frame_rate_denominator == std_format->frame_rate_denominator) {
+    metric |= 0x400;
   }
-  if (format->top_field_first != std_format->top_field_first) {
-    metric++;
+  if (format->aspect_ratio_numerator == std_format->aspect_ratio_numerator &&
+      format->aspect_ratio_denominator == std_format->aspect_ratio_denominator) {
+    metric |= 0x200;
   }
-  if (format->frame_rate_numerator != std_format->frame_rate_numerator) {
-    metric++;
+  if (format->colour_matrix == std_format->colour_matrix &&
+      format->colour_primaries == std_format->colour_primaries &&
+      format->transfer_function == std_format->transfer_function) {
+    metric |= 0x100;
   }
-  if (format->frame_rate_denominator != std_format->frame_rate_denominator) {
-    metric++;
+
+  /* things that contribute to VC2_DL */
+  if (format->width == std_format->width &&
+      format->height == std_format->height) {
+    metric |= 0x80;
   }
-  if (format->aspect_ratio_numerator != std_format->aspect_ratio_numerator) {
-    metric++;
+  if (format->interlaced == std_format->interlaced) {
+    metric |= 0x40;
   }
-  if (format->aspect_ratio_denominator != std_format->aspect_ratio_denominator) {
-    metric++;
+
+#if 0
+  if (format->left_offset == std_format->left_offset &&
+      format->top_offset == std_format->top_offset &&
+      format->clean_width == std_format->clean_width &&
+      format->clean_height == std_format->clean_height) {
+    metric |= 0x40;
   }
-  if (format->left_offset != std_format->left_offset) {
-    metric++;
-  }
-  if (format->top_offset != std_format->top_offset) {
-    metric++;
-  }
-  if (format->clean_width != std_format->clean_width) {
-    metric++;
-  }
-  if (format->clean_height != std_format->clean_height) {
-    metric++;
-  }
-  if (format->colour_matrix != std_format->colour_matrix) {
-    metric++;
-  }
-  if (format->colour_primaries != std_format->colour_primaries) {
-    metric++;
-  }
-  if (format->transfer_function != std_format->transfer_function) {
-    metric++;
-  }
+#endif
 
   return metric;
 }
@@ -288,28 +285,27 @@ schro_video_format_get_video_format_metric (SchroVideoFormat *format, int i)
  * function guesses a standard format to use as a starting point for
  * encoding the video format pointed to by @format.
  *
- * FIXME: the function that guesses the best format is poor
- *
  * Returns: an index to the optimal standard format
  */
 SchroVideoFormatEnum
 schro_video_format_get_std_video_format (SchroVideoFormat *format)
 {
   int metric;
-  int min_index;
-  int min_metric;
+  int max_index;
+  int max_metric;
   int i;
 
-  min_index = 0;
-  min_metric = schro_video_format_get_video_format_metric (format, 0);
+  max_index = 0;
+  max_metric = schro_video_format_get_video_format_metric (format, 1);
   for(i=1;i<ARRAY_SIZE (schro_video_formats); i++) {
     metric = schro_video_format_get_video_format_metric (format, i);
-    if (metric < min_metric) {
-      min_index = i;
-      min_metric = metric;
+    SCHRO_ERROR("%d %04x", i, metric);
+    if (metric > max_metric) {
+      max_index = i;
+      max_metric = metric;
     }
   }
-  return min_index;
+  return max_index;
 }
 
 typedef struct _SchroFrameRate SchroFrameRate;
@@ -676,5 +672,64 @@ schro_video_format_get_iwt_alloc_size (SchroVideoFormat *format,
     SCHRO_CHROMA_FORMAT_H_SHIFT(format->chroma_format);
   *height = picture_chroma_height <<
       SCHRO_CHROMA_FORMAT_V_SHIFT(format->chroma_format);
+}
+
+schro_bool
+schro_video_format_check_MP_DL (SchroVideoFormat *format)
+{
+  SchroVideoFormat base_format;
+
+  if (format->index < 1 || format->index > 20) {
+    return FALSE;
+  }
+
+  schro_video_format_set_std_video_format (&base_format, format->index);
+
+  if (format->width > base_format.width ||
+      format->height > base_format.height) {
+    return FALSE;
+  }
+
+  if (format->frame_rate_numerator != base_format.frame_rate_numerator ||
+      format->frame_rate_denominator != base_format.frame_rate_denominator) {
+    return FALSE;
+  }
+
+  if (format->clean_width != base_format.clean_width ||
+      format->clean_height != base_format.clean_height ||
+      format->left_offset != base_format.left_offset ||
+      format->top_offset != base_format.top_offset) {
+    return FALSE;
+  }
+
+  if (schro_video_format_get_std_signal_range (format) != 2) {
+    return FALSE;
+  }
+
+  if (format->colour_primaries != base_format.colour_primaries ||
+      format->colour_matrix != base_format.colour_matrix ||
+      format->transfer_function != base_format.transfer_function) {
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+schro_bool
+schro_video_format_check_VC2_DL (SchroVideoFormat *format)
+{
+  SchroVideoFormat base_format;
+
+  if (format->index < 1 || format->index > 20) {
+    return FALSE;
+  }
+
+  schro_video_format_set_std_video_format (&base_format, format->index);
+
+  if (memcmp (&base_format, format, sizeof(SchroVideoFormat)) != 0) {
+    return FALSE;
+  }
+
+  return TRUE;
 }
 

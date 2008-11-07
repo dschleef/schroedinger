@@ -142,6 +142,13 @@ typedef enum _SchroAuxiliaryDataID {
   SCHRO_AUX_DATA_USER = 0x80
 }SchroAuxiliaryDataID;
 
+typedef enum _SchroProfile {
+  SCHRO_PROFILE_LOW_DELAY = 0,
+  SCHRO_PROFILE_SIMPLE = 1,
+  SCHRO_PROFILE_MAIN_INTRA = 2,
+  SCHRO_PROFILE_MAIN = 8
+} SchroProfile;
+
 SCHRO_END_DECLS
 
 #endif

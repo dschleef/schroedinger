@@ -172,6 +172,7 @@ handle_gop_enum (SchroEncoder *encoder)
       encoder->setup_frame = schro_encoder_setup_frame_tworef;
       break;
   }
+
 }
 
 /**
@@ -258,6 +259,26 @@ schro_encoder_start (SchroEncoder *encoder)
       handle_gop_enum (encoder);
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_CONSTANT_ERROR;
       break;
+  }
+
+  encoder->level = 0;
+  encoder->video_format.index =
+    schro_video_format_get_std_video_format (&encoder->video_format);
+  switch (encoder->profile) {
+    case SCHRO_PROFILE_LOW_DELAY:
+    case SCHRO_PROFILE_SIMPLE:
+    case SCHRO_PROFILE_MAIN_INTRA:
+      if (schro_video_format_check_VC2_DL (&encoder->video_format)) {
+        encoder->level = 1;
+      }
+      break;
+    case SCHRO_PROFILE_MAIN:
+      if (schro_video_format_check_MP_DL (&encoder->video_format)) {
+        encoder->level = 128;
+      }
+      break;
+    default:
+      SCHRO_ASSERT(0);
   }
 
   encoder->start_time = schro_utils_get_time ();
