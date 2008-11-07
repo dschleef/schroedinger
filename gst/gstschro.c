@@ -26,6 +26,7 @@
 
 GType gst_schrofilter_get_type (void);
 GType gst_schrodownsample_get_type (void);
+GType gst_schrocolorspace_get_type (void);
 GType gst_schro_enc_get_type (void);
 GType gst_schro_dec_get_type (void);
 GType gst_schro_parse_get_type (void);
@@ -58,6 +59,8 @@ plugin_init (GstPlugin * plugin)
       gst_frame_store_get_type ());
   gst_element_register (plugin, "schroscale", GST_RANK_NONE,
       gst_schro_scale_get_type ());
+  gst_element_register (plugin, "schrocolorspace", GST_RANK_NONE,
+      gst_schrocolorspace_get_type ());
 
   return TRUE;
 }

@@ -39,36 +39,36 @@
 #include <math.h>
 #include <schroedinger/schrovirtframe.h>
 
-#define GST_TYPE_SCHRODOWNSAMPLE \
-  (gst_schrodownsample_get_type())
-#define GST_SCHRODOWNSAMPLE(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_SCHRODOWNSAMPLE,GstSchrodownsample))
-#define GST_SCHRODOWNSAMPLE_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_SCHRODOWNSAMPLE,GstSchrodownsampleClass))
-#define GST_IS_SCHRODOWNSAMPLE(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_SCHRODOWNSAMPLE))
-#define GST_IS_SCHRODOWNSAMPLE_CLASS(obj) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_SCHRODOWNSAMPLE))
+#define GST_TYPE_SCHROCOLORSPACE \
+  (gst_schrocolorspace_get_type())
+#define GST_SCHROCOLORSPACE(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_SCHROCOLORSPACE,GstSchrocolorspace))
+#define GST_SCHROCOLORSPACE_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_SCHROCOLORSPACE,GstSchrocolorspaceClass))
+#define GST_IS_SCHROCOLORSPACE(obj) \
+  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_SCHROCOLORSPACE))
+#define GST_IS_SCHROCOLORSPACE_CLASS(obj) \
+  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_SCHROCOLORSPACE))
 
-typedef struct _GstSchrodownsample GstSchrodownsample;
-typedef struct _GstSchrodownsampleClass GstSchrodownsampleClass;
+typedef struct _GstSchrocolorspace GstSchrocolorspace;
+typedef struct _GstSchrocolorspaceClass GstSchrocolorspaceClass;
 
-struct _GstSchrodownsample
+struct _GstSchrocolorspace
 {
   GstBaseTransform base_transform;
 
   SchroVideoFormat format;
 };
 
-struct _GstSchrodownsampleClass
+struct _GstSchrocolorspaceClass
 {
   GstBaseTransformClass parent_class;
 
 };
 
-GType gst_schrodownsample_get_type (void);
+GType gst_schrocolorspace_get_type (void);
 
-/* GstSchrodownsample signals and args */
+/* GstSchrocolorspace signals and args */
 enum
 {
   /* FILL ME */
@@ -83,31 +83,31 @@ enum
       /* FILL ME */
 };
 
-static void gst_schrodownsample_base_init (gpointer g_class);
-static void gst_schrodownsample_class_init (gpointer g_class,
+static void gst_schrocolorspace_base_init (gpointer g_class);
+static void gst_schrocolorspace_class_init (gpointer g_class,
     gpointer class_data);
-static void gst_schrodownsample_init (GTypeInstance * instance, gpointer g_class);
+static void gst_schrocolorspace_init (GTypeInstance * instance, gpointer g_class);
 
-static void gst_schrodownsample_set_property (GObject * object, guint prop_id,
+static void gst_schrocolorspace_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec);
-static void gst_schrodownsample_get_property (GObject * object, guint prop_id,
+static void gst_schrocolorspace_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec);
 
-static GstCaps *gst_schrodownsample_transform_caps (GstBaseTransform * base_transform,
+static GstCaps *gst_schrocolorspace_transform_caps (GstBaseTransform * base_transform,
     GstPadDirection direction, GstCaps *caps);
-static GstFlowReturn gst_schrodownsample_transform (GstBaseTransform * base_transform,
+static GstFlowReturn gst_schrocolorspace_transform (GstBaseTransform * base_transform,
     GstBuffer *inbuf, GstBuffer *outbuf);
-static gboolean gst_schrodownsample_get_unit_size (GstBaseTransform * base_transform,
+static gboolean gst_schrocolorspace_get_unit_size (GstBaseTransform * base_transform,
     GstCaps *caps, guint *size);
 
-static GstStaticPadTemplate gst_schrodownsample_sink_template =
+static GstStaticPadTemplate gst_schrocolorspace_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
     GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YV12, YUY2, UYVY, AYUV }"))
     );
 
-static GstStaticPadTemplate gst_schrodownsample_src_template =
+static GstStaticPadTemplate gst_schrocolorspace_src_template =
     GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
@@ -115,32 +115,32 @@ static GstStaticPadTemplate gst_schrodownsample_src_template =
     );
 
 GType
-gst_schrodownsample_get_type (void)
+gst_schrocolorspace_get_type (void)
 {
   static GType compress_type = 0;
 
   if (!compress_type) {
     static const GTypeInfo compress_info = {
-      sizeof (GstSchrodownsampleClass),
-      gst_schrodownsample_base_init,
+      sizeof (GstSchrocolorspaceClass),
+      gst_schrocolorspace_base_init,
       NULL,
-      gst_schrodownsample_class_init,
+      gst_schrocolorspace_class_init,
       NULL,
       NULL,
-      sizeof (GstSchrodownsample),
+      sizeof (GstSchrocolorspace),
       0,
-      gst_schrodownsample_init,
+      gst_schrocolorspace_init,
     };
 
     compress_type = g_type_register_static (GST_TYPE_BASE_TRANSFORM,
-        "GstSchrodownsample", &compress_info, 0);
+        "GstSchrocolorspace", &compress_info, 0);
   }
   return compress_type;
 }
 
 
 static void
-gst_schrodownsample_base_init (gpointer g_class)
+gst_schrocolorspace_base_init (gpointer g_class)
 {
   static GstElementDetails compress_details =
       GST_ELEMENT_DETAILS ("Video Filter Template",
@@ -151,26 +151,26 @@ gst_schrodownsample_base_init (gpointer g_class)
   //GstBaseTransformClass *base_transform_class = GST_BASE_TRANSFORM_CLASS (g_class);
 
   gst_element_class_add_pad_template (element_class,
-      gst_static_pad_template_get (&gst_schrodownsample_src_template));
+      gst_static_pad_template_get (&gst_schrocolorspace_src_template));
   gst_element_class_add_pad_template (element_class,
-      gst_static_pad_template_get (&gst_schrodownsample_sink_template));
+      gst_static_pad_template_get (&gst_schrocolorspace_sink_template));
 
   gst_element_class_set_details (element_class, &compress_details);
 }
 
 static void
-gst_schrodownsample_class_init (gpointer g_class, gpointer class_data)
+gst_schrocolorspace_class_init (gpointer g_class, gpointer class_data)
 {
   GObjectClass *gobject_class;
   GstBaseTransformClass *base_transform_class;
-  GstSchrodownsampleClass *downsample_class;
+  GstSchrocolorspaceClass *colorspace_class;
 
   gobject_class = G_OBJECT_CLASS (g_class);
   base_transform_class = GST_BASE_TRANSFORM_CLASS (g_class);
-  downsample_class = GST_SCHRODOWNSAMPLE_CLASS (g_class);
+  colorspace_class = GST_SCHROCOLORSPACE_CLASS (g_class);
 
-  gobject_class->set_property = gst_schrodownsample_set_property;
-  gobject_class->get_property = gst_schrodownsample_get_property;
+  gobject_class->set_property = gst_schrocolorspace_set_property;
+  gobject_class->get_property = gst_schrocolorspace_get_property;
 
 #if 0
   g_object_class_install_property (gobject_class, ARG_WAVELET_TYPE,
@@ -181,30 +181,30 @@ gst_schrodownsample_class_init (gpointer g_class, gpointer class_data)
         0, 100, 0, G_PARAM_READWRITE));
 #endif
 
-  base_transform_class->transform = gst_schrodownsample_transform;
-  base_transform_class->transform_caps = gst_schrodownsample_transform_caps;
-  base_transform_class->get_unit_size = gst_schrodownsample_get_unit_size;
+  base_transform_class->transform = gst_schrocolorspace_transform;
+  base_transform_class->transform_caps = gst_schrocolorspace_transform_caps;
+  base_transform_class->get_unit_size = gst_schrocolorspace_get_unit_size;
 }
 
 static void
-gst_schrodownsample_init (GTypeInstance * instance, gpointer g_class)
+gst_schrocolorspace_init (GTypeInstance * instance, gpointer g_class)
 {
-  //GstSchrodownsample *compress = GST_SCHRODOWNSAMPLE (instance);
+  //GstSchrocolorspace *compress = GST_SCHROCOLORSPACE (instance);
   //GstBaseTransform *btrans = GST_BASE_TRANSFORM (instance);
 
-  GST_DEBUG ("gst_schrodownsample_init");
+  GST_DEBUG ("gst_schrocolorspace_init");
 }
 
 static void
-gst_schrodownsample_set_property (GObject * object, guint prop_id,
+gst_schrocolorspace_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
 {
-  GstSchrodownsample *src;
+  GstSchrocolorspace *src;
 
-  g_return_if_fail (GST_IS_SCHRODOWNSAMPLE (object));
-  src = GST_SCHRODOWNSAMPLE (object);
+  g_return_if_fail (GST_IS_SCHROCOLORSPACE (object));
+  src = GST_SCHROCOLORSPACE (object);
 
-  GST_DEBUG ("gst_schrodownsample_set_property");
+  GST_DEBUG ("gst_schrocolorspace_set_property");
   switch (prop_id) {
     default:
       break;
@@ -212,13 +212,13 @@ gst_schrodownsample_set_property (GObject * object, guint prop_id,
 }
 
 static void
-gst_schrodownsample_get_property (GObject * object, guint prop_id, GValue * value,
+gst_schrocolorspace_get_property (GObject * object, guint prop_id, GValue * value,
     GParamSpec * pspec)
 {
-  GstSchrodownsample *src;
+  GstSchrocolorspace *src;
 
-  g_return_if_fail (GST_IS_SCHRODOWNSAMPLE (object));
-  src = GST_SCHRODOWNSAMPLE (object);
+  g_return_if_fail (GST_IS_SCHROCOLORSPACE (object));
+  src = GST_SCHROCOLORSPACE (object);
 
   switch (prop_id) {
     default:
@@ -228,54 +228,33 @@ gst_schrodownsample_get_property (GObject * object, guint prop_id, GValue * valu
 }
 
 static void
-transform_value (GValue *dest, const GValue *src, GstPadDirection dir)
+transform_value (GValue *dest)
 {
-  g_value_init (dest, G_VALUE_TYPE (src));
+  GValue fourcc = { 0 };
 
-  if (G_VALUE_HOLDS_INT (src)) {
-    int x;
+  g_value_init (dest, GST_TYPE_LIST);
+  g_value_init (&fourcc, GST_TYPE_FOURCC);
 
-    x = g_value_get_int (src);
-    if (dir == GST_PAD_SINK) {
-      g_value_set_int (dest, x/2);
-    } else {
-      g_value_set_int (dest, x*2);
-    }
-  } else if (GST_VALUE_HOLDS_INT_RANGE (src)) {
-    int min, max;
+  gst_value_set_fourcc (&fourcc, GST_MAKE_FOURCC('I','4','2','0'));
+  gst_value_list_append_value (dest, &fourcc);
 
-    min = gst_value_get_int_range_min (src);
-    max = gst_value_get_int_range_max (src);
+  gst_value_set_fourcc (&fourcc, GST_MAKE_FOURCC('Y','V','1','2'));
+  gst_value_list_append_value (dest, &fourcc);
 
-    if (dir == GST_PAD_SINK) {
-      min = (min+1)/2;
-      if (max == G_MAXINT) {
-        max = G_MAXINT/2;
-      } else {
-        max = (max+1)/2;
-      }
-    } else {
-      if (max > G_MAXINT/2) {
-        max = G_MAXINT;
-      } else {
-        max = max*2;
-      }
-      if (min > G_MAXINT/2) {
-        min = G_MAXINT;
-      } else {
-        min = min*2;
-      }
-    }
-    gst_value_set_int_range (dest, min, max);
-  } else {
-    /* FIXME */
-    g_warning ("case not handled");
-    g_value_set_int (dest, 100);
-  }
+  gst_value_set_fourcc (&fourcc, GST_MAKE_FOURCC('Y','U','Y','2'));
+  gst_value_list_append_value (dest, &fourcc);
+
+  gst_value_set_fourcc (&fourcc, GST_MAKE_FOURCC('U','Y','V','Y'));
+  gst_value_list_append_value (dest, &fourcc);
+
+  gst_value_set_fourcc (&fourcc, GST_MAKE_FOURCC('A','Y','U','V'));
+  gst_value_list_append_value (dest, &fourcc);
+
+  g_value_unset (&fourcc);
 }
 
 static GstCaps *
-gst_schrodownsample_transform_caps (GstBaseTransform * base_transform,
+gst_schrocolorspace_transform_caps (GstBaseTransform * base_transform,
     GstPadDirection direction, GstCaps *caps)
 {
   int i;
@@ -288,14 +267,9 @@ gst_schrodownsample_transform_caps (GstBaseTransform * base_transform,
   for(i=0;i<gst_caps_get_size (caps);i++){
     structure = gst_caps_get_structure (caps, i);
 
-    value = gst_structure_get_value (structure, "width");
-    transform_value (&new_value, value, direction);
-    gst_structure_set_value (structure, "width", &new_value);
-    g_value_unset (&new_value);
-
-    value = gst_structure_get_value (structure, "height");
-    transform_value (&new_value, value, direction);
-    gst_structure_set_value (structure, "height", &new_value);
+    value = gst_structure_get_value (structure, "format");
+    transform_value (&new_value);
+    gst_structure_set_value (structure, "format", &new_value);
     g_value_unset (&new_value);
   }
 
@@ -303,7 +277,7 @@ gst_schrodownsample_transform_caps (GstBaseTransform * base_transform,
 }
 
 static gboolean
-gst_schrodownsample_get_unit_size (GstBaseTransform * base_transform,
+gst_schrocolorspace_get_unit_size (GstBaseTransform * base_transform,
     GstCaps *caps, guint *size)
 {
   int width, height;
@@ -336,65 +310,88 @@ gst_schrodownsample_get_unit_size (GstBaseTransform * base_transform,
 }
 
 static GstFlowReturn
-gst_schrodownsample_transform (GstBaseTransform * base_transform,
+gst_schrocolorspace_transform (GstBaseTransform * base_transform,
     GstBuffer *inbuf, GstBuffer *outbuf)
 {
-  GstSchrodownsample *compress;
-  SchroFrame *outframe;
-  int width, height;
-  uint32_t format;
+  GstSchrocolorspace *compress;
+  SchroFrame *out_frame;
   SchroFrame *frame;
+  int width, height;
+  uint32_t in_format;
+  uint32_t out_format;
+  SchroFrameFormat new_subsample;
   
-  g_return_val_if_fail (GST_IS_SCHRODOWNSAMPLE (base_transform), GST_FLOW_ERROR);
-  compress = GST_SCHRODOWNSAMPLE (base_transform);
+  g_return_val_if_fail (GST_IS_SCHROCOLORSPACE (base_transform), GST_FLOW_ERROR);
+  compress = GST_SCHROCOLORSPACE (base_transform);
 
   gst_structure_get_fourcc (gst_caps_get_structure(inbuf->caps, 0),
-      "format", &format);
+      "format", &in_format);
+  gst_structure_get_fourcc (gst_caps_get_structure(outbuf->caps, 0),
+      "format", &out_format);
   gst_structure_get_int (gst_caps_get_structure(inbuf->caps, 0),
       "width", &width);
   gst_structure_get_int (gst_caps_get_structure(inbuf->caps, 0),
       "height", &height);
 
-  switch (format) {
+  switch (in_format) {
     case GST_MAKE_FOURCC('I','4','2','0'):
       frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA(inbuf),
           width, height);
-      outframe = schro_frame_new_from_data_I420 (GST_BUFFER_DATA(outbuf),
-          width/2, height/2);
       break;
     case GST_MAKE_FOURCC('Y','V','1','2'):
       frame = schro_frame_new_from_data_YV12 (GST_BUFFER_DATA(inbuf),
           width, height);
-      outframe = schro_frame_new_from_data_YV12 (GST_BUFFER_DATA(outbuf),
-          width/2, height/2);
       break;
     case GST_MAKE_FOURCC('Y','U','Y','2'):
       frame = schro_frame_new_from_data_YUY2 (GST_BUFFER_DATA(inbuf),
           width, height);
-      outframe = schro_frame_new_from_data_YUY2 (GST_BUFFER_DATA(outbuf),
-          width/2, height/2);
       break;
     case GST_MAKE_FOURCC('U','Y','V','Y'):
       frame = schro_frame_new_from_data_UYVY (GST_BUFFER_DATA(inbuf),
           width, height);
-      outframe = schro_frame_new_from_data_UYVY (GST_BUFFER_DATA(outbuf),
-          width/2, height/2);
       break;
     case GST_MAKE_FOURCC('A','Y','U','V'):
       frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA(inbuf),
           width, height);
-      outframe = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA(outbuf),
-          width/2, height/2);
+      break;
+    default:
+      g_assert_not_reached();
+  }
+
+  switch (out_format) {
+    case GST_MAKE_FOURCC('I','4','2','0'):
+      out_frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA(outbuf),
+          width, height);
+      new_subsample = SCHRO_FRAME_FORMAT_U8_420;
+      break;
+    case GST_MAKE_FOURCC('Y','V','1','2'):
+      out_frame = schro_frame_new_from_data_YV12 (GST_BUFFER_DATA(outbuf),
+          width, height);
+      new_subsample = SCHRO_FRAME_FORMAT_U8_420;
+      break;
+    case GST_MAKE_FOURCC('Y','U','Y','2'):
+      out_frame = schro_frame_new_from_data_YUY2 (GST_BUFFER_DATA(outbuf),
+          width, height);
+      new_subsample = SCHRO_FRAME_FORMAT_U8_422;
+      break;
+    case GST_MAKE_FOURCC('U','Y','V','Y'):
+      out_frame = schro_frame_new_from_data_UYVY (GST_BUFFER_DATA(outbuf),
+          width, height);
+      new_subsample = SCHRO_FRAME_FORMAT_U8_422;
+      break;
+    case GST_MAKE_FOURCC('A','Y','U','V'):
+      out_frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA(outbuf),
+          width, height);
+      new_subsample = SCHRO_FRAME_FORMAT_U8_444;
       break;
     default:
       g_assert_not_reached();
   }
 
   frame = schro_virt_frame_new_unpack_take (frame);
-  frame = schro_virt_frame_new_horiz_downsample_take (frame, FALSE);
-  frame = schro_virt_frame_new_vert_downsample_take (frame, FALSE);
+  frame = schro_virt_frame_new_subsample_take (frame, new_subsample);
 
-  switch (format) {
+  switch (out_format) {
     case GST_MAKE_FOURCC('Y','U','Y','2'):
       frame = schro_virt_frame_new_pack_YUY2_take (frame);
       break;
@@ -408,9 +405,9 @@ gst_schrodownsample_transform (GstBaseTransform * base_transform,
       break;
   }
 
-  schro_virt_frame_render (frame, outframe);
+  schro_virt_frame_render (frame, out_frame);
   schro_frame_unref (frame);
-  schro_frame_unref (outframe);
+  schro_frame_unref (out_frame);
 
   return GST_FLOW_OK;
 }
