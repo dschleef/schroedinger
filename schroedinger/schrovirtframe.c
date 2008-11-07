@@ -859,6 +859,57 @@ convert_422_420 (SchroFrame *frame, void *_dest, int component, int i)
   oil_memcpy (dest, src, frame->components[component].width);
 }
 
+/* up */
+
+static void
+convert_422_444 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+  int j;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+
+  if (component == 0) {
+    oil_memcpy (dest, src, frame->width);
+  } else {
+    for(j=0;j<frame->components[component].width;j++){
+      dest[j] = src[j>>1];
+    }
+  }
+}
+
+static void
+convert_420_444 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+  int j;
+
+  if (component == 0) {
+    src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+    oil_memcpy (dest, src, frame->components[component].width);
+  } else {
+    src = schro_virt_frame_get_line (frame->virt_frame1, component, i>>1);
+    for(j=0;j<frame->components[component].width;j++){
+      dest[j] = src[j>>1];
+    }
+  }
+}
+
+static void
+convert_420_422 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+
+  if (component == 0) {
+    src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  } else {
+    src = schro_virt_frame_get_line (frame->virt_frame1, component, i>>1);
+  }
+  oil_memcpy (dest, src, frame->components[component].width);
+}
 
 SchroFrame *
 schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format)
@@ -866,6 +917,9 @@ schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format)
   SchroFrame *virt_frame;
   SchroFrameRenderFunc render_line;
 
+  if (vf->format == format) {
+    return schro_frame_ref (vf);
+  }
   if (vf->format == SCHRO_FRAME_FORMAT_U8_422 &&
       format == SCHRO_FRAME_FORMAT_U8_420) {
     render_line = convert_422_420;
@@ -875,6 +929,15 @@ schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format)
   } else if (vf->format == SCHRO_FRAME_FORMAT_U8_444 &&
       format == SCHRO_FRAME_FORMAT_U8_422) {
     render_line = convert_444_422;
+  } else if (vf->format == SCHRO_FRAME_FORMAT_U8_420 &&
+      format == SCHRO_FRAME_FORMAT_U8_422) {
+    render_line = convert_420_422;
+  } else if (vf->format == SCHRO_FRAME_FORMAT_U8_420 &&
+      format == SCHRO_FRAME_FORMAT_U8_444) {
+    render_line = convert_420_444;
+  } else if (vf->format == SCHRO_FRAME_FORMAT_U8_422 &&
+      format == SCHRO_FRAME_FORMAT_U8_444) {
+    render_line = convert_422_444;
   } else {
     SCHRO_ASSERT(0);
     return NULL;
@@ -885,8 +948,6 @@ schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format)
 
   return virt_frame;
 }
-
-
 
 
 SchroFrame *
