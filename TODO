@@ -1,27 +1,22 @@
 
-BUGS:
+ - modify scheduler to run multiple tasks on the same picture
+   simultaneously
 
-  setting NOARITH preference doesn't do anything
+ - "rate distortion" for time vs. ME searching
+
+ - 
+
+
+
+BUGS:
 
 general:
 
   add copyright blocks
 
-  stabilize API
-
   add profile support
 
   add bit peeling
-
-  default block sizes are wrong for some video formats
-
-  use SchroFrameData everywhere
-
-schroarith.c:
-
-  move next_list to elsewhere
-
-  integrate with SchroPack and SchroUnpack
 
 schropack.c:
 
@@ -42,16 +37,6 @@ schroencoder.c:
 schrohistogram.c:
 
   rename ilogx/iexpx to something sane
-
-schrometric.c:
-
-  handle non-8x8 blocks
-
-schromotion.c:
-
-  handle bi-ref blocks
-
-  rename copy_with_motion to schro_motion_render
 
 schroparams.c:
 
