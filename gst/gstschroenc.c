@@ -23,6 +23,7 @@
 
 #include <gst/gst.h>
 #include <gst/video/video.h>
+#include <gst/video/gstbasevideoencoder.h>
 #include <string.h>
 
 #define SCHRO_ENABLE_UNSTABLE_API
@@ -31,7 +32,6 @@
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schrovirtframe.h>
 #include <math.h>
-#include "gstbasevideoencoder.h"
 #include "gstschroutils.h"
 
 GST_DEBUG_CATEGORY_EXTERN (schro_debug);
@@ -55,7 +55,8 @@ typedef enum {
   GST_SCHRO_ENC_OUTPUT_OGG,
   GST_SCHRO_ENC_OUTPUT_QUICKTIME,
   GST_SCHRO_ENC_OUTPUT_AVI,
-  GST_SCHRO_ENC_OUTPUT_MPEG_TS
+  GST_SCHRO_ENC_OUTPUT_MPEG_TS,
+  GST_SCHRO_ENC_OUTPUT_MP4
 } GstSchroEncOutputType;
 
 struct _GstSchroEnc
@@ -126,7 +127,7 @@ static GstStaticPadTemplate gst_schro_enc_src_template =
     GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS ("video/x-dirac;video/x-qt-part")
+    GST_STATIC_CAPS ("video/x-dirac;video/x-qt-part;video/x-mp4-part")
     );
 
 GST_BOILERPLATE (GstSchroEnc, gst_schro_enc, GstBaseVideoEncoder,
@@ -351,7 +352,7 @@ gst_schro_enc_start (GstBaseVideoEncoder *base_video_encoder)
   GstStructure *structure;
 
   GST_DEBUG("set_output_caps");
-  caps = gst_pad_get_allowed_caps (base_video_encoder->srcpad);
+  caps = gst_pad_get_allowed_caps (GST_BASE_VIDEO_CODEC_SRC_PAD(base_video_encoder));
 
   if (gst_caps_is_empty (caps)) {
     gst_caps_unref (caps);
@@ -366,6 +367,8 @@ gst_schro_enc_start (GstBaseVideoEncoder *base_video_encoder)
     schro_enc->output_format = GST_SCHRO_ENC_OUTPUT_QUICKTIME;
   } else if (gst_structure_has_name (structure, "video/x-avi-part")) {
     schro_enc->output_format = GST_SCHRO_ENC_OUTPUT_AVI;
+  } else if (gst_structure_has_name (structure, "video/x-mp4-part")) {
+    schro_enc->output_format = GST_SCHRO_ENC_OUTPUT_MP4;
   } else {
     return FALSE;
   }
@@ -524,6 +527,15 @@ gst_schro_enc_get_caps (GstBaseVideoEncoder *base_video_encoder)
         state->fps_d,
         "pixel-aspect-ratio", GST_TYPE_FRACTION, state->par_n,
         state->par_d, NULL);
+  } else if (schro_enc->output_format == GST_SCHRO_ENC_OUTPUT_MP4) {
+    caps = gst_caps_new_simple ("video/x-mp4-part",
+        "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('d','r','a','c'),
+        "width", G_TYPE_INT, state->width,
+        "height", G_TYPE_INT, state->height,
+        "framerate", GST_TYPE_FRACTION, state->fps_n,
+        state->fps_d,
+        "pixel-aspect-ratio", GST_TYPE_FRACTION, state->par_n,
+        state->par_d, NULL);
   } else {
     g_assert_not_reached ();
   }
@@ -575,7 +587,7 @@ gst_schro_enc_shape_output_ogg (GstBaseVideoEncoder *base_video_encoder,
 
   gst_buffer_set_caps (buf, base_video_encoder->caps);
 
-  return gst_pad_push (base_video_encoder->srcpad, buf);
+  return gst_pad_push (GST_BASE_VIDEO_CODEC_SRC_PAD(base_video_encoder), buf);
 }
 
 static GstFlowReturn
@@ -592,20 +604,51 @@ gst_schro_enc_shape_output_quicktime (GstBaseVideoEncoder *base_video_encoder,
   GST_BUFFER_DURATION (buf) = gst_video_state_get_timestamp (state,
       frame->presentation_frame_number + 1) - GST_BUFFER_TIMESTAMP (buf);
   GST_BUFFER_OFFSET_END (buf) = gst_video_state_get_timestamp (state,
-      frame->decode_frame_number);
+      frame->system_frame_number);
   GST_BUFFER_OFFSET (buf) = GST_CLOCK_TIME_NONE;
 
   if (frame->is_sync_point &&
       frame->presentation_frame_number == frame->system_frame_number) {
     GST_BUFFER_FLAG_UNSET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
-    GST_ERROR("sync point");
   } else {
     GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
   }
 
   gst_buffer_set_caps (buf, base_video_encoder->caps);
 
-  return gst_pad_push (base_video_encoder->srcpad, buf);
+  return gst_pad_push (GST_BASE_VIDEO_CODEC_SRC_PAD(base_video_encoder), buf);
+}
+
+static GstFlowReturn
+gst_schro_enc_shape_output_mp4 (GstBaseVideoEncoder *base_video_encoder,
+    GstVideoFrame *frame)
+{
+  GstBuffer *buf = frame->src_buffer;
+  const GstVideoState *state;
+
+  state = gst_base_video_encoder_get_state (base_video_encoder);
+
+  GST_BUFFER_TIMESTAMP (buf) = gst_video_state_get_timestamp (state,
+      frame->presentation_frame_number);
+  GST_BUFFER_DURATION (buf) = gst_video_state_get_timestamp (state,
+      frame->presentation_frame_number + 1) - GST_BUFFER_TIMESTAMP (buf);
+  GST_BUFFER_OFFSET_END (buf) = gst_video_state_get_timestamp (state,
+      frame->decode_frame_number);
+  GST_BUFFER_OFFSET (buf) = GST_CLOCK_TIME_NONE;
+
+GST_BUFFER_OFFSET_END (buf) = gst_video_state_get_timestamp (state,
+frame->system_frame_number);
+
+  if (frame->is_sync_point &&
+      frame->presentation_frame_number == frame->system_frame_number) {
+    GST_BUFFER_FLAG_UNSET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
+  } else {
+    GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
+  }
+
+  gst_buffer_set_caps (buf, base_video_encoder->caps);
+
+  return gst_pad_push (GST_BASE_VIDEO_CODEC_SRC_PAD(base_video_encoder), buf);
 }
 
 static GstFlowReturn
@@ -619,10 +662,10 @@ gst_schro_enc_shape_output (GstBaseVideoEncoder *base_video_encoder,
   switch (schro_enc->output_format) {
     case GST_SCHRO_ENC_OUTPUT_OGG:
       return gst_schro_enc_shape_output_ogg (base_video_encoder, frame);
-      break;
     case GST_SCHRO_ENC_OUTPUT_QUICKTIME:
       return gst_schro_enc_shape_output_quicktime (base_video_encoder, frame);
-      break;
+    case GST_SCHRO_ENC_OUTPUT_MP4:
+      return gst_schro_enc_shape_output_mp4 (base_video_encoder, frame);
     default:
       g_assert_not_reached ();
       break;

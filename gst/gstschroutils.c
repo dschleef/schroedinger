@@ -118,3 +118,22 @@ gst_schro_wrap_schro_buffer (SchroBuffer *buffer)
   return gstbuf;
 }
 
+static void
+gst_schro_buffer_free (SchroBuffer *buffer, void *priv)
+{
+  gst_buffer_unref (GST_BUFFER (priv));
+}
+
+SchroBuffer *
+gst_schro_wrap_gst_buffer (GstBuffer *buffer)
+{
+  SchroBuffer *schrobuf;
+
+  schrobuf = schro_buffer_new_with_data (GST_BUFFER_DATA (buffer),
+      GST_BUFFER_SIZE (buffer));
+  schrobuf->free = gst_schro_buffer_free;
+  schrobuf->priv = buffer;
+
+  return schrobuf;
+}
+

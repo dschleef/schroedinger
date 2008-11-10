@@ -22,15 +22,14 @@
 #endif
 
 #include <gst/gst.h>
-#include <gst/base/gstbasetransform.h>
 #include <gst/base/gstadapter.h>
 #include <gst/video/video.h>
+#include <gst/video/gstbasevideoparse.h>
 #include <string.h>
 #include <schroedinger/schro.h>
 #include <liboil/liboil.h>
 #include <math.h>
 
-#include "gstbasevideoparse.h"
 
 #define SCHRO_ENABLE_UNSTABLE_API
 #include <schroedinger/schroparse.h>
@@ -57,7 +56,8 @@ typedef enum {
   GST_SCHRO_PARSE_OUTPUT_OGG,
   GST_SCHRO_PARSE_OUTPUT_QUICKTIME,
   GST_SCHRO_PARSE_OUTPUT_AVI,
-  GST_SCHRO_PARSE_OUTPUT_MPEG_TS
+  GST_SCHRO_PARSE_OUTPUT_MPEG_TS,
+  GST_SCHRO_PARSE_OUTPUT_MP4
 } GstSchroParseOutputType;
 
 struct _GstSchroParse
@@ -124,7 +124,7 @@ static GstStaticPadTemplate gst_schro_parse_src_template =
     GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS ("video/x-dirac;video/x-qt-part;video/x-avi-part")
+    GST_STATIC_CAPS ("video/x-dirac;video/x-qt-part;video/x-avi-part;video/x-mp4-part")
     );
 
 GST_BOILERPLATE (GstSchroParse, gst_schro_parse, GstBaseVideoParse, GST_TYPE_BASE_VIDEO_PARSE);
@@ -213,7 +213,7 @@ gst_schro_parse_start (GstBaseVideoParse *base_video_parse)
   GstStructure *structure;
 
   GST_DEBUG("start");
-  caps = gst_pad_get_allowed_caps (base_video_parse->srcpad);
+  caps = gst_pad_get_allowed_caps (GST_BASE_VIDEO_CODEC_SRC_PAD(base_video_parse));
 
   if (gst_caps_is_empty (caps)) {
     gst_caps_unref (caps);
@@ -230,6 +230,8 @@ gst_schro_parse_start (GstBaseVideoParse *base_video_parse)
     schro_parse->output_format = GST_SCHRO_PARSE_OUTPUT_AVI;
   } else if (gst_structure_has_name (structure, "video/x-mpegts-part")) {
     schro_parse->output_format = GST_SCHRO_PARSE_OUTPUT_MPEG_TS;
+  } else if (gst_structure_has_name (structure, "video/x-mp4-part")) {
+    schro_parse->output_format = GST_SCHRO_PARSE_OUTPUT_MP4;
   } else {
     return FALSE;
   }
@@ -309,42 +311,6 @@ gst_schro_parse_scan_for_sync (GstAdapter *adapter, gboolean at_eos,
       offset, MIN (n, n_available - 3));
 }
 
-#ifdef unused
-static gboolean
-gst_schro_parse_get_packet (GstAdapter *adapter, gboolean at_eos,
-    int offset, int *size)
-{
-  int xsize;
-  unsigned char header[SCHRO_PARSE_HEADER_SIZE];
-  int back;
-  
-  if (gst_adapter_available (adapter) - offset < SCHRO_PARSE_HEADER_SIZE) {
-    /* FIXME maybe */
-    return FALSE;
-  }
-
-  gst_adapter_copy_full (adapter, header, offset, SCHRO_PARSE_HEADER_SIZE);
-
-  if (memcmp (header, "BBCD", 4) != 0) {
-    return FALSE;
-  }
-
-  xsize = GST_READ_UINT32_BE (header + 5);
-  if (xsize & 0xf0000000) {
-    /* unreasonably large size */
-    return FALSE;
-  }
-
-  back = GST_READ_UINT32_BE (header + 9);
-  if (back & 0xf0000000) {
-    /* unreasonably large size */
-    return FALSE;
-  }
-
-  return TRUE;
-}
-#endif
-
 static GstFlowReturn
 gst_schro_parse_parse_data (GstBaseVideoParse *base_video_parse,
     gboolean at_eos)
@@ -410,7 +376,7 @@ gst_schro_parse_parse_data (GstBaseVideoParse *base_video_parse,
     gst_adapter_copy_full (base_video_parse->input_adapter, data, 0, next);
     parse_sequence_header (schro_parse, data, next);
 
-    gst_base_video_parse_set_sync_point (base_video_parse);
+    base_video_parse->current_frame->is_sync_point = TRUE;
 
     g_free (data);
   }
@@ -492,15 +458,8 @@ gst_schro_parse_shape_output_quicktime (GstBaseVideoParse *base_video_parse,
 
   state = gst_base_video_parse_get_state (base_video_parse);
 
-#if 0
-  GST_BUFFER_TIMESTAMP (buf) = gst_video_state_get_timestamp (state,
-      frame->presentation_frame_number);
-  GST_BUFFER_DURATION (buf) = gst_video_state_get_timestamp (state,
-      frame->presentation_frame_number + 1) - GST_BUFFER_TIMESTAMP (buf);
   GST_BUFFER_OFFSET_END (buf) = gst_video_state_get_timestamp (state,
-      frame->decode_frame_number);
-  GST_BUFFER_OFFSET (buf) = GST_CLOCK_TIME_NONE;
-#endif
+      frame->system_frame_number);
 
   if (frame->is_sync_point &&
       frame->presentation_frame_number == frame->system_frame_number) {
@@ -521,16 +480,6 @@ gst_schro_parse_shape_output_mpeg_ts (GstBaseVideoParse *base_video_parse,
   const GstVideoState *state;
 
   state = gst_base_video_parse_get_state (base_video_parse);
-
-#if 0
-  if (frame->is_sync_point &&
-      frame->presentation_frame_number == frame->system_frame_number) {
-    GST_BUFFER_FLAG_UNSET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
-    GST_DEBUG("sync point");
-  } else {
-    GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
-  }
-#endif
 
   return gst_base_video_parse_push (base_video_parse, buf);
 }
@@ -556,297 +505,6 @@ gst_schro_parse_shape_output (GstBaseVideoParse *base_video_parse,
 
   return GST_FLOW_ERROR;
 }
-
-#if 0
-static GstFlowReturn
-gst_schro_parse_handle_packet_ogg (GstSchroParse *schro_parse, GstBuffer *buf)
-{
-  guint8 *data;
-  int parse_code;
-  GstFlowReturn ret = GST_FLOW_OK;
-
-  data = GST_BUFFER_DATA(buf);
-  parse_code = data[4];
-
-  if (schro_parse->have_picture) {
-    schro_parse->have_picture = FALSE;
-    if (SCHRO_PARSE_CODE_IS_END_OF_SEQUENCE(parse_code)) {
-      gst_adapter_push (schro_parse->output_adapter, buf);
-      return gst_schro_parse_push_packet_ogg (schro_parse);
-    } else {
-      ret = gst_schro_parse_push_packet_ogg (schro_parse);
-    }
-  }
-
-  if (SCHRO_PARSE_CODE_IS_SEQ_HEADER(parse_code)) {
-    if (!schro_parse->have_seq_header) {
-      handle_sequence_header (schro_parse, data, GST_BUFFER_SIZE(buf));
-      schro_parse->have_seq_header = TRUE;
-    }
-  }
-
-  if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
-    schro_parse->have_picture = TRUE;
-    schro_parse->buf_picture_number = GST_READ_UINT32_BE (data+13);
-    if (schro_parse->have_seq_header) {
-      schro_parse->seq_hdr_picture_number = GST_READ_UINT32_BE (data+13);
-    }
-  }
-  gst_adapter_push (schro_parse->output_adapter, buf);
-
-  return ret;
-}
-
-static GstFlowReturn
-gst_schro_parse_push_packet_ogg (GstSchroParse *schro_parse)
-{
-  GstBuffer *buf;
-
-  buf = gst_adapter_take_buffer (schro_parse->output_adapter,
-      gst_adapter_available (schro_parse->output_adapter));
-
-  if (schro_parse->have_seq_header) {
-    schro_parse->seq_hdr_picture_number = schro_parse->picture_number;
-  }
-#if 0
-  schro_parse->granulepos_hi = schro_parse->seq_hdr_picture_number;
-  schro_parse->granulepos_low = schro_parse->picture_number - schro_parse->granulepos_hi;
-#else
-  {
-    int dpn;
-    int delay;
-    int dist;
-    int sys;
-    int pt;
-    int st;
-
-    sys = schro_parse->picture_number;
-    dpn = schro_parse->buf_picture_number;
-
-    pt = schro_parse->buf_picture_number * 2;
-    st = sys * 2;
-    delay = pt - st + 2;
-    dist = schro_parse->picture_number - schro_parse->seq_hdr_picture_number;
-
-    GST_DEBUG("sys %d dpn %d pt %d delay %d dist %d",
-        sys, dpn, pt, delay, dist);
-
-    schro_parse->granulepos_hi = (((uint64_t)pt - delay)<<9) | ((dist>>8));
-    schro_parse->granulepos_low = (delay << 9) | (dist & 0xff);
-    GST_DEBUG("granulepos %lld:%lld",
-        schro_parse->granulepos_hi, schro_parse->granulepos_low);
-  }
-#endif
-
-  GST_BUFFER_OFFSET_END (buf) =
-    (((uint64_t)schro_parse->granulepos_hi)<<OGG_DIRAC_GRANULE_SHIFT) +
-    schro_parse->granulepos_low;
-  if ((int64_t)(GST_BUFFER_OFFSET_END (buf) - schro_parse->last_granulepos) <= 0) {
-    GST_DEBUG("granulepos didn't increase");
-  }
-  schro_parse->last_granulepos = GST_BUFFER_OFFSET_END (buf);
-
-  GST_BUFFER_OFFSET (buf) = gst_schro_parse_get_timestamp (schro_parse,
-      (schro_parse->granulepos_hi + schro_parse->granulepos_low)>>9);
-  GST_BUFFER_TIMESTAMP (buf) = gst_schro_parse_get_timestamp (schro_parse,
-      schro_parse->picture_number);
-  GST_BUFFER_DURATION (buf) = gst_schro_parse_get_timestamp (schro_parse,
-        schro_parse->picture_number + 1) - GST_BUFFER_TIMESTAMP (buf);
-
-  if (schro_parse->have_seq_header) {
-    GST_BUFFER_FLAG_UNSET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
-  } else {
-    GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
-  }
-  schro_parse->have_seq_header = FALSE;
-
-  schro_parse->picture_number++;
-
-  GST_INFO("size %d offset %lld granulepos %llu:%llu timestamp %lld duration %lld",
-      GST_BUFFER_SIZE (buf),
-      GST_BUFFER_OFFSET (buf),
-      GST_BUFFER_OFFSET_END (buf)>>OGG_DIRAC_GRANULE_SHIFT,
-      GST_BUFFER_OFFSET_END (buf)&OGG_DIRAC_GRANULE_LOW_MASK,
-      GST_BUFFER_TIMESTAMP (buf),
-      GST_BUFFER_DURATION (buf));
-
-  if (!schro_parse->pushed_seq_header) {
-    GST_BUFFER_OFFSET_END (schro_parse->seq_header_buffer) = -1;
-
-    gst_pad_push (schro_parse->srcpad,
-        gst_buffer_ref(schro_parse->seq_header_buffer));
-    schro_parse->pushed_seq_header = TRUE;
-  }
-
-  gst_buffer_set_caps (buf, schro_parse->caps);
-  return gst_pad_push (schro_parse->srcpad, buf);
-}
-
-static GstFlowReturn
-gst_schro_parse_handle_packet_qt (GstSchroParse *schro_parse, GstBuffer *buf)
-{
-  guint8 *data;
-  int parse_code;
-  GstFlowReturn ret = GST_FLOW_OK;
-
-  data = GST_BUFFER_DATA(buf);
-  parse_code = data[4];
-
-  if (schro_parse->have_picture) {
-    schro_parse->have_picture = FALSE;
-    if (SCHRO_PARSE_CODE_IS_END_OF_SEQUENCE(parse_code)) {
-      gst_adapter_push (schro_parse->output_adapter, buf);
-      return gst_schro_parse_push_packet_qt (schro_parse);
-    } else {
-      ret = gst_schro_parse_push_packet_qt (schro_parse);
-    }
-  }
-
-  if (SCHRO_PARSE_CODE_IS_SEQ_HEADER(parse_code)) {
-    if (!schro_parse->have_seq_header) {
-      handle_sequence_header (schro_parse, data, GST_BUFFER_SIZE(buf));
-      schro_parse->have_seq_header = TRUE;
-    }
-  }
-
-  if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
-    schro_parse->have_picture = TRUE;
-    schro_parse->buf_picture_number = GST_READ_UINT32_BE (data+13);
-  }
-  gst_adapter_push (schro_parse->output_adapter, buf);
-
-  return ret;
-}
-
-static GstFlowReturn
-gst_schro_parse_push_packet_qt (GstSchroParse *schro_parse)
-{
-  GstBuffer *buf;
-
-  buf = gst_adapter_take_buffer (schro_parse->output_adapter,
-      gst_adapter_available (schro_parse->output_adapter));
-
-  GST_BUFFER_TIMESTAMP (buf) = gst_schro_parse_get_timestamp (schro_parse,
-      schro_parse->buf_picture_number);
-  GST_BUFFER_DURATION (buf) = gst_schro_parse_get_timestamp (schro_parse,
-        schro_parse->buf_picture_number + 1) - GST_BUFFER_TIMESTAMP (buf);
-  GST_BUFFER_OFFSET (buf) = gst_schro_parse_get_timestamp (schro_parse,
-      schro_parse->picture_number - 1);
-  GST_BUFFER_OFFSET_END (buf) = GST_CLOCK_TIME_NONE;
-
-  if (schro_parse->have_seq_header &&
-      schro_parse->picture_number == schro_parse->buf_picture_number) {
-    GST_BUFFER_FLAG_UNSET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
-  } else {
-    GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
-  }
-  schro_parse->have_seq_header = FALSE;
-
-  schro_parse->picture_number++;
-
-  gst_buffer_set_caps (buf, schro_parse->caps);
-
-  return gst_pad_push (schro_parse->srcpad, buf);
-}
-
-static GstFlowReturn
-gst_schro_parse_handle_packet_avi (GstSchroParse *schro_parse, GstBuffer *buf)
-{
-  guint8 *data;
-  int parse_code;
-  GstFlowReturn ret = GST_FLOW_OK;
-
-  data = GST_BUFFER_DATA(buf);
-  parse_code = data[4];
-
-  while (schro_parse->have_picture) {
-    schro_parse->have_picture = FALSE;
-    if (SCHRO_PARSE_CODE_IS_END_OF_SEQUENCE(parse_code)) {
-      GST_DEBUG("storing");
-      gst_adapter_push (schro_parse->output_adapter, buf);
-      GST_DEBUG("pushing");
-      return gst_schro_parse_push_packet_avi (schro_parse);
-    } else {
-      GST_DEBUG("pushing");
-      if (schro_parse->buf_picture_number == schro_parse->picture_number ||
-          schro_parse->stored_picture_number == schro_parse->picture_number) {
-        ret = gst_schro_parse_push_packet_avi (schro_parse);
-        /* FIXME if we get an error here, we might end up in an
-         * inconsistent state. */
-      } else {
-        schro_parse->stored_picture_number = schro_parse->buf_picture_number;
-        GST_DEBUG("OOO picture %d", schro_parse->stored_picture_number);
-        /* no longer counts as a seek point */
-        schro_parse->have_seq_header = FALSE;
-      }
-    }
-
-    GST_DEBUG("stored %d picture %d", schro_parse->stored_picture_number,
-        schro_parse->picture_number);
-    if (schro_parse->stored_picture_number == schro_parse->picture_number) {
-      schro_parse->have_picture = TRUE;
-    }
-  }
-
-  if (SCHRO_PARSE_CODE_IS_SEQ_HEADER(parse_code)) {
-    if (!schro_parse->have_seq_header) {
-      handle_sequence_header (schro_parse, data, GST_BUFFER_SIZE(buf));
-      schro_parse->have_seq_header = TRUE;
-    }
-  }
-
-  if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
-    schro_parse->have_picture = TRUE;
-    schro_parse->buf_picture_number = GST_READ_UINT32_BE (data+13);
-    GST_DEBUG("picture number %d", schro_parse->buf_picture_number);
-  }
-  GST_DEBUG("storing");
-  gst_adapter_push (schro_parse->output_adapter, buf);
-
-  GST_DEBUG("returning %d", ret);
-  return ret;
-}
-
-static GstFlowReturn
-gst_schro_parse_push_packet_avi (GstSchroParse *schro_parse)
-{
-  GstBuffer *buf;
-  int size;
-
-  size = gst_adapter_available (schro_parse->output_adapter);
-  GST_DEBUG("size %d", size);
-  if (size > 0) {
-    buf = gst_adapter_take_buffer (schro_parse->output_adapter, size);
-  } else {
-    buf = gst_buffer_new_and_alloc (0);
-  }
-
-  GST_BUFFER_TIMESTAMP (buf) = gst_schro_parse_get_timestamp (schro_parse,
-      schro_parse->buf_picture_number);
-  GST_BUFFER_DURATION (buf) = gst_schro_parse_get_timestamp (schro_parse,
-        schro_parse->buf_picture_number + 1) - GST_BUFFER_TIMESTAMP (buf);
-  GST_BUFFER_OFFSET_END (buf) = gst_schro_parse_get_timestamp (schro_parse,
-      schro_parse->picture_number);
-
-  GST_DEBUG("buf_pic %d pic %d", schro_parse->buf_picture_number,
-      schro_parse->picture_number);
-
-  if (schro_parse->have_seq_header &&
-      schro_parse->picture_number == schro_parse->buf_picture_number) {
-    GST_DEBUG("seek point on %d", schro_parse->picture_number);
-    GST_BUFFER_FLAG_UNSET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
-  } else {
-    GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
-  }
-  schro_parse->have_seq_header = FALSE;
-
-  schro_parse->picture_number++;
-
-  gst_buffer_set_caps (buf, schro_parse->caps);
-
-  return gst_pad_push (schro_parse->srcpad, buf);
-}
-#endif
 
 static GstCaps *
 gst_schro_parse_get_caps (GstBaseVideoParse *base_video_parse)
@@ -915,6 +573,15 @@ gst_schro_parse_get_caps (GstBaseVideoParse *base_video_parse)
         state->par_d, NULL);
   } else if (schro_parse->output_format == GST_SCHRO_PARSE_OUTPUT_MPEG_TS) {
     caps = gst_caps_new_simple ("video/x-mpegts-part",
+        "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('d','r','a','c'),
+        "width", G_TYPE_INT, state->width,
+        "height", G_TYPE_INT, state->height,
+        "framerate", GST_TYPE_FRACTION, state->fps_n,
+        state->fps_d,
+        "pixel-aspect-ratio", GST_TYPE_FRACTION, state->par_n,
+        state->par_d, NULL);
+  } else if (schro_parse->output_format == GST_SCHRO_PARSE_OUTPUT_MP4) {
+    caps = gst_caps_new_simple ("video/x-mp4-part",
         "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('d','r','a','c'),
         "width", G_TYPE_INT, state->width,
         "height", G_TYPE_INT, state->height,

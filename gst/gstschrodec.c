@@ -21,13 +21,18 @@
 #include "config.h"
 #endif
 
+#define SCHRO_ENABLE_UNSTABLE_API
+
 #include <gst/gst.h>
-#include <gst/base/gstbasetransform.h>
 #include <gst/base/gstadapter.h>
 #include <gst/video/video.h>
+#include <gst/video/gstbasevideodecoder.h>
 #include <string.h>
 #include <schroedinger/schro.h>
 #include <math.h>
+#include "gstschroutils.h"
+
+#include <schroedinger/schroparse.h>
 
 GST_DEBUG_CATEGORY_EXTERN (schro_debug);
 #define GST_CAT_DEFAULT schro_debug
@@ -48,44 +53,31 @@ typedef struct _GstSchroDecClass GstSchroDecClass;
 
 struct _GstSchroDec
 {
-  GstElement element;
+  GstBaseVideoDecoder base_video_decoder;
 
-  GstPad *sinkpad, *srcpad;
-  GstAdapter *adapter;
+  //GstPad *sinkpad, *srcpad;
 
   int wavelet_type;
   int level;
 
   SchroDecoder *decoder;
 
+  GstBuffer *seq_header_buffer;
+
   /* state */
-  int n_frames;
-  gint64 granulepos;
-  GstSegment segment;
-  gboolean discont;
-  uint32_t fourcc;
 
-  int bytes_per_picture;
-  int fps_n;
-  int fps_d;
-
-  gboolean have_access_unit;
-
-  int width;
-  int height;
-
-  gdouble proportion;
+  //gdouble proportion;
   GstClockTime earliest_time;
   GstClockTime timestamp_offset;
-  gint64 granulepos_offset;
+  //gint64 granulepos_offset;
 
-  gboolean dropping;
-  gboolean waiting_for_picture;
+  //gboolean dropping;
+  //gboolean waiting_for_picture;
 };
 
 struct _GstSchroDecClass
 {
-  GstElementClass element_class;
+  GstBaseVideoDecoder base_video_decoder_class;
 };
 
 
@@ -106,23 +98,17 @@ static void gst_schro_dec_set_property (GObject * object, guint prop_id,
 static void gst_schro_dec_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec);
 
-static const GstQueryType *gst_schro_dec_get_query_types (GstPad *pad);
-static gboolean gst_schro_dec_src_convert (GstPad *pad,
-    GstFormat src_format, gint64 src_value,
-    GstFormat * dest_format, gint64 *dest_value);
-static gboolean gst_schro_dec_sink_convert (GstPad *pad,
-    GstFormat src_format, gint64 src_value,
-    GstFormat * dest_format, gint64 *dest_value);
-static gboolean gst_schro_dec_src_query (GstPad *pad, GstQuery *query);
 static gboolean gst_schro_dec_sink_query (GstPad *pad, GstQuery *query);
-static gboolean gst_schro_dec_src_event (GstPad *pad, GstEvent *event);
-static gboolean gst_schro_dec_sink_event (GstPad *pad, GstEvent *event);
-static GstStateChangeReturn gst_schro_dec_change_state (GstElement *element,
-    GstStateChange transition);
-static GstFlowReturn gst_schro_dec_chain (GstPad *pad, GstBuffer *buf);
-static GstFlowReturn gst_schro_dec_push_all (GstSchroDec *schro_dec, 
-    gboolean at_eos);
-static GstFlowReturn gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer);
+
+static gboolean gst_schro_dec_start (GstBaseVideoDecoder *dec);
+static gboolean gst_schro_dec_stop (GstBaseVideoDecoder *dec);
+static gboolean gst_schro_dec_reset (GstBaseVideoDecoder *dec);
+static GstFlowReturn gst_schro_dec_parse_data (GstBaseVideoDecoder *base_video_decoder, gboolean at_eos);
+static int gst_schro_dec_scan_for_sync (GstBaseVideoDecoder *base_video_decoder, gboolean at_eos,
+    int offset, int n);
+static gboolean gst_schro_dec_handle_frame (GstBaseVideoDecoder *decoder,
+    GstVideoFrame *frame);
+static void gst_schrodec_send_tags (GstSchroDec *schro_dec);
 
 static GstStaticPadTemplate gst_schro_dec_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
@@ -138,7 +124,7 @@ static GstStaticPadTemplate gst_schro_dec_src_template =
     GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YUY2, AYUV }"))
     );
 
-GST_BOILERPLATE (GstSchroDec, gst_schro_dec, GstElement, GST_TYPE_ELEMENT);
+GST_BOILERPLATE (GstSchroDec, gst_schro_dec, GstBaseVideoDecoder, GST_TYPE_BASE_VIDEO_DECODER);
 
 static void
 gst_schro_dec_base_init (gpointer g_class)
@@ -162,16 +148,23 @@ static void
 gst_schro_dec_class_init (GstSchroDecClass *klass)
 {
   GObjectClass *gobject_class;
+  GstBaseVideoDecoderClass *base_video_decoder_class;
   GstElementClass *element_class;
 
   gobject_class = G_OBJECT_CLASS (klass);
   element_class = GST_ELEMENT_CLASS (klass);
+  base_video_decoder_class = GST_BASE_VIDEO_DECODER_CLASS (klass);
 
   gobject_class->set_property = gst_schro_dec_set_property;
   gobject_class->get_property = gst_schro_dec_get_property;
   gobject_class->finalize = gst_schro_dec_finalize;
 
-  element_class->change_state = gst_schro_dec_change_state;
+  base_video_decoder_class->start = GST_DEBUG_FUNCPTR(gst_schro_dec_start);
+  base_video_decoder_class->stop = GST_DEBUG_FUNCPTR(gst_schro_dec_stop);
+  base_video_decoder_class->reset = GST_DEBUG_FUNCPTR(gst_schro_dec_reset);
+  base_video_decoder_class->parse_data = GST_DEBUG_FUNCPTR(gst_schro_dec_parse_data);
+  base_video_decoder_class->scan_for_sync = GST_DEBUG_FUNCPTR(gst_schro_dec_scan_for_sync);
+  base_video_decoder_class->handle_frame = GST_DEBUG_FUNCPTR(gst_schro_dec_handle_frame);
 }
 
 static void
@@ -179,86 +172,10 @@ gst_schro_dec_init (GstSchroDec *schro_dec, GstSchroDecClass *klass)
 {
   GST_DEBUG ("gst_schro_dec_init");
 
+  gst_pad_set_query_function (GST_BASE_VIDEO_CODEC_SINK_PAD(schro_dec),
+      gst_schro_dec_sink_query);
+
   schro_dec->decoder = schro_decoder_new ();
-
-  schro_dec->sinkpad = gst_pad_new_from_static_template (&gst_schro_dec_sink_template, "sink");
-  gst_pad_set_chain_function (schro_dec->sinkpad, gst_schro_dec_chain);
-  gst_pad_set_query_function (schro_dec->sinkpad, gst_schro_dec_sink_query);
-  gst_pad_set_event_function (schro_dec->sinkpad, gst_schro_dec_sink_event);
-  gst_element_add_pad (GST_ELEMENT(schro_dec), schro_dec->sinkpad);
-
-  schro_dec->srcpad = gst_pad_new_from_static_template (&gst_schro_dec_src_template, "src");
-  gst_pad_set_query_type_function (schro_dec->srcpad, gst_schro_dec_get_query_types);
-  gst_pad_set_query_function (schro_dec->srcpad, gst_schro_dec_src_query);
-  gst_pad_set_event_function (schro_dec->srcpad, gst_schro_dec_src_event);
-  gst_pad_use_fixed_caps (schro_dec->srcpad);
-  gst_element_add_pad (GST_ELEMENT(schro_dec), schro_dec->srcpad);
-
-  schro_dec->adapter = gst_adapter_new();
-}
-
-static void
-gst_schro_dec_reset (GstSchroDec *dec)
-{
-  GST_DEBUG("reset");
-  dec->granulepos = 0;
-  dec->discont = TRUE;
-  dec->n_frames = 0;
-  dec->timestamp_offset = GST_CLOCK_TIME_NONE;
-  dec->granulepos_offset = -1;
-
-  gst_segment_init (&dec->segment, GST_FORMAT_TIME);
-  gst_adapter_clear (dec->adapter);
-}
-
-static void
-gst_schro_dec_finalize (GObject *object)
-{
-  GstSchroDec *schro_dec;
-
-  g_return_if_fail (GST_IS_SCHRO_DEC (object));
-  schro_dec = GST_SCHRO_DEC (object);
-
-  if (schro_dec->decoder) {
-    schro_decoder_free (schro_dec->decoder);
-  }
-  if (schro_dec->adapter) {
-    g_object_unref (schro_dec->adapter);
-  }
-
-  G_OBJECT_CLASS (parent_class)->finalize (object);
-}
-
-static void
-gst_schro_dec_set_property (GObject * object, guint prop_id,
-    const GValue * value, GParamSpec * pspec)
-{
-  GstSchroDec *src;
-
-  g_return_if_fail (GST_IS_SCHRO_DEC (object));
-  src = GST_SCHRO_DEC (object);
-
-  GST_DEBUG ("gst_schro_dec_set_property");
-  switch (prop_id) {
-    default:
-      break;
-  }
-}
-
-static void
-gst_schro_dec_get_property (GObject * object, guint prop_id, GValue * value,
-    GParamSpec * pspec)
-{
-  GstSchroDec *src;
-
-  g_return_if_fail (GST_IS_SCHRO_DEC (object));
-  src = GST_SCHRO_DEC (object);
-
-  switch (prop_id) {
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-      break;
-  }
 }
 
 #define OGG_DIRAC_GRANULE_SHIFT 22
@@ -286,73 +203,6 @@ granulepos_to_frame (gint64 granulepos)
   return pt >> 1;
 }
 
-static const GstQueryType *
-gst_schro_dec_get_query_types (GstPad *pad)
-{
-  static const GstQueryType query_types[] = {
-    GST_QUERY_POSITION,
-    GST_QUERY_DURATION,
-    GST_QUERY_CONVERT,
-    0
-  };
-
-  return query_types;
-}
-
-static gboolean
-gst_schro_dec_src_convert (GstPad *pad,
-    GstFormat src_format, gint64 src_value,
-    GstFormat * dest_format, gint64 *dest_value)
-{
-  gboolean res = TRUE;
-  GstSchroDec *dec;
-
-  if (src_format == *dest_format) {
-    *dest_value = src_value;
-    return TRUE;
-  }
-
-  dec = GST_SCHRO_DEC (gst_pad_get_parent (pad));
-
-  /* FIXME: check if we are in a decoding state */
-
-  switch (src_format) {
-    case GST_FORMAT_BYTES:
-      switch (*dest_format) {
-        case GST_FORMAT_DEFAULT:
-          *dest_value = gst_util_uint64_scale_int (src_value, 1,
-              dec->bytes_per_picture);
-          break;
-        case GST_FORMAT_TIME:
-          /* seems like a rather silly conversion, implement me if you like */
-        default:
-          res = FALSE;
-      }
-      break;
-    case GST_FORMAT_DEFAULT:
-      switch (*dest_format) {
-        case GST_FORMAT_TIME:
-          *dest_value = gst_util_uint64_scale (src_value,
-              GST_SECOND * dec->fps_d, dec->fps_n);
-          break;
-        case GST_FORMAT_BYTES:
-          *dest_value = gst_util_uint64_scale_int (src_value,
-              dec->bytes_per_picture, 1);
-          break;
-        default:
-          res = FALSE;
-      }
-      break;
-    default:
-      res = FALSE;
-      break;
-  }
-
-  gst_object_unref (dec);
-
-  return res;
-}
-
 static gboolean
 gst_schro_dec_sink_convert (GstPad *pad,
     GstFormat src_format, gint64 src_value,
@@ -360,6 +210,7 @@ gst_schro_dec_sink_convert (GstPad *pad,
 {
   gboolean res = TRUE;
   GstSchroDec *dec;
+  GstVideoState *state;
 
   if (src_format == *dest_format) {
     *dest_value = src_value;
@@ -370,11 +221,13 @@ gst_schro_dec_sink_convert (GstPad *pad,
 
   /* FIXME: check if we are in a decoding state */
 
+  state = gst_base_video_decoder_get_state (GST_BASE_VIDEO_DECODER(dec));
+
   res = FALSE;
   if (src_format == GST_FORMAT_DEFAULT && *dest_format == GST_FORMAT_TIME) {
-    if (dec->fps_d != 0) {
+    if (state->fps_d != 0) {
       *dest_value = gst_util_uint64_scale (granulepos_to_frame (src_value),
-          dec->fps_d * GST_SECOND, dec->fps_n);
+          state->fps_d * GST_SECOND, state->fps_n);
       res = TRUE;
     } else {
       res = FALSE;
@@ -384,64 +237,6 @@ gst_schro_dec_sink_convert (GstPad *pad,
   gst_object_unref (dec);
 
   return res;
-}
-
-static gboolean
-gst_schro_dec_src_query (GstPad *pad, GstQuery *query)
-{
-  GstSchroDec *dec;
-  gboolean res = FALSE;
-
-  dec = GST_SCHRO_DEC (gst_pad_get_parent(pad));
-
-  switch (GST_QUERY_TYPE (query)) {
-    case GST_QUERY_POSITION:
-    {
-      GstFormat format;
-      gint64 time;
-      gint64 value;
-
-      gst_query_parse_position (query, &format, NULL);
-
-      time = gst_util_uint64_scale (granulepos_to_frame (dec->granulepos),
-              dec->fps_n, dec->fps_d);
-      //time -= dec->segment.start;
-      time += dec->segment.time;
-      GST_DEBUG("query position %lld", time);
-      res = gst_schro_dec_src_convert (pad, GST_FORMAT_TIME, time,
-          &format, &value);
-      if (!res) goto error;
-
-      gst_query_set_position (query, format, value);
-      break;
-    }
-    case GST_QUERY_DURATION:
-      res = gst_pad_query (GST_PAD_PEER (dec->sinkpad), query);
-      if (!res) goto error;
-      break;
-    case GST_QUERY_CONVERT:
-    {
-      GstFormat src_fmt, dest_fmt;
-      gint64 src_val, dest_val;
-
-      gst_query_parse_convert (query, &src_fmt, &src_val, &dest_fmt, &dest_val);
-      res = gst_schro_dec_src_convert (pad, src_fmt, src_val, &dest_fmt,
-          &dest_val);
-      if (!res) goto error;
-      gst_query_set_convert (query, src_fmt, src_val, dest_fmt, dest_val);
-      break;
-    }
-    default:
-      res = gst_pad_query_default (pad, query);
-      break;
-  }
-done:
-  gst_object_unref (dec);
-
-  return res;
-error:
-  GST_DEBUG_OBJECT (dec, "query failed");
-  goto done;
 }
 
 static gboolean
@@ -479,293 +274,255 @@ error:
 }
 
 static gboolean
-gst_schro_dec_src_event (GstPad *pad, GstEvent *event)
+gst_schro_dec_start (GstBaseVideoDecoder *dec)
 {
-  GstSchroDec *dec;
-  gboolean res = FALSE;
-
-  dec = GST_SCHRO_DEC (gst_pad_get_parent(pad));
-
-  switch (GST_EVENT_TYPE (event)) {
-    case GST_EVENT_SEEK:
-    {
-      GstFormat format, tformat;
-      gdouble rate;
-      GstEvent *real_seek;
-      GstSeekFlags flags;
-      GstSeekType cur_type, stop_type;
-      gint64 cur, stop;
-      gint64 tcur, tstop;
-
-      gst_event_parse_seek (event, &rate, &format, &flags, &cur_type,
-          &cur, &stop_type, &stop);
-      gst_event_unref (event);
-
-      tformat = GST_FORMAT_TIME;
-      res = gst_schro_dec_src_convert (pad, format, cur, &tformat, &tcur);
-      if (!res) goto convert_error;
-      res = gst_schro_dec_src_convert (pad, format, stop, &tformat, &tstop);
-      if (!res) goto convert_error;
-
-      real_seek = gst_event_new_seek (rate, GST_FORMAT_TIME,
-          flags, cur_type, tcur, stop_type, tstop);
-
-      res = gst_pad_push_event (dec->sinkpad, real_seek);
-
-      break;
-    }
-    case GST_EVENT_QOS:
-    {
-      gdouble proportion;
-      GstClockTimeDiff diff;
-      GstClockTime timestamp;
-
-      gst_event_parse_qos (event, &proportion, &diff, &timestamp);
-
-      GST_OBJECT_LOCK (dec);
-      dec->proportion = proportion;
-      dec->earliest_time = timestamp + diff;
-      GST_OBJECT_UNLOCK (dec);
-
-      GST_DEBUG_OBJECT (dec, "got QoS %" GST_TIME_FORMAT ", %" G_GINT64_FORMAT ", %g",
-          GST_TIME_ARGS(timestamp), diff, proportion);
-
-      res = gst_pad_push_event (dec->sinkpad, event);
-      break;
-    }
-    default:
-      res = gst_pad_push_event (dec->sinkpad, event);
-      break;
+  if (dec->codec_data) {
+    GST_DEBUG("codec data!");
   }
-done:
-  gst_object_unref (dec);
-  return res;
 
-convert_error:
-  GST_DEBUG_OBJECT (dec, "could not convert format");
-  goto done;
+  return TRUE;
 }
 
 static gboolean
-gst_schro_dec_sink_event (GstPad *pad, GstEvent *event)
+gst_schro_dec_stop (GstBaseVideoDecoder *dec)
 {
-  GstSchroDec *dec;
-  gboolean ret = FALSE;
 
-  dec = GST_SCHRO_DEC (gst_pad_get_parent(pad));
-
-  switch (GST_EVENT_TYPE (event)) {
-    case GST_EVENT_FLUSH_START:
-      //GST_ERROR("unhandled flush start");
-      ret = gst_pad_push_event (dec->srcpad, event);
-      break;
-    case GST_EVENT_FLUSH_STOP:
-      //GST_ERROR("unhandled flush stop");
-      gst_schro_dec_reset (dec);
-      ret = gst_pad_push_event (dec->srcpad, event);
-      break;
-    case GST_EVENT_EOS:
-      ret = gst_schro_dec_process_buffer (dec, NULL);
-      ret = gst_pad_push_event (dec->srcpad, event);
-      break;
-    case GST_EVENT_NEWSEGMENT:
-    {
-      gboolean update;
-      GstFormat format;
-      gdouble rate;
-      gint64 start, stop, time;
-
-      gst_event_parse_new_segment (event, &update, &rate, &format, &start,
-          &stop, &time);
-
-      if (format != GST_FORMAT_TIME)
-        goto newseg_wrong_format;
-
-      if (rate <= 0.0)
-        goto newseg_wrong_rate;
-
-      GST_DEBUG("newsegment %lld %lld", start, time);
-      gst_segment_set_newsegment (&dec->segment, update, rate, format,
-          start, stop, time);
-
-      ret = gst_pad_push_event (dec->srcpad, event);
-      break;
-    }
-    default:
-      ret = gst_pad_push_event (dec->srcpad, event);
-      break;
-  }
-done:
-  gst_object_unref (dec);
-  return ret;
-
-newseg_wrong_format:
-  GST_DEBUG_OBJECT (dec, "received non TIME newsegment");
-  gst_event_unref (event);
-  goto done;
-
-newseg_wrong_rate:
-  GST_DEBUG_OBJECT (dec, "negative rates not supported");
-  gst_event_unref (event);
-  goto done;
+  return TRUE;
 }
 
-
-static GstStateChangeReturn
-gst_schro_dec_change_state (GstElement *element, GstStateChange transition)
+static gboolean
+gst_schro_dec_reset (GstBaseVideoDecoder *dec)
 {
-  GstSchroDec *dec = GST_SCHRO_DEC (element);
-  GstStateChangeReturn ret;
+  GstSchroDec *schro_dec;
+  
+  schro_dec = GST_SCHRO_DEC(dec);
 
-  switch (transition) {
-    case GST_STATE_CHANGE_NULL_TO_READY:
-      break;
-    case GST_STATE_CHANGE_READY_TO_PAUSED:
-      gst_schro_dec_reset (dec);
-      break;
-    case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
-      break;
-    default:
-      break;
+  GST_DEBUG("reset");
+
+  if (schro_dec->decoder) {
+    schro_decoder_reset (schro_dec->decoder);
   }
 
-  ret = parent_class->change_state (element, transition);
-
-  switch (transition) {
-    case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
-      break;
-    case GST_STATE_CHANGE_PAUSED_TO_READY:
-      gst_schro_dec_reset (dec);
-      break;
-    case GST_STATE_CHANGE_READY_TO_NULL:
-      break;
-    default:
-      break;
-  }
-
-  return ret;
-}
-
-
-static void
-gst_schro_buffer_free (SchroBuffer *buffer, void *priv)
-{
-  gst_buffer_unref (GST_BUFFER (priv));
-}
-
-static SchroBuffer *
-gst_schro_wrap_gst_buffer (GstBuffer *buffer)
-{
-  SchroBuffer *schrobuf;
-
-  schrobuf = schro_buffer_new_with_data (GST_BUFFER_DATA (buffer),
-      GST_BUFFER_SIZE (buffer));
-  schrobuf->free = gst_schro_buffer_free;
-  schrobuf->priv = buffer;
-
-  return schrobuf;
+  return TRUE;
 }
 
 static void
-gst_schro_frame_free (SchroFrame *frame, void *priv)
-{
-
-  gst_buffer_unref (GST_BUFFER (priv));
-}
-
-
-static SchroFrame *
-gst_schro_wrap_frame (GstSchroDec *schro_dec, GstBuffer *buffer)
-{
-  SchroFrame *frame;
-
-  switch (schro_dec->fourcc) {
-    case GST_MAKE_FOURCC('I','4','2','0'):
-      frame = schro_frame_new_from_data_I420 (GST_BUFFER_DATA (buffer),
-          schro_dec->width, schro_dec->height);
-      break;
-    case GST_MAKE_FOURCC('Y','U','Y','2'):
-      frame = schro_frame_new_from_data_YUY2 (GST_BUFFER_DATA (buffer),
-          schro_dec->width, schro_dec->height);
-      break;
-    case GST_MAKE_FOURCC('A','Y','U','V'):
-      frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA (buffer),
-          schro_dec->width, schro_dec->height);
-      break;
-    default:
-      g_assert_not_reached();
-      break;
-  }
-  schro_frame_set_free_callback (frame, gst_schro_frame_free, buffer);
-
-  return frame;
-}
-
-static GstFlowReturn
-gst_schro_dec_chain (GstPad *pad, GstBuffer *buf)
+gst_schro_dec_finalize (GObject *object)
 {
   GstSchroDec *schro_dec;
 
-  schro_dec = GST_SCHRO_DEC (GST_PAD_PARENT (pad));
+  g_return_if_fail (GST_IS_SCHRO_DEC (object));
+  schro_dec = GST_SCHRO_DEC (object);
 
-  GST_DEBUG("timestamp offset %lld, buffer %lld gp %lld, size %d",
-    schro_dec->timestamp_offset, GST_BUFFER_TIMESTAMP(buf),
-    GST_BUFFER_OFFSET_END(buf), GST_BUFFER_SIZE(buf));
-
-  if (G_UNLIKELY (GST_BUFFER_FLAG_IS_SET (buf, GST_BUFFER_FLAG_DISCONT))) {
-    GST_DEBUG_OBJECT (schro_dec, "received DISCONT buffer");
-    schro_decoder_reset (schro_dec->decoder);
-    schro_dec->timestamp_offset = GST_CLOCK_TIME_NONE;
-    schro_dec->granulepos_offset = -1;
-    schro_dec->granulepos = -1;
-    schro_dec->discont = TRUE;
+  if (schro_dec->decoder) {
+    schro_decoder_free (schro_dec->decoder);
+    schro_dec->decoder = NULL;
   }
 
-  if (!GST_CLOCK_TIME_IS_VALID(schro_dec->timestamp_offset) &&
-      GST_BUFFER_TIMESTAMP_IS_VALID(buf)) {
-    schro_dec->timestamp_offset = GST_BUFFER_TIMESTAMP(buf);
-    GST_DEBUG("setting timestamp offset to %lld", schro_dec->timestamp_offset);
-  }
-  if (schro_dec->granulepos_offset == -1 &&
-      GST_BUFFER_OFFSET_END(buf) != -1) {
-    schro_dec->granulepos_offset = GST_BUFFER_OFFSET_END(buf);
-    GST_DEBUG("setting granulepos offset to %lld", GST_BUFFER_OFFSET_END(buf));
-  }
-
-  gst_adapter_push (schro_dec->adapter, buf);
-
-  return gst_schro_dec_push_all (schro_dec, FALSE);
+  G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
-#define ROUND_UP_SHIFT(x,y) (((x) + (1<<(y)) - 1)>>(y))
-#define ROUND_UP_POW2(x,y) (((x) + (1<<(y)) - 1)&((~0)<<(y)))
+static void
+gst_schro_dec_set_property (GObject * object, guint prop_id,
+    const GValue * value, GParamSpec * pspec)
+{
+  GstSchroDec *src;
+
+  g_return_if_fail (GST_IS_SCHRO_DEC (object));
+  src = GST_SCHRO_DEC (object);
+
+  GST_DEBUG ("gst_schro_dec_set_property");
+  switch (prop_id) {
+    default:
+      break;
+  }
+}
+
+static void
+gst_schro_dec_get_property (GObject * object, guint prop_id, GValue * value,
+    GParamSpec * pspec)
+{
+  GstSchroDec *src;
+
+  g_return_if_fail (GST_IS_SCHRO_DEC (object));
+  src = GST_SCHRO_DEC (object);
+
+  switch (prop_id) {
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
+  }
+}
+
+static void
+parse_sequence_header (GstSchroDec *schro_dec, guint8 *data, int size)
+{
+  SchroVideoFormat video_format;
+  int ret;
+  GstVideoState *state;
+
+  GST_DEBUG("parse_sequence_header size=%d", size);
+
+  state = gst_base_video_decoder_get_state (GST_BASE_VIDEO_DECODER(schro_dec));
+
+  schro_dec->seq_header_buffer = gst_buffer_new_and_alloc (size);
+  memcpy (GST_BUFFER_DATA (schro_dec->seq_header_buffer), data, size);
+
+  ret = schro_parse_decode_sequence_header (data + 13, size - 13,
+      &video_format);
+  if (ret) {
+    if (video_format.chroma_format == SCHRO_CHROMA_444) {
+      state->format = GST_VIDEO_FORMAT_AYUV;
+    } else if (video_format.chroma_format == SCHRO_CHROMA_422) {
+      state->format = GST_VIDEO_FORMAT_YUY2;
+    } else if (video_format.chroma_format == SCHRO_CHROMA_420) {
+      state->format = GST_VIDEO_FORMAT_I420;
+    }
+    state->fps_n = video_format.frame_rate_numerator;
+    state->fps_d = video_format.frame_rate_denominator;
+    GST_DEBUG("Frame rate is %d/%d", state->fps_n,
+        state->fps_d);
+
+    state->width = video_format.width;
+    state->height = video_format.height;
+    GST_DEBUG("Frame dimensions are %d x %d\n", state->width,
+        state->height);
+
+    state->clean_width = video_format.clean_width;
+    state->clean_height = video_format.clean_height;
+    state->clean_offset_left = video_format.left_offset;
+    state->clean_offset_top = video_format.top_offset;
+
+    state->par_n = video_format.aspect_ratio_numerator;
+    state->par_d = video_format.aspect_ratio_denominator;
+    GST_DEBUG("Pixel aspect ratio is %d/%d", state->par_n,
+        state->par_d);
+
+    /* FIXME state points to what is actually in the decoder */
+    //gst_base_video_decoder_set_state (GST_BASE_VIDEO_DECODER (schro_dec),
+    //    state);
+  } else {
+    GST_WARNING("Failed to get frame rate from sequence header");
+  }
+
+  gst_schrodec_send_tags (schro_dec);
+}
+
+
+static GstFlowReturn
+gst_schro_dec_parse_data (GstBaseVideoDecoder *base_video_decoder,
+    gboolean at_eos)
+{
+  GstSchroDec *schro_decoder;
+  unsigned char header[SCHRO_PARSE_HEADER_SIZE];
+  int next;
+  int prev;
+  int parse_code;
+  
+  GST_DEBUG("parse_data");
+  
+  schro_decoder = GST_SCHRO_DEC (base_video_decoder);
+  
+  if (gst_adapter_available (base_video_decoder->input_adapter) < SCHRO_PARSE_HEADER_SIZE) {
+    return GST_BASE_VIDEO_DECODER_FLOW_NEED_DATA;
+  }
+
+  GST_DEBUG("available %d", gst_adapter_available (base_video_decoder->input_adapter));
+  
+  gst_adapter_copy_full (base_video_decoder->input_adapter, header, 0, SCHRO_PARSE_HEADER_SIZE);
+
+  parse_code = header[4];
+  next = GST_READ_UINT32_BE (header + 5);
+  prev = GST_READ_UINT32_BE (header + 9);
+
+  GST_DEBUG("%08x %02x %08x %08x",
+      GST_READ_UINT32_BE (header), parse_code, next, prev);
+
+  if (memcmp (header, "BBCD", 4) != 0 ||
+      (next & 0xf0000000) || (prev & 0xf0000000)) {
+    gst_base_video_decoder_lost_sync (base_video_decoder);
+    return GST_BASE_VIDEO_DECODER_FLOW_NEED_DATA;
+  }
+
+  if (SCHRO_PARSE_CODE_IS_END_OF_SEQUENCE (parse_code)) {
+    GstVideoFrame *frame;
+
+    if (next != 0 && next != SCHRO_PARSE_HEADER_SIZE) {
+      GST_WARNING("next is not 0 or 13 in EOS packet (%d)", next);
+    }
+
+    gst_base_video_decoder_add_to_frame (base_video_decoder,
+        SCHRO_PARSE_HEADER_SIZE);
+
+    frame = base_video_decoder->current_frame;
+    frame->is_eos = TRUE;
+
+    SCHRO_ERROR("eos");
+
+    return gst_base_video_decoder_have_frame (base_video_decoder);
+  }
+
+  if (gst_adapter_available (base_video_decoder->input_adapter) < next) {
+    return GST_BASE_VIDEO_DECODER_FLOW_NEED_DATA;
+  }
+
+  if (SCHRO_PARSE_CODE_IS_SEQ_HEADER(parse_code)) {
+    guint8 *data;
+
+    data = g_malloc (next);
+
+    gst_adapter_copy_full (base_video_decoder->input_adapter, data, 0, next);
+    parse_sequence_header (schro_decoder, data, next);
+
+    base_video_decoder->current_frame->is_sync_point = TRUE;
+
+    g_free (data);
+  }
+
+  if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
+    GstVideoFrame *frame;
+    guint8 tmp[4];
+
+    frame = base_video_decoder->current_frame;
+
+    gst_adapter_copy_full (base_video_decoder->input_adapter, tmp,
+        SCHRO_PARSE_HEADER_SIZE, 4);
+
+    frame->presentation_frame_number = GST_READ_UINT32_BE (tmp);
+
+    gst_base_video_decoder_add_to_frame (base_video_decoder, next);
+
+    return gst_base_video_decoder_have_frame (base_video_decoder);
+  } else {
+    gst_base_video_decoder_add_to_frame (base_video_decoder, next);
+  }
+
+  return GST_FLOW_OK;
+}
 
 static int
-get_buffer_size (GstSchroDec *schro_dec)
+gst_schro_dec_scan_for_sync (GstBaseVideoDecoder *base_video_decoder,
+    gboolean at_eos, int offset, int n)
 {
-  int size;
-  int width = schro_dec->width;
-  int height = schro_dec->height;
+  GstAdapter *adapter = base_video_decoder->input_adapter;
+  int n_available;
+  
+  n_available = gst_adapter_available (adapter) - offset;
 
-  switch (schro_dec->fourcc) {
-    case GST_MAKE_FOURCC('I','4','2','0'):
-      size = ROUND_UP_POW2(width,2) * ROUND_UP_POW2(height,1);
-      size += 2 * ROUND_UP_POW2(ROUND_UP_SHIFT(width,1),2) *
-        ROUND_UP_SHIFT(height,1);
-      break;
-    case GST_MAKE_FOURCC('Y','U','Y','2'):
-      size = ROUND_UP_POW2(width,2) * 2 * height;
-      break;
-    case GST_MAKE_FOURCC('A','Y','U','V'):
-      size = width * 4 * height;
-      break;
-    default:
-      g_assert_not_reached();
-      break;
+  if (n_available < 4) {
+    if (at_eos) {
+      return n_available;
+    } else {
+      return 0;
+    }
   }
 
-  return size;
+  n_available -= 3;
+
+  return gst_adapter_masked_scan_uint32 (adapter, 0x42424344, 0xffffffff,
+      offset, MIN (n, n_available - 3));
 }
+
 
 static void
 gst_schrodec_send_tags (GstSchroDec *schro_dec)
@@ -777,167 +534,35 @@ gst_schrodec_send_tags (GstSchroDec *schro_dec)
      GST_TAG_VIDEO_CODEC, "Dirac", NULL);
 
   gst_element_found_tags_for_pad (GST_ELEMENT_CAST (schro_dec), 
-     schro_dec->srcpad, list);
+     GST_BASE_VIDEO_CODEC_SRC_PAD(schro_dec), list);
 }
 
-static GstFlowReturn
-gst_schro_dec_push_all (GstSchroDec *schro_dec, gboolean at_eos)
+gboolean
+gst_schro_dec_handle_frame (GstBaseVideoDecoder *base_video_decoder,
+    GstVideoFrame *frame)
 {
-  GstBuffer *parse_buf;
+  GstSchroDec *schro_dec;
+  int schro_ret;
   SchroBuffer *input_buffer;
-  GstFlowReturn ret = GST_FLOW_OK;
+  gboolean go;
+  gboolean ret;
+  GstVideoState *state;
 
-  while (TRUE) {
-    gint size;
-    unsigned char header[SCHRO_PARSE_HEADER_SIZE];
+  schro_dec = GST_SCHRO_DEC (base_video_decoder);
 
-    if (gst_adapter_available (schro_dec->adapter) < SCHRO_PARSE_HEADER_SIZE) {
-      /* Need more data */
-      return GST_FLOW_OK;
-    }
-    gst_adapter_copy (schro_dec->adapter, header, 0, SCHRO_PARSE_HEADER_SIZE);
+  GST_DEBUG("handle frame");
 
-    if (memcmp (header, "BBCD", 4) != 0) {
-      /* bad header or lost sync */
-      /* FIXME: we should handle this */
-      return GST_FLOW_ERROR;
-    }
+  state = gst_base_video_decoder_get_state (base_video_decoder);
 
-    size = GST_READ_UINT32_BE(header + 5);
-    if (size == 0) size = 13;
-    if (size < 13) {
-      /* FIXME: should handle this by resyncing. */
-      return GST_FLOW_ERROR;
-    }
-    if (gst_adapter_available (schro_dec->adapter) < size) {
-      return GST_FLOW_OK;
-    }
+  gst_base_video_decoder_set_src_caps (base_video_decoder);
 
-    GST_LOG ("Have complete parse unit of %d bytes", size);
+  input_buffer = gst_schro_wrap_gst_buffer (frame->sink_buffer);
+  frame->sink_buffer = NULL;
 
-    parse_buf = gst_adapter_take_buffer (schro_dec->adapter, size);
-    input_buffer = gst_schro_wrap_gst_buffer (parse_buf);
-  
-    ret = gst_schro_dec_process_buffer (schro_dec, input_buffer);
-    if (ret != GST_FLOW_OK) {
-      return ret;
-    }
+  schro_ret = schro_decoder_autoparse_push (schro_dec->decoder, input_buffer);
 
-  }
-
-  return GST_FLOW_OK;
-}
-
-static void
-handle_first_access_unit (GstSchroDec *schro_dec)
-{
-  SchroVideoFormat *format;
-  GstCaps *caps;
-
-  format = schro_decoder_get_video_format (schro_dec->decoder);
-  schro_dec->width = format->width;
-  schro_dec->height = format->height;
-  switch(format->chroma_format) {
-    case 0:
-      schro_dec->fourcc = GST_MAKE_FOURCC('A','Y','U','V');
-      break;
-    case 1:
-      schro_dec->fourcc = GST_MAKE_FOURCC('Y','U','Y','2');
-      break;
-    case 2:
-      schro_dec->fourcc = GST_MAKE_FOURCC('I','4','2','0');
-      break;
-    default:
-      g_assert_not_reached();
-      break;
-  }
-
-  caps = gst_caps_new_simple ("video/x-raw-yuv",
-      "format", GST_TYPE_FOURCC, schro_dec->fourcc,
-      "width", G_TYPE_INT, format->width,
-      "height", G_TYPE_INT, format->height,
-      "framerate", GST_TYPE_FRACTION,
-      format->frame_rate_numerator, format->frame_rate_denominator,
-      "pixel-aspect-ratio", GST_TYPE_FRACTION,
-      format->aspect_ratio_numerator, format->aspect_ratio_denominator,
-      NULL);
-
-  GST_DEBUG("setting caps %" GST_PTR_FORMAT, caps);
-
-  gst_pad_set_caps (schro_dec->srcpad, caps);
-
-  schro_dec->fps_n = format->frame_rate_numerator;
-  schro_dec->fps_d = format->frame_rate_denominator;
-  schro_dec->bytes_per_picture = (format->width * format->height * 3) / 4;
-
-  if (!GST_CLOCK_TIME_IS_VALID(schro_dec->timestamp_offset)) {
-    schro_dec->timestamp_offset = gst_util_uint64_scale (
-        granulepos_to_frame (schro_dec->granulepos_offset),
-        schro_dec->fps_d * GST_SECOND, schro_dec->fps_n);
-  }
-
-  gst_caps_unref (caps);
-  free (format);
-
-  gst_schrodec_send_tags (schro_dec);
-
-  schro_dec->have_access_unit = TRUE;
-}
-
-static GstFlowReturn
-gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer)
-{
-  GstFlowReturn ret = GST_FLOW_OK;
-  SchroFrame *frame;
-  int size;
-  int earliest_frame;
-  GstBuffer *outbuf;
-  int go = 1;
-
-  if (schro_dec->dropping && input_buffer != NULL) {
-    int parse_code = input_buffer->data[4];
-    if (SCHRO_PARSE_CODE_IS_SEQ_HEADER (parse_code)) {
-      schro_dec->dropping = FALSE;
-    } else {
-      return GST_FLOW_OK;
-    }
-  }
-  if (schro_dec->waiting_for_picture && input_buffer != NULL) {
-    int parse_code = input_buffer->data[4];
-    if (SCHRO_PARSE_CODE_IS_PICTURE (parse_code)) {
-      if (SCHRO_PARSE_CODE_NUM_REFS(parse_code) == 0) {
-        schro_dec->waiting_for_picture = FALSE;
-      } else {
-        schro_dec->waiting_for_picture = FALSE;
-        schro_dec->dropping = TRUE;
-        return GST_FLOW_OK;
-      }
-    }
-  }
-
-  if (input_buffer) {
-    int schro_ret;
-    schro_ret = schro_decoder_push (schro_dec->decoder, input_buffer);
-    if (schro_ret == SCHRO_DECODER_FIRST_ACCESS_UNIT) {
-      handle_first_access_unit (schro_dec);
-      schro_dec->waiting_for_picture = TRUE;
-    }
-  } else {
-    schro_decoder_push_end_of_stream (schro_dec->decoder);
-  }
-
-  if (schro_dec->have_access_unit) {
-    earliest_frame = gst_util_uint64_scale (
-        schro_dec->earliest_time - schro_dec->segment.start,
-        schro_dec->fps_n, schro_dec->fps_d * GST_SECOND);
-
-    GST_DEBUG("earliest frame %d", earliest_frame);
-    schro_decoder_set_earliest_frame (schro_dec->decoder, earliest_frame);
-
-    schro_decoder_set_skip_ratio (schro_dec->decoder,
-        1/schro_dec->proportion);
-  }
-
+  ret = TRUE;
+  go = TRUE;
   while (go) {
     int it;
 
@@ -945,64 +570,77 @@ gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer)
 
     switch (it) {
       case SCHRO_DECODER_FIRST_ACCESS_UNIT:
-        handle_first_access_unit (schro_dec);
         break;
       case SCHRO_DECODER_NEED_BITS:
+        GST_DEBUG("need bits");
         go = 0;
         break;
       case SCHRO_DECODER_NEED_FRAME:
-        size = get_buffer_size (schro_dec);
-        ret = gst_pad_alloc_buffer_and_set_caps (schro_dec->srcpad,
-            GST_BUFFER_OFFSET_NONE, size,
-            GST_PAD_CAPS (schro_dec->srcpad), &outbuf);
-        if (ret != GST_FLOW_OK) {
-          GST_DEBUG("could not allocate buffer for pad");
-          return ret;
-        }
-        frame = gst_schro_wrap_frame (schro_dec, outbuf);
-        schro_decoder_add_output_picture (schro_dec->decoder, frame);
-        break;
-      case SCHRO_DECODER_OK:
-        frame = schro_decoder_pull (schro_dec->decoder);
+        {
+          GstBuffer *outbuf;
+          GstVideoState *state;
+          SchroFrame *schro_frame;
+          GstFlowReturn flow_ret;
+          int size;
 
-        if (frame) {
-          if (frame->priv) {
-            outbuf = frame->priv;
-      
-            if (schro_dec->discont) {
-              GST_DEBUG("discont timestamp %" G_GINT64_FORMAT, 
-                  GST_BUFFER_TIMESTAMP(outbuf));
-              GST_BUFFER_FLAG_SET (outbuf, GST_BUFFER_FLAG_DISCONT);
-              schro_dec->discont = FALSE;
+          GST_DEBUG("need frame");
+
+          state = gst_base_video_decoder_get_state (base_video_decoder);
+          size = gst_video_format_get_size (state->format, state->width,
+              state->height);
+          flow_ret = gst_pad_alloc_buffer_and_set_caps (
+              GST_BASE_VIDEO_CODEC_SRC_PAD(schro_dec),
+              GST_BUFFER_OFFSET_NONE, size,
+              GST_PAD_CAPS (GST_BASE_VIDEO_CODEC_SRC_PAD(schro_dec)), &outbuf);
+          if (flow_ret != GST_FLOW_OK) {
+            go = FALSE;
+            ret = FALSE;
+            break;
+          }
+          schro_frame = gst_schro_buffer_wrap (outbuf,
+              state->format, state->width, state->height);
+          schro_decoder_add_output_picture (schro_dec->decoder, schro_frame);
+          break;
+        }
+      case SCHRO_DECODER_OK:
+        {
+          SchroFrame *schro_frame;
+
+          GST_DEBUG("got frame");
+
+          schro_frame = schro_decoder_pull (schro_dec->decoder);
+
+          if (schro_frame) {
+            if (schro_frame->priv) {
+              GstFlowReturn flow_ret;
+
+              frame->src_buffer =
+                gst_buffer_ref(GST_BUFFER(schro_frame->priv));
+        
+              flow_ret = gst_base_video_decoder_finish_frame (
+                  base_video_decoder, frame);
+              if (flow_ret != GST_FLOW_OK) {
+                GST_DEBUG("finish frame returned %d", flow_ret);
+                return FALSE;
+              }
+            } else {
+              GST_DEBUG("skipped frame");
             }
       
-            GST_BUFFER_TIMESTAMP(outbuf) = gst_util_uint64_scale (
-                schro_dec->n_frames, schro_dec->fps_d * GST_SECOND,
-                schro_dec->fps_n) +
-              schro_dec->timestamp_offset;
-            GST_BUFFER_DURATION(outbuf) = gst_util_uint64_scale_int (GST_SECOND,
-               schro_dec->fps_d, schro_dec->fps_n);
-
-            gst_buffer_ref(outbuf);
-            ret = gst_pad_push (schro_dec->srcpad, outbuf);
-            if (ret != GST_FLOW_OK)
-              return ret;
-          } else {
-            GST_DEBUG("skipped frame %d", schro_dec->n_frames);
+            schro_frame_unref (schro_frame);
           }
-    
-          schro_dec->n_frames++;
-          schro_frame_unref (frame);
+          go = FALSE;
         }
 
         break;
       case SCHRO_DECODER_EOS:
+        GST_DEBUG("eos");
         go = FALSE;
         break;
       case SCHRO_DECODER_ERROR:
         go = FALSE;
-        GST_ERROR ("codec error");
-        ret = GST_FLOW_ERROR;
+        GST_DEBUG ("codec error");
+        ret = FALSE;
         break;
     }
   }
