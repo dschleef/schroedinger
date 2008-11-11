@@ -7,10 +7,19 @@ libgstschro_la_SOURCES = \
 	gstschrodec.c \
 	gstschroparse.c \
 	gstschroscale.c \
-	gstbasevideocoder.c \
-	gstbasevideocoder.h \
+	gstbasevideodecoder.c \
+	gstbasevideodecoder.h \
+	gstbasevideoencoder.c \
+	gstbasevideoencoder.h \
+	gstbasevideoparse.c \
+	gstbasevideoparse.h \
+	gstbasevideoutils.c \
+	gstbasevideoutils.h \
 	gstframestore.c \
-	gstschrocolorspace.c
+	gstschroutils.c \
+	gstschroutils.h \
+	gstadapter2.c \
+	gstadapter2.h
 
 if ENABLE_ENCODER
 libgstschro_la_SOURCES += \

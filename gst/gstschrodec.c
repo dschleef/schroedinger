@@ -894,7 +894,7 @@ gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer)
   GstBuffer *outbuf;
   int go = 1;
 
-  if (schro_dec->dropping) {
+  if (schro_dec->dropping && input_buffer != NULL) {
     int parse_code = input_buffer->data[4];
     if (SCHRO_PARSE_CODE_IS_SEQ_HEADER (parse_code)) {
       schro_dec->dropping = FALSE;
@@ -902,7 +902,7 @@ gst_schro_dec_process_buffer (GstSchroDec *schro_dec, SchroBuffer *input_buffer)
       return GST_FLOW_OK;
     }
   }
-  if (schro_dec->waiting_for_picture) {
+  if (schro_dec->waiting_for_picture && input_buffer != NULL) {
     int parse_code = input_buffer->data[4];
     if (SCHRO_PARSE_CODE_IS_PICTURE (parse_code)) {
       if (SCHRO_PARSE_CODE_NUM_REFS(parse_code) == 0) {
