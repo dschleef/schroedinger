@@ -237,6 +237,7 @@ struct _SchroEncoder {
   double filter_value;
   int profile;
   int level;
+  int open_gop;
   int au_distance;
   schro_bool enable_psnr;
   schro_bool enable_ssim;

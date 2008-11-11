@@ -610,7 +610,11 @@ schro_encoder_handle_gop_tworef (SchroEncoder *encoder, int i)
     if (f->start_sequence_header ||
         f->frame_number >= encoder->au_frame + encoder->au_distance) {
       f->start_sequence_header = TRUE;
-      gop_length = j + 1;
+      if (encoder->open_gop || j == 0) {
+        gop_length = j + 1;
+      } else {
+        gop_length = j;
+      }
       break;
     }
 

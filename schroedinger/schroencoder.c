@@ -75,6 +75,7 @@ schro_encoder_new (void)
   encoder->filter_value = 5.0;
   encoder->profile = 0;
   encoder->level = 0;
+  encoder->open_gop = 1;
   encoder->au_distance = 120;
   encoder->enable_psnr = TRUE;
   encoder->enable_ssim = FALSE;
@@ -3127,6 +3128,7 @@ static SchroEncoderSetting encoder_settings[] = {
   DOUB("filter_value", 0, 100.0, 5.0),
   INT ("profile", 0, 0, 0),
   INT ("level", 0, 0, 0),
+  BOOL("open_gop", TRUE),
   INT ("au_distance", 1, INT_MAX, 30),
   BOOL("enable_psnr", FALSE),
   BOOL("enable_ssim", FALSE),
@@ -3216,6 +3218,7 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(interlaced_coding);
   VAR_SET(profile);
   VAR_SET(level);
+  VAR_SET(open_gop);
   VAR_SET(au_distance);
   VAR_SET(ref_distance);
   VAR_SET(transform_depth);
@@ -3279,6 +3282,7 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(interlaced_coding);
   VAR_GET(profile);
   VAR_GET(level);
+  VAR_GET(open_gop);
   VAR_GET(au_distance);
   VAR_GET(ref_distance);
   VAR_GET(transform_depth);
