@@ -1962,7 +1962,10 @@ schro_frame_mc_edgeextend_horiz (SchroFrame *frame, SchroFrame *src)
       uint8_t *src_line = SCHRO_FRAME_DATA_GET_LINE(src->components + k, j);
 
       memset (line - frame->extension, src_line[0], frame->extension);
-      memset (line + width, src_line[width-1], frame->extension);
+      /* A picture of size (w,h) is upconverted to (2*w-1,2*h-1)
+       * However, schroedinger's effective upconverted size is (2*w,2*h)
+       * Remember to overwrite the last horizontal pel */
+      memset (line + width - 1, src_line[width-1], frame->extension + 1);
     }
   }
 }
@@ -1985,8 +1988,14 @@ schro_frame_mc_edgeextend_vert (SchroFrame *frame, SchroFrame *src)
           SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1) - frame->extension,
           width + frame->extension*2);
     }
+    /* A picture of size (w,h) is upconverted to (2*w-1,2*h-1)
+     * However, schroedinger's effective upconverted size is (2*w,2*h)
+     * Copy the src into the bottom line of frame.
+     * NB, this assumes that oil_memcpy is safe when src == dest */
+    oil_memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height - 1) - frame->extension,
+        SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1) - frame->extension,
+        width + frame->extension*2);
   }
-
 }
 
 void
