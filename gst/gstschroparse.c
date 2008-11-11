@@ -56,7 +56,8 @@ typedef struct _GstSchroParseClass GstSchroParseClass;
 typedef enum {
   GST_SCHRO_PARSE_OUTPUT_OGG,
   GST_SCHRO_PARSE_OUTPUT_QUICKTIME,
-  GST_SCHRO_PARSE_OUTPUT_AVI
+  GST_SCHRO_PARSE_OUTPUT_AVI,
+  GST_SCHRO_PARSE_OUTPUT_MPEG_TS
 } GstSchroParseOutputType;
 
 struct _GstSchroParse
@@ -211,7 +212,7 @@ gst_schro_parse_start (GstBaseVideoParse *base_video_parse)
   GstCaps *caps;
   GstStructure *structure;
 
-  GST_DEBUG("start");
+  GST_ERROR("start");
   caps = gst_pad_get_allowed_caps (base_video_parse->srcpad);
 
   if (gst_caps_is_empty (caps)) {
@@ -227,6 +228,8 @@ gst_schro_parse_start (GstBaseVideoParse *base_video_parse)
     schro_parse->output_format = GST_SCHRO_PARSE_OUTPUT_QUICKTIME;
   } else if (gst_structure_has_name (structure, "video/x-avi-part")) {
     schro_parse->output_format = GST_SCHRO_PARSE_OUTPUT_AVI;
+  } else if (gst_structure_has_name (structure, "video/x-mpegts-part")) {
+    schro_parse->output_format = GST_SCHRO_PARSE_OUTPUT_MPEG_TS;
   } else {
     return FALSE;
   }
@@ -483,6 +486,7 @@ gst_schro_parse_shape_output_quicktime (GstBaseVideoParse *base_video_parse,
 
   state = gst_base_video_parse_get_state (base_video_parse);
 
+#if 0
   GST_BUFFER_TIMESTAMP (buf) = gst_video_state_get_timestamp (state,
       frame->presentation_frame_number);
   GST_BUFFER_DURATION (buf) = gst_video_state_get_timestamp (state,
@@ -490,6 +494,7 @@ gst_schro_parse_shape_output_quicktime (GstBaseVideoParse *base_video_parse,
   GST_BUFFER_OFFSET_END (buf) = gst_video_state_get_timestamp (state,
       frame->decode_frame_number);
   GST_BUFFER_OFFSET (buf) = GST_CLOCK_TIME_NONE;
+#endif
 
   if (frame->is_sync_point &&
       frame->presentation_frame_number == frame->system_frame_number) {
@@ -498,6 +503,28 @@ gst_schro_parse_shape_output_quicktime (GstBaseVideoParse *base_video_parse,
   } else {
     GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
   }
+
+  return gst_base_video_parse_push (base_video_parse, buf);
+}
+
+static GstFlowReturn
+gst_schro_parse_shape_output_mpeg_ts (GstBaseVideoParse *base_video_parse,
+    GstVideoFrame *frame)
+{
+  GstBuffer *buf = frame->src_buffer;
+  const GstVideoState *state;
+
+  state = gst_base_video_parse_get_state (base_video_parse);
+
+#if 0
+  if (frame->is_sync_point &&
+      frame->presentation_frame_number == frame->system_frame_number) {
+    GST_BUFFER_FLAG_UNSET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
+    GST_DEBUG("sync point");
+  } else {
+    GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DELTA_UNIT);
+  }
+#endif
 
   return gst_base_video_parse_push (base_video_parse, buf);
 }
@@ -513,10 +540,10 @@ gst_schro_parse_shape_output (GstBaseVideoParse *base_video_parse,
   switch (schro_parse->output_format) {
     case GST_SCHRO_PARSE_OUTPUT_OGG:
       return gst_schro_parse_shape_output_ogg (base_video_parse, frame);
-      break;
     case GST_SCHRO_PARSE_OUTPUT_QUICKTIME:
       return gst_schro_parse_shape_output_quicktime (base_video_parse, frame);
-      break;
+    case GST_SCHRO_PARSE_OUTPUT_MPEG_TS:
+      return gst_schro_parse_shape_output_mpeg_ts (base_video_parse, frame);
     default:
       break;
   }
@@ -873,6 +900,15 @@ gst_schro_parse_get_caps (GstBaseVideoParse *base_video_parse)
         state->par_d, NULL);
   } else if (schro_parse->output_format == GST_SCHRO_PARSE_OUTPUT_AVI) {
     caps = gst_caps_new_simple ("video/x-avi-part",
+        "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('d','r','a','c'),
+        "width", G_TYPE_INT, state->width,
+        "height", G_TYPE_INT, state->height,
+        "framerate", GST_TYPE_FRACTION, state->fps_n,
+        state->fps_d,
+        "pixel-aspect-ratio", GST_TYPE_FRACTION, state->par_n,
+        state->par_d, NULL);
+  } else if (schro_parse->output_format == GST_SCHRO_PARSE_OUTPUT_MPEG_TS) {
+    caps = gst_caps_new_simple ("video/x-mpegts-part",
         "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('d','r','a','c'),
         "width", G_TYPE_INT, state->width,
         "height", G_TYPE_INT, state->height,

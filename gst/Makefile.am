@@ -7,6 +7,7 @@ libgstschro_la_SOURCES = \
 	gstschrodec.c \
 	gstschroparse.c \
 	gstschroscale.c \
+	gstschrocolorspace.c \
 	gstbasevideodecoder.c \
 	gstbasevideodecoder.h \
 	gstbasevideoencoder.c \

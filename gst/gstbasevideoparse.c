@@ -569,6 +569,11 @@ gst_base_video_parse_chain (GstPad *pad, GstBuffer *buf)
   base_video_parse = GST_BASE_VIDEO_PARSE (GST_PAD_PARENT (pad));
   klass = GST_BASE_VIDEO_PARSE_GET_CLASS (base_video_parse);
 
+  if (!base_video_parse->started) {
+    klass->start (base_video_parse);
+    base_video_parse->started = TRUE;
+  }
+
   if (G_UNLIKELY (GST_BUFFER_FLAG_IS_SET (buf, GST_BUFFER_FLAG_DISCONT))) {
     GST_DEBUG_OBJECT (base_video_parse, "received DISCONT buffer");
     gst_base_video_parse_reset (base_video_parse);

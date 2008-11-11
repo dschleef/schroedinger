@@ -90,6 +90,7 @@ struct _GstBaseVideoParse
 
   gboolean have_sync;
   gboolean discont;
+  gboolean started;
 
   GstVideoFrame *current_frame;
   GstVideoState state;
