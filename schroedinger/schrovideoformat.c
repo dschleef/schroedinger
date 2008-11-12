@@ -299,7 +299,6 @@ schro_video_format_get_std_video_format (SchroVideoFormat *format)
   max_metric = schro_video_format_get_video_format_metric (format, 1);
   for(i=1;i<ARRAY_SIZE (schro_video_formats); i++) {
     metric = schro_video_format_get_video_format_metric (format, i);
-    SCHRO_ERROR("%d %04x", i, metric);
     if (metric > max_metric) {
       max_index = i;
       max_metric = metric;
