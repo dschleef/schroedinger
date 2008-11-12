@@ -212,7 +212,7 @@ gst_schro_parse_start (GstBaseVideoParse *base_video_parse)
   GstCaps *caps;
   GstStructure *structure;
 
-  GST_ERROR("start");
+  GST_DEBUG("start");
   caps = gst_pad_get_allowed_caps (base_video_parse->srcpad);
 
   if (gst_caps_is_empty (caps)) {
@@ -393,7 +393,7 @@ gst_schro_parse_parse_data (GstBaseVideoParse *base_video_parse,
     frame = gst_base_video_parse_get_frame (base_video_parse);
     frame->is_eos = TRUE;
 
-    SCHRO_ERROR("eos");
+    SCHRO_DEBUG("eos");
 
     return gst_base_video_parse_finish_frame (base_video_parse);
   }
@@ -445,6 +445,7 @@ static GstFlowReturn
 gst_schro_parse_shape_output_ogg (GstBaseVideoParse *base_video_parse,
     GstVideoFrame *frame)
 {
+  GstSchroParse *schro_parse;
   int dpn;
   int delay;
   int dist;
@@ -454,6 +455,8 @@ gst_schro_parse_shape_output_ogg (GstBaseVideoParse *base_video_parse,
   guint64 granulepos_low;
   GstBuffer *buf = frame->src_buffer;
 
+  schro_parse = GST_SCHRO_PARSE (base_video_parse);
+
   dpn = frame->decode_frame_number;
 
   pt = frame->presentation_frame_number * 2;
@@ -461,7 +464,7 @@ gst_schro_parse_shape_output_ogg (GstBaseVideoParse *base_video_parse,
   delay = pt - dt;
   dist = frame->distance_from_sync;
 
-  GST_ERROR("sys %d dpn %d pt %d dt %d delay %d dist %d",
+  GST_DEBUG("sys %d dpn %d pt %d dt %d delay %d dist %d",
       (int)frame->system_frame_number,
       (int)frame->decode_frame_number,
       pt, dt, delay, dist);
@@ -470,9 +473,12 @@ gst_schro_parse_shape_output_ogg (GstBaseVideoParse *base_video_parse,
   granulepos_low = (delay << 9) | (dist & 0xff);
   GST_DEBUG("granulepos %lld:%lld", granulepos_hi, granulepos_low);
 
-  GST_BUFFER_OFFSET_END (buf) = (granulepos_hi << 22) | (granulepos_low);
-
-  //GST_BUFFER_OFFSET_END(buf) = -1;
+  if (frame->is_eos) {
+    GST_BUFFER_OFFSET_END (buf) = schro_parse->last_granulepos;
+  } else {
+    schro_parse->last_granulepos = (granulepos_hi << 22) | (granulepos_low);
+    GST_BUFFER_OFFSET_END (buf) = schro_parse->last_granulepos;
+  }
 
   return gst_base_video_parse_push (base_video_parse, buf);
 }

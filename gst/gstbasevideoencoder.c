@@ -149,6 +149,7 @@ gst_base_video_encoder_sink_event (GstPad *pad, GstEvent *event)
         frame->presentation_frame_number =
           base_video_encoder->presentation_frame_number;
         frame->presentation_duration = 0;
+        frame->is_eos = TRUE;
         //frame->presentation_duration = 0;
         base_video_encoder->presentation_frame_number++;
 

@@ -90,3 +90,33 @@ gst_schro_buffer_wrap (GstBuffer *buf, GstVideoFormat format, int width,
   return frame;
 }
 
+#ifdef GST_BUFFER_FREE_FUNC
+static void
+schro_buf_free_func (gpointer priv)
+{
+  SchroBuffer *buffer = (SchroBuffer *)priv;
+
+  schro_buffer_unref (buffer);
+}
+#endif
+
+/* takes the reference */
+GstBuffer *
+gst_schro_wrap_schro_buffer (SchroBuffer *buffer)
+{
+  GstBuffer *gstbuf;
+
+#ifdef GST_BUFFER_FREE_FUNC
+  gstbuf = gst_buffer_new ();
+  GST_BUFFER_DATA (gstbuf) = buffer->data;
+  GST_BUFFER_SIZE (gstbuf) = buffer->length;
+  GST_BUFFER_MALLOCDATA (gstbuf) = (void *)buffer;
+  GST_BUFFER_FREE_FUNC (gstbuf) = schro_buf_free_func;
+#else
+  gstbuf = gst_buffer_new_and_alloc (buffer->length);
+  memcpy (GST_BUFFER_DATA(gstbuf), buffer->data, buffer->length);
+#endif
+
+  return gstbuf;
+}
+

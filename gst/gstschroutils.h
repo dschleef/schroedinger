@@ -27,6 +27,7 @@
 SchroFrame *
 gst_schro_buffer_wrap (GstBuffer *buf, GstVideoFormat format, int width,
     int height);
+GstBuffer * gst_schro_wrap_schro_buffer (SchroBuffer *buffer);
 
 #endif
 

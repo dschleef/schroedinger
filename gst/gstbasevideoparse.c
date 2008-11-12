@@ -811,7 +811,7 @@ gst_base_video_parse_push (GstBaseVideoParse *base_video_parse,
   }
   gst_buffer_set_caps (buffer, base_video_parse->caps);
 
-  GST_ERROR("pushing ts=%lld dur=%lld off=%lld off_end=%lld",
+  GST_DEBUG("pushing ts=%lld dur=%lld off=%lld off_end=%lld",
       GST_BUFFER_TIMESTAMP(buffer),
       GST_BUFFER_DURATION(buffer),
       GST_BUFFER_OFFSET(buffer),
