@@ -1047,6 +1047,7 @@ schro_encoder_encode_sequence_header (SchroEncoder *encoder)
   SchroPack *pack;
   SchroBuffer *buffer;
   SchroBuffer *subbuffer;
+  int next_offset;
 
   buffer = schro_buffer_new_and_alloc (0x100);
 
@@ -1056,6 +1057,12 @@ schro_encoder_encode_sequence_header (SchroEncoder *encoder)
   schro_encoder_encode_sequence_header_header (encoder, pack);
 
   schro_pack_flush (pack);
+
+  next_offset = schro_pack_get_offset (pack);
+  buffer->data[5] = (next_offset >> 24) & 0xff;
+  buffer->data[6] = (next_offset >> 16) & 0xff;
+  buffer->data[7] = (next_offset >> 8) & 0xff;
+  buffer->data[8] = (next_offset >> 0) & 0xff;
 
   subbuffer = schro_buffer_new_subbuffer (buffer, 0,
       schro_pack_get_offset (pack));
