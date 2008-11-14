@@ -66,6 +66,7 @@ schro_encoder_new (void)
   encoder->min_bitrate = 13824000;
   encoder->buffer_size = 0;
   encoder->buffer_level = 0;
+  encoder->quality = 7.0;
   encoder->noise_threshold = 25.0;
   encoder->gop_structure = 0;
   encoder->queue_depth = 20;
@@ -176,6 +177,12 @@ handle_gop_enum (SchroEncoder *encoder)
 
 }
 
+static double
+schro_encoder_quality_get_lambda (double quality)
+{
+  return exp(((quality-5)/0.7 - 7.0)*M_LN10*0.5);
+}
+
 /**
  * schro_encoder_start:
  * @encoder: an encoder object
@@ -260,6 +267,11 @@ schro_encoder_start (SchroEncoder *encoder)
       handle_gop_enum (encoder);
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_CONSTANT_ERROR;
       break;
+    case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_QUALITY:
+      handle_gop_enum (encoder);
+      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_CONSTANT_LAMBDA;
+      encoder->magic_lambda = schro_encoder_quality_get_lambda (encoder->quality);
+      break;
   }
 
   encoder->level = 0;
@@ -329,7 +341,7 @@ schro_encoder_init_perceptual_weighting (SchroEncoder *encoder)
     encoder->cycles_per_degree_vert *= 0.5;
   }
 
-  SCHRO_DEBUG("cycles per degree horiz=%g vert=%g",
+  SCHRO_ERROR("cycles per degree horiz=%g vert=%g",
       encoder->cycles_per_degree_horiz, encoder->cycles_per_degree_vert);
 
   switch(encoder->perceptual_weighting) {
@@ -3070,7 +3082,8 @@ static char *rate_control_list[] = {
   "low_delay",
   "lossless",
   "constant_lambda",
-  "constant_error"
+  "constant_error",
+  "constant_quality"
 };
 static char *gop_structure_list[] = {
   "adaptive",
@@ -3126,6 +3139,7 @@ static SchroEncoderSetting encoder_settings[] = {
   INT ("min_bitrate", 0, INT_MAX, 13824000),
   INT ("buffer_size", 0, INT_MAX, 0),
   INT ("buffer_level", 0, INT_MAX, 0),
+  DOUB("quality", 0, 10.0, 7.0),
   DOUB("noise_threshold", 0, 100.0, 25.0),
   ENUM("gop_structure", gop_structure_list, 0),
   INT("queue_depth", 1, SCHRO_LIMIT_FRAME_QUEUE_LENGTH, 20),
@@ -3215,6 +3229,7 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(min_bitrate);
   VAR_SET(buffer_size);
   VAR_SET(buffer_level);
+  VAR_SET(quality);
   VAR_SET(noise_threshold);
   VAR_SET(gop_structure);
   VAR_SET(queue_depth);
@@ -3279,6 +3294,7 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(min_bitrate);
   VAR_GET(buffer_size);
   VAR_GET(buffer_level);
+  VAR_GET(quality);
   VAR_GET(noise_threshold);
   VAR_GET(gop_structure);
   VAR_GET(queue_depth);

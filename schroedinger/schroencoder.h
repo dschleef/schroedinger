@@ -59,7 +59,8 @@ typedef enum {
   SCHRO_ENCODER_RATE_CONTROL_LOW_DELAY,
   SCHRO_ENCODER_RATE_CONTROL_LOSSLESS,
   SCHRO_ENCODER_RATE_CONTROL_CONSTANT_LAMBDA,
-  SCHRO_ENCODER_RATE_CONTROL_CONSTANT_ERROR
+  SCHRO_ENCODER_RATE_CONTROL_CONSTANT_ERROR,
+  SCHRO_ENCODER_RATE_CONTROL_CONSTANT_QUALITY
 } SchroEncoderRateControlEnum;
 
 typedef enum {
@@ -228,6 +229,7 @@ struct _SchroEncoder {
   int min_bitrate;
   int buffer_size;
   int buffer_level;
+  double quality;
   double noise_threshold;
   int gop_structure;
   int queue_depth;
