@@ -19,9 +19,7 @@ libgstschro_la_SOURCES = \
 	gstbasevideoutils.h \
 	gstframestore.c \
 	gstschroutils.c \
-	gstschroutils.h \
-	gstadapter2.c \
-	gstadapter2.h
+	gstschroutils.h
 
 if ENABLE_ENCODER
 libgstschro_la_SOURCES += \
