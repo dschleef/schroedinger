@@ -12,8 +12,6 @@ AC_SUBST(SCHRO_MAJORMINOR)
 
 AM_CONFIG_HEADER(config.h)
 
-AC_DEFINE_UNQUOTED(DIRAC_COMPAT, 1, [Enable Dirac compatibility])
-
 dnl CURRENT, REVISION, AGE
 dnl - library source changed -> increment REVISION
 dnl - interfaces added/removed/changed -> increment CURRENT, REVISION = 0
