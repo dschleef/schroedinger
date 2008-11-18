@@ -799,11 +799,17 @@ color_matrix (SchroFrame *frame, void *_dest, int component, int i)
 SchroFrame *
 schro_virt_frame_new_color_matrix (SchroFrame *vf)
 {
+  return schro_virt_frame_new_color_matrix_take (schro_frame_ref (vf));
+}
+
+SchroFrame *
+schro_virt_frame_new_color_matrix_take (SchroFrame *vf)
+{
   SchroFrame *virt_frame;
 
   virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_U8_444,
       vf->width, vf->height);
-  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->virt_frame1 = vf;
   virt_frame->render_line = color_matrix;
 
   return virt_frame;

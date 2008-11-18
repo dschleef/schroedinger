@@ -8,6 +8,7 @@ libgstschro_la_SOURCES = \
 	gstschroparse.c \
 	gstschroscale.c \
 	gstschrocolorspace.c \
+	gstlogoinsert.c \
 	gstbasevideodecoder.c \
 	gstbasevideodecoder.h \
 	gstbasevideoencoder.c \
@@ -31,5 +32,5 @@ endif
 
 libgstschro_la_CFLAGS = $(GST_CFLAGS) $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 libgstschro_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
-libgstschro_la_LIBADD = $(GST_LIBS) $(GST_BASE_LIBS) $(SCHRO_LIBS) $(LIBOIL_LIBS)
+libgstschro_la_LIBADD = $(GST_LIBS) $(GST_BASE_LIBS) $(SCHRO_LIBS) $(LIBOIL_LIBS) -lpng
 

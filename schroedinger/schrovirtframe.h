@@ -35,6 +35,7 @@ SchroFrame *schro_virt_frame_new_unpack_take (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_YUY2_take (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_UYVY_take (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_AYUV_take (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_color_matrix_take (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_subsample_take (SchroFrame *vf, SchroFrameFormat format);
 
 SchroFrame * schro_virt_frame_new_convert_u8_take (SchroFrame *vf);
