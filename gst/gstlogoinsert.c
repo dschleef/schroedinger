@@ -390,7 +390,7 @@ schro_frame_new_from_png (void *data, int size)
   width = png_get_image_width (png_ptr, info_ptr);
   height = png_get_image_height (png_ptr, info_ptr);
   color_type = png_get_color_type (png_ptr, info_ptr);
-  GST_ERROR("PNG size %dx%d color_type %d", width, height, color_type);
+  GST_DEBUG("PNG size %dx%d color_type %d", width, height, color_type);
 
   png_set_strip_16 (png_ptr);
   png_set_packing (png_ptr);
@@ -438,6 +438,8 @@ static SchroFrame *
 schro_virt_frame_extract_alpha_take (SchroFrame *frame)
 {
   SchroFrame *virt_frame;
+
+  /* FIXME check that frame is a real AYUV frame */
 
   virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_U8_444,
       frame->width, frame->height);

@@ -143,9 +143,9 @@ static void
 gst_schrodownsample_base_init (gpointer g_class)
 {
   static GstElementDetails compress_details =
-      GST_ELEMENT_DETAILS ("Video Filter Template",
+      GST_ELEMENT_DETAILS ("Downsample video",
       "Filter/Effect/Video",
-      "Template for a video filter",
+      "Decreases size of video by a factor of 2",
       "David Schleef <ds@schleef.org>");
   GstElementClass *element_class = GST_ELEMENT_CLASS (g_class);
   //GstBaseTransformClass *base_transform_class = GST_BASE_TRANSFORM_CLASS (g_class);

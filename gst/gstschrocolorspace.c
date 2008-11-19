@@ -143,9 +143,9 @@ static void
 gst_schrocolorspace_base_init (gpointer g_class)
 {
   static GstElementDetails compress_details =
-      GST_ELEMENT_DETAILS ("Video Filter Template",
+      GST_ELEMENT_DETAILS ("YCbCr format conversion",
       "Filter/Effect/Video",
-      "Template for a video filter",
+      "YCbCr format conversion",
       "David Schleef <ds@schleef.org>");
   GstElementClass *element_class = GST_ELEMENT_CLASS (g_class);
   //GstBaseTransformClass *base_transform_class = GST_BASE_TRANSFORM_CLASS (g_class);
