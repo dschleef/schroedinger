@@ -34,6 +34,7 @@ GType gst_waveletvisualizer_get_type (void);
 GType gst_frame_store_get_type (void);
 GType gst_schro_scale_get_type (void);
 GType gst_logoinsert_get_type (void);
+GType gst_colorconvert_get_type (void);
 
 GST_DEBUG_CATEGORY (schro_debug);
 #define GST_CAT_DEFAULT schro_debug
@@ -62,8 +63,12 @@ plugin_init (GstPlugin * plugin)
       gst_schro_scale_get_type ());
   gst_element_register (plugin, "schrocolorspace", GST_RANK_NONE,
       gst_schrocolorspace_get_type ());
+#ifdef ENABLE_EXTRAS
   gst_element_register (plugin, "logoinsert", GST_RANK_NONE,
       gst_logoinsert_get_type ());
+  gst_element_register (plugin, "colorconvert", GST_RANK_NONE,
+      gst_colorconvert_get_type ());
+#endif
 
   return TRUE;
 }

@@ -8,7 +8,6 @@ libgstschro_la_SOURCES = \
 	gstschroparse.c \
 	gstschroscale.c \
 	gstschrocolorspace.c \
-	gstlogoinsert.c \
 	gstbasevideodecoder.c \
 	gstbasevideodecoder.h \
 	gstbasevideoencoder.c \
@@ -20,6 +19,12 @@ libgstschro_la_SOURCES = \
 	gstframestore.c \
 	gstschroutils.c \
 	gstschroutils.h
+
+if ENABLE_EXTRAS
+libgstschro_la_SOURCES += \
+	gstlogoinsert.c \
+	gstcolorconvert.c
+endif
 
 if ENABLE_ENCODER
 libgstschro_la_SOURCES += \

@@ -43,6 +43,10 @@ dnl the version check needs to stay here because autopoint greps for it
 AC_CHECK_LIBM
 AC_SUBST(LIBM)
 
+AC_ARG_ENABLE(extras, AC_HELP_STRING([--enable-extras],
+              [enable extra stuff (default=disabled)]))
+AM_CONDITIONAL(ENABLE_EXTRAS, test "x$ENABLE_EXTRAS" = "xyes")
+
 dnl liboil is required
 OIL_VER="0.3.13"
 PKG_CHECK_MODULES(LIBOIL, liboil-0.3 >= $OIL_VER, HAVE_LIBOIL=yes, HAVE_LIBOIL=no)
@@ -65,6 +69,17 @@ if test "x${HAVE_ORC}" = xyes ; then
   SCHRO_PKG_DEPS="$SCHRO_PKG_DEPS orc-0.3 >= $ORC_VER"
 fi
 AM_CONDITIONAL(HAVE_ORC, test "x$HAVE_ORC" = "xyes")
+
+if test "x$enable_extras" = xyes ; then
+  AC_DEFINE(ENABLE_EXTRAS, 1, [Whether or not to enable extras])
+
+  PKG_CHECK_MODULES(LIBPNG, libpng12 >= 1.0, HAVE_LIBPNG=yes, HAVE_LIBPNG=no)
+  if test "x${HAVE_LIBPNG}" != xyes ; then
+    AC_ERROR([libpng12 is required when --enable-extras is specified])
+  fi
+  AC_SUBST(LIBPNG_LIBS)
+  AC_SUBST(LIBPNG_CFLAGS)
+fi
 
 AC_ARG_WITH([thread],
     AS_HELP_STRING([--with-thread=IMPL],[use threading library {auto,pthread,gthread,win32,none} [[default=auto]]]),
