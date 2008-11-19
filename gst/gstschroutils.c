@@ -27,6 +27,7 @@
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schrovirtframe.h>
 #include <math.h>
+#include <string.h>
 
 GST_DEBUG_CATEGORY_EXTERN (schro_debug);
 #define GST_CAT_DEFAULT schro_debug
