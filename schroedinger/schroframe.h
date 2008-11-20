@@ -82,6 +82,7 @@ struct _SchroFrame {
   SchroFrame *virt_frame2;
   void (*render_line) (SchroFrame *frame, void *dest, int component, int i);
   void *virt_priv;
+  void *virt_priv2;
 
   int extension;
 };
