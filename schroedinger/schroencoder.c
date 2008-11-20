@@ -341,7 +341,7 @@ schro_encoder_init_perceptual_weighting (SchroEncoder *encoder)
     encoder->cycles_per_degree_vert *= 0.5;
   }
 
-  SCHRO_ERROR("cycles per degree horiz=%g vert=%g",
+  SCHRO_DEBUG("cycles per degree horiz=%g vert=%g",
       encoder->cycles_per_degree_horiz, encoder->cycles_per_degree_vert);
 
   switch(encoder->perceptual_weighting) {
