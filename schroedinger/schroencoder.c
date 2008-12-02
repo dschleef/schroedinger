@@ -32,7 +32,7 @@ static void schro_encoder_clean_up_transform_subband (SchroEncoderFrame *frame,
     int component, int index);
 static void schro_encoder_fixup_offsets (SchroEncoder *encoder,
     SchroBuffer *buffer, schro_bool is_eos);
-static void schro_encoder_frame_complete (SchroEncoderFrame *frame);
+static void schro_encoder_frame_complete (SchroAsyncStage *stage);
 static int schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain);
 static void schro_encoder_init_perceptual_weighting (SchroEncoder *encoder);
 void schro_encoder_encode_sequence_header_header (SchroEncoder *encoder,
@@ -1176,9 +1176,9 @@ schro_encoder_wait (SchroEncoder *encoder)
 }
 
 static void
-schro_encoder_frame_complete (SchroEncoderFrame *frame)
+schro_encoder_frame_complete (SchroAsyncStage *stage)
 {
-  int stage;
+  SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
 
   SCHRO_INFO("completing task, picture %d working %02x in state %02x",
       frame->frame_number, frame->working, 0 /*frame->state*/);
@@ -1186,11 +1186,10 @@ schro_encoder_frame_complete (SchroEncoderFrame *frame)
   SCHRO_ASSERT(frame->busy == TRUE);
 
   frame->busy = FALSE;
-  stage = frame->working;
-  frame->stages[stage].is_done = TRUE;
+  stage->is_done = TRUE;
   frame->working = 0;
 
-  if (stage == SCHRO_ENCODER_FRAME_STAGE_POSTANALYSE) {
+  if (stage == frame->stages + SCHRO_ENCODER_FRAME_STAGE_POSTANALYSE) {
     frame->stages[SCHRO_ENCODER_FRAME_STAGE_DONE].is_done = TRUE;
 
     SCHRO_ASSERT(frame->output_buffer_size > 0);
@@ -1261,7 +1260,9 @@ run_stage (SchroEncoderFrame *frame, int stage)
     default:
       SCHRO_ASSERT(0);
   }
-  schro_async_run_locked (frame->encoder->async, func, frame);
+  frame->stages[stage].task_func = func;
+  frame->stages[stage].priv = frame;
+  schro_async_run_stage_locked (frame->encoder->async, frame->stages + stage);
 }
 
 /**
@@ -1410,8 +1411,10 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
 
 
 void
-schro_encoder_analyse_picture (SchroEncoderFrame *frame)
+schro_encoder_analyse_picture (SchroAsyncStage *stage)
 {
+  SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
+
   frame->filtered_frame = schro_frame_dup_extended (frame->original_frame,
       32);
   if (frame->encoder->filtering != 0) {
@@ -1458,8 +1461,10 @@ schro_encoder_analyse_picture (SchroEncoderFrame *frame)
 }
 
 void
-schro_encoder_predict_rough_picture (SchroEncoderFrame *frame)
+schro_encoder_predict_rough_picture (SchroAsyncStage *stage)
 {
+  SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
+
   SCHRO_INFO("predict picture %d", frame->frame_number);
 
   if (frame->params.num_refs > 0) {
@@ -1470,8 +1475,10 @@ schro_encoder_predict_rough_picture (SchroEncoderFrame *frame)
 /* should perform fullpel ME without "rendering",
  * ie without mode decision and motion compensation and DWT */
 void
-schro_encoder_predict_pel_picture (SchroEncoderFrame* frame)
+schro_encoder_predict_pel_picture (SchroAsyncStage *stage)
 {
+  SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
+
   SCHRO_ASSERT (frame && frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_ROUGH].is_done);
   SCHRO_INFO ("fullpel predict picture %d", frame->frame_number);
 
@@ -1481,8 +1488,9 @@ schro_encoder_predict_pel_picture (SchroEncoderFrame* frame)
 }
 
 void
-schro_encoder_predict_subpel_picture (SchroEncoderFrame* frame)
+schro_encoder_predict_subpel_picture (SchroAsyncStage *stage)
 {
+  SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
 
   if (frame->params.num_refs > 0 && frame->params.mv_precision > 0) {
     schro_encoder_motion_predict_subpel (frame);
@@ -1492,8 +1500,10 @@ schro_encoder_predict_subpel_picture (SchroEncoderFrame* frame)
 /* performs mode decision and superblock splitting
  * finally it does DWT */
 void
-schro_encoder_mode_decision (SchroEncoderFrame* frame)
+schro_encoder_mode_decision (SchroAsyncStage *stage)
 {
+  SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
+
   SCHRO_ASSERT(frame && frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL].is_done);
   SCHRO_INFO("mode decision and superblock splitting picture %d", frame->frame_number);
 
@@ -1552,8 +1562,9 @@ schro_encoder_render_picture (SchroEncoderFrame *frame)
 }
 
 void
-schro_encoder_encode_picture (SchroEncoderFrame *frame)
+schro_encoder_encode_picture (SchroAsyncStage *stage)
 {
+  SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
   SchroBuffer *subbuffer;
   int picture_chroma_width, picture_chroma_height;
   int width, height;
@@ -1637,8 +1648,9 @@ schro_encoder_encode_picture (SchroEncoderFrame *frame)
 }
 
 void
-schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
+schro_encoder_reconstruct_picture (SchroAsyncStage *stage)
 {
+  SchroEncoderFrame *encoder_frame = (SchroEncoderFrame *)stage->priv;
   SchroFrameFormat frame_format;
   SchroFrame *frame;
 
@@ -1669,8 +1681,9 @@ schro_encoder_reconstruct_picture (SchroEncoderFrame *encoder_frame)
 }
 
 void
-schro_encoder_postanalyse_picture (SchroEncoderFrame *frame)
+schro_encoder_postanalyse_picture (SchroAsyncStage *stage)
 {
+  SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
   SchroVideoFormat *video_format = frame->params.video_format;
 
   if (frame->encoder->enable_psnr) {

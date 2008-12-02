@@ -448,17 +448,17 @@ void schro_encoder_init_subbands (SchroEncoderFrame *frame);
 void schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index);
 void schro_encoder_encode_subband_noarith (SchroEncoderFrame *frame, int component, int index);
 
-void schro_encoder_analyse_picture (SchroEncoderFrame *frame);
-void schro_encoder_predict_rough_picture (SchroEncoderFrame *frame);
-void schro_encoder_predict_pel_picture (SchroEncoderFrame *frame);
-void schro_encoder_predict_subpel_picture (SchroEncoderFrame *frame);
+void schro_encoder_analyse_picture (SchroAsyncStage *stage);
+void schro_encoder_predict_rough_picture (SchroAsyncStage *stage);
+void schro_encoder_predict_pel_picture (SchroAsyncStage *stage);
+void schro_encoder_predict_subpel_picture (SchroAsyncStage *stage);
 
-void schro_encoder_fullpel_predict_picture (SchroEncoderFrame* frame);
-void schro_encoder_mode_decision (SchroEncoderFrame* frame);
+void schro_encoder_fullpel_predict_picture (SchroAsyncStage *stage);
+void schro_encoder_mode_decision (SchroAsyncStage *stage);
 
-void schro_encoder_encode_picture (SchroEncoderFrame *frame);
-void schro_encoder_reconstruct_picture (SchroEncoderFrame *frame);
-void schro_encoder_postanalyse_picture (SchroEncoderFrame *frame);
+void schro_encoder_encode_picture (SchroAsyncStage *stage);
+void schro_encoder_reconstruct_picture (SchroAsyncStage *stage);
+void schro_encoder_postanalyse_picture (SchroAsyncStage *stage);
 
 SchroFrame * schro_encoder_frame_queue_get (SchroEncoder *encoder,
     SchroPictureNumber frame_number);
