@@ -12,12 +12,34 @@ typedef int SchroExecDomain;
 typedef struct _SchroAsync SchroAsync;
 typedef struct _SchroThread SchroThread;
 typedef struct _SchroAsyncTask SchroAsyncTask;
+typedef struct _SchroAsyncStage SchroAsyncStage;
 typedef struct _SchroMutex SchroMutex;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
 typedef int (*SchroAsyncScheduleFunc)(void *, SchroExecDomain exec_domain);
 typedef void (*SchroAsyncCompleteFunc)(void *);
+typedef void (*SchroAsyncTaskFunc) (void *);
+
+struct _SchroAsyncTask {
+  SchroAsyncTaskFunc task_func;
+  void *priv;
+};
+
+struct _SchroAsyncStage {
+  SchroAsyncTaskFunc task_func;
+  void *priv;
+
+  schro_bool is_ready;
+  schro_bool is_needed; /* FIXME remove eventually */
+  schro_bool is_done;
+  int priority;
+  int n_tasks_started;
+  int n_tasks_completed;
+
+  int n_tasks;
+  SchroAsyncTaskFunc tasks[10];
+};
 
 void schro_async_init (void);
 SchroAsync * schro_async_new(int n_threads,

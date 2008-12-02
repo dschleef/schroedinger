@@ -34,8 +34,7 @@ struct _SchroAsync {
 
   SchroThread *threads;
 
-  void (*task_func)(void *);
-  void *task_priv;
+  SchroAsyncTask task;
 
   SchroAsyncScheduleFunc schedule;
   void *schedule_closure;
@@ -182,10 +181,10 @@ schro_async_free (SchroAsync *async)
 void
 schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 {
-  SCHRO_ASSERT(async->task_func == NULL);
+  SCHRO_ASSERT(async->task.task_func == NULL);
 
-  async->task_func = func;
-  async->task_priv = ptr;
+  async->task.task_func = func;
+  async->task.priv = ptr;
 
   pthread_cond_signal (&async->thread_cond);
 }
@@ -305,15 +304,15 @@ schro_thread_main (void *ptr)
     } else {
       ret = async->schedule (async->schedule_closure, thread->exec_domain);
       /* FIXME ignoring ret */
-      if (!async->task_func) {
+      if (!async->task.task_func) {
         thread->busy = FALSE;
         continue;
       }
 
       thread->busy = TRUE;
-      func = async->task_func;
-      priv = async->task_priv;
-      async->task_func = NULL;
+      func = async->task.task_func;
+      priv = async->task.priv;
+      async->task.task_func = NULL;
 
       if (async->n_idle > 0) {
         pthread_cond_signal (&async->thread_cond);

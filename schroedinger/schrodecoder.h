@@ -87,8 +87,8 @@ struct _SchroPicture {
 
   SchroDecoder *decoder;
 
-  unsigned int state;
-  unsigned int needed_state;
+  //unsigned int state;
+  //unsigned int needed_state;
   unsigned int working;
   int busy;
   int skip;
@@ -103,6 +103,8 @@ struct _SchroPicture {
   SchroPicture *ref0;
   SchroPicture *ref1;
   SchroFrame *planar_output_frame;
+
+  SchroAsyncStage stages[9];
 
   int is_ref;
 

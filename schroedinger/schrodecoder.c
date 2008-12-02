@@ -57,16 +57,17 @@ struct _SchroPictureSubbandContext {
 };
 
 enum {
-  SCHRO_DECODER_STATE_INIT = (1<<0),
-  SCHRO_DECODER_STATE_REFERENCES = (1<<1),
-  SCHRO_DECODER_STATE_MOTION_DECODE = (1<<2),
-  SCHRO_DECODER_STATE_MOTION_RENDER = (1<<3),
-  SCHRO_DECODER_STATE_RESIDUAL_DECODE = (1<<4),
-  SCHRO_DECODER_STATE_WAVELET_TRANSFORM = (1<<5),
-  SCHRO_DECODER_STATE_COMBINE = (1<<6),
-  SCHRO_DECODER_STATE_UPSAMPLE = (1<<7),
-  SCHRO_DECODER_STATE_DONE = (1<<8),
+  SCHRO_DECODER_STAGE_INIT = 0,
+  SCHRO_DECODER_STAGE_REFERENCES,
+  SCHRO_DECODER_STAGE_MOTION_DECODE,
+  SCHRO_DECODER_STAGE_MOTION_RENDER,
+  SCHRO_DECODER_STAGE_RESIDUAL_DECODE,
+  SCHRO_DECODER_STAGE_WAVELET_TRANSFORM,
+  SCHRO_DECODER_STAGE_COMBINE,
+  SCHRO_DECODER_STAGE_UPSAMPLE,
+  SCHRO_DECODER_STAGE_DONE
 };
+
 
 int _schro_decode_prediction_only;
 
@@ -311,14 +312,7 @@ schro_picture_unref (SchroPicture *picture)
 void
 schro_decoder_reset (SchroDecoder *decoder)
 {
-  int i;
-
   schro_async_lock (decoder->async);
-  for(i=0;i<decoder->picture_queue->n;i++){
-    SchroPicture *picture = decoder->picture_queue->elements[i].data;
-
-    picture->needed_state = 0;
-  }
 
   schro_queue_clear (decoder->picture_queue);
   schro_queue_clear (decoder->reference_queue);
@@ -478,7 +472,7 @@ schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
     schro_decoder_error(decoder, "next picture not available in full queue");
     return FALSE;
   }
-  if (picture && picture->state & SCHRO_DECODER_STATE_DONE) {
+  if (picture && picture->stages[SCHRO_DECODER_STAGE_DONE].is_done) {
     return TRUE;
   }
   return FALSE;
@@ -522,7 +516,7 @@ schro_decoder_pull (SchroDecoder *decoder)
     picture = schro_queue_find (decoder->picture_queue, decoder->next_frame_number);
   }
   if (picture) {
-    if (picture->state & SCHRO_DECODER_STATE_DONE) {
+    if (picture->stages[SCHRO_DECODER_STAGE_DONE].is_done) {
       schro_queue_remove (decoder->picture_queue, picture->picture_number);
     } else {
       picture = NULL;
@@ -636,8 +630,8 @@ schro_decoder_dump (SchroDecoder *decoder)
     SCHRO_ERROR("%d: %d %d %04x %04x %04x",
         i, picture->picture_number,
         picture->busy,
-        picture->state,
-        picture->needed_state,
+        0 /*picture->state */,
+        0 /*picture->needed_state*/,
         picture->working);
   }
   SCHRO_ERROR("next_frame_number %d", decoder->next_frame_number);
@@ -868,8 +862,8 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
 
     SCHRO_DEBUG("adding %d to queue (skipped)", picture->picture_number);
 
-    picture->state = SCHRO_DECODER_STATE_DONE;
-    picture->needed_state = SCHRO_DECODER_STATE_DONE;
+    picture->stages[SCHRO_DECODER_STAGE_DONE].is_done = TRUE;
+    picture->stages[SCHRO_DECODER_STAGE_DONE].is_needed = TRUE;
   } else {
     picture->output_picture = schro_queue_pull (decoder->output_queue);
     SCHRO_ASSERT(picture->output_picture);
@@ -955,23 +949,26 @@ schro_decoder_parse_picture (SchroPicture *picture)
     }
   }
 
-  picture->needed_state |= SCHRO_DECODER_STATE_REFERENCES;
-  picture->needed_state |= SCHRO_DECODER_STATE_MOTION_DECODE;
-  picture->needed_state |= SCHRO_DECODER_STATE_MOTION_RENDER;
-  picture->needed_state |= SCHRO_DECODER_STATE_RESIDUAL_DECODE;
-  picture->needed_state |= SCHRO_DECODER_STATE_WAVELET_TRANSFORM;
-  picture->needed_state |= SCHRO_DECODER_STATE_COMBINE;
+  picture->stages[SCHRO_DECODER_STAGE_REFERENCES].is_needed = TRUE;
+  picture->stages[SCHRO_DECODER_STAGE_REFERENCES].is_needed = TRUE;
+  picture->stages[SCHRO_DECODER_STAGE_MOTION_DECODE].is_needed = TRUE;
+  picture->stages[SCHRO_DECODER_STAGE_MOTION_RENDER].is_needed = TRUE;
+  picture->stages[SCHRO_DECODER_STAGE_RESIDUAL_DECODE].is_needed = TRUE;
+  picture->stages[SCHRO_DECODER_STAGE_WAVELET_TRANSFORM].is_needed = TRUE;
+  picture->stages[SCHRO_DECODER_STAGE_COMBINE].is_needed = TRUE;
 }
 
 void
 schro_decoder_picture_complete (SchroPicture *picture)
 {
+  SchroAsyncStage *stage = picture->stages + picture->working;
+
   SCHRO_DEBUG ("picture complete");
 
-  picture->state |= picture->working;
+  stage->is_done = TRUE;
   picture->working = 0;
-  if ((picture->needed_state & (~picture->state)) == 0) {
-    picture->state |= SCHRO_DECODER_STATE_DONE;
+  if (stage == picture->stages + SCHRO_DECODER_STAGE_COMBINE) {
+    picture->stages[SCHRO_DECODER_STAGE_DONE].is_done = TRUE;
   }
   picture->busy = FALSE;
 
@@ -1004,15 +1001,16 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
 
   for(i=0;i<decoder->picture_queue->n;i++){
     SchroPicture *picture = decoder->picture_queue->elements[i].data;
-    unsigned int todo;
     void *func = NULL;
 
     if (picture->busy) continue;
 
-    todo = picture->needed_state & (~picture->state);
-    SCHRO_DEBUG("picture %d todo %04x", picture->picture_number, todo);
+    SCHRO_DEBUG("picture %d", picture->picture_number);
 
-    if (todo & SCHRO_DECODER_STATE_REFERENCES) {
+#define TODO(stage) \
+    (picture->stages[(stage)].is_needed && \
+     !picture->stages[(stage)].is_done)
+    if (TODO(SCHRO_DECODER_STAGE_REFERENCES)) {
       int j;
       int refs_ready = TRUE;
 
@@ -1021,7 +1019,7 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
 
         refpic = (j==0) ? picture->ref0 : picture->ref1;
 
-        if (refpic->busy || !(refpic->state & SCHRO_DECODER_STATE_DONE)) {
+        if (refpic->busy || !(refpic->stages[SCHRO_DECODER_STAGE_DONE].is_done)) {
           refs_ready = FALSE;
           continue;
         }
@@ -1032,12 +1030,12 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
 #else
             picture->params.mv_precision > 0 &&
 #endif
-            !(refpic->state & SCHRO_DECODER_STATE_UPSAMPLE)) {
+            !(refpic->stages[SCHRO_DECODER_STAGE_UPSAMPLE].is_done)) {
           if (!render_ok) {
             refs_ready = FALSE;
             continue;
           }
-          refpic->working = SCHRO_DECODER_STATE_UPSAMPLE;
+          refpic->working = SCHRO_DECODER_STAGE_UPSAMPLE;
           refpic->busy = TRUE;
 
           func = schro_decoder_x_upsample;
@@ -1048,30 +1046,31 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
         }
       }
       if (refs_ready) {
-        picture->state |= SCHRO_DECODER_STATE_REFERENCES;
+        picture->stages[SCHRO_DECODER_STAGE_REFERENCES].is_done = TRUE;
       }
     }
 
-    if (todo & SCHRO_DECODER_STATE_MOTION_DECODE &&
-        picture->state & SCHRO_DECODER_STATE_REFERENCES && decode_ok) {
+
+    if (TODO(SCHRO_DECODER_STAGE_MOTION_DECODE) &&
+        picture->stages[SCHRO_DECODER_STAGE_REFERENCES].is_done && decode_ok) {
       func = schro_decoder_x_decode_motion;
-      picture->working = SCHRO_DECODER_STATE_MOTION_DECODE;
-    } else if (todo & SCHRO_DECODER_STATE_MOTION_RENDER &&
-        picture->state & SCHRO_DECODER_STATE_MOTION_DECODE && render_ok) {
+      picture->working = SCHRO_DECODER_STAGE_MOTION_DECODE;
+    } else if (TODO(SCHRO_DECODER_STAGE_MOTION_RENDER) &&
+        picture->stages[SCHRO_DECODER_STAGE_MOTION_DECODE].is_done && render_ok) {
       func = schro_decoder_x_render_motion;
-      picture->working = SCHRO_DECODER_STATE_MOTION_RENDER;
-    } else if (todo & SCHRO_DECODER_STATE_RESIDUAL_DECODE && decode_ok) {
+      picture->working = SCHRO_DECODER_STAGE_MOTION_RENDER;
+    } else if (TODO(SCHRO_DECODER_STAGE_RESIDUAL_DECODE) && decode_ok) {
       func = schro_decoder_x_decode_residual;
-      picture->working = SCHRO_DECODER_STATE_RESIDUAL_DECODE;
-    } else if (todo & SCHRO_DECODER_STATE_WAVELET_TRANSFORM &&
-        picture->state & SCHRO_DECODER_STATE_RESIDUAL_DECODE && render_ok) {
+      picture->working = SCHRO_DECODER_STAGE_RESIDUAL_DECODE;
+    } else if (TODO(SCHRO_DECODER_STAGE_WAVELET_TRANSFORM) &&
+        picture->stages[SCHRO_DECODER_STAGE_RESIDUAL_DECODE].is_done && render_ok) {
       func = schro_decoder_x_wavelet_transform;
-      picture->working = SCHRO_DECODER_STATE_WAVELET_TRANSFORM;
-    } else if (todo & SCHRO_DECODER_STATE_COMBINE &&
-        picture->state & SCHRO_DECODER_STATE_WAVELET_TRANSFORM &&
-        picture->state & SCHRO_DECODER_STATE_MOTION_RENDER && render_ok) {
+      picture->working = SCHRO_DECODER_STAGE_WAVELET_TRANSFORM;
+    } else if (TODO(SCHRO_DECODER_STAGE_COMBINE) &&
+        picture->stages[SCHRO_DECODER_STAGE_WAVELET_TRANSFORM].is_done &&
+        picture->stages[SCHRO_DECODER_STAGE_MOTION_RENDER].is_done && render_ok) {
       func = schro_decoder_x_combine;
-      picture->working = SCHRO_DECODER_STATE_COMBINE;
+      picture->working = SCHRO_DECODER_STAGE_COMBINE;
     }
 
     if (func) {
