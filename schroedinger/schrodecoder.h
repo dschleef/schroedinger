@@ -87,9 +87,6 @@ struct _SchroPicture {
 
   SchroDecoder *decoder;
 
-  //unsigned int state;
-  //unsigned int needed_state;
-  unsigned int working;
   int busy;
   int skip;
   int error;
@@ -178,15 +175,6 @@ void schro_decoder_subband_dc_predict (SchroFrameData *fd);
 SchroPicture * schro_picture_new (SchroDecoder *decoder);
 SchroPicture * schro_picture_ref (SchroPicture *picture);
 void schro_picture_unref (SchroPicture *picture);
-
-void schro_decoder_decode_picture (SchroPicture *picture);
-void schro_decoder_x_check_references (SchroPicture *picture);
-void schro_decoder_x_decode_motion (SchroPicture *picture);
-void schro_decoder_x_render_motion (SchroPicture *picture);
-void schro_decoder_x_decode_residual (SchroPicture *picture);
-void schro_decoder_x_wavelet_transform (SchroPicture *picture);
-void schro_decoder_x_combine (SchroPicture *picture);
-void schro_decoder_x_upsample (SchroPicture *picture);
 
 int schro_decoder_iterate_picture (SchroDecoder *decoder);
 void schro_decoder_parse_picture (SchroPicture *picture);

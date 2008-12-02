@@ -71,6 +71,12 @@ enum {
 
 int _schro_decode_prediction_only;
 
+static void schro_decoder_x_decode_motion (SchroAsyncStage *stage);
+static void schro_decoder_x_render_motion (SchroAsyncStage *stage);
+static void schro_decoder_x_decode_residual (SchroAsyncStage *stage);
+static void schro_decoder_x_wavelet_transform (SchroAsyncStage *stage);
+static void schro_decoder_x_combine (SchroAsyncStage *stage);
+static void schro_decoder_x_upsample (SchroAsyncStage *stage);
 
 static void schro_decoder_reference_add (SchroDecoder *decoder,
     SchroPicture *picture);
@@ -81,7 +87,7 @@ static void schro_decoder_reference_retire (SchroDecoder *decoder,
 static void schro_decoder_decode_subband (SchroPicture *picture,
     SchroPictureSubbandContext *ctx);
 static int schro_decoder_async_schedule (SchroDecoder *decoder, SchroExecDomain domain);
-static void schro_decoder_picture_complete (SchroPicture *picture);
+static void schro_decoder_picture_complete (SchroAsyncStage *stage);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
@@ -632,7 +638,7 @@ schro_decoder_dump (SchroDecoder *decoder)
         picture->busy,
         0 /*picture->state */,
         0 /*picture->needed_state*/,
-        picture->working);
+        0 /*picture->working*/);
   }
   SCHRO_ERROR("next_frame_number %d", decoder->next_frame_number);
 }
@@ -959,14 +965,13 @@ schro_decoder_parse_picture (SchroPicture *picture)
 }
 
 void
-schro_decoder_picture_complete (SchroPicture *picture)
+schro_decoder_picture_complete (SchroAsyncStage *stage)
 {
-  SchroAsyncStage *stage = picture->stages + picture->working;
+  SchroPicture *picture = (SchroPicture *)stage->priv;
 
   SCHRO_DEBUG ("picture complete");
 
   stage->is_done = TRUE;
-  picture->working = 0;
   if (stage == picture->stages + SCHRO_DECODER_STAGE_COMBINE) {
     picture->stages[SCHRO_DECODER_STAGE_DONE].is_done = TRUE;
   }
@@ -1002,6 +1007,7 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
   for(i=0;i<decoder->picture_queue->n;i++){
     SchroPicture *picture = decoder->picture_queue->elements[i].data;
     void *func = NULL;
+    int stage = 0;
 
     if (picture->busy) continue;
 
@@ -1035,12 +1041,14 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
             refs_ready = FALSE;
             continue;
           }
-          refpic->working = SCHRO_DECODER_STAGE_UPSAMPLE;
           refpic->busy = TRUE;
 
           func = schro_decoder_x_upsample;
           schro_picture_ref (refpic);
-          schro_async_run_locked (decoder->async, func, refpic);
+          refpic->stages[SCHRO_DECODER_STAGE_UPSAMPLE].task_func = func;
+          refpic->stages[SCHRO_DECODER_STAGE_UPSAMPLE].priv = refpic;
+          schro_async_run_stage_locked (decoder->async,
+              refpic->stages + SCHRO_DECODER_STAGE_UPSAMPLE);
 
           return TRUE;
         }
@@ -1054,30 +1062,33 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
     if (TODO(SCHRO_DECODER_STAGE_MOTION_DECODE) &&
         picture->stages[SCHRO_DECODER_STAGE_REFERENCES].is_done && decode_ok) {
       func = schro_decoder_x_decode_motion;
-      picture->working = SCHRO_DECODER_STAGE_MOTION_DECODE;
+      stage = SCHRO_DECODER_STAGE_MOTION_DECODE;
     } else if (TODO(SCHRO_DECODER_STAGE_MOTION_RENDER) &&
         picture->stages[SCHRO_DECODER_STAGE_MOTION_DECODE].is_done && render_ok) {
       func = schro_decoder_x_render_motion;
-      picture->working = SCHRO_DECODER_STAGE_MOTION_RENDER;
+      stage = SCHRO_DECODER_STAGE_MOTION_RENDER;
     } else if (TODO(SCHRO_DECODER_STAGE_RESIDUAL_DECODE) && decode_ok) {
       func = schro_decoder_x_decode_residual;
-      picture->working = SCHRO_DECODER_STAGE_RESIDUAL_DECODE;
+      stage = SCHRO_DECODER_STAGE_RESIDUAL_DECODE;
     } else if (TODO(SCHRO_DECODER_STAGE_WAVELET_TRANSFORM) &&
         picture->stages[SCHRO_DECODER_STAGE_RESIDUAL_DECODE].is_done && render_ok) {
       func = schro_decoder_x_wavelet_transform;
-      picture->working = SCHRO_DECODER_STAGE_WAVELET_TRANSFORM;
+      stage = SCHRO_DECODER_STAGE_WAVELET_TRANSFORM;
     } else if (TODO(SCHRO_DECODER_STAGE_COMBINE) &&
         picture->stages[SCHRO_DECODER_STAGE_WAVELET_TRANSFORM].is_done &&
         picture->stages[SCHRO_DECODER_STAGE_MOTION_RENDER].is_done && render_ok) {
       func = schro_decoder_x_combine;
-      picture->working = SCHRO_DECODER_STAGE_COMBINE;
+      stage = SCHRO_DECODER_STAGE_COMBINE;
     }
 
     if (func) {
       picture->busy = TRUE;
 
       schro_picture_ref (picture);
-      schro_async_run_locked (decoder->async, func, picture);
+
+      picture->stages[stage].task_func = func;
+      picture->stages[stage].priv = picture;
+      schro_async_run_stage_locked (decoder->async, picture->stages + stage);
 
       return TRUE;
     }
@@ -1086,31 +1097,10 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
   return FALSE;
 }
 
-#if 0
 void
-schro_decoder_decode_picture (SchroPicture *picture)
+schro_decoder_x_decode_motion (SchroAsyncStage *stage)
 {
-  schro_decoder_x_check_references (picture);
-  schro_decoder_x_decode_motion (picture);
-  schro_decoder_x_render_motion (picture);
-  schro_decoder_x_decode_residual (picture);
-  schro_decoder_x_wavelet_transform (picture);
-  schro_decoder_x_combine (picture);
-  schro_decoder_x_upsample (picture);
-}
-#endif
-
-void
-schro_decoder_x_check_references (SchroPicture *picture)
-{
-  //SchroParams *params = &picture->params;
-  //SchroDecoder *decoder = picture->decoder;
-
-}
-
-void
-schro_decoder_x_decode_motion (SchroPicture *picture)
-{
+  SchroPicture *picture = (SchroPicture *)stage->priv;
   SchroParams *params = &picture->params;
 
   if (params->num_refs > 0) {
@@ -1121,8 +1111,9 @@ schro_decoder_x_decode_motion (SchroPicture *picture)
 }
 
 void
-schro_decoder_x_render_motion (SchroPicture *picture)
+schro_decoder_x_render_motion (SchroAsyncStage *stage)
 {
+  SchroPicture *picture = (SchroPicture *)stage->priv;
   SchroParams *params = &picture->params;
   SchroDecoder *decoder = picture->decoder;
 
@@ -1185,8 +1176,9 @@ schro_decoder_x_render_motion (SchroPicture *picture)
 }
 
 void
-schro_decoder_x_decode_residual (SchroPicture *picture)
+schro_decoder_x_decode_residual (SchroAsyncStage *stage)
 {
+  SchroPicture *picture = (SchroPicture *)stage->priv;
   SchroParams *params = &picture->params;
 
   if (!picture->zero_residual) {
@@ -1199,8 +1191,9 @@ schro_decoder_x_decode_residual (SchroPicture *picture)
 }
 
 void
-schro_decoder_x_wavelet_transform (SchroPicture *picture)
+schro_decoder_x_wavelet_transform (SchroAsyncStage *stage)
 {
+  SchroPicture *picture = (SchroPicture *)stage->priv;
   if (!picture->zero_residual) {
     if (picture->decoder->use_cuda) {
       picture->frame = schro_frame_clone (picture->decoder->cuda_domain,
@@ -1229,8 +1222,9 @@ schro_decoder_x_wavelet_transform (SchroPicture *picture)
 }
 
 void
-schro_decoder_x_combine (SchroPicture *picture)
+schro_decoder_x_combine (SchroAsyncStage *stage)
 {
+  SchroPicture *picture = (SchroPicture *)stage->priv;
   SchroParams *params = &picture->params;
   SchroDecoder *decoder = picture->decoder;
   SchroFrame *planar_output_frame;
@@ -1406,8 +1400,10 @@ schro_decoder_x_combine (SchroPicture *picture)
 }
 
 void
-schro_decoder_x_upsample (SchroPicture *picture)
+schro_decoder_x_upsample (SchroAsyncStage *stage)
 {
+  SchroPicture *picture = (SchroPicture *)stage->priv;
+
   if (picture->decoder->use_cuda) {
 #ifdef HAVE_CUDA
     schro_upsampled_gpuframe_upsample (picture->upsampled_frame);
