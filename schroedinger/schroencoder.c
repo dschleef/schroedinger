@@ -596,7 +596,7 @@ schro_encoder_pull_is_ready_locked (SchroEncoder *encoder)
     SchroEncoderFrame *frame;
     frame = encoder->frame_queue->elements[i].data;
     if (frame->slot == encoder->output_slot &&
-        (frame->state & SCHRO_ENCODER_FRAME_STATE_DONE)) {
+        (frame->stages[SCHRO_ENCODER_FRAME_STAGE_DONE].is_done)) {
       return TRUE;
     }
   }
@@ -616,7 +616,7 @@ schro_encoder_shift_frame_queue (SchroEncoder *encoder)
 
   while (!schro_queue_is_empty(encoder->frame_queue)) {
     frame = encoder->frame_queue->elements[0].data;
-    if (!(frame->state & SCHRO_ENCODER_FRAME_STATE_FREE)) {
+    if (!(frame->stages[SCHRO_ENCODER_FRAME_STAGE_FREE].is_done)) {
       break;
     }
 
@@ -730,7 +730,7 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
     SchroEncoderFrame *frame;
     frame = encoder->frame_queue->elements[i].data;
     if (frame->slot == encoder->output_slot &&
-        (frame->state & SCHRO_ENCODER_FRAME_STATE_DONE)) {
+        (frame->stages[SCHRO_ENCODER_FRAME_STAGE_DONE].is_done)) {
       int is_picture = FALSE;
 
       if (presentation_frame) {
@@ -770,7 +770,7 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
         double elapsed_time;
 
         is_picture = TRUE;
-        frame->state |= SCHRO_ENCODER_FRAME_STATE_FREE;
+        frame->stages[SCHRO_ENCODER_FRAME_STAGE_FREE].is_done = TRUE;
         encoder->output_slot++;
 
         elapsed_time = schro_utils_get_time() - encoder->start_time;
@@ -1153,13 +1153,13 @@ schro_encoder_wait (SchroEncoder *encoder)
         SchroEncoderFrame *frame = encoder->frame_queue->elements[i].data;
         SCHRO_WARNING("%d: %d %d %d %d %04x", i, frame->frame_number,
             frame->picture_number_ref[0], frame->picture_number_ref[1],
-            frame->busy, frame->state);
+            frame->busy, 0 /*frame->state*/);
       }
       for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
         SchroEncoderFrame *frame = encoder->reference_pictures[i];
         if (frame) {
           SCHRO_WARNING("ref %d: %d %d %04x", i, frame->frame_number,
-              frame->busy, frame->state);
+              frame->busy, 0 /*frame->state*/);
         } else {
           SCHRO_WARNING("ref %d: NULL", i);
         }
@@ -1178,17 +1178,20 @@ schro_encoder_wait (SchroEncoder *encoder)
 static void
 schro_encoder_frame_complete (SchroEncoderFrame *frame)
 {
+  int stage;
+
   SCHRO_INFO("completing task, picture %d working %02x in state %02x",
-      frame->frame_number, frame->working, frame->state);
+      frame->frame_number, frame->working, 0 /*frame->state*/);
 
   SCHRO_ASSERT(frame->busy == TRUE);
 
   frame->busy = FALSE;
-  frame->state |= frame->working;
+  stage = frame->working;
+  frame->stages[stage].is_done = TRUE;
   frame->working = 0;
 
-  if ((frame->state & SCHRO_ENCODER_FRAME_STATE_POSTANALYSE)) {
-    frame->state |= SCHRO_ENCODER_FRAME_STATE_DONE;
+  if (stage == SCHRO_ENCODER_FRAME_STAGE_POSTANALYSE) {
+    frame->stages[SCHRO_ENCODER_FRAME_STAGE_DONE].is_done = TRUE;
 
     SCHRO_ASSERT(frame->output_buffer_size > 0);
 
@@ -1222,37 +1225,37 @@ schro_encoder_frame_complete (SchroEncoderFrame *frame)
  * Runs a stage in the encoding process.
  */
 static void
-run_stage (SchroEncoderFrame *frame, SchroEncoderFrameStateEnum state)
+run_stage (SchroEncoderFrame *frame, int stage)
 {
   void *func;
 
-  SCHRO_ASSERT(!(frame->state & state));
+  SCHRO_ASSERT(frame->stages[stage].is_done == FALSE);
 
   frame->busy = TRUE;
-  frame->working = state;
-  switch (state) {
-    case SCHRO_ENCODER_FRAME_STATE_ANALYSE:
+  frame->working = stage;
+  switch (stage) {
+    case SCHRO_ENCODER_FRAME_STAGE_ANALYSE:
       func = schro_encoder_analyse_picture;
       break;
-    case SCHRO_ENCODER_FRAME_STATE_PREDICT_ROUGH:
+    case SCHRO_ENCODER_FRAME_STAGE_PREDICT_ROUGH:
       func = schro_encoder_predict_rough_picture;
       break;
-    case SCHRO_ENCODER_FRAME_STATE_PREDICT_PEL:
+    case SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL:
       func = schro_encoder_predict_pel_picture;
       break;
-    case SCHRO_ENCODER_FRAME_STATE_PREDICT_SUBPEL:
+    case SCHRO_ENCODER_FRAME_STAGE_PREDICT_SUBPEL:
       func = schro_encoder_predict_subpel_picture;
       break;
-    case SCHRO_ENCODER_FRAME_STATE_MODE_DECISION:
+    case SCHRO_ENCODER_FRAME_STAGE_MODE_DECISION:
       func = schro_encoder_mode_decision;
       break;
-    case SCHRO_ENCODER_FRAME_STATE_ENCODING:
+    case SCHRO_ENCODER_FRAME_STAGE_ENCODING:
       func = schro_encoder_encode_picture;
       break;
-    case SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT:
+    case SCHRO_ENCODER_FRAME_STAGE_RECONSTRUCT:
       func = schro_encoder_reconstruct_picture;
       break;
-    case SCHRO_ENCODER_FRAME_STATE_POSTANALYSE:
+    case SCHRO_ENCODER_FRAME_STAGE_POSTANALYSE:
       func = schro_encoder_postanalyse_picture;
       break;
     default:
@@ -1274,11 +1277,11 @@ check_refs (SchroEncoderFrame *frame)
   if (frame->num_refs == 0) return TRUE;
 
   if (frame->num_refs > 0 &&
-      !(frame->ref_frame[0]->state & SCHRO_ENCODER_FRAME_STATE_DONE)) {
+      !(frame->ref_frame[0]->stages[SCHRO_ENCODER_FRAME_STAGE_DONE].is_done)) {
     return FALSE;
   }
   if (frame->num_refs > 1 &&
-      !(frame->ref_frame[1]->state & SCHRO_ENCODER_FRAME_STATE_DONE)) {
+      !(frame->ref_frame[1]->stages[SCHRO_ENCODER_FRAME_STAGE_DONE].is_done)) {
     return FALSE;
   }
 
@@ -1291,21 +1294,21 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
   SchroEncoderFrame *frame;
   int i;
   int ref;
-  unsigned int todo;
 
   SCHRO_INFO("iterate %d", encoder->completed_eos);
 
   for(i=0;i<encoder->frame_queue->n;i++) {
     frame = encoder->frame_queue->elements[i].data;
-    SCHRO_DEBUG("analyse i=%d picture=%d state=%d busy=%d", i, frame->frame_number, frame->state, frame->busy);
+    SCHRO_DEBUG("analyse i=%d picture=%d state=%d busy=%d", i,
+        frame->frame_number, 0 /*frame->state*/, frame->busy);
 
     if (frame->busy) continue;
 
-    todo = frame->needed_state & (~frame->state);
+#define TODO(stage) (frame->stages[(stage)].is_needed && !frame->stages[(stage)].is_done)
 
-    if (todo & SCHRO_ENCODER_FRAME_STATE_ANALYSE) {
+    if (TODO(SCHRO_ENCODER_FRAME_STAGE_ANALYSE)) {
       encoder->init_frame (frame);
-      run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ANALYSE);
+      run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_ANALYSE);
       return TRUE;
     }
   }
@@ -1323,45 +1326,44 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
   for(ref = 1; ref >= 0; ref--){
     for(i=0;i<encoder->frame_queue->n;i++) {
       frame = encoder->frame_queue->elements[i].data;
-      SCHRO_DEBUG("backref i=%d picture=%d state=%d busy=%d", i, frame->frame_number, frame->state, frame->busy);
+      SCHRO_DEBUG("backref i=%d picture=%d state=%d busy=%d", i,
+          frame->frame_number, 0 /*frame->state*/, frame->busy);
 
       if (frame->busy) continue;
 
       if (frame->is_ref != ref) continue;
 
-      todo = frame->needed_state & (~frame->state);
-
-      if (todo & SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS &&
-          frame->state & SCHRO_ENCODER_FRAME_STATE_HAVE_GOP) {
+      if (TODO(SCHRO_ENCODER_FRAME_STAGE_HAVE_PARAMS) &&
+          frame->stages[SCHRO_ENCODER_FRAME_STAGE_HAVE_GOP].is_done) {
 
         if (encoder->setup_frame (frame)) {
-          frame->state |= SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS;
+          frame->stages[SCHRO_ENCODER_FRAME_STAGE_HAVE_PARAMS].is_done = TRUE;
         }
       }
 
-      if (todo & SCHRO_ENCODER_FRAME_STATE_PREDICT_ROUGH
-          && frame->state & SCHRO_ENCODER_FRAME_STATE_HAVE_PARAMS) {
+      if (TODO(SCHRO_ENCODER_FRAME_STAGE_PREDICT_ROUGH) &&
+          frame->stages[SCHRO_ENCODER_FRAME_STAGE_HAVE_PARAMS].is_done) {
         if (!check_refs(frame)) continue;
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT_ROUGH);
+        run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_PREDICT_ROUGH);
         return TRUE;
       }
 
-      if (todo & SCHRO_ENCODER_FRAME_STATE_PREDICT_PEL
-          && frame->state & SCHRO_ENCODER_FRAME_STATE_PREDICT_ROUGH) {
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT_PEL);
+      if (TODO(SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL) &&
+          frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_ROUGH].is_done) {
+        run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL);
         return TRUE;
       }
 
-      if (todo & SCHRO_ENCODER_FRAME_STATE_PREDICT_SUBPEL
-          && frame->state & SCHRO_ENCODER_FRAME_STATE_PREDICT_PEL) {
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_PREDICT_SUBPEL);
+      if (TODO(SCHRO_ENCODER_FRAME_STAGE_PREDICT_SUBPEL) &&
+          frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL].is_done) {
+        run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_PREDICT_SUBPEL);
         return TRUE;
       }
 
-      if (todo & SCHRO_ENCODER_FRAME_STATE_MODE_DECISION
-          && frame->state & SCHRO_ENCODER_FRAME_STATE_PREDICT_SUBPEL) {
+      if (TODO(SCHRO_ENCODER_FRAME_STAGE_MODE_DECISION) &&
+          frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_SUBPEL].is_done) {
         if (!check_refs (frame)) continue;
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_MODE_DECISION);
+        run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_MODE_DECISION);
         return TRUE;
       }
 
@@ -1380,25 +1382,24 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
   for(ref = 1; ref >= 0; ref--){
     for(i=0;i<encoder->frame_queue->n;i++) {
       frame = encoder->frame_queue->elements[i].data;
-      SCHRO_DEBUG("backref i=%d picture=%d state=%d busy=%d", i, frame->frame_number, frame->state, frame->busy);
+      SCHRO_DEBUG("backref i=%d picture=%d state=%d busy=%d", i,
+          frame->frame_number, 0/*frame->state*/, frame->busy);
 
       if (frame->busy) continue;
 
-      todo = frame->needed_state & (~frame->state);
-
-      if (todo & SCHRO_ENCODER_FRAME_STATE_ENCODING &&
-          frame->state & SCHRO_ENCODER_FRAME_STATE_HAVE_QUANTS) {
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_ENCODING);
+      if (TODO(SCHRO_ENCODER_FRAME_STAGE_ENCODING) &&
+          frame->stages[SCHRO_ENCODER_FRAME_STAGE_HAVE_QUANTS].is_done) {
+        run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_ENCODING);
         return TRUE;
       }
-      if (todo & SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT &&
-          frame->state & SCHRO_ENCODER_FRAME_STATE_ENCODING) {
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT);
+      if (TODO(SCHRO_ENCODER_FRAME_STAGE_RECONSTRUCT) &&
+          frame->stages[SCHRO_ENCODER_FRAME_STAGE_ENCODING].is_done) {
+        run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_RECONSTRUCT);
         return TRUE;
       }
-      if (todo & SCHRO_ENCODER_FRAME_STATE_POSTANALYSE &&
-          frame->state & SCHRO_ENCODER_FRAME_STATE_RECONSTRUCT) {
-        run_stage (frame, SCHRO_ENCODER_FRAME_STATE_POSTANALYSE);
+      if (TODO(SCHRO_ENCODER_FRAME_STAGE_POSTANALYSE) &&
+          frame->stages[SCHRO_ENCODER_FRAME_STAGE_RECONSTRUCT].is_done) {
+        run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_POSTANALYSE);
         return TRUE;
       }
     }
@@ -1471,7 +1472,7 @@ schro_encoder_predict_rough_picture (SchroEncoderFrame *frame)
 void
 schro_encoder_predict_pel_picture (SchroEncoderFrame* frame)
 {
-  SCHRO_ASSERT (frame && frame->state & SCHRO_ENCODER_FRAME_STATE_PREDICT_ROUGH);
+  SCHRO_ASSERT (frame && frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_ROUGH].is_done);
   SCHRO_INFO ("fullpel predict picture %d", frame->frame_number);
 
   if (frame->params.num_refs > 0) {
@@ -1493,7 +1494,7 @@ schro_encoder_predict_subpel_picture (SchroEncoderFrame* frame)
 void
 schro_encoder_mode_decision (SchroEncoderFrame* frame)
 {
-  SCHRO_ASSERT(frame && frame->state & SCHRO_ENCODER_FRAME_STATE_PREDICT_PEL);
+  SCHRO_ASSERT(frame && frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL].is_done);
   SCHRO_INFO("mode decision and superblock splitting picture %d", frame->frame_number);
 
 #if 0
@@ -2927,10 +2928,12 @@ schro_encoder_frame_new (SchroEncoder *encoder)
   int iwt_width, iwt_height;
   int picture_width;
   int picture_height;
+  int i;
 
   encoder_frame = schro_malloc0 (sizeof(SchroEncoderFrame));
-  encoder_frame->state = SCHRO_ENCODER_FRAME_STATE_NEW;
-  encoder_frame->needed_state = 0xffff;
+  for(i=0;i<SCHRO_ENCODER_FRAME_STAGE_LAST;i++){
+    encoder_frame->stages[i].is_needed = TRUE;
+  }
   encoder_frame->refcount = 1;
 
   frame_format = schro_params_get_frame_format (16,

@@ -56,7 +56,7 @@ schro_engine_code_picture (SchroEncoderFrame *frame,
   frame->picture_number_ref[0] = ref0;
   frame->picture_number_ref[1] = ref1;
 
-  frame->state |= SCHRO_ENCODER_FRAME_STATE_HAVE_GOP;
+  frame->stages[SCHRO_ENCODER_FRAME_STAGE_HAVE_GOP].is_done = TRUE;
   frame->slot = encoder->next_slot++;
 
   if (num_refs > 0) {
@@ -289,7 +289,7 @@ schro_engine_get_scene_change_score (SchroEncoder *encoder, int i)
     frame1->have_scene_change_score = TRUE;
     return TRUE;
   }
-  if (!(frame2->state & SCHRO_ENCODER_FRAME_STATE_ANALYSE)) {
+  if (!(frame2->stages[SCHRO_ENCODER_FRAME_STAGE_ANALYSE].is_done)) {
     return FALSE;
   }
 
@@ -575,9 +575,9 @@ schro_encoder_handle_gop_tworef (SchroEncoder *encoder, int i)
 
   frame = encoder->frame_queue->elements[i].data;
 
-  SCHRO_ASSERT(!(frame->state & SCHRO_ENCODER_FRAME_STATE_HAVE_GOP));
+  SCHRO_ASSERT(frame->stages[SCHRO_ENCODER_FRAME_STAGE_HAVE_GOP].is_done == FALSE);
 
-  if (frame->busy || !(frame->state & SCHRO_ENCODER_FRAME_STATE_ANALYSE))
+  if (frame->busy || !frame->stages[SCHRO_ENCODER_FRAME_STAGE_ANALYSE].is_done)
     return;
 
   //schro_engine_check_new_sequence_header (encoder, frame);
@@ -600,9 +600,9 @@ schro_encoder_handle_gop_tworef (SchroEncoder *encoder, int i)
 
     f = encoder->frame_queue->elements[i+j].data;
 
-    SCHRO_ASSERT(!(f->state & SCHRO_ENCODER_FRAME_STATE_HAVE_GOP));
+    SCHRO_ASSERT(f->stages[SCHRO_ENCODER_FRAME_STAGE_HAVE_GOP].is_done == FALSE);
 
-    if (f->busy || !(f->state & SCHRO_ENCODER_FRAME_STATE_ANALYSE)) {
+    if (f->busy || !f->stages[SCHRO_ENCODER_FRAME_STAGE_ANALYSE].is_done) {
       SCHRO_DEBUG("picture %d not ready", i + j);
       return;
     }
@@ -696,8 +696,7 @@ schro_encoder_handle_quants (SchroEncoder *encoder, int i)
 
   frame = encoder->frame_queue->elements[i].data;
 
-  if (frame->busy || !(frame->state & SCHRO_ENCODER_FRAME_STATE_MODE_DECISION)) return FALSE;
-
+  if (frame->busy || !frame->stages[SCHRO_ENCODER_FRAME_STAGE_MODE_DECISION].is_done) return FALSE;
 
   encoder->quant_slot++;
 
@@ -705,7 +704,7 @@ schro_encoder_handle_quants (SchroEncoder *encoder, int i)
   schro_encoder_choose_quantisers (frame);
   schro_encoder_estimate_entropy (frame);
 
-  frame->state |= SCHRO_ENCODER_FRAME_STATE_HAVE_QUANTS;
+  frame->stages[SCHRO_ENCODER_FRAME_STAGE_HAVE_QUANTS].is_done = TRUE;
 
   return TRUE;
 }
@@ -729,7 +728,8 @@ schro_encoder_handle_gop_backref (SchroEncoder *encoder, int i)
 
   frame = encoder->frame_queue->elements[i].data;
 
-  if (frame->busy || !(frame->state & SCHRO_ENCODER_FRAME_STATE_ANALYSE)) return;
+  if (frame->busy || !frame->stages[SCHRO_ENCODER_FRAME_STAGE_ANALYSE].is_done)
+    return;
 
   schro_engine_check_new_sequence_header (encoder, frame);
 
@@ -749,7 +749,7 @@ schro_encoder_handle_gop_backref (SchroEncoder *encoder, int i)
   for (j = 0; j < gop_length; j++) {
     f = encoder->frame_queue->elements[i+j].data;
 
-    if (f->busy || !(f->state & SCHRO_ENCODER_FRAME_STATE_ANALYSE)) {
+    if (f->busy || !f->stages[SCHRO_ENCODER_FRAME_STAGE_ANALYSE].is_done) {
       SCHRO_DEBUG("picture %d not ready", i + j);
       return;
     }
@@ -814,14 +814,14 @@ schro_encoder_handle_gop_intra_only (SchroEncoder *encoder, int i)
 
   frame = encoder->frame_queue->elements[i].data;
 
-  if (frame->busy || !(frame->state & SCHRO_ENCODER_FRAME_STATE_ANALYSE)) return;
+  if (frame->busy || !frame->stages[SCHRO_ENCODER_FRAME_STAGE_ANALYSE].is_done) return;
 
   schro_engine_check_new_sequence_header (encoder, frame);
 
   SCHRO_DEBUG("handling gop from %d to %d (index %d)", encoder->gop_picture,
       encoder->gop_picture, i);
 
-  if (frame->busy || !(frame->state & SCHRO_ENCODER_FRAME_STATE_ANALYSE)) {
+  if (frame->busy || !frame->stages[SCHRO_ENCODER_FRAME_STAGE_ANALYSE].is_done) {
     SCHRO_DEBUG("picture %d not ready", i);
     return;
   }
@@ -910,7 +910,7 @@ schro_encoder_handle_gop_lowdelay (SchroEncoder *encoder, int i)
 
   frame = encoder->frame_queue->elements[i].data;
 
-  if (frame->busy || frame->state != SCHRO_ENCODER_FRAME_STATE_ANALYSE) return;
+  if (frame->busy || !frame->stages[SCHRO_ENCODER_FRAME_STAGE_ANALYSE].is_done) return;
 
   schro_engine_check_new_sequence_header (encoder, frame);
 
