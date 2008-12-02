@@ -95,8 +95,8 @@ main (int argc, char *argv[])
 
   schro_init();
 
-  //test(853,480);
-  if (1) {
+  test(853,480);
+  if (0) {
     for(w=SIZE;w<SIZE+16;w++){
       for(h=SIZE;h<SIZE+16;h++){
         test(w,h);
