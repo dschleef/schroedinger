@@ -588,7 +588,12 @@ schro_decoder_get_status_locked (SchroDecoder *decoder)
   }
   if (decoder->have_sequence_header &&
       schro_queue_is_empty (decoder->output_queue)) {
-    return SCHRO_DECODER_NEED_FRAME;
+    int i;
+    for(i=0;i<decoder->picture_queue->n;i++){
+      SchroPicture *picture = decoder->picture_queue->elements[i].data;
+      if (!picture->output_picture)
+        return SCHRO_DECODER_NEED_FRAME;
+    }
   }
   if (!schro_queue_is_full (decoder->picture_queue) && !decoder->flushing) {
     return SCHRO_DECODER_NEED_BITS;
@@ -863,9 +868,6 @@ schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer, Schro
 
     picture->stages[SCHRO_DECODER_STAGE_DONE].is_done = TRUE;
     picture->stages[SCHRO_DECODER_STAGE_DONE].is_needed = TRUE;
-  } else {
-    picture->output_picture = schro_queue_pull (decoder->output_queue);
-    SCHRO_ASSERT(picture->output_picture);
   }
 
   schro_async_lock (decoder->async);
@@ -1069,8 +1071,14 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
     } else if (TODO(SCHRO_DECODER_STAGE_COMBINE) &&
         picture->stages[SCHRO_DECODER_STAGE_WAVELET_TRANSFORM].is_done &&
         picture->stages[SCHRO_DECODER_STAGE_MOTION_RENDER].is_done && render_ok) {
-      func = schro_decoder_x_combine;
-      stage = SCHRO_DECODER_STAGE_COMBINE;
+      if (!picture->output_picture) {
+        /* NB, there may not be anything in the output_queue */
+        picture->output_picture = schro_queue_pull (decoder->output_queue);
+      }
+      if (picture->output_picture) {
+        func = schro_decoder_x_combine;
+        stage = SCHRO_DECODER_STAGE_COMBINE;
+      }
     }
 
     if (func) {
