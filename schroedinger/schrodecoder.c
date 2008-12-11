@@ -91,6 +91,8 @@ static void schro_decoder_picture_complete (SchroAsyncStage *stage);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
+static void schro_picturequeue_rob_insert (SchroQueue *queue, SchroPicture *pic);
+static int schro_picture_n_before_m (SchroPictureNumber n, SchroPictureNumber m);
 
 /* API */
 
@@ -119,9 +121,11 @@ schro_decoder_new (void)
   decoder->output_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_frame_unref);
 
-  decoder->queue_depth = 4;
-  decoder->picture_queue = schro_queue_new (decoder->queue_depth,
-      (SchroQueueFreeFunc)schro_picture_unref);
+  /* This value of reorder_queue_size needs to be one greater than
+   * any spec derived value, since schro is unable to bypass the
+   * reorder buffer in the same way a realtime h/w system would. */
+  decoder->reorder_queue_size = 2+1; /* rob size: 2 = default */
+  decoder->reorder_queue = schro_queue_new (4, (SchroQueueFreeFunc)schro_picture_unref);
 
   decoder->cpu_domain = schro_memory_domain_new_local ();
 #ifdef HAVE_CUDA
@@ -174,7 +178,7 @@ schro_decoder_free (SchroDecoder *decoder)
 
   schro_queue_free (decoder->output_queue);
   schro_queue_free (decoder->reference_queue);
-  schro_queue_free (decoder->picture_queue);
+  schro_queue_free (decoder->reorder_queue);
 
   if (decoder->error_message) schro_free (decoder->error_message);
 
@@ -320,7 +324,7 @@ schro_decoder_reset (SchroDecoder *decoder)
 {
   schro_async_lock (decoder->async);
 
-  schro_queue_clear (decoder->picture_queue);
+  schro_queue_clear (decoder->reorder_queue);
   schro_queue_clear (decoder->reference_queue);
   schro_queue_clear (decoder->output_queue);
 
@@ -370,7 +374,15 @@ schro_decoder_get_video_format (SchroDecoder *decoder)
 SchroPictureNumber
 schro_decoder_get_picture_number (SchroDecoder *decoder)
 {
-  return decoder->next_frame_number;
+  SchroPicture *picture = NULL;
+
+  if (decoder->reorder_queue->n >= decoder->reorder_queue_size ||
+      decoder->coded_order || decoder->flushing) {
+    picture = schro_queue_peek (decoder->reorder_queue);
+  }
+  if (picture)
+    return picture->picture_number;
+  return SCHRO_PICTURE_NUMBER_INVALID;
 }
 
 /**
@@ -464,20 +476,15 @@ schro_decoder_set_picture_order (SchroDecoder *decoder, int order)
 static int
 schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
 {
-  SchroPicture *picture;
+  SchroPicture *picture = NULL;
 
-  if (decoder->coded_order) {
-    picture = schro_queue_peek (decoder->picture_queue);
-  } else {
-    picture = schro_queue_find (decoder->picture_queue,
-        decoder->next_frame_number);
+  /* Not possible to pull from the RoB if not full */
+  /* NB, schro's RoB implementation can be larger than the spec */
+  if (decoder->reorder_queue->n >= decoder->reorder_queue_size ||
+      decoder->coded_order || decoder->flushing) {
+    picture = schro_queue_peek (decoder->reorder_queue);
   }
-  if (!picture && !decoder->flushing &&
-      schro_queue_is_full (decoder->picture_queue)) {
-    SCHRO_ERROR("failed to find picture %d", decoder->next_frame_number);
-    schro_decoder_error(decoder, "next picture not available in full queue");
-    return FALSE;
-  }
+
   if (picture && picture->stages[SCHRO_DECODER_STAGE_DONE].is_done) {
     return TRUE;
   }
@@ -510,34 +517,22 @@ schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
 SchroFrame *
 schro_decoder_pull (SchroDecoder *decoder)
 {
-  SchroPicture *picture;
+  SchroPicture *picture = NULL;
   SchroFrame *frame;
 
-  SCHRO_DEBUG("searching for frame %d", decoder->next_frame_number);
-
   schro_async_lock (decoder->async);
-  if (decoder->coded_order) {
-    picture = schro_queue_peek (decoder->picture_queue);
-  } else {
-    picture = schro_queue_find (decoder->picture_queue, decoder->next_frame_number);
+
+  if (schro_decoder_pull_is_ready_locked (decoder)) {
+    picture = schro_queue_pull (decoder->reorder_queue);
   }
-  if (picture) {
-    if (picture->stages[SCHRO_DECODER_STAGE_DONE].is_done) {
-      schro_queue_remove (decoder->picture_queue, picture->picture_number);
-    } else {
-      picture = NULL;
-    }
-  } else {
-    SCHRO_ERROR("next picture not in queue");
-  }
+
   schro_async_unlock (decoder->async);
 
   if (!picture) {
     return NULL;
   }
 
-  decoder->next_frame_number++;
-
+  /* XXX would be nice to warn if expected picture not present */
   frame = schro_frame_ref (picture->output_picture);
   schro_picture_unref (picture);
 
@@ -559,7 +554,7 @@ schro_decoder_push_ready (SchroDecoder *decoder)
   int ret;
 
   schro_async_lock (decoder->async);
-  ret = schro_queue_is_full (decoder->picture_queue);
+  ret = schro_queue_is_full (decoder->reorder_queue);
   schro_async_unlock (decoder->async);
 
   return (ret == FALSE);
@@ -570,8 +565,8 @@ schro_decoder_need_output_frame_locked (SchroDecoder *decoder)
 {
   int num_frames_in_hand = decoder->output_queue->n;
   int i;
-  for(i=0;i<decoder->picture_queue->n;i++){
-    SchroPicture *picture = decoder->picture_queue->elements[i].data;
+  for(i=0;i<decoder->reorder_queue->n;i++){
+    SchroPicture *picture = decoder->reorder_queue->elements[i].data;
     if (!picture->output_picture)
       num_frames_in_hand--;
   }
@@ -593,8 +588,6 @@ schro_decoder_need_output_frame (SchroDecoder *decoder)
 static int
 schro_decoder_get_status_locked (SchroDecoder *decoder)
 {
-  SchroPicture *next_picture;
-
   if (schro_decoder_pull_is_ready_locked (decoder)) {
     return SCHRO_DECODER_OK;
   }
@@ -605,16 +598,11 @@ schro_decoder_get_status_locked (SchroDecoder *decoder)
       schro_decoder_need_output_frame_locked (decoder)) {
     return SCHRO_DECODER_NEED_FRAME;
   }
-  if (!schro_queue_is_full (decoder->picture_queue) && !decoder->flushing) {
+  if (!schro_queue_is_full (decoder->reorder_queue) && !decoder->flushing) {
     return SCHRO_DECODER_NEED_BITS;
   }
 
-  if (decoder->coded_order) {
-    next_picture = schro_queue_peek (decoder->picture_queue);
-  } else {
-    next_picture = schro_queue_find (decoder->picture_queue, decoder->next_frame_number);
-  }
-  if (decoder->flushing && next_picture == NULL) {
+  if (decoder->flushing && !decoder->reorder_queue->n) {
     if (decoder->end_of_stream) {
       return SCHRO_DECODER_EOS;
     } else {
@@ -645,8 +633,8 @@ schro_decoder_dump (SchroDecoder *decoder)
   int i;
 
   SCHRO_ERROR("index, picture_number, busy, state, needed_state, working");
-  for(i=0;i<decoder->picture_queue->n;i++){
-    SchroPicture *picture = decoder->picture_queue->elements[i].data;
+  for(i=0;i<decoder->reorder_queue->n;i++){
+    SchroPicture *picture = decoder->reorder_queue->elements[i].data;
 
     SCHRO_ERROR("%d: %d %d %04x %04x %04x",
         i, picture->picture_number,
@@ -655,7 +643,14 @@ schro_decoder_dump (SchroDecoder *decoder)
         0 /*picture->needed_state*/,
         0 /*picture->working*/);
   }
-  SCHRO_ERROR("next_frame_number %d", decoder->next_frame_number);
+  if (decoder->reorder_queue->n >= decoder->reorder_queue_size ||
+      decoder->coded_order || decoder->flushing) {
+    SCHRO_ERROR("next_picture_number %d", schro_decoder_get_picture_number (decoder));
+  } else {
+    SCHRO_ERROR("reorder_queue too empty to determine next_picture_number: "
+                "needs: %d pictures",
+                decoder->reorder_queue_size - decoder->reorder_queue->n);
+  }
 }
 
 /**
@@ -820,15 +815,6 @@ schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer, Schro
 
   SCHRO_DEBUG("picturenumber: %u", picture->picture_number);
 
-  if (!decoder->have_frame_number) {
-    if (params->num_refs > 0) {
-      SCHRO_ERROR("expected I frame after sequence header");
-    }
-    decoder->next_frame_number = picture->picture_number;
-    decoder->have_frame_number = TRUE;
-    SCHRO_INFO("next frame number after seek %d", decoder->next_frame_number);
-  }
-
   if (picture->is_ref) {
     schro_async_lock (decoder->async);
     schro_decoder_reference_retire (decoder, picture->retired_picture_number);
@@ -841,11 +827,7 @@ schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer, Schro
     picture->skip = TRUE;
   }
 
-  if (picture->picture_number < decoder->next_frame_number) {
-    SCHRO_DEBUG("picture out of order, skipping");
-    schro_picture_unref (picture);
-    return SCHRO_DECODER_OK;
-  }
+  /* todo: prune pictures that are inaccessible in the first gop */
 
   if (!decoder->video_format.interlaced_coding &&
       !picture->is_ref && decoder->skip_value > decoder->skip_ratio) {
@@ -882,7 +864,11 @@ schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer, Schro
 
   schro_async_lock (decoder->async);
   SCHRO_DEBUG("adding %d to queue", picture->picture_number);
-  schro_queue_add (decoder->picture_queue, picture, picture->picture_number);
+  if (!decoder->coded_order) {
+    schro_picturequeue_rob_insert (decoder->reorder_queue, picture);
+  } else {
+    schro_queue_add (decoder->reorder_queue, picture, picture->picture_number);
+  }
   schro_async_signal_scheduler (decoder->async);
   schro_async_unlock (decoder->async);
 
@@ -1008,8 +994,8 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
     render_ok = TRUE;
   }
 
-  for(i=0;i<decoder->picture_queue->n;i++){
-    SchroPicture *picture = decoder->picture_queue->elements[i].data;
+  for(i=0;i<decoder->reorder_queue->n;i++){
+    SchroPicture *picture = decoder->reorder_queue->elements[i].data;
     void *func = NULL;
     int stage = 0;
 
@@ -2770,3 +2756,34 @@ schro_decoder_error (SchroDecoder *decoder, const char *s)
   }
 }
 
+/* compare picture numbers in a way that handles wrap around */
+static int
+schro_picture_n_before_m (SchroPictureNumber n, SchroPictureNumber m)
+{
+  /* specified as: n occurs before m if:
+   *   (m - n) mod (1<<32) < D */
+  return (uint32_t)(m - n) < (1u<<31);
+}
+
+/* model the reorder buffer */
+static void
+schro_picturequeue_rob_insert (SchroQueue *queue, SchroPicture *picture)
+{
+  int i;
+
+  SCHRO_ASSERT (queue->n < queue->size);
+
+  /* find the position to insert before. */
+  for(i=0;i<queue->n;i++){
+    if (schro_picture_n_before_m (picture->picture_number, queue->elements[i].picture_number)) {
+      break;
+    }
+  }
+
+  /* make space and insert at i */
+  memmove (queue->elements + i + 1, queue->elements + i,
+          sizeof(SchroQueueElement)*(queue->n - i));
+  queue->n++;
+  queue->elements[i].data = picture;
+  queue->elements[i].picture_number = picture->picture_number;
+}
