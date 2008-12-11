@@ -99,6 +99,7 @@ schro_encoder_new (void)
   encoder->enable_bigblock_estimation = TRUE;
   encoder->enable_multiquant = TRUE;
   encoder->enable_dc_multiquant = FALSE;
+  encoder->enable_global_motion = FALSE;
   encoder->horiz_slices = 8;
   encoder->vert_slices = 6;
 
@@ -3188,6 +3189,7 @@ static SchroEncoderSetting encoder_settings[] = {
   BOOL("enable_bigblock_estimation", FALSE),
   BOOL("enable_multiquant", TRUE),
   BOOL("enable_dc_multiquant", FALSE),
+  BOOL("enable_global_motion", FALSE),
   INT ("horiz_slices", 1, INT_MAX, 16),
   INT ("vert_slices", 1, INT_MAX, 16),
 
@@ -3277,6 +3279,7 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
   VAR_SET(enable_bigblock_estimation);
   VAR_SET(enable_multiquant);
   VAR_SET(enable_dc_multiquant);
+  VAR_SET(enable_global_motion);
   VAR_SET(horiz_slices);
   VAR_SET(vert_slices);
   //VAR_SET();
@@ -3342,6 +3345,7 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
   VAR_GET(enable_bigblock_estimation);
   VAR_GET(enable_multiquant);
   VAR_GET(enable_dc_multiquant);
+  VAR_GET(enable_global_motion);
   VAR_GET(horiz_slices);
   VAR_GET(vert_slices);
   //VAR_GET();
