@@ -1432,10 +1432,10 @@ schro_decoder_decode_parse_header (SchroUnpack *unpack)
   parse_code = schro_unpack_decode_bits (unpack, 8);
   SCHRO_DEBUG ("parse code %02x", parse_code);
 
-  decoder->next_parse_offset = schro_unpack_decode_bits (unpack, 32);
-  SCHRO_DEBUG ("next_parse_offset %d", decoder->next_parse_offset);
-  decoder->prev_parse_offset = schro_unpack_decode_bits (unpack, 32);
-  SCHRO_DEBUG ("prev_parse_offset %d", decoder->prev_parse_offset);
+  v1 = schro_unpack_decode_bits (unpack, 32);
+  SCHRO_DEBUG ("next_parse_offset %d", v1);
+  v1 = schro_unpack_decode_bits (unpack, 32);
+  SCHRO_DEBUG ("prev_parse_offset %d", v1);
 
   return parse_code;
 }
