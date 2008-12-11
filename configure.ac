@@ -45,7 +45,7 @@ AC_SUBST(LIBM)
 
 AC_ARG_ENABLE(extras, AC_HELP_STRING([--enable-extras],
               [enable extra stuff (default=disabled)]))
-AM_CONDITIONAL(ENABLE_EXTRAS, test "x$ENABLE_EXTRAS" = "xyes")
+AM_CONDITIONAL(ENABLE_EXTRAS, test "x$ENABLE_EXTRAS" != "xno")
 
 dnl liboil is required
 OIL_VER="0.3.13"
