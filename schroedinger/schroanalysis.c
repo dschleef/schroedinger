@@ -71,15 +71,14 @@ schro_frame_mean_squared_error (SchroFrame *a, SchroFrame *b, double *mse)
   n = a->components[0].width * a->components[0].height;
   mse[0] = sum/n;
 
-  sum += schro_frame_component_squared_error (&a->components[1],
+  sum = schro_frame_component_squared_error (&a->components[1],
       &b->components[1]);
-  n += a->components[1].width * a->components[1].height;
+  n = a->components[1].width * a->components[1].height;
   mse[1] = sum/n;
 
-  sum += schro_frame_component_squared_error (&a->components[2],
+  sum = schro_frame_component_squared_error (&a->components[2],
       &b->components[2]);
-  n += a->components[2].width * a->components[2].height;
+  n = a->components[2].width * a->components[2].height;
   mse[2] = sum/n;
 }
-
 
