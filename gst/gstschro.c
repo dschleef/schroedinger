@@ -66,8 +66,6 @@ plugin_init (GstPlugin * plugin)
 #ifdef ENABLE_EXTRAS
   gst_element_register (plugin, "logoinsert", GST_RANK_NONE,
       gst_logoinsert_get_type ());
-  gst_element_register (plugin, "colorconvert", GST_RANK_NONE,
-      gst_colorconvert_get_type ());
 #endif
 
   return TRUE;

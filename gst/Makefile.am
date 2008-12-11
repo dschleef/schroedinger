@@ -22,8 +22,7 @@ libgstschro_la_SOURCES = \
 
 if ENABLE_EXTRAS
 libgstschro_la_SOURCES += \
-	gstlogoinsert.c \
-	gstcolorconvert.c
+	gstlogoinsert.c
 endif
 
 if ENABLE_ENCODER
