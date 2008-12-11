@@ -41,8 +41,6 @@ struct _SchroDecoder {
   SchroOpenGL *opengl;
   int use_opengl;
 
-  SchroBuffer *input_buffer;
-
   SchroPictureNumber next_frame_number;
 
   SchroPicture *picture;
@@ -176,7 +174,7 @@ SchroPicture * schro_picture_new (SchroDecoder *decoder);
 SchroPicture * schro_picture_ref (SchroPicture *picture);
 void schro_picture_unref (SchroPicture *picture);
 
-int schro_decoder_iterate_picture (SchroDecoder *decoder);
+int schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer);
 void schro_decoder_parse_picture (SchroPicture *picture);
 void schro_decoder_parse_picture_header (SchroPicture *picture);
 void schro_decoder_parse_picture_prediction_parameters (SchroPicture *picture);

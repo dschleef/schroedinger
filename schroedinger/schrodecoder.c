@@ -698,14 +698,9 @@ schro_decoder_set_flushing (SchroDecoder *decoder, int value)
 int
 schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
 {
-  SCHRO_ASSERT(decoder->input_buffer == NULL);
-
   decoder->flushing = FALSE;
-  decoder->input_buffer = buffer;
 
-  schro_unpack_init_with_data (&decoder->unpack,
-      decoder->input_buffer->data,
-      decoder->input_buffer->length, 1);
+  schro_unpack_init_with_data (&decoder->unpack, buffer->data, buffer->length, 1);
   schro_decoder_decode_parse_header(decoder);
 
   if (decoder->parse_code == SCHRO_PARSE_CODE_SEQUENCE_HEADER) {
@@ -715,11 +710,11 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
     if (!decoder->have_sequence_header) {
       schro_decoder_parse_sequence_header(decoder);
       decoder->have_sequence_header = TRUE;
-      decoder->sequence_header_buffer = schro_buffer_dup (decoder->input_buffer);
+      decoder->sequence_header_buffer = schro_buffer_dup (buffer);
 
       ret = SCHRO_DECODER_FIRST_ACCESS_UNIT;
     } else {
-      if (schro_decoder_compare_sequence_header_buffer (decoder->input_buffer,
+      if (schro_decoder_compare_sequence_header_buffer (buffer,
             decoder->sequence_header_buffer)) {
         ret = SCHRO_DECODER_OK;
       } else {
@@ -728,8 +723,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
       }
     }
 
-    schro_buffer_unref (decoder->input_buffer);
-    decoder->input_buffer = NULL;
+    schro_buffer_unref (buffer);
     return ret;
   }
 
@@ -746,22 +740,18 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
       decoder->has_md5 = TRUE;
     }
 
-    schro_buffer_unref (decoder->input_buffer);
-    decoder->input_buffer = NULL;
-
+    schro_buffer_unref (buffer);
     return SCHRO_DECODER_OK;
   }
 
   if (SCHRO_PARSE_CODE_IS_PADDING(decoder->parse_code)) {
-    schro_buffer_unref (decoder->input_buffer);
-    decoder->input_buffer = NULL;
+    schro_buffer_unref (buffer);
     return SCHRO_DECODER_OK;
   }
 
   if (SCHRO_PARSE_CODE_IS_END_OF_SEQUENCE (decoder->parse_code)) {
     SCHRO_DEBUG ("decoding end sequence");
-    schro_buffer_unref (decoder->input_buffer);
-    decoder->input_buffer = NULL;
+    schro_buffer_unref (buffer);
     decoder->end_of_stream = TRUE;
     decoder->flushing = TRUE;
     return SCHRO_DECODER_EOS;
@@ -771,22 +761,19 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
 
     if (!decoder->have_sequence_header) {
       SCHRO_INFO ("no access unit -- dropping picture");
-      schro_buffer_unref (decoder->input_buffer);
-      decoder->input_buffer = NULL;
+      schro_buffer_unref (buffer);
       return SCHRO_DECODER_OK;
     }
 
-    return schro_decoder_iterate_picture (decoder);
+    return schro_decoder_iterate_picture (decoder, buffer);
   }
 
-  schro_buffer_unref (decoder->input_buffer);
-  decoder->input_buffer = NULL;
-
+  schro_buffer_unref (buffer);
   return SCHRO_DECODER_ERROR;
 }
 
 int
-schro_decoder_iterate_picture (SchroDecoder *decoder)
+schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer)
 {
   SchroPicture *picture;
   SchroParams *params;
@@ -795,8 +782,7 @@ schro_decoder_iterate_picture (SchroDecoder *decoder)
   decoder->picture = picture;
   params = &picture->params;
 
-  picture->input_buffer = decoder->input_buffer;
-  decoder->input_buffer = NULL;
+  picture->input_buffer = buffer;
 
   params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->parse_code);
   params->is_lowdelay = SCHRO_PARSE_CODE_IS_LOW_DELAY(decoder->parse_code);
