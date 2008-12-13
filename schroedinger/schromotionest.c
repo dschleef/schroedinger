@@ -104,6 +104,9 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
           frame->ref_frame[ref]);
       schro_encoder_phasecorr_estimation (frame->phasecorr[ref]);
     }
+    if (encoder->enable_global_motion) {
+      schro_encoder_global_estimation (frame);
+    }
   }
 
   frame->me = schro_motionest_new (frame);

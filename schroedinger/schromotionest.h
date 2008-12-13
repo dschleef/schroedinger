@@ -66,7 +66,7 @@ void schro_encoder_motion_predict_rough (SchroEncoderFrame *frame);
 void schro_encoder_motion_predict_pel (SchroEncoderFrame *frame);
 void schro_encoder_motion_predict_subpel (SchroEncoderFrame *frame);
 
-void schro_encoder_global_estimation (SchroMotionEst *me);
+void schro_encoder_global_estimation (SchroEncoderFrame *frame);
 
 SchroMotionField * schro_motion_field_new (int x_num_blocks, int y_num_blocks);
 void schro_motion_field_free (SchroMotionField *field);

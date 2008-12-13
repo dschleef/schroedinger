@@ -7,40 +7,41 @@
 #include <string.h>
 #include <math.h>
 
-void schro_motion_global_metric (SchroMotionField *mf, SchroFrame *frame,
+
+static void
+schro_motion_global_metric (SchroMotionField *field, SchroFrame *frame,
     SchroFrame *ref);
 
-
 void
-schro_encoder_global_estimation (SchroMotionEst *me)
+schro_encoder_global_estimation (SchroEncoderFrame *frame)
 {
-  SchroParams *params = me->params;
+  SchroParams *params = &frame->params;
   SchroMotionField *mf, *mf_orig;
   int i;
 
   SCHRO_ERROR("Global prediction is broken.  Please try again later");
 
   for(i=0;i<params->num_refs;i++) {
-    mf_orig = me->encoder_frame->rme[i]->motion_fields[0];
+    mf_orig = frame->rme[i]->motion_fields[0];
     mf = schro_motion_field_new (mf_orig->x_num_blocks, mf_orig->y_num_blocks);
 
     memcpy (mf->motion_vectors, mf_orig->motion_vectors,
         sizeof(SchroMotionVector)*mf->x_num_blocks*mf->y_num_blocks);
     schro_motion_field_global_estimation (mf,
-        &me->encoder_frame->params.global_motion[i],
+        &frame->params.global_motion[i],
         params->mv_precision);
     if (i == 0) {
       schro_motion_global_metric (mf,
-          me->encoder_frame->filtered_frame,
-          me->encoder_frame->ref_frame[0]->filtered_frame);
+          frame->filtered_frame,
+          frame->ref_frame[0]->filtered_frame);
     } else {
-      schro_motion_global_metric (mf, me->encoder_frame->filtered_frame,
-          me->encoder_frame->ref_frame[1]->filtered_frame);
+      schro_motion_global_metric (mf, frame->filtered_frame,
+          frame->ref_frame[1]->filtered_frame);
     }
   }
 }
 
-void
+static void
 schro_motion_global_metric (SchroMotionField *field, SchroFrame *frame,
     SchroFrame *ref)
 {
