@@ -109,6 +109,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
 	schroengine.c \
 	schrofft.c \
 	schrofilter.c \
+	schroglobalest.c \
 	schrolist.c \
 	schrometric.c \
 	schromotionest.c \
