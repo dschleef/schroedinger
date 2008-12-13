@@ -37,7 +37,6 @@ schro_encoder_global_estimation (SchroMotionEst *me)
       schro_motion_global_metric (mf, me->encoder_frame->filtered_frame,
           me->encoder_frame->ref_frame[1]->filtered_frame);
     }
-    schro_list_append (me->encoder_frame->motion_field_list, mf);
   }
 }
 

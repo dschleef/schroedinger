@@ -89,7 +89,6 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
   SchroEncoder *encoder = frame->encoder;
-  int n;
   int ref;
 
   SCHRO_ASSERT(params->x_num_blocks != 0);
@@ -111,9 +110,6 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
 
   frame->motion = schro_motion_new (params, NULL, NULL);
   frame->me->motion = frame->motion;
-
-  frame->motion_field_list = schro_list_new_full ((SchroListFreeFunc)schro_motion_field_free, NULL);
-  n = 0;
 
 #if 0
   for(ref=0;ref<params->num_refs;ref++){
@@ -139,8 +135,6 @@ schro_encoder_motion_predict_pel (SchroEncoderFrame *frame)
 
   schro_motion_calculate_stats (frame->motion, frame);
   frame->estimated_mc_bits = schro_motion_estimate_entropy (frame->motion);
-
-  schro_list_free (frame->motion_field_list);
 
   frame->badblock_ratio = (double)frame->me->badblocks/(params->x_num_blocks*params->y_num_blocks/16);
 }

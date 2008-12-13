@@ -178,7 +178,6 @@ struct _SchroEncoderFrame {
   struct _SchroPhaseCorr *phasecorr[2];
 
   SchroMotion *motion;
-  SchroList *motion_field_list;
 
   SchroHistogram subband_hists[3][SCHRO_LIMIT_SUBBANDS];
   SchroHistogram hist_test;
