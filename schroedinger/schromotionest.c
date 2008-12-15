@@ -104,9 +104,9 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
           frame->ref_frame[ref]);
       schro_encoder_phasecorr_estimation (frame->phasecorr[ref]);
     }
-    if (encoder->enable_global_motion) {
-      schro_encoder_global_estimation (frame);
-    }
+  }
+  if (encoder->enable_global_motion) {
+    schro_encoder_global_estimation (frame);
   }
 
   frame->me = schro_motionest_new (frame);
@@ -995,6 +995,8 @@ if (1) {
 
 void schro_motionest_superblock_phasecorr1 (SchroMotionEst *me, int ref,
     SchroBlock *block, int i, int j);
+void schro_motionest_superblock_global (SchroMotionEst *me, int ref,
+    SchroBlock *block, int i, int j);
 
 void
 schro_encoder_bigblock_estimation (SchroMotionEst *me)
@@ -1059,6 +1061,15 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
         TRYBLOCK
         if (params->num_refs > 1) {
           schro_motionest_superblock_phasecorr1 (me, 1, &tryblock, i, j);
+          TRYBLOCK
+        }
+      }
+
+      if (me->encoder_frame->encoder->enable_global_motion) {
+        schro_motionest_superblock_global (me, 0, &tryblock, i, j);
+        TRYBLOCK
+        if (params->num_refs > 1) {
+          schro_motionest_superblock_global (me, 1, &tryblock, i, j);
           TRYBLOCK
         }
       }

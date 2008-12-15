@@ -73,8 +73,6 @@ void schro_motion_field_free (SchroMotionField *field);
 void schro_motion_field_scan (SchroMotionField *field, SchroParams *params, SchroFrame *frame, SchroFrame *ref, int dist);
 void schro_motion_field_inherit (SchroMotionField *field, SchroMotionField *parent);
 void schro_motion_field_copy (SchroMotionField *field, SchroMotionField *parent);
-void schro_motion_field_global_estimation (SchroMotionField *mf,
-    SchroGlobalMotion *gm, int mv_precision);
 
 int schro_frame_get_metric (SchroFrame *frame1, int x1, int y1,
     SchroFrame *frame2, int x2, int y2);

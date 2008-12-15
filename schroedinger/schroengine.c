@@ -457,7 +457,9 @@ init_params (SchroEncoderFrame *frame)
   }
 
   params->mv_precision = encoder->mv_precision;
-  //params->have_global_motion = TRUE;
+  if (encoder->enable_global_motion) {
+    params->have_global_motion = TRUE;
+  }
   if (encoder->enable_multiquant) {
     params->codeblock_mode_index = 1;
   } else {
