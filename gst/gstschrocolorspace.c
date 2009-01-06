@@ -104,14 +104,14 @@ static GstStaticPadTemplate gst_schrocolorspace_sink_template =
     GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YV12, YUY2, UYVY, AYUV }"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YV12, YUY2, UYVY, AYUV, v216, v210 }"))
     );
 
 static GstStaticPadTemplate gst_schrocolorspace_src_template =
     GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YV12, YUY2, UYVY, AYUV }"))
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_YUV ("{ I420, YV12, YUY2, UYVY, AYUV, v216, v210 }"))
     );
 
 GType
@@ -250,6 +250,12 @@ transform_value (GValue *dest)
   gst_value_set_fourcc (&fourcc, GST_MAKE_FOURCC('A','Y','U','V'));
   gst_value_list_append_value (dest, &fourcc);
 
+  gst_value_set_fourcc (&fourcc, GST_MAKE_FOURCC('v','2','1','0'));
+  gst_value_list_append_value (dest, &fourcc);
+
+  gst_value_set_fourcc (&fourcc, GST_MAKE_FOURCC('v','2','1','6'));
+  gst_value_list_append_value (dest, &fourcc);
+
   g_value_unset (&fourcc);
 }
 
@@ -301,6 +307,12 @@ gst_schrocolorspace_get_unit_size (GstBaseTransform * base_transform,
       break;
     case GST_MAKE_FOURCC('A','Y','U','V'):
       *size = width * height * 4;
+      break;
+    case GST_MAKE_FOURCC('v','2','1','6'):
+      *size = width * height * 4;
+      break;
+    case GST_MAKE_FOURCC('v','2','1','0'):
+      *size = ((width + 47) / 48) * 128 * height;
       break;
     default:
       g_assert_not_reached();
@@ -354,6 +366,14 @@ gst_schrocolorspace_transform (GstBaseTransform * base_transform,
       frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA(inbuf),
           width, height);
       break;
+    case GST_MAKE_FOURCC('v','2','1','6'):
+      frame = schro_frame_new_from_data_v216 (GST_BUFFER_DATA(inbuf),
+          width, height);
+      break;
+    case GST_MAKE_FOURCC('v','2','1','0'):
+      frame = schro_frame_new_from_data_v210 (GST_BUFFER_DATA(inbuf),
+          width, height);
+      break;
     default:
       g_assert_not_reached();
   }
@@ -384,6 +404,16 @@ gst_schrocolorspace_transform (GstBaseTransform * base_transform,
           width, height);
       new_subsample = SCHRO_FRAME_FORMAT_U8_444;
       break;
+    case GST_MAKE_FOURCC('v','2','1','6'):
+      out_frame = schro_frame_new_from_data_v216 (GST_BUFFER_DATA(outbuf),
+          width, height);
+      new_subsample = SCHRO_FRAME_FORMAT_U8_422;
+      break;
+    case GST_MAKE_FOURCC('v','2','1','0'):
+      out_frame = schro_frame_new_from_data_v210 (GST_BUFFER_DATA(outbuf),
+          width, height);
+      new_subsample = SCHRO_FRAME_FORMAT_U8_422;
+      break;
     default:
       g_assert_not_reached();
   }
@@ -400,6 +430,12 @@ gst_schrocolorspace_transform (GstBaseTransform * base_transform,
       break;
     case GST_MAKE_FOURCC('A','Y','U','V'):
       frame = schro_virt_frame_new_pack_AYUV_take (frame);
+      break;
+    case GST_MAKE_FOURCC('v','2','1','6'):
+      frame = schro_virt_frame_new_pack_v216_take (frame);
+      break;
+    case GST_MAKE_FOURCC('v','2','1','0'):
+      frame = schro_virt_frame_new_pack_v210_take (frame);
       break;
     default:
       break;

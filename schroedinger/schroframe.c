@@ -304,6 +304,72 @@ schro_frame_new_from_data_AYUV (void *data, int width, int height)
 }
 
 /**
+ * schro_frame_new_from_data_v216:
+ *
+ * Creates a new SchroFrame object with the requested size using
+ * the data pointed to by @data.  The data must be in v216 format.
+ * The data must remain for the lifetime of the SchroFrame object.
+ * It is recommended to use schro_frame_set_free_callback() for
+ * notification when the data is no longer needed.
+ *
+ * Returns: a new SchroFrame object
+ */
+SchroFrame *
+schro_frame_new_from_data_v216 (void *data, int width, int height)
+{
+  SchroFrame *frame = schro_frame_new();
+
+  frame->format = SCHRO_FRAME_FORMAT_v216;
+
+  frame->width = width;
+  frame->height = height;
+
+  frame->components[0].format = frame->format;
+  frame->components[0].width = width;
+  frame->components[0].height = height;
+  frame->components[0].stride = ROUND_UP_POW2(width,1) * 4;
+  frame->components[0].data = data;
+  frame->components[0].length = frame->components[0].stride * height;
+  frame->components[0].v_shift = 0;
+  frame->components[0].h_shift = 0;
+
+  return frame;
+}
+
+/**
+ * schro_frame_new_from_data_v210:
+ *
+ * Creates a new SchroFrame object with the requested size using
+ * the data pointed to by @data.  The data must be in v210 format.
+ * The data must remain for the lifetime of the SchroFrame object.
+ * It is recommended to use schro_frame_set_free_callback() for
+ * notification when the data is no longer needed.
+ *
+ * Returns: a new SchroFrame object
+ */
+SchroFrame *
+schro_frame_new_from_data_v210 (void *data, int width, int height)
+{
+  SchroFrame *frame = schro_frame_new();
+
+  frame->format = SCHRO_FRAME_FORMAT_v210;
+
+  frame->width = width;
+  frame->height = height;
+
+  frame->components[0].format = frame->format;
+  frame->components[0].width = width;
+  frame->components[0].height = height;
+  frame->components[0].stride = ((width+5)/6) * 16;
+  frame->components[0].data = data;
+  frame->components[0].length = frame->components[0].stride * height;
+  frame->components[0].v_shift = 0;
+  frame->components[0].h_shift = 0;
+
+  return frame;
+}
+
+/**
  * schro_frame_new_from_data_I420:
  *
  * Creates a new SchroFrame object with the requested size using

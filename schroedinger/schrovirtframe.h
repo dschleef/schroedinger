@@ -24,6 +24,9 @@ SchroFrame *schro_virt_frame_new_unpack (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_YUY2 (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_UYVY (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_AYUV (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_v216 (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_v210 (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_RGB (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_color_matrix (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format);
 
@@ -35,6 +38,9 @@ SchroFrame *schro_virt_frame_new_unpack_take (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_YUY2_take (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_UYVY_take (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_AYUV_take (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_v216_take (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_v210_take (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_RGB_take (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_color_matrix_take (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_subsample_take (SchroFrame *vf, SchroFrameFormat format);
 

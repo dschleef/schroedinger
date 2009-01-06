@@ -36,6 +36,10 @@ schro_frame_new_virtual (SchroMemoryDomain *domain, SchroFrameFormat format,
     frame->components[0].height = height;
     if (format == SCHRO_FRAME_FORMAT_AYUV) {
       frame->components[0].stride = width * 4;
+    } else if (format == SCHRO_FRAME_FORMAT_v216) {
+      frame->components[0].stride = ROUND_UP_POW2(width,1) * 4;
+    } else if (format == SCHRO_FRAME_FORMAT_v210) {
+      frame->components[0].stride = ((width + 47) / 48) * 128;
     } else {
       frame->components[0].stride = ROUND_UP_POW2(width,1) * 2;
     }
@@ -619,6 +623,108 @@ unpack_ayuv (SchroFrame *frame, void *_dest, int component, int i)
   }
 }
 
+static void
+unpack_v210 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+  int j;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+
+#define READ_UINT32_LE(a) (((uint8_t *)(a))[0] | (((uint8_t *)(a))[1]<<8) | \
+  (((uint8_t *)(a))[2]<<16) | (((uint8_t *)(a))[3]<<24))
+  switch (component) {
+    case 0:
+      for(j=0;j<frame->width/6;j++){
+        dest[j*6 + 0] = ((READ_UINT32_LE (src + j*16 + 0) >> 10)&0x3ff) >> 2;
+        dest[j*6 + 1] = ((READ_UINT32_LE (src + j*16 + 4) >> 0)&0x3ff) >> 2;
+        dest[j*6 + 2] = ((READ_UINT32_LE (src + j*16 + 4) >> 20)&0x3ff) >> 2;
+        dest[j*6 + 3] = ((READ_UINT32_LE (src + j*16 + 8) >> 10)&0x3ff) >> 2;
+        dest[j*6 + 4] = ((READ_UINT32_LE (src + j*16 + 12) >> 0)&0x3ff) >> 2;
+        dest[j*6 + 5] = ((READ_UINT32_LE (src + j*16 + 12) >> 20)&0x3ff) >> 2;
+      }
+      if (j*6 + 0 < frame->width) {
+        dest[j*6 + 0] = ((READ_UINT32_LE (src + j*16 + 0) >> 10)&0x3ff) >> 2;
+      }
+      if (j*6 + 1 < frame->width) {
+        dest[j*6 + 1] = ((READ_UINT32_LE (src + j*16 + 4) >> 0)&0x3ff) >> 2;
+      }
+      if (j*6 + 2 < frame->width) {
+        dest[j*6 + 2] = ((READ_UINT32_LE (src + j*16 + 4) >> 20)&0x3ff) >> 2;
+      }
+      if (j*6 + 3 < frame->width) {
+        dest[j*6 + 3] = ((READ_UINT32_LE (src + j*16 + 8) >> 10)&0x3ff) >> 2;
+      }
+      if (j*6 + 4 < frame->width) {
+        dest[j*6 + 4] = ((READ_UINT32_LE (src + j*16 + 12) >> 0)&0x3ff) >> 2;
+      }
+      if (j*6 + 5 < frame->width) {
+        dest[j*6 + 5] = ((READ_UINT32_LE (src + j*16 + 12) >> 20)&0x3ff) >> 2;
+      }
+      break;
+    case 1:
+      for(j=0;j<frame->width/6;j++){
+        dest[j*3 + 0] = ((READ_UINT32_LE (src + j*16 + 0) >> 0)&0x3ff) >> 2;
+        dest[j*3 + 1] = ((READ_UINT32_LE (src + j*16 + 4) >> 10)&0x3ff) >> 2;
+        dest[j*3 + 2] = ((READ_UINT32_LE (src + j*16 + 8) >> 20)&0x3ff) >> 2;
+      }
+      if (j*6 + 0 < frame->width) {
+        dest[j*3 + 0] = ((READ_UINT32_LE (src + j*16 + 0) >> 0)&0x3ff) >> 2;
+      }
+      if (j*6 + 2 < frame->width) {
+        dest[j*3 + 1] = ((READ_UINT32_LE (src + j*16 + 4) >> 10)&0x3ff) >> 2;
+      }
+      if (j*6 + 4 < frame->width) {
+        dest[j*3 + 2] = ((READ_UINT32_LE (src + j*16 + 8) >> 20)&0x3ff) >> 2;
+      }
+      break;
+    case 2:
+      for(j=0;j<frame->width/6;j++){
+        dest[j*3 + 0] = ((READ_UINT32_LE (src + j*16 + 0) >> 20)&0x3ff) >> 2;
+        dest[j*3 + 1] = ((READ_UINT32_LE (src + j*16 + 8) >> 0)&0x3ff) >> 2;
+        dest[j*3 + 2] = ((READ_UINT32_LE (src + j*16 + 12) >> 10)&0x3ff) >> 2;
+      }
+      if (j*6 + 0 < frame->width) {
+        dest[j*3 + 0] = ((READ_UINT32_LE (src + j*16 + 0) >> 20)&0x3ff) >> 2;
+      }
+      if (j*6 + 2 < frame->width) {
+        dest[j*3 + 1] = ((READ_UINT32_LE (src + j*16 + 8) >> 0)&0x3ff) >> 2;
+      }
+      if (j*6 + 4 < frame->width) {
+        dest[j*3 + 2] = ((READ_UINT32_LE (src + j*16 + 12) >> 10)&0x3ff) >> 2;
+      }
+      break;
+  }
+}
+
+static void
+unpack_v216 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src;
+  int j;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+
+  switch (component) {
+    case 0:
+      for(j=0;j<frame->width;j++){
+        dest[j] = src[j*4 + 2 + 1];
+      }
+      break;
+    case 1:
+      for(j=0;j<frame->width/2;j++){
+        dest[j] = src[j*8 + 0 + 1];
+      }
+      break;
+    case 2:
+      for(j=0;j<frame->width/2;j++){
+        dest[j] = src[j*8 + 4 + 1];
+      }
+  }
+}
+
 SchroFrame *
 schro_virt_frame_new_unpack (SchroFrame *vf)
 {
@@ -638,6 +744,14 @@ schro_virt_frame_new_unpack (SchroFrame *vf)
     case SCHRO_FRAME_FORMAT_AYUV:
       format = SCHRO_FRAME_FORMAT_U8_444;
       render_line = unpack_ayuv;
+      break;
+    case SCHRO_FRAME_FORMAT_v210:
+      format = SCHRO_FRAME_FORMAT_U8_422;
+      render_line = unpack_v210;
+      break;
+    case SCHRO_FRAME_FORMAT_v216:
+      format = SCHRO_FRAME_FORMAT_U8_422;
+      render_line = unpack_v216;
       break;
     default:
       return schro_frame_ref (vf);
@@ -715,6 +829,141 @@ schro_virt_frame_new_pack_UYVY (SchroFrame *vf)
 }
 
 static void
+pack_v216 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src_y;
+  uint8_t *src_u;
+  uint8_t *src_v;
+  int j;
+
+  src_y = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+  src_u = schro_virt_frame_get_line (frame->virt_frame1, 1, i);
+  src_v = schro_virt_frame_get_line (frame->virt_frame1, 2, i);
+
+  for(j=0;j<frame->width/2;j++){
+    dest[j*8+0] = src_u[j];
+    dest[j*8+1] = src_u[j];
+    dest[j*8+2] = src_y[j*2+0];
+    dest[j*8+3] = src_y[j*2+0];
+    dest[j*8+4] = src_v[j];
+    dest[j*8+5] = src_v[j];
+    dest[j*8+6] = src_y[j*2+1];
+    dest[j*8+7] = src_y[j*2+1];
+  }
+}
+
+SchroFrame *
+schro_virt_frame_new_pack_v216 (SchroFrame *vf)
+{
+  SchroFrame *virt_frame;
+
+  virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_v216,
+      vf->width, vf->height);
+  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->render_line = pack_v216;
+
+  return virt_frame;
+}
+
+static void
+pack_v210 (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src_y;
+  uint8_t *src_u;
+  uint8_t *src_v;
+  int j;
+  uint32_t val;
+
+  src_y = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+  src_u = schro_virt_frame_get_line (frame->virt_frame1, 1, i);
+  src_v = schro_virt_frame_get_line (frame->virt_frame1, 2, i);
+
+#define TO_10(x) (((x)<<2) | ((x)>>6))
+#define WRITE_UINT32_LE(a,b) do { \
+  ((uint8_t *)(a))[0] = (b)&0xff; \
+  ((uint8_t *)(a))[1] = ((b)>>8)&0xff; \
+  ((uint8_t *)(a))[2] = ((b)>>16)&0xff; \
+  ((uint8_t *)(a))[3] = ((b)>>24)&0xff; \
+} while(0)
+  for(j=0;j<frame->width/6;j++){
+    int y0, y1, y2, y3, y4, y5;
+    int cr0, cr1, cr2;
+    int cb0, cb1, cb2;
+
+    y0 = TO_10(src_y[j*6 + 0]);
+    y1 = TO_10(src_y[j*6 + 1]);
+    y2 = TO_10(src_y[j*6 + 2]);
+    y3 = TO_10(src_y[j*6 + 3]);
+    y4 = TO_10(src_y[j*6 + 4]);
+    y5 = TO_10(src_y[j*6 + 5]);
+    cb0 = TO_10(src_u[j*3 + 0]);
+    cb1 = TO_10(src_u[j*3 + 1]);
+    cb2 = TO_10(src_u[j*3 + 2]);
+    cr0 = TO_10(src_v[j*3 + 0]);
+    cr1 = TO_10(src_v[j*3 + 1]);
+    cr2 = TO_10(src_v[j*3 + 2]);
+
+    val = (cr0<<20) | (y0<< 10) | (cb0);
+    WRITE_UINT32_LE (dest + j*16 + 0, val);
+
+    val = (y2<<20) | (cb1<< 10) | (y1);
+    WRITE_UINT32_LE (dest + j*16 + 4, val);
+
+    val = (cb2<<20) | (y3<< 10) | (cr1);
+    WRITE_UINT32_LE (dest + j*16 + 8, val);
+
+    val = (y5<<20) | (cr2<< 10) | (y4);
+    WRITE_UINT32_LE (dest + j*16 + 12, val);
+  }
+  if (j*6 < frame->width) {
+    int y0, y1, y2, y3, y4, y5;
+    int cr0, cr1, cr2;
+    int cb0, cb1, cb2;
+
+    y0 = ((j*6 + 0) < frame->width) ? TO_10(src_y[j*6 + 0]) : 0;
+    y1 = ((j*6 + 1) < frame->width) ? TO_10(src_y[j*6 + 1]) : 0;
+    y2 = ((j*6 + 2) < frame->width) ? TO_10(src_y[j*6 + 2]) : 0;
+    y3 = ((j*6 + 3) < frame->width) ? TO_10(src_y[j*6 + 3]) : 0;
+    y4 = ((j*6 + 4) < frame->width) ? TO_10(src_y[j*6 + 4]) : 0;
+    y5 = ((j*6 + 5) < frame->width) ? TO_10(src_y[j*6 + 5]) : 0;
+    cb0 = ((j*6 + 0) < frame->width) ? TO_10(src_u[j*3 + 0]) : 0;
+    cb1 = ((j*6 + 2) < frame->width) ? TO_10(src_u[j*3 + 1]) : 0;
+    cb2 = ((j*6 + 4) < frame->width) ? TO_10(src_u[j*3 + 2]) : 0;
+    cr0 = ((j*6 + 0) < frame->width) ? TO_10(src_v[j*3 + 0]) : 0;
+    cr1 = ((j*6 + 2) < frame->width) ? TO_10(src_v[j*3 + 1]) : 0;
+    cr2 = ((j*6 + 4) < frame->width) ? TO_10(src_v[j*3 + 2]) : 0;
+
+    val = (cr0<<20) | (y0<< 10) | (cb0);
+    WRITE_UINT32_LE (dest + j*16 + 0, val);
+
+    val = (y2<<20) | (cb1<< 10) | (y1);
+    WRITE_UINT32_LE (dest + j*16 + 4, val);
+
+    val = (cb2<<20) | (y3<< 10) | (cr1);
+    WRITE_UINT32_LE (dest + j*16 + 8, val);
+
+    val = (y5<<20) | (cr2<< 10) | (y4);
+    WRITE_UINT32_LE (dest + j*16 + 12, val);
+  }
+
+}
+
+SchroFrame *
+schro_virt_frame_new_pack_v210 (SchroFrame *vf)
+{
+  SchroFrame *virt_frame;
+
+  virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_v210,
+      vf->width, vf->height);
+  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->render_line = pack_v210;
+
+  return virt_frame;
+}
+
+static void
 pack_ayuv (SchroFrame *frame, void *_dest, int component, int i)
 {
   uint8_t *dest = _dest;
@@ -740,10 +989,43 @@ schro_virt_frame_new_pack_AYUV (SchroFrame *vf)
 {
   SchroFrame *virt_frame;
 
-  virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_YUYV,
+  virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_AYUV,
       vf->width, vf->height);
   virt_frame->virt_frame1 = schro_frame_ref(vf);
   virt_frame->render_line = pack_ayuv;
+
+  return virt_frame;
+}
+
+static void
+pack_rgb (SchroFrame *frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  uint8_t *src_y;
+  uint8_t *src_u;
+  uint8_t *src_v;
+  int j;
+
+  src_y = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+  src_u = schro_virt_frame_get_line (frame->virt_frame1, 1, i);
+  src_v = schro_virt_frame_get_line (frame->virt_frame1, 2, i);
+
+  for(j=0;j<frame->width;j++){
+    dest[j*3+0] = src_y[j];
+    dest[j*3+1] = src_u[j];
+    dest[j*3+2] = src_v[j];
+  }
+}
+
+SchroFrame *
+schro_virt_frame_new_pack_RGB (SchroFrame *vf)
+{
+  SchroFrame *virt_frame;
+
+  virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_RGB,
+      vf->width, vf->height);
+  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->render_line = pack_rgb;
 
   return virt_frame;
 }
@@ -1020,10 +1302,37 @@ schro_virt_frame_new_pack_UYVY_take (SchroFrame *vf)
 }
 
 SchroFrame *
+schro_virt_frame_new_pack_v216_take (SchroFrame *vf)
+{
+  SchroFrame *virt_frame;
+  virt_frame = schro_virt_frame_new_pack_v216 (vf);
+  schro_frame_unref (vf);
+  return virt_frame;
+}
+
+SchroFrame *
+schro_virt_frame_new_pack_v210_take (SchroFrame *vf)
+{
+  SchroFrame *virt_frame;
+  virt_frame = schro_virt_frame_new_pack_v210 (vf);
+  schro_frame_unref (vf);
+  return virt_frame;
+}
+
+SchroFrame *
 schro_virt_frame_new_pack_AYUV_take (SchroFrame *vf)
 {
   SchroFrame *virt_frame;
   virt_frame = schro_virt_frame_new_pack_AYUV (vf);
+  schro_frame_unref (vf);
+  return virt_frame;
+}
+
+SchroFrame *
+schro_virt_frame_new_pack_RGB_take (SchroFrame *vf)
+{
+  SchroFrame *virt_frame;
+  virt_frame = schro_virt_frame_new_pack_RGB (vf);
   schro_frame_unref (vf);
   return virt_frame;
 }
