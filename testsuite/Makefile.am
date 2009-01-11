@@ -24,7 +24,7 @@ noinst_PROGRAMS = arith arith_encode \
 	 colorspace filter_coeff utils extension
 
 if ENABLE_ENCODER
-noinst_PROGRAMS += encode global_motion filter ssim wavelet_gain \
+noinst_PROGRAMS += encode filter ssim wavelet_gain \
 	wavelet_gain_curve perceptual_weight perceptual_curves \
 	wavelet_noise_2d unpack abi
 endif
