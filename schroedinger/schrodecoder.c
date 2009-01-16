@@ -779,7 +779,6 @@ schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer)
   SchroParams *params;
 
   picture = schro_picture_new (decoder);
-  decoder->picture = picture;
   params = &picture->params;
 
   picture->input_buffer = buffer;
@@ -795,21 +794,22 @@ schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer)
     decoder->has_md5 = FALSE;
   }
 
-  schro_decoder_parse_picture_header(decoder->picture);
+  schro_decoder_parse_picture_header(picture);
+
+  SCHRO_DEBUG("picturenumber: %u", picture->picture_number);
 
   if (!decoder->have_frame_number) {
     if (params->num_refs > 0) {
       SCHRO_ERROR("expected I frame after sequence header");
     }
-    decoder->next_frame_number = decoder->picture->picture_number;
+    decoder->next_frame_number = picture->picture_number;
     decoder->have_frame_number = TRUE;
     SCHRO_INFO("next frame number after seek %d", decoder->next_frame_number);
   }
 
   if (picture->is_ref) {
     schro_async_lock (decoder->async);
-    schro_decoder_reference_retire (decoder,
-        decoder->picture->retired_picture_number);
+    schro_decoder_reference_retire (decoder, picture->retired_picture_number);
     schro_decoder_reference_add (decoder, picture);
     schro_async_unlock (decoder->async);
   }

@@ -43,8 +43,6 @@ struct _SchroDecoder {
 
   SchroPictureNumber next_frame_number;
 
-  SchroPicture *picture;
-
   int major_version;
   int minor_version;
   int profile;
