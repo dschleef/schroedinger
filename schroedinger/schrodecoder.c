@@ -697,11 +697,16 @@ schro_decoder_push_end_of_stream (SchroDecoder *decoder)
   return SCHRO_DECODER_EOS;
 }
 
+/**
+ * schro_decoder_set_flushing:
+ *
+ * This function is depricated and has no effect.
+ * If control over the picture order is required, consult
+ * schro_decoder_set_picture_order()
+ */
 int
 schro_decoder_set_flushing (SchroDecoder *decoder, int value)
 {
-  decoder->flushing = value;
-
   return SCHRO_DECODER_OK;
 }
 

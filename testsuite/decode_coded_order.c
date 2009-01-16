@@ -102,8 +102,6 @@ decode (FILE *file)
       }
     }
 
-    schro_decoder_set_flushing (decoder, TRUE);
-
     go = 1;
     while (go) {
       it = schro_decoder_wait (decoder);

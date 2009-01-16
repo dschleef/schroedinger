@@ -141,7 +141,9 @@ SchroVideoFormat * schro_decoder_get_video_format (SchroDecoder *decoder);
 void schro_decoder_add_output_picture (SchroDecoder *decoder, SchroFrame *frame);
 int schro_decoder_push_ready (SchroDecoder *decoder);
 int schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer);
-int schro_decoder_set_flushing (SchroDecoder *decoder, int flushing);
+#ifndef SCHRO_DISABLE_DEPRECATED
+int schro_decoder_set_flushing (SchroDecoder *decoder, int flushing) SCHRO_DEPRECATED;
+#endif
 void schro_decoder_set_picture_order (SchroDecoder *decoder, int picture_order);
 int schro_decoder_push_end_of_stream (SchroDecoder *decoder);
 SchroFrame *schro_decoder_pull (SchroDecoder *decoder);
