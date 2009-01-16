@@ -699,12 +699,18 @@ int
 schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
 {
   SchroUnpack unpack;
+  int parse_code;
   decoder->flushing = FALSE;
 
   schro_unpack_init_with_data (&unpack, buffer->data, buffer->length, 1);
-  schro_decoder_decode_parse_header(&unpack);
+  parse_code = schro_decoder_decode_parse_header(&unpack);
 
-  if (decoder->parse_code == SCHRO_PARSE_CODE_SEQUENCE_HEADER) {
+  if (parse_code == -1) {
+    schro_buffer_unref (buffer);
+    return SCHRO_DECODER_ERROR;
+  }
+
+  if (parse_code == SCHRO_PARSE_CODE_SEQUENCE_HEADER) {
     int ret;
 
     SCHRO_INFO ("decoding sequence header");
@@ -728,7 +734,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
     return ret;
   }
 
-  if (decoder->parse_code == SCHRO_PARSE_CODE_AUXILIARY_DATA) {
+  if (parse_code == SCHRO_PARSE_CODE_AUXILIARY_DATA) {
     int code;
 
     code = schro_unpack_decode_bits (&unpack, 8);
@@ -745,12 +751,12 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
     return SCHRO_DECODER_OK;
   }
 
-  if (SCHRO_PARSE_CODE_IS_PADDING(decoder->parse_code)) {
+  if (SCHRO_PARSE_CODE_IS_PADDING(parse_code)) {
     schro_buffer_unref (buffer);
     return SCHRO_DECODER_OK;
   }
 
-  if (SCHRO_PARSE_CODE_IS_END_OF_SEQUENCE (decoder->parse_code)) {
+  if (SCHRO_PARSE_CODE_IS_END_OF_SEQUENCE (parse_code)) {
     SCHRO_DEBUG ("decoding end sequence");
     schro_buffer_unref (buffer);
     decoder->end_of_stream = TRUE;
@@ -758,7 +764,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
     return SCHRO_DECODER_EOS;
   }
 
-  if (SCHRO_PARSE_CODE_IS_PICTURE(decoder->parse_code)) {
+  if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
 
     if (!decoder->have_sequence_header) {
       SCHRO_INFO ("no sequence header -- dropping picture");
@@ -766,7 +772,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
       return SCHRO_DECODER_OK;
     }
 
-    return schro_decoder_iterate_picture (decoder, buffer, &unpack);
+    return schro_decoder_iterate_picture (decoder, buffer, &unpack, parse_code);
   }
 
   schro_buffer_unref (buffer);
@@ -774,7 +780,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
 }
 
 int
-schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer, SchroUnpack *unpack)
+schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer, SchroUnpack *unpack, int parse_code)
 {
   SchroPicture *picture;
   SchroParams *params;
@@ -784,10 +790,10 @@ schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer, Schro
 
   picture->input_buffer = buffer;
 
-  params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(decoder->parse_code);
-  params->is_lowdelay = SCHRO_PARSE_CODE_IS_LOW_DELAY(decoder->parse_code);
-  params->is_noarith = !SCHRO_PARSE_CODE_USING_AC(decoder->parse_code);
-  picture->is_ref = SCHRO_PARSE_CODE_IS_REFERENCE(decoder->parse_code);
+  params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(parse_code);
+  params->is_lowdelay = SCHRO_PARSE_CODE_IS_LOW_DELAY(parse_code);
+  params->is_noarith = !SCHRO_PARSE_CODE_USING_AC(parse_code);
+  picture->is_ref = SCHRO_PARSE_CODE_IS_REFERENCE(parse_code);
 
   if (decoder->has_md5) {
     picture->has_md5 = TRUE;
@@ -1407,10 +1413,11 @@ schro_decoder_x_upsample (SchroAsyncStage *stage)
   }
 }
 
-void
+int
 schro_decoder_decode_parse_header (SchroUnpack *unpack)
 {
   int v1, v2, v3, v4;
+  int parse_code;
 
   v1 = schro_unpack_decode_bits (unpack, 8);
   v2 = schro_unpack_decode_bits (unpack, 8);
@@ -1419,16 +1426,18 @@ schro_decoder_decode_parse_header (SchroUnpack *unpack)
   SCHRO_DEBUG ("parse header %02x %02x %02x %02x", v1, v2, v3, v4);
   if (v1 != 'B' || v2 != 'B' || v3 != 'C' || v4 != 'D') {
     SCHRO_ERROR ("expected parse header");
-    return;
+    return -1;
   }
 
-  decoder->parse_code = schro_unpack_decode_bits (unpack, 8);
-  SCHRO_DEBUG ("parse code %02x", decoder->parse_code);
+  parse_code = schro_unpack_decode_bits (unpack, 8);
+  SCHRO_DEBUG ("parse code %02x", parse_code);
 
   decoder->next_parse_offset = schro_unpack_decode_bits (unpack, 32);
   SCHRO_DEBUG ("next_parse_offset %d", decoder->next_parse_offset);
   decoder->prev_parse_offset = schro_unpack_decode_bits (unpack, 32);
   SCHRO_DEBUG ("prev_parse_offset %d", decoder->prev_parse_offset);
+
+  return parse_code;
 }
 
 static int
