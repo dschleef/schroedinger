@@ -49,7 +49,6 @@ struct _SchroDecoder {
   int level;
   SchroVideoFormat video_format;
 
-  SchroQueue *frame_queue;
   SchroQueue *picture_queue;
 
   int queue_depth;
