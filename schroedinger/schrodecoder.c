@@ -1812,8 +1812,22 @@ schro_decoder_check_version (int major, int minor)
 int
 schro_decoder_compare_sequence_header_buffer (SchroBuffer *a, SchroBuffer *b)
 {
-  if (a->length != b->length) return FALSE;
+  return TRUE;
+
+  /* FIXME */
+  if (a->length != b->length) {
+    SCHRO_ERROR("length different %d vs %d", a->length, b->length);
+    return FALSE;
+  }
   if (a->length < 13) return FALSE;
+
+  {
+    int i;
+    for(i=13;i<a->length;i++) {
+      SCHRO_ERROR("seq headers: %02x %02x", a->data[i], b->data[i]);
+    }
+  }
+
   if (memcmp (a->data + 13, b->data + 13, a->length - 13) != 0) return FALSE;
 
   return TRUE;
