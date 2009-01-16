@@ -565,14 +565,29 @@ schro_decoder_push_ready (SchroDecoder *decoder)
   return (ret == FALSE);
 }
 
+static int
+schro_decoder_need_output_frame_locked (SchroDecoder *decoder)
+{
+  int num_frames_in_hand = decoder->output_queue->n;
+  int i;
+  for(i=0;i<decoder->picture_queue->n;i++){
+    SchroPicture *picture = decoder->picture_queue->elements[i].data;
+    if (!picture->output_picture)
+      num_frames_in_hand--;
+  }
+  return num_frames_in_hand < 0;
+}
+
 int
 schro_decoder_need_output_frame (SchroDecoder *decoder)
 {
-  if (decoder->have_sequence_header &&
-      schro_queue_is_empty (decoder->output_queue)) {
-    return TRUE;
-  }
-  return FALSE;
+  int ret;
+
+  schro_async_lock (decoder->async);
+  ret = schro_decoder_need_output_frame_locked (decoder);
+  schro_async_unlock (decoder->async);
+
+  return ret;
 }
 
 static int
@@ -587,13 +602,8 @@ schro_decoder_get_status_locked (SchroDecoder *decoder)
     return SCHRO_DECODER_ERROR;
   }
   if (decoder->have_sequence_header &&
-      schro_queue_is_empty (decoder->output_queue)) {
-    int i;
-    for(i=0;i<decoder->picture_queue->n;i++){
-      SchroPicture *picture = decoder->picture_queue->elements[i].data;
-      if (!picture->output_picture)
-        return SCHRO_DECODER_NEED_FRAME;
-    }
+      schro_decoder_need_output_frame_locked (decoder)) {
+    return SCHRO_DECODER_NEED_FRAME;
   }
   if (!schro_queue_is_full (decoder->picture_queue) && !decoder->flushing) {
     return SCHRO_DECODER_NEED_BITS;
