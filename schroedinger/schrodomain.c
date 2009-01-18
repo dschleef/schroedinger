@@ -8,6 +8,7 @@
 #include <schroedinger/schrodebug.h>
 #include <stdlib.h>
 
+//#define MEM_DOMAIN_ALWAYS_FREE 1
 
 /* SchroMemoryDomain */
 
@@ -120,7 +121,12 @@ schro_memory_domain_memfree (SchroMemoryDomain *domain, void *ptr)
       continue;
     }
     if (domain->slots[i].ptr == ptr) {
+#ifdef MEM_DOMAIN_ALWAYS_FREE
+      domain->free (domain->slots[i].ptr, domain->slots[i].size);
+      domain->slots[i].flags = 0;
+#else
       domain->slots[i].flags &= (~SCHRO_MEMORY_DOMAIN_SLOT_IN_USE);
+#endif
       schro_mutex_unlock (domain->mutex);
       return;
     }
