@@ -116,6 +116,13 @@ schro_decoder_instance_new (SchroDecoder *decoder)
   instance->reorder_queue_size = 2+1; /* rob size: 2 = default */
   instance->reorder_queue = schro_queue_new (4, (SchroQueueFreeFunc)schro_picture_unref);
 
+  /* when using coded_order, the RoB size is 1, propagate the
+   * setting across decoder instances */
+  /* xxx: this will need to be moved into sequence header handling later */
+  if (decoder->coded_order) {
+    instance->reorder_queue_size = 1;
+  }
+
   return instance;
 }
 
@@ -129,6 +136,9 @@ schro_decoder_instance_free (SchroDecoderInstance *instance)
   if (instance->sequence_header_buffer) {
     schro_buffer_unref (instance->sequence_header_buffer);
   }
+
+  /* do not call instance_free(instance->next).
+   * It must be handled by the caller if required */
 
   schro_free (instance);
 }
@@ -207,7 +217,11 @@ schro_decoder_free (SchroDecoder *decoder)
     schro_async_free (decoder->async);
   }
 
-  schro_decoder_instance_free (decoder->instance);
+  do {
+    SchroDecoderInstance *next = decoder->instance->next;
+    schro_decoder_instance_free (decoder->instance);
+    decoder->instance = next;
+  } while (decoder->instance);
 
   schro_buflist_free (decoder->input_buflist);
   schro_parse_sync_free (decoder->sps);
@@ -224,6 +238,72 @@ schro_decoder_free (SchroDecoder *decoder)
 
 
   schro_free (decoder);
+}
+
+/**
+ * schro_decoder_begin_sequence:
+ *
+ * Prepare the @decoder to accept a new sequence.
+ *
+ * Returns SCHRO_DECODER_OK
+ *         SCHRO_DECODER_ERROR: if oldest sequence hasn't been marked with
+ *                              end of sequence
+ */
+int
+schro_decoder_begin_sequence (SchroDecoder *decoder)
+{
+  SchroDecoderInstance *instance = decoder->instance;
+  /* find newest sequence */
+  while (instance->next) instance = instance->next;
+
+  if (!instance->flushing || !instance->end_of_stream) {
+    return SCHRO_DECODER_ERROR;
+  }
+
+  schro_async_lock (decoder->async);
+  instance->next = schro_decoder_instance_new (decoder);
+  schro_async_unlock (decoder->async);
+
+  return SCHRO_DECODER_OK;
+}
+
+/**
+ * schro_decoder_end_sequence:
+ *
+ * When decoder_wait() returns SCHRO_DECODER_EOS, the sequence
+ * that terminated must be cleaned up before the state machine
+ * will advance.
+ *
+ * Returns SCHRO_DECODER_OK:
+ *         SCHRO_DECODER_ERROR: if oldest sequence has not completed.
+ *         SCHRO_DECODER_ERROR: if the decoder has not been prepared
+ *                              for a new sequence.
+ */
+int
+schro_decoder_end_sequence (SchroDecoder *decoder)
+{
+  /* oldest sequence */
+  SchroDecoderInstance *instance = decoder->instance;
+  SchroDecoderInstance *old;
+
+  if (!instance->flushing || !instance->end_of_stream ||
+      instance->reorder_queue->n > 0) {
+    /* can not guarantee no threads are using the instance */
+    return SCHRO_DECODER_ERROR;
+  }
+
+  if (!instance->next) {
+    /* decoder has no new instance waiting */
+    return SCHRO_DECODER_ERROR;
+  }
+
+  schro_async_lock (decoder->async);
+  old = instance->next;
+  schro_decoder_instance_free (instance);
+  decoder->instance = old;
+  schro_async_unlock (decoder->async);
+
+  return SCHRO_DECODER_OK;
 }
 
 /**
@@ -591,6 +671,10 @@ int
 schro_decoder_push_ready (SchroDecoder *decoder)
 {
   int ret;
+  SchroDecoderInstance *instance = decoder->instance;
+  /* by definition, all instances prior to the last are flushing, just
+   * check if the final sequence not full */
+  while (instance->next) instance = instance->next;
 
   schro_async_lock (decoder->async);
   ret = schro_queue_is_full (decoder->instance->reorder_queue);
@@ -602,6 +686,8 @@ schro_decoder_push_ready (SchroDecoder *decoder)
 static int
 schro_decoder_need_output_frame_locked (SchroDecoder *decoder)
 {
+  /* output frames are only required to satisfy completion of the
+   * oldest sequence. Do not iterate over instances */
   SchroDecoderInstance *instance = decoder->instance;
   int num_frames_in_hand = instance->output_queue->n;
   int i;
@@ -631,6 +717,12 @@ schro_decoder_get_status_locked (SchroDecoder *decoder)
   SchroDecoderInstance *instance = decoder->instance;
   /* NB, this function should be `pure' (no sideeffects),
    * since it is called in a context which should not update state */
+  if (!instance) {
+    /* Under normal operation, this shouldn't be possible:
+     *  - only if the user uses the raw api in the wrong order */
+    schro_decoder_error (decoder, "Missing decoder instance");
+    return SCHRO_DECODER_ERROR;
+  }
   if (instance->first_sequence_header) {
     return SCHRO_DECODER_FIRST_ACCESS_UNIT;
   }
@@ -776,6 +868,18 @@ schro_decoder_autoparse_wait (SchroDecoder *decoder)
         return ret;
       }
       break;
+    case SCHRO_DECODER_EOS:
+      /* delete the decoder instance -- it is finished with
+       * This is safe since for the status to be EOS
+       * there must be:
+       *  - no work left in the decoder queue
+       *  - no pictures left to retrieve
+       * Therefore there are no threads running in this instance.
+       */
+      schro_decoder_end_sequence (decoder);
+      /* try again to discover the next state: EOS never gets passed
+       * to the user */
+      continue;
     }
   }
 }
@@ -783,8 +887,32 @@ schro_decoder_autoparse_wait (SchroDecoder *decoder)
 int
 schro_decoder_push_end_of_stream (SchroDecoder *decoder)
 {
-  decoder->instance->flushing = TRUE;
-  decoder->instance->end_of_stream = TRUE;
+  SchroDecoderInstance *instance = decoder->instance;
+  /* find newest sequence */
+  while (instance->next) instance = instance->next;
+
+  instance->flushing = TRUE;
+  instance->end_of_stream = TRUE;
+
+  return SCHRO_DECODER_EOS;
+}
+
+/**
+ * schro_decoder_autoparse_push_end_of_sequence:
+ *
+ * Signals that the most recent sequence is to terminates: decoding
+ * of all pictures still in progress will continue.
+ *
+ * The decoder state is prepared to immediately handle data for
+ * a new sequence.
+ *
+ * Returns: SCHRO_DECODER_EOS
+ */
+int
+schro_decoder_autoparse_push_end_of_sequence (SchroDecoder *decoder)
+{
+  schro_decoder_push_end_of_stream (decoder);
+  schro_decoder_begin_sequence (decoder);
   return SCHRO_DECODER_EOS;
 }
 
@@ -807,6 +935,23 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
   SchroDecoderInstance *instance = decoder->instance;
   SchroUnpack unpack;
   int parse_code;
+
+  if (!instance) {
+    /* this should not be possible with the autoparse api:
+     *  - decoder is created with an instance
+     *  - instances are created eachtime an EOS is inserted
+     *  - instances are deleted when EOS is pulled.
+     * => Next instance is created before previous one is destroyed
+     * Assumptions:
+     *  - Only examined case where wait() and push() are called
+     *    from same thread
+     */
+    return SCHRO_DECODER_ERROR;
+  }
+
+  /* find newest sequence */
+  while (instance->next) instance = instance->next;
+  /* instance is now the next instance to send data to */
 
   instance->flushing = FALSE;
 
@@ -898,7 +1043,6 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
  *
  * Returns: if decoder ready for more data, but insufficient input buffer:
  *          SCHRO_DECODER_NEED_BITS
- *
  *          otherwise SCHRO_DECODER_OK
  */
 int
@@ -914,7 +1058,14 @@ schro_decoder_autoparse_push (SchroDecoder *decoder, SchroBuffer *buffer)
     if (!buffer)
       return SCHRO_DECODER_NEED_BITS;
 
-    schro_decoder_push (decoder, buffer);
+    switch (schro_decoder_push (decoder, buffer)) {
+    default:
+      break;
+    case SCHRO_DECODER_EOS:
+      /* Prepare decoder for immediately handling the next sequence */
+      schro_decoder_begin_sequence (decoder);
+      break;
+    }
   }
 
   return SCHRO_DECODER_OK;
