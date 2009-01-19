@@ -16,6 +16,9 @@ struct _SchroBufferList
   /* private */
   SchroList *list;
   unsigned offset;
+
+  /* stashed tag for use in next extraction */
+  SchroTag *tag;
 };
 
 SchroBufferList *schro_buflist_new (void);

@@ -419,8 +419,23 @@ schro_picture_unref (SchroPicture *picture)
     if (picture->ref0) schro_picture_unref (picture->ref0);
     if (picture->ref1) schro_picture_unref (picture->ref1);
 
+    if (picture->tag) picture->tag->base.free (picture->tag);
+
     schro_free (picture);
   }
+}
+
+/**
+ * schro_decoder_tag_new:
+ *
+ * Returns: An empty decoder tag structure
+ */
+SchroDecoderTag *
+schro_decoder_tag_new ()
+{
+    SchroDecoderTag *tag = schro_malloc0 (sizeof(*tag));
+    tag->base.free = schro_free;
+    return tag;
 }
 
 /**
@@ -496,6 +511,34 @@ schro_decoder_get_picture_number (SchroDecoder *decoder)
   if (picture)
     return picture->picture_number;
   return SCHRO_PICTURE_NUMBER_INVALID;
+}
+
+/**
+ * schro_decoder_get_picture_tag:
+ * @decoder: a decoder object
+ *
+ * Returns any tag associated with the next picture to be returned
+ * by @schro_decoder_pull().  Ownership of the tag is transfered to
+ * the caller.
+ *
+ * Returns: a tag represented by void* or NULL
+ */
+SchroDecoderTag *
+schro_decoder_get_picture_tag (SchroDecoder *decoder)
+{
+  SchroDecoderInstance *instance = decoder->instance;
+  SchroPicture *picture = NULL;
+
+  if (instance->reorder_queue->n >= instance->reorder_queue_size ||
+      instance->flushing) {
+    picture = schro_queue_peek (instance->reorder_queue);
+  }
+  if (picture) {
+    SchroDecoderTag *tag = picture->tag;
+    picture->tag = NULL;
+    return tag;
+  }
+  return NULL;
 }
 
 /**
@@ -957,6 +1000,16 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
 
   instance->flushing = FALSE;
 
+  /* Buffers may have associated (tagged) private data.
+   * This data is to be associated with the next(/this) picture data unit */
+  if (buffer->tag) {
+    if (decoder->next_picture_tag) {
+      decoder->next_picture_tag->base.free (decoder->next_picture_tag);
+    }
+    decoder->next_picture_tag = (SchroDecoderTag*) buffer->tag;
+  }
+  buffer->tag = NULL;
+
   schro_unpack_init_with_data (&unpack, buffer->data, buffer->length, 1);
   parse_code = schro_decoder_decode_parse_header(&unpack);
 
@@ -1021,9 +1074,13 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
   }
 
   if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
+    SchroDecoder *decoder = instance->decoder;
 
     if (!instance->have_sequence_header) {
       SCHRO_INFO ("no sequence header -- dropping picture");
+      if (decoder->next_picture_tag)
+        decoder->next_picture_tag->base.free (decoder->next_picture_tag);
+      decoder->next_picture_tag = NULL;
       schro_buffer_unref (buffer);
       return SCHRO_DECODER_OK;
     }
@@ -1084,6 +1141,9 @@ schro_decoder_iterate_picture (SchroDecoderInstance *instance, SchroBuffer *buff
   params = &picture->params;
 
   picture->input_buffer = buffer;
+
+  picture->tag = decoder->next_picture_tag;
+  decoder->next_picture_tag = NULL;
 
   params->num_refs = SCHRO_PARSE_CODE_NUM_REFS(parse_code);
   params->is_lowdelay = SCHRO_PARSE_CODE_IS_LOW_DELAY(parse_code);

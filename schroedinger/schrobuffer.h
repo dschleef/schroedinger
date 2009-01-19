@@ -20,6 +20,8 @@ struct _SchroBuffer
 
   void (*free) (SchroBuffer *, void *);
   void *priv;
+
+  SchroTag* tag;
 };
 
 SchroBuffer *schro_buffer_new (void);

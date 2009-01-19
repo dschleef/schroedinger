@@ -232,8 +232,9 @@ schro_buflist_flush (SchroBufferList *buflist, unsigned amount)
 SchroBuffer *
 schro_buflist_extract (SchroBufferList *buflist, unsigned start, unsigned len)
 {
-  SchroBuffer *buf;
-  unsigned start_orig = start;
+  SchroBuffer *buf, *dst;
+  SchroTag *tag = NULL;
+  unsigned pos = start;
   int bufidx;
   uint8_t tmp;
 
@@ -249,19 +250,57 @@ schro_buflist_extract (SchroBufferList *buflist, unsigned start, unsigned len)
   }
   /* guaranteed that the range is wholly contained within buflist */
 
-  bufidx = schro_buflist_internal_seek(buflist, &start);
+  bufidx = schro_buflist_internal_seek(buflist, &pos);
   SCHRO_ASSERT(bufidx < buflist->list->n);
 
   buf = buflist->list->members[bufidx];
 
-  if (start + len <= buf->length) {
-    /* Special case, if the requested range is contained within a single
-     * buffer, then use a subbuffer */
-    return schro_buffer_new_subbuffer (buf, start, len);
+  /* Semantics for private void* in buffers in a bufferlist:
+   *  - Shall be associated with the next dataunit to commence after (or at)
+   *    the start of the buffer in the bufferist.
+   *  - May only be extracted once.
+   *  - If multiple void* could apply to the next dataunit, behaviour is undefined
+   *    NB: this implementation will discard all but the first.
+   *  - Ownership of the tag is transfered to the output buffer
+   */
+  if (buflist->tag) {
+    /* take a previously discovered tag */
+    tag = buflist->tag;
+    buflist->tag = NULL;
+  } else {
+    /* fall back and try to take from the buffer */
+    tag = buf->tag;
+    buf->tag = NULL;
   }
 
-  buf = schro_buffer_new_and_alloc (len);
-  schro_buflist_peekbytes (buf->data, len, buflist, start_orig);
+  if (pos + len <= buf->length) {
+    /* Special case, if the requested range is contained within a single
+     * buffer, then use a subbuffer */
+    dst = schro_buffer_new_subbuffer (buf, pos, len);
+    dst->tag = tag;
+    return dst;
+  }
 
-  return buf;
+  /* dataunit spans multiple buffers */
+  dst = schro_buffer_new_and_alloc (len);
+  dst->tag = tag;
+  schro_buflist_peekbytes (dst->data, len, buflist, start);
+
+  /* sort out rescuing the first tag that was in the extracted
+   * region and saving it ready for extraction at start+len. */
+  len += pos;
+  for (pos = 0; pos < len;)
+  {
+    buf = buflist->list->members[bufidx];
+    if (!tag) {
+      /* find the first non null tag we come across, take it,
+       * and store in internal state */
+      buflist->tag = buf->tag;
+      buf->tag = NULL;
+    }
+    pos += buf->length;
+    bufidx++;
+  }
+
+  return dst;
 }
