@@ -231,7 +231,7 @@ schro_picture_new (SchroDecoder *decoder)
   picture_height = schro_video_format_get_picture_height (video_format);
 
   schro_video_format_get_iwt_alloc_size (video_format, &iwt_width,
-      &iwt_height);
+      &iwt_height, SCHRO_LIMIT_TRANSFORM_DEPTH);
 
   if (decoder->use_cuda) {
     picture->transform_frame = schro_frame_new_and_alloc (decoder->cpu_domain,

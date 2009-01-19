@@ -1577,7 +1577,7 @@ schro_encoder_encode_picture (SchroAsyncStage *stage)
   frame->output_buffer = schro_buffer_new_and_alloc (frame->output_buffer_size);
 
   schro_video_format_get_iwt_alloc_size (&frame->encoder->video_format,
-      &width, &height);
+      &width, &height, frame->encoder->transform_depth);
   frame->subband_size = width * height / 4;
   frame->subband_buffer = schro_buffer_new_and_alloc (frame->subband_size * sizeof(int16_t));
 
@@ -2956,7 +2956,7 @@ schro_encoder_frame_new (SchroEncoder *encoder)
       encoder->video_format.chroma_format);
 
   schro_video_format_get_iwt_alloc_size (&encoder->video_format,
-      &iwt_width, &iwt_height);
+      &iwt_width, &iwt_height, encoder->transform_depth);
   encoder_frame->iwt_frame = schro_frame_new_and_alloc (NULL, frame_format,
       iwt_width, iwt_height);
   encoder_frame->quant_frame = schro_frame_new_and_alloc (NULL, frame_format,

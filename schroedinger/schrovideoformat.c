@@ -654,7 +654,7 @@ schro_video_format_get_picture_chroma_size (SchroVideoFormat *format,
 
 void
 schro_video_format_get_iwt_alloc_size (SchroVideoFormat *format,
-    int *width, int *height)
+    int *width, int *height, int transform_depth)
 {
   int picture_chroma_width;
   int picture_chroma_height;
@@ -663,9 +663,9 @@ schro_video_format_get_iwt_alloc_size (SchroVideoFormat *format,
       &picture_chroma_height);
 
   picture_chroma_width = ROUND_UP_POW2(picture_chroma_width,
-      SCHRO_LIMIT_TRANSFORM_DEPTH);
+      transform_depth);
   picture_chroma_height = ROUND_UP_POW2(picture_chroma_height,
-      SCHRO_LIMIT_TRANSFORM_DEPTH);
+      transform_depth);
 
   *width = picture_chroma_width <<
     SCHRO_CHROMA_FORMAT_H_SHIFT(format->chroma_format);
