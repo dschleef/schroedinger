@@ -706,7 +706,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
   if (decoder->parse_code == SCHRO_PARSE_CODE_SEQUENCE_HEADER) {
     int ret;
 
-    SCHRO_INFO ("decoding access unit");
+    SCHRO_INFO ("decoding sequence header");
     if (!decoder->have_sequence_header) {
       schro_decoder_parse_sequence_header(decoder);
       decoder->have_sequence_header = TRUE;
@@ -718,7 +718,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
             decoder->sequence_header_buffer)) {
         ret = SCHRO_DECODER_OK;
       } else {
-        schro_decoder_error (decoder, "access unit changed");
+        schro_decoder_error (decoder, "sequence header changed");
         ret = SCHRO_DECODER_ERROR;
       }
     }
@@ -760,7 +760,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
   if (SCHRO_PARSE_CODE_IS_PICTURE(decoder->parse_code)) {
 
     if (!decoder->have_sequence_header) {
-      SCHRO_INFO ("no access unit -- dropping picture");
+      SCHRO_INFO ("no sequence header -- dropping picture");
       schro_buffer_unref (buffer);
       return SCHRO_DECODER_OK;
     }
@@ -799,7 +799,7 @@ schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer)
 
   if (!decoder->have_frame_number) {
     if (params->num_refs > 0) {
-      SCHRO_ERROR("expected I frame after access unit header");
+      SCHRO_ERROR("expected I frame after sequence header");
     }
     decoder->next_frame_number = decoder->picture->picture_number;
     decoder->have_frame_number = TRUE;
@@ -1462,7 +1462,7 @@ schro_decoder_parse_sequence_header (SchroDecoder *decoder)
   SchroVideoFormat *format = &decoder->video_format;
   SchroUnpack *unpack = &decoder->unpack;
 
-  SCHRO_DEBUG("decoding access unit");
+  SCHRO_DEBUG("decoding sequence header");
 
   /* parse parameters */
   decoder->major_version = schro_unpack_decode_uint (unpack);
