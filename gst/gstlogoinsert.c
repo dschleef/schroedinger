@@ -59,7 +59,7 @@ struct _GstLogoinsert
   int height;
 
   gchar *data;
-  guint size;
+  gsize size;
   SchroFrame *overlay_frame;
   SchroFrame *ayuv_frame;
   SchroFrame *alpha_frame;
