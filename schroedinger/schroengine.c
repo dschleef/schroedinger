@@ -546,12 +546,14 @@ schro_encoder_init_frame (SchroEncoderFrame *frame)
       frame->need_downsampling = TRUE;
       frame->need_upsampling = (encoder->mv_precision > 0);
       frame->need_average_luma = TRUE;
+      frame->need_extension = TRUE;
       break;
     case SCHRO_ENCODER_GOP_BIREF:
     case SCHRO_ENCODER_GOP_CHAINED_BIREF:
       frame->need_downsampling = TRUE;
       frame->need_upsampling = (encoder->mv_precision > 0);
       frame->need_average_luma = TRUE;
+      frame->need_extension = TRUE;
       break;
   }
 }

@@ -1416,9 +1416,9 @@ schro_encoder_analyse_picture (SchroAsyncStage *stage)
 {
   SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
 
-  frame->filtered_frame = schro_frame_dup_extended (frame->original_frame,
-      32);
-  if (frame->encoder->filtering != 0) {
+  if (frame->encoder->filtering != 0 || frame->need_extension) {
+    frame->filtered_frame = schro_frame_dup_extended (frame->original_frame,
+        32);
     switch (frame->encoder->filtering) {
       case 1:
         schro_frame_filter_cwmN (frame->filtered_frame,
@@ -1436,8 +1436,10 @@ schro_encoder_analyse_picture (SchroAsyncStage *stage)
         schro_frame_filter_adaptive_lowpass (frame->filtered_frame);
         break;
     }
+    schro_frame_mc_edgeextend (frame->filtered_frame);
+  } else {
+    frame->filtered_frame = schro_frame_ref (frame->original_frame);
   }
-  schro_frame_mc_edgeextend (frame->filtered_frame);
 
   if (frame->need_downsampling) {
     schro_encoder_frame_downsample (frame);

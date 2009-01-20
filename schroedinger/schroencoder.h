@@ -93,6 +93,7 @@ struct _SchroEncoderFrame {
   unsigned int expired_reference;
 
   /* Bits telling the engine stages which stuff needs to happen */
+  unsigned int need_extension;
   unsigned int need_downsampling;
   unsigned int need_upsampling;
   unsigned int need_filtering;
