@@ -75,6 +75,12 @@ typedef int SchroCUDAStream;
 #define SCHRO_INTERNAL
 #endif
 
+#if SCHRO_GNUC_PREREQ(3,3)
+#define SCHRO_DEPRECATED __attribute__ ((deprecated))
+#else
+#define SCHRO_DEPRECATED
+#endif
+
 #ifdef __cplusplus
 #define SCHRO_BEGIN_DECLS extern "C" {
 #define SCHRO_END_DECLS }
