@@ -377,7 +377,7 @@ schro_decoder_get_picture_number (SchroDecoder *decoder)
   SchroPicture *picture = NULL;
 
   if (decoder->reorder_queue->n >= decoder->reorder_queue_size ||
-      decoder->coded_order || decoder->flushing) {
+      decoder->flushing) {
     picture = schro_queue_peek (decoder->reorder_queue);
   }
   if (picture)
@@ -466,10 +466,15 @@ schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio)
 void
 schro_decoder_set_picture_order (SchroDecoder *decoder, int order)
 {
+  /* todo: this is the wrong place to set reorder_queue_size,
+   * a future decoder update will extract the reorder_queue_size
+   * from the seqhdr (or profile/level defaults) */
   if (order == SCHRO_DECODER_PICTURE_ORDER_CODED) {
     decoder->coded_order = TRUE;
+    decoder->reorder_queue_size = 1;
   } else {
     decoder->coded_order = FALSE;
+    decoder->reorder_queue_size = 2+1;
   }
 }
 
@@ -481,7 +486,7 @@ schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
   /* Not possible to pull from the RoB if not full */
   /* NB, schro's RoB implementation can be larger than the spec */
   if (decoder->reorder_queue->n >= decoder->reorder_queue_size ||
-      decoder->coded_order || decoder->flushing) {
+      decoder->flushing) {
     picture = schro_queue_peek (decoder->reorder_queue);
   }
 
@@ -644,7 +649,7 @@ schro_decoder_dump (SchroDecoder *decoder)
         0 /*picture->working*/);
   }
   if (decoder->reorder_queue->n >= decoder->reorder_queue_size ||
-      decoder->coded_order || decoder->flushing) {
+      decoder->flushing) {
     SCHRO_ERROR("next_picture_number %d", schro_decoder_get_picture_number (decoder));
   } else {
     SCHRO_ERROR("reorder_queue too empty to determine next_picture_number: "
@@ -869,11 +874,7 @@ schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer, Schro
 
   schro_async_lock (decoder->async);
   SCHRO_DEBUG("adding %d to queue", picture->picture_number);
-  if (!decoder->coded_order) {
-    schro_picturequeue_rob_insert (decoder->reorder_queue, picture, decoder->reorder_queue_size);
-  } else {
-    schro_queue_add (decoder->reorder_queue, picture, picture->picture_number);
-  }
+  schro_picturequeue_rob_insert (decoder->reorder_queue, picture, decoder->reorder_queue_size);
   schro_async_signal_scheduler (decoder->async);
   schro_async_unlock (decoder->async);
 
