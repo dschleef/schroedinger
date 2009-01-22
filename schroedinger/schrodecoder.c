@@ -91,7 +91,7 @@ static void schro_decoder_picture_complete (SchroAsyncStage *stage);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
-static void schro_picturequeue_rob_insert (SchroQueue *queue, SchroPicture *pic);
+static void schro_picturequeue_rob_insert (SchroQueue *queue, SchroPicture *picture, unsigned windowsize);
 static int schro_picture_n_before_m (SchroPictureNumber n, SchroPictureNumber m);
 
 /* API */
@@ -870,7 +870,7 @@ schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer, Schro
   schro_async_lock (decoder->async);
   SCHRO_DEBUG("adding %d to queue", picture->picture_number);
   if (!decoder->coded_order) {
-    schro_picturequeue_rob_insert (decoder->reorder_queue, picture);
+    schro_picturequeue_rob_insert (decoder->reorder_queue, picture, decoder->reorder_queue_size);
   } else {
     schro_queue_add (decoder->reorder_queue, picture, picture->picture_number);
   }
@@ -2772,14 +2772,21 @@ schro_picture_n_before_m (SchroPictureNumber n, SchroPictureNumber m)
 
 /* model the reorder buffer */
 static void
-schro_picturequeue_rob_insert (SchroQueue *queue, SchroPicture *picture)
+schro_picturequeue_rob_insert (SchroQueue *queue, SchroPicture *picture, unsigned windowsize)
 {
-  int i;
+  /* the implemented reorder buffer may be larger than signalled in the stream
+   * to fix this, window the insertion sort to work on upto the last @windowsize@
+   * elements. */
+  /* NB, a window size of 1 implies coded_order */
+  int i = queue->n + 1 - windowsize;
 
   SCHRO_ASSERT (queue->n < queue->size);
 
+  if (i < 0)
+    i = 0;
+
   /* find the position to insert before. */
-  for(i=0;i<queue->n;i++){
+  for(;i<queue->n;i++){
     if (schro_picture_n_before_m (picture->picture_number, queue->elements[i].picture_number)) {
       break;
     }
