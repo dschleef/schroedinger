@@ -16,6 +16,7 @@ void schro_virt_frame_render_line (SchroFrame *frame, void *dest,
 
 void schro_virt_frame_render (SchroFrame *frame, SchroFrame *dest);
 
+#if 0
 SchroFrame *schro_virt_frame_new_horiz_downsample (SchroFrame *vf, int cosite);
 SchroFrame *schro_virt_frame_new_vert_downsample (SchroFrame *vf, int cosite);
 SchroFrame *schro_virt_frame_new_vert_resample (SchroFrame *vf, int height);
@@ -29,6 +30,7 @@ SchroFrame *schro_virt_frame_new_pack_v210 (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_RGB (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_color_matrix (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format);
+#endif
 
 SchroFrame *schro_virt_frame_new_horiz_downsample_take (SchroFrame *vf, int cosite);
 SchroFrame *schro_virt_frame_new_vert_downsample_take (SchroFrame *vf, int cosite);
