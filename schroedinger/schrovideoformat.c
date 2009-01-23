@@ -38,6 +38,45 @@ schro_video_format_validate (SchroVideoFormat *format)
 }
 
 int
+schro_video_format_compare_new_sequence (SchroVideoFormat *a, SchroVideoFormat *b)
+{
+  if (a->index != b->index ||
+      a->width != b->width ||
+      a->height != b->height ||
+      a->chroma_format != b->chroma_format ||
+      a->interlaced != b->interlaced ||
+      a->top_field_first != b->top_field_first ||
+      a->frame_rate_numerator != b->frame_rate_numerator ||
+      a->frame_rate_denominator != b->frame_rate_denominator ||
+      a->aspect_ratio_numerator != b->aspect_ratio_numerator ||
+      a->aspect_ratio_denominator != b->aspect_ratio_denominator ||
+      a->clean_width != b->clean_width ||
+      a->clean_height != b->clean_height ||
+      a->left_offset != b->left_offset ||
+      a->top_offset != b->top_offset ||
+      a->luma_offset != b->luma_offset ||
+      a->luma_excursion != b->luma_excursion ||
+      a->chroma_offset != b->chroma_offset ||
+      a->chroma_excursion != b->chroma_excursion ||
+      a->colour_primaries != b->colour_primaries ||
+      a->colour_matrix != b->colour_matrix ||
+      a->transfer_function != b->transfer_function) {
+    return FALSE;
+  }
+  return TRUE;
+}
+
+int
+schro_video_format_compare (SchroVideoFormat *a, SchroVideoFormat *b)
+{
+  if (!schro_video_format_compare_new_sequence (a, b) ||
+      a->interlaced_coding != b->interlaced_coding) {
+    return FALSE;
+  }
+  return TRUE;
+}
+
+int
 schro_video_format_get_bit_depth (SchroVideoFormat *format)
 {
   int max;

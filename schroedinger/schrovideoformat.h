@@ -72,6 +72,8 @@ void schro_video_format_get_iwt_alloc_size (SchroVideoFormat *format,
 int schro_video_format_get_bit_depth (SchroVideoFormat *format);
 schro_bool schro_video_format_check_MP_DL (SchroVideoFormat *format);
 schro_bool schro_video_format_check_VC2_DL (SchroVideoFormat *format);
+int schro_video_format_compare_new_sequence (SchroVideoFormat *a, SchroVideoFormat *b);
+int schro_video_format_compare (SchroVideoFormat *a, SchroVideoFormat *b);
 
 #endif
 
