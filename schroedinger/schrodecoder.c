@@ -345,6 +345,7 @@ schro_decoder_reset (SchroDecoder *decoder)
   decoder->next_frame_number = 0;
   decoder->have_frame_number = FALSE;
 
+  decoder->first_sequence_header = FALSE;
   decoder->end_of_stream = FALSE;
   decoder->flushing = FALSE;
   schro_async_unlock (decoder->async);
@@ -606,6 +607,11 @@ schro_decoder_need_output_frame (SchroDecoder *decoder)
 static int
 schro_decoder_get_status_locked (SchroDecoder *decoder)
 {
+  /* NB, this function should be `pure' (no sideeffects),
+   * since it is called in a context which should not update state */
+  if (decoder->first_sequence_header) {
+    return SCHRO_DECODER_FIRST_ACCESS_UNIT;
+  }
   if (schro_decoder_pull_is_ready_locked (decoder)) {
     return SCHRO_DECODER_OK;
   }
@@ -689,8 +695,17 @@ schro_decoder_wait (SchroDecoder *decoder)
   schro_async_lock (decoder->async);
   while (1) {
     ret = schro_decoder_get_status_locked (decoder);
-    if (ret != SCHRO_DECODER_WAIT) {
-      break;
+    switch (ret) {
+      default:
+        goto cleanup;
+
+      case SCHRO_DECODER_FIRST_ACCESS_UNIT:
+        /* clean up state for next iteration */
+        decoder->first_sequence_header = FALSE;
+        goto cleanup;
+
+      case SCHRO_DECODER_WAIT:
+        break;
     }
 
     ret = schro_async_wait_locked (decoder->async);
@@ -702,6 +717,7 @@ schro_decoder_wait (SchroDecoder *decoder)
       //SCHRO_ASSERT(0);
     }
   }
+cleanup:
   schro_async_unlock (decoder->async);
 
   return ret;
@@ -750,6 +766,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
     if (!decoder->have_sequence_header) {
       schro_decoder_parse_sequence_header(decoder, &unpack);
       decoder->have_sequence_header = TRUE;
+      decoder->first_sequence_header = TRUE;
       decoder->sequence_header_buffer = schro_buffer_dup (buffer);
 
       ret = SCHRO_DECODER_FIRST_ACCESS_UNIT;

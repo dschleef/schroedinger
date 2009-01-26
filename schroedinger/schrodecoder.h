@@ -63,6 +63,7 @@ struct _SchroDecoder {
 
   SchroPictureNumber earliest_frame;
 
+  int first_sequence_header;
   int have_sequence_header;
   SchroBuffer *sequence_header_buffer;
   int have_frame_number;
