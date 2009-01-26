@@ -17,6 +17,7 @@
 SCHRO_BEGIN_DECLS
 
 typedef struct _SchroDecoder SchroDecoder;
+typedef struct _SchroDecoderInstance SchroDecoderInstance;
 typedef struct _SchroPicture SchroPicture;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
@@ -29,22 +30,43 @@ typedef struct _SchroOpenGL SchroOpenGL;
 struct _SchroDecoder {
   /*< private >*/
 
-  /* the list of reference pictures */
-  SchroQueue *reference_queue;
-
-  /* a list of frames provided by the app that we'll decode into */
-  SchroQueue *output_queue;
-
   SchroMemoryDomain *cpu_domain;
   SchroMemoryDomain *cuda_domain;
   SchroMemoryDomain *opengl_domain;
+
   SchroAsync *async;
+
   int use_cuda;
   SchroOpenGL *opengl;
   int use_opengl;
 
+  double skip_value;
+  double skip_ratio;
+
+  /* output pictures in coded order */
+  int coded_order;
+
+  int error;
+  char *error_message;
+
   SchroBufferList *input_buflist;
   SchroParseSyncState *sps;
+
+  SchroDecoderInstance *instance;
+};
+
+struct _SchroDecoderInstance {
+  /*< private >*/
+
+  /* the decoder this sequence instance belongs to */
+  SchroDecoder *decoder;
+
+  /* the list of reference pictures */
+  SchroQueue *reference_queue;
+
+  /* a list of frames provided by the app that we'll decode into */
+  /* xxx: maybe this belongs in Decoder and not per instance */
+  SchroQueue *output_queue;
 
   SchroPictureNumber next_frame_number;
 
@@ -59,20 +81,11 @@ struct _SchroDecoder {
 
   int end_of_stream;
   int flushing;
-  int coded_order;
-
-  SchroPictureNumber earliest_frame;
 
   int first_sequence_header;
   int have_sequence_header;
   SchroBuffer *sequence_header_buffer;
   int have_frame_number;
-
-  double skip_value;
-  double skip_ratio;
-
-  int error;
-  char *error_message;
 
   int has_md5;
   uint8_t md5_checksum[32];
@@ -81,7 +94,7 @@ struct _SchroDecoder {
 struct _SchroPicture {
   int refcount;
 
-  SchroDecoder *decoder;
+  SchroDecoderInstance *decoder_instance;
 
   int busy;
   int skip;
@@ -166,18 +179,18 @@ int schro_decoder_autoparse_wait (SchroDecoder *decoder);
 int schro_decoder_autoparse_push (SchroDecoder *decoder, SchroBuffer *buffer);
 
 int schro_decoder_decode_parse_header (SchroUnpack *unpack);
-void schro_decoder_parse_sequence_header (SchroDecoder *decoder, SchroUnpack *unpack);
+void schro_decoder_parse_sequence_header (SchroDecoderInstance *instance, SchroUnpack *unpack);
 int schro_decoder_compare_sequence_header_buffer (SchroBuffer *a, SchroBuffer *b);
 
 void schro_decoder_subband_dc_predict (SchroFrameData *fd);
 
 /* SchroPicture */
 
-SchroPicture * schro_picture_new (SchroDecoder *decoder);
+SchroPicture * schro_picture_new (SchroDecoderInstance *instance);
 SchroPicture * schro_picture_ref (SchroPicture *picture);
 void schro_picture_unref (SchroPicture *picture);
 
-int schro_decoder_iterate_picture (SchroDecoder *decoder, SchroBuffer *buffer, SchroUnpack *unpack, int parse_code);
+int schro_decoder_iterate_picture (SchroDecoderInstance *instance, SchroBuffer *buffer, SchroUnpack *unpack, int parse_code);
 void schro_decoder_parse_picture (SchroPicture *picture, SchroUnpack *unpack);
 void schro_decoder_parse_picture_header (SchroPicture *picture, SchroUnpack *unpack);
 void schro_decoder_parse_picture_prediction_parameters (SchroPicture *picture, SchroUnpack *unpack);
