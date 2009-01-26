@@ -11,6 +11,8 @@
 #include <schroedinger/schroqueue.h>
 #include <schroedinger/schroasync.h>
 #include <schroedinger/schroarith.h>
+#include <schroedinger/schrobufferlist.h>
+#include <schroedinger/schroparse.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -40,6 +42,9 @@ struct _SchroDecoder {
   int use_cuda;
   SchroOpenGL *opengl;
   int use_opengl;
+
+  SchroBufferList *input_buflist;
+  SchroParseSyncState *sps;
 
   SchroPictureNumber next_frame_number;
 
@@ -155,6 +160,8 @@ SchroPictureNumber schro_decoder_get_picture_number (SchroDecoder *decoder);
 int schro_decoder_need_output_frame (SchroDecoder *decoder);
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
+
+int schro_decoder_autoparse_push (SchroDecoder *decoder, SchroBuffer *buffer);
 
 int schro_decoder_decode_parse_header (SchroUnpack *unpack);
 void schro_decoder_parse_sequence_header (SchroDecoder *decoder, SchroUnpack *unpack);

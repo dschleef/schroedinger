@@ -116,6 +116,9 @@ schro_decoder_new (void)
   decoder->skip_value = 1.0;
   decoder->skip_ratio = 1.0;
 
+  decoder->input_buflist = schro_buflist_new ();
+  decoder->sps = schro_parse_sync_new ();
+
   decoder->reference_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_picture_unref);
   decoder->output_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
@@ -179,6 +182,9 @@ schro_decoder_free (SchroDecoder *decoder)
   schro_queue_free (decoder->output_queue);
   schro_queue_free (decoder->reference_queue);
   schro_queue_free (decoder->reorder_queue);
+
+  schro_buflist_free (decoder->input_buflist);
+  schro_parse_sync_free (decoder->sps);
 
   if (decoder->error_message) schro_free (decoder->error_message);
 
@@ -329,6 +335,13 @@ schro_decoder_reset (SchroDecoder *decoder)
   schro_queue_clear (decoder->output_queue);
 
   decoder->have_sequence_header = FALSE;
+
+  schro_buflist_free (decoder->input_buflist);
+  decoder->input_buflist = schro_buflist_new ();
+
+  schro_parse_sync_free (decoder->sps);
+  decoder->sps = schro_parse_sync_new ();
+
   decoder->next_frame_number = 0;
   decoder->have_frame_number = FALSE;
 
@@ -797,6 +810,35 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
 
   schro_buffer_unref (buffer);
   return SCHRO_DECODER_ERROR;
+}
+
+/**
+ * schro_decoder_autoparse_push:
+ *
+ * Appends @buffer@ to the internal input queue, extracting work
+ * units as necessary.  There are no alignment constraints on the
+ * contents of @buffer@; it is not required to be data unit aligned,
+ * nor contain a single whole data unit.
+ *
+ * Returns: SCHRO_DECODER_OK
+ */
+int
+schro_decoder_autoparse_push (SchroDecoder *decoder, SchroBuffer *buffer)
+{
+  /* 1. buffer is added to the decoder input queue.
+   * 2. The synchronizer extracts (if possible) a data unit for parsing */
+  if (buffer)
+    schro_buflist_append (decoder->input_buflist, buffer);
+
+  while (schro_decoder_push_ready (decoder)) {
+    buffer = schro_parse_sync (decoder->sps, decoder->input_buflist);
+    if (!buffer)
+      return SCHRO_DECODER_OK;
+
+    schro_decoder_push (decoder, buffer);
+  }
+
+  return SCHRO_DECODER_OK;
 }
 
 int
