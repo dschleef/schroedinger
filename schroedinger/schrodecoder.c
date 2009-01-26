@@ -677,10 +677,12 @@ schro_decoder_push_ready (SchroDecoder *decoder)
   while (instance->next) instance = instance->next;
 
   schro_async_lock (decoder->async);
-  ret = schro_queue_is_full (decoder->instance->reorder_queue);
+  /* may not push more data if the decoder is flushing:
+   *   This occurs when an EOS is pushed and no new sequence is prepared */
+  ret = !instance->flushing && !schro_queue_is_full (decoder->instance->reorder_queue);
   schro_async_unlock (decoder->async);
 
-  return (ret == FALSE);
+  return ret;
 }
 
 static int
