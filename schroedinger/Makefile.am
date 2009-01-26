@@ -11,6 +11,11 @@ pkgincludedir = $(includedir)/schroedinger-@SCHRO_MAJORMINOR@/schroedinger
 
 lib_LTLIBRARIES = libschroedinger-@SCHRO_MAJORMINOR@.la
 
+BUILT_SOURCES = \
+	schroversion.h
+
+DISTCLEANFILES = schroversion.h
+
 EXTRA_DIST = schroarith-i386.c \
 	schroasync-none.c \
 	schroasync-pthread.c \
@@ -54,6 +59,9 @@ pkginclude_HEADERS = \
 	schrowavelet.h \
 	schrobitstream.h \
 	schromotion.h
+
+nodist_pkginclude_HEADERS = \
+	schroversion.h
 
 noinst_HEADERS = \
 	schrooil.h \

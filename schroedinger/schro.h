@@ -26,6 +26,7 @@
 #include <schroedinger/schrowavelet.h>
 #include <schroedinger/schrometric.h>
 #include <schroedinger/schroutils.h>
+#include <schroedinger/schroversion.h>
 
 SCHRO_BEGIN_DECLS
 
