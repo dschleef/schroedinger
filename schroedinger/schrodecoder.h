@@ -162,6 +162,7 @@ int schro_decoder_need_output_frame (SchroDecoder *decoder);
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
+int schro_decoder_autoparse_wait (SchroDecoder *decoder);
 int schro_decoder_autoparse_push (SchroDecoder *decoder, SchroBuffer *buffer);
 
 int schro_decoder_decode_parse_header (SchroUnpack *unpack);

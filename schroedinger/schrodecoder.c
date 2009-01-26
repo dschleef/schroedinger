@@ -723,6 +723,40 @@ cleanup:
   return ret;
 }
 
+/**
+ * schro_decoder_autoparse_wait:
+ * @decoder: a decoder object
+ *
+ * Waits until the decoder requires the application to do something,
+ * e.g., push more data or remove a frame from the picture queue,
+ * and then returns the decoder status.
+ *
+ * When using @schro_decoder_autoparse_push, this function should
+ * be used instead of @schro_decoder_wait.
+ *
+ * Returns: decoder status
+ */
+int
+schro_decoder_autoparse_wait (SchroDecoder *decoder)
+{
+  while (1) {
+    int ret = schro_decoder_wait (decoder);
+    switch (ret) {
+    default:
+      return ret;
+    case SCHRO_DECODER_NEED_BITS:
+      /* see if there is anything sitting in the input_buflist
+       * before requesting more data */
+      /* xxx, it would be good if this were moved to an idle thread */
+      ret = schro_decoder_autoparse_push (decoder, NULL);
+      if (ret == SCHRO_DECODER_NEED_BITS) {
+        return ret;
+      }
+      break;
+    }
+  }
+}
+
 int
 schro_decoder_push_end_of_stream (SchroDecoder *decoder)
 {
@@ -837,7 +871,10 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
  * contents of @buffer@; it is not required to be data unit aligned,
  * nor contain a single whole data unit.
  *
- * Returns: SCHRO_DECODER_OK
+ * Returns: if decoder ready for more data, but insufficient input buffer:
+ *          SCHRO_DECODER_NEED_BITS
+ *
+ *          otherwise SCHRO_DECODER_OK
  */
 int
 schro_decoder_autoparse_push (SchroDecoder *decoder, SchroBuffer *buffer)
@@ -850,7 +887,7 @@ schro_decoder_autoparse_push (SchroDecoder *decoder, SchroBuffer *buffer)
   while (schro_decoder_push_ready (decoder)) {
     buffer = schro_parse_sync (decoder->sps, decoder->input_buflist);
     if (!buffer)
-      return SCHRO_DECODER_OK;
+      return SCHRO_DECODER_NEED_BITS;
 
     schro_decoder_push (decoder, buffer);
   }
