@@ -176,3 +176,187 @@ schro_parse_decode_sequence_header (uint8_t *data, int length,
   return TRUE;
 }
 
+typedef struct parse_info {
+  uint32_t next_parse_offset;
+  uint32_t prev_parse_offset;
+  uint_least8_t parse_code;
+} parse_info_t;
+
+/**
+ * schro_parse_decode_parseinfo:
+ *
+ * decodes a parse info structure aligned at the start of *@data@,
+ * of maximal length @length@, storing the results in *@pi@.
+ *
+ * Returns 0 if decoding is unsuccessful; 1 on success
+ */
+int
+schro_parse_decode_parseinfo (uint8_t *data, unsigned length, parse_info_t *pi)
+{
+  if (length < 13) {
+    return 0;
+  }
+
+  if (data[0] != 'B' || data[1] != 'B' || data[2] != 'C' || data[3] != 'D') {
+    return 0;
+  }
+
+  pi->parse_code = data[4];
+  pi->next_parse_offset = data[5] << 24 | data[6] << 16 | data[7] << 8 | data[8];
+  pi->prev_parse_offset = data[9] << 24 | data[10] << 16 | data[11] << 8 | data[12];
+  return 1;
+}
+
+struct _SchroParseSyncState
+{
+  /* <private> */
+  int sync_state;
+  unsigned offset;
+  uint32_t last_npo;
+};
+
+enum {
+  NOT_SYNCED = 0,
+  TRY_SYNC,
+  SYNCED,
+  SYNCED_INCOMPLETEDU,
+};
+
+/**
+ * schro_parse_sync_new:
+ *
+ * returns: NULL or pointer to allocated SchroParseSyncState
+ */
+SchroParseSyncState *
+schro_parse_sync_new (void)
+{
+  return schro_malloc0 (sizeof(SchroParseSyncState));
+}
+
+/**
+ * schro_parse_sync_free:
+ *
+ * release storage for an allocated SchroParseSyncState
+ */
+void
+schro_parse_sync_free (SchroParseSyncState *sps)
+{
+  schro_free (sps);
+}
+
+/**
+ * schro_parse_sync:
+ *
+ * Synchronises to and extracts single data units from @buflist@.
+ * Synchronisation state is updated through @sps@.
+ *
+ * Returns: NULL if no data unit may be extracted; or pointer to
+ *          SchroBuffer containing a single data unit.
+ */
+SchroBuffer *
+schro_parse_sync (SchroParseSyncState *sps, SchroBufferList *buflist)
+{
+  uint8_t tmp[13];
+  const uint8_t *parse_code_prefix = (const uint8_t*)"BBCD";
+  parse_info_t pu = {0};
+  SchroBuffer *du;
+
+  do {
+    switch (sps->sync_state) {
+    case NOT_SYNCED: { /* -> TRY_SYNC | NOT_SYNCED */
+      /* find start code (offset), stop so as to include a whole PI */
+      int found = schro_buflist_findbytes (buflist, &sps->offset, parse_code_prefix, 4);
+      /* xxx, worth flushing upto this point, although that is
+       * quite complicated. */
+      if (!found) {
+        return NULL;
+      }
+      /* protect the case where there aren't 9 more bytes after end of
+       * parse_code_prefix: offset + 12 = last byte of parse_info */
+      if (!schro_buflist_peekbytes (tmp, 1, buflist, sps->offset+12)) {
+        return NULL;
+      }
+      /* found, fall through */
+    }
+    case TRY_SYNC: { /* -> SYNCED | NOT_SYNCED */
+      parse_info_t pu1;
+      /* NB, we are guaranteed that reading 13 bytes from sps->offset will
+       * succeed, since NOT_SYNCED will not advance to this point if not */
+      schro_buflist_peekbytes (tmp, 13, buflist, sps->offset);
+      if (!schro_parse_decode_parseinfo (tmp, 13, &pu1)) {
+        goto try_sync_fail;
+      }
+      /* Check that prev_parse_offset doesn't reference something not yet seen */
+      if (sps->offset < pu1.prev_parse_offset) {
+        goto try_sync_fail;
+      }
+      /* NB, guaranteed that there are 13 bytes avaliable */
+      schro_buflist_peekbytes (tmp, 13, buflist, sps->offset - pu1.prev_parse_offset);
+      if (!schro_parse_decode_parseinfo (tmp, 13, &pu)) {
+        goto try_sync_fail;
+      }
+      if (pu1.prev_parse_offset != pu.next_parse_offset) {
+try_sync_fail:
+        sps->sync_state = NOT_SYNCED;
+        sps->offset++;
+        /* find somewhere else to try again */
+        break;
+      }
+      sps->last_npo = pu.next_parse_offset;
+      /* offset was pointing at pu1, rewind to point at pu */
+      sps->offset -= pu.next_parse_offset;
+      sps->sync_state = SYNCED;
+      break;
+    }
+    case SYNCED: { /* -> SYNCED | SYNCED_INCOMPLETEDU | NOT_SYNCED */
+      int a;
+      if (schro_buflist_peekbytes (tmp, 13, buflist, sps->offset) < 13)
+        return NULL;
+      a = schro_parse_decode_parseinfo (tmp, 13, &pu);
+      if (!a || (sps->last_npo != pu.prev_parse_offset)) {
+        sps->sync_state = NOT_SYNCED;
+        break;
+      }
+      sps->last_npo = pu.next_parse_offset;
+      sps->sync_state = SYNCED;
+      break;
+    }
+    case SYNCED_INCOMPLETEDU: { /* -> SYNCED */
+      /* NB, this is safe -- to get here we must've already read pu
+       * previously, so no need to check that it is ok again */
+      schro_buflist_peekbytes (tmp, 13, buflist, sps->offset);
+      schro_parse_decode_parseinfo (tmp, 13, &pu);
+      sps->sync_state = SYNCED;
+      /* assume that the DU is complete this time */
+      break;
+    }
+    }
+  } while (NOT_SYNCED == sps->sync_state);
+
+  /*
+   * synced, attempt to extract a data unit
+   */
+
+  /* fixup for case where pu.next_parse_offset = 0 (eg, EOS) */
+  if (!pu.next_parse_offset) {
+    pu.next_parse_offset = 13;
+  }
+
+  /* flush everything upto the DU */
+  schro_buflist_flush (buflist, sps->offset);
+  sps->offset = 0;
+
+  /* try to extract the complete DU */
+  du = schro_buflist_extract(buflist, 0, pu.next_parse_offset);
+  if (!du) {
+    /* the whole DU isn't in the buffer, try again */
+    sps->sync_state = SYNCED_INCOMPLETEDU;
+    return NULL;
+  }
+
+  /* flush everything upto the end of DU */
+  schro_buflist_flush (buflist, pu.next_parse_offset);
+
+  return du;
+}
+
