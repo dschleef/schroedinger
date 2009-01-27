@@ -233,6 +233,7 @@ SchroBuffer *
 schro_buflist_extract (SchroBufferList *buflist, unsigned start, unsigned len)
 {
   SchroBuffer *buf;
+  unsigned start_orig = start;
   int bufidx;
   uint8_t tmp;
 
@@ -260,7 +261,7 @@ schro_buflist_extract (SchroBufferList *buflist, unsigned start, unsigned len)
   }
 
   buf = schro_buffer_new_and_alloc (len);
-  schro_buflist_peekbytes (buf->data, len, buflist, start);
+  schro_buflist_peekbytes (buf->data, len, buflist, start_orig);
 
   return buf;
 }
