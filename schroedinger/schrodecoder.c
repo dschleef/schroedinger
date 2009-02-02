@@ -557,7 +557,9 @@ schro_decoder_get_picture_tag (SchroDecoder *decoder)
 void
 schro_decoder_add_output_picture (SchroDecoder *decoder, SchroFrame *frame)
 {
+  schro_async_lock (decoder->async);
   schro_queue_add (decoder->instance->output_queue, frame, 0);
+  schro_async_unlock (decoder->async);
 }
 
 /**
@@ -1419,6 +1421,7 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
         picture->output_picture = schro_queue_pull (decoder->instance->output_queue);
       }
       if (picture->output_picture) {
+        SCHRO_ASSERT(picture->output_picture->refcount == 1);
         func = schro_decoder_x_combine;
         stage = SCHRO_DECODER_STAGE_COMBINE;
       }
