@@ -736,6 +736,9 @@ schro_decoder_need_output_frame_locked (SchroDecoder *decoder)
   SchroDecoderInstance *instance = decoder->instance;
   int num_frames_in_hand = instance->output_queue->n;
   int i;
+  if (schro_queue_is_full (instance->output_queue)) {
+    return 0;
+  }
   for(i=0; i < instance->reorder_queue->n; i++){
     SchroPicture *picture = instance->reorder_queue->elements[i].data;
     if (!picture->output_picture)
