@@ -819,13 +819,14 @@ schro_decoder_dump (SchroDecoder *decoder)
   SCHRO_ERROR("index, picture_number, busy, state, needed_state, working");
   for(i=0; i < instance->reorder_queue->n; i++){
     SchroPicture *picture = instance->reorder_queue->elements[i].data;
+    int done = 0, needed = 0, j;
+    for(j=0; j <= SCHRO_DECODER_STAGE_DONE; j++) {
+      done |= picture->stages[j].is_done << j;
+      needed |= picture->stages[j].is_needed << j;
+    }
 
-    SCHRO_ERROR("%d: %d %d %04x %04x %04x",
-        i, picture->picture_number,
-        picture->busy,
-        0 /*picture->state */,
-        0 /*picture->needed_state*/,
-        0 /*picture->working*/);
+    SCHRO_ERROR("%d: %d %d %04x %04x -",
+        i, picture->picture_number, picture->busy, done, needed);
   }
   if (instance->reorder_queue->n >= instance->reorder_queue_size ||
       instance->flushing) {
