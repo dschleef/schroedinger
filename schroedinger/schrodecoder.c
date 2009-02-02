@@ -107,8 +107,9 @@ schro_decoder_instance_new (SchroDecoder *decoder)
 
   instance->reference_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
       (SchroQueueFreeFunc)schro_picture_unref);
-  instance->output_queue = schro_queue_new (SCHRO_LIMIT_REFERENCE_FRAMES,
-      (SchroQueueFreeFunc)schro_frame_unref);
+  /* the output queue shouldn't be too large: the output queue may be
+   * a precious resource, no point holding on to loads without reason */
+  instance->output_queue = schro_queue_new (4, (SchroQueueFreeFunc)schro_frame_unref);
 
   /* This value of reorder_queue_size needs to be one greater than
    * any spec derived value, since schro is unable to bypass the
