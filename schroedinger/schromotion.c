@@ -1045,10 +1045,6 @@ schro_motion_verify (SchroMotion *motion)
       mv = &motion->motion_vectors[y*params->x_num_blocks + x];
       sbmv = &motion->motion_vectors[(y&~3)*params->x_num_blocks + (x&~3)];
 
-      SCHRO_DEBUG("verify %d %d: %d %d  %d %d %d %d  %d %d %d %d", x, y, mv->split, mv->pred_mode,
-          mv->using_global, mv->unused, mv->scan, mv->metric,
-          mv->dx[0], mv->dy[0], mv->dx[1], mv->dy[1]);
-
       if (mv->split != sbmv->split) {
         SCHRO_ERROR("mv(%d,%d) has the wrong split", x, y);
         return 0;
