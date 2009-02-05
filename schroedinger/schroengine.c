@@ -604,6 +604,7 @@ schro_encoder_init_frame (SchroEncoderFrame *frame)
       frame->need_downsampling = FALSE;
       frame->need_upsampling = FALSE;
       frame->need_average_luma = FALSE;
+      frame->need_mad = FALSE;
       break;
     case SCHRO_ENCODER_GOP_ADAPTIVE:
     case SCHRO_ENCODER_GOP_BACKREF:
@@ -612,6 +613,7 @@ schro_encoder_init_frame (SchroEncoderFrame *frame)
       frame->need_upsampling = (encoder->mv_precision > 0);
       frame->need_average_luma = TRUE;
       frame->need_extension = TRUE;
+      frame->need_mad = encoder->enable_scene_change_detection;
       break;
     case SCHRO_ENCODER_GOP_BIREF:
     case SCHRO_ENCODER_GOP_CHAINED_BIREF:
@@ -619,6 +621,7 @@ schro_encoder_init_frame (SchroEncoderFrame *frame)
       frame->need_upsampling = (encoder->mv_precision > 0);
       frame->need_average_luma = TRUE;
       frame->need_extension = TRUE;
+      frame->need_mad = encoder->enable_scene_change_detection;
       break;
   }
 }

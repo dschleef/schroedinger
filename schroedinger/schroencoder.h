@@ -30,6 +30,8 @@ typedef enum {
 typedef enum {
   SCHRO_ENCODER_FRAME_STAGE_NEW = 0,
   SCHRO_ENCODER_FRAME_STAGE_ANALYSE,
+  SCHRO_ENCODER_FRAME_STAGE_SC_DETECT_1,
+  SCHRO_ENCODER_FRAME_STAGE_SC_DETECT_2,
   SCHRO_ENCODER_FRAME_STAGE_HAVE_GOP,
   SCHRO_ENCODER_FRAME_STAGE_HAVE_PARAMS,
   SCHRO_ENCODER_FRAME_STAGE_PREDICT_ROUGH,
@@ -98,6 +100,7 @@ struct _SchroEncoderFrame {
   unsigned int need_upsampling;
   unsigned int need_filtering;
   unsigned int need_average_luma;
+  unsigned int need_mad;
 
   /* bits indicating that a particular analysis has happened.  Mainly
    * for verification */
@@ -107,6 +110,7 @@ struct _SchroEncoderFrame {
   unsigned int have_downsampling;
   unsigned int have_upsampling;
   unsigned int have_average_luma;
+  unsigned int have_mad;
 
   SchroAsyncStage stages[SCHRO_ENCODER_FRAME_STAGE_LAST];
 
@@ -121,6 +125,11 @@ struct _SchroEncoderFrame {
   SchroFrame *downsampled_frames[8];
   SchroUpsampledFrame *reconstructed_frame;
   SchroUpsampledFrame *upsampled_original_frame;
+
+  int sc_mad; /* shot change mean absolute difference */
+  double sc_threshold; /* shot change threshold */
+  double sc_mad_score;
+  int sc_mad_available;
 
   SchroBuffer *sequence_header_buffer;
   SchroList *inserted_buffers;
@@ -267,6 +276,7 @@ struct _SchroEncoder {
   schro_bool enable_multiquant;
   schro_bool enable_dc_multiquant;
   schro_bool enable_global_motion;
+  schro_bool enable_scene_change_detection;
   int horiz_slices;
   int vert_slices;
   int codeblock_size;
