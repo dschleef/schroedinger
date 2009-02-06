@@ -701,6 +701,55 @@ median3(int a, int b, int c)
 }
 
 void
+schro_mf_vector_prediction (SchroMotionField* mf,
+    int x, int y, int* pred_x, int* pred_y, int mode)
+{
+  SCHRO_ASSERT(mf && pred_x && pred_y);
+  SCHRO_ASSERT (1 == mode || 2 == mode);
+  int x_num_blocks = mf->x_num_blocks;
+  SchroMotionVector* mv;
+  int vx[3], vy[3], n = 0, ref = mode - 1;
+  if (0<x) {
+    mv = &mf->motion_vectors[y * x_num_blocks + x - 1];
+    vx[n] = mv->u.vec.dx[ref];
+    vy[n] = mv->u.vec.dy[ref];
+    ++n;
+  }
+  if (0<y) {
+    mv = &mf->motion_vectors[(y-1) * x_num_blocks + x];
+    vx[n] = mv->u.vec.dx[ref];
+    vy[n] = mv->u.vec.dy[ref];
+    ++n;
+  }
+  if (0<x && 0<y) {
+    mv = &mf->motion_vectors[(y-1) * x_num_blocks + x - 1];
+    vx[n] = mv->u.vec.dx[ref];
+    vy[n] = mv->u.vec.dy[ref];
+    ++n;
+  }
+  switch(n) {
+    case 0:
+      *pred_x = 0;
+      *pred_y = 0;
+      break;
+    case 1:
+      *pred_x = vx[0];
+      *pred_y = vy[0];
+      break;
+    case 2:
+      *pred_x = (vx[0] + vx[1] + 1)>>1;
+      *pred_y = (vy[0] + vy[1] + 1)>>1;
+      break;
+    case 3:
+      *pred_x = median3(vx[0], vx[1], vx[2]);
+      *pred_y = median3(vy[0], vy[1], vy[2]);
+      break;
+    default:
+      SCHRO_ASSERT(0);
+  }
+}
+
+void
 schro_motion_vector_prediction (SchroMotion *motion,
     int x, int y, int *pred_x, int *pred_y, int mode)
 {
