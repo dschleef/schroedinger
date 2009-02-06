@@ -17,10 +17,12 @@ schro_encoder_frame_downsample (SchroEncoderFrame *frame)
   last = frame->filtered_frame;
   for(i=0;i<frame->encoder->downsample_levels;i++){
     frame->downsampled_frames[i] =
-      schro_frame_new_and_alloc (NULL, frame->filtered_frame->format,
+      schro_frame_new_and_alloc_extended (NULL, frame->filtered_frame->format,
           ROUND_UP_SHIFT(frame->filtered_frame->width, i+1),
-          ROUND_UP_SHIFT(frame->filtered_frame->height, i+1));
+          ROUND_UP_SHIFT(frame->filtered_frame->height, i+1),
+          MAX(frame->params.xbsep_luma, frame->params.ybsep_luma));
     schro_frame_downsample (frame->downsampled_frames[i], last);
+    schro_frame_mc_edgeextend (frame->downsampled_frames[i]);
     last = frame->downsampled_frames[i];
   }
 }
