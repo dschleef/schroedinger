@@ -106,30 +106,43 @@ schro_metric_scan_get_min (SchroMetricScan *scan, int *dx, int *dy)
   return min_metric;
 }
 
+
 void
 schro_metric_scan_setup (SchroMetricScan *scan, int dx, int dy, int dist)
 {
-  int xmin, ymin;
-  int xmax, ymax;
+  int xmin;
+  int xmax;
+  int ymin;
+  int ymax;
+  int xrange;
+  int yrange;
 
-  xmin = scan->x + dx - dist;
-  xmax = scan->x + dx + dist;
-  ymin = scan->y + dy - dist;
-  ymax = scan->y + dy + dist;
+  SCHRO_ASSERT(scan && scan->frame && scan->ref_frame && dist > 0);
 
+  xmin = MAX (-scan->block_width, scan->x + dx - dist);
+  xmax = MIN (scan->frame->width, scan->x + dx + dist);
+  ymin = MAX (-scan->block_height, scan->y + dy - dist);
+  ymax = MIN (scan->frame->height, scan->y + dy + dist);
   xmin = MAX (xmin, -scan->frame->extension);
   ymin = MAX (ymin, -scan->frame->extension);
   xmax = MIN (xmax, scan->frame->width - scan->block_width + scan->frame->extension);
   ymax = MIN (ymax, scan->frame->height - scan->block_height + scan->frame->extension);
 
+  xrange = xmax - xmin;
+  yrange = ymax - ymin;
+
+  /* sets ref_x and ref_y */
   scan->ref_x = xmin;
   scan->ref_y = ymin;
-  scan->scan_width = xmax - xmin + 1;
-  scan->scan_height = ymax - ymin + 1;
+
+  scan->scan_width = xrange + 1;
+  scan->scan_height = yrange + 1;
 
   SCHRO_ASSERT (scan->scan_width <= SCHRO_LIMIT_METRIC_SCAN);
   SCHRO_ASSERT (scan->scan_height <= SCHRO_LIMIT_METRIC_SCAN);
 }
+
+
 
 int
 schro_metric_get (SchroFrameData *src1, SchroFrameData *src2, int width,
