@@ -467,6 +467,7 @@ schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame)
 void
 schro_encoder_push_frame_full (SchroEncoder *encoder, SchroFrame *frame, void *priv)
 {
+  schro_async_lock (encoder->async);
   if (encoder->video_format.interlaced_coding == 0) {
     SchroEncoderFrame *encoder_frame;
     SchroFrameFormat format;
@@ -493,7 +494,6 @@ schro_encoder_push_frame_full (SchroEncoder *encoder, SchroFrame *frame, void *p
 
     encoder_frame->frame_number = encoder->next_frame_number++;
 
-    schro_async_lock (encoder->async);
     if (schro_queue_is_full (encoder->frame_queue)) {
       SCHRO_ERROR("push when queue full");
       SCHRO_ASSERT(0);
@@ -537,7 +537,6 @@ schro_encoder_push_frame_full (SchroEncoder *encoder, SchroFrame *frame, void *p
     encoder_frame1->frame_number = encoder->next_frame_number++;
     encoder_frame2->frame_number = encoder->next_frame_number++;
 
-    schro_async_lock (encoder->async);
     if (schro_queue_slots_available (encoder->frame_queue) < 2) {
       SCHRO_ERROR("push when queue full");
       SCHRO_ASSERT(0);
@@ -1145,6 +1144,7 @@ static void
 schro_encoder_frame_complete (SchroAsyncStage *stage)
 {
   SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
+  int i;
 
   SCHRO_INFO("completing task, picture %d working %02x in state %02x",
       frame->frame_number, frame->working, 0 /*frame->state*/);
@@ -1164,6 +1164,14 @@ schro_encoder_frame_complete (SchroAsyncStage *stage)
       schro_encoder_frame_unref (frame->previous_frame);
       frame->previous_frame = NULL;
     }
+    if (frame->motion) {
+      schro_motion_free (frame->motion);
+      frame->motion = NULL;
+    }
+    if (frame->me) {
+      schro_motionest_free (frame->me);
+      frame->me = NULL;
+    }
     if (frame->ref_frame[0]) {
       schro_encoder_frame_unref (frame->ref_frame[0]);
       frame->ref_frame[0] = NULL;
@@ -1171,6 +1179,27 @@ schro_encoder_frame_complete (SchroAsyncStage *stage)
     if (frame->ref_frame[1]) {
       schro_encoder_frame_unref (frame->ref_frame[1]);
       frame->ref_frame[1] = NULL;
+    }
+
+    if (!frame->is_ref) {
+      for(i=0;i<5;i++){
+        if (frame->downsampled_frames[i]) {
+          schro_frame_unref (frame->downsampled_frames[i]);
+          frame->downsampled_frames[i] = NULL;
+        }
+      }
+    }
+
+    for (i=0; 2>i; ++i) {
+      if (frame->deep_me[i]) {
+        schro_me_free (&frame->deep_me[i]);
+      }
+    }
+
+    for (i=0; 2>i; ++i) {
+      if (frame->hier_bm[i]) {
+        schro_hbm_unref (&frame->hier_bm[i]);
+      }
     }
 
     if (frame->start_sequence_header) {
@@ -1595,10 +1624,32 @@ schro_encoder_predict_pel_picture (SchroAsyncStage *stage)
 void
 schro_encoder_predict_subpel_picture (SchroAsyncStage *stage)
 {
+  SCHRO_ASSERT(stage && stage->priv);
   SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
 
-  if (frame->params.num_refs > 0 && frame->params.mv_precision > 0) {
-    schro_encoder_motion_predict_subpel (frame);
+  if (frame->encoder->enable_bigblock_estimation) {
+    if (frame->params.num_refs > 0 && frame->params.mv_precision > 0) {
+      schro_encoder_motion_predict_subpel (frame);
+    }
+  } else if (frame->encoder->enable_deep_estimation) {
+    SCHRO_ASSERT( ( !(frame->params.num_refs > 0) || frame->hier_bm[0])
+        && ( !(frame->params.num_refs > 1) || frame->hier_bm[1]) );
+    int ref, xnum_blocks, ynum_blocks;
+    SchroMotionField *mf_dest, *mf_src;
+    if (frame->params.num_refs > 0) {
+      xnum_blocks = frame->params.x_num_blocks;
+      ynum_blocks = frame->params.y_num_blocks;
+    for (ref = 0; frame->params.num_refs > ref; ++ref) {
+        mf_dest = schro_motion_field_new (xnum_blocks, ynum_blocks);
+        mf_src = schro_hbm_motion_field (frame->hier_bm[ref], 0);
+        memcpy (mf_dest->motion_vectors, mf_src->motion_vectors
+            , xnum_blocks * ynum_blocks * sizeof (SchroMotionVector));
+        schro_me_set_subpel_mf (frame->deep_me[ref], mf_dest);
+      }
+    }
+    if (frame->params.num_refs > 0 && frame->params.mv_precision > 0) {
+      schro_encoder_motion_predict_subpel_deep (frame);
+    }
   }
 }
 
@@ -1607,16 +1658,24 @@ schro_encoder_predict_subpel_picture (SchroAsyncStage *stage)
 void
 schro_encoder_mode_decision (SchroAsyncStage *stage)
 {
+  SCHRO_ASSERT(stage && stage->priv);
   SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
 
-  SCHRO_ASSERT(frame && frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL].is_done);
+  SCHRO_ASSERT(frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL].is_done);
   SCHRO_INFO("mode decision and superblock splitting picture %d", frame->frame_number);
 
-#if 0
-  if (frame->params.num_refs > 0) {
-    schro_encoder_do_mode_decision (frame);
- }
-#endif
+  SchroMotionField* mf_src;
+  SchroMotionVector* mv_dest;
+
+  if (frame->encoder->enable_deep_estimation) {
+    /* FIXME: temporary solution to lack of proper mode decision */
+    if (0 < frame->params.num_refs) {
+      mf_src = schro_me_subpel_mf (frame->deep_me[0]);
+      mv_dest = frame->motion->motion_vectors;
+      memcpy (mv_dest, mf_src->motion_vectors, mf_src->x_num_blocks
+          * mf_src->y_num_blocks * sizeof (SchroMotionVector));
+    }
+  }
 
   schro_encoder_render_picture (frame);
 }
@@ -3260,6 +3319,9 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
       if (frame->quant_indices[1][i]) schro_free (frame->quant_indices[1][i]);
       if (frame->quant_indices[2][i]) schro_free (frame->quant_indices[2][i]);
     }
+
+    if (frame->deep_me[0]) schro_me_free (&frame->deep_me[0]);
+    if (frame->deep_me[1]) schro_me_free (&frame->deep_me[1]);
 
     schro_free (frame);
   }

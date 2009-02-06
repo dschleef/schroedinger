@@ -114,9 +114,11 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
     }
   }
 
-  if (encoder->enable_bigblock_estimation
-      || encoder->enable_deep_estimation) {
-    frame->me = schro_motionest_new (frame);
+  frame->me = schro_motionest_new (frame);
+  if (encoder->enable_deep_estimation) {
+    for (ref=0; params->num_refs > ref; ++ref) {
+      frame->deep_me[ref] = schro_me_new (frame, ref);
+    }
   }
 
   frame->motion = schro_motion_new (params, NULL, NULL);
@@ -251,15 +253,143 @@ schro_encoder_motion_predict_subpel (SchroEncoderFrame *frame)
     SCHRO_ASSERT(frame->ref_frame[1]->upsampled_original_frame);
   }
 
-  for(j=0;j<params->y_num_blocks;j+=4){
-    for(i=0;i<params->x_num_blocks;i+=4){
-      SchroBlock block = { 0 };
+  if (frame->encoder->enable_deep_estimation) {
+    schro_encoder_motion_predict_subpel_deep (frame);
+  } else if (frame->encoder->enable_bigblock_estimation) {
 
-      schro_motion_copy_from (frame->me->motion, i, j, &block);
-      schro_encoder_motion_refine_block_subpel (frame, &block, i, j);
-      schro_block_fixup (&block);
-      schro_motion_copy_to (frame->me->motion, i, j, &block);
+    for(j=0;j<params->y_num_blocks;j+=4){
+      for(i=0;i<params->x_num_blocks;i+=4){
+        SchroBlock block = { 0 };
+
+        schro_motion_copy_from (frame->me->motion, i, j, &block);
+        schro_encoder_motion_refine_block_subpel (frame, &block, i, j);
+        schro_block_fixup (&block);
+        schro_motion_copy_to (frame->me->motion, i, j, &block);
+      }
     }
+  }
+}
+
+typedef struct {
+  int dx;
+  int dy;
+} MatchPos;
+
+
+void
+schro_encoder_motion_predict_subpel_deep (SchroEncoderFrame *frame)
+{
+  SCHRO_ASSERT(frame && frame->params.mv_precision);
+  SCHRO_ASSERT(frame->upsampled_original_frame
+      && frame->ref_frame[0]->upsampled_original_frame
+      && (!frame->ref_frame[1]
+        || frame->ref_frame[1]->upsampled_original_frame));
+
+  SchroParams* params = &frame->params;
+  double lambda = frame->base_lambda /* frame->frame_me_lambda */;
+  int mvprec = 0, ref;
+  int xblen = params->xbsep_luma, yblen = params->ybsep_luma;
+  int i, j;
+  int x_min, x_max, y_min, y_max;
+  SchroMotionField* mf=NULL;
+  SchroMotionVector* mv;
+  SchroFrameData fd;
+  SchroFrame* orig_frame = get_downsampled (frame, 0);
+  x_min = y_min = -orig_frame->extension;
+
+  if (1 < params->mv_precision) {
+    fd.data = schro_malloc(xblen * yblen * sizeof (uint8_t));
+    fd.stride = xblen;
+    fd.height = yblen;
+    fd.width = xblen;
+    fd.format = SCHRO_FRAME_FORMAT_U8_420;
+
+  }
+
+  MatchPos sp_matches[] =
+  {   {-1, -1}, {0, -1}, {1, -1}
+    , {-1,  0},          {1,  0}
+    , {-1,  1}, {0,  1}, {1,  1}   };
+
+  while (!(params->mv_precision < ++mvprec)) {
+    x_max = (orig_frame->width << mvprec) + orig_frame->extension;
+    y_max = (orig_frame->height << mvprec) + orig_frame->extension;
+    for (ref=0; ref<params->num_refs; ++ref) {
+      SchroUpsampledFrame* upframe =
+        frame->ref_frame[ref]->upsampled_original_frame;
+      mf = schro_me_subpel_mf (frame->deep_me[ref]);
+      for (j=0; params->y_num_blocks > j; ++j) {
+        for (i=0; params->x_num_blocks > i; ++i) {
+          int error, entropy, min_error=SCHRO_METRIC_INVALID, m=-1;
+          double score, min_score=HUGE_VAL;
+          int x, y, k;
+          int dx, dy;
+          int pred_x, pred_y;
+          SchroFrameData orig, ref_data;
+          int width, height;
+
+          mv = &mf->motion_vectors[j*params->x_num_blocks+i];
+
+          /* only process valid MVs */
+          if (SCHRO_METRIC_INVALID == mv->metric) {
+            continue;
+          }
+          /* adjust MV precision */
+          mv->u.vec.dx[ref] <<= 1;
+          mv->u.vec.dy[ref] <<= 1;
+
+          /* calculate score for current MV */
+          schro_mf_vector_prediction (mf, i, j, &pred_x, &pred_y, ref+1);
+          entropy = schro_pack_estimate_sint (mv->u.vec.dx[ref] - pred_x);
+          entropy += schro_pack_estimate_sint (mv->u.vec.dy[ref] - pred_y);
+          min_score = entropy + lambda * mv->metric;
+          /* fetch source data */
+          if (!schro_frame_get_data (orig_frame, &orig, 0
+                , i*xblen, j*yblen)) {
+            continue;
+          }
+          width = MIN(xblen, orig.width);
+          height = MIN(yblen, orig.height);
+          x = i * (xblen << mvprec) + mv->u.vec.dx[ref];
+          y = j * (yblen << mvprec) + mv->u.vec.dy[ref];
+          /* check what matches are valid */
+          for (k=0; sizeof(sp_matches)/sizeof(sp_matches[0]) > k; ++k) {
+            dx = x + sp_matches[k].dx;
+            dy = y + sp_matches[k].dy;
+            if (   !(x_min < dx) || !(x_max > dx + xblen - 1)
+                || !(y_min < dy) || !(y_max > dy + yblen - 1)  ) {
+              continue;
+            }
+            fd.width = width;
+            fd.height = height;
+            schro_upsampled_frame_get_block_fast_precN (upframe, 0, dx, dy
+                , mvprec, &ref_data, &fd);
+            error = schro_metric_absdiff_u8 (orig.data, orig.stride
+                , ref_data.data, ref_data.stride, width, height);
+            /* calculate score */
+            entropy = schro_pack_estimate_sint (mv->u.vec.dx[ref] + sp_matches[k].dx
+                - pred_x);
+            entropy += schro_pack_estimate_sint (mv->u.vec.dy[ref] + sp_matches[k].dy
+                - pred_y);
+            score = entropy + lambda * error;
+            if (min_score > score) {
+              min_score = score;
+              min_error = error;
+              m = k;
+            }
+          }
+          if (-1 != m) {
+            mv->u.vec.dx[ref] += sp_matches[m].dx;
+            mv->u.vec.dy[ref] += sp_matches[m].dy;
+            mv->metric = min_error;
+          }
+        }
+      }
+
+    }
+  }
+  if (1 < params->mv_precision) {
+    schro_free (fd.data);
   }
 }
 
@@ -1403,4 +1533,113 @@ schro_motion_copy_to (SchroMotion *motion, int i, int j, SchroBlock *block)
     }
   }
 }
+
+/* supports motion estimation */
+struct SchroMe {
+  SchroFrame*            src;
+  SchroUpsampledFrame*   ref;
+
+  SchroParams*           params;
+
+  double                 lambda;
+  int                    ref_number;
+
+  SchroMotionField*      subpel_mf;
+  SchroMotionField*      split2_mf;
+  SchroMotionField*      split1_mf;
+  SchroMotionField*      split0_mf;
+
+  SchroHierBm            hbm;
+
+  int                    badblocks;
+};
+
+
+SchroMe
+schro_me_new (SchroEncoderFrame* frame, int ref_number)
+{
+  SCHRO_ASSERT (frame);
+  SchroMe me = schro_malloc0 (sizeof(struct SchroMe));
+  SCHRO_ASSERT (me);
+  me->src = schro_frame_ref (frame->filtered_frame);
+  me->params = &frame->params;
+  /* FIXME: SchroUpsampledFrame is not reference-counted
+   * this object could be deleted without ever knowing about it */
+  me->ref = frame->ref_frame[ref_number]->upsampled_original_frame;
+  me->lambda = frame->base_lambda;
+  me->hbm = schro_hbm_ref (frame->hier_bm[ref_number]);
+  return me;
+}
+
+void
+schro_me_free (SchroMe* pme)
+{
+  SCHRO_ASSERT (pme);
+  SchroMe me = *pme;
+  if (me->src) schro_frame_unref (me->src);
+  if (me->hbm) schro_hbm_unref (&me->hbm);
+  if (me->subpel_mf) schro_motion_field_free (me->subpel_mf);
+  if (me->split0_mf) schro_motion_field_free (me->split0_mf);
+  if (me->split1_mf) schro_motion_field_free (me->split1_mf);
+  if (me->split2_mf) schro_motion_field_free (me->split2_mf);
+  schro_free (me);
+  *pme = NULL;
+}
+
+SchroMotionField*
+schro_me_subpel_mf (SchroMe me)
+{
+  SCHRO_ASSERT (me);
+  return me->subpel_mf;
+}
+
+void
+schro_me_set_subpel_mf (SchroMe me, SchroMotionField* mf)
+{
+  SCHRO_ASSERT (me && mf);
+  me->subpel_mf = mf;
+}
+
+SchroMotionField*
+schro_me_split2_mf (SchroMe me)
+{
+  SCHRO_ASSERT (me);
+  return me->split2_mf;
+}
+
+SchroMotionField*
+schro_me_split1_mf (SchroMe me)
+{
+  SCHRO_ASSERT (me);
+  return me->split1_mf;
+}
+
+SchroMotionField*
+schro_me_split0_mf (SchroMe me)
+{
+  SCHRO_ASSERT (me);
+  return me->split0_mf;
+}
+
+void
+schro_me_set_lambda (SchroMe me, double lambda)
+{
+  SCHRO_ASSERT (me);
+  me->lambda = lambda;
+}
+
+double
+schro_me_lambda (SchroMe me)
+{
+  SCHRO_ASSERT (me);
+  return me->lambda;
+}
+
+SchroParams*
+schro_me_params (SchroMe me)
+{
+  SCHRO_ASSERT (me);
+  return me->params;
+}
+
 

@@ -12,6 +12,8 @@ typedef struct _SchroBlock SchroBlock;
 
 /* supports hierarchical block-matching motion estimation */
 typedef struct SchroHierBm* SchroHierBm;
+/* supports motion estimation */
+typedef struct SchroMe* SchroMe;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
@@ -70,6 +72,7 @@ void schro_encoder_hierarchical_block_matching (SchroEncoderFrame* frame);
 void schro_encoder_motion_predict_rough (SchroEncoderFrame *frame);
 void schro_encoder_motion_predict_pel (SchroEncoderFrame *frame);
 void schro_encoder_motion_predict_subpel (SchroEncoderFrame *frame);
+void schro_encoder_motion_predict_subpel_deep (SchroEncoderFrame* frame);
 
 void schro_encoder_global_estimation (SchroEncoderFrame *frame);
 
@@ -98,7 +101,7 @@ void schro_block_fixup (SchroBlock *block);
 int schro_block_check (SchroBlock *block);
 
 /* SchroHierBm interface */
-SchroHierBm schro_hbm_new ( SchroEncoderFrame* frame, int ref );
+SchroHierBm schro_hbm_new ( SchroEncoderFrame* frame, int ref_number );
 SchroHierBm schro_hbm_ref ( SchroHierBm schro_hbm );
 void schro_hbm_unref ( SchroHierBm* schro_hbm );
 
@@ -107,6 +110,20 @@ void schro_hierarchical_bm_scan_hint ( SchroHierBm schro_hbm, int shift, int h_r
 
 SchroMotionField* schro_hbm_best_mf ( SchroHierBm schro_hbm );
 SchroMotionField* schro_hbm_motion_field ( SchroHierBm schro_hbm, int level);
+
+/* SchroMe interface */
+SchroMe schro_me_new ( SchroEncoderFrame* frame, int ref_number );
+void schro_me_free ( SchroMe* me );
+
+SchroMotionField* schro_me_subpel_mf ( SchroMe me );
+void schro_me_set_subpel_mf ( SchroMe me, SchroMotionField* mf );
+SchroMotionField* shcro_me_split2_mf ( SchroMe me );
+SchroMotionField* schro_me_split1_mf ( SchroMe me );
+SchroMotionField* schro_me_split0_mf ( SchroMe me );
+
+void schro_me_set_lambda ( SchroMe me, double lambda );
+double schro_me_lambda ( SchroMe me );
+SchroParams* schro_me_params ( SchroMe me );
 
 #endif
 
