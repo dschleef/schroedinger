@@ -168,8 +168,14 @@ void schro_upsampled_frame_get_subdata_prec0 (SchroUpsampledFrame *upframe,
 void schro_upsampled_frame_get_subdata_prec1 (SchroUpsampledFrame *upframe,
     int k, int x, int y, SchroFrameData *fd);
 
+/* it extracts a block of data from a frame, if possible */
+int schro_frame_get_data (SchroFrame* frame, SchroFrameData* fd, int comp
+    , int x, int y);
+
 void schro_frame_get_subdata (SchroFrame *frame, SchroFrameData *fd,
         int comp, int x, int y);
+void schro_frame_get_reference_subdata (SchroFrame* frame, SchroFrameData* fd
+    , int comp, int x, int y);
 
 void schro_frame_split_fields (SchroFrame *dest1, SchroFrame *dest2, SchroFrame *src);
 

@@ -1852,6 +1852,29 @@ schro_upsampled_frame_get_pixel_prec0 (SchroUpsampledFrame *upframe, int k,
   return line[x];
 }
 
+int
+schro_frame_get_data (SchroFrame* frame, SchroFrameData* fd, int k
+    , int x, int y)
+{
+  SCHRO_ASSERT(frame && fd && !(0>x) && !(0>y));
+  /* check whether the required block lies completely outside the frame */
+  if ( !(frame->width > x) || !(frame->height > y) ) {
+    return FALSE;
+  }
+  SchroFrameData* comp = frame->components + k;
+  SCHRO_ASSERT(SCHRO_FRAME_FORMAT_DEPTH(comp->format) == SCHRO_FRAME_FORMAT_DEPTH_U8);
+
+  fd->format = comp->format;
+  fd->data = SCHRO_FRAME_DATA_GET_PIXEL_U8(comp, x, y);
+  fd->stride = comp->stride;
+  fd->width = comp->width - x;
+  fd->height = comp->height - y;
+  fd->h_shift = comp->h_shift;
+  fd->v_shift = comp->v_shift;
+
+  return TRUE;
+}
+
 #ifdef unused
 void
 schro_upsampled_frame_get_block_prec0 (SchroUpsampledFrame *upframe, int k,
@@ -2286,3 +2309,15 @@ schro_frame_get_subdata (SchroFrame *frame, SchroFrameData *fd,
   fd->v_shift = comp->v_shift;
 }
 
+void
+schro_frame_get_reference_subdata (SchroFrame* frame, SchroFrameData* fd
+    , int component, int x, int y)
+{
+  schro_frame_get_subdata (frame, fd, component, x, y);
+  SchroFrameData* comp = frame->components + component;
+  int extension = frame->extension;
+  /* modify width and height to account for a reference block
+   * that can be completely outside of a frame */
+  fd->width = MAX(0, comp->width + extension - x);
+  fd->height = MAX(0, comp->height + extension - y);
+}
