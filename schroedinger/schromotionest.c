@@ -95,8 +95,13 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
 
   if (encoder->enable_hierarchical_estimation) {
     for(ref=0;ref<params->num_refs;ref++){
-      frame->rme[ref] = schro_rough_me_new (frame, frame->ref_frame[ref]);
-      schro_rough_me_heirarchical_scan (frame->rme[ref]);
+      if (encoder->enable_bigblock_estimation) {
+        frame->rme[ref] = schro_rough_me_new (frame, frame->ref_frame[ref]);
+        schro_rough_me_heirarchical_scan (frame->rme[ref]);
+      } else if (encoder->enable_deep_estimation) {
+        frame->hier_bm[ref] = schro_hbm_new (frame, ref);
+        schro_hbm_scan (frame->hier_bm[ref]);
+      }
 
       if (encoder->enable_phasecorr_estimation) {
         frame->phasecorr[ref] = schro_phasecorr_new (frame,
@@ -109,10 +114,16 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
     }
   }
 
-  frame->me = schro_motionest_new (frame);
+  if (encoder->enable_bigblock_estimation
+      || encoder->enable_deep_estimation) {
+    frame->me = schro_motionest_new (frame);
+  }
 
   frame->motion = schro_motion_new (params, NULL, NULL);
-  frame->me->motion = frame->motion;
+  if (encoder->enable_bigblock_estimation
+      || encoder->enable_deep_estimation) {
+    frame->me->motion = frame->motion;
+  }
 
 #if 0
   for(ref=0;ref<params->num_refs;ref++){
@@ -124,22 +135,29 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
 
 }
 
-
 void
 schro_encoder_motion_predict_pel (SchroEncoderFrame *frame)
 {
   SchroParams *params = &frame->params;
+  int ref;
 
   SCHRO_ASSERT(params->x_num_blocks != 0);
   SCHRO_ASSERT(params->y_num_blocks != 0);
   SCHRO_ASSERT(params->num_refs > 0);
 
-  schro_encoder_bigblock_estimation (frame->me);
+  if (frame->encoder->enable_bigblock_estimation) {
+    schro_encoder_bigblock_estimation (frame->me);
 
-  schro_motion_calculate_stats (frame->motion, frame);
-  frame->estimated_mc_bits = schro_motion_estimate_entropy (frame->motion);
+    schro_motion_calculate_stats (frame->motion, frame);
+    frame->estimated_mc_bits = schro_motion_estimate_entropy (frame->motion);
 
-  frame->badblock_ratio = (double)frame->me->badblocks/(params->x_num_blocks*params->y_num_blocks/16);
+    frame->badblock_ratio = (double)frame->me->badblocks/(params->x_num_blocks*params->y_num_blocks/16);
+  } else if (frame->encoder->enable_deep_estimation) {
+    for (ref=0; params->num_refs > ref; ++ref) {
+      SCHRO_ASSERT (frame->hier_bm[ref]);
+      schro_hierarchical_bm_scan_hint (frame->hier_bm[ref], 0, 3);
+    }
+  } else SCHRO_ASSERT(0);
 }
 
 void

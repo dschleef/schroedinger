@@ -98,8 +98,8 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schromotion.c \
 	schromotionfast.c \
 	schroparams.c \
-	schroparse.c \
 	schroroughmotion.c \
+	schroparse.c \
 	schroqueue.c \
 	schrotables.c \
 	schrotablesinit.c \
@@ -129,6 +129,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
 	schrofft.c \
 	schrofilter.c \
 	schroglobalest.c \
+	schrohierbm.c \
 	schrolist.c \
 	schrometric.c \
 	schromotionest.c \
