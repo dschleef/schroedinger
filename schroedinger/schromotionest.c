@@ -184,10 +184,12 @@ schro_encoder_motion_refine_block_subpel (SchroEncoderFrame *frame,
 
           x = MAX((i+ii)*frame->params.xbsep_luma, 0);
           y = MAX((j+jj)*frame->params.ybsep_luma, 0);
-          width = skip*frame->params.xbsep_luma;
-          height = skip*frame->params.ybsep_luma;
 
           schro_frame_get_subdata (get_downsampled (frame, 0), &orig, 0, x, y);
+
+          width = MIN(skip*frame->params.xbsep_luma, orig.width);
+          height = MIN(skip*frame->params.ybsep_luma, orig.height);
+
 
           min_metric = 0x7fffffff;
           min_dx = 0;
@@ -698,6 +700,7 @@ schro_motionest_block_scan (SchroMotionEst *me, int ref, int distance,
 
   scan.block_width = params->xbsep_luma;
   scan.block_height = params->ybsep_luma;
+
   scan.gravity_scale = 0;
   scan.gravity_x = 0;
   scan.gravity_y = 0;
@@ -710,6 +713,16 @@ schro_motionest_block_scan (SchroMotionEst *me, int ref, int distance,
 
   scan.x = (i + ii) * params->xbsep_luma;
   scan.y = (j + jj) * params->ybsep_luma;
+  if (!(scan.x < scan.frame->width) || !(scan.y < scan.frame->height)) {
+    mv->u.vec.dx[ref] = 0;
+    mv->u.vec.dy[ref] = 0;
+    mv->metric = SCHRO_METRIC_INVALID;
+    block->error += mv->metric;
+    block->valid = FALSE;
+    return;
+  }
+  scan.block_width = MIN(params->xbsep_luma, scan.frame->width-scan.x);
+  scan.block_height = MIN(params->ybsep_luma, scan.frame->height-scan.y);
   schro_metric_scan_setup (&scan, dx, dy, distance);
   if (scan.scan_width <= 0 || scan.scan_height <= 0) {
     mv->u.vec.dx[ref] = 0;
@@ -852,6 +865,7 @@ schro_motionest_subsuperblock_scan (SchroMotionEst *me, int ref, int distance,
 
   scan.block_width = 2*params->xbsep_luma;
   scan.block_height = 2*params->ybsep_luma;
+
   scan.gravity_scale = 0;
   scan.gravity_x = 0;
   scan.gravity_y = 0;
@@ -864,6 +878,15 @@ schro_motionest_subsuperblock_scan (SchroMotionEst *me, int ref, int distance,
 
   scan.x = (i + ii) * params->xbsep_luma;
   scan.y = (j + jj) * params->ybsep_luma;
+  if (!(scan.x < scan.frame->width) || !(scan.y < scan.frame->height)) {
+    mv->u.vec.dx[ref] = mv->u.vec.dy[ref] = 0;
+    mv->metric = SCHRO_METRIC_INVALID;
+    block->error += mv->metric;
+    block->valid = FALSE;
+    return;
+  }
+  scan.block_width = MIN(2*params->xbsep_luma, scan.frame->width-scan.x);
+  scan.block_height = MIN(2*params->ybsep_luma, scan.frame->height-scan.y);
   schro_metric_scan_setup (&scan, dx, dy, distance);
   if (scan.scan_width <= 0 || scan.scan_height <= 0) {
     mv->u.vec.dx[ref] = 0;
