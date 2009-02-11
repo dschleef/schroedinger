@@ -213,12 +213,14 @@ int schro_metric_get_biref (SchroFrameData *fd, SchroFrameData *src1,
   int offset = (1<<(shift-1));
   int x;
 
+#if 0
   SCHRO_ASSERT(fd->width >= width);
   SCHRO_ASSERT(fd->height >= height);
   SCHRO_ASSERT(src1->width >= width);
   SCHRO_ASSERT(src1->height >= height);
   SCHRO_ASSERT(src2->width >= width);
   SCHRO_ASSERT(src2->height >= height);
+#endif
 
   for(j=0;j<height;j++){
     line = SCHRO_FRAME_DATA_GET_LINE(fd, j);

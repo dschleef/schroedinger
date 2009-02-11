@@ -72,7 +72,7 @@ void schro_encoder_hierarchical_block_matching (SchroEncoderFrame* frame);
 void schro_encoder_motion_predict_rough (SchroEncoderFrame *frame);
 void schro_encoder_motion_predict_pel (SchroEncoderFrame *frame);
 void schro_encoder_motion_predict_subpel (SchroEncoderFrame *frame);
-void schro_encoder_motion_predict_subpel_deep (SchroEncoderFrame* frame);
+void schro_encoder_motion_predict_subpel_deep (SchroMe me);
 
 void schro_encoder_global_estimation (SchroEncoderFrame *frame);
 
@@ -112,18 +112,35 @@ SchroMotionField* schro_hbm_best_mf ( SchroHierBm schro_hbm );
 SchroMotionField* schro_hbm_motion_field ( SchroHierBm schro_hbm, int level);
 
 /* SchroMe interface */
-SchroMe schro_me_new ( SchroEncoderFrame* frame, int ref_number );
+SchroMe schro_me_new ( SchroEncoderFrame* framer );
 void schro_me_free ( SchroMe* me );
 
-SchroMotionField* schro_me_subpel_mf ( SchroMe me );
-void schro_me_set_subpel_mf ( SchroMe me, SchroMotionField* mf );
-SchroMotionField* shcro_me_split2_mf ( SchroMe me );
-SchroMotionField* schro_me_split1_mf ( SchroMe me );
-SchroMotionField* schro_me_split0_mf ( SchroMe me );
+SchroFrame* schro_me_src ( SchroMe me );
+SchroUpsampledFrame* schro_me_ref ( SchroMe me, int ref_number );
+
+SchroMotionField* schro_me_subpel_mf ( SchroMe me, int ref_number );
+void schro_me_set_subpel_mf ( SchroMe me, SchroMotionField* mf, int ref_number );
+SchroMotionField* schro_me_split2_mf ( SchroMe me, int ref_number );
+void schro_me_set_split2_mf ( SchroMe me, SchroMotionField* mf, int ref_number );
+SchroMotionField* schro_me_split1_mf ( SchroMe me, int ref_number );
+void schro_me_set_split1_mf ( SchroMe me, SchroMotionField* mf, int ref_number );
+SchroMotionField* schro_me_split0_mf ( SchroMe me, int ref_number );
+void schro_me_set_split0_mf ( SchroMe me, SchroMotionField* mf, int ref_number );
+
+SchroHierBm schro_me_hbm (SchroMe me, int ref_number);
 
 void schro_me_set_lambda ( SchroMe me, double lambda );
 double schro_me_lambda ( SchroMe me );
 SchroParams* schro_me_params ( SchroMe me );
+SchroMotion* schro_me_motion ( SchroMe me );
+void schro_me_set_motion ( SchroMe me, SchroMotion* motion );
+void schro_me_set_mc_error ( SchroMe me, double mc_err );
+double schro_me_mc_error ( SchroMe me );
+void schro_me_set_badblock_ratio ( SchroMe me, double badblocks_ratio );
+double schro_me_badblocks_ratio ( SchroMe me );
+void schro_mode_decision (SchroMe me);
+
+void schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame);
 
 #endif
 

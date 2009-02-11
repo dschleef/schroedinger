@@ -116,9 +116,7 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
 
   frame->me = schro_motionest_new (frame);
   if (encoder->enable_deep_estimation) {
-    for (ref=0; params->num_refs > ref; ++ref) {
-      frame->deep_me[ref] = schro_me_new (frame, ref);
-    }
+    frame->deep_me = schro_me_new (frame);
   }
 
   frame->motion = schro_motion_new (params, NULL, NULL);
@@ -250,22 +248,17 @@ schro_encoder_motion_predict_subpel (SchroEncoderFrame *frame)
   SCHRO_ASSERT(frame->upsampled_original_frame);
   SCHRO_ASSERT(frame->ref_frame[0]->upsampled_original_frame);
   if (frame->ref_frame[1]) {
-    SCHRO_ASSERT(frame->ref_frame[1]->upsampled_original_frame);
+      SCHRO_ASSERT(frame->ref_frame[1]->upsampled_original_frame);
   }
 
-  if (frame->encoder->enable_deep_estimation) {
-    schro_encoder_motion_predict_subpel_deep (frame);
-  } else if (frame->encoder->enable_bigblock_estimation) {
+  for(j=0;j<params->y_num_blocks;j+=4){
+    for(i=0;i<params->x_num_blocks;i+=4){
+      SchroBlock block = { 0 };
 
-    for(j=0;j<params->y_num_blocks;j+=4){
-      for(i=0;i<params->x_num_blocks;i+=4){
-        SchroBlock block = { 0 };
-
-        schro_motion_copy_from (frame->me->motion, i, j, &block);
-        schro_encoder_motion_refine_block_subpel (frame, &block, i, j);
-        schro_block_fixup (&block);
-        schro_motion_copy_to (frame->me->motion, i, j, &block);
-      }
+      schro_motion_copy_from (frame->me->motion, i, j, &block);
+      schro_encoder_motion_refine_block_subpel (frame, &block, i, j);
+      schro_block_fixup (&block);
+      schro_motion_copy_to (frame->me->motion, i, j, &block);
     }
   }
 }
@@ -277,16 +270,12 @@ typedef struct {
 
 
 void
-schro_encoder_motion_predict_subpel_deep (SchroEncoderFrame *frame)
+schro_encoder_motion_predict_subpel_deep (SchroMe me)
 {
-  SCHRO_ASSERT(frame && frame->params.mv_precision);
-  SCHRO_ASSERT(frame->upsampled_original_frame
-      && frame->ref_frame[0]->upsampled_original_frame
-      && (!frame->ref_frame[1]
-        || frame->ref_frame[1]->upsampled_original_frame));
+  SCHRO_ASSERT(me);
 
-  SchroParams* params = &frame->params;
-  double lambda = frame->base_lambda /* frame->frame_me_lambda */;
+  SchroParams* params = schro_me_params (me);
+  double lambda = schro_me_lambda (me);
   int mvprec = 0, ref;
   int xblen = params->xbsep_luma, yblen = params->ybsep_luma;
   int i, j;
@@ -294,7 +283,7 @@ schro_encoder_motion_predict_subpel_deep (SchroEncoderFrame *frame)
   SchroMotionField* mf=NULL;
   SchroMotionVector* mv;
   SchroFrameData fd;
-  SchroFrame* orig_frame = get_downsampled (frame, 0);
+  SchroFrame* orig_frame = schro_me_src (me);
   x_min = y_min = -orig_frame->extension;
 
   if (1 < params->mv_precision) {
@@ -315,9 +304,8 @@ schro_encoder_motion_predict_subpel_deep (SchroEncoderFrame *frame)
     x_max = (orig_frame->width << mvprec) + orig_frame->extension;
     y_max = (orig_frame->height << mvprec) + orig_frame->extension;
     for (ref=0; ref<params->num_refs; ++ref) {
-      SchroUpsampledFrame* upframe =
-        frame->ref_frame[ref]->upsampled_original_frame;
-      mf = schro_me_subpel_mf (frame->deep_me[ref]);
+      SchroUpsampledFrame* upframe = schro_me_ref (me, ref);
+      mf = schro_me_subpel_mf (me, ref);
       for (j=0; params->y_num_blocks > j; ++j) {
         for (i=0; params->x_num_blocks > i; ++i) {
           int error, entropy, min_error=SCHRO_METRIC_INVALID, m=-1;
@@ -1534,15 +1522,799 @@ schro_motion_copy_to (SchroMotion *motion, int i, int j, SchroBlock *block)
   }
 }
 
-/* supports motion estimation */
-struct SchroMe {
-  SchroFrame*            src;
+/* performs mode decision for a superblock, split level 2
+ * Note that a SchroMotion object is required to estimate
+ * the cost of the different prediction modes. */
+static void
+schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
+    , SchroFrameData* fd)
+{
+  SCHRO_ASSERT(me && block && fd);
+
+  int total_entropy = 0, total_error = 0, ii, jj, ref;
+  double lambda = schro_me_lambda (me); /* frame->frame_me_lambda; */
+  int comp_w[3], comp_h[3];
+  SchroParams* params = schro_me_params (me);
+  SchroMotion* motion = schro_me_motion (me);
+  SCHRO_ASSERT (motion);
+  int mvprec = params->mv_precision;
+  int xnum_blocks = params->x_num_blocks;
+  int fd_width, fd_height, biref;
+  int xblen = params->xbsep_luma, yblen = params->ybsep_luma;
+  SchroFrame* orig_frame = schro_me_src (me);
+  SchroFrameData ref_data[2], orig;
+  SchroUpsampledFrame* upframe[2];
+  SchroMotionField* mf;
+  int xmin, ymin, xmax, ymax;
+  xmin = ymin = -orig_frame->extension;
+  xmax = (orig_frame->width << mvprec) + orig_frame->extension;
+  ymax = (orig_frame->height << mvprec) + orig_frame->extension;
+
+  comp_w[0] = xblen;
+  comp_h[0] = yblen;
+  comp_w[1] = comp_w[2] = xblen
+    >> SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format);
+  comp_h[1] = comp_h[2] = yblen
+    >> SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
+
+
+  for (jj=0; 4>jj; ++jj) {
+    for (ii=0; 4>ii; ++ii) {
+      double score, min_score=HUGE_VAL;
+      int entropy[2], error;
+      int width, height;
+      int dx[2], dy[2];
+      int best_entropy = SCHRO_METRIC_INVALID
+        , best_error = SCHRO_METRIC_INVALID;
+      SchroMotionVector *mv, *mv_ref[2], best_mv = { 0 };
+      best_mv.split = 2;
+      best_mv.pred_mode = 1;
+
+      mv = motion->motion_vectors + (j+jj)*xnum_blocks + i + ii;
+      /* check that the block lies whitin the frame */
+      if (   !(orig_frame->width > (i+ii) * xblen)
+          || !(orig_frame->height > (j+jj) * yblen) ) {
+        /* Note: blocks outside frame are encoded pred_mode 1, zero MVs */
+        *mv = best_mv;
+        block->mv[jj][ii] = best_mv;
+        total_entropy += schro_motion_block_estimate_entropy (motion
+            , i+ii, j+jj);
+        continue;
+      }
+      mv->metric = SCHRO_METRIC_INVALID;
+
+      /* do the 2 references, if available */
+      for (ref=0; params->num_refs > ref; ++ref) {
+        mf = schro_me_split2_mf (me, ref);
+        SCHRO_ASSERT (mf);
+        mv_ref[ref] = mf->motion_vectors + (j+jj)*xnum_blocks + i+ii;
+        if (mv_ref[ref]->metric != SCHRO_METRIC_INVALID) {
+          *mv = *mv_ref[ref];
+          mv->split = 2;
+          mv->pred_mode = ref+1;
+          mv->using_global = 0;
+          entropy[ref] =
+            schro_motion_block_estimate_entropy (motion, i+ii, j+jj);
+          score = entropy[ref] + mv->metric * lambda;
+          if (min_score > score) {
+            min_score = score;
+            best_mv = *mv;
+            best_entropy = entropy[ref];
+            best_error = mv->metric;
+          }
+        }
+      }
+      /* do biref, if available */
+      if (   1 < params->num_refs
+          && SCHRO_METRIC_INVALID != mv_ref[0]->metric
+          && SCHRO_METRIC_INVALID != mv_ref[1]->metric  ) {
+        /* Note: I need to calculate the cost of biref prediction */
+        biref = 1; /* flag - either or both MVs could be outside frame+ext */
+        mv->u.vec.dx[0] = mv_ref[0]->u.vec.dx[0];
+        mv->u.vec.dy[0] = mv_ref[0]->u.vec.dy[0];
+        mv->u.vec.dx[1] = mv_ref[1]->u.vec.dx[1];
+        mv->u.vec.dy[1] = mv_ref[1]->u.vec.dy[1];
+        mv->pred_mode = 3;
+        mv->using_global = 0;
+        if (schro_frame_get_data (orig_frame, &orig, 0
+              , (i+ii)*xblen, (j+jj)*yblen)) {
+          width = MIN(xblen, orig.width);
+          height = MIN(yblen, orig.height);
+          int tmp_x = (i+ii) * (xblen << mvprec)
+            , tmp_y = (j+jj) * (yblen << mvprec);
+          for (ref=0; params->num_refs > ref; ++ref) {
+            dx[ref] = tmp_x + mv->u.vec.dx[ref];
+            dy[ref] = tmp_y + mv->u.vec.dy[ref];
+            if (    xmin > dx[ref] || ymin > dy[ref]
+                || !(xmax > dx[ref] + width - 1)
+                || !(ymax > dy[ref] + height - 1)    ) {
+              biref = 0;
+              break;
+            }
+            /* I need to save the original value of fd width and height */
+            fd_width = fd[ref].width;
+            fd_height = fd[ref].height;
+            fd[ref].width = width;
+            fd[ref].height = height;
+            upframe[ref] = schro_me_ref (me, ref);
+            schro_upsampled_frame_get_block_fast_precN (upframe[ref], 0, dx[ref]
+                , dy[ref], mvprec, &ref_data[ref], &fd[ref]);
+            fd[ref].width = fd_width;
+            fd[ref].height = fd_height;
+          }
+          if (biref) {
+            mv->metric = schro_metric_get_biref (&orig, &ref_data[0], 1
+                , &ref_data[1], 1, 1, width, height);
+            score = entropy[0]+entropy[1] + mv->metric * lambda;
+            if (min_score > score) {
+              best_error = mv->metric;
+              best_entropy = entropy[0]+entropy[1];
+              best_mv = *mv;
+              min_score = score;
+            }
+          }
+        }
+      }
+
+      /* FIXME: magic used for considering DC prediction */
+      if (4 * xblen * yblen < best_error) {
+        /* let's consider DC prediction */
+        SchroMotionVector* mvdc;
+        int k;
+        mvdc = (SchroMotionVector*)mv;
+        mvdc->pred_mode = 0;
+        mvdc->split = 2;
+        mvdc->using_global = 0;
+        error = 0;
+        for (k=0; 3>k; ++k) {
+          if (0 == k) {
+            error = schro_block_average (&mvdc->u.dc.dc[k], orig_frame->components+k
+              , (i+ii)*comp_w[k], (j+jj)*comp_h[k], comp_w[k], comp_h[k]);
+          } else {
+            schro_block_average (&mvdc->u.dc.dc[k], orig_frame->components+k
+              , (i+ii)*comp_w[k], (j+jj)*comp_h[k], comp_w[k], comp_h[k]);
+          }
+        }
+        if (SCHRO_METRIC_INVALID_2 == error) {
+          mvdc->metric = SCHRO_METRIC_INVALID;
+          SCHRO_DEBUG("Invalid DC metric");
+        } else {
+          mvdc->metric = error;
+          /* FIXME: we're assuming that the block doesn't have any predictor */
+          entropy[0] = schro_pack_estimate_sint (mvdc->u.dc.dc[0]);
+          entropy[0] += schro_pack_estimate_sint (mvdc->u.dc.dc[1]);
+          entropy[0] += schro_pack_estimate_sint (mvdc->u.dc.dc[2]);
+          if (error < best_error) {
+            best_mv = *(SchroMotionVector*)mvdc;
+            best_error = mvdc->metric;
+            best_entropy = entropy[0];
+          }
+        }
+      }
+      *mv = best_mv;
+      total_error += best_error;
+      total_entropy += best_entropy;
+      block->mv[jj][ii] = best_mv;
+    }
+  }
+  block->valid = TRUE;
+  block->error = total_error;
+  block->entropy = total_entropy;
+  block->score = total_entropy + lambda * total_error;
+}
+
+static void
+set_split1_motion (SchroMotion* motion, int i, int j)
+{
+  SCHRO_ASSERT(motion && !(i & 0x1) && !(j & 0x1));
+  SchroParams* params = motion->params;
+  int xnum_blocks = params->x_num_blocks;
+  SchroMotionVector* mv = motion->motion_vectors + j*xnum_blocks + i;
+  *(mv+1) = *mv;
+  *(mv+xnum_blocks) = *mv;
+  *(mv+xnum_blocks+1) = *mv;
+}
+
+static int
+mv_already_in_list (SchroMotionVector* hint_list[], int len
+    , SchroMotionVector* candidate_mv, int ref, int shift) {
+  SCHRO_ASSERT (hint_list && candidate_mv && len >0);
+  int i;
+  for (i=0; len > i; ++i) {
+    if ((candidate_mv->u.vec.dx[ref] << shift) == hint_list[i]->u.vec.dx[ref]
+        && (candidate_mv->u.vec.dy[ref] << shift) == hint_list[i]->u.vec.dy[ref]) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/* select a MV for a split1 block based on 5 seeds
+   the four split 2 MVs and the MV from rough ME, level 1.
+   The selection of the MV is based on actual cost, not just SAD */
+static void
+schro_get_best_mv_split1 (SchroMe me, int ref, int i, int j
+    , SchroMotionVector* mv_ref, int* error, int* entropy, SchroFrameData* fd)
+{
+  SCHRO_ASSERT(me && mv_ref && error && entropy
+      && !(i&0x1) && !(j&0x1) && fd && (0 == ref || 1 == ref));
+
+  SchroMotionVector *hint_mv[6], *mv_motion;
+  SchroMotionVector *mv, temp_mv={0};
+  SchroMotionField *mf;
+  SchroParams* params = schro_me_params (me);
+  SchroFrameData orig, ref_data;
+  SchroFrame* frame = schro_me_src (me);
+  SchroUpsampledFrame* upframe;
+  SchroMotion* motion = schro_me_motion (me);
+  int n=0, ii, jj, m=0, min_m, metric, ent;
+  int mv_prec = params->mv_precision;
+  int fd_width, fd_height;
+  double score, min_score, lambda = schro_me_lambda (me);
+  int xblen, yblen, width, height, dx, dy;
+  int xmin, xmax, ymin, ymax, tmp_x, tmp_y;
+  int best_error=SCHRO_METRIC_INVALID, best_entropy=SCHRO_METRIC_INVALID;
+
+  xblen = params->xbsep_luma << 1;
+  yblen = params->ybsep_luma << 1;
+  xmin = ymin = -frame->extension;
+  xmax = (frame->width << mv_prec) + frame->extension;
+  ymax = (frame->height << mv_prec) + frame->extension;
+  SCHRO_ASSERT (motion);
+  mv_motion = motion->motion_vectors + j * params->x_num_blocks + i;
+
+  /* get source data if possible */
+  if (!schro_frame_get_data (frame, &orig, 0
+        , i * params->xbsep_luma, j * params->ybsep_luma)) {
+    *mv_ref = temp_mv;
+    *error = 0;
+    *mv_motion = *mv_ref;
+    *entropy = schro_motion_block_estimate_entropy (motion, i, j);
+    return;
+  }
+  width = MIN(xblen, orig.width);
+  height = MIN(yblen, orig.height);
+
+  /* inherit from split 2 level MV */
+  mf = schro_me_subpel_mf (me, ref);
+  SCHRO_ASSERT (mf);
+  for (jj=0; 2>jj; ++jj) {
+    for (ii=0; 2>ii; ++ii) {
+      mv = mf->motion_vectors + (j+jj)*mf->x_num_blocks + i + ii;
+      if (SCHRO_METRIC_INVALID != mv->metric) {
+        if ((0 < n && !mv_already_in_list (hint_mv, n, mv, ref, mv_prec)) || 0 == n) {
+          hint_mv[n++] = mv;
+        }
+      }
+    }
+  }
+  /* inherit from stage 1 of hier. BM */
+  SchroHierBm hbm = schro_me_hbm (me, ref);
+  SCHRO_ASSERT (hbm);
+  mf = schro_hbm_motion_field (hbm, 1);
+  SCHRO_ASSERT (mf);
+  mv = mf->motion_vectors + j*mf->x_num_blocks + i;
+  if (SCHRO_METRIC_INVALID != mv->metric) {
+    if ((0 < n && !mv_already_in_list (hint_mv, n, mv, ref, mv_prec)) || 0 == n) {
+      temp_mv = *mv;
+      temp_mv.u.vec.dx[ref] <<= mv_prec;
+      temp_mv.u.vec.dy[ref] <<= mv_prec;
+      hint_mv[n++] = &temp_mv;
+    }
+  }
+
+  /* now pick the best candidate */
+  min_m = -1;
+  min_score = HUGE_VAL;
+  tmp_x = (i * params->xbsep_luma) << mv_prec;
+  tmp_y = (j * params->ybsep_luma) << mv_prec;
+  upframe = schro_me_ref (me, ref);
+  for (m=0; n > m; ++m) {
+    dx = hint_mv[m]->u.vec.dx[ref] + tmp_x;
+    dy = hint_mv[m]->u.vec.dy[ref] + tmp_y;
+    if (  xmin > dx || ymin > dy
+        || !(xmax > dx + width - 1) || !(ymax > dy + height - 1)  ) {
+      continue;
+    }
+    /* I need to save the original value of fd width and height */
+    fd_width = fd->width;
+    fd_height = fd->height;
+    fd->width = width;
+    fd->height = height;
+
+    schro_upsampled_frame_get_block_fast_precN (upframe, 0, dx, dy
+        , mv_prec, &ref_data, fd);
+    fd->width = fd_width;
+    fd->height = fd_height;
+    metric = schro_metric_absdiff_u8 (orig.data, orig.stride
+                , ref_data.data, ref_data.stride, width, height);
+    *mv_motion = *hint_mv[m];
+    mv_motion->split = 1;
+    mv_motion->pred_mode = ref + 1;
+    ent = schro_motion_block_estimate_entropy (motion, i, j);
+    score = ent + metric * lambda;
+    if (min_score > score) {
+      min_score = score;
+      min_m = m;
+      best_entropy = ent;
+      best_error = metric;
+    }
+  }
+  if (-1 < min_m) {
+    *error = best_error;
+    *entropy = best_entropy;
+    *mv_ref = *hint_mv[min_m];
+    mv_ref->metric = best_error >> 2;
+    mv_ref->split = 1;
+    mv_ref->pred_mode = ref + 1;
+  } else  mv_ref->metric = SCHRO_METRIC_INVALID;
+}
+
+/* performs mode decision for a superblock, split level 1 */
+static void
+schro_do_split1 (SchroMe me, int i, int j, SchroBlock* block
+    , SchroFrameData* fd)
+{
+  SCHRO_ASSERT(me && block && fd);
+
+  SchroParams* params = schro_me_params (me);
+  SchroMotion* motion = schro_me_motion (me);
+  SCHRO_ASSERT (motion);
+  SchroFrame* orig_frame = schro_me_src (me);
+  SchroFrameData ref_data[2], orig;
+  SchroUpsampledFrame* upframe[2];
+  SchroMotionField* mf;
+  double lambda = schro_me_lambda (me);
+
+  int ii, jj, ref, biref;
+  int total_entropy = 0, total_error = 0;
+  int mvprec = params->mv_precision;
+  int xblen = params->xbsep_luma * 2, yblen = params->ybsep_luma * 2;
+  int width, height, dx[2], dy[2], tmp_x, tmp_y;
+
+  int fd_width, fd_height;
+  int xmin, xmax, ymin, ymax;
+  xmin = ymin = -orig_frame->extension;
+  xmax = (orig_frame->width << mvprec) + orig_frame->extension;
+  ymax = (orig_frame->height << mvprec) + orig_frame->extension;
+
+  block->valid = TRUE;
+
+  for (jj=0; 4>jj; jj+=2) {
+    for (ii=0; 4>ii; ii+=2) {
+      double score, min_score = HUGE_VAL;
+      int entropy[2], error=SCHRO_METRIC_INVALID;
+      int best_entropy = SCHRO_METRIC_INVALID
+        , best_error = SCHRO_METRIC_INVALID;
+      /* Note that the metric for the split 1 block will be stored in best_mv
+       * but divided by 4 */
+      SchroMotionVector *mv, best_mv = { 0 }, mv_ref[2], *mv_split1;
+      best_mv.split = 1;
+      best_mv.pred_mode = 1;
+
+      mv = motion->motion_vectors + (j+jj)*params->x_num_blocks + i + ii;
+      /* check that the block lies within the frame */
+      if (   !(orig_frame->width > (i+ii) * params->xbsep_luma)
+          || !(orig_frame->height > (j+jj) * params->ybsep_luma) ) {
+        /* the block lies outside the frame, set both block and motion
+         * to a zero mv, split 1, forward predicted */
+        *mv = best_mv;
+        block->mv[jj][ii] = *mv;
+        block->valid = FALSE;
+        set_split1_motion (motion, i+ii, j+jj);
+        total_entropy += schro_motion_block_estimate_entropy (motion
+            , i+ii, j+jj);
+        mf = schro_me_split1_mf (me, 0);
+        SCHRO_ASSERT (mf);
+        mv_split1 = mf->motion_vectors + (j+jj)*params->x_num_blocks + i + ii;
+        *mv_split1 = best_mv;
+        if (1 < params->num_refs) {
+          mf = schro_me_split1_mf (me, 1);
+          SCHRO_ASSERT (mf);
+          mv_split1 = mf->motion_vectors + (j+jj)*params->x_num_blocks + i+ii;
+          *mv_split1 = best_mv;
+          mv_split1->pred_mode = 2;
+          continue;
+        }
+      }
+      mv->metric = SCHRO_METRIC_INVALID;
+      best_mv.metric = SCHRO_METRIC_INVALID;
+
+      /* do the 2 references, if available */
+      for (ref=0; params->num_refs > ref; ++ref) {
+        mf = schro_me_split1_mf (me, ref);
+        SCHRO_ASSERT (mf);
+        mv_split1 = mf->motion_vectors + (j + jj)*params->x_num_blocks + i+ii;
+        schro_get_best_mv_split1 (me, ref, i+ii, j+jj, &mv_ref[ref]
+            , &error, &entropy[ref], fd);
+        *mv_split1 = mv_ref[ref];
+        if (SCHRO_METRIC_INVALID != mv_ref[ref].metric) {
+          score = entropy[ref] + lambda * error;
+          if (min_score > score) {
+            min_score = score;
+            best_mv = mv_ref[ref];
+            best_entropy = entropy[ref];
+            best_error = error;
+          }
+        }
+      }
+      /* do biref if available */
+      if ( 1 < params->num_refs
+          && SCHRO_METRIC_INVALID != mv_ref[0].metric
+          && SCHRO_METRIC_INVALID != mv_ref[1].metric ) {
+        /* I'm going to use the two best MVs from previous steps
+        * Note: I need to calculate the cost and entropy of biref */
+        mv_ref[0].u.vec.dx[1] = mv_ref[1].u.vec.dx[1];
+        mv_ref[0].u.vec.dy[1] = mv_ref[1].u.vec.dy[1];
+        mv_ref[0].pred_mode = 3;
+        biref = TRUE;
+        if (schro_frame_get_data (orig_frame, &orig, 0
+              , (i+ii)*params->xbsep_luma, (j+jj)*params->ybsep_luma)) {
+          width = MIN(xblen, orig.width);
+          height = MIN(yblen, orig.height);
+          tmp_x = (i+ii) * (params->xbsep_luma << mvprec);
+          tmp_y = (j+jj) * (params->ybsep_luma << mvprec);
+          for (ref=0; params->num_refs > ref; ++ref) {
+            dx[ref] = tmp_x + mv_ref[0].u.vec.dx[ref];
+            dy[ref] = tmp_y + mv_ref[0].u.vec.dy[ref];
+            /* check whether we can extract reference blocks */
+            if (  xmin > dx[ref] || ymin > dy[ref]
+                || !(xmax > dx[ref] + width - 1)
+                || !(ymax > dy[ref] + height - 1)   )  {
+              biref = FALSE;
+              break;
+            } else {
+              fd_width = fd[ref].width;
+              fd_height = fd[ref].height;
+              fd[ref].width = width;
+              fd[ref].height = height;
+              upframe[ref] = schro_me_ref (me, ref);
+              schro_upsampled_frame_get_block_fast_precN (upframe[ref], 0
+                  , dx[ref], dy[ref], mvprec, &ref_data[ref], &fd[ref]);
+              fd[ref].width = fd_width;
+              fd[ref].height = fd_height;
+            }
+          }
+          if (biref) {
+            error = schro_metric_get_biref (&orig, &ref_data[0], 1
+                , &ref_data[1], 1, 1, width, height);
+            score = entropy[0] + entropy[1] + lambda * error;
+            mv_ref[0].metric = error >> 2;
+            if (min_score > score) {
+              best_error = error;
+              best_entropy = entropy[0] + entropy[1];
+              best_mv = mv_ref[0];
+              min_score = score;
+            }
+          }
+        }
+      }
+      if (SCHRO_METRIC_INVALID == best_mv.metric) {
+        block->valid = FALSE;
+      } else {
+        *mv = best_mv;
+        total_error += best_error;
+        total_entropy += best_entropy;
+        block->mv[jj][ii] = best_mv;
+        set_split1_motion (motion, i+ii, j+jj);
+      }
+    }
+  }
+  block->error = total_error;
+  block->entropy = total_entropy;
+  block->score = total_entropy + lambda * total_error;
+}
+
+static void
+schro_get_best_split0_mv (SchroMe me, int ref, int i, int j
+    , SchroMotionVector* mv_ref, int* error, int* entropy
+    , SchroFrameData* fd) {
+  SCHRO_ASSERT(me && (0 == ref || 1 == ref)
+      && !(i&0x3) && !(j&0x3) && fd && error && entropy);
+
+  SchroMotionVector* hint_mv[6], *mv_motion;
+  SchroMotionVector *mv, temp_mv = {0};
+  SchroMotionField* mf;
+  SchroParams* params = schro_me_params (me);
+  SchroFrameData orig, ref_data;
+  SchroFrame* frame = schro_me_src (me);
+  SchroUpsampledFrame* upframe;
+  SchroHierBm hbm;
+  SchroMotion* motion = schro_me_motion (me);
+  int n=0, m=0, min_m = -1, metric, ent;
+  int mv_prec = params->mv_precision;
+  int fd_width, fd_height, jj, ii;
+  double score, min_score = HUGE_VAL
+    , lambda = schro_me_lambda (me);
+  int xblen = params->xbsep_luma << 2, yblen = params->ybsep_luma << 2;
+  int width, height, dx, dy, xmin, xmax, ymin, ymax, tmp_x, tmp_y;
+  int best_error = SCHRO_METRIC_INVALID_2, best_entropy = SCHRO_METRIC_INVALID_2;
+
+  xmin = -frame->extension;
+  ymin = -frame->extension;
+  xmax = (frame->width << mv_prec) + frame->extension;
+  ymax = (frame->height << mv_prec) + frame->extension;
+
+  /* get source data if possible */
+  if (!schro_frame_get_data (frame, &orig, 0
+        , i * params->xbsep_luma, j * params->ybsep_luma)) {
+    /* this should never happen */
+    SCHRO_ASSERT (0);
+  }
+  width = MIN(xblen, orig.width);
+  height = MIN(yblen, orig.height);
+  mv_motion = motion->motion_vectors + j * params->x_num_blocks + i;
+
+  /* inherit from split 1 level MV */
+  mf = schro_me_split1_mf (me, ref);
+  SCHRO_ASSERT (mf);
+  for (jj = 0; 4 > jj; jj += 2) {
+    for (ii = 0; 4 > ii; ii += 2) {
+      mv = mf->motion_vectors + (j+jj)*mf->x_num_blocks + i + ii;
+      if (SCHRO_METRIC_INVALID != mv->metric) {
+        if ((0 < n && !mv_already_in_list (hint_mv, n, mv, ref, 0)) || 0 == n) {
+          hint_mv[n++] = mv;
+        }
+      }
+    }
+  }
+  /* inherit from stage 2 of hier. BM */
+  hbm = schro_me_hbm (me, ref);
+  SCHRO_ASSERT (hbm);
+  mf = schro_hbm_motion_field (hbm, 2);
+  mv = mf->motion_vectors + j*mf->x_num_blocks + i;
+  if (SCHRO_METRIC_INVALID != mv->metric) {
+    if ((0 < n && !mv_already_in_list (hint_mv, n, mv, ref, mv_prec)) || 0 == n) {
+      temp_mv = *mv;
+      temp_mv.u.vec.dx[ref] <<= mv_prec;
+      temp_mv.u.vec.dy[ref] <<= mv_prec;
+      hint_mv[n++] = &temp_mv;
+    }
+  }
+  /* now pick the best candidate */
+  tmp_x = (i * params->xbsep_luma) << mv_prec;
+  tmp_y = (j * params->ybsep_luma) << mv_prec;
+  upframe = schro_me_ref (me, ref);
+  for (m=0; n > m; ++m) {
+    dx = hint_mv[m]->u.vec.dx[ref] + tmp_x;
+    dy = hint_mv[m]->u.vec.dy[ref] + tmp_y;
+    if ( xmin > dx || ymin > dy
+        || !(xmax > dx + width - 1) || !(ymax > dy + height - 1) ) {
+      continue;
+    }
+    /* I need to save the original values of fd width and height */
+    fd_width = fd->width;
+    fd_height = fd->height;
+    fd->width = width;
+    fd->height = height;
+    schro_upsampled_frame_get_block_fast_precN (upframe, 0, dx, dy, mv_prec
+        , &ref_data, fd);
+    fd->width = fd_width;
+    fd->height = fd_height;
+    metric = schro_metric_absdiff_u8 (orig.data, orig.stride
+        , ref_data.data, ref_data.stride, width, height);
+    *mv_motion = *hint_mv[m];
+    mv_motion->split = 0;
+    mv_motion->pred_mode = ref + 1;
+    ent = schro_motion_block_estimate_entropy (motion, i, j);
+    score = ent + lambda * metric;
+    if (min_score > score) {
+      min_score = score;
+      min_m = m;
+      best_entropy = ent;
+      best_error = metric;
+    }
+  }
+  if (-1 < min_m) {
+    *error = best_error;
+    *entropy = best_entropy;
+    *mv_ref = *hint_mv[min_m];
+    mv_ref->metric = best_error >> 4;
+    mv_ref->split = 0;
+    mv_ref->pred_mode = ref+1;
+  } else mv_ref->metric = SCHRO_METRIC_INVALID;
+}
+
+
+/* performs mode decision for a superblock, split level 0 */
+static void
+schro_do_split0 (SchroMe me, int i, int j, SchroBlock* block
+    , SchroFrameData* fd)
+{
+  SCHRO_ASSERT(me && block && fd && !(i&0x3) && !(j&0x3));
+  block->valid = FALSE;
+
+  SchroParams* params = schro_me_params (me);
+  SchroFrame* orig_frame = schro_me_src (me);
+  SchroFrameData ref_data[2], orig;
+  SchroUpsampledFrame* upframe[2];
+  SchroMotionField* mf;
+  SchroMotionVector mv_ref[2], best_mv={0}, *mv_split0;
+  double lambda = schro_me_lambda (me);
+
+  int mv_prec = params->mv_precision;
+  int xblen = params->xbsep_luma << 2
+    , yblen = params->ybsep_luma << 2;
+  int width, height, dx[2], dy[2], tmp_x, tmp_y;
+  int ref, error=SCHRO_METRIC_INVALID, entropy[2];
+  int best_error = SCHRO_METRIC_INVALID
+    , best_entropy = SCHRO_METRIC_INVALID;
+  double score, min_score = HUGE_VAL;
+  int xmin = -orig_frame->extension, ymin = -orig_frame->extension
+    , xmax = (orig_frame->width << mv_prec) + orig_frame->extension
+    , ymax = (orig_frame->height << mv_prec) + orig_frame->extension;
+  int biref, fd_width, fd_height;
+  best_mv.metric = SCHRO_METRIC_INVALID;
+
+  /* do the 2 references, if available */
+  for (ref = 0; params->num_refs > ref; ++ref) {
+    mf = schro_me_split0_mf (me, ref);
+    SCHRO_ASSERT (mf);
+    mv_split0 = mf->motion_vectors + j*params->x_num_blocks + i;
+    schro_get_best_split0_mv (me, ref, i, j, &mv_ref[ref], &error, &entropy[ref], fd);
+    *mv_split0 = mv_ref[ref];
+    if (SCHRO_METRIC_INVALID != mv_ref[ref].metric) {
+      score = entropy[ref] + lambda * error;
+      if (min_score > score) {
+        min_score = score;
+        best_mv = mv_ref[ref];
+        best_entropy = entropy[ref];
+        best_error = error;
+      }
+    }
+  }
+  /* do biref, if available */
+  if (1 < params->num_refs
+      && SCHRO_METRIC_INVALID != mv_ref[0].metric
+      && SCHRO_METRIC_INVALID != mv_ref[1].metric ) {
+    mv_ref[0].u.vec.dx[1] = mv_ref[1].u.vec.dx[1];
+    mv_ref[0].u.vec.dy[1] = mv_ref[1].u.vec.dy[1];
+    mv_ref[0].pred_mode = 3;
+    biref = TRUE;
+    if (schro_frame_get_data (orig_frame, &orig, 0
+          , i*params->xbsep_luma, j*params->ybsep_luma)) {
+      width = MIN(orig.width, xblen);
+      height = MIN(orig.height, yblen);
+      tmp_x = i * (params->xbsep_luma << mv_prec);
+      tmp_y = j * (params->ybsep_luma << mv_prec);
+      for (ref=0; params->num_refs > ref; ++ref) {
+        dx[ref] = tmp_x + mv_ref[0].u.vec.dx[ref];
+        dy[ref] = tmp_y + mv_ref[0].u.vec.dy[ref];
+        /* check whether we can extract reference blocks */
+        if ( xmin > dx[ref] || ymin > dy[ref]
+            || !(xmax > dx[ref] + width - 1)
+            || !(ymax > dy[ref] + height - 1)  ) {
+          biref = FALSE;
+          break;
+        } else {
+          fd_width = fd[ref].width;
+          fd_height = fd[ref].height;
+          fd[ref].width = width;
+          fd[ref].height = height;
+          upframe[ref] = schro_me_ref (me, ref);
+          schro_upsampled_frame_get_block_fast_precN (upframe[ref], 0
+              , dx[ref], dy[ref], mv_prec, &ref_data[ref], &fd[ref]);
+          fd[ref].width = fd_width;
+          fd[ref].height = fd_height;
+        }
+      }
+      if (biref) {
+        error = schro_metric_get_biref (&orig, &ref_data[0], 1
+            , &ref_data[1], 1, 1, width, height);
+        score = entropy[0] + entropy[1] + lambda * error;
+        mv_ref[0].metric = error;
+        if (min_score > score) {
+          min_score = score;
+          best_mv = mv_ref[0];
+          best_error = error;
+          best_entropy = entropy[0] + entropy[1];
+        }
+      }
+    }
+  }
+  if (SCHRO_METRIC_INVALID == best_mv.metric) {
+    block->valid = FALSE;
+  } else {
+    block->valid = TRUE;
+    block->error = best_error;
+    block->entropy = best_entropy;
+    block->score = best_entropy + lambda * best_error;
+    block->mv[0][0] = best_mv;
+  }
+}
+
+
+/* performs mode decision and block/superblock splitting */
+void
+schro_mode_decision (SchroMe me)
+{
+  SCHRO_ASSERT (me);
+  SchroParams* params = schro_me_params (me);
+  SchroFrameData fd[2];
+  SchroMotion* motion = schro_me_motion (me);
+  int i,j, ref;
+  double total_error = 0.0;
+  int block_size;
+  int badblocks = 0, dcblocks = 0;
+  double min_score;
+  int k, l;
+
+  block_size = 16 * params->xbsep_luma * params->ybsep_luma;
+  fd[0].data = fd[1].data = NULL;
+  if (1 < params->mv_precision) {
+    for (ref=0; params->num_refs > ref; ++ref) {
+      fd[ref].data = schro_malloc (block_size * sizeof (uint8_t));
+      fd[ref].stride = fd[ref].width = params->xbsep_luma << 2;
+      fd[ref].height = params->ybsep_luma << 2;
+      fd[ref].length = block_size * sizeof(uint8_t);
+      fd[ref].h_shift = fd[ref].v_shift = 0;
+      fd[ref].format = SCHRO_FRAME_FORMAT_U8_420;
+    }
+  }
+  /* loop over all superblocks. The indices are set to the value of the
+   * top-left block in the SB, just like in Dave's bigblock estimation.
+   * We'll start considering split 2 first, then split 1 and finally split 0 */
+  for (j=0; params->y_num_blocks > j; j+=4) {
+    for (i=0; params->x_num_blocks > i; i+=4) {
+      SchroBlock block = {0}, tryblock = {0};
+
+      schro_do_split2 (me, i, j, &block, fd);
+      min_score = block.score;
+
+      /* note: do_split1 writes to motion */
+      schro_do_split1 (me, i, j, &tryblock, fd);
+      if (tryblock.valid) {
+        if (min_score > tryblock.score) {
+          memcpy (&block, &tryblock, sizeof (block));
+          schro_block_fixup (&block);
+          /* I need to overwrite motion because it's needed to estimate
+           * entropy at split 0 */
+          schro_motion_copy_to (motion, i, j, &block);
+          min_score = block.score;
+          /* Note: only do split0 if split1 better than split2 */
+          schro_do_split0 (me, i, j, &tryblock, fd);
+          if (tryblock.valid) {
+            if (min_score > tryblock.score) {
+              memcpy (&block, &tryblock, sizeof(block));
+              schro_block_fixup (&block);
+            }
+          }
+        }
+      } else {
+        for (k=0; 4 > k; ++k) {
+          for (l=0; 4 > l; ++l) {
+            if (0 == block.mv[k][l].pred_mode) {
+              ++dcblocks;
+            }
+          }
+        }
+      }
+      schro_motion_copy_to (motion, i, j, &block);
+      if (block.error > 10*block_size) {
+        ++badblocks;
+      }
+
+      total_error += (double)block.error * block.error /
+        (double)(block_size * block_size);
+    }
+  }
+
+  schro_me_set_mc_error (me
+      , total_error / (240.0*240.0) /
+           params->x_num_blocks * params->y_num_blocks / 16);
+
+  schro_me_set_badblock_ratio (me
+      , badblocks / (params->x_num_blocks*params->y_num_blocks / 16));
+
+  if (1 < params->mv_precision) {
+    for (ref=0; params->num_refs > ref; ++ref) {
+      schro_free (fd[ref].data);
+    }
+  }
+}
+
+struct SchroMeElement {
   SchroUpsampledFrame*   ref;
-
-  SchroParams*           params;
-
-  double                 lambda;
-  int                    ref_number;
 
   SchroMotionField*      subpel_mf;
   SchroMotionField*      split2_mf;
@@ -1550,24 +2322,69 @@ struct SchroMe {
   SchroMotionField*      split0_mf;
 
   SchroHierBm            hbm;
-
-  int                    badblocks;
 };
 
 
-SchroMe
-schro_me_new (SchroEncoderFrame* frame, int ref_number)
+typedef struct SchroMeElement* SchroMeElement;
+
+/* supports motion estimation */
+struct SchroMe {
+  SchroFrame*            src;
+
+  SchroParams*           params;
+  double                 lambda;
+  SchroMotion*           motion;
+
+  double                 mc_error;
+  double                 badblocks_ratio;
+
+  SchroMeElement         meElement[2];
+};
+
+SchroMeElement
+schro_me_element_new (SchroEncoderFrame* frame, int ref_number)
 {
-  SCHRO_ASSERT (frame);
+  SCHRO_ASSERT (frame && (0 == ref_number || 1 == ref_number));
+  SchroMeElement me = schro_malloc0 (sizeof (struct SchroMeElement));
+  SCHRO_ASSERT (me);
+  me->ref = frame->ref_frame[ref_number]->upsampled_original_frame;
+  me->hbm = schro_hbm_ref (frame->hier_bm[ref_number]);
+  return me;
+}
+
+void
+schro_me_element_free (SchroMeElement* pme)
+{
+  SCHRO_ASSERT (pme);
+  SchroMeElement me = *pme;
+  if (me) {
+    if (me->hbm) schro_hbm_unref (&me->hbm);
+    if (me->subpel_mf) schro_motion_field_free (me->subpel_mf);
+    if (me->split2_mf) schro_motion_field_free (me->split2_mf);
+    if (me->split1_mf) schro_motion_field_free (me->split1_mf);
+    if (me->split0_mf) schro_motion_field_free (me->split0_mf);
+    schro_free (me);
+    *pme = NULL;
+  }
+}
+
+
+SchroMe
+schro_me_new (SchroEncoderFrame* frame)
+{
+  SCHRO_ASSERT (frame );
+  int ref;
   SchroMe me = schro_malloc0 (sizeof(struct SchroMe));
   SCHRO_ASSERT (me);
   me->src = schro_frame_ref (frame->filtered_frame);
+  /* FIXME: SchroUpsampledFrame, SchroMotion and SchroParams
+   * are not reference-counted but they should if we use them like this */
   me->params = &frame->params;
-  /* FIXME: SchroUpsampledFrame is not reference-counted
-   * this object could be deleted without ever knowing about it */
-  me->ref = frame->ref_frame[ref_number]->upsampled_original_frame;
-  me->lambda = frame->base_lambda;
-  me->hbm = schro_hbm_ref (frame->hier_bm[ref_number]);
+  me->motion = frame->motion;
+  me->lambda = frame->encoder->magic_mc_lambda;
+  for (ref=0; me->params->num_refs > ref; ++ref) {
+    me->meElement[ref] = schro_me_element_new (frame, ref);
+  }
   return me;
 }
 
@@ -1575,50 +2392,93 @@ void
 schro_me_free (SchroMe* pme)
 {
   SCHRO_ASSERT (pme);
+  int ref;
   SchroMe me = *pme;
-  if (me->src) schro_frame_unref (me->src);
-  if (me->hbm) schro_hbm_unref (&me->hbm);
-  if (me->subpel_mf) schro_motion_field_free (me->subpel_mf);
-  if (me->split0_mf) schro_motion_field_free (me->split0_mf);
-  if (me->split1_mf) schro_motion_field_free (me->split1_mf);
-  if (me->split2_mf) schro_motion_field_free (me->split2_mf);
+  if (me) {
+    schro_frame_unref (me->src);
+    for (ref=0; me->params->num_refs > ref; ++ref) {
+      schro_me_element_free (&me->meElement[ref]);
+    }
+  }
   schro_free (me);
   *pme = NULL;
 }
 
-SchroMotionField*
-schro_me_subpel_mf (SchroMe me)
+SchroFrame*
+schro_me_src (SchroMe me)
 {
   SCHRO_ASSERT (me);
-  return me->subpel_mf;
+  return me->src;
+}
+
+SchroUpsampledFrame*
+schro_me_ref (SchroMe me, int ref_number)
+{
+  SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
+  return me->meElement[ref_number]->ref;
+}
+
+SchroMotionField*
+schro_me_subpel_mf (SchroMe me, int ref_number)
+{
+  SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
+  return me->meElement[ref_number]->subpel_mf;
 }
 
 void
-schro_me_set_subpel_mf (SchroMe me, SchroMotionField* mf)
+schro_me_set_subpel_mf (SchroMe me, SchroMotionField* mf, int ref_number)
 {
-  SCHRO_ASSERT (me && mf);
-  me->subpel_mf = mf;
+  SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
+  me->meElement[ref_number]->subpel_mf = mf;
 }
 
 SchroMotionField*
-schro_me_split2_mf (SchroMe me)
+schro_me_split2_mf (SchroMe me, int ref_number)
 {
-  SCHRO_ASSERT (me);
-  return me->split2_mf;
+  SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
+  return me->meElement[ref_number]->split2_mf;
+}
+
+void
+schro_me_set_split2_mf (SchroMe me, SchroMotionField* mf, int ref_number)
+{
+  SCHRO_ASSERT (me &&(0 == ref_number || 1 == ref_number));
+  me->meElement[ref_number]->split2_mf = mf;
 }
 
 SchroMotionField*
-schro_me_split1_mf (SchroMe me)
+schro_me_split1_mf (SchroMe me, int ref_number)
 {
-  SCHRO_ASSERT (me);
-  return me->split1_mf;
+  SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
+  return me->meElement[ref_number]->split1_mf;
+}
+
+void
+schro_me_set_split1_mf (SchroMe me, SchroMotionField* mf, int ref_number)
+{
+  SCHRO_ASSERT (me &&(0 == ref_number || 1 == ref_number));
+  me->meElement[ref_number]->split1_mf = mf;
 }
 
 SchroMotionField*
-schro_me_split0_mf (SchroMe me)
+schro_me_split0_mf (SchroMe me, int ref_number)
 {
-  SCHRO_ASSERT (me);
-  return me->split0_mf;
+  SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
+  return me->meElement[ref_number]->split0_mf;
+}
+
+void
+schro_me_set_split0_mf (SchroMe me, SchroMotionField* mf, int ref_number)
+{
+  SCHRO_ASSERT (me &&(0 == ref_number || 1 == ref_number));
+  me->meElement[ref_number]->split0_mf = mf;
+}
+
+SchroHierBm
+schro_me_hbm (SchroMe me, int ref_number)
+{
+  SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
+  return me->meElement[ref_number]->hbm;
 }
 
 void
@@ -1640,6 +2500,48 @@ schro_me_params (SchroMe me)
 {
   SCHRO_ASSERT (me);
   return me->params;
+}
+
+SchroMotion*
+schro_me_motion (SchroMe me)
+{
+  SCHRO_ASSERT (me);
+  return me->motion;
+}
+
+void
+schro_me_set_motion (SchroMe me, SchroMotion* motion)
+{
+  SCHRO_ASSERT (me);
+  me->motion = motion;
+}
+
+void
+schro_me_set_mc_error (SchroMe me, double mc_error)
+{
+  SCHRO_ASSERT (me);
+  me->mc_error = mc_error;
+}
+
+double
+schro_me_mc_error (SchroMe me)
+{
+  SCHRO_ASSERT (me);
+  return me->mc_error;
+}
+
+void
+schro_me_set_badblock_ratio (SchroMe me, double badblocks_ratio)
+{
+  SCHRO_ASSERT (me);
+  me->badblocks_ratio = badblocks_ratio;
+}
+
+double
+schro_me_badblocks_ratio (SchroMe me)
+{
+  SCHRO_ASSERT (me);
+  return me->badblocks_ratio;
 }
 
 

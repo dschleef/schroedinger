@@ -524,6 +524,7 @@ schro_frame_clone (SchroMemoryDomain *domain, SchroFrame *frame)
       frame->format, frame->width, frame->height);
 }
 
+
 /**
  * schro_frame_ref:
  * @frame: a frame object
@@ -535,9 +536,11 @@ schro_frame_clone (SchroMemoryDomain *domain, SchroFrame *frame)
 SchroFrame *
 schro_frame_ref (SchroFrame *frame)
 {
+  SCHRO_ASSERT(frame && frame->refcount > 0);
   frame->refcount++;
   return frame;
 }
+
 
 /**
  * schro_frame_unref:
@@ -561,7 +564,6 @@ schro_frame_unref (SchroFrame *frame)
     if (frame->free) {
       frame->free (frame, frame->priv);
     }
-
 #ifdef HAVE_OPENGL
     if (SCHRO_FRAME_IS_OPENGL (frame)) {
       schro_opengl_frame_cleanup (frame);
@@ -588,7 +590,7 @@ schro_frame_unref (SchroFrame *frame)
       schro_free (frame->virt_priv);
     }
 
-    schro_free(frame);
+     schro_free(frame);
   }
 }
 

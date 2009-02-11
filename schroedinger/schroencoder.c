@@ -1190,10 +1190,8 @@ schro_encoder_frame_complete (SchroAsyncStage *stage)
       }
     }
 
-    for (i=0; 2>i; ++i) {
-      if (frame->deep_me[i]) {
-        schro_me_free (&frame->deep_me[i]);
-      }
+    if (frame->deep_me) {
+      schro_me_free (&frame->deep_me);
     }
 
     for (i=0; 2>i; ++i) {
@@ -1644,11 +1642,11 @@ schro_encoder_predict_subpel_picture (SchroAsyncStage *stage)
         mf_src = schro_hbm_motion_field (frame->hier_bm[ref], 0);
         memcpy (mf_dest->motion_vectors, mf_src->motion_vectors
             , xnum_blocks * ynum_blocks * sizeof (SchroMotionVector));
-        schro_me_set_subpel_mf (frame->deep_me[ref], mf_dest);
+        schro_me_set_subpel_mf (frame->deep_me, mf_dest, ref);
       }
     }
     if (frame->params.num_refs > 0 && frame->params.mv_precision > 0) {
-      schro_encoder_motion_predict_subpel_deep (frame);
+      schro_encoder_motion_predict_subpel_deep (frame->deep_me);
     }
   }
 }
@@ -1664,16 +1662,48 @@ schro_encoder_mode_decision (SchroAsyncStage *stage)
   SCHRO_ASSERT(frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL].is_done);
   SCHRO_INFO("mode decision and superblock splitting picture %d", frame->frame_number);
 
-  SchroMotionField* mf_src;
-  SchroMotionVector* mv_dest;
-
   if (frame->encoder->enable_deep_estimation) {
-    /* FIXME: temporary solution to lack of proper mode decision */
-    if (0 < frame->params.num_refs) {
-      mf_src = schro_me_subpel_mf (frame->deep_me[0]);
-      mv_dest = frame->motion->motion_vectors;
-      memcpy (mv_dest, mf_src->motion_vectors, mf_src->x_num_blocks
-          * mf_src->y_num_blocks * sizeof (SchroMotionVector));
+    SchroMotionField *mf, *mf_src;
+    int xnum_blocks, ynum_blocks, ref;
+    if (frame->params.num_refs > 0) {
+      xnum_blocks = frame->params.x_num_blocks;
+      ynum_blocks = frame->params.y_num_blocks;
+      for (ref = 0; frame->params.num_refs > ref; ++ref) {
+        mf = schro_motion_field_new (xnum_blocks, ynum_blocks);
+        schro_motion_field_set (mf, 2, ref+1);
+        /* copy split2 from subpel */
+        mf_src = schro_me_subpel_mf (frame->deep_me, ref);
+        SCHRO_ASSERT (mf_src);
+        memcpy (mf->motion_vectors, mf_src->motion_vectors
+            , xnum_blocks * ynum_blocks * sizeof (SchroMotionVector));
+        schro_me_set_split2_mf (frame->deep_me, mf, ref);
+
+        mf = schro_motion_field_new (xnum_blocks, ynum_blocks);
+        schro_motion_field_set (mf, 1, ref+1);
+        schro_me_set_split1_mf (frame->deep_me, mf, ref);
+
+        mf = schro_motion_field_new (xnum_blocks, ynum_blocks);
+        schro_motion_field_set (mf, 0, ref+1);
+        schro_me_set_split0_mf (frame->deep_me, mf, ref);
+      }
+      SCHRO_INFO("mode decision and superblock splitting picture %d"
+          , frame->frame_number);
+      schro_me_set_motion (frame->deep_me, frame->motion);
+      schro_mode_decision (frame->deep_me);
+      schro_motion_calculate_stats (frame->motion, frame);
+      frame->estimated_mc_bits = schro_motion_estimate_entropy (frame->motion);
+      frame->badblock_ratio = schro_me_badblocks_ratio (frame->deep_me);
+      frame->mc_error = schro_me_mc_error (frame->deep_me);
+
+      SCHRO_DEBUG("DC block ratio for frame %d s %g", frame->frame_number
+          , frame->dcblock_ratio);
+
+      if (frame->dcblock_ratio > frame->encoder->magic_me_bailout_limit) {
+        frame->params.num_refs = 0;
+        frame->num_refs = 0;
+        SCHRO_DEBUG("DC block ratio too high for frame d, inserting an intra  picture"
+            , frame->frame_number);
+      }
     }
   }
 
@@ -1695,11 +1725,11 @@ schro_encoder_render_picture (SchroEncoderFrame *frame)
     SCHRO_ASSERT(schro_motion_verify (frame->motion));
 
     if ((frame->encoder->bits_per_picture &&
-        frame->estimated_mc_bits > frame->encoder->bits_per_picture * frame->encoder->magic_mc_bailout_limit) ||
+        frame->estimated_mc_bits > frame->encoder->bits_per_picture * frame->encoder->magic_me_bailout_limit) ||
         frame->badblock_ratio > 0.5) {
       SCHRO_DEBUG("%d: MC bailout %d > %g", frame->frame_number,
           frame->estimated_mc_bits,
-          frame->encoder->bits_per_picture*frame->encoder->magic_mc_bailout_limit);
+          frame->encoder->bits_per_picture*frame->encoder->magic_me_bailout_limit);
       frame->picture_weight = frame->encoder->magic_bailout_weight;
       frame->params.num_refs = 0;
       frame->num_refs = 0;
@@ -3247,12 +3277,14 @@ schro_encoder_frame_new (SchroEncoder *encoder)
 void
 schro_encoder_frame_ref (SchroEncoderFrame *frame)
 {
+  SCHRO_ASSERT (frame && frame->refcount > 0);
   frame->refcount++;
 }
 
 void
 schro_encoder_frame_unref (SchroEncoderFrame *frame)
 {
+  SCHRO_ASSERT(frame && frame->refcount > 0);
   int i;
 
   frame->refcount--;
@@ -3320,8 +3352,7 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
       if (frame->quant_indices[2][i]) schro_free (frame->quant_indices[2][i]);
     }
 
-    if (frame->deep_me[0]) schro_me_free (&frame->deep_me[0]);
-    if (frame->deep_me[1]) schro_me_free (&frame->deep_me[1]);
+    if (frame->deep_me) schro_me_free (&frame->deep_me);
 
     schro_free (frame);
   }
@@ -3492,7 +3523,7 @@ struct SchroEncoderSettings {
   DOUB(magic_scene_change_threshold, 0.0, 1000.0, 0.2),
   DOUB(magic_inter_p_weight, 0.0, 1000.0, 1.5),
   DOUB(magic_inter_b_weight, 0.0, 1000.0, 0.2),
-  DOUB(magic_mc_bailout_limit, 0.0, 1000.0, 0.5),
+  DOUB(magic_me_bailout_limit, 0.0, 1000.0, 0.33),
   DOUB(magic_bailout_weight, 0.0, 1000.0, 4.0),
   DOUB(magic_error_power, 0.0, 1000.0, 4.0),
   DOUB(magic_mc_lambda, 0.0, 1000.0, 0.1),

@@ -187,7 +187,7 @@ struct _SchroEncoderFrame {
   struct _SchroRoughME *rme[2];
   struct _SchroPhaseCorr *phasecorr[2];
   struct SchroHierBm* hier_bm[2];
-  struct SchroMe* deep_me[2];
+  struct SchroMe* deep_me;
 
   SchroMotion *motion;
 
@@ -216,6 +216,7 @@ struct _SchroEncoderFrame {
   double estimated_arith_context_ratio;
 
   double badblock_ratio;
+  double dcblock_ratio;
   double hist_slope;
 };
 
@@ -293,7 +294,7 @@ struct _SchroEncoder {
   double magic_scene_change_threshold;
   double magic_inter_p_weight;
   double magic_inter_b_weight;
-  double magic_mc_bailout_limit;
+  double magic_me_bailout_limit;
   double magic_bailout_weight;
   double magic_error_power;
   double magic_mc_lambda;

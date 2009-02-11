@@ -90,10 +90,10 @@ void
 schro_hbm_unref (SchroHierBm* schro_hbm)
 {
   SCHRO_ASSERT(schro_hbm && *schro_hbm && (*schro_hbm)->ref_count > 0);
-  if (0 == --(*schro_hbm)->ref_count) {
-    schro_hbm_free (*schro_hbm);
-  }
+  SchroHierBm hbm = *schro_hbm;
   *schro_hbm = NULL;
+  if (0 < --hbm->ref_count) return;
+  schro_hbm_free (hbm);
 }
 
 SchroFrame*
