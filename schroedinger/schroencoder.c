@@ -581,6 +581,10 @@ schro_encoder_start (SchroEncoder *encoder)
       && encoder->enable_deep_estimation) {
     /* only one can be set at any one time */
     encoder->enable_bigblock_estimation = FALSE;
+  } else if (!encoder->enable_bigblock_estimation
+      && !encoder->enable_deep_estimation) {
+    SCHRO_ERROR("no motion estimation selected!");
+    SCHRO_ASSERT(0);
   }
 
   if (encoder->video_format.luma_excursion >= 256 ||
@@ -1904,16 +1908,23 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
     }
   }
 
-  for (i=0; encoder->frame_queue->n > i; ++i) {
-    frame = encoder->frame_queue->elements[i].data;
-    SCHRO_DEBUG("serialised stage i=%d picture=%d state=%d slot=%d quant_slot=%d"
-        , i, frame->frame_number, 0 /* frame>state */
-        , frame->slot, encoder->quant_slot);
+  for (ref = 1; ref >= 0; ref--) {
+    for (i=0; encoder->frame_queue->n > i; ++i) {
+      frame = encoder->frame_queue->elements[i].data;
+      SCHRO_DEBUG("serialised stage i=%d picture=%d state=%d slot=%d quant_slot=%d"
+          , i, frame->frame_number, 0 /* frame>state */
+          , frame->slot, encoder->quant_slot);
 
-    if (frame->busy) continue;
+      if (frame->busy) continue;
 
-    if (frame->slot == encoder->quant_slot) {
-      int ret;
+      if (encoder->enable_deep_estimation) {
+        if (frame->slot != encoder->quant_slot) {
+          continue;
+        }
+      } else if (encoder->enable_bigblock_estimation) {
+        if (frame->is_ref != ref) continue;
+      }
+
       if (TODO(SCHRO_ENCODER_FRAME_STAGE_PREDICT_SUBPEL) &&
           frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL].is_done) {
         schro_encoder_set_frame_lambda (frame);
@@ -1926,10 +1937,29 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
         run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_MODE_DECISION);
         return TRUE;
       }
+    }
+  }
 
-      /* analyse the residual in preparation for quantisation */
+  for(i=0;i<encoder->frame_queue->n;i++) {
+    frame = encoder->frame_queue->elements[i].data;
+    if (frame->slot == encoder->quant_slot) {
+      int ret;
       ret = encoder->handle_quants (encoder, i);
-      if (!ret) continue;
+      if (!ret) break;
+    }
+  }
+
+  for (ref = 1; ref >=0; ref--) {
+    for (i=0; encoder->frame_queue->n > i; ++i) {
+      frame = encoder->frame_queue->elements[i].data;
+
+      if (frame->busy) continue;
+
+      if (encoder->enable_deep_estimation) {
+        if (frame->slot != encoder->quant_slot) continue;
+      } else if (encoder->enable_bigblock_estimation) {
+        if (frame->is_ref != ref) continue;
+      }
 
       if (TODO(SCHRO_ENCODER_FRAME_STAGE_ENCODING) &&
           frame->stages[SCHRO_ENCODER_FRAME_STAGE_HAVE_QUANTS].is_done) {
@@ -1946,6 +1976,7 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
           frame->frame_number, 0/*frame->state*/, frame->busy);
 
       if (frame->busy) continue;
+      if (frame->is_ref != ref) continue;
 
       if (TODO(SCHRO_ENCODER_FRAME_STAGE_RECONSTRUCT) &&
           frame->stages[SCHRO_ENCODER_FRAME_STAGE_ENCODING].is_done) {
