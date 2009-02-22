@@ -7,4 +7,4 @@ Name: schro-@SCHRO_MAJORMINOR@ uninstalled
 Description: Dirac codec library
 Version: @VERSION@
 Libs: -L${libdir} -lschroedinger-@SCHRO_MAJORMINOR@ @PTHREAD_LIBS@ @LIBM@
-Cflags: -I${includedir} -I@srcdir@/schroedinger
+Cflags: -I${includedir} -I@srcdir@
