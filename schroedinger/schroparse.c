@@ -213,6 +213,7 @@ struct _SchroParseSyncState
   int sync_state;
   unsigned offset;
   uint32_t last_npo;
+  int done_special_startup;
 };
 
 enum {
@@ -276,6 +277,23 @@ schro_parse_sync (SchroParseSyncState *sps, SchroBufferList *buflist)
       if (!schro_buflist_peekbytes (tmp, 13, buflist, sps->offset)) {
         return NULL;
       }
+      while (!sps->done_special_startup && !sps->offset) {
+        uint8_t c;
+        sps->done_special_startup = TRUE;
+        /* special startup case: the very first buffer may consist of a
+         * single data unit, (usually a seqhdr), to aleviate waiting for
+         * two parse_infos to arrive, assume that we are synced IFF the
+         * next_parse_offset <= length(buflist) */
+        if (!schro_parse_decode_parseinfo (tmp, 13, &pu)) {
+          break;
+        }
+        if (!schro_buflist_peekbytes (&c, 1, buflist, sps->offset + pu.next_parse_offset-1)) {
+          break;
+        }
+        sps->last_npo = pu.next_parse_offset;
+        sps->sync_state = SYNCED;
+        goto extract;
+      }
       /* found, fall through */
     }
     case TRY_SYNC: { /* -> SYNCED | NOT_SYNCED */
@@ -330,7 +348,7 @@ try_sync_fail:
     }
     }
   } while (NOT_SYNCED == sps->sync_state);
-
+extract:
   /*
    * synced, attempt to extract a data unit
    */
