@@ -271,18 +271,16 @@ schro_parse_sync (SchroParseSyncState *sps, SchroBufferList *buflist)
       if (!found) {
         return NULL;
       }
-      /* protect the case where there aren't 9 more bytes after end of
-       * parse_code_prefix: offset + 12 = last byte of parse_info */
-      if (!schro_buflist_peekbytes (tmp, 1, buflist, sps->offset+12)) {
+      /* protect the case where there isn't a whole parse_info avaliable.
+       * eagerly read parse_info into tmp, it'll be required shortly */
+      if (!schro_buflist_peekbytes (tmp, 13, buflist, sps->offset)) {
         return NULL;
       }
       /* found, fall through */
     }
     case TRY_SYNC: { /* -> SYNCED | NOT_SYNCED */
       parse_info_t pu1;
-      /* NB, we are guaranteed that reading 13 bytes from sps->offset will
-       * succeed, since NOT_SYNCED will not advance to this point if not */
-      schro_buflist_peekbytes (tmp, 13, buflist, sps->offset);
+      /* tmp is still valid from NOT_SYNCED case */
       if (!schro_parse_decode_parseinfo (tmp, 13, &pu1)) {
         goto try_sync_fail;
       }
