@@ -23,63 +23,93 @@
 void
 schro_split_ext_desl93 (int16_t *hi, int16_t *lo, int n)
 {
+#ifndef HAVE_ORC
   static const int16_t stage1_weights[] = { 1, -9, -9, 1 };
   //static const int16_t stage2_weights[] = { 1, 1 };
   static const int16_t stage1_offset_shift[] = { 7, 4 };
   static const int16_t stage2_offset_shift[] = { 2, 2 };
+#endif
 
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
   hi[n+1] = hi[n-1];
 
+#ifdef HAVE_ORC
+  orc_mas4_add_s16_1991_74 (lo, lo, hi - 1, n);
+#else
   oil_mas4_add_s16 (lo, lo, hi - 1, stage1_weights, stage1_offset_shift, n);
+#endif
 
   lo[-1] = lo[0];
 
   //oil_mas2_add_s16 (hi, hi, lo - 1, stage2_weights, stage2_offset_shift, n);
+#ifdef HAVE_ORC
+  orc_add2_rshift_add_s16_22 (hi, hi, lo - 1, lo, n);
+#else
   oil_add2_rshift_add_s16 (hi, hi, lo - 1, lo, stage2_offset_shift, n);
+#endif
 }
 
 void
 schro_split_ext_53 (int16_t *hi, int16_t *lo, int n)
 {
+#ifndef HAVE_ORC
   //static const int16_t stage1_weights[] = { -1, -1 };
   //static const int16_t stage2_weights[] = { 1, 1 };
   static const int16_t stage1_offset_shift[] = { 1, 1 };
   static const int16_t stage2_offset_shift[] = { 2, 2 };
+#endif
 
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
 
   //oil_mas2_add_s16 (lo, lo, hi, stage1_weights, stage1_offset_shift, n);
+#ifdef HAVE_ORC
+  orc_add2_rshift_sub_s16_11 (lo, lo, hi, hi+1, n);
+#else
   oil_add2_rshift_sub_s16 (lo, lo, hi, hi+1, stage1_offset_shift, n);
+#endif
 
   lo[-1] = lo[0];
   lo[n] = lo[n-1];
 
   //oil_mas2_add_s16 (hi, hi, lo - 1, stage2_weights, stage2_offset_shift, n);
+#ifdef HAVE_ORC
+  orc_add2_rshift_add_s16_22 (hi, hi, lo - 1, lo, n);
+#else
   oil_add2_rshift_add_s16 (hi, hi, lo - 1, lo, stage2_offset_shift, n);
+#endif
 }
 
 void
 schro_split_ext_135 (int16_t *hi, int16_t *lo, int n)
 {
+#ifndef HAVE_ORC
   static const int16_t stage1_weights[] = { 1, -9, -9, 1 };
   static const int16_t stage2_weights[] = { -1, 9, 9, -1 };
   static const int16_t stage1_offset_shift[] = { 7, 4 };
   static const int16_t stage2_offset_shift[] = { 16, 5 };
+#endif
 
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
   hi[n+1] = hi[n-1];
 
+#ifdef HAVE_ORC
+  orc_mas4_add_s16_1991_74 (lo, lo, hi - 1, n);
+#else
   oil_mas4_add_s16 (lo, lo, hi-1, stage1_weights, stage1_offset_shift, n);
+#endif
 
   lo[-1] = lo[0];
   lo[-2] = lo[0];
   lo[n] = lo[n-1];
 
+#ifdef HAVE_ORC
+  orc_mas4_add_s16_1991_165 (hi, hi, lo - 2, n);
+#else
   oil_mas4_add_s16 (hi, hi, lo - 2, stage2_weights, stage2_offset_shift, n);
+#endif
 }
 
 void
@@ -298,7 +328,9 @@ void schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
     int16_t *tmp)
 {
   int i;
+#ifndef HAVE_ORC
   int16_t one = 1;
+#endif
 
 #define ROW(row) ((int16_t *)OFFSET(data, (row)*stride))
 
@@ -311,7 +343,11 @@ void schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
     if (i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
+#ifdef HAVE_ORC
+      orc_lshift1_s16(ROW(i), ROW(i), width);
+#else
       oil_lshift_s16(ROW(i), ROW(i), &one, width);
+#endif
       oil_deinterleave2_s16 (hi, lo, ROW(i), width/2);
       schro_split_ext_desl93 (hi, lo, width/2);
       oil_memcpy (ROW(i), hi, width/2*sizeof(int16_t));
@@ -384,14 +420,20 @@ void schro_iwt_5_3 (int16_t *data, int stride, int width, int height,
   static const int16_t stage1_offset_shift[] = { 1, 1 };
   static const int16_t stage2_offset_shift[] = { 2, 2 };
   int i;
+#ifndef HAVE_ORC
   int16_t one = 1;
+#endif
 
 #define ROW(row) ((int16_t *)OFFSET(data, (row)*stride))
   for(i=0;i<height + 2;i++){
     if (i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
+#ifdef HAVE_ORC
+      orc_lshift1_s16(ROW(i), ROW(i), width);
+#else
       oil_lshift_s16(ROW(i), ROW(i), &one, width);
+#endif
       oil_deinterleave2_s16 (hi, lo, ROW(i), width/2);
       schro_split_ext_53 (hi, lo, width/2);
       oil_memcpy (ROW(i), hi, width/2*sizeof(int16_t));
@@ -448,7 +490,9 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
     int16_t *tmp)
 {
   int i;
+#ifndef HAVE_ORC
   int16_t one = 1;
+#endif
 
   /* FIXME */
   SCHRO_ASSERT(height>=6);
@@ -460,7 +504,11 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
     if (i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
+#ifdef HAVE_ORC
+      orc_lshift1_s16(ROW(i), ROW(i), width);
+#else
       oil_lshift_s16(ROW(i), ROW(i), &one, width);
+#endif
       oil_deinterleave2_s16 (hi, lo, ROW(i), width/2);
       schro_split_ext_135 (hi, lo, width/2);
       oil_memcpy (ROW(i), hi, width/2*sizeof(int16_t));
@@ -529,20 +577,36 @@ schro_iwt_haar (int16_t *data, int stride, int width, int height,
 
   for(i=0;i<height;i+=2){
     data1 = OFFSET(data,i*stride);
+#ifdef HAVE_ORC
+    if (shift == 1) {
+      orc_lshift1_s16(tmp, data1, width);
+    } else {
+      oil_memcpy (tmp, data1, width*sizeof(int16_t));
+    }
+#else
     if (shift) {
       oil_lshift_s16(tmp, data1, &shift, width);
     } else {
       oil_memcpy (tmp, data1, width*sizeof(int16_t));
     }
+#endif
     oil_deinterleave2_s16 (data1, data1 + width/2, tmp, width/2);
     schro_split_ext_haar (data1, data1 + width/2, width/2);
 
     data2 = OFFSET(data,(i+1)*stride);
+#ifdef HAVE_ORC
+    if (shift == 1) {
+      orc_lshift1_s16(tmp, data2, width);
+    } else {
+      oil_memcpy (tmp, data2, width*sizeof(int16_t));
+    }
+#else
     if (shift) {
       oil_lshift_s16(tmp, data2, &shift, width);
     } else {
       oil_memcpy (tmp, data2, width*sizeof(int16_t));
     }
+#endif
     oil_deinterleave2_s16 (data2, data2 + width/2, tmp, width/2);
     schro_split_ext_haar (data2, data2 + width/2, width/2);
 
@@ -653,7 +717,9 @@ void schro_iwt_daub_9_7 (int16_t *data, int stride, int width, int height,
   static const int16_t stage12_offset_shift[] = { 2047, 12 };
   static const int16_t stage34_offset_shift[] = { 2048, 12 };
   int i;
+#ifndef HAVE_ORC
   int16_t one = 1;
+#endif
   int i1;
   int i2;
 
@@ -664,7 +730,11 @@ void schro_iwt_daub_9_7 (int16_t *data, int stride, int width, int height,
     if (i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
+#ifdef HAVE_ORC
+      orc_lshift1_s16(ROW(i), ROW(i), width);
+#else
       oil_lshift_s16(ROW(i), ROW(i), &one, width);
+#endif
       oil_deinterleave2_s16 (hi, lo, ROW(i), width/2);
       schro_split_ext_daub97 (hi, lo, width/2);
       oil_memcpy (ROW(i), hi, width/2*sizeof(int16_t));

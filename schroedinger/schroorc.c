@@ -4,29 +4,112 @@
 #endif
 
 #include <schroedinger/schrooil.h>
+#include <schroedinger/schrodebug.h>
 #include <orc/orc.h>
 #include <math.h>
 #include <stdio.h>
 
 
 void
-orc_add2_rshift_add_s16 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
-    int16_t *s4_2, int n)
+orc_add2_rshift_add_s16_22 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
+    int n)
 {
+#if 0
+  static const int16_t s4_2[] = { 2, 2 };
   int i;
   for(i=0;i<n;i++) {
     d[i] = s1[i] + ((s2[i] + s3[i] + s4_2[0])>>s4_2[1]);
   }
+#endif
+  static OrcProgram *p = NULL;
+  OrcExecutor *ex;
+
+  if (p == NULL) {
+    SCHRO_ERROR("orc_add2_rshift_add_s16_22");
+
+    p = orc_program_new ();
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_source (p, 2, "s2");
+    orc_program_add_source (p, 2, "s3");
+    orc_program_add_constant (p, 2, 2, "c1");
+    orc_program_add_constant (p, 2, 2, "c2");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append_str (p, "addw", "t1", "s2", "s3");
+    orc_program_append_str (p, "addw", "t1", "t1", "c1");
+    orc_program_append_str (p, "shrsw", "t1", "t1", "c2");
+    orc_program_append_str (p, "addw", "d1", "s1", "t1");
+
+    orc_program_compile (p);
+  }
+
+  ex = orc_executor_new (p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array_str (ex, "s1", s1);
+  orc_executor_set_array_str (ex, "s2", s2);
+  orc_executor_set_array_str (ex, "s3", s3);
+  orc_executor_set_array_str (ex, "d1", d);
+
+  orc_executor_run (ex);
+  orc_executor_free (ex);
 }
 
 void
-orc_add2_rshift_sub_s16 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
-    int16_t *s4_2, int n)
+orc_add2_rshift_sub_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
+    int n)
 {
+#if 0
   int i;
   for(i=0;i<n;i++) {
     d[i] = s1[i] - ((s2[i] + s3[i] + s4_2[0])>>s4_2[1]);
   }
+#endif
+  static OrcProgram *p = NULL;
+  OrcExecutor *ex;
+
+  if (p == NULL) {
+    SCHRO_ERROR("orc_add2_rshift_sub_s16_11");
+
+    p = orc_program_new ();
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_source (p, 2, "s2");
+    orc_program_add_source (p, 2, "s3");
+#if 0
+    orc_program_add_constant (p, 2, 1, "c1");
+    orc_program_add_constant (p, 2, 1, "c2");
+#else
+    orc_program_add_constant (p, 2, 0x8000, "c1");
+#endif
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 2, "t2");
+    orc_program_add_temporary (p, 2, "t3");
+
+#if 0
+    orc_program_append_str (p, "addw", "t1", "s2", "s3");
+    orc_program_append_str (p, "addw", "t1", "t1", "c1");
+    orc_program_append_str (p, "shrsw", "t1", "t1", "c2");
+#else
+    orc_program_append_str (p, "xorw", "t1", "c1", "s2");
+    orc_program_append_str (p, "xorw", "t2", "c1", "s3");
+    orc_program_append_str (p, "avguw", "t3", "t1", "t2");
+    orc_program_append_str (p, "xorw", "t1", "c1", "t3");
+#endif
+    orc_program_append_str (p, "subw", "d1", "s1", "t1");
+
+    orc_program_compile (p);
+  }
+
+  ex = orc_executor_new (p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array_str (ex, "s1", s1);
+  orc_executor_set_array_str (ex, "s2", s2);
+  orc_executor_set_array_str (ex, "s3", s3);
+  orc_executor_set_array_str (ex, "d1", d);
+
+  orc_executor_run (ex);
+  orc_executor_free (ex);
 }
 
 void
@@ -42,34 +125,23 @@ void
 orc_add_s16 (int16_t *d, int16_t *src1, int16_t *src2, int n)
 {
   static OrcProgram *p = NULL;
-  static int s1;
-  static int s2;
-  static int d1;
   OrcExecutor *ex;
 
   if (p == NULL) {
-#if 0
-  int i;
-  for(i=0;i<n;i++){
-    d[i] = src1[i] + src2[i];
-  }
-#endif
-    p = orc_program_new ();
+    SCHRO_ERROR("orc_add_s16");
 
-    d1 = orc_program_add_destination (p, "s16", "d1");
-    s1 = orc_program_add_source (p, "s16", "s1");
-    s2 = orc_program_add_source (p, "s16", "s2");
+    p = orc_program_new_dss (2,2,2);
 
-    orc_program_append (p, "add_s16", d1, s1, s2);
+    orc_program_append_str (p, "addw", "d1", "s1", "s2");
 
     orc_program_compile (p);
   }
 
   ex = orc_executor_new (p);
   orc_executor_set_n (ex, n);
-  orc_executor_set_array (ex, s1, src1);
-  orc_executor_set_array (ex, s2, src2);
-  orc_executor_set_array (ex, d1, d);
+  orc_executor_set_array_str (ex, "s1", src1);
+  orc_executor_set_array_str (ex, "s2", src2);
+  orc_executor_set_array_str (ex, "d1", d);
 
   orc_executor_run (ex);
   orc_executor_free (ex);
@@ -88,12 +160,55 @@ orc_addc_rshift_s16 (int16_t *d1, int16_t *s1, int16_t *s2_2, int n)
 }
 
 void
-orc_lshift_s16 (int16_t *d1, int16_t *s1, int16_t *s3_1, int n)
+orc_lshift1_s16 (int16_t *d1, int16_t *s1, int n)
 {
-  int i;
-  for(i=0;i<n;i++){
-    d1[i] = s1[i]<<s3_1[0];
+  static OrcProgram *p = NULL;
+  OrcExecutor *ex;
+
+  if (p == NULL) {
+    SCHRO_ERROR("orc_lshift1_s16");
+
+    p = orc_program_new_ds (2,2);
+    orc_program_add_constant (p, 2, 1, "c1");
+
+    orc_program_append_str (p, "shlw", "d1", "s1", "c1");
+
+    orc_program_compile (p);
   }
+
+  ex = orc_executor_new (p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array_str (ex, "s1", s1);
+  orc_executor_set_array_str (ex, "d1", d1);
+
+  orc_executor_run (ex);
+  orc_executor_free (ex);
+}
+
+void
+orc_lshift2_s16 (int16_t *d1, int16_t *s1, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor *ex;
+
+  if (p == NULL) {
+    SCHRO_ERROR("orc_lshift2_s16");
+
+    p = orc_program_new_ds (2,2);
+    orc_program_add_constant (p, 2, 2, "c1");
+
+    orc_program_append_str (p, "shlw", "d1", "s1", "c1");
+
+    orc_program_compile (p);
+  }
+
+  ex = orc_executor_new (p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array_str (ex, "s1", s1);
+  orc_executor_set_array_str (ex, "d1", d1);
+
+  orc_executor_run (ex);
+  orc_executor_free (ex);
 }
 
 void
@@ -144,11 +259,13 @@ orc_mas4_across_add_s16 (int16_t *d, int16_t *s1, int16_t *s2_nx4, int sstr2,
 #endif
 
 void
-orc_mas4_add_s16 (int16_t *d1, int16_t *s1, int16_t *s2, int16_t *s3_4,
-    int16_t *s4_2, int n)
+orc_mas4_add_s16_1991_74 (int16_t *d1, int16_t *s1, int16_t *s2, int n)
 {
+#if 0
   int i;
   int x;
+  static const int16_t s3_4[] = { 1, -9, -9, 1 };
+  static const int16_t s4_2[] = { 7, 4 };
 
   for(i=0;i<n;i++){
     x = s4_2[0] + s2[i]*s3_4[0] + s2[i+1]*s3_4[1] + s2[i+2]*s3_4[2] +
@@ -156,15 +273,133 @@ orc_mas4_add_s16 (int16_t *d1, int16_t *s1, int16_t *s2, int16_t *s3_4,
     x >>= s4_2[1];
     d1[i] = s1[i] + x;
   }
+#endif
+  static OrcProgram *p = NULL;
+  OrcExecutor *ex;
+
+  if (p == NULL) {
+    SCHRO_ERROR("orc_mas4_add_s16_1991_74");
+
+    p = orc_program_new ();
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_source (p, 2, "s20");
+    orc_program_add_source (p, 2, "s21");
+    orc_program_add_source (p, 2, "s22");
+    orc_program_add_source (p, 2, "s23");
+    orc_program_add_constant (p, 2, 9, "c1");
+    orc_program_add_constant (p, 2, 8, "c2");
+    orc_program_add_constant (p, 2, 4, "c3");
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 2, "t2");
+
+    orc_program_append_str (p, "addw", "t1", "s21", "s22");
+    orc_program_append_str (p, "mullw", "t1", "t1", "c1");
+    orc_program_append_str (p, "addw", "t2", "s20", "s23");
+    orc_program_append_str (p, "subw", "t1", "t1", "t2");
+    orc_program_append_str (p, "addw", "t1", "t1", "c2");
+    orc_program_append_str (p, "shrsw", "t1", "t1", "c3");
+    orc_program_append_str (p, "subw", "d1", "s1", "t1");
+
+    orc_program_compile (p);
+  }
+
+  ex = orc_executor_new (p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array_str (ex, "s1", s1);
+  orc_executor_set_array_str (ex, "s20", s2+0);
+  orc_executor_set_array_str (ex, "s21", s2+1);
+  orc_executor_set_array_str (ex, "s22", s2+2);
+  orc_executor_set_array_str (ex, "s23", s2+3);
+  orc_executor_set_array_str (ex, "d1", d1);
+
+  orc_executor_run (ex);
+  orc_executor_free (ex);
+}
+
+void
+orc_mas4_add_s16_1991_165 (int16_t *d1, int16_t *s1, int16_t *s2, int n)
+{
+#if 0
+  int i;
+  int x;
+  static const int16_t s3_4[] = { 1, -9, -9, 1 };
+  static const int16_t s4_2[] = { 7, 4 };
+
+  for(i=0;i<n;i++){
+    x = s4_2[0] + s2[i]*s3_4[0] + s2[i+1]*s3_4[1] + s2[i+2]*s3_4[2] +
+        s2[i+3]*s3_4[3];
+    x >>= s4_2[1];
+    d1[i] = s1[i] + x;
+  }
+#endif
+  static OrcProgram *p = NULL;
+  OrcExecutor *ex;
+
+  if (p == NULL) {
+    SCHRO_ERROR("orc_mas4_add_s16_1991_165");
+
+    p = orc_program_new ();
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_source (p, 2, "s20");
+    orc_program_add_source (p, 2, "s21");
+    orc_program_add_source (p, 2, "s22");
+    orc_program_add_source (p, 2, "s23");
+    orc_program_add_constant (p, 2, 9, "c1");
+    orc_program_add_constant (p, 2, 16, "c2");
+    orc_program_add_constant (p, 2, 5, "c3");
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 2, "t2");
+
+    orc_program_append_str (p, "addw", "t1", "s21", "s22");
+    orc_program_append_str (p, "mullw", "t1", "t1", "c1");
+    orc_program_append_str (p, "addw", "t2", "s20", "s23");
+    orc_program_append_str (p, "subw", "t1", "t1", "t2");
+    orc_program_append_str (p, "addw", "t1", "t1", "c2");
+    orc_program_append_str (p, "shrsw", "t1", "t1", "c3");
+    orc_program_append_str (p, "addw", "d1", "s1", "t1");
+
+    orc_program_compile (p);
+  }
+
+  ex = orc_executor_new (p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array_str (ex, "s1", s1);
+  orc_executor_set_array_str (ex, "s20", s2+0);
+  orc_executor_set_array_str (ex, "s21", s2+1);
+  orc_executor_set_array_str (ex, "s22", s2+2);
+  orc_executor_set_array_str (ex, "s23", s2+3);
+  orc_executor_set_array_str (ex, "d1", d1);
+
+  orc_executor_run (ex);
+  orc_executor_free (ex);
 }
 
 void
 orc_subtract_s16 (int16_t *d, int16_t *src1, int16_t *src2, int n)
 {
-  int i;
-  for(i=0;i<n;i++){
-    d[i] = src1[i] - src2[i];
+  static OrcProgram *p = NULL;
+  OrcExecutor *ex;
+
+  if (p == NULL) {
+    SCHRO_ERROR("orc_subtract_s16");
+
+    p = orc_program_new_dss (2,2,2);
+
+    orc_program_append_str (p, "subw", "d1", "s1", "s2");
+
+    orc_program_compile (p);
   }
+
+  ex = orc_executor_new (p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array_str (ex, "s1", src1);
+  orc_executor_set_array_str (ex, "s2", src2);
+  orc_executor_set_array_str (ex, "d1", d);
+
+  orc_executor_run (ex);
+  orc_executor_free (ex);
 }
 
 
