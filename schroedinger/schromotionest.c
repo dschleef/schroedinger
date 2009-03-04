@@ -2283,18 +2283,18 @@ schro_mode_decision (SchroMe me)
             }
           }
         }
-      } else {
-        for (k=0; 4 > k; ++k) {
-          for (l=0; 4 > l; ++l) {
-            if (0 == block.mv[k][l].pred_mode) {
-              ++dcblocks;
-            }
-          }
-        }
       }
       schro_motion_copy_to (motion, i, j, &block);
       if (block.error > 10*block_size) {
         ++badblocks;
+      }
+
+      for (k=0; 4 > k; ++k) {
+        for (l=0; 4 > l; ++l) {
+          if (0 == block.mv[k][l].pred_mode) {
+            ++dcblocks;
+          }
+        }
       }
 
       total_error += (double)block.error * block.error /
