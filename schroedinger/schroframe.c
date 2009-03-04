@@ -682,6 +682,10 @@ schro_frame_convert (SchroFrame *dest, SchroFrame *src)
     case SCHRO_FRAME_FORMAT_ARGB:
       dest_format = SCHRO_FRAME_FORMAT_U8_444;
       break;
+    case SCHRO_FRAME_FORMAT_v210:
+    case SCHRO_FRAME_FORMAT_v216:
+      dest_format = SCHRO_FRAME_FORMAT_S16_422;
+      break;
     default:
       dest_format = dest->format;
       break;
@@ -719,6 +723,14 @@ schro_frame_convert (SchroFrame *dest, SchroFrame *src)
     case SCHRO_FRAME_FORMAT_AYUV:
       frame = schro_virt_frame_new_pack_AYUV_take (frame);
       SCHRO_DEBUG("pack_AYUV %p", frame);
+      break;
+    case SCHRO_FRAME_FORMAT_v210:
+      frame = schro_virt_frame_new_pack_v210_take (frame);
+      SCHRO_DEBUG("pack_v210 %p", frame);
+      break;
+    case SCHRO_FRAME_FORMAT_v216:
+      frame = schro_virt_frame_new_pack_v216_take (frame);
+      SCHRO_DEBUG("pack_v216 %p", frame);
       break;
     default:
       break;

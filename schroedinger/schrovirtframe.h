@@ -50,6 +50,7 @@ SchroFrame * schro_virt_frame_new_convert_u8_take (SchroFrame *vf);
 SchroFrame * schro_virt_frame_new_convert_s16_take (SchroFrame *vf);
 SchroFrame * schro_virt_frame_new_crop_take (SchroFrame *vf, int width, int height);
 SchroFrame * schro_virt_frame_new_edgeextend_take (SchroFrame *vf, int width, int height);
+SchroFrame * schro_virt_frame_new_interlace_take (SchroFrame *vf_top, SchroFrame *vf_bottom);
 
 SCHRO_END_DECLS
 
