@@ -80,7 +80,7 @@ main (int argc, char *argv[])
 {
   int i;
 
-  oil_init();
+  schro_init();
 
   data = malloc(2048*512*2);
 
