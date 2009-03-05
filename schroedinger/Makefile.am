@@ -108,7 +108,6 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schroutils.c \
 	schrovideoformat.c \
 	schrovirtframe.c \
-	schrowavelet.c \
 	$(cuda_sources) \
 	schroasync-@THREAD_IMPL@.c
 
@@ -131,8 +130,12 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
 endif
 
 if HAVE_ORC
-libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += schroorc.c
+libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
+	schroorc.c schrowaveletorc.c
+else
+libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += schrowavelet.c
 endif
+
 
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = \
