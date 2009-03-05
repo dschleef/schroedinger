@@ -217,12 +217,37 @@ orc_add2_rshift_sub_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
 }
 
 void
-orc_add_const_rshift_s16 (int16_t *d1, int16_t *s1, int16_t *s3_2, int n)
+orc_add_const_rshift_s16_11 (int16_t *d1, int16_t *s1, int n)
 {
+#if 0
   int i;
   for(i=0;i<n;i++){
     d1[i] = (s1[i] + s3_2[0])>>s3_2[1];
   }
+#endif
+  static OrcProgram *p = NULL;
+  OrcExecutor *ex;
+
+  if (p == NULL) {
+    SCHRO_ERROR("orc_add_const_rshift_s16_11");
+
+    p = orc_program_new_dss (2,2,2);
+    orc_program_add_constant (p, 2, 1, "c1");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append_str (p, "addw", "t1", "s1", "c1");
+    orc_program_append_str (p, "shrsw", "d1", "t1", "c1");
+
+    orc_program_compile (p);
+  }
+
+  ex = orc_executor_new (p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array_str (ex, "s1", s1);
+  orc_executor_set_array_str (ex, "d1", d1);
+
+  orc_executor_run (ex);
+  orc_executor_free (ex);
 }
 
 void
