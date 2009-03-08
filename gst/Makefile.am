@@ -20,11 +20,6 @@ libgstschro_la_SOURCES = \
 	gstschroutils.c \
 	gstschroutils.h
 
-if ENABLE_EXTRAS
-libgstschro_la_SOURCES += \
-	gstlogoinsert.c
-endif
-
 if ENABLE_ENCODER
 libgstschro_la_SOURCES += \
 	gstschroenc.c \
