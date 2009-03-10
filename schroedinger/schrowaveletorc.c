@@ -134,9 +134,6 @@ schro_split_ext_daub97 (int16_t *hi, int16_t *lo, int n)
 void
 schro_synth_ext_desl93 (int16_t *hi, int16_t *lo, int n)
 {
-  static const int16_t stage2_weights[] = { -1, 9, 9, -1 };
-  static const int16_t stage2_offset_shift[] = { 8, 4 };
-
   lo[-2] = lo[0];
   lo[-1] = lo[0];
   lo[n] = lo[n-1];
@@ -149,7 +146,7 @@ schro_synth_ext_desl93 (int16_t *hi, int16_t *lo, int n)
   hi[n] = hi[n-1];
   hi[n+1] = hi[n-1];
 
-  oil_mas4_add_s16 (lo, lo, hi - 1, stage2_weights, stage2_offset_shift, n);
+  orc_mas4_add_s16_1991 (lo, lo, hi - 1, 4, n);
 }
 
 void
@@ -169,20 +166,15 @@ schro_synth_ext_53 (int16_t *hi, int16_t *lo, int n)
 void
 schro_synth_ext_135 (int16_t *hi, int16_t *lo, int n)
 {
-  static const int16_t stage1_weights[] = { 1, -9, -9, 1 };
-  static const int16_t stage2_weights[] = { -1, 9, 9, -1 };
-  static const int16_t stage1_offset_shift[] = { 15, 5 };
-  static const int16_t stage2_offset_shift[] = { 8, 4 };
-
   lo[-1] = lo[0];
   lo[-2] = lo[0];
   lo[n] = lo[n-1];
-  oil_mas4_add_s16 (hi, hi, lo - 2, stage1_weights, stage1_offset_shift, n);
+  orc_mas4_sub_s16_1991 (hi, hi, lo - 2, 5, n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
   hi[n+1] = hi[n-1];
-  oil_mas4_add_s16 (lo, lo, hi-1, stage2_weights, stage2_offset_shift, n);
+  orc_mas4_add_s16_1991 (lo, lo, hi-1, 4, n);
 }
 
 void

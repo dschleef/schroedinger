@@ -12,6 +12,7 @@
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <liboil/liboil.h>
 #include <schroedinger/schrovirtframe.h>
+#include <schroedinger/schroorc.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -1253,7 +1254,11 @@ schro_frame_add_s16_u8 (SchroFrame *dest, SchroFrame *src)
     for(y=0;y<height;y++){
       sdata = SCHRO_FRAME_DATA_GET_LINE (scomp, y);
       ddata = SCHRO_FRAME_DATA_GET_LINE (dcomp, y);
+#ifdef HAVE_ORC
+      orc_add_s16_u8 (ddata, ddata, sdata, width);
+#else
       oil_add_s16_u8 (ddata, ddata, sdata, width);
+#endif
     }
   }
 }
