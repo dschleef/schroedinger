@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <math.h>
+#include <stddef.h>
 
 #if 0
 /* Used for testing bitstream */
@@ -38,6 +39,7 @@ static void schro_encoder_init_perceptual_weighting (SchroEncoder *encoder);
 void schro_encoder_encode_sequence_header_header (SchroEncoder *encoder,
     SchroPack *pack);
 static schro_bool schro_frame_data_is_zero (SchroFrameData *fd);
+static void schro_encoder_setting_set_defaults (SchroEncoder *encoder);
 
 /**
  * schro_encoder_new:
@@ -60,69 +62,9 @@ schro_encoder_new (void)
 
   encoder->last_ref = -1;
 
-  encoder->rate_control = 0;
-  encoder->bitrate = 13824000;
-  encoder->max_bitrate = 13824000;
-  encoder->min_bitrate = 13824000;
-  encoder->buffer_size = 0;
-  encoder->buffer_level = 0;
-  encoder->quality = 7.0;
-  encoder->noise_threshold = 25.0;
-  encoder->gop_structure = 0;
-  encoder->queue_depth = 20;
-  encoder->perceptual_weighting = 1;
-  encoder->perceptual_distance = 4.0;
-  encoder->filtering = 0;
-  encoder->filter_value = 5.0;
-  encoder->profile = 0;
-  encoder->level = 0;
-  encoder->open_gop = 1;
-  encoder->au_distance = 120;
-  encoder->enable_psnr = TRUE;
-  encoder->enable_ssim = FALSE;
-  encoder->enable_md5 = FALSE;
-
-  encoder->ref_distance = 4;
-  encoder->transform_depth = 4;
-  encoder->intra_wavelet = SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7;
-  encoder->inter_wavelet = SCHRO_WAVELET_LE_GALL_5_3;
-  encoder->mv_precision = 0;
-  encoder->motion_block_size = 0;
-  encoder->motion_block_overlap = 0;
-  encoder->interlaced_coding = FALSE;
-  encoder->enable_internal_testing = FALSE;
-  encoder->enable_noarith = FALSE;
-  encoder->enable_fullscan_estimation = FALSE;
-  encoder->enable_hierarchical_estimation = FALSE;
-  encoder->enable_zero_estimation = FALSE;
-  encoder->enable_phasecorr_estimation = FALSE;
-  encoder->enable_bigblock_estimation = TRUE;
-  encoder->enable_multiquant = TRUE;
-  encoder->enable_dc_multiquant = FALSE;
-  encoder->enable_global_motion = FALSE;
-  encoder->horiz_slices = 8;
-  encoder->vert_slices = 6;
-
-  encoder->magic_dc_metric_offset = 1.0;
-  encoder->magic_subband0_lambda_scale = 10.0;
-  encoder->magic_chroma_lambda_scale = 0.01;
-  encoder->magic_nonref_lambda_scale = 0.01;
-  encoder->magic_allocation_scale = 1.1;
-  encoder->magic_keyframe_weight = 7.5;
-  encoder->magic_scene_change_threshold = 0.2;
-  encoder->magic_inter_p_weight = 1.5;
-  encoder->magic_inter_b_weight = 0.2;
-  encoder->magic_mc_bailout_limit = 0.5;
-  encoder->magic_bailout_weight = 4.0;
-  encoder->magic_error_power = 4.0;
-  encoder->magic_mc_lambda = 0.1;
-  encoder->magic_subgroup_length = 4;
-  encoder->magic_lambda = 1.0;
-  encoder->magic_badblock_multiplier_nonref = 4.0;
-  encoder->magic_badblock_multiplier_ref = 8.0;
-  encoder->magic_block_search_threshold = 15.0;
-
   encoder->downsample_levels = 5;
+
+  schro_encoder_setting_set_defaults(encoder);
 
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
@@ -3087,13 +3029,13 @@ schro_encoder_reference_get (SchroEncoder *encoder,
 /* settings */
 
 #define ENUM(name,list,def) \
-  { name , SCHRO_ENCODER_SETTING_TYPE_ENUM, 0, ARRAY_SIZE(list)-1, def, list }
+  {{#name, SCHRO_ENCODER_SETTING_TYPE_ENUM, 0, ARRAY_SIZE(list)-1, def, list}, offsetof(SchroEncoder, name)}
 #define INT(name,min,max,def) \
-  { name , SCHRO_ENCODER_SETTING_TYPE_INT, min, max, def }
+  {{#name, SCHRO_ENCODER_SETTING_TYPE_INT, min, max, def}, offsetof(SchroEncoder, name)}
 #define BOOL(name,def) \
-  { name , SCHRO_ENCODER_SETTING_TYPE_BOOLEAN, 0, 1, def }
+  {{#name, SCHRO_ENCODER_SETTING_TYPE_BOOLEAN, 0, 1, def}, offsetof(SchroEncoder, name)}
 #define DOUB(name,min,max,def) \
-  { name , SCHRO_ENCODER_SETTING_TYPE_DOUBLE, min, max, def }
+  {{#name, SCHRO_ENCODER_SETTING_TYPE_DOUBLE, min, max, def}, offsetof(SchroEncoder, name)}
 
 static char *rate_control_list[] = {
   "constant_noise_threshold",
@@ -3151,68 +3093,71 @@ static char *block_overlap_list[] = {
 #define INT_MAX 2147483647
 #endif
 
-static SchroEncoderSetting encoder_settings[] = {
-  ENUM("rate_control", rate_control_list, 0),
-  INT ("bitrate", 0, INT_MAX, 13824000),
-  INT ("max_bitrate", 0, INT_MAX, 13824000),
-  INT ("min_bitrate", 0, INT_MAX, 13824000),
-  INT ("buffer_size", 0, INT_MAX, 0),
-  INT ("buffer_level", 0, INT_MAX, 0),
-  DOUB("quality", 0, 10.0, 7.0),
-  DOUB("noise_threshold", 0, 100.0, 25.0),
-  ENUM("gop_structure", gop_structure_list, 0),
-  INT("queue_depth", 1, SCHRO_LIMIT_FRAME_QUEUE_LENGTH, 20),
-  ENUM("perceptual_weighting", perceptual_weighting_list, 0),
-  DOUB("perceptual_distance", 0, 100.0, 4.0),
-  ENUM("filtering", filtering_list, 0),
-  DOUB("filter_value", 0, 100.0, 5.0),
-  INT ("profile", 0, 0, 0),
-  INT ("level", 0, 0, 0),
-  BOOL("open_gop", TRUE),
-  INT ("au_distance", 1, INT_MAX, 30),
-  BOOL("enable_psnr", FALSE),
-  BOOL("enable_ssim", FALSE),
+struct SchroEncoderSettings {
+  SchroEncoderSetting s;
+  int offset;
+} static const encoder_settings[] = {
+  ENUM(rate_control, rate_control_list, 0),
+  INT (bitrate, 0, INT_MAX, 13824000),
+  INT (max_bitrate, 0, INT_MAX, 13824000),
+  INT (min_bitrate, 0, INT_MAX, 13824000),
+  INT (buffer_size, 0, INT_MAX, 0),
+  INT (buffer_level, 0, INT_MAX, 0),
+  DOUB(quality, 0, 10.0, 7.0),
+  DOUB(noise_threshold, 0, 100.0, 25.0),
+  ENUM(gop_structure, gop_structure_list, 0),
+  INT (queue_depth, 1, SCHRO_LIMIT_FRAME_QUEUE_LENGTH, 20),
+  ENUM(perceptual_weighting, perceptual_weighting_list, 1),
+  DOUB(perceptual_distance, 0, 100.0, 4.0),
+  ENUM(filtering, filtering_list, 0),
+  DOUB(filter_value, 0, 100.0, 5.0),
+  INT (profile, 0, 0, 0),
+  INT (level, 0, 0, 0),
+  BOOL(open_gop, TRUE),
+  INT (au_distance, 1, INT_MAX, 120),
+  BOOL(enable_psnr, FALSE),
+  BOOL(enable_ssim, FALSE),
 
-  INT ("ref_distance", 2, 20, 4),
-  INT ("transform_depth", 0, SCHRO_LIMIT_ENCODER_TRANSFORM_DEPTH, 4),
-  ENUM("intra_wavelet", wavelet_list, SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7),
-  ENUM("inter_wavelet", wavelet_list, SCHRO_WAVELET_LE_GALL_5_3),
-  INT ("mv_precision", 0, 3, 0),
-  ENUM("motion_block_size", block_size_list, 0),
-  ENUM("motion_block_overlap", block_overlap_list, 0),
-  BOOL("interlaced_coding", FALSE),
-  BOOL("enable_internal_testing", FALSE),
-  BOOL("enable_noarith", FALSE),
-  BOOL("enable_md5", FALSE),
-  BOOL("enable_fullscan_estimation", FALSE),
-  BOOL("enable_hierarchical_estimation", TRUE),
-  BOOL("enable_zero_estimation", FALSE),
-  BOOL("enable_phasecorr_estimation", FALSE),
-  BOOL("enable_bigblock_estimation", FALSE),
-  BOOL("enable_multiquant", TRUE),
-  BOOL("enable_dc_multiquant", FALSE),
-  BOOL("enable_global_motion", FALSE),
-  INT ("horiz_slices", 1, INT_MAX, 16),
-  INT ("vert_slices", 1, INT_MAX, 16),
+  INT (ref_distance, 2, 20, 4),
+  INT (transform_depth, 0, SCHRO_LIMIT_ENCODER_TRANSFORM_DEPTH, 4),
+  ENUM(intra_wavelet, wavelet_list, SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7),
+  ENUM(inter_wavelet, wavelet_list, SCHRO_WAVELET_LE_GALL_5_3),
+  INT (mv_precision, 0, 3, 0),
+  ENUM(motion_block_size, block_size_list, 0),
+  ENUM(motion_block_overlap, block_overlap_list, 0),
+  BOOL(interlaced_coding, FALSE),
+  BOOL(enable_internal_testing, FALSE),
+  BOOL(enable_noarith, FALSE),
+  BOOL(enable_md5, FALSE),
+  BOOL(enable_fullscan_estimation, FALSE),
+  BOOL(enable_hierarchical_estimation, FALSE),
+  BOOL(enable_zero_estimation, FALSE),
+  BOOL(enable_phasecorr_estimation, FALSE),
+  BOOL(enable_bigblock_estimation, TRUE),
+  BOOL(enable_multiquant, TRUE),
+  BOOL(enable_dc_multiquant, FALSE),
+  BOOL(enable_global_motion, FALSE),
+  INT (horiz_slices, 1, INT_MAX, 8),
+  INT (vert_slices, 1, INT_MAX, 6),
 
-  DOUB("magic_dc_metric_offset", 0.0, 1000.0, 0.0),
-  DOUB("magic_subband0_lambda_scale", 0.0, 1000.0, 0.0),
-  DOUB("magic_chroma_lambda_scale", 0.0, 1000.0, 0.0),
-  DOUB("magic_nonref_lambda_scale", 0.0, 1000.0, 0.0),
-  DOUB("magic_allocation_scale", 0.0, 1000.0, 0.0),
-  DOUB("magic_keyframe_weight", 0.0, 1000.0, 0.0),
-  DOUB("magic_scene_change_threshold", 0.0, 1000.0, 0.0),
-  DOUB("magic_inter_p_weight", 0.0, 1000.0, 0.0),
-  DOUB("magic_inter_b_weight", 0.0, 1000.0, 0.0),
-  DOUB("magic_mc_bailout_limit", 0.0, 1000.0, 0.0),
-  DOUB("magic_bailout_weight", 0.0, 1000.0, 0.0),
-  DOUB("magic_error_power", 0.0, 1000.0, 0.0),
-  DOUB("magic_mc_lambda", 0.0, 1000.0, 0.0),
-  DOUB("magic_subgroup_length", 1.0, 10.0, 4.0),
-  DOUB("magic_lambda", 0.0, 1000.0, 1.0),
-  DOUB("magic_badblock_multiplier_nonref", 0.0, 1000.0, 1.0),
-  DOUB("magic_badblock_multiplier_ref", 0.0, 1000.0, 1.0),
-  DOUB("magic_block_search_threshold", 0.0, 1000.0, 1.0),
+  DOUB(magic_dc_metric_offset, 0.0, 1000.0, 1.0),
+  DOUB(magic_subband0_lambda_scale, 0.0, 1000.0, 10.0),
+  DOUB(magic_chroma_lambda_scale, 0.0, 1000.0, 0.01),
+  DOUB(magic_nonref_lambda_scale, 0.0, 1000.0, 0.01),
+  DOUB(magic_allocation_scale, 0.0, 1000.0, 1.1),
+  DOUB(magic_keyframe_weight, 0.0, 1000.0, 7.5),
+  DOUB(magic_scene_change_threshold, 0.0, 1000.0, 0.2),
+  DOUB(magic_inter_p_weight, 0.0, 1000.0, 1.5),
+  DOUB(magic_inter_b_weight, 0.0, 1000.0, 0.2),
+  DOUB(magic_mc_bailout_limit, 0.0, 1000.0, 0.5),
+  DOUB(magic_bailout_weight, 0.0, 1000.0, 4.0),
+  DOUB(magic_error_power, 0.0, 1000.0, 4.0),
+  DOUB(magic_mc_lambda, 0.0, 1000.0, 0.1),
+  DOUB(magic_subgroup_length, 1.0, 10.0, 4.0),
+  DOUB(magic_lambda, 0.0, 1000.0, 1.0),
+  DOUB(magic_badblock_multiplier_nonref, 0.0, 1000.0, 4.0),
+  DOUB(magic_badblock_multiplier_ref, 0.0, 1000.0, 8.0),
+  DOUB(magic_block_search_threshold, 0.0, 1000.0, 15.0),
 };
 
 int
@@ -3225,151 +3170,93 @@ const SchroEncoderSetting *
 schro_encoder_get_setting_info (int i)
 {
   if (i>=0 && i < ARRAY_SIZE(encoder_settings)) {
-    return encoder_settings+i;
+    return &encoder_settings[i].s;
   }
   return NULL;
 }
 
-#define VAR_SET(x) if (strcmp (name, #x) == 0) { \
-  SCHRO_DEBUG("setting %s to %g", #x, value); \
-  encoder->x = value; \
-  return; \
-}
-#define VAR_GET(x) if (strcmp (name, #x) == 0) { \
-  return encoder->x; \
+/**
+ * schro_encoder_setting_set_defaults:
+ * @encoder: an encoder structure
+ *
+ * set the encoder options to the defaults advertised through
+ * schro_encoder_get_setting_info.  old settings are lost.
+ */
+static void
+schro_encoder_setting_set_defaults (SchroEncoder *encoder)
+{
+  int i;
+  for (i = 0; i < ARRAY_SIZE(encoder_settings); i++) {
+    switch (encoder_settings[i].s.type) {
+    case SCHRO_ENCODER_SETTING_TYPE_BOOLEAN:
+    case SCHRO_ENCODER_SETTING_TYPE_INT:
+    case SCHRO_ENCODER_SETTING_TYPE_ENUM:
+      *(int*)((void*)encoder + encoder_settings[i].offset) = encoder_settings[i].s.default_value;
+      break;
+    case SCHRO_ENCODER_SETTING_TYPE_DOUBLE:
+      *(double*)((void*)encoder + encoder_settings[i].offset) = encoder_settings[i].s.default_value;
+      break;
+    default:
+      break;
+    }
+  }
 }
 
+/**
+ * schro_encoder_setting_set_double:
+ * @encoder: an encoder object
+ *
+ * set the encoder option given by @name to @value.
+ */
 void
 schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
     double value)
 {
-  VAR_SET(rate_control);
-  VAR_SET(bitrate);
-  VAR_SET(max_bitrate);
-  VAR_SET(min_bitrate);
-  VAR_SET(buffer_size);
-  VAR_SET(buffer_level);
-  VAR_SET(quality);
-  VAR_SET(noise_threshold);
-  VAR_SET(gop_structure);
-  VAR_SET(queue_depth);
-  VAR_SET(perceptual_weighting);
-  VAR_SET(perceptual_distance);
-  VAR_SET(filtering);
-  VAR_SET(filter_value);
-  VAR_SET(interlaced_coding);
-  VAR_SET(profile);
-  VAR_SET(level);
-  VAR_SET(open_gop);
-  VAR_SET(au_distance);
-  VAR_SET(ref_distance);
-  VAR_SET(transform_depth);
-  VAR_SET(intra_wavelet);
-  VAR_SET(inter_wavelet);
-  VAR_SET(mv_precision);
-  VAR_SET(motion_block_size);
-  VAR_SET(motion_block_overlap);
-  VAR_SET(enable_psnr);
-  VAR_SET(enable_ssim);
-  VAR_SET(enable_internal_testing);
-  VAR_SET(enable_noarith);
-  VAR_SET(enable_md5);
-  VAR_SET(enable_fullscan_estimation);
-  VAR_SET(enable_hierarchical_estimation);
-  VAR_SET(enable_zero_estimation);
-  VAR_SET(enable_phasecorr_estimation);
-  VAR_SET(enable_bigblock_estimation);
-  VAR_SET(enable_multiquant);
-  VAR_SET(enable_dc_multiquant);
-  VAR_SET(enable_global_motion);
-  VAR_SET(horiz_slices);
-  VAR_SET(vert_slices);
-  //VAR_SET();
-
-  VAR_SET(magic_dc_metric_offset);
-  VAR_SET(magic_subband0_lambda_scale);
-  VAR_SET(magic_chroma_lambda_scale);
-  VAR_SET(magic_nonref_lambda_scale);
-  VAR_SET(magic_allocation_scale);
-  VAR_SET(magic_keyframe_weight);
-  VAR_SET(magic_scene_change_threshold);
-  VAR_SET(magic_inter_p_weight);
-  VAR_SET(magic_inter_b_weight);
-  VAR_SET(magic_mc_bailout_limit);
-  VAR_SET(magic_bailout_weight);
-  VAR_SET(magic_error_power);
-  VAR_SET(magic_mc_lambda);
-  VAR_SET(magic_subgroup_length);
-  VAR_SET(magic_lambda);
-  VAR_SET(magic_badblock_multiplier_nonref);
-  VAR_SET(magic_badblock_multiplier_ref);
-  VAR_SET(magic_block_search_threshold);
+  int i;
+  for (i = 0; i < ARRAY_SIZE(encoder_settings); i++) {
+    if (strcmp(name, encoder_settings[i].s.name)) {
+      continue;
+    }
+    switch (encoder_settings[i].s.type) {
+    case SCHRO_ENCODER_SETTING_TYPE_BOOLEAN:
+    case SCHRO_ENCODER_SETTING_TYPE_INT:
+    case SCHRO_ENCODER_SETTING_TYPE_ENUM:
+      *(int*)((void*)encoder + encoder_settings[i].offset) = value;
+      return;
+    case SCHRO_ENCODER_SETTING_TYPE_DOUBLE:
+      *(double*)((void*)encoder + encoder_settings[i].offset) = value;
+      return;
+    default:
+      return;
+    }
+  }
 }
 
+/**
+ * schro_encoder_setting_get_double:
+ * @encoder: an encoder object
+ *
+ * Returns: the current value of an encoder option given by @name
+ */
 double
 schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
 {
-  VAR_GET(rate_control);
-  VAR_GET(bitrate);
-  VAR_GET(max_bitrate);
-  VAR_GET(min_bitrate);
-  VAR_GET(buffer_size);
-  VAR_GET(buffer_level);
-  VAR_GET(quality);
-  VAR_GET(noise_threshold);
-  VAR_GET(gop_structure);
-  VAR_GET(queue_depth);
-  VAR_GET(perceptual_weighting);
-  VAR_GET(perceptual_distance);
-  VAR_GET(filtering);
-  VAR_GET(filter_value);
-  VAR_GET(interlaced_coding);
-  VAR_GET(profile);
-  VAR_GET(level);
-  VAR_GET(open_gop);
-  VAR_GET(au_distance);
-  VAR_GET(ref_distance);
-  VAR_GET(transform_depth);
-  VAR_GET(intra_wavelet);
-  VAR_GET(inter_wavelet);
-  VAR_GET(mv_precision);
-  VAR_GET(motion_block_size);
-  VAR_GET(motion_block_overlap);
-  VAR_GET(enable_psnr);
-  VAR_GET(enable_ssim);
-  VAR_GET(enable_internal_testing);
-  VAR_GET(enable_noarith);
-  VAR_GET(enable_md5);
-  VAR_GET(enable_fullscan_estimation);
-  VAR_GET(enable_hierarchical_estimation);
-  VAR_GET(enable_zero_estimation);
-  VAR_GET(enable_phasecorr_estimation);
-  VAR_GET(enable_bigblock_estimation);
-  VAR_GET(enable_multiquant);
-  VAR_GET(enable_dc_multiquant);
-  VAR_GET(enable_global_motion);
-  VAR_GET(horiz_slices);
-  VAR_GET(vert_slices);
-  //VAR_GET();
-
-  VAR_GET(magic_dc_metric_offset);
-  VAR_GET(magic_subband0_lambda_scale);
-  VAR_GET(magic_chroma_lambda_scale);
-  VAR_GET(magic_nonref_lambda_scale);
-  VAR_GET(magic_allocation_scale);
-  VAR_GET(magic_keyframe_weight);
-  VAR_GET(magic_scene_change_threshold);
-  VAR_GET(magic_inter_p_weight);
-  VAR_GET(magic_inter_b_weight);
-  VAR_GET(magic_mc_bailout_limit);
-  VAR_GET(magic_bailout_weight);
-  VAR_GET(magic_error_power);
-  VAR_GET(magic_mc_lambda);
-  VAR_GET(magic_subgroup_length);
-  VAR_GET(magic_lambda);
-  VAR_GET(magic_badblock_multiplier_nonref);
-  VAR_GET(magic_badblock_multiplier_ref);
-  VAR_GET(magic_block_search_threshold);
+  int i;
+  for (i = 0; i < ARRAY_SIZE(encoder_settings); i++) {
+    if (strcmp(name, encoder_settings[i].s.name)) {
+      continue;
+    }
+    switch (encoder_settings[i].s.type) {
+    case SCHRO_ENCODER_SETTING_TYPE_BOOLEAN:
+    case SCHRO_ENCODER_SETTING_TYPE_INT:
+    case SCHRO_ENCODER_SETTING_TYPE_ENUM:
+      return *(int*)((void*)encoder + encoder_settings[i].offset);
+    case SCHRO_ENCODER_SETTING_TYPE_DOUBLE:
+      return *(double*)((void*)encoder + encoder_settings[i].offset);
+    default:
+      return 0;
+    }
+  }
 
   return 0;
 }
