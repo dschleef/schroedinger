@@ -6,8 +6,6 @@ libgstschro_la_SOURCES = \
 	gstschro.c \
 	gstschrodec.c \
 	gstschroparse.c \
-	gstschroscale.c \
-	gstschrocolorspace.c \
 	gstbasevideodecoder.c \
 	gstbasevideodecoder.h \
 	gstbasevideoencoder.c \
@@ -16,15 +14,12 @@ libgstschro_la_SOURCES = \
 	gstbasevideoparse.h \
 	gstbasevideoutils.c \
 	gstbasevideoutils.h \
-	gstframestore.c \
 	gstschroutils.c \
 	gstschroutils.h
 
 if ENABLE_ENCODER
 libgstschro_la_SOURCES += \
-	gstschroenc.c \
-	gstschrodownsample.c \
-	gstschrofilter.c
+	gstschroenc.c
 endif
 
 libgstschro_la_CFLAGS = $(GST_CFLAGS) $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
