@@ -1578,6 +1578,10 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
   SchroFrame *planar_output_frame;
   SchroFrame *combined_frame;
   SchroFrame *output_frame;
+  /*> output_picture: a view of picture->output_picture, that is modified
+   * when field coding.  Be very careful referencing this, no reference to
+   * output_picture may leave this function */
+  SchroFrame output_picture = *picture->output_picture;
 
   if (picture->zero_residual) {
     combined_frame = picture->mc_tmp_frame;
@@ -1612,6 +1616,31 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
     output_frame = combined_frame;
   }
 
+  if (picture->decoder_instance->video_format.interlaced_coding) {
+    /* output_picture is a frame, however the [planar_]output_frame only
+     * contains a field.  Create a view of the output_picture that corresponds
+     * to the correct field */
+    /* 10.4p3 earliest field in each frame shall have an even picture number:
+     *   PicNum&1 | top_field_first=1 | top_field_first=0
+     *   ---------+-------------------+------------------
+     *        0   |       top         |       bot
+     *        1   |       bot         |       top*/
+    if ((picture->picture_number&1) == picture->decoder_instance->video_format.top_field_first) {
+      /* to access bot_field, data pointers for first line need moving */
+      output_picture.components[0].data = SCHRO_FRAME_DATA_GET_LINE (&output_picture.components[0], 1);
+      output_picture.components[1].data = SCHRO_FRAME_DATA_GET_LINE (&output_picture.components[1], 1);
+      output_picture.components[2].data = SCHRO_FRAME_DATA_GET_LINE (&output_picture.components[2], 1);
+    }
+    /* skip every other line and half heights */
+    output_picture.components[0].stride *= 2;
+    output_picture.components[1].stride *= 2;
+    output_picture.components[2].stride *= 2;
+    output_picture.components[0].height /= 2;
+    output_picture.components[1].height /= 2;
+    output_picture.components[2].height /= 2;
+    output_picture.height /= 2;
+  }
+
   if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
     planar_output_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
         schro_params_get_frame_format (8, picture->decoder_instance->video_format.chroma_format),
@@ -1620,10 +1649,10 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
 #ifdef HAVE_CUDA
       SchroFrame *cuda_output_frame;
       cuda_output_frame = schro_frame_clone (decoder->cuda_domain,
-          picture->output_picture);
+          &output_picture);
       schro_gpuframe_convert (planar_output_frame, output_frame);
       schro_gpuframe_convert (cuda_output_frame, planar_output_frame);
-      schro_gpuframe_to_cpu (picture->output_picture, cuda_output_frame);
+      schro_gpuframe_to_cpu (&output_picture, cuda_output_frame);
       schro_frame_unref (cuda_output_frame);
 #else
       SCHRO_ASSERT(0);
@@ -1640,23 +1669,27 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       schro_opengl_frame_pull (picture->planar_output_frame, tmp_opengl_output_frame);
       schro_frame_unref (tmp_opengl_output_frame);
 
-      schro_frame_convert (picture->output_picture, picture->planar_output_frame);
+      schro_frame_convert (&output_picture, picture->planar_output_frame);
 #else
       SCHRO_ASSERT(0);
 #endif
     } else {
       schro_frame_convert (planar_output_frame, output_frame);
-      schro_frame_convert (picture->output_picture, planar_output_frame);
+      schro_frame_convert (&output_picture, planar_output_frame);
     }
   } else {
-    planar_output_frame = schro_frame_ref(picture->output_picture);
+    /* may look unsafe since this doesn't reference count the storage
+     * for output_picture.  However lifetime of planar_output_frame is
+     * only this function, during which, existance of output_picture is
+     * guaranteed => ok. */
+    planar_output_frame = schro_frame_ref(&output_picture);
     if (decoder->use_cuda) {
 #ifdef HAVE_CUDA
       SchroFrame *cuda_output_frame;
       cuda_output_frame = schro_frame_clone (decoder->cuda_domain,
-          picture->output_picture);
+          &output_picture);
       schro_gpuframe_convert (cuda_output_frame, output_frame);
-      schro_gpuframe_to_cpu (picture->output_picture, cuda_output_frame);
+      schro_gpuframe_to_cpu (&output_picture, cuda_output_frame);
       schro_frame_unref (cuda_output_frame);
 #else
       SCHRO_ASSERT(0);
@@ -1666,17 +1699,17 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       SchroFrame *tmp_opengl_output_frame;
 
       tmp_opengl_output_frame = schro_opengl_frame_new (decoder->opengl,
-          decoder->opengl_domain, picture->output_picture->format,
-          picture->output_picture->width, picture->output_picture->height);
+          decoder->opengl_domain, output_picture.format,
+          output_picture.width, output_picture.height);
 
       schro_opengl_frame_convert (tmp_opengl_output_frame, output_frame);
-      schro_opengl_frame_pull (picture->output_picture, tmp_opengl_output_frame);
+      schro_opengl_frame_pull (&output_picture, tmp_opengl_output_frame);
       schro_frame_unref (tmp_opengl_output_frame);
 #else
       SCHRO_ASSERT(0);
 #endif
     } else {
-      schro_frame_convert (picture->output_picture, output_frame);
+      schro_frame_convert (&output_picture, output_frame);
     }
   }
 
