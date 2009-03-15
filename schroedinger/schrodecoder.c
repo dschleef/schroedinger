@@ -1303,6 +1303,53 @@ schro_decoder_parse_picture (SchroPicture *picture, SchroUnpack *unpack)
   picture->stages[SCHRO_DECODER_STAGE_COMBINE].is_needed = TRUE;
 }
 
+/**
+ * schro_decoder_assign_output_picture:
+ * @picture that needs consideration of its output_picture
+ * @robpos position of picture in reorder buffer
+ *
+ * Assign an output picture to @picture, taking into account field_coding
+ * and the sharing of a frame between fields.
+ */
+static void
+schro_decoder_assign_output_picture(SchroPicture *picture, int robpos)
+{
+  SchroDecoderInstance *instance = picture->decoder_instance;
+
+  if (picture->output_picture)
+    return;
+
+  if (instance->video_format.interlaced_coding) do {
+    SchroPicture *pair_picture;
+    int pair_robpos;
+    /* field coding: one frame is shared between two field pictures.
+     * has the pair to this field already got a frame allocated?
+     *  - If so, take a reference to the already allocated frame.
+     *  - 10.4p3 earliest field in each frame shall have an even picture number
+     *  => for even pictures, pair picture_number+1, for odd pictures, -1.
+     * The action of the RoB guarantees that the pair will eventually be
+     * sitting next to each other in the RoB. */
+    /* find which RoB position the pair to this picture should reside: */
+    pair_robpos = robpos + (picture->picture_number&1 ? -1 : 1);
+    if (pair_robpos < 0 || pair_robpos >= instance->reorder_queue->n)
+      break;
+    pair_picture = instance->reorder_queue->elements[pair_robpos].data;
+    if (pair_picture->picture_number != (picture->picture_number ^ 1))
+      break;
+    /* picture_pair and picture are not only next to each other
+     * in the RoB, but also belong to the same frame. */
+    if (!pair_picture->output_picture)
+      break;
+    picture->output_picture = schro_frame_ref (pair_picture->output_picture);
+  } while (0);
+
+  if (!picture->output_picture) {
+    /* either frame coding, or first field to be decoded of a frame */
+    picture->output_picture = schro_queue_pull (instance->output_queue);
+    /* NB, there may not be anything in the output_queue */
+  }
+}
+
 void
 schro_decoder_picture_complete (SchroAsyncStage *stage)
 {
@@ -1417,11 +1464,9 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
         picture->stages[SCHRO_DECODER_STAGE_WAVELET_TRANSFORM].is_done &&
         picture->stages[SCHRO_DECODER_STAGE_MOTION_RENDER].is_done && render_ok) {
       if (!picture->output_picture) {
-        /* NB, there may not be anything in the output_queue */
-        picture->output_picture = schro_queue_pull (decoder->instance->output_queue);
+        schro_decoder_assign_output_picture (picture, i);
       }
       if (picture->output_picture) {
-        SCHRO_ASSERT(picture->output_picture->refcount == 1);
         func = schro_decoder_x_combine;
         stage = SCHRO_DECODER_STAGE_COMBINE;
       }
