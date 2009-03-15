@@ -325,6 +325,19 @@ schro_encoder_motion_predict_subpel_deep (SchroMe me)
           if (SCHRO_METRIC_INVALID == mv->metric) {
             continue;
           }
+          /* fetch source data */
+          if (!schro_frame_get_data (orig_frame, &orig, 0
+                , i*xblen, j*yblen)) {
+            continue;
+          }
+          width = MIN(xblen, orig.width);
+          height = MIN(yblen, orig.height);
+          /* fetch reference data for full pel position - luma only */
+          schro_upsampled_frame_get_block_fast_precN (upframe, 0
+              , mv->u.vec.dx[ref] + i*xblen, mv->u.vec.dy[ref] + j*yblen
+              , 0, &ref_data, &fd);
+          mv->metric = schro_metric_absdiff_u8 (orig.data, orig.stride
+              , ref_data.data, ref_data.stride, width, height);
           /* adjust MV precision */
           mv->u.vec.dx[ref] <<= 1;
           mv->u.vec.dy[ref] <<= 1;
@@ -334,13 +347,6 @@ schro_encoder_motion_predict_subpel_deep (SchroMe me)
           entropy = schro_pack_estimate_sint (mv->u.vec.dx[ref] - pred_x);
           entropy += schro_pack_estimate_sint (mv->u.vec.dy[ref] - pred_y);
           min_score = entropy + lambda * mv->metric;
-          /* fetch source data */
-          if (!schro_frame_get_data (orig_frame, &orig, 0
-                , i*xblen, j*yblen)) {
-            continue;
-          }
-          width = MIN(xblen, orig.width);
-          height = MIN(yblen, orig.height);
           x = i * (xblen << mvprec) + mv->u.vec.dx[ref];
           y = j * (yblen << mvprec) + mv->u.vec.dy[ref];
           /* check what matches are valid */

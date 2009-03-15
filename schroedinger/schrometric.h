@@ -4,6 +4,7 @@
 
 #include <schroedinger/schroutils.h>
 #include <schroedinger/schroframe.h>
+#include <limits.h>
 
 SCHRO_BEGIN_DECLS
 
@@ -28,7 +29,7 @@ struct _SchroMetricScan {
   uint32_t metrics[SCHRO_LIMIT_METRIC_SCAN*SCHRO_LIMIT_METRIC_SCAN];
 };
 
-#define SCHRO_METRIC_INVALID 0x7fff
+#define SCHRO_METRIC_INVALID INT_MAX
 
 int schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b,
     int b_stride, int width, int height);
