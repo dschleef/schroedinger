@@ -20,7 +20,8 @@ struct _SchroMotionVector {
   unsigned int split : 2;
   unsigned int unused : 3;
   unsigned int scan : 8;
-  unsigned int metric : 16;
+  unsigned int _pad : 16;
+  unsigned int metric : 32;
   union {
     struct {
       int16_t dx[2];

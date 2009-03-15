@@ -39,7 +39,7 @@ int schro_metric_haar_const (uint8_t *data, int stride, int dc_value,
 int schro_metric_abssum_s16 (int16_t *data, int stride, int width, int height);
 int schro_metric_sum_u8 (uint8_t *data, int stride, int width, int height);
 
-void schro_metric_scan_do_scan (SchroMetricScan *scan);
+void schro_metric_scan_do_scan (SchroMetricScan *scan, int use_chroma);
 int schro_metric_scan_get_min (SchroMetricScan *scan, int *dx, int *dy);
 void schro_metric_scan_setup (SchroMetricScan *scan, int dx, int dy, int dist);
 

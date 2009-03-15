@@ -28,12 +28,8 @@ schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
 }
 
 void
-schro_metric_scan_do_scan (SchroMetricScan *scan)
+schro_metric_scan_do_scan (SchroMetricScan *scan, int use_chroma)
 {
-  SchroFrameData *fd = scan->frame->components + 0;
-  SchroFrameData *fd_ref = scan->ref_frame->components + 0;
-  int i,j;
-
   SCHRO_ASSERT (scan->ref_x + scan->block_width + scan->scan_width - 1 <= scan->frame->width + scan->frame->extension);
   SCHRO_ASSERT (scan->ref_y + scan->block_height + scan->scan_height - 1 <= scan->frame->height + scan->frame->extension);
   SCHRO_ASSERT (scan->ref_x >= -scan->frame->extension);
@@ -41,27 +37,51 @@ schro_metric_scan_do_scan (SchroMetricScan *scan)
   SCHRO_ASSERT (scan->scan_width > 0);
   SCHRO_ASSERT (scan->scan_height > 0);
 
-  if (scan->block_width == 8 && scan->block_height == 8) {
-    for(j=0;j<scan->scan_height;j++){
+  int k;
+  uint32_t metrics[SCHRO_LIMIT_METRIC_SCAN*SCHRO_LIMIT_METRIC_SCAN];
+  int shift_h = SCHRO_FRAME_FORMAT_H_SHIFT(scan->frame->format)
+    , shift_v = SCHRO_FRAME_FORMAT_V_SHIFT(scan->frame->format);
+  int components_number = use_chroma ? 3 : 1;
+  orc_splat_u8_ns ((uint8_t *)scan->metrics, 0,
+      sizeof(uint32_t)*scan->scan_width * scan->scan_height);
+  for (k=0; components_number>k; ++k) {
+    SchroFrameData *fd = scan->frame->components + k;
+    SchroFrameData *fd_ref = scan->ref_frame->components + k;
+    int i,j;
+    int block_width = 0 == k ? scan->block_width : scan->block_width >> shift_h
+      , block_height = 0 == k ? scan->block_height : scan->block_height >> shift_v
+      , x = 0 == k ? scan->x : scan->x >> shift_h
+      , y = 0 == k ? scan->y : scan->y >> shift_v
+      , ref_x = 0 == k ? scan->ref_x : scan->ref_x >> shift_h
+      , ref_y = 0 == k ? scan->ref_y : scan->ref_y >> shift_v;
+
+    if (block_width == 8 && block_height == 8) {
+      for(j=0;j<scan->scan_height;j++){
       for(i=0;i<scan->scan_width;i++){
-        orc_sad_8x8_u8 (scan->metrics + i * scan->scan_height + j,
-            SCHRO_FRAME_DATA_GET_PIXEL_U8(fd, scan->x, scan->y),
+        orc_sad_8x8_u8 (metrics + i * scan->scan_height + j,
+            SCHRO_FRAME_DATA_GET_PIXEL_U8(fd, x, y),
             fd->stride,
-            SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, scan->ref_x + i, scan->ref_y + j),
+            SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, ref_x + i, ref_y + j),
             fd_ref->stride);
       }
-    }
-    return;
-  }
+      }
+      for (i=0; scan->scan_width * scan->scan_height>i; ++i) {
+        scan->metrics[i] += metrics[i];
+      }
+    } else {
 
-  for(i=0;i<scan->scan_width;i++) {
-    for(j=0;j<scan->scan_height;j++) {
-      scan->metrics[i*scan->scan_height + j] = schro_metric_absdiff_u8 (
-          SCHRO_FRAME_DATA_GET_PIXEL_U8(fd, scan->x, scan->y),
-          fd->stride,
-          SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, scan->ref_x + i,
-            scan->ref_y + j), fd_ref->stride,
-          scan->block_width, scan->block_height);
+      uint32_t tmp;
+      for(i=0;i<scan->scan_width;i++) {
+        for(j=0;j<scan->scan_height;j++) {
+          tmp = schro_metric_absdiff_u8 (
+              SCHRO_FRAME_DATA_GET_PIXEL_U8(fd, x, y),
+              fd->stride,
+              SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, ref_x + i,
+                ref_y + j), fd_ref->stride,
+              block_width, block_height);
+          scan->metrics[i*scan->scan_height+j] += tmp;
+        }
+      }
     }
   }
 }

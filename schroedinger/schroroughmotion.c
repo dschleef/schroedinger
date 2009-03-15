@@ -125,7 +125,7 @@ schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
       }
 #endif
 
-      schro_metric_scan_do_scan (&scan);
+      schro_metric_scan_do_scan (&scan, FALSE);
       mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy);
       dx <<= shift;
       dy <<= shift;
@@ -280,7 +280,7 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
         continue;
       }
 
-      schro_metric_scan_do_scan (&scan);
+      schro_metric_scan_do_scan (&scan, FALSE);
       mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy);
       dx <<= shift;
       dy <<= shift;
