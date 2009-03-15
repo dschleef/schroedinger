@@ -739,6 +739,10 @@ schro_decoder_need_output_frame_locked (SchroDecoder *decoder)
   SchroDecoderInstance *instance = decoder->instance;
   int num_frames_in_hand = instance->output_queue->n;
   int i;
+  if (instance->video_format.interlaced_coding) {
+    /* each frame counts for two pictures */
+    num_frames_in_hand *= 2;
+  }
   if (schro_queue_is_full (instance->output_queue)) {
     return 0;
   }
@@ -746,6 +750,11 @@ schro_decoder_need_output_frame_locked (SchroDecoder *decoder)
     SchroPicture *picture = instance->reorder_queue->elements[i].data;
     if (!picture->output_picture)
       num_frames_in_hand--;
+  }
+  if (instance->video_format.interlaced_coding) {
+    /* field_coding, only needs a frame for every 2 pictures. */
+    /* but if there is a single field waiting, we need a frame. */
+    return (num_frames_in_hand - 1) / 2 < 0;
   }
   return num_frames_in_hand < 0;
 }
