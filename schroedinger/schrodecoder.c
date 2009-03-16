@@ -650,10 +650,23 @@ schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
     picture = schro_queue_peek (instance->reorder_queue);
   }
 
-  if (picture && picture->stages[SCHRO_DECODER_STAGE_DONE].is_done) {
+  if (!picture || !picture->stages[SCHRO_DECODER_STAGE_DONE].is_done) {
+    /* nothing avaliable, give up */
+    return FALSE;
+  }
+  /* one picture is avaliable, sufficient for frame_coding */
+  if (!instance->video_format.interlaced_coding) {
     return TRUE;
   }
-  return FALSE;
+  /* interlaced_coding: there must be two pictures avaliable */
+  SCHRO_ASSERT(instance->reorder_queue->n >= 2);
+
+  /* don't check if the second field is the pair to the first, since the
+   * RoB is full, it would cause a deadlock to block on there being a
+   * valid pair at the front of the RoB. */
+  picture = instance->reorder_queue->elements[1].data;
+  /* is second field ready ? */
+  return picture->stages[SCHRO_DECODER_STAGE_DONE].is_done;
 }
 
 /**
