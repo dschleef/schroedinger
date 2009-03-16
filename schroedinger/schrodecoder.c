@@ -93,6 +93,8 @@ static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
 static void schro_decoder_set_rob_size (SchroDecoderInstance *instance);
 
+static int schro_decoder_frame_is_twofield (SchroDecoderInstance *instance, SchroFrame *frame);
+
 static void schro_picturequeue_rob_insert (SchroQueue *queue, SchroPicture *picture, unsigned windowsize);
 static int schro_picture_n_before_m (SchroPictureNumber n, SchroPictureNumber m);
 
@@ -648,11 +650,13 @@ schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
     /* nothing avaliable, give up */
     return FALSE;
   }
-  /* one picture is avaliable, sufficient for frame_coding */
-  if (!instance->video_format.interlaced_coding) {
+  if (!schro_decoder_frame_is_twofield (instance, picture->output_picture)) {
+    /* one picture is avaliable, sufficient for:
+     *  - frame_coding
+     *  - field_coding and user supplies fields */
     return TRUE;
   }
-  /* interlaced_coding: there must be two pictures avaliable */
+  /* interlaced_coding with twofiled output: must be two pictures avaliable */
   SCHRO_ASSERT(instance->reorder_queue->n >= 2);
 
   /* don't check if the second field is the pair to the first, since the
@@ -689,13 +693,14 @@ schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
 SchroFrame *
 schro_decoder_pull (SchroDecoder *decoder)
 {
+  SchroDecoderInstance *instance = decoder->instance;
   SchroPicture *picture = NULL;
   SchroFrame *frame;
 
   schro_async_lock (decoder->async);
 
   if (schro_decoder_pull_is_ready_locked (decoder)) {
-    picture = schro_queue_pull (decoder->instance->reorder_queue);
+    picture = schro_queue_pull (instance->reorder_queue);
   }
 
   if (!picture) {
@@ -706,7 +711,9 @@ schro_decoder_pull (SchroDecoder *decoder)
   frame = schro_frame_ref (picture->output_picture);
   schro_picture_unref (picture);
 
-  if (decoder->instance->video_format.interlaced_coding) do {
+  if (schro_decoder_frame_is_twofield (instance, picture->output_picture)) do {
+    /* only consider the 2nd field if it can reference
+     * picture->output_picture, ie frame is twofields */
     SchroPictureNumber picture_number = picture->picture_number;
     if (picture_number&1) {
       /* The following is voilated:
@@ -767,22 +774,22 @@ schro_decoder_need_output_frame_locked (SchroDecoder *decoder)
   SchroDecoderInstance *instance = decoder->instance;
   int num_frames_in_hand = instance->output_queue->n;
   int i;
-  if (instance->video_format.interlaced_coding) {
-    /* each frame counts for two pictures */
-    num_frames_in_hand *= 2;
-  }
   if (schro_queue_is_full (instance->output_queue)) {
     return 0;
+  }
+  if (instance->video_format.interlaced_coding) {
+    for(i=0; i < instance->output_queue->n; i++) {
+      SchroFrame *output_frame = instance->output_queue->elements[i].data;
+      if (schro_decoder_frame_is_twofield (instance, output_frame)) {
+        /* this frame counts for two pictures */
+        num_frames_in_hand++;
+      }
+    }
   }
   for(i=0; i < instance->reorder_queue->n; i++){
     SchroPicture *picture = instance->reorder_queue->elements[i].data;
     if (!picture->output_picture)
       num_frames_in_hand--;
-  }
-  if (instance->video_format.interlaced_coding) {
-    /* field_coding, only needs a frame for every 2 pictures. */
-    /* but if there is a single field waiting, we need a frame. */
-    return (num_frames_in_hand - 1) / 2 < 0;
   }
   return num_frames_in_hand < 0;
 }
@@ -1379,6 +1386,12 @@ schro_decoder_assign_output_picture(SchroPicture *picture, int robpos)
      * in the RoB, but also belong to the same frame. */
     if (!pair_picture->output_picture)
       break;
+    /* only reference the pairs output picture if its frame sized,
+     * ie, the user supplied a frame and not a field */
+    if (!schro_decoder_frame_is_twofield (instance, pair_picture->output_picture))
+      break;
+
+    /* pair_picture->output_picture is full frame */
     picture->output_picture = schro_frame_ref (pair_picture->output_picture);
   } while (0);
 
@@ -1700,7 +1713,9 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
     output_frame = combined_frame;
   }
 
-  if (picture->decoder_instance->video_format.interlaced_coding) {
+  if (picture->decoder_instance->video_format.interlaced_coding &&
+      schro_decoder_frame_is_twofield (picture->decoder_instance, &output_picture))
+  {
     /* output_picture is a frame, however the [planar_]output_frame only
      * contains a field.  Create a view of the output_picture that corresponds
      * to the correct field */
@@ -3312,4 +3327,25 @@ schro_decoder_set_rob_size (SchroDecoderInstance *instance)
   instance->reorder_queue_size++;
 
   SCHRO_ASSERT(instance->reorder_queue_size <= instance->reorder_queue->size);
+}
+
+/**
+ * schro_decoder_frame_is_twofield:
+ *
+ * Returns: TRUE if @frame can store two field picture from @instance in a
+ *          pseudo-progressive manner
+ */
+static int
+schro_decoder_frame_is_twofield (SchroDecoderInstance *instance, SchroFrame *frame)
+{
+  int picture_height = schro_video_format_get_picture_height (&instance->video_format);
+
+  if (frame->height == picture_height)
+    return FALSE;
+
+  if (!instance->video_format.interlaced_coding) {
+    SCHRO_ERROR("supplying non frame-sized pictures when frame_coding is not supported");
+  }
+
+  return TRUE;
 }
