@@ -311,7 +311,7 @@ schro_encoder_motion_predict_subpel_deep (SchroMe me)
       mf = schro_me_subpel_mf (me, ref);
       for (j=0; params->y_num_blocks > j; ++j) {
         for (i=0; params->x_num_blocks > i; ++i) {
-          int error, entropy, min_error=SCHRO_METRIC_INVALID, m=-1;
+          int error, entropy, min_error=INT_MAX, m=-1;
           double score, min_score=HUGE_VAL;
           int x, y, k;
           int dx, dy;
@@ -321,11 +321,7 @@ schro_encoder_motion_predict_subpel_deep (SchroMe me)
 
           mv = &mf->motion_vectors[j*params->x_num_blocks+i];
 
-          /* only process valid MVs */
-          if (SCHRO_METRIC_INVALID == mv->metric) {
-            continue;
-          }
-          /* fetch source data */
+          /* fetch source data (only process valid MVs) */
           if (!schro_frame_get_data (orig_frame, &orig, 0
                 , i*xblen, j*yblen)) {
             continue;
@@ -463,7 +459,7 @@ schro_motion_field_set (SchroMotionField *field, int split, int pred_mode)
       memset (mv, 0, sizeof (*mv));
       mv->split = split;
       mv->pred_mode = pred_mode;
-      mv->metric = SCHRO_METRIC_INVALID;
+      mv->metric = 0;
     }
   }
 }
@@ -1551,7 +1547,7 @@ schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
   int fd_width, fd_height, biref;
   int xblen = params->xbsep_luma, yblen = params->ybsep_luma;
   SchroFrame* orig_frame = schro_me_src (me);
-  SchroFrameData ref_data[2], orig;
+  SchroFrameData ref_data[3][2], orig[3];
   SchroUpsampledFrame* upframe[2];
   SchroMotionField* mf;
   int xmin, ymin, xmax, ymax;
@@ -1571,12 +1567,14 @@ schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
     for (ii=0; 4>ii; ++ii) {
       double score, min_score=HUGE_VAL;
       int entropy[2], error;
-      int width, height;
+      int width[3], height[3];
       int dx[2], dy[2];
-      int best_entropy = SCHRO_METRIC_INVALID
-        , best_error = SCHRO_METRIC_INVALID;
-      SchroMotionVector *mv, *mv_ref[2], best_mv = { 0 };
+      int k;
+      int best_entropy = INT_MAX, best_error = INT_MAX;
+      SchroMotionVector *mv, *mv_ref[2], best_mv = { 0 }, zero_mv = { 0 };
+      zero_mv.split = 2;
       best_mv.split = 2;
+      zero_mv.pred_mode = 1;
       best_mv.pred_mode = 1;
 
       mv_ref[0] = mv_ref[1] = NULL;
@@ -1586,39 +1584,35 @@ schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
       if (   !(orig_frame->width > (i+ii) * xblen)
           || !(orig_frame->height > (j+jj) * yblen) ) {
         /* Note: blocks outside frame are encoded pred_mode 1, zero MVs */
-        *mv = best_mv;
-        block->mv[jj][ii] = best_mv;
+        *mv = zero_mv;
+        block->mv[jj][ii] = zero_mv;
         total_entropy += schro_motion_block_estimate_entropy (motion
             , i+ii, j+jj);
         continue;
       }
-      mv->metric = SCHRO_METRIC_INVALID;
+      mv->metric = INT_MAX;
 
       /* do the 2 references, if available */
       for (ref=0; params->num_refs > ref; ++ref) {
         mf = schro_me_split2_mf (me, ref);
         SCHRO_ASSERT (mf);
         mv_ref[ref] = mf->motion_vectors + (j+jj)*xnum_blocks + i+ii;
-        if (mv_ref[ref]->metric != SCHRO_METRIC_INVALID) {
-          *mv = *mv_ref[ref];
-          mv->split = 2;
-          mv->pred_mode = ref+1;
-          mv->using_global = 0;
-          entropy[ref] =
-            schro_motion_block_estimate_entropy (motion, i+ii, j+jj);
-          score = entropy[ref] + mv->metric * lambda;
-          if (min_score > score) {
-            min_score = score;
-            best_mv = *mv;
-            best_entropy = entropy[ref];
-            best_error = mv->metric;
-          }
+        *mv = *mv_ref[ref];
+        mv->split = 2;
+        mv->pred_mode = ref+1;
+        mv->using_global = 0;
+        entropy[ref] =
+          schro_motion_block_estimate_entropy (motion, i+ii, j+jj);
+        score = entropy[ref] + mv->metric * lambda;
+        if (min_score > score) {
+          min_score = score;
+          best_mv = *mv;
+          best_entropy = entropy[ref];
+          best_error = mv->metric;
         }
       }
       /* do biref, if available */
-      if (   1 < params->num_refs
-          && SCHRO_METRIC_INVALID != mv_ref[0]->metric
-          && SCHRO_METRIC_INVALID != mv_ref[1]->metric  ) {
+      if ( 1 < params->num_refs ) {
         /* Note: I need to calculate the cost of biref prediction */
         biref = 1; /* flag - either or both MVs could be outside frame+ext */
         mv->u.vec.dx[0] = mv_ref[0]->u.vec.dx[0];
@@ -1627,48 +1621,60 @@ schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
         mv->u.vec.dy[1] = mv_ref[1]->u.vec.dy[1];
         mv->pred_mode = 3;
         mv->using_global = 0;
-        if (schro_frame_get_data (orig_frame, &orig, 0
-              , (i+ii)*xblen, (j+jj)*yblen)) {
-          width = MIN(xblen, orig.width);
-          height = MIN(yblen, orig.height);
-          int tmp_x = (i+ii) * (xblen << mvprec)
-            , tmp_y = (j+jj) * (yblen << mvprec);
+        for (k=0; 3>k; ++k) {
+          /* fetch dource data for all components */
+          schro_frame_get_data (orig_frame, &orig[k], k
+              , (i+ii) * comp_w[k], (j+jj) * comp_h[k]);
+          width[k] = MIN(comp_w[k], orig[k].width);
+          height[k] = MIN(comp_h[k], orig[k].height);
+          int tmp_x = (i+ii) * (comp_w[k] << mvprec)
+            , tmp_y = (j+jj) * (comp_h[k] << mvprec);
           for (ref=0; params->num_refs > ref; ++ref) {
-            dx[ref] = tmp_x + mv->u.vec.dx[ref];
-            dy[ref] = tmp_y + mv->u.vec.dy[ref];
-            if (    xmin > dx[ref] || ymin > dy[ref]
-                || !(xmax > dx[ref] + width - 1)
-                || !(ymax > dy[ref] + height - 1)    ) {
+            dx[ref] = mv->u.vec.dx[ref];
+            dx[ref] >>= 0 == k ? 0
+              : SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format);
+            dx[ref] += tmp_x;
+            dy[ref] = mv->u.vec.dy[ref];
+            dy[ref] >>= 0 == k ? 0
+              : SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
+            dy[ref] += tmp_y;
+            if ( 0 == k && biref && (  xmin > dx[ref] || ymin > dy[ref]
+                || !(xmax > dx[ref] + width[k] - 1)
+                || !(ymax > dy[ref] + height[k] - 1)    ) ) {
               biref = 0;
               break;
             }
             /* I need to save the original value of fd width and height */
             fd_width = fd[ref].width;
             fd_height = fd[ref].height;
-            fd[ref].width = width;
-            fd[ref].height = height;
+            fd[ref].width = width[k];
+            fd[ref].height = height[k];
             upframe[ref] = schro_me_ref (me, ref);
-            schro_upsampled_frame_get_block_fast_precN (upframe[ref], 0, dx[ref]
-                , dy[ref], mvprec, &ref_data[ref], &fd[ref]);
+            schro_upsampled_frame_get_block_fast_precN (upframe[ref], k, dx[ref]
+                , dy[ref], mvprec, &ref_data[k][ref], &fd[ref]);
             fd[ref].width = fd_width;
             fd[ref].height = fd_height;
           }
-          if (biref) {
-            mv->metric = schro_metric_get_biref (&orig, &ref_data[0], 1
-                , &ref_data[1], 1, 1, width, height);
-            score = entropy[0]+entropy[1] + mv->metric * lambda;
-            if (min_score > score) {
-              best_error = mv->metric;
-              best_entropy = entropy[0]+entropy[1];
-              best_mv = *mv;
-              min_score = score;
-            }
+        }
+        if (biref) {
+          int tmp_metric = 0;
+          for (k=0; 3>k; ++k) {
+            tmp_metric += schro_metric_get_biref (&orig[k], &ref_data[k][0], 1
+                , &ref_data[k][1], 1, 1, width[k], height[k]);
+          }
+          mv->metric = tmp_metric;
+          score = entropy[0]+entropy[1] + mv->metric * lambda;
+          if (min_score > score) {
+            best_error = mv->metric;
+            best_entropy = entropy[0]+entropy[1];
+            best_mv = *mv;
+            min_score = score;
           }
         }
       }
 
       /* FIXME: magic used for considering DC prediction */
-      if (4 * xblen * yblen < best_error) {
+      if (((4 * width[0] * height[0])* 2 / 3) < best_error) {
         /* let's consider DC prediction */
         SchroMotionVector* mvdc;
         int k;
@@ -1678,28 +1684,24 @@ schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
         mvdc->using_global = 0;
         error = 0;
         for (k=0; 3>k; ++k) {
-          if (0 == k) {
-            error = schro_block_average (&mvdc->u.dc.dc[k], orig_frame->components+k
-              , (i+ii)*comp_w[k], (j+jj)*comp_h[k], comp_w[k], comp_h[k]);
+          int tmp = schro_block_average (&mvdc->u.dc.dc[k], orig_frame->components+k
+            , (i+ii)*comp_w[k], (j+jj)*comp_h[k], comp_w[k], comp_h[k]);
+          if (SCHRO_METRIC_INVALID_2 == tmp) {
+            SCHRO_DEBUG("Invalid DC metric");
+            mvdc->metric = INT_MAX;
           } else {
-            schro_block_average (&mvdc->u.dc.dc[k], orig_frame->components+k
-              , (i+ii)*comp_w[k], (j+jj)*comp_h[k], comp_w[k], comp_h[k]);
+            error += tmp;
           }
         }
-        if (SCHRO_METRIC_INVALID_2 == error) {
-          mvdc->metric = SCHRO_METRIC_INVALID;
-          SCHRO_DEBUG("Invalid DC metric");
-        } else {
-          mvdc->metric = error;
-          /* FIXME: we're assuming that the block doesn't have any predictor */
-          entropy[0] = schro_pack_estimate_sint (mvdc->u.dc.dc[0]);
-          entropy[0] += schro_pack_estimate_sint (mvdc->u.dc.dc[1]);
-          entropy[0] += schro_pack_estimate_sint (mvdc->u.dc.dc[2]);
-          if (error < best_error) {
-            best_mv = *(SchroMotionVector*)mvdc;
-            best_error = mvdc->metric;
-            best_entropy = entropy[0];
-          }
+        mvdc->metric = error;
+        /* FIXME: we're assuming that the block doesn't have any predictor */
+        entropy[0] = schro_pack_estimate_sint (mvdc->u.dc.dc[0]);
+        entropy[0] += schro_pack_estimate_sint (mvdc->u.dc.dc[1]);
+        entropy[0] += schro_pack_estimate_sint (mvdc->u.dc.dc[2]);
+        if (error < best_error) {
+          best_mv = *(SchroMotionVector*)mvdc;
+          best_error = mvdc->metric;
+          best_entropy = entropy[0];
         }
       }
       *mv = best_mv;
