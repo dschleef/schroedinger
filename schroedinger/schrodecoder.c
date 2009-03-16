@@ -704,8 +704,6 @@ schro_decoder_pull (SchroDecoder *decoder)
     picture = schro_queue_pull (decoder->instance->reorder_queue);
   }
 
-  schro_async_unlock (decoder->async);
-
   if (!picture) {
     return NULL;
   }
@@ -713,6 +711,29 @@ schro_decoder_pull (SchroDecoder *decoder)
   /* XXX would be nice to warn if expected picture not present */
   frame = schro_frame_ref (picture->output_picture);
   schro_picture_unref (picture);
+
+  if (decoder->instance->video_format.interlaced_coding) do {
+    SchroPictureNumber picture_number = picture->picture_number;
+    if (picture_number&1) {
+      /* The following is voilated:
+       * - 10.4p3 earliest field in each frame shall have an even picture number
+       * Then the head of the reorder_queue can't be the pair to picture */
+      break;
+    }
+
+    picture = schro_queue_peek (decoder->instance->reorder_queue);
+    if (picture_number+1 != picture->picture_number) {
+      /* The second field in the frame can only be a pair to the first if
+       * they have consecutive picture numbers */
+      break;
+    }
+
+    /* second field is the pair to the first: discard it */
+    picture = schro_queue_pull (decoder->instance->reorder_queue);
+    schro_picture_unref (picture);
+  } while (0);
+
+  schro_async_unlock (decoder->async);
 
   return frame;
 }
