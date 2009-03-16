@@ -91,6 +91,8 @@ static void schro_decoder_picture_complete (SchroAsyncStage *stage);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
+static void schro_decoder_set_rob_size (SchroDecoderInstance *instance);
+
 static void schro_picturequeue_rob_insert (SchroQueue *queue, SchroPicture *picture, unsigned windowsize);
 static int schro_picture_n_before_m (SchroPictureNumber n, SchroPictureNumber m);
 
@@ -111,18 +113,9 @@ schro_decoder_instance_new (SchroDecoder *decoder)
    * a precious resource, no point holding on to loads without reason */
   instance->output_queue = schro_queue_new (4, (SchroQueueFreeFunc)schro_frame_unref);
 
-  /* This value of reorder_queue_size needs to be one greater than
-   * any spec derived value, since schro is unable to bypass the
-   * reorder buffer in the same way a realtime h/w system would. */
-  instance->reorder_queue_size = 2+1; /* rob size: 2 = default */
   instance->reorder_queue = schro_queue_new (4, (SchroQueueFreeFunc)schro_picture_unref);
 
-  /* when using coded_order, the RoB size is 1, propagate the
-   * setting across decoder instances */
-  /* xxx: this will need to be moved into sequence header handling later */
-  if (decoder->coded_order) {
-    instance->reorder_queue_size = 1;
-  }
+  schro_decoder_set_rob_size (instance);
 
   return instance;
 }
@@ -625,15 +618,16 @@ schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio)
 void
 schro_decoder_set_picture_order (SchroDecoder *decoder, int order)
 {
-  /* todo: this is the wrong place to set reorder_queue_size,
-   * a future decoder update will extract the reorder_queue_size
-   * from the seqhdr (or profile/level defaults) */
-  if (order == SCHRO_DECODER_PICTURE_ORDER_CODED) {
-    decoder->coded_order = TRUE;
-    decoder->instance->reorder_queue_size = 1;
-  } else {
-    decoder->coded_order = FALSE;
-    decoder->instance->reorder_queue_size = 2+1;
+  SchroDecoderInstance *instance;
+
+  decoder->coded_order = order == SCHRO_DECODER_PICTURE_ORDER_CODED;
+
+  /* propagate to all instances */
+  for (instance = decoder->instance; instance; instance = instance->next) {
+    if (instance->have_sequence_header) {
+      SCHRO_ERROR("Don't call this function after decoding has commenced");
+    }
+    schro_decoder_set_rob_size (instance);
   }
 }
 
@@ -1074,6 +1068,8 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
     SCHRO_INFO ("decoding sequence header");
     if (!instance->have_sequence_header) {
       schro_decoder_parse_sequence_header(instance, &unpack);
+      /* safe to resize RoB, since nothing can be inflight in this instance */
+      schro_decoder_set_rob_size (instance);
       instance->have_sequence_header = TRUE;
       instance->first_sequence_header = TRUE;
       instance->sequence_header_buffer = schro_buffer_dup (buffer);
@@ -3281,4 +3277,39 @@ schro_picturequeue_rob_insert (SchroQueue *queue, SchroPicture *picture, unsigne
   queue->n++;
   queue->elements[i].data = picture;
   queue->elements[i].picture_number = picture->picture_number;
+}
+
+/**
+ * schro_decoder_set_rob_size:
+ * @instance a decoder instance to set the rob size
+ *
+ * precondition: either be using coded_order, or the instance must have
+ * seen a sequence_header for guaranteed operation.
+ *
+ * caller must guarantee that modifying the RoB size is safe
+ */
+static void
+schro_decoder_set_rob_size (SchroDecoderInstance *instance)
+{
+  if (instance->decoder->coded_order) {
+    /* when using coded_order, the RoB size is 1 */
+    instance->reorder_queue_size = 1;
+    return;
+  }
+
+  /* set default RoB sizes */
+  if (!instance->video_format.interlaced_coding) {
+    instance->reorder_queue_size = 2;
+  } else {
+    instance->reorder_queue_size = 4;
+  }
+
+  /* todo: override rob size with value specified in sequence header */
+
+  /* Under normal operation, the value of reorder_queue_size needs to be one
+   * greater than any spec derived value, since schro is unable to bypass the
+   * reorder buffer in the same way a realtime h/w system would. */
+  instance->reorder_queue_size++;
+
+  SCHRO_ASSERT(instance->reorder_queue_size <= instance->reorder_queue->size);
 }
