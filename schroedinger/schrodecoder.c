@@ -113,7 +113,7 @@ schro_decoder_instance_new (SchroDecoder *decoder)
    * a precious resource, no point holding on to loads without reason */
   instance->output_queue = schro_queue_new (4, (SchroQueueFreeFunc)schro_frame_unref);
 
-  instance->reorder_queue = schro_queue_new (4, (SchroQueueFreeFunc)schro_picture_unref);
+  instance->reorder_queue = schro_queue_new (5, (SchroQueueFreeFunc)schro_picture_unref);
 
   schro_decoder_set_rob_size (instance);
 
