@@ -5,7 +5,7 @@ SUBDIRS = schroedinger doc tools testsuite
 DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc
 
 if HAVE_GST
-SUBDIRS += gst
+SUBDIRS += gst-libs/gst/video gst
 endif
 
 DIST_SUBDIRS = schroedinger doc tools gst testsuite

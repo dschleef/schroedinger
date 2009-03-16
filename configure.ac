@@ -187,6 +187,11 @@ AC_SUBST(GST_PLUGIN_LDFLAGS)
 
 AC_DEFINE(GST_PACKAGE_ORIGIN, "unknown", [Package origin in GStreamer plugin])
 
+AC_ARG_ENABLE(video-compat, AC_HELP_STRING([--disable-video-compat],
+    [disable gstvideo compatibility (default=enabled)]))
+AM_CONDITIONAL(ENABLE_VIDEO_COMPAT, test "x$enable_video_compat" != "xno")
+
+
 ########################
 # Check for CUDA
 ########################
@@ -274,6 +279,7 @@ doc/Makefile
 schroedinger/Makefile
 schroedinger/cuda/Makefile
 schroedinger/opengl/Makefile
+gst-libs/gst/video/Makefile
 gst/Makefile
 testsuite/Makefile
 testsuite/cache/Makefile
