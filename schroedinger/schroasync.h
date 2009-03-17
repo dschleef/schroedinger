@@ -48,6 +48,23 @@ SchroAsync * schro_async_new(int n_threads,
     void *closure);
 void schro_async_free (SchroAsync *async);
 
+/**
+ * schro_async_stop:
+ *
+ * wait for all worker threads belonging to @async to finish their
+ * current task.  no further tasks will be executed until
+ * schro_async_start is called
+ */
+void schro_async_stop (SchroAsync *async);
+
+/**
+ * schro_async_sart:
+ *
+ * Resume execution of scheduler for @async after schro_async_stop
+ * has been called.
+ */
+void schro_async_start (SchroAsync *async);
+
 void schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr);
 void schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage);
 int schro_async_get_num_completed (SchroAsync *async);

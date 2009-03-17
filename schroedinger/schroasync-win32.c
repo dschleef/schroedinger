@@ -163,6 +163,33 @@ schro_async_free (SchroAsync *async)
 }
 
 void
+schro_async_start (SchroAsync *async)
+{
+  int i;
+  for(i=0;i<async->n_threads) {
+    SetEvent (async->thread_event);
+  }
+}
+
+void
+schro_async_stop (SchroAsync *async)
+{
+  int i;
+  HANDLE *handles;
+
+  for(i=0;i<async->n_threads;i++){
+    SetEvent (async->threads[i].event);
+  }
+
+  handles = schro_malloc (sizeof(HANDLE) * async->n_threads);
+  for(i=0;i<async->n_threads;i++){
+    handles[i] = async->threads[i].thread;
+  }
+  WaitForMultipleObjects (async->n_threads, handles, TRUE, INFINITE);
+  schro_free (handles);
+}
+
+void
 schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 {
   SCHRO_ASSERT(async->task.task_func == NULL);

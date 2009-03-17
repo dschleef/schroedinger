@@ -61,6 +61,16 @@ schro_async_free (SchroAsync *async)
 }
 
 void
+schro_async_start (SchroAsync *async)
+{
+}
+
+void
+schro_async_stop (SchroAsync *async)
+{
+}
+
+void
 schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 {
   SCHRO_ASSERT(async->task_func == NULL);

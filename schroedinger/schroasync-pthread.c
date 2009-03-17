@@ -179,6 +179,22 @@ schro_async_free (SchroAsync *async)
 }
 
 void
+schro_async_start (SchroAsync *async)
+{
+  pthread_cond_broadcast (&async->thread_cond);
+}
+
+void
+schro_async_stop (SchroAsync *async)
+{
+  pthread_mutex_lock (&async->mutex);
+  while(async->n_idle < async->n_threads_running) {
+    pthread_cond_wait (&async->app_cond, &async->mutex);
+  }
+  pthread_mutex_unlock (&async->mutex);
+}
+
+void
 schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 {
   SCHRO_ASSERT(async->task.task_func == NULL);
