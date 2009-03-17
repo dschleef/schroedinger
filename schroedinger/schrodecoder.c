@@ -450,7 +450,7 @@ schro_decoder_tag_new ()
 void
 schro_decoder_reset (SchroDecoder *decoder)
 {
-  schro_async_lock (decoder->async);
+  schro_async_stop (decoder->async);
 
   schro_buflist_free (decoder->input_buflist);
   decoder->input_buflist = schro_buflist_new ();
@@ -461,9 +461,9 @@ schro_decoder_reset (SchroDecoder *decoder)
   schro_decoder_instance_free (decoder->instance);
   decoder->instance = schro_decoder_instance_new (decoder);
 
-  schro_async_unlock (decoder->async);
-
   decoder->error = FALSE;
+
+  schro_async_start (decoder->async);
 }
 
 /**
