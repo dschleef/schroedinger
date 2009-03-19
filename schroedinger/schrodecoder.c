@@ -91,6 +91,10 @@ static void schro_decoder_picture_complete (SchroAsyncStage *stage);
 
 static void schro_decoder_error (SchroDecoder *decoder, const char *s);
 
+static void schro_decoder_set_rob_size (SchroDecoderInstance *instance);
+
+static int schro_decoder_frame_is_twofield (SchroDecoderInstance *instance, SchroFrame *frame);
+
 static void schro_picturequeue_rob_insert (SchroQueue *queue, SchroPicture *picture, unsigned windowsize);
 static int schro_picture_n_before_m (SchroPictureNumber n, SchroPictureNumber m);
 
@@ -111,18 +115,9 @@ schro_decoder_instance_new (SchroDecoder *decoder)
    * a precious resource, no point holding on to loads without reason */
   instance->output_queue = schro_queue_new (4, (SchroQueueFreeFunc)schro_frame_unref);
 
-  /* This value of reorder_queue_size needs to be one greater than
-   * any spec derived value, since schro is unable to bypass the
-   * reorder buffer in the same way a realtime h/w system would. */
-  instance->reorder_queue_size = 2+1; /* rob size: 2 = default */
-  instance->reorder_queue = schro_queue_new (4, (SchroQueueFreeFunc)schro_picture_unref);
+  instance->reorder_queue = schro_queue_new (5, (SchroQueueFreeFunc)schro_picture_unref);
 
-  /* when using coded_order, the RoB size is 1, propagate the
-   * setting across decoder instances */
-  /* xxx: this will need to be moved into sequence header handling later */
-  if (decoder->coded_order) {
-    instance->reorder_queue_size = 1;
-  }
+  schro_decoder_set_rob_size (instance);
 
   return instance;
 }
@@ -625,15 +620,16 @@ schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio)
 void
 schro_decoder_set_picture_order (SchroDecoder *decoder, int order)
 {
-  /* todo: this is the wrong place to set reorder_queue_size,
-   * a future decoder update will extract the reorder_queue_size
-   * from the seqhdr (or profile/level defaults) */
-  if (order == SCHRO_DECODER_PICTURE_ORDER_CODED) {
-    decoder->coded_order = TRUE;
-    decoder->instance->reorder_queue_size = 1;
-  } else {
-    decoder->coded_order = FALSE;
-    decoder->instance->reorder_queue_size = 2+1;
+  SchroDecoderInstance *instance;
+
+  decoder->coded_order = order == SCHRO_DECODER_PICTURE_ORDER_CODED;
+
+  /* propagate to all instances */
+  for (instance = decoder->instance; instance; instance = instance->next) {
+    if (instance->have_sequence_header) {
+      SCHRO_ERROR("Don't call this function after decoding has commenced");
+    }
+    schro_decoder_set_rob_size (instance);
   }
 }
 
@@ -650,10 +646,25 @@ schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
     picture = schro_queue_peek (instance->reorder_queue);
   }
 
-  if (picture && picture->stages[SCHRO_DECODER_STAGE_DONE].is_done) {
+  if (!picture || !picture->stages[SCHRO_DECODER_STAGE_DONE].is_done) {
+    /* nothing avaliable, give up */
+    return FALSE;
+  }
+  if (!schro_decoder_frame_is_twofield (instance, picture->output_picture)) {
+    /* one picture is avaliable, sufficient for:
+     *  - frame_coding
+     *  - field_coding and user supplies fields */
     return TRUE;
   }
-  return FALSE;
+  /* interlaced_coding with twofiled output: must be two pictures avaliable */
+  SCHRO_ASSERT(instance->reorder_queue->n >= 2);
+
+  /* don't check if the second field is the pair to the first, since the
+   * RoB is full, it would cause a deadlock to block on there being a
+   * valid pair at the front of the RoB. */
+  picture = instance->reorder_queue->elements[1].data;
+  /* is second field ready ? */
+  return picture->stages[SCHRO_DECODER_STAGE_DONE].is_done;
 }
 
 /**
@@ -682,16 +693,15 @@ schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
 SchroFrame *
 schro_decoder_pull (SchroDecoder *decoder)
 {
+  SchroDecoderInstance *instance = decoder->instance;
   SchroPicture *picture = NULL;
   SchroFrame *frame;
 
   schro_async_lock (decoder->async);
 
   if (schro_decoder_pull_is_ready_locked (decoder)) {
-    picture = schro_queue_pull (decoder->instance->reorder_queue);
+    picture = schro_queue_pull (instance->reorder_queue);
   }
-
-  schro_async_unlock (decoder->async);
 
   if (!picture) {
     return NULL;
@@ -700,6 +710,31 @@ schro_decoder_pull (SchroDecoder *decoder)
   /* XXX would be nice to warn if expected picture not present */
   frame = schro_frame_ref (picture->output_picture);
   schro_picture_unref (picture);
+
+  if (schro_decoder_frame_is_twofield (instance, picture->output_picture)) do {
+    /* only consider the 2nd field if it can reference
+     * picture->output_picture, ie frame is twofields */
+    SchroPictureNumber picture_number = picture->picture_number;
+    if (picture_number&1) {
+      /* The following is voilated:
+       * - 10.4p3 earliest field in each frame shall have an even picture number
+       * Then the head of the reorder_queue can't be the pair to picture */
+      break;
+    }
+
+    picture = schro_queue_peek (decoder->instance->reorder_queue);
+    if (picture_number+1 != picture->picture_number) {
+      /* The second field in the frame can only be a pair to the first if
+       * they have consecutive picture numbers */
+      break;
+    }
+
+    /* second field is the pair to the first: discard it */
+    picture = schro_queue_pull (decoder->instance->reorder_queue);
+    schro_picture_unref (picture);
+  } while (0);
+
+  schro_async_unlock (decoder->async);
 
   return frame;
 }
@@ -741,6 +776,15 @@ schro_decoder_need_output_frame_locked (SchroDecoder *decoder)
   int i;
   if (schro_queue_is_full (instance->output_queue)) {
     return 0;
+  }
+  if (instance->video_format.interlaced_coding) {
+    for(i=0; i < instance->output_queue->n; i++) {
+      SchroFrame *output_frame = instance->output_queue->elements[i].data;
+      if (schro_decoder_frame_is_twofield (instance, output_frame)) {
+        /* this frame counts for two pictures */
+        num_frames_in_hand++;
+      }
+    }
   }
   for(i=0; i < instance->reorder_queue->n; i++){
     SchroPicture *picture = instance->reorder_queue->elements[i].data;
@@ -1031,6 +1075,8 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
     SCHRO_INFO ("decoding sequence header");
     if (!instance->have_sequence_header) {
       schro_decoder_parse_sequence_header(instance, &unpack);
+      /* safe to resize RoB, since nothing can be inflight in this instance */
+      schro_decoder_set_rob_size (instance);
       instance->have_sequence_header = TRUE;
       instance->first_sequence_header = TRUE;
       instance->sequence_header_buffer = schro_buffer_dup (buffer);
@@ -1305,6 +1351,59 @@ schro_decoder_parse_picture (SchroPicture *picture, SchroUnpack *unpack)
   picture->stages[SCHRO_DECODER_STAGE_COMBINE].is_needed = TRUE;
 }
 
+/**
+ * schro_decoder_assign_output_picture:
+ * @picture that needs consideration of its output_picture
+ * @robpos position of picture in reorder buffer
+ *
+ * Assign an output picture to @picture, taking into account field_coding
+ * and the sharing of a frame between fields.
+ */
+static void
+schro_decoder_assign_output_picture(SchroPicture *picture, int robpos)
+{
+  SchroDecoderInstance *instance = picture->decoder_instance;
+
+  if (picture->output_picture)
+    return;
+
+  if (instance->video_format.interlaced_coding) do {
+    SchroPicture *pair_picture;
+    int pair_robpos;
+    /* field coding: one frame is shared between two field pictures.
+     * has the pair to this field already got a frame allocated?
+     *  - If so, take a reference to the already allocated frame.
+     *  - 10.4p3 earliest field in each frame shall have an even picture number
+     *  => for even pictures, pair picture_number+1, for odd pictures, -1.
+     * The action of the RoB guarantees that the pair will eventually be
+     * sitting next to each other in the RoB. */
+    /* find which RoB position the pair to this picture should reside: */
+    pair_robpos = robpos + (picture->picture_number&1 ? -1 : 1);
+    if (pair_robpos < 0 || pair_robpos >= instance->reorder_queue->n)
+      break;
+    pair_picture = instance->reorder_queue->elements[pair_robpos].data;
+    if (pair_picture->picture_number != (picture->picture_number ^ 1))
+      break;
+    /* picture_pair and picture are not only next to each other
+     * in the RoB, but also belong to the same frame. */
+    if (!pair_picture->output_picture)
+      break;
+    /* only reference the pairs output picture if its frame sized,
+     * ie, the user supplied a frame and not a field */
+    if (!schro_decoder_frame_is_twofield (instance, pair_picture->output_picture))
+      break;
+
+    /* pair_picture->output_picture is full frame */
+    picture->output_picture = schro_frame_ref (pair_picture->output_picture);
+  } while (0);
+
+  if (!picture->output_picture) {
+    /* either frame coding, or first field to be decoded of a frame */
+    picture->output_picture = schro_queue_pull (instance->output_queue);
+    /* NB, there may not be anything in the output_queue */
+  }
+}
+
 void
 schro_decoder_picture_complete (SchroAsyncStage *stage)
 {
@@ -1419,11 +1518,9 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
         picture->stages[SCHRO_DECODER_STAGE_WAVELET_TRANSFORM].is_done &&
         picture->stages[SCHRO_DECODER_STAGE_MOTION_RENDER].is_done && render_ok) {
       if (!picture->output_picture) {
-        /* NB, there may not be anything in the output_queue */
-        picture->output_picture = schro_queue_pull (decoder->instance->output_queue);
+        schro_decoder_assign_output_picture (picture, i);
       }
       if (picture->output_picture) {
-        SCHRO_ASSERT(picture->output_picture->refcount == 1);
         func = schro_decoder_x_combine;
         stage = SCHRO_DECODER_STAGE_COMBINE;
       }
@@ -1580,6 +1677,10 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
   SchroFrame *planar_output_frame;
   SchroFrame *combined_frame;
   SchroFrame *output_frame;
+  /*> output_picture: a view of picture->output_picture, that is modified
+   * when field coding.  Be very careful referencing this, no reference to
+   * output_picture may leave this function */
+  SchroFrame output_picture = *picture->output_picture;
 
   if (picture->zero_residual) {
     combined_frame = picture->mc_tmp_frame;
@@ -1614,6 +1715,33 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
     output_frame = combined_frame;
   }
 
+  if (picture->decoder_instance->video_format.interlaced_coding &&
+      schro_decoder_frame_is_twofield (picture->decoder_instance, &output_picture))
+  {
+    /* output_picture is a frame, however the [planar_]output_frame only
+     * contains a field.  Create a view of the output_picture that corresponds
+     * to the correct field */
+    /* 10.4p3 earliest field in each frame shall have an even picture number:
+     *   PicNum&1 | top_field_first=1 | top_field_first=0
+     *   ---------+-------------------+------------------
+     *        0   |       top         |       bot
+     *        1   |       bot         |       top*/
+    if ((picture->picture_number&1) == picture->decoder_instance->video_format.top_field_first) {
+      /* to access bot_field, data pointers for first line need moving */
+      output_picture.components[0].data = SCHRO_FRAME_DATA_GET_LINE (&output_picture.components[0], 1);
+      output_picture.components[1].data = SCHRO_FRAME_DATA_GET_LINE (&output_picture.components[1], 1);
+      output_picture.components[2].data = SCHRO_FRAME_DATA_GET_LINE (&output_picture.components[2], 1);
+    }
+    /* skip every other line and half heights */
+    output_picture.components[0].stride *= 2;
+    output_picture.components[1].stride *= 2;
+    output_picture.components[2].stride *= 2;
+    output_picture.components[0].height /= 2;
+    output_picture.components[1].height /= 2;
+    output_picture.components[2].height /= 2;
+    output_picture.height /= 2;
+  }
+
   if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
     planar_output_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
         schro_params_get_frame_format (8, picture->decoder_instance->video_format.chroma_format),
@@ -1622,10 +1750,10 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
 #ifdef HAVE_CUDA
       SchroFrame *cuda_output_frame;
       cuda_output_frame = schro_frame_clone (decoder->cuda_domain,
-          picture->output_picture);
+          &output_picture);
       schro_gpuframe_convert (planar_output_frame, output_frame);
       schro_gpuframe_convert (cuda_output_frame, planar_output_frame);
-      schro_gpuframe_to_cpu (picture->output_picture, cuda_output_frame);
+      schro_gpuframe_to_cpu (&output_picture, cuda_output_frame);
       schro_frame_unref (cuda_output_frame);
 #else
       SCHRO_ASSERT(0);
@@ -1642,23 +1770,27 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       schro_opengl_frame_pull (picture->planar_output_frame, tmp_opengl_output_frame);
       schro_frame_unref (tmp_opengl_output_frame);
 
-      schro_frame_convert (picture->output_picture, picture->planar_output_frame);
+      schro_frame_convert (&output_picture, picture->planar_output_frame);
 #else
       SCHRO_ASSERT(0);
 #endif
     } else {
       schro_frame_convert (planar_output_frame, output_frame);
-      schro_frame_convert (picture->output_picture, planar_output_frame);
+      schro_frame_convert (&output_picture, planar_output_frame);
     }
   } else {
-    planar_output_frame = schro_frame_ref(picture->output_picture);
+    /* may look unsafe since this doesn't reference count the storage
+     * for output_picture.  However lifetime of planar_output_frame is
+     * only this function, during which, existance of output_picture is
+     * guaranteed => ok. */
+    planar_output_frame = schro_frame_ref(&output_picture);
     if (decoder->use_cuda) {
 #ifdef HAVE_CUDA
       SchroFrame *cuda_output_frame;
       cuda_output_frame = schro_frame_clone (decoder->cuda_domain,
-          picture->output_picture);
+          &output_picture);
       schro_gpuframe_convert (cuda_output_frame, output_frame);
-      schro_gpuframe_to_cpu (picture->output_picture, cuda_output_frame);
+      schro_gpuframe_to_cpu (&output_picture, cuda_output_frame);
       schro_frame_unref (cuda_output_frame);
 #else
       SCHRO_ASSERT(0);
@@ -1668,17 +1800,17 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       SchroFrame *tmp_opengl_output_frame;
 
       tmp_opengl_output_frame = schro_opengl_frame_new (decoder->opengl,
-          decoder->opengl_domain, picture->output_picture->format,
-          picture->output_picture->width, picture->output_picture->height);
+          decoder->opengl_domain, output_picture.format,
+          output_picture.width, output_picture.height);
 
       schro_opengl_frame_convert (tmp_opengl_output_frame, output_frame);
-      schro_opengl_frame_pull (picture->output_picture, tmp_opengl_output_frame);
+      schro_opengl_frame_pull (&output_picture, tmp_opengl_output_frame);
       schro_frame_unref (tmp_opengl_output_frame);
 #else
       SCHRO_ASSERT(0);
 #endif
     } else {
-      schro_frame_convert (picture->output_picture, output_frame);
+      schro_frame_convert (&output_picture, output_frame);
     }
   }
 
@@ -3162,4 +3294,60 @@ schro_picturequeue_rob_insert (SchroQueue *queue, SchroPicture *picture, unsigne
   queue->n++;
   queue->elements[i].data = picture;
   queue->elements[i].picture_number = picture->picture_number;
+}
+
+/**
+ * schro_decoder_set_rob_size:
+ * @instance a decoder instance to set the rob size
+ *
+ * precondition: either be using coded_order, or the instance must have
+ * seen a sequence_header for guaranteed operation.
+ *
+ * caller must guarantee that modifying the RoB size is safe
+ */
+static void
+schro_decoder_set_rob_size (SchroDecoderInstance *instance)
+{
+  if (instance->decoder->coded_order) {
+    /* when using coded_order, the RoB size is 1 */
+    instance->reorder_queue_size = 1;
+    return;
+  }
+
+  /* set default RoB sizes */
+  if (!instance->video_format.interlaced_coding) {
+    instance->reorder_queue_size = 2;
+  } else {
+    instance->reorder_queue_size = 4;
+  }
+
+  /* todo: override rob size with value specified in sequence header */
+
+  /* Under normal operation, the value of reorder_queue_size needs to be one
+   * greater than any spec derived value, since schro is unable to bypass the
+   * reorder buffer in the same way a realtime h/w system would. */
+  instance->reorder_queue_size++;
+
+  SCHRO_ASSERT(instance->reorder_queue_size <= instance->reorder_queue->size);
+}
+
+/**
+ * schro_decoder_frame_is_twofield:
+ *
+ * Returns: TRUE if @frame can store two field picture from @instance in a
+ *          pseudo-progressive manner
+ */
+static int
+schro_decoder_frame_is_twofield (SchroDecoderInstance *instance, SchroFrame *frame)
+{
+  int picture_height = schro_video_format_get_picture_height (&instance->video_format);
+
+  if (frame->height == picture_height)
+    return FALSE;
+
+  if (!instance->video_format.interlaced_coding) {
+    SCHRO_ERROR("supplying non frame-sized pictures when frame_coding is not supported");
+  }
+
+  return TRUE;
 }
