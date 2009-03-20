@@ -2378,6 +2378,14 @@ schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
           oil_avg2_16xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
           break;
+        case 24:
+          oil_avg2_16xn_u8 (fd->data, fd->stride,
+              fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
+          oil_avg2_8xn_u8 (SCHRO_OFFSET(fd->data,16), fd->stride,
+              SCHRO_OFFSET(fd00.data, 16), fd00.stride,
+              SCHRO_OFFSET(fd10.data, 16), fd10.stride,
+              fd->height);
+          break;
         case 32:
           oil_avg2_32xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
@@ -2434,6 +2442,18 @@ schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
               fd01.data, fd01.stride,
               fd10.data, fd10.stride,
               fd11.data, fd11.stride, p, fd->height);
+          break;
+        case 24:
+          oil_combine4_16xn_u8 (fd->data, fd->stride,
+              fd00.data, fd00.stride,
+              fd01.data, fd01.stride,
+              fd10.data, fd10.stride,
+              fd11.data, fd11.stride, p, fd->height);
+          oil_combine4_8xn_u8 (SCHRO_OFFSET(fd->data,16), fd->stride,
+              SCHRO_OFFSET(fd00.data,16), fd00.stride,
+              SCHRO_OFFSET(fd01.data,16), fd01.stride,
+              SCHRO_OFFSET(fd10.data,16), fd10.stride,
+              SCHRO_OFFSET(fd11.data,16), fd11.stride, p, fd->height);
           break;
         case 32:
           oil_combine4_32xn_u8 (fd->data, fd->stride,
