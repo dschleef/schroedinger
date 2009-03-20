@@ -95,7 +95,6 @@ struct _SchroArithContext {
   int ones;
 };
 
-/* TODO: eliminate unused members */
 struct _SchroArith {
   SchroBuffer *buffer;
   uint8_t *dataptr;
@@ -106,7 +105,6 @@ struct _SchroArith {
   uint32_t range_size;
   int cntr;
   int carry;
-  uint8_t shift;
 
   uint16_t probabilities[SCHRO_CTX_LAST];
   uint16_t lut[512];
