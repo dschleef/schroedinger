@@ -27,6 +27,11 @@ void orc_mas4_sub_s16_1991 (int16_t *d1, int16_t *s1, int16_t *s2, int shift, in
 void orc_subtract_s16 (int16_t *d, int16_t *src1, int16_t *src2, int n);
 void orc_memcpy (void *dest, void *src, int n);
 void orc_add_s16_u8 (int16_t *d, int16_t *src1, uint8_t *src2, int n);
+void orc_convert_s16_u8 (int16_t *d, uint8_t *src1, int n);
+void orc_convert_u8_s16 (uint8_t *d, int16_t *src1, int n);
+void orc_subtract_s16_u8 (int16_t *d, int16_t *src1, uint8_t *src2, int n);
+
+
 
 #endif
 

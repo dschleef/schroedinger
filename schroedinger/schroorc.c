@@ -663,22 +663,142 @@ orc_add_s16_u8 (int16_t *d, int16_t *src1, uint8_t *src2, int n)
   orc_executor_free (ex);
 }
 
+void
+orc_convert_s16_u8 (int16_t *d, uint8_t *src1, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor *ex;
+
+  if (p == NULL) {
+    int ret;
+
+    p = orc_program_new_ds (2,1);
+
+    orc_program_append_ds_str (p, "convubw", "d1", "s1");
+
+    ret = orc_program_compile (p);
+    if (!ret) {
+      SCHRO_ERROR("Orc compiler failure");
+    }
+  }
+
+  ex = orc_executor_new (p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array_str (ex, "s1", src1);
+  orc_executor_set_array_str (ex, "d1", d);
+
+  orc_executor_run (ex);
+  orc_executor_free (ex);
+}
+
+void
+orc_convert_u8_s16 (uint8_t *d, int16_t *src1, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor *ex;
+
+  if (p == NULL) {
+    int ret;
+
+    p = orc_program_new_ds (1,2);
+
+    orc_program_append_ds_str (p, "convsuswb", "d1", "s1");
+
+    ret = orc_program_compile (p);
+    if (!ret) {
+      SCHRO_ERROR("Orc compiler failure");
+    }
+  }
+
+  ex = orc_executor_new (p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array_str (ex, "s1", src1);
+  orc_executor_set_array_str (ex, "d1", d);
+
+  orc_executor_run (ex);
+  orc_executor_free (ex);
+}
+
+void
+orc_subtract_s16_u8 (int16_t *d, int16_t *src1, uint8_t *src2, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor *ex;
+
+  if (p == NULL) {
+    int ret;
+
+    p = orc_program_new_dss (2,2,1);
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append_ds_str (p, "convubw", "t1", "s2");
+    orc_program_append_str (p, "subw", "d1", "s1", "t1");
+
+    ret = orc_program_compile (p);
+    if (!ret) {
+      SCHRO_ERROR("Orc compiler failure");
+    }
+  }
+
+  ex = orc_executor_new (p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array_str (ex, "s1", src1);
+  orc_executor_set_array_str (ex, "s2", src2);
+  orc_executor_set_array_str (ex, "d1", d);
+
+  orc_executor_run (ex);
+  orc_executor_free (ex);
+}
+
+void
+orc_multiply_and_add_s16_u8 (int16_t *d, int16_t *src1, int16_t *src2,
+    uint8_t *src3, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor *ex;
+
+  if (p == NULL) {
+    int ret;
+
+    p = orc_program_new_dss (2,2,2);
+    orc_program_add_source (p, 1, "s3");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append_ds_str (p, "convubw", "t1", "s3");
+    orc_program_append_str (p, "mullw", "t1", "t1", "s2");
+    orc_program_append_str (p, "addw", "d1", "s1", "t1");
+
+    ret = orc_program_compile (p);
+    if (!ret) {
+      SCHRO_ERROR("Orc compiler failure");
+    }
+  }
+
+  ex = orc_executor_new (p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array_str (ex, "s1", src1);
+  orc_executor_set_array_str (ex, "s2", src2);
+  orc_executor_set_array_str (ex, "s3", src3);
+  orc_executor_set_array_str (ex, "d1", d);
+
+  orc_executor_run (ex);
+  orc_executor_free (ex);
+}
+
 
 #if 0
 /* within current orc scope */
-orc_add_s16_u8
-orc_convert_s16_u8
-orc_convert_u8_s16
 orc_copy_u8
 orc_mas8_across_add_s16
 orc_mas8_across_u8
 orc_mas8_add_s16
 orc_mas8_u8_sym_l15
 orc_merge_linear_u8
-orc_multiply_and_add_s16_u8
-orc_subtract_s16_u8
 orc_splat_u16_ns
 orc_splat_u8_ns
+orc_deinterleave2_s16
+orc_interleave2_s16
+orc_packyuyv
 
 /* 2D */
 orc_avg2_12xn_u8
@@ -700,13 +820,10 @@ orc_sad8x8_8xn_u8
 orc_sad8x8_u8
 
 /* hard? */
-orc_deinterleave2_s16
-orc_interleave2_s16
 orc_mas10_u8
 orc_mas12_addc_rshift_decim2_u8
 
 /* special */
 orc_md5
-orc_packyuyv
 #endif
 
