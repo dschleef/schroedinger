@@ -319,10 +319,6 @@ struct _SchroEncoder {
   double start_time;
   int downsample_levels;
 
-#if 0
-  int prefs[SCHRO_PREF_LAST];
-#endif
-
   /* internal stuff */
 
   double cycles_per_degree_horiz;
@@ -365,22 +361,6 @@ struct _SchroEncoderSetting {
 
   char **enum_list;
 };
-
-#if 0
-struct _SchroEncoderSettings {
-  int transform_depth;
-  int wavelet_filter_index;
-
-  /* stuff we don't handle yet */
-  int profile;
-  int level;
-
-  int xbsep_luma;
-  int ybsep_luma;
-  int xblen_luma;
-  int yblen_luma;
-};
-#endif
 
 enum {
   SCHRO_MOTION_FIELD_HIER_REF0,
