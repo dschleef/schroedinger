@@ -21,8 +21,6 @@
 #include "config.h"
 #endif
 
-#define SCHRO_ENABLE_UNSTABLE_API
-
 #include <gst/gst.h>
 #include <gst/base/gstadapter.h>
 #include <gst/video/video.h>

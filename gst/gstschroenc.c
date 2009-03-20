@@ -26,8 +26,6 @@
 #include <gst/video/gstbasevideoencoder.h>
 #include <string.h>
 
-#define SCHRO_ENABLE_UNSTABLE_API
-
 #include <schroedinger/schro.h>
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schrovirtframe.h>

@@ -408,6 +408,7 @@ SchroBuffer * schro_encoder_pull (SchroEncoder *encoder,
     int *n_decodable_frames);
 SchroBuffer * schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
     void **priv);
+SchroBuffer * schro_encoder_encode_sequence_header (SchroEncoder *encoder);
 
 int schro_encoder_get_n_settings (void);
 const SchroEncoderSetting *schro_encoder_get_setting_info (int i);
@@ -451,7 +452,6 @@ void schro_encoder_encode_picture_header (SchroEncoderFrame *frame);
 SchroBuffer * schro_encoder_encode_end_of_stream (SchroEncoder *encoder);
 void schro_encoder_clean_up_transform (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers (SchroEncoderFrame *frame);
-SchroBuffer * schro_encoder_encode_sequence_header (SchroEncoder *encoder);
 void schro_encoder_output_push (SchroEncoder *encoder,
     SchroBuffer *buffer, int slot, int presentation_frame);
 

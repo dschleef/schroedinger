@@ -188,14 +188,15 @@ void schro_decoder_set_skip_ratio (SchroDecoder *decoder, double ratio);
 SchroPictureNumber schro_decoder_get_picture_number (SchroDecoder *decoder);
 int schro_decoder_need_output_frame (SchroDecoder *decoder);
 
+int schro_decoder_autoparse_wait (SchroDecoder *decoder);
+int schro_decoder_autoparse_push (SchroDecoder *decoder, SchroBuffer *buffer);
+int schro_decoder_autoparse_push_end_of_sequence (SchroDecoder *decoder);
+
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
 int schro_decoder_begin_sequence (SchroDecoder *decoder);
 int schro_decoder_end_sequence (SchroDecoder *decoder);
 
-int schro_decoder_autoparse_wait (SchroDecoder *decoder);
-int schro_decoder_autoparse_push (SchroDecoder *decoder, SchroBuffer *buffer);
-int schro_decoder_autoparse_push_end_of_sequence (SchroDecoder *decoder);
 
 SchroTag* schro_decoder_get_picture_tag (SchroDecoder *decoder);
 

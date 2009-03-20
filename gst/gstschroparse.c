@@ -30,8 +30,6 @@
 #include <liboil/liboil.h>
 #include <math.h>
 
-
-#define SCHRO_ENABLE_UNSTABLE_API
 #include <schroedinger/schroparse.h>
 
 
