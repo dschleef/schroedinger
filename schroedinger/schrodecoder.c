@@ -415,23 +415,10 @@ schro_picture_unref (SchroPicture *picture)
     if (picture->ref0) schro_picture_unref (picture->ref0);
     if (picture->ref1) schro_picture_unref (picture->ref1);
 
-    if (picture->tag) picture->tag->base.free (picture->tag);
+    if (picture->tag) schro_tag_free (picture->tag);
 
     schro_free (picture);
   }
-}
-
-/**
- * schro_decoder_tag_new:
- *
- * Returns: An empty decoder tag structure
- */
-SchroDecoderTag *
-schro_decoder_tag_new ()
-{
-    SchroDecoderTag *tag = schro_malloc0 (sizeof(*tag));
-    tag->base.free = schro_free;
-    return tag;
 }
 
 /**
@@ -519,7 +506,7 @@ schro_decoder_get_picture_number (SchroDecoder *decoder)
  *
  * Returns: a tag represented by void* or NULL
  */
-SchroDecoderTag *
+SchroTag *
 schro_decoder_get_picture_tag (SchroDecoder *decoder)
 {
   SchroDecoderInstance *instance = decoder->instance;
@@ -530,7 +517,7 @@ schro_decoder_get_picture_tag (SchroDecoder *decoder)
     picture = schro_queue_peek (instance->reorder_queue);
   }
   if (picture) {
-    SchroDecoderTag *tag = picture->tag;
+    SchroTag *tag = picture->tag;
     picture->tag = NULL;
     return tag;
   }
@@ -1055,9 +1042,9 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
    * This data is to be associated with the next(/this) picture data unit */
   if (buffer->tag) {
     if (decoder->next_picture_tag) {
-      decoder->next_picture_tag->base.free (decoder->next_picture_tag);
+      schro_tag_free (decoder->next_picture_tag);
     }
-    decoder->next_picture_tag = (SchroDecoderTag*) buffer->tag;
+    decoder->next_picture_tag = buffer->tag;
   }
   buffer->tag = NULL;
 
@@ -1131,8 +1118,9 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
 
     if (!instance->have_sequence_header) {
       SCHRO_INFO ("no sequence header -- dropping picture");
-      if (decoder->next_picture_tag)
-        decoder->next_picture_tag->base.free (decoder->next_picture_tag);
+      if (decoder->next_picture_tag) {
+        schro_tag_free (decoder->next_picture_tag);
+      }
       decoder->next_picture_tag = NULL;
       schro_buffer_unref (buffer);
       return SCHRO_DECODER_OK;

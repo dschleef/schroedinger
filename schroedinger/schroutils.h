@@ -30,14 +30,7 @@ typedef unsigned int schro_bool;
  */
 typedef int SchroCUDAStream;
 
-/* Base for tag structures */
-typedef struct _SchroTag SchroTag;
-
 #ifdef SCHRO_ENABLE_UNSTABLE_API
-
-struct _SchroTag {
-    void (*free) (void *);
-};
 
 #define SCHRO_PICTURE_NUMBER_INVALID (-1)
 

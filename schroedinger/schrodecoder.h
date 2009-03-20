@@ -19,7 +19,6 @@ SCHRO_BEGIN_DECLS
 typedef struct _SchroDecoder SchroDecoder;
 typedef struct _SchroDecoderInstance SchroDecoderInstance;
 typedef struct _SchroPicture SchroPicture;
-typedef struct _SchroDecoderTag SchroDecoderTag;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
@@ -55,7 +54,7 @@ struct _SchroDecoder {
 
   /* private data that is supplied with the input bitstream and
    * is to be associated with the next picture to occur */
-  SchroDecoderTag *next_picture_tag;
+  SchroTag *next_picture_tag;
 
   SchroDecoderInstance *instance;
 };
@@ -148,12 +147,7 @@ struct _SchroPicture {
   uint8_t md5_checksum[32];
 
   /* private data that is associated with this picture */
-  SchroDecoderTag *tag;
-};
-
-struct _SchroDecoderTag {
-  SchroTag base;
-  void *tag;
+  SchroTag *tag;
 };
 
 #endif
@@ -203,8 +197,7 @@ int schro_decoder_autoparse_wait (SchroDecoder *decoder);
 int schro_decoder_autoparse_push (SchroDecoder *decoder, SchroBuffer *buffer);
 int schro_decoder_autoparse_push_end_of_sequence (SchroDecoder *decoder);
 
-SchroDecoderTag * schro_decoder_tag_new ();
-SchroDecoderTag* schro_decoder_get_picture_tag (SchroDecoder *decoder);
+SchroTag* schro_decoder_get_picture_tag (SchroDecoder *decoder);
 
 int schro_decoder_decode_parse_header (SchroUnpack *unpack);
 void schro_decoder_parse_sequence_header (SchroDecoderInstance *instance, SchroUnpack *unpack);

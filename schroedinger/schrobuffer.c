@@ -111,3 +111,43 @@ schro_buffer_dup (SchroBuffer * buffer)
   return dup;
 }
 
+
+/**
+ * schro_tag_new:
+ * @value: initial value for the tag
+ * @free_func: function to free value, may be NULL.  this function must
+ *             allow being called as free_func(NULL).
+ *
+ * Returns: An a decoder tag structure, with an initial value
+ */
+SchroTag *
+schro_tag_new (void *value, void (*free_func)(void *))
+{
+  SchroTag *tag = schro_malloc0 (sizeof(*tag));
+
+  if (!tag) {
+    if (free_func) {
+      free_func (value);
+    }
+    return NULL;
+  }
+  tag->free = free_func;
+  tag->value = value;
+  return tag;
+}
+
+/**
+ * schro_tag_free:
+ *
+ * Frees storage associated with @tag.  Calls tag's free_func to free
+ * private data if free_func is non zero.
+ */
+void
+schro_tag_free (SchroTag *tag)
+{
+  if (tag->free) {
+    tag->free (tag->value);
+  }
+  schro_free (tag);
+}
+

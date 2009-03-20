@@ -7,6 +7,7 @@
 SCHRO_BEGIN_DECLS
 
 typedef struct _SchroBuffer SchroBuffer;
+typedef struct _SchroTag SchroTag;
 
 struct _SchroBuffer
 {
@@ -24,6 +25,12 @@ struct _SchroBuffer
   SchroTag* tag;
 };
 
+struct _SchroTag
+{
+  void (*free) (void *);
+  void *value;
+};
+
 SchroBuffer *schro_buffer_new (void);
 SchroBuffer *schro_buffer_new_and_alloc (int size);
 SchroBuffer *schro_buffer_new_with_data (void *data, int size);
@@ -32,6 +39,9 @@ SchroBuffer *schro_buffer_new_subbuffer (SchroBuffer * buffer, int offset,
 SchroBuffer *schro_buffer_dup (SchroBuffer * buffer);
 SchroBuffer * schro_buffer_ref (SchroBuffer * buffer);
 void schro_buffer_unref (SchroBuffer * buffer);
+
+SchroTag *schro_tag_new (void *value, void (*free_func) (void *));
+void schro_tag_free (SchroTag *tag);
 
 SCHRO_END_DECLS
 
