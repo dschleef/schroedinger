@@ -1170,12 +1170,6 @@ color_matrix (SchroFrame *frame, void *_dest, int component, int i)
 SchroFrame *
 schro_virt_frame_new_color_matrix (SchroFrame *vf)
 {
-  return schro_virt_frame_new_color_matrix_take (schro_frame_ref (vf));
-}
-
-SchroFrame *
-schro_virt_frame_new_color_matrix_take (SchroFrame *vf)
-{
   SchroFrame *virt_frame;
 
   virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_U8_444,
@@ -1327,6 +1321,7 @@ schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format)
 }
 
 
+#if 0
 SchroFrame *
 schro_virt_frame_new_horiz_downsample_take (SchroFrame *vf, int cosite)
 {
@@ -1434,6 +1429,7 @@ schro_virt_frame_new_subsample_take (SchroFrame *vf, SchroFrameFormat format)
   schro_frame_unref (vf);
   return virt_frame;
 }
+#endif
 
 static void
 convert_u8_s16 (SchroFrame *frame, void *_dest, int component, int i)
@@ -1450,7 +1446,7 @@ convert_u8_s16 (SchroFrame *frame, void *_dest, int component, int i)
 }
 
 SchroFrame *
-schro_virt_frame_new_convert_u8_take (SchroFrame *vf)
+schro_virt_frame_new_convert_u8 (SchroFrame *vf)
 {
   SchroFrame *virt_frame;
   SchroFrameFormat format;
@@ -1479,7 +1475,7 @@ convert_s16_u8 (SchroFrame *frame, void *_dest, int component, int i)
 }
 
 SchroFrame *
-schro_virt_frame_new_convert_s16_take (SchroFrame *vf)
+schro_virt_frame_new_convert_s16 (SchroFrame *vf)
 {
   SchroFrame *virt_frame;
   SchroFrameFormat format;
@@ -1514,7 +1510,7 @@ crop_s16 (SchroFrame *frame, void *_dest, int component, int i)
 }
 
 SchroFrame *
-schro_virt_frame_new_crop_take (SchroFrame *vf, int width, int height)
+schro_virt_frame_new_crop (SchroFrame *vf, int width, int height)
 {
   SchroFrame *virt_frame;
 
@@ -1574,7 +1570,7 @@ edge_extend_s16 (SchroFrame *frame, void *_dest, int component, int i)
 }
 
 SchroFrame *
-schro_virt_frame_new_edgeextend_take (SchroFrame *vf, int width, int height)
+schro_virt_frame_new_edgeextend (SchroFrame *vf, int width, int height)
 {
   SchroFrame *virt_frame;
 

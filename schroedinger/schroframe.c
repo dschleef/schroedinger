@@ -693,44 +693,44 @@ schro_frame_convert (SchroFrame *dest, SchroFrame *src)
   }
   schro_frame_ref (src);
 
-  frame = schro_virt_frame_new_unpack_take (src);
+  frame = schro_virt_frame_new_unpack (src);
   SCHRO_DEBUG("unpack %p", frame);
 
   if (SCHRO_FRAME_FORMAT_DEPTH(dest_format) != SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
     if (SCHRO_FRAME_FORMAT_DEPTH(dest_format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-      frame = schro_virt_frame_new_convert_u8_take (frame);
+      frame = schro_virt_frame_new_convert_u8 (frame);
       SCHRO_DEBUG("convert_u8 %p", frame);
     } else if (SCHRO_FRAME_FORMAT_DEPTH(dest_format) ==
         SCHRO_FRAME_FORMAT_DEPTH_S16) {
-      frame = schro_virt_frame_new_convert_s16_take (frame);
+      frame = schro_virt_frame_new_convert_s16 (frame);
       SCHRO_DEBUG("convert_s16 %p", frame);
     }
   }
 
   if ((dest_format & 3) != (frame->format & 3)) {
-    frame = schro_virt_frame_new_subsample_take (frame, dest_format);
+    frame = schro_virt_frame_new_subsample (frame, dest_format);
     SCHRO_DEBUG("subsample %p", frame);
   }
 
   switch (dest->format) {
     case SCHRO_FRAME_FORMAT_YUYV:
-      frame = schro_virt_frame_new_pack_YUY2_take (frame);
+      frame = schro_virt_frame_new_pack_YUY2 (frame);
       SCHRO_DEBUG("pack_YUY2 %p", frame);
       break;
     case SCHRO_FRAME_FORMAT_UYVY:
-      frame = schro_virt_frame_new_pack_UYVY_take (frame);
+      frame = schro_virt_frame_new_pack_UYVY (frame);
       SCHRO_DEBUG("pack_UYVY %p", frame);
       break;
     case SCHRO_FRAME_FORMAT_AYUV:
-      frame = schro_virt_frame_new_pack_AYUV_take (frame);
+      frame = schro_virt_frame_new_pack_AYUV (frame);
       SCHRO_DEBUG("pack_AYUV %p", frame);
       break;
     case SCHRO_FRAME_FORMAT_v210:
-      frame = schro_virt_frame_new_pack_v210_take (frame);
+      frame = schro_virt_frame_new_pack_v210 (frame);
       SCHRO_DEBUG("pack_v210 %p", frame);
       break;
     case SCHRO_FRAME_FORMAT_v216:
-      frame = schro_virt_frame_new_pack_v216_take (frame);
+      frame = schro_virt_frame_new_pack_v216 (frame);
       SCHRO_DEBUG("pack_v216 %p", frame);
       break;
     default:
@@ -741,11 +741,11 @@ schro_frame_convert (SchroFrame *dest, SchroFrame *src)
     SCHRO_DEBUG("crop %d %d to %d %d",
         frame->width, frame->height, dest->width, dest->height);
 
-    frame = schro_virt_frame_new_crop_take (frame, dest->width, dest->height);
+    frame = schro_virt_frame_new_crop (frame, dest->width, dest->height);
     SCHRO_DEBUG("crop %p", frame);
   }
   if (dest->width > src->width || dest->height > src->height) {
-    frame = schro_virt_frame_new_edgeextend_take (frame, dest->width, dest->height);
+    frame = schro_virt_frame_new_edgeextend (frame, dest->width, dest->height);
     SCHRO_DEBUG("edgeextend %p", frame);
   }
 

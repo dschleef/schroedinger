@@ -21,6 +21,8 @@
 #include "config.h"
 #endif
 
+#define SCHRO_ENABLE_UNSTABLE_API
+
 #include <gst/gst.h>
 #include <gst/video/video.h>
 #include <schroedinger/schro.h>
@@ -70,9 +72,9 @@ gst_schro_buffer_wrap (GstBuffer *buf, GstVideoFormat format, int width,
         SchroFrame *vframe2;
         SchroFrame *vframe3;
 
-        vframe1 = schro_virt_frame_new_unpack_take (rgbframe);
-        vframe2 = schro_virt_frame_new_color_matrix_take (vframe1);
-        vframe3 = schro_virt_frame_new_subsample_take (vframe2, SCHRO_FRAME_FORMAT_U8_420);
+        vframe1 = schro_virt_frame_new_unpack (rgbframe);
+        vframe2 = schro_virt_frame_new_color_matrix (vframe1);
+        vframe3 = schro_virt_frame_new_subsample (vframe2, SCHRO_FRAME_FORMAT_U8_420);
 
         frame = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420,
             width, height);
