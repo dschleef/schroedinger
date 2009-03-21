@@ -307,7 +307,7 @@ schro_virt_frame_new_horiz_downsample (SchroFrame *vf, int cosite)
   SchroFrame *virt_frame;
 
   virt_frame = schro_frame_new_virtual (NULL, vf->format, vf->width/2, vf->height);
-  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->virt_frame1 = vf;
   if (cosite) {
     virt_frame->render_line = schro_virt_frame_render_downsample_horiz_cosite;
   } else {
@@ -424,7 +424,7 @@ schro_virt_frame_new_vert_downsample (SchroFrame *vf, int cosite)
   SchroFrame *virt_frame;
 
   virt_frame = schro_frame_new_virtual (NULL, vf->format, vf->width, vf->height/2);
-  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->virt_frame1 = vf;
   if (cosite) {
     virt_frame->render_line = schro_virt_frame_render_downsample_vert_cosite;
   } else {
@@ -497,7 +497,7 @@ schro_virt_frame_new_vert_resample (SchroFrame *vf, int height)
   double *scale;
 
   virt_frame = schro_frame_new_virtual (NULL, vf->format, vf->width, height);
-  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->virt_frame1 = vf;
   virt_frame->render_line = schro_virt_frame_render_resample_vert;
 
   scale = malloc(sizeof(double));
@@ -551,7 +551,7 @@ schro_virt_frame_new_horiz_resample (SchroFrame *vf, int width)
   double *scale;
 
   virt_frame = schro_frame_new_virtual (NULL, vf->format, width, vf->height);
-  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->virt_frame1 = vf;
   virt_frame->render_line = schro_virt_frame_render_resample_horiz;
 
   scale = malloc(sizeof(double));
@@ -775,11 +775,11 @@ schro_virt_frame_new_unpack (SchroFrame *vf)
       render_line = unpack_v216;
       break;
     default:
-      return schro_frame_ref (vf);
+      return vf;
   }
 
   virt_frame = schro_frame_new_virtual (NULL, format, vf->width, vf->height);
-  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->virt_frame1 = vf;
   virt_frame->render_line = render_line;
 
   return virt_frame;
@@ -809,7 +809,7 @@ schro_virt_frame_new_pack_YUY2 (SchroFrame *vf)
 
   virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_YUYV,
       vf->width, vf->height);
-  virt_frame->virt_frame1 = schro_frame_ref (vf);
+  virt_frame->virt_frame1 = vf;
   virt_frame->render_line = pack_yuyv;
 
   return virt_frame;
@@ -843,7 +843,7 @@ schro_virt_frame_new_pack_UYVY (SchroFrame *vf)
 
   virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_YUYV,
       vf->width, vf->height);
-  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->virt_frame1 = vf;
   virt_frame->render_line = pack_uyvy;
 
   return virt_frame;
@@ -881,7 +881,7 @@ schro_virt_frame_new_pack_v216 (SchroFrame *vf)
 
   virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_v216,
       vf->width, vf->height);
-  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->virt_frame1 = vf;
   virt_frame->render_line = pack_v216;
 
   return virt_frame;
@@ -1063,7 +1063,7 @@ schro_virt_frame_new_pack_v210 (SchroFrame *vf)
 
   virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_v210,
       vf->width, vf->height);
-  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->virt_frame1 = vf;
   if (vf->format == SCHRO_FRAME_FORMAT_S16_422) {
     virt_frame->render_line = pack_v210_s16;
   } else {
@@ -1101,7 +1101,7 @@ schro_virt_frame_new_pack_AYUV (SchroFrame *vf)
 
   virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_AYUV,
       vf->width, vf->height);
-  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->virt_frame1 = vf;
   virt_frame->render_line = pack_ayuv;
 
   return virt_frame;
@@ -1137,7 +1137,7 @@ schro_virt_frame_new_pack_RGB (SchroFrame *vf)
 
   virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_RGB,
       vf->width, vf->height);
-  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->virt_frame1 = vf;
   virt_frame->render_line = pack_rgb;
 
   return virt_frame;
@@ -1318,7 +1318,7 @@ schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format)
   SchroFrameRenderFunc render_line;
 
   if (vf->format == format) {
-    return schro_frame_ref (vf);
+    return vf;
   }
   if (vf->format == SCHRO_FRAME_FORMAT_U8_422 &&
       format == SCHRO_FRAME_FORMAT_U8_420) {
@@ -1343,7 +1343,7 @@ schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format)
     return NULL;
   }
   virt_frame = schro_frame_new_virtual (NULL, format, vf->width, vf->height);
-  virt_frame->virt_frame1 = schro_frame_ref(vf);
+  virt_frame->virt_frame1 = vf;
   virt_frame->render_line = render_line;
 
   return virt_frame;
