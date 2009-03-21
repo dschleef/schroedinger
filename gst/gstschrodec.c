@@ -455,7 +455,7 @@ gst_schro_dec_parse_data (GstBaseVideoDecoder *base_video_decoder,
     frame = base_video_decoder->current_frame;
     frame->is_eos = TRUE;
 
-    SCHRO_ERROR("eos");
+    SCHRO_DEBUG("eos");
 
     return gst_base_video_decoder_have_frame (base_video_decoder);
   }
