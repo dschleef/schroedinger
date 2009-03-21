@@ -70,6 +70,7 @@ schro_async_stop (SchroAsync *async)
 {
 }
 
+#ifdef unused
 void
 schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 {
@@ -78,6 +79,7 @@ schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
   async->task_func = func;
   async->task_priv = ptr;
 }
+#endif
 
 void
 schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
@@ -88,11 +90,13 @@ schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
   async->task_priv = stage;
 }
 
+#ifdef unused
 int schro_async_get_num_completed (SchroAsync *async)
 {
   if (async->done_priv) return 1;
   return 0;
 }
+#endif
 
 void *schro_async_pull (SchroAsync *async)
 {
@@ -137,6 +141,7 @@ schro_async_wait_locked (SchroAsync *async)
   return TRUE;
 }
 
+#ifdef unused
 void
 schro_async_wait_one (SchroAsync *async)
 {
@@ -147,7 +152,9 @@ schro_async_wait_one (SchroAsync *async)
     async->complete (async->task_priv);
   }
 }
+#endif
 
+#ifdef unused
 void
 schro_async_wait (SchroAsync *async, int min_waiting)
 {
@@ -158,6 +165,7 @@ schro_async_wait (SchroAsync *async, int min_waiting)
     async->complete (async->task_priv);
   }
 }
+#endif
 
 void schro_async_lock (SchroAsync *async)
 {

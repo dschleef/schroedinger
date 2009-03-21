@@ -2621,6 +2621,7 @@ schro_decoder_init_subband_frame_data_interleaved (SchroPicture *picture)
   }
 }
 
+#ifdef HAVE_OPENGL
 void
 schro_decoder_init_subband_frame_data (SchroPicture *picture)
 {
@@ -2643,6 +2644,7 @@ schro_decoder_init_subband_frame_data (SchroPicture *picture)
     }
   }
 }
+#endif
 
 void
 schro_decoder_parse_lowdelay_transform_data (SchroPicture *picture, SchroUnpack *unpack)

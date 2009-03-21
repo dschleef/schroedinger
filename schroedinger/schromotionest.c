@@ -1147,6 +1147,7 @@ schro_motion_estimate_entropy (SchroMotion *motion)
   return entropy;
 }
 
+#ifdef unused
 int
 schro_motion_superblock_estimate_entropy (SchroMotion *motion, int i, int j)
 {
@@ -1161,6 +1162,7 @@ schro_motion_superblock_estimate_entropy (SchroMotion *motion, int i, int j)
 
   return entropy;
 }
+#endif
 
 int
 schro_motion_superblock_try_estimate_entropy (SchroMotion *motion, int i,

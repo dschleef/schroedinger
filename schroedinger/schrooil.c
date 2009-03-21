@@ -54,6 +54,7 @@ oil_sum_square_diff_u8 (int32_t *d_1, uint8_t *s1, uint8_t *s2, int n)
   d_1[0] = sum;
 }
 
+#ifdef unused
 void
 oil_mas10_s16 (int16_t *d, const int16_t *s1_np3, const int32_t *s2_4,
     const int32_t *s3_2, int n)
@@ -70,6 +71,7 @@ oil_mas10_s16 (int16_t *d, const int16_t *s1_np3, const int32_t *s2_4,
     d[i] = (x + s3_2[0])>>s3_2[1];
   }
 }
+#endif
 
 void
 oil_convert_f64_u8 (double *dest, uint8_t *src, int n)

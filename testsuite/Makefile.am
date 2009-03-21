@@ -24,7 +24,7 @@ noinst_PROGRAMS = arith arith_encode \
 	 colorspace filter_coeff utils extension
 
 if ENABLE_ENCODER
-noinst_PROGRAMS += encode filter ssim wavelet_gain \
+noinst_PROGRAMS += encode ssim wavelet_gain \
 	wavelet_gain_curve perceptual_weight perceptual_curves \
 	wavelet_noise_2d unpack abi
 endif
@@ -122,10 +122,6 @@ quant_SOURCES = quant.c
 #sort_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 sort_SOURCES = sort.c
 
-#filter_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-#filter_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
-filter_SOURCES = filter.c
-
 #ssim_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 #ssim_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 ssim_SOURCES = ssim.c
@@ -143,7 +139,6 @@ perceptual_weight_SOURCES = perceptual_weight.c
 #perceptual_curves_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 #perceptual_curves_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 perceptual_curves_SOURCES = perceptual_curves.c
-
 
 
 zzuf_test:

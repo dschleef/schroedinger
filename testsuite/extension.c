@@ -122,7 +122,7 @@ void test (int width, int height)
 
   for(y=-32*2;y<100+32*2-16*2;y++) {
     for(x=-32*2;x<100+32*2-16*2;x++) {
-      schro_upsampled_frame_get_block_precN (upframe, 0, x, y, 1, &fd_ref);
+      schro_upsampled_frame_get_block_fast_precN (upframe, 0, x, y, 1, &fd_ref, &fd_ref);
       schro_upsampled_frame_get_subdata_prec1 (upframe, 0, x, y, &fd);
       ok = frame_data_compare (&fd, &fd_ref);
       if (dump_all || !ok) {

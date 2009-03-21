@@ -45,6 +45,7 @@ schro_malloc0 (int size)
   return ptr;
 }
 
+#ifdef unused
 void *
 schro_realloc (void *ptr, int size)
 {
@@ -53,6 +54,7 @@ schro_realloc (void *ptr, int size)
 
   return ptr;
 }
+#endif
 
 void
 schro_free (void *ptr)

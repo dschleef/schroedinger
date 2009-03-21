@@ -37,6 +37,7 @@ schro_video_format_validate (SchroVideoFormat *format)
   return 1;
 }
 
+#ifdef unused
 int
 schro_video_format_compare_new_sequence (SchroVideoFormat *a, SchroVideoFormat *b)
 {
@@ -65,7 +66,9 @@ schro_video_format_compare_new_sequence (SchroVideoFormat *a, SchroVideoFormat *
   }
   return TRUE;
 }
+#endif
 
+#ifdef unused
 int
 schro_video_format_compare (SchroVideoFormat *a, SchroVideoFormat *b)
 {
@@ -75,6 +78,7 @@ schro_video_format_compare (SchroVideoFormat *a, SchroVideoFormat *b)
   }
   return TRUE;
 }
+#endif
 
 int
 schro_video_format_get_bit_depth (SchroVideoFormat *format)
@@ -658,19 +662,23 @@ schro_video_format_get_picture_height (SchroVideoFormat *format)
   return format->height;
 }
 
+#ifdef unused
 int
 schro_video_format_get_chroma_width (SchroVideoFormat *format)
 {
   return ROUND_UP_SHIFT(format->width,
       SCHRO_CHROMA_FORMAT_H_SHIFT(format->chroma_format));
 }
+#endif
 
+#ifdef unused
 int
 schro_video_format_get_chroma_height (SchroVideoFormat *format)
 {
   return ROUND_UP_SHIFT(format->height,
       SCHRO_CHROMA_FORMAT_V_SHIFT(format->chroma_format));
 }
+#endif
 
 void
 schro_video_format_get_picture_luma_size (SchroVideoFormat *format,

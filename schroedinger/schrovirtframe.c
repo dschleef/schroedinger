@@ -214,6 +214,7 @@ schro_virt_frame_render (SchroFrame *frame, SchroFrame *dest)
   }
 }
 
+#ifdef unused
 void
 schro_virt_frame_render_downsample_horiz_cosite (SchroFrame *frame,
     void *_dest, int component, int i)
@@ -234,7 +235,9 @@ schro_virt_frame_render_downsample_horiz_cosite (SchroFrame *frame,
     dest[j] = CLAMP((x+2)>>2, 0, 255);
   }
 }
+#endif
 
+#ifdef unused
 void
 schro_virt_frame_render_downsample_horiz_halfsite (SchroFrame *frame,
     void *_dest, int component, int i)
@@ -295,7 +298,9 @@ schro_virt_frame_render_downsample_horiz_halfsite (SchroFrame *frame,
       break;
   }
 }
+#endif
 
+#ifdef unused
 SchroFrame *
 schro_virt_frame_new_horiz_downsample (SchroFrame *vf, int cosite)
 {
@@ -311,7 +316,9 @@ schro_virt_frame_new_horiz_downsample (SchroFrame *vf, int cosite)
 
   return virt_frame;
 }
+#endif
 
+#ifdef unused
 void
 schro_virt_frame_render_downsample_vert_cosite (SchroFrame *frame,
     void *_dest, int component, int i)
@@ -339,8 +346,9 @@ schro_virt_frame_render_downsample_vert_cosite (SchroFrame *frame,
     dest[j] = CLAMP((x+2)>>2, 0, 255);
   }
 }
+#endif
 
-
+#ifdef unused
 void
 schro_virt_frame_render_downsample_vert_halfsite (SchroFrame *frame,
     void *_dest, int component, int i)
@@ -407,7 +415,9 @@ schro_virt_frame_render_downsample_vert_halfsite (SchroFrame *frame,
       break;
   }
 }
+#endif
 
+#ifdef unused
 SchroFrame *
 schro_virt_frame_new_vert_downsample (SchroFrame *vf, int cosite)
 {
@@ -423,7 +433,9 @@ schro_virt_frame_new_vert_downsample (SchroFrame *vf, int cosite)
 
   return virt_frame;
 }
+#endif
 
+#ifdef unused
 void
 get_taps (double *taps, double x)
 {
@@ -433,7 +445,9 @@ get_taps (double *taps, double x)
   taps[1] = x * (- x * x + x + 1);
   taps[0] = x * x * (x - 1);
 }
+#endif
 
+#ifdef unused
 void
 schro_virt_frame_render_resample_vert (SchroFrame *frame, void *_dest,
     int component, int i)
@@ -473,7 +487,9 @@ schro_virt_frame_render_resample_vert (SchroFrame *frame, void *_dest,
     dest[j] = CLAMP(rint(x), 0, 255);
   }
 }
+#endif
 
+#ifdef unused
 SchroFrame *
 schro_virt_frame_new_vert_resample (SchroFrame *vf, int height)
 {
@@ -491,7 +507,9 @@ schro_virt_frame_new_vert_resample (SchroFrame *vf, int height)
 
   return virt_frame;
 }
+#endif
 
+#ifdef unused
 void
 schro_virt_frame_render_resample_horiz (SchroFrame *frame, void *_dest,
     int component, int i)
@@ -523,7 +541,9 @@ schro_virt_frame_render_resample_horiz (SchroFrame *frame, void *_dest,
     dest[j] = CLAMP(rint(y), 0, 255);
   }
 }
+#endif
 
+#ifdef unused
 SchroFrame *
 schro_virt_frame_new_horiz_resample (SchroFrame *vf, int width)
 {
@@ -541,6 +561,7 @@ schro_virt_frame_new_horiz_resample (SchroFrame *vf, int width)
 
   return virt_frame;
 }
+#endif
 
 static void
 unpack_yuyv (SchroFrame *frame, void *_dest, int component, int i)
@@ -1086,6 +1107,7 @@ schro_virt_frame_new_pack_AYUV (SchroFrame *vf)
   return virt_frame;
 }
 
+#ifdef unused
 static void
 pack_rgb (SchroFrame *frame, void *_dest, int component, int i)
 {
@@ -1105,7 +1127,9 @@ pack_rgb (SchroFrame *frame, void *_dest, int component, int i)
     dest[j*3+2] = src_v[j];
   }
 }
+#endif
 
+#ifdef unused
 SchroFrame *
 schro_virt_frame_new_pack_RGB (SchroFrame *vf)
 {
@@ -1118,7 +1142,9 @@ schro_virt_frame_new_pack_RGB (SchroFrame *vf)
 
   return virt_frame;
 }
+#endif
 
+#ifdef unused
 static void
 color_matrix (SchroFrame *frame, void *_dest, int component, int i)
 {
@@ -1166,7 +1192,9 @@ color_matrix (SchroFrame *frame, void *_dest, int component, int i)
   }
 
 }
+#endif
 
+#ifdef unused
 SchroFrame *
 schro_virt_frame_new_color_matrix (SchroFrame *vf)
 {
@@ -1179,6 +1207,7 @@ schro_virt_frame_new_color_matrix (SchroFrame *vf)
 
   return virt_frame;
 }
+#endif
 
 static void
 convert_444_422 (SchroFrame *frame, void *_dest, int component, int i)

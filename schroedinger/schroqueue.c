@@ -82,6 +82,7 @@ schro_queue_delete (SchroQueue *queue, SchroPictureNumber picture_number)
   }
 }
 
+#ifdef unused
 void *
 schro_queue_remove (SchroQueue *queue, SchroPictureNumber picture_number)
 {
@@ -100,7 +101,9 @@ schro_queue_remove (SchroQueue *queue, SchroPictureNumber picture_number)
 
   return NULL;
 }
+#endif
 
+#ifdef unused
 void
 schro_queue_clear (SchroQueue *queue)
 {
@@ -113,6 +116,7 @@ schro_queue_clear (SchroQueue *queue)
   }
   queue->n = 0;
 }
+#endif
 
 void
 schro_queue_pop (SchroQueue *queue)

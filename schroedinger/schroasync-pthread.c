@@ -194,6 +194,7 @@ schro_async_stop (SchroAsync *async)
   pthread_mutex_unlock (&async->mutex);
 }
 
+#ifdef unused
 void
 schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 {
@@ -204,6 +205,7 @@ schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 
   pthread_cond_signal (&async->thread_cond);
 }
+#endif
 
 void
 schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
@@ -216,10 +218,12 @@ schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
   pthread_cond_signal (&async->thread_cond);
 }
 
+#ifdef unused
 int schro_async_get_num_completed (SchroAsync *async)
 {
   return async->n_completed;
 }
+#endif
 
 static void
 schro_async_dump (SchroAsync *async)
@@ -270,6 +274,7 @@ schro_async_wait_locked (SchroAsync *async)
 #endif
 }
 
+#ifdef unused
 void
 schro_async_wait_one (SchroAsync *async)
 {
@@ -282,7 +287,9 @@ schro_async_wait_one (SchroAsync *async)
   pthread_cond_wait (&async->app_cond, &async->mutex);
   pthread_mutex_unlock (&async->mutex);
 }
+#endif
 
+#ifdef unused
 void
 schro_async_wait (SchroAsync *async, int min_waiting)
 {
@@ -297,6 +304,7 @@ schro_async_wait (SchroAsync *async, int min_waiting)
   pthread_cond_wait (&async->app_cond, &async->mutex);
   pthread_mutex_unlock (&async->mutex);
 }
+#endif
 
 static void *
 schro_thread_main (void *ptr)
@@ -435,6 +443,7 @@ schro_mutex_new (void)
   return mutex;
 }
 
+#ifdef unused
 SchroMutex *
 schro_mutex_new_recursive (void)
 {
@@ -449,6 +458,7 @@ schro_mutex_new_recursive (void)
 
   return mutex;
 }
+#endif
 
 void
 schro_mutex_lock (SchroMutex *mutex)

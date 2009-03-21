@@ -35,6 +35,7 @@ schro_unpack_get_bits_read (SchroUnpack *unpack)
   return unpack->n_bits_read;
 }
 
+#ifdef unused
 int
 schro_unpack_get_bits_remaining (SchroUnpack *unpack)
 {
@@ -43,6 +44,7 @@ schro_unpack_get_bits_remaining (SchroUnpack *unpack)
   }
   return unpack->n_bits_left + unpack->n_bits_in_shift_register;
 }
+#endif
 
 void
 schro_unpack_limit_bits_remaining (SchroUnpack *unpack, int n_bits)

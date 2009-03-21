@@ -1461,6 +1461,7 @@ void schro_frame_shift_right (SchroFrame *frame, int shift)
   }
 }
 
+#ifdef unused
 /**
  * schro_frame_edge_extend:
  * @frame: frame
@@ -1543,6 +1544,7 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
       break;
   }
 }
+#endif
 
 void
 schro_frame_zero_extend (SchroFrame *frame, int width, int height)
@@ -2134,6 +2136,7 @@ schro_upsampled_frame_get_pixel_prec0 (SchroUpsampledFrame *upframe, int k,
   return line[x];
 }
 
+#ifdef unused
 void
 schro_upsampled_frame_get_block_prec0 (SchroUpsampledFrame *upframe, int k,
     int x, int y, SchroFrameData *fd)
@@ -2150,7 +2153,9 @@ schro_upsampled_frame_get_block_prec0 (SchroUpsampledFrame *upframe, int k,
   }
 }
 #endif
+#endif
 
+#ifdef unused
 void
 schro_upsampled_frame_get_block_fast_prec0 (SchroUpsampledFrame *upframe, int k,
     int x, int y, SchroFrameData *fd)
@@ -2166,6 +2171,7 @@ schro_upsampled_frame_get_block_fast_prec0 (SchroUpsampledFrame *upframe, int k,
     memcpy (dest, src + x, fd->width);
   }
 }
+#endif
 
 void
 schro_upsampled_frame_get_subdata_prec0 (SchroUpsampledFrame *upframe,
@@ -2200,6 +2206,7 @@ schro_upsampled_frame_get_pixel_prec1 (SchroUpsampledFrame *upframe, int k,
   return line[x];
 }
 
+#ifdef unused
 void
 schro_upsampled_frame_get_block_prec1 (SchroUpsampledFrame *upframe, int k,
     int x, int y, SchroFrameData *fd)
@@ -2215,6 +2222,7 @@ schro_upsampled_frame_get_block_prec1 (SchroUpsampledFrame *upframe, int k,
     }
   }
 }
+#endif
 #endif
 
 void
@@ -2314,6 +2322,7 @@ schro_upsampled_frame_get_pixel_prec3 (SchroUpsampledFrame *upframe, int k,
   return ROUND_SHIFT(value, 4);
 }
 
+#ifdef unused
 void
 schro_upsampled_frame_get_block_prec3 (SchroUpsampledFrame *upframe, int k,
     int x, int y, SchroFrameData *fd)
@@ -2329,6 +2338,7 @@ schro_upsampled_frame_get_block_prec3 (SchroUpsampledFrame *upframe, int k,
     }
   }
 }
+#endif
 #endif
 
 void
@@ -2503,6 +2513,7 @@ schro_upsampled_frame_get_pixel_precN (SchroUpsampledFrame *upframe, int k,
   SCHRO_ASSERT(0);
 }
 
+#ifdef unused
 void
 schro_upsampled_frame_get_block_precN (SchroUpsampledFrame *upframe, int k,
     int x, int y, int prec, SchroFrameData *fd)
@@ -2524,6 +2535,7 @@ schro_upsampled_frame_get_block_precN (SchroUpsampledFrame *upframe, int k,
 
   SCHRO_ASSERT(0);
 }
+#endif
 #endif
 
 void

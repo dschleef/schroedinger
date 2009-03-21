@@ -45,6 +45,7 @@ sort_u8 (uint8_t *d, int n)
   }
 }
 
+#ifdef unused
 /* reference */
 void
 schro_filter_cwmN_ref (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n, int weight)
@@ -71,6 +72,7 @@ schro_filter_cwmN_ref (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n,
     d[i] = list[(8+weight)/2];
   }
 }
+#endif
 
 void
 schro_filter_cwmN (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n, int weight)
@@ -159,6 +161,7 @@ schro_frame_filter_cwmN (SchroFrame *frame, int weight)
 }
 
 
+#ifdef unused
 static void
 schro_frame_component_filter_cwmN_ref (SchroFrameData *comp, int weight)
 {
@@ -197,7 +200,9 @@ schro_frame_component_filter_cwmN_ref (SchroFrameData *comp, int weight)
   schro_free (tmp1);
   schro_free (tmp2);
 }
+#endif
 
+#ifdef unused
 void
 schro_frame_filter_cwmN_ref (SchroFrame *frame, int weight)
 {
@@ -205,6 +210,7 @@ schro_frame_filter_cwmN_ref (SchroFrame *frame, int weight)
   schro_frame_component_filter_cwmN_ref (&frame->components[1], weight);
   schro_frame_component_filter_cwmN_ref (&frame->components[2], weight);
 }
+#endif
 
 
 #if 0
@@ -236,6 +242,7 @@ schro_filter_cwm7 (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n)
 }
 #endif
 
+#ifdef unused
 /* FIXME move to schrooil */
 void
 schro_filter_cwm7 (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n)
@@ -267,7 +274,9 @@ schro_filter_cwm7 (uint8_t *d, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n)
     }
   }
 }
+#endif
 
+#ifdef unused
 static void
 schro_frame_component_filter_cwm7 (SchroFrameData *comp)
 {
@@ -306,7 +315,9 @@ schro_frame_component_filter_cwm7 (SchroFrameData *comp)
   schro_free (tmp1);
   schro_free (tmp2);
 }
+#endif
 
+#ifdef unused
 void
 schro_frame_filter_cwm7 (SchroFrame *frame)
 {
@@ -314,9 +325,11 @@ schro_frame_filter_cwm7 (SchroFrame *frame)
   schro_frame_component_filter_cwm7 (&frame->components[1]);
   schro_frame_component_filter_cwm7 (&frame->components[2]);
 }
+#endif
 
 
 
+#ifdef unused
 static void
 lowpass_u8 (uint8_t *d, uint8_t *s, int n)
 {
@@ -342,7 +355,9 @@ lowpass_u8 (uint8_t *d, uint8_t *s, int n)
     d[i] = (x + 128)>>8;
   }
 }
+#endif
 
+#ifdef unused
 /* FIXME move to schrooil */
 static void
 lowpass_vert_u8 (uint8_t *d, uint8_t *s, int n)
@@ -360,8 +375,9 @@ lowpass_vert_u8 (uint8_t *d, uint8_t *s, int n)
     d[i] = (x + 128)>>8;
   }
 }
+#endif
 
-
+#ifdef unused
 static void
 schro_frame_component_filter_lowpass (SchroFrameData *comp)
 {
@@ -393,7 +409,9 @@ schro_frame_component_filter_lowpass (SchroFrameData *comp)
 
   schro_free (tmp);
 }
+#endif
 
+#ifdef unused
 void
 schro_frame_filter_lowpass (SchroFrame *frame)
 {
@@ -401,9 +419,10 @@ schro_frame_filter_lowpass (SchroFrame *frame)
   schro_frame_component_filter_lowpass (&frame->components[1]);
   schro_frame_component_filter_lowpass (&frame->components[2]);
 }
+#endif
 
 
-
+#ifdef unused
 static void
 lowpass_s16 (int16_t *d, int16_t *s, int n)
 {
@@ -429,7 +448,9 @@ lowpass_s16 (int16_t *d, int16_t *s, int n)
     d[i] = (x + 128)>>8;
   }
 }
+#endif
 
+#ifdef unused
 /* FIXME move to schrooil */
 static void
 lowpass_vert_s16 (int16_t *d, int16_t *s, int n)
@@ -447,8 +468,10 @@ lowpass_vert_s16 (int16_t *d, int16_t *s, int n)
     d[i] = (x + 128)>>8;
   }
 }
+#endif
 
 
+#ifdef unused
 static void
 schro_frame_component_filter_lowpass_16 (SchroFrameData *comp)
 {
@@ -481,7 +504,9 @@ schro_frame_component_filter_lowpass_16 (SchroFrameData *comp)
 
   schro_free (tmp);
 }
+#endif
 
+#ifdef unused
 void
 schro_frame_filter_lowpass_16 (SchroFrame *frame)
 {
@@ -489,6 +514,7 @@ schro_frame_filter_lowpass_16 (SchroFrame *frame)
   schro_frame_component_filter_lowpass_16 (&frame->components[1]);
   schro_frame_component_filter_lowpass_16 (&frame->components[2]);
 }
+#endif
 
 
 static void
@@ -671,6 +697,7 @@ schro_frame_filter_lowpass2 (SchroFrame *frame, double sigma)
 }
 
 
+#ifdef unused
 void
 schro_frame_filter_wavelet (SchroFrame *frame)
 {
@@ -729,6 +756,7 @@ schro_frame_filter_wavelet (SchroFrame *frame)
   schro_frame_convert (frame, tmpframe);
   schro_frame_unref (tmpframe);
 }
+#endif
 
 
 static double

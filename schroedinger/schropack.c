@@ -26,11 +26,13 @@ schro_pack_free (SchroPack *pack)
   schro_free(pack);
 }
 
+#ifdef unused
 void
 schro_pack_copy (SchroPack *dest, SchroPack *src)
 {
   memcpy (dest, src, sizeof(SchroPack));
 }
+#endif
 
 static void
 schro_pack_shift_out (SchroPack *pack)

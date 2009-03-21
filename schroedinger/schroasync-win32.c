@@ -189,6 +189,7 @@ schro_async_stop (SchroAsync *async)
   schro_free (handles);
 }
 
+#ifdef unused
 void
 schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 {
@@ -199,6 +200,7 @@ schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 
   schro_async_signal_scheduler (async);
 }
+#endif
 
 void
 schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
@@ -211,10 +213,12 @@ schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
   schro_async_signal_scheduler (async);
 }
 
+#ifdef unused
 int schro_async_get_num_completed (SchroAsync *async)
 {
   return async->n_completed;
 }
+#endif
 
 static void
 schro_async_dump (SchroAsync *async)
@@ -251,6 +255,7 @@ schro_async_wait_locked (SchroAsync *async)
   return TRUE;
 }
 
+#ifdef unused
 void
 schro_async_wait (SchroAsync *async, int min_waiting)
 {
@@ -265,6 +270,7 @@ schro_async_wait (SchroAsync *async, int min_waiting)
   WaitForSingleObject (async->app_event, INFINITE);
   LeaveCriticalSection (&async->mutex);
 }
+#endif
 
 static unsigned int __stdcall
 schro_thread_main (void *ptr)

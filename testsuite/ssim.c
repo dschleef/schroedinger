@@ -24,7 +24,7 @@ create_pattern (SchroFrame *frame)
   }
   memset (frame->components[1].data, 0, frame->components[1].length);
   memset (frame->components[2].data, 0, frame->components[2].length);
-  schro_frame_filter_lowpass (frame);
+  schro_frame_filter_lowpass2 (frame, 5.0);
 }
 
 void

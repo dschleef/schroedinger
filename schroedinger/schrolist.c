@@ -82,6 +82,7 @@ schro_list_append (SchroList *list, void *value)
   list->n++;
 }
 
+#ifdef unused
 void
 schro_list_insert (SchroList *list, int i, void *value)
 {
@@ -94,6 +95,7 @@ schro_list_insert (SchroList *list, int i, void *value)
   list->members[i] = value;
   list->n++;
 }
+#endif
 
 void *
 schro_list_remove (SchroList *list, int i)
@@ -117,6 +119,7 @@ schro_list_delete (SchroList *list, int i)
   _schro_list_free_member (list, schro_list_remove (list, i));
 }
 
+#ifdef unused
 void *
 schro_list_replace (SchroList *list, int i, void *value)
 {
@@ -127,11 +130,14 @@ schro_list_replace (SchroList *list, int i, void *value)
 
   return value;
 }
+#endif
 
-
+#ifdef unused
 void
 schro_list_prepend (SchroList *list, void *value)
 {
   schro_list_insert (list, 0, value);
 }
+#endif
+
 

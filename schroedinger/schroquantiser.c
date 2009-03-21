@@ -132,12 +132,14 @@ solve (double *matrix, double *column, int n)
   }
 }
 
+#ifdef unused
 void
 schro_encoder_set_default_subband_weights (SchroEncoder *encoder)
 {
   schro_encoder_calculate_subband_weights (encoder,
       schro_encoder_perceptual_weight_constant);
 }
+#endif
 
 void
 schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
