@@ -396,7 +396,6 @@ void schro_encoder_force_sequence_header (SchroEncoder *encoder);
 
 SchroBuffer * schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
     SchroAuxiliaryDataID id, void *data, int size);
-void schro_encoder_encode_access_unit_header (SchroEncoder *encoder, SchroPack *bits);
 void schro_encoder_encode_parse_info (SchroPack *bits, int parse_code);
 void schro_encoder_insert_buffer (SchroEncoder *encoder, SchroBuffer *buffer);
 void schro_encoder_frame_insert_buffer (SchroEncoderFrame *frame, SchroBuffer *buffer);
