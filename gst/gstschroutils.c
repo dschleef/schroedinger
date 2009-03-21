@@ -21,7 +21,7 @@
 #include "config.h"
 #endif
 
-#define SCHRO_ENABLE_UNSTABLE_API
+//#define SCHRO_ENABLE_UNSTABLE_API
 
 #include <gst/gst.h>
 #include <gst/video/video.h>
@@ -65,6 +65,7 @@ gst_schro_buffer_wrap (GstBuffer *buf, GstVideoFormat format, int width,
     case GST_VIDEO_FORMAT_AYUV:
       frame = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA (buf), width, height);
       break;
+#if 0
     case GST_VIDEO_FORMAT_ARGB:
       {
         SchroFrame *rgbframe = schro_frame_new_from_data_AYUV (GST_BUFFER_DATA (buf), width, height);
@@ -82,6 +83,7 @@ gst_schro_buffer_wrap (GstBuffer *buf, GstVideoFormat format, int width,
         schro_frame_unref (vframe3);
       }
       break;
+#endif
     default:
       g_assert_not_reached();
   }

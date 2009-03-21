@@ -117,8 +117,7 @@ static GstStaticPadTemplate gst_schro_enc_sink_template =
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
     GST_STATIC_CAPS (
-      GST_VIDEO_CAPS_YUV ("{ I420, YV12, YUY2, UYVY, AYUV }") ";"
-      GST_VIDEO_CAPS_ARGB)
+      GST_VIDEO_CAPS_YUV ("{ I420, YV12, YUY2, UYVY, AYUV }"))
     );
 
 static GstStaticPadTemplate gst_schro_enc_src_template =
