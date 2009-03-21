@@ -699,7 +699,7 @@ schro_decoder_pull (SchroDecoder *decoder)
   frame = schro_frame_ref (picture->output_picture);
   schro_picture_unref (picture);
 
-  if (schro_decoder_frame_is_twofield (instance, picture->output_picture)) do {
+  if (schro_decoder_frame_is_twofield (instance, frame)) do {
     /* only consider the 2nd field if it can reference
      * picture->output_picture, ie frame is twofields */
     SchroPictureNumber picture_number = picture->picture_number;
