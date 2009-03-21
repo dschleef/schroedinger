@@ -7,6 +7,8 @@
 
 SCHRO_BEGIN_DECLS
 
+#ifdef SCHRO_ENABLE_UNSTABLE_API
+
 #define SCHRO_FRAME_IS_CUDA(frame) ((frame)->domain && ((frame)->domain->flags & SCHRO_MEMORY_DOMAIN_CUDA))
 
 void schro_gpuframe_to_cpu (SchroFrame *dest, SchroFrame *src);
@@ -28,6 +30,8 @@ void schro_upsampled_gpuframe_upsample(SchroUpsampledFrame *rv);
 void schro_upsampled_gpuframe_free(SchroUpsampledFrame *x);
 
 void schro_gpuframe_zero (SchroFrame *dest);
+
+#endif
 
 SCHRO_END_DECLS
 
