@@ -79,6 +79,15 @@ schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
   async->task_priv = ptr;
 }
 
+void
+schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
+{
+  SCHRO_ASSERT(async->task_func == NULL);
+
+  async->task_func = stage->task_func;
+  async->task_priv = stage;
+}
+
 int schro_async_get_num_completed (SchroAsync *async)
 {
   if (async->done_priv) return 1;

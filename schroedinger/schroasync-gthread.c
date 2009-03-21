@@ -199,6 +199,17 @@ schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
   g_cond_signal (async->thread_cond);
 }
 
+void
+schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
+{
+  SCHRO_ASSERT(async->task_func == NULL);
+
+  async->task_func = stage->task_func;
+  async->task_priv = stage;
+
+  g_cond_signal (async->thread_cond);
+}
+
 int schro_async_get_num_completed (SchroAsync *async)
 {
   return async->n_completed;
