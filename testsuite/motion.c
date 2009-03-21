@@ -14,11 +14,21 @@
 #include <liboil/liboilprofile.h>
 
 void
+schro_frame_data_clear (SchroFrameData *fd)
+{
+  int i;
+  for(i=0;i<fd->height;i++){
+    memset (SCHRO_FRAME_DATA_GET_LINE (fd, i), 0, fd->width);
+  }
+
+}
+
+void
 schro_frame_clear (SchroFrame *frame)
 {
-  memset(frame->components[0].data, 0, frame->components[0].length);
-  memset(frame->components[1].data, 0, frame->components[1].length);
-  memset(frame->components[2].data, 0, frame->components[2].length);
+  schro_frame_data_clear (frame->components + 0);
+  schro_frame_data_clear (frame->components + 1);
+  schro_frame_data_clear (frame->components + 2);
 }
 
 int
@@ -37,6 +47,11 @@ main (int argc, char *argv[])
 
   schro_init();
 
+  memset (&video_format, 0, sizeof(video_format));
+  memset (&params, 0, sizeof(params));
+
+  schro_video_format_set_std_video_format (&video_format,
+      SCHRO_VIDEO_FORMAT_CUSTOM);
   video_format.width = 720;
   video_format.height = 480;
   video_format.chroma_format = SCHRO_CHROMA_420;
@@ -54,8 +69,8 @@ main (int argc, char *argv[])
       video_format.width, video_format.height);
   schro_frame_clear(dest);
 
-  ref = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420,
-      video_format.width, video_format.height);
+  ref = schro_frame_new_and_alloc_extended (NULL, SCHRO_FRAME_FORMAT_U8_420,
+      video_format.width, video_format.height, 32);
   schro_frame_clear(ref);
 
   uref = schro_upsampled_frame_new (ref);
@@ -79,15 +94,17 @@ main (int argc, char *argv[])
   for(i=0;i<10;i++){
     oil_profile_init (&prof);
     for(j=0;j<10;j++){
-      SchroMotion motion;
+      SchroMotion *motion;
+      void *mv_save;
 
-      motion.src1 = uref;
-      motion.src2 = NULL;
-      motion.motion_vectors = motion_vectors;
-      motion.params = &params;
+      motion = schro_motion_new (&params, uref, NULL);
+      mv_save = motion->motion_vectors;
+      motion->motion_vectors = motion_vectors;
       oil_profile_start(&prof);
-      schro_motion_render (&motion, dest);
+      schro_motion_render (motion, dest);
       oil_profile_stop(&prof);
+      motion->motion_vectors = mv_save;
+      schro_motion_free (motion);
     }
     oil_profile_get_ave_std (&prof, &ave, &std);
     printf("cycles %g %g\n", ave, std);

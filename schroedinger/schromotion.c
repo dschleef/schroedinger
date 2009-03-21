@@ -676,6 +676,33 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
   }
 #endif
 
+  {
+    int min_extension;
+    int i;
+
+    min_extension = motion->src1->frames[0]->extension;
+    for(i=0;i<4;i++){
+      if (motion->src1->frames[i]) {
+        min_extension = MIN(min_extension, motion->src1->frames[i]->extension);
+      }
+      if (motion->src2 && motion->src2->frames[i]) {
+        min_extension = MIN(min_extension, motion->src2->frames[i]->extension);
+      }
+    }
+
+    if (MAX(params->xblen_luma, params->yblen_luma) > min_extension) {
+#ifdef ENABLE_MOTION_REF
+      SCHRO_WARNING ("block size (%dx%d) larger than minimum frame extension %d, using reference motion renderer",
+          params->xblen_luma, params->yblen_luma, min_extension);
+      schro_motion_render_ref (motion, dest);
+      return;
+#else
+      SCHRO_ERROR ("block size (%dx%d) larger than minimum frame extension %d, probably will crash",
+          params->xblen_luma, params->yblen_luma, min_extension);
+#endif
+    }
+  }
+
   if (params->num_refs == 1) {
     SCHRO_ASSERT(params->picture_weight_2 == 1);
   }
