@@ -541,6 +541,7 @@ schro_decoder_add_output_picture (SchroDecoder *decoder, SchroFrame *frame)
 {
   schro_async_lock (decoder->async);
   schro_queue_add (decoder->instance->output_queue, frame, 0);
+  schro_async_signal_scheduler (decoder->async);
   schro_async_unlock (decoder->async);
 }
 
