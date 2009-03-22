@@ -3335,11 +3335,16 @@ schro_decoder_frame_is_twofield (SchroDecoderInstance *instance, SchroFrame *fra
 {
   int picture_height = schro_video_format_get_picture_height (&instance->video_format);
 
+  if (frame->height == 0) {
+    /* Indicates a skipped picture */
+    return FALSE;
+  }
+
   if (frame->height == picture_height)
     return FALSE;
 
   if (!instance->video_format.interlaced_coding) {
-    SCHRO_ERROR("supplying non frame-sized pictures when frame_coding is not supported");
+    SCHRO_ERROR("supplying non frame-sized pictures when frame_coding is not supported (%d should be %d)", frame->height, picture_height);
   }
 
   return TRUE;
