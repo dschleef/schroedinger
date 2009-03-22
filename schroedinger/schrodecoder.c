@@ -2373,6 +2373,12 @@ schro_decoder_decode_macroblock(SchroPicture *picture, SchroArith **arith,
   }
 
   switch (mv->split) {
+    default:
+      /* this can happen if _schro_arith_decode_uint() decodes a value
+       * that overflows.  FIXME should cause a picture error.  For now,
+       * just pretend it didn't happen.  */
+      SCHRO_ERROR("mv->split == %d, split_prediction %d", mv->split, split_prediction);
+      /* fall through */
     case 0:
       schro_decoder_decode_prediction_unit (picture, arith, unpack,
           motion->motion_vectors, i, j);
@@ -2413,9 +2419,6 @@ schro_decoder_decode_macroblock(SchroPicture *picture, SchroArith **arith,
         }
       }
       break;
-    default:
-      SCHRO_ERROR("mv->split == %d, split_prediction %d", mv->split, split_prediction);
-      SCHRO_ASSERT(0);
   }
 }
 
