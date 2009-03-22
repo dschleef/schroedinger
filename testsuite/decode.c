@@ -101,13 +101,11 @@ decode (FILE *file)
           schro_decoder_add_output_picture (decoder, frame);
           break;
         case SCHRO_DECODER_OK:
+          //printf("picture number %d\n",
+          //    schro_decoder_get_picture_number (decoder));
           frame = schro_decoder_pull (decoder);
-          //printf("got frame %p\n", frame);
 
           if (frame) {
-            //printf("picture number %d\n",
-            //    schro_decoder_get_picture_number (decoder) - 1);
-
             schro_frame_unref (frame);
           }
           break;
