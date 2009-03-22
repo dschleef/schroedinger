@@ -1332,6 +1332,8 @@ schro_decoder_parse_picture (SchroPicture *picture, SchroUnpack *unpack)
     }
   }
 
+  if (picture->error) return;
+
   picture->stages[SCHRO_DECODER_STAGE_REFERENCES].is_needed = TRUE;
   picture->stages[SCHRO_DECODER_STAGE_MOTION_DECODE].is_needed = TRUE;
   picture->stages[SCHRO_DECODER_STAGE_MOTION_RENDER].is_needed = TRUE;
