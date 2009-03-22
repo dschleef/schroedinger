@@ -1243,7 +1243,7 @@ schro_decoder_iterate_picture (SchroDecoderInstance *instance, SchroBuffer *buff
           instance->video_format.width,
           schro_video_format_get_picture_height(&instance->video_format),
           32);
-      /* FIXME the allocated picture contains junk */
+      schro_frame_clear (ref);
       picture->upsampled_frame = schro_upsampled_frame_new (ref);
     }
 
