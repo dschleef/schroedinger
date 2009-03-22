@@ -676,6 +676,16 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
   }
 #endif
 
+  if (params->have_global_motion) {
+#ifdef ENABLE_MOTION_REF
+    SCHRO_WARNING ("global motion enabled, using reference motion renderer");
+    schro_motion_render_ref (motion, dest);
+    return;
+#else
+    SCHRO_ERROR ("global motion enabled, probably will crash");
+#endif
+  }
+
   {
     int min_extension;
     int i;
