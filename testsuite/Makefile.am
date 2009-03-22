@@ -148,3 +148,10 @@ test-%.drc:
 	num=`echo $@ | sed 's/test-\(.*\)\.drc/\1/'`; \
 	zzuf -A -s$$num -r0.00001 -c -v cat test_stream.drc >$@
 
+zzuf_files:
+	n=0; \
+	while [ $$n -lt 100 ] ; do \
+	  zzuf -A -s$$n -r0.00001 -c -v cat test_stream.drc >test-$$n.drc; \
+	  n=$$(($$n+1)); \
+	done
+
