@@ -122,6 +122,7 @@ void schro_frame_add (SchroFrame *dest, SchroFrame *src);
 void schro_frame_subtract (SchroFrame *dest, SchroFrame *src);
 void schro_frame_shift_left (SchroFrame *frame, int shift);
 void schro_frame_shift_right (SchroFrame *frame, int shift);
+void schro_frame_clear (SchroFrame *frame);
 
 void schro_frame_downsample (SchroFrame *dest, SchroFrame *src);
 void schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src);

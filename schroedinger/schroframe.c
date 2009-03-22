@@ -608,6 +608,38 @@ void schro_frame_set_free_callback (SchroFrame *frame,
   frame->priv = priv;
 }
 
+static void
+schro_frame_component_clear (SchroFrameData *fd)
+{
+  int j;
+
+  if (SCHRO_FRAME_FORMAT_DEPTH(fd->format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
+    uint8_t *line;
+    uint8_t zero = 128;
+
+    for(j=0;j<fd->height;j++){
+      line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+      oil_splat_u8_ns (line, &zero, fd->width);
+    }
+  } else {
+    int16_t *line;
+    int16_t zero = 0;
+
+    for(j=0;j<fd->height;j++){
+      line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+      oil_splat_s16_ns (line, &zero, fd->width);
+    }
+  }
+}
+
+void
+schro_frame_clear (SchroFrame *frame)
+{
+  schro_frame_component_clear (frame->components + 0);
+  schro_frame_component_clear (frame->components + 1);
+  schro_frame_component_clear (frame->components + 2);
+}
+
 #if 0
 static void schro_frame_convert_u8_s16 (SchroFrame *dest, SchroFrame *src);
 static void schro_frame_convert_s16_u8 (SchroFrame *dest, SchroFrame *src);
