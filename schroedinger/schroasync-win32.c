@@ -166,8 +166,8 @@ void
 schro_async_start (SchroAsync *async)
 {
   int i;
-  for(i=0;i<async->n_threads) {
-    SetEvent (async->thread_event);
+  for(i=0;i<async->n_threads;i++) {
+    SetEvent (async->threads[i].event);
   }
 }
 
@@ -332,7 +332,7 @@ schro_thread_main (void *ptr)
      * a lot of unnecessary wakeups in some cases. */
     {
       int i;
-      for(i=0;i<async->n_threads) {
+      for(i=0;i<async->n_threads;i++) {
         SetEvent (async->thread_event);
       }
     }
