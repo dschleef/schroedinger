@@ -181,10 +181,10 @@ main (int argc, char *argv[])
       printf("Size %dx%d:\n", width, height);
       for(filter=0;filter<=SCHRO_WAVELET_DAUBECHIES_9_7;filter++){
         printf("  filter %d:\n", filter);
-        if (filter == SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7 && (width < 0 || height <= 4)) {
+        if (filter == SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7 && (width < 0 || height <= 6)) {
           continue;
         }
-        if (filter == SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7 && (width < 0 || height <= 4)) {
+        if (filter == SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7 && (width < 0 || height <= 6)) {
           continue;
         }
         if (filter == SCHRO_WAVELET_FIDELITY && (width < 16 || height < 16)) {
