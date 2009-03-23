@@ -1,6 +1,6 @@
 AC_PREREQ([2.58])
 dnl PLEASE remove the nano when doing a release
-AC_INIT(schroedinger,1.0.5.1)
+AC_INIT(schroedinger,1.0.6)
 
 AS_VERSION
 
@@ -19,7 +19,7 @@ dnl - library source changed -> increment REVISION
 dnl - interfaces added/removed/changed -> increment CURRENT, REVISION = 0
 dnl - interfaces added -> increment AGE
 dnl - interfaces removed -> AGE = 0
-SCHRO_LIBVERSION="1:0:1"
+SCHRO_LIBVERSION="2:0:2"
 AC_SUBST(SCHRO_LIBVERSION)
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
@@ -46,7 +46,7 @@ AC_CHECK_LIBM
 AC_SUBST(LIBM)
 
 dnl liboil is required
-OIL_VER="0.3.13"
+OIL_VER="0.3.16"
 PKG_CHECK_MODULES(LIBOIL, liboil-0.3 >= $OIL_VER, HAVE_LIBOIL=yes, HAVE_LIBOIL=no)
 if test "x${HAVE_LIBOIL}" != xyes ; then
   AC_ERROR([liboil-0.3 >= $OIL_VER is required])

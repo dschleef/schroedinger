@@ -1,4 +1,27 @@
 
+1.0.6
+=====
+
+ - Requires liboil-0.3.16
+ - New configure flag '--disable-encoder' useful for embedded
+   systems that don't require the encoder.
+ - New constant-quality encoding mode, enabled by setting the encoder
+   setting 'rate-control' to 6, and adjusting 'quality' from 0 to 10.
+   (Interesting range is 3-7).
+ - Various encoder improvements
+ - Speed improvements in decoder
+ - API additions for parsing streams in the decoder
+ - API improvements handling interlaced video
+ - Rewrite of the GStreamer elements, including new base classes
+   for video encoding and decoding
+ - Moved extra GStreamer elements to Cog
+ - Experimental code that uses Orc instead of liboil (--enable-orc)
+
+1.0.5-1.0.2
+===========
+
+ - ...
+
 1.0.1
 =====
 
