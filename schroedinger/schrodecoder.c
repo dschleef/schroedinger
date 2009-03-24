@@ -683,6 +683,7 @@ schro_decoder_pull (SchroDecoder *decoder)
 {
   SchroDecoderInstance *instance = decoder->instance;
   SchroPicture *picture = NULL;
+  SchroPictureNumber picture_number;
   SchroFrame *frame;
 
   schro_async_lock (decoder->async);
@@ -697,12 +698,12 @@ schro_decoder_pull (SchroDecoder *decoder)
 
   /* XXX would be nice to warn if expected picture not present */
   frame = schro_frame_ref (picture->output_picture);
+  picture_number = picture->picture_number;
   schro_picture_unref (picture);
 
   if (schro_decoder_frame_is_twofield (instance, frame)) do {
     /* only consider the 2nd field if it can reference
      * picture->output_picture, ie frame is twofields */
-    SchroPictureNumber picture_number = picture->picture_number;
     if (picture_number&1) {
       /* The following is voilated:
        * - 10.4p3 earliest field in each frame shall have an even picture number
