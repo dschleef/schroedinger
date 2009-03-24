@@ -98,6 +98,7 @@ static void
 schro_buffer_free_subbuffer (SchroBuffer * buffer, void *priv)
 {
   schro_buffer_unref (buffer->parent);
+  buffer->parent = NULL;
 }
 
 SchroBuffer *

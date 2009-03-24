@@ -847,6 +847,7 @@ schro_frame_filter_adaptive_lowpass (SchroFrame *frame)
   }
 
   schro_frame_unref(tmp);
+  tmp = NULL;
 
   slope = schro_histogram_estimate_slope (&hist);
 

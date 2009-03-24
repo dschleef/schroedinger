@@ -77,6 +77,7 @@ schro_engine_code_picture (SchroEncoderFrame *frame,
       if (encoder->reference_pictures[i] == NULL) break;
       if (encoder->reference_pictures[i]->frame_number == retire) {
         schro_encoder_frame_unref(encoder->reference_pictures[i]);
+        encoder->reference_pictures[i] = NULL;
         break;
       }
     }

@@ -257,11 +257,13 @@ schro_encoder_free (SchroEncoder *encoder)
 
   if (encoder->last_frame) {
     schro_encoder_frame_unref (encoder->last_frame);
+    encoder->last_frame = NULL;
   }
 
   for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
     if (encoder->reference_pictures[i]) {
       schro_encoder_frame_unref (encoder->reference_pictures[i]);
+      encoder->reference_pictures[i] = NULL;
     }
   }
   schro_queue_free (encoder->frame_queue);
@@ -469,6 +471,7 @@ schro_encoder_push_frame_full (SchroEncoder *encoder, SchroFrame *frame, void *p
           encoder->video_format.width, encoder->video_format.height);
       schro_frame_convert (encoder_frame->original_frame, frame);
       schro_frame_unref (frame);
+      frame = NULL;
     }
 
     encoder_frame->frame_number = encoder->next_frame_number++;
@@ -512,6 +515,7 @@ schro_encoder_push_frame_full (SchroEncoder *encoder, SchroFrame *frame, void *p
     schro_frame_split_fields (encoder_frame1->original_frame,
         encoder_frame2->original_frame, frame);
     schro_frame_unref (frame);
+    frame = NULL;
 
     encoder_frame1->frame_number = encoder->next_frame_number++;
     encoder_frame2->frame_number = encoder->next_frame_number++;
@@ -636,6 +640,7 @@ schro_encoder_frame_assemble_buffer (SchroEncoderFrame *frame,
     memcpy (buffer->data + offset, buf->data, buf->length);
     offset += buf->length;
     schro_buffer_unref (buf);
+    buf = NULL;
   }
 
   buf = frame->output_buffer;
@@ -1023,6 +1028,7 @@ schro_encoder_encode_sequence_header (SchroEncoder *encoder)
       schro_pack_get_offset (pack));
   schro_pack_free (pack);
   schro_buffer_unref (buffer);
+  buffer = NULL;
 
   return subbuffer;
 }

@@ -131,6 +131,7 @@ schro_decoder_instance_free (SchroDecoderInstance *instance)
 
   if (instance->sequence_header_buffer) {
     schro_buffer_unref (instance->sequence_header_buffer);
+    instance->sequence_header_buffer = NULL;
   }
 
   /* do not call instance_free(instance->next).
@@ -394,12 +395,14 @@ schro_picture_unref (SchroPicture *picture)
       for(i=0;i<SCHRO_LIMIT_SUBBANDS;i++) {
         if (picture->subband_buffer[component][i]) {
           schro_buffer_unref (picture->subband_buffer[component][i]);
+          picture->subband_buffer[component][i] = NULL;
         }
       }
     }
     for(i=0;i<9;i++){
       if (picture->motion_buffers[i]) {
         schro_buffer_unref (picture->motion_buffers[i]);
+        picture->motion_buffers[i] = NULL;
       }
     }
     if (picture->lowdelay_buffer) schro_buffer_unref (picture->lowdelay_buffer);
@@ -700,6 +703,7 @@ schro_decoder_pull (SchroDecoder *decoder)
   frame = schro_frame_ref (picture->output_picture);
   picture_number = picture->picture_number;
   schro_picture_unref (picture);
+  picture = NULL;
 
   if (schro_decoder_frame_is_twofield (instance, frame)) do {
     /* only consider the 2nd field if it can reference
@@ -721,6 +725,7 @@ schro_decoder_pull (SchroDecoder *decoder)
     /* second field is the pair to the first: discard it */
     picture = schro_queue_pull (decoder->instance->reorder_queue);
     schro_picture_unref (picture);
+    picture = NULL;
   } while (0);
 
   schro_async_unlock (decoder->async);
@@ -1604,11 +1609,12 @@ schro_decoder_x_render_motion (SchroAsyncStage *stage)
      * coding = infinite dependency chain = -ENOMEM) */
     if (picture->ref0) {
       schro_picture_unref(picture->ref0);
+      picture->ref0 = NULL;
     }
     if (picture->ref1) {
       schro_picture_unref(picture->ref1);
+      picture->ref1 = NULL;
     }
-    picture->ref0 = picture->ref1 = NULL;
   }
 }
 
@@ -1747,6 +1753,7 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       schro_gpuframe_convert (cuda_output_frame, planar_output_frame);
       schro_gpuframe_to_cpu (&output_picture, cuda_output_frame);
       schro_frame_unref (cuda_output_frame);
+      cuda_output_frame = NULL;
 #else
       SCHRO_ASSERT(0);
 #endif
@@ -1761,6 +1768,7 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       schro_opengl_frame_convert (tmp_opengl_output_frame, output_frame);
       schro_opengl_frame_pull (picture->planar_output_frame, tmp_opengl_output_frame);
       schro_frame_unref (tmp_opengl_output_frame);
+      tmp_opengl_output_frame = NULL;
 
       schro_frame_convert (&output_picture, picture->planar_output_frame);
 #else
@@ -1784,6 +1792,7 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       schro_gpuframe_convert (cuda_output_frame, output_frame);
       schro_gpuframe_to_cpu (&output_picture, cuda_output_frame);
       schro_frame_unref (cuda_output_frame);
+      cuda_output_frame = NULL;
 #else
       SCHRO_ASSERT(0);
 #endif
@@ -1798,6 +1807,7 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       schro_opengl_frame_convert (tmp_opengl_output_frame, output_frame);
       schro_opengl_frame_pull (&output_picture, tmp_opengl_output_frame);
       schro_frame_unref (tmp_opengl_output_frame);
+      tmp_opengl_output_frame = NULL;
 #else
       SCHRO_ASSERT(0);
 #endif
@@ -1861,6 +1871,7 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
     }
   }
   schro_frame_unref(planar_output_frame);
+  planar_output_frame = NULL;
 
   /* eagerly unreference any storage that is nolonger required */
   if (picture->mc_tmp_frame) {
