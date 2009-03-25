@@ -129,7 +129,7 @@ orc_add2_rshift_add_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
     orc_program_add_source (p, 2, "s3");
-#if 0
+#if 1
     orc_program_add_constant (p, 2, 1, "c1");
     orc_program_add_constant (p, 2, 1, "c2");
 #else
@@ -139,7 +139,7 @@ orc_add2_rshift_add_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
     orc_program_add_temporary (p, 2, "t2");
     orc_program_add_temporary (p, 2, "t3");
 
-#if 0
+#if 1
     orc_program_append_str (p, "addw", "t1", "s2", "s3");
     orc_program_append_str (p, "addw", "t1", "t1", "c1");
     orc_program_append_str (p, "shrsw", "t1", "t1", "c2");
@@ -189,7 +189,7 @@ orc_add2_rshift_sub_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
     orc_program_add_source (p, 2, "s3");
-#if 0
+#if 1
     orc_program_add_constant (p, 2, 1, "c1");
     orc_program_add_constant (p, 2, 1, "c2");
 #else
@@ -199,7 +199,7 @@ orc_add2_rshift_sub_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
     orc_program_add_temporary (p, 2, "t2");
     orc_program_add_temporary (p, 2, "t3");
 
-#if 0
+#if 1
     orc_program_append_str (p, "addw", "t1", "s2", "s3");
     orc_program_append_str (p, "addw", "t1", "t1", "c1");
     orc_program_append_str (p, "shrsw", "t1", "t1", "c2");
