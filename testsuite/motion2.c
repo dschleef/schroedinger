@@ -15,14 +15,6 @@
 #include <liboil/liboilrandom.h>
 
 void
-schro_frame_clear (SchroFrame *frame)
-{
-  memset(frame->components[0].data, 0, frame->components[0].length);
-  memset(frame->components[1].data, 0, frame->components[1].length);
-  memset(frame->components[2].data, 0, frame->components[2].length);
-}
-
-void
 schro_frame_create_pattern (SchroFrame *frame, int type)
 {
   int i,j,k;

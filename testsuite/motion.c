@@ -13,24 +13,6 @@
 #define OIL_ENABLE_UNSTABLE_API
 #include <liboil/liboilprofile.h>
 
-void
-schro_frame_data_clear (SchroFrameData *fd)
-{
-  int i;
-  for(i=0;i<fd->height;i++){
-    memset (SCHRO_FRAME_DATA_GET_LINE (fd, i), 0, fd->width);
-  }
-
-}
-
-void
-schro_frame_clear (SchroFrame *frame)
-{
-  schro_frame_data_clear (frame->components + 0);
-  schro_frame_data_clear (frame->components + 1);
-  schro_frame_data_clear (frame->components + 2);
-}
-
 int
 main (int argc, char *argv[])
 {
