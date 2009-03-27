@@ -43,6 +43,7 @@ schro_buflist_free (SchroBufferList *buflist)
     return;
   }
   schro_list_free (buflist->list);
+  if (buflist->tag) schro_tag_free (buflist->tag);
   schro_free (buflist);
 }
 
