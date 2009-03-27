@@ -83,7 +83,7 @@ schro_buffer_unref (SchroBuffer * buffer)
     if (buffer->free)
       buffer->free (buffer, buffer->priv);
     if (buffer->tag)
-      buffer->tag->free (buffer->tag);
+      schro_tag_free (buffer->tag);
     schro_free (buffer);
   }
 }
