@@ -62,7 +62,7 @@ _schro_list_expand (SchroList *list, int n)
 {
   if (n <= list->n_alloc) return;
 
-  list->members = realloc (list->members, n*sizeof(void *));
+  list->members = schro_realloc (list->members, n*sizeof(void *));
   list->n_alloc = n;
 }
 
