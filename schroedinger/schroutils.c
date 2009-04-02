@@ -12,16 +12,23 @@
 #include <time.h>
 #include <sys/time.h>
 
-#undef USE_MMAP
-#ifdef USE_MMAP
-#include <sys/mman.h>
+#ifndef SCHRO_MALLOC_USE_MMAP
+/* enable this for mmap based buffer overrun checks */
+//# define SCHRO_MALLOC_USE_MMAP
+/* enable this if there are alignment issues */
+//# define ALIGN_16
 #endif
 
 #ifdef _WIN32
 #include <windows.h>
+#undef SCHRO_MALLOC_USE_MMAP
 #endif
 
-#ifndef USE_MMAP
+#ifdef SCHRO_MALLOC_USE_MMAP
+#include <sys/mman.h>
+#endif
+
+#ifndef SCHRO_MALLOC_USE_MMAP
 void *
 schro_malloc (int size)
 {
@@ -60,14 +67,21 @@ schro_free (void *ptr)
   SCHRO_DEBUG("free %p", ptr);
   free (ptr);
 }
-#else
+#else /* SCHRO_MALLOC_USE_MMAP */
+
+static const char sentinel[] = "This came from schro";
+
 void *
 schro_malloc (int size)
 {
   void *ptr;
   int rsize;
 
-  rsize = ROUND_UP_POW2(size + 16, 12);
+#ifdef ALIGN_16
+  size = ROUND_UP_POW2(size, 4);
+#endif
+
+  rsize = ROUND_UP_POW2(size + sizeof(int) + sizeof(sentinel), 12);
   ptr = mmap(NULL, rsize + 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
   SCHRO_ASSERT(ptr != MAP_FAILED);
 
@@ -77,8 +91,8 @@ schro_malloc (int size)
   SCHRO_DEBUG("alloc %p %d", ptr, size);
 
   *(int *)OFFSET(ptr, 4096) = rsize;
+  memcpy(OFFSET(ptr, 4096 + sizeof(int)), sentinel, sizeof(sentinel));
 
-  //return OFFSET(ptr, rsize-size);
   return OFFSET(ptr, 4096 + rsize - size);
 }
 
@@ -91,9 +105,30 @@ schro_malloc0 (int size)
 void *
 schro_realloc (void *ptr, int size)
 {
-  SCHRO_ASSERT(size <= 0);
+  unsigned long page = ((unsigned long)ptr) & ~(4095);
+  int rsize, old_size;
 
-  return ptr;
+  if (!ptr)
+    return schro_malloc(size);
+
+  /* find original size */
+  if ((unsigned long) ptr - page <= sizeof(int) + sizeof(sentinel)) {
+    /* if ptr is too close to start of page, then the base pointer is
+     * the previous page */
+    page -= 4096;
+  }
+  rsize = *(int *)page;
+  old_size = page+rsize-(unsigned long)ptr;;
+
+  void *new = schro_malloc(size);
+  if (size < old_size)
+    memcpy(new, ptr, size);
+  else
+    memcpy(new, ptr, old_size);
+
+  schro_free(ptr);
+
+  return new;
 }
 
 void
@@ -102,11 +137,19 @@ schro_free (void *ptr)
   unsigned long page = ((unsigned long)ptr) & ~(4095);
   int rsize;
 
+  if ((unsigned long) ptr - page <= sizeof(int) + sizeof(sentinel)) {
+    /* if ptr is too close to start of page, then the base pointer is
+     * the previous page */
+    page -= 4096;
+  }
+
   rsize = *(int *)page;
+
+  SCHRO_ASSERT(!memcmp((void*)page+sizeof(int), sentinel, sizeof(sentinel)));
 
   munmap((void *)(page - 4096), rsize + 8192);
 }
-#endif
+#endif /* SCHRO_MALLOC_USE_MMAP */
 
 int
 muldiv64 (int a, int b, int c)
