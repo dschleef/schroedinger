@@ -24,7 +24,7 @@ struct _SchroAsync {
   int n_threads;
   int n_threads_running;
   int n_idle;
-  int stop;
+  enum { RUNNING=0, STOP, DIE } stop;
 
   volatile int n_completed;
 
@@ -162,7 +162,7 @@ schro_async_free (SchroAsync *async)
   int i;
 
   pthread_mutex_lock (&async->mutex);
-  async->stop = TRUE;
+  async->stop = DIE;
   while(async->n_threads_running > 0) {
     pthread_cond_signal (&async->thread_cond);
     pthread_cond_wait (&async->app_cond, &async->mutex);
@@ -181,12 +181,15 @@ schro_async_free (SchroAsync *async)
 void
 schro_async_start (SchroAsync *async)
 {
+  async->stop = RUNNING;
   pthread_cond_broadcast (&async->thread_cond);
 }
 
 void
 schro_async_stop (SchroAsync *async)
 {
+  async->stop = STOP;
+
   pthread_mutex_lock (&async->mutex);
   while(async->n_idle < async->n_threads_running) {
     pthread_cond_wait (&async->app_cond, &async->mutex);
@@ -229,6 +232,7 @@ static void
 schro_async_dump (SchroAsync *async)
 {
   int i;
+  SCHRO_WARNING ("stop = %d", async->stop);
   for(i=0;i<async->n_threads;i++){
     SchroThread *thread = async->threads + i;
 
@@ -322,6 +326,23 @@ schro_thread_main (void *ptr)
   async->n_threads_running++;
   thread->busy = FALSE;
   while (1) {
+    /* check for deaths each time */
+    if (async->stop != RUNNING) {
+      async->n_idle++;
+      thread->busy = FALSE;
+      pthread_cond_signal (&async->app_cond);
+      if (async->stop == DIE) {
+        async->n_threads_running--;
+        pthread_mutex_unlock (&async->mutex);
+        SCHRO_DEBUG("thread %d: dying", thread->index);
+        return NULL;
+      }
+      SCHRO_DEBUG("thread %d: stopping (until restarted)", thread->index);
+      pthread_cond_wait (&async->thread_cond, &async->mutex);
+      SCHRO_DEBUG("thread %d: resuming", thread->index);
+      async->n_idle--;
+      continue;
+    }
     if (thread->busy == 0) {
       async->n_idle++;
       SCHRO_DEBUG("thread %d: idle", thread->index);
@@ -329,14 +350,10 @@ schro_thread_main (void *ptr)
       SCHRO_DEBUG("thread %d: got signal", thread->index);
       async->n_idle--;
       thread->busy = TRUE;
-      if (async->stop) {
-        pthread_cond_signal (&async->app_cond);
-        async->n_threads_running--;
-        pthread_mutex_unlock (&async->mutex);
-        SCHRO_DEBUG("thread %d: stopping", thread->index);
-        return NULL;
-      }
-    } else {
+      /* check for stop requests before doing work */
+      continue;
+    }
+    if (1) { /* avoiding indent change */
       ret = async->schedule (async->schedule_closure, thread->exec_domain);
       /* FIXME ignoring ret */
       if (!async->task.task_func) {
