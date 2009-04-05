@@ -112,22 +112,22 @@ schro_split_ext_daub97 (int16_t *hi, int16_t *lo, int n)
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
 
-  orc_mas2_add_s16 (lo, lo, hi, -6497, 2047, 12, n);
+  orc_mas2_sub_s16_ip (lo, hi, 6497, 2048, 12, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n-1];
 
-  orc_mas2_add_s16 (hi, hi, lo - 1, -217, 2047, 12, n);
+  orc_mas2_sub_s16_ip (hi, lo - 1, 217, 2048, 12, n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
 
-  orc_mas2_add_s16 (lo, lo, hi, 3616, 2048, 12, n);
+  orc_mas2_add_s16_ip (lo, hi, 3616, 2048, 12, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n-1];
 
-  orc_mas2_add_s16 (hi, hi, lo - 1, 1817, 2048, 12, n);
+  orc_mas2_add_s16_ip (hi, lo - 1, 1817, 2048, 12, n);
 
 }
 
@@ -225,22 +225,22 @@ schro_synth_ext_daub97 (int16_t *hi, int16_t *lo, int n)
   lo[-1] = lo[0];
   lo[n] = lo[n-1];
 
-  orc_mas2_add_s16 (hi, hi, lo - 1, -1817, 2047, 12, n);
+  orc_mas2_sub_s16_ip (hi, lo - 1, 1817, 2048, 12, n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
 
-  orc_mas2_add_s16 (lo, lo, hi, -3616, 2047, 12, n);
+  orc_mas2_sub_s16_ip (lo, hi, 3616, 2048, 12, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n-1];
 
-  orc_mas2_add_s16 (hi, hi, lo - 1, 217, 2048, 12, n);
+  orc_mas2_add_s16_ip (hi, lo - 1, 217, 2048, 12, n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
 
-  orc_mas2_add_s16 (lo, lo, hi, 6497, 2048, 12, n);
+  orc_mas2_add_s16_ip (lo, hi, 6497, 2048, 12, n);
 }
 
 
@@ -287,11 +287,10 @@ void schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
             OFFSET(data, (i1-2)*stride), OFFSET(data, i1*stride),
             stage1_weights, stage1_offset_shift, width);
       } else {
-        static const int16_t stage1_weights[] = { 1, -9, -9, 1 };
-        oil_mas4_across_add_s16 (
-            OFFSET(data,(i1+1)*stride), OFFSET(data,(i1+1)*stride),
-            OFFSET(data,(i1-2)*stride), stride * 2,
-            stage1_weights, stage1_offset_shift, width);
+        //static const int16_t stage1_weights[] = { 1, -9, -9, 1 };
+        orc_mas4_across_sub_s16_1991_ip (
+            OFFSET(data,(i1+1)*stride),
+            OFFSET(data,(i1-2)*stride), stride * 2, 4, width);
       }
     }
     if ((i2&1) == 0 && i2>=0 && i2 < height) {
@@ -395,10 +394,9 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
             ROW(i1+1), ROW(i1+1), ROW(i1-2), ROW(i1),
             stage1_weights, stage1_offset_shift, width);
       } else {
-        static const int16_t stage1_weights[] = { 1, -9, -9, 1 };
-        oil_mas4_across_add_s16 (
-            ROW(i1+1), ROW(i1+1), ROW(i1-2), stride * 2,
-            stage1_weights, stage1_offset_shift, width);
+        //static const int16_t stage1_weights[] = { 1, -9, -9, 1 };
+        orc_mas4_across_sub_s16_1991_ip (
+            ROW(i1+1), ROW(i1-2), stride * 2, 4, width);
       }
     }
     if ((i2&1) == 0 && i2>=0 && i2 < height) {
@@ -419,10 +417,9 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
             ROW(i2), ROW(i2), ROW(i2-5), stride * 2,
             stage2_weights, stage2_offset_shift, width);
       } else {
-        static const int16_t stage2_weights[] = { -1, 9, 9, -1 };
-        oil_mas4_across_add_s16 (
-            ROW(i2), ROW(i2), ROW(i2-3), stride * 2,
-            stage2_weights, stage2_offset_shift, width);
+        //static const int16_t stage2_weights[] = { -1, 9, 9, -1 };
+        orc_mas4_across_add_s16_1991_ip (
+            ROW(i2), ROW(i2-3), stride * 2, 5, width);
       }
     }
 #undef ROW
@@ -702,11 +699,10 @@ void schro_iiwt_desl_9_3 (int16_t *data, int stride, int width, int height,
             OFFSET(data, (i1-2)*stride), OFFSET(data, i1*stride),
             stage1_weights, stage1_offset_shift, width);
       } else {
-        static const int16_t stage1_weights[] = { -1, 9, 9, -1 };
-        oil_mas4_across_add_s16 (
-            OFFSET(data,(i1+1)*stride), OFFSET(data,(i1+1)*stride),
-            OFFSET(data,(i1-2)*stride), stride * 2,
-            stage1_weights, stage1_offset_shift, width);
+        //static const int16_t stage1_weights[] = { -1, 9, 9, -1 };
+        orc_mas4_across_add_s16_1991_ip (
+            OFFSET(data,(i1+1)*stride),
+            OFFSET(data,(i1-2)*stride), stride * 2, 4, width);
       }
     }
     if (i >=0 && i < height) {
