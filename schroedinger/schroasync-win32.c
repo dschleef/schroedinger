@@ -26,7 +26,7 @@ struct _SchroAsync {
   int n_threads_running;
   int n_idle;
 
-  int stop;
+  enum { RUNNING=0, STOP, DIE } stop;
 
   volatile int n_completed;
 
@@ -103,6 +103,7 @@ schro_async_new(int n_threads,
   async->n_threads = n_threads;
   async->threads = schro_malloc0 (sizeof(SchroThread) * (n_threads + 1));
 
+  async->stop = RUNNING;
   async->schedule = schedule;
   async->schedule_closure = closure;
   async->complete = complete;
@@ -137,7 +138,7 @@ schro_async_free (SchroAsync *async)
   HANDLE *handles;
 
   EnterCriticalSection (&async->mutex);
-  async->stop = TRUE;
+  async->stop = DIE;
   LeaveCriticalSection (&async->mutex);
 
   for(i=0;i<async->n_threads;i++){
@@ -166,6 +167,7 @@ void
 schro_async_start (SchroAsync *async)
 {
   int i;
+  async->stop = RUNNING;
   for(i=0;i<async->n_threads;i++) {
     SetEvent (async->threads[i].event);
   }
@@ -204,6 +206,7 @@ static void
 schro_async_dump (SchroAsync *async)
 {
   int i;
+  SCHRO_WARNING ("stop = %d", async->stop);
   for(i=0;i<async->n_threads;i++){
     SchroThread *thread = async->threads + i;
 
@@ -221,10 +224,7 @@ schro_async_wait_locked (SchroAsync *async)
   if (ret == WAIT_TIMEOUT) {
     int i;
     for(i=0;i<async->n_threads;i++){
-      if (async->threads[i].busy) {
-        SCHRO_DEBUG("thread %d is busy", i);
-        break;
-      }
+      if (async->threads[i].busy != 0) break;
     }
     if (i == async->n_threads) {
       SCHRO_WARNING("timeout.  deadlock?");
@@ -249,57 +249,80 @@ schro_thread_main (void *ptr)
   TlsSetValue (domain_key, (void *)(unsigned long)thread->exec_domain);
 
   async->n_threads_running++;
+  thread->busy = FALSE;
   while (1) {
-    async->n_idle++;
-    thread->busy = FALSE;
-    LeaveCriticalSection (&async->mutex);
-    SCHRO_DEBUG("thread %d: idle, waiting for event", thread->index);
-    WaitForSingleObject (thread->event, INFINITE);
-    SCHRO_DEBUG("thread %d: got event", thread->index);
-    EnterCriticalSection (&async->mutex);
-    async->n_idle--;
-    thread->busy = TRUE;
-
-    if (async->stop) {
+    /* check for deaths each time */
+    if (async->stop != RUNNING) {
+      async->n_idle++;
+      thread->busy = FALSE;
       SetEvent (async->app_event);
-      async->n_threads_running--;
-      LeaveCriticalSection (&async->mutex);
-      SCHRO_DEBUG("thread %d: stopping", thread->index);
-      return 0;
-    }
-
-    ret = async->schedule (async->schedule_closure, thread->exec_domain);
-    /* FIXME ignoring ret */
-    if (!async->task.task_func) {
+      if (async->stop == DIE) {
+        async->n_threads_running--;
+        LeaveCriticalSection (&async->mutex);
+        SCHRO_DEBUG("thread %d: dying", thread->index);
+        return 0;
+      }
+      SCHRO_DEBUG("thread %d: stopping (until restarted)", thread->index);
+      WaitForSingleObject (thread->event, INFINITE);
+      SCHRO_DEBUG("thread %d: resuming", thread->index);
+      async->n_idle--;
       continue;
     }
-
-    func = async->task.task_func;
-    priv = async->task.priv;
-    async->task.task_func = NULL;
-
-    LeaveCriticalSection (&async->mutex);
-
-    SCHRO_DEBUG("thread %d: running", thread->index);
-    func (priv);
-    SCHRO_DEBUG("thread %d: done", thread->index);
-
-    EnterCriticalSection (&async->mutex);
-    async->complete (priv);
-    SetEvent (async->app_event);
-#ifdef HAVE_CUDA
-    /* FIXME */
-    /* This is required because we don't have a better mechanism
-     * for indicating to threads in other exec domains that it is
-     * their turn to run.  It's mostly harmless, although causes
-     * a lot of unnecessary wakeups in some cases. */
-    {
-      int i;
-      for(i=0;i<async->n_threads;i++) {
-        SetEvent (async->thread_event);
-      }
+    if (thread->busy == 0) {
+      async->n_idle++;
+      LeaveCriticalSection (&async->mutex);
+      SCHRO_DEBUG("thread %d: idle", thread->index);
+      WaitForSingleObject (thread->event, INFINITE);
+      SCHRO_DEBUG("thread %d: got signal", thread->index);
+      EnterCriticalSection (&async->mutex);
+      async->n_idle--;
+      thread->busy = TRUE;
+      /* check for stop requests before doing work */
+      continue;
     }
+    if (1) { /* avoiding indent change */
+      ret = async->schedule (async->schedule_closure, thread->exec_domain);
+      /* FIXME ignoring ret */
+      if (!async->task.task_func) {
+        thread->busy = FALSE;
+        continue;
+      }
+
+      //thread->busy = TRUE;
+      func = async->task.task_func;
+      priv = async->task.priv;
+      async->task.task_func = NULL;
+
+      //if (async->n_idle > 0) {
+      //  SetEvent (thread->event);
+      //}
+      LeaveCriticalSection (&async->mutex);
+
+      SCHRO_DEBUG("thread %d: running", thread->index);
+      func (priv);
+      SCHRO_DEBUG("thread %d: done", thread->index);
+
+      EnterCriticalSection (&async->mutex);
+
+      async->complete (priv);
+
+      SetEvent (async->app_event);
+#if defined HAVE_CUDA || defined HAVE_OPENGL
+      /* FIXME */
+      /* This is required because we don't have a better mechanism
+       * for indicating to threads in other exec domains that it is
+       * their turn to run.  It's mostly harmless, although causes
+       * a lot of unnecessary wakeups in some cases. */
+      {
+        int i;
+        for(i=0;i<async->n_threads;i++) {
+          SetEvent (async->thread_event);
+        }
+      }
 #endif
+
+      //thread->busy = FALSE;
+    }
   }
 }
 
@@ -324,7 +347,7 @@ void schro_async_signal_scheduler (SchroAsync *async)
 }
 
 void
-schro_async_add_cuda (SchroAsync *async)
+schro_async_add_exec_domain (SchroAsync *async, SchroExecDomain exec_domain)
 {
   SchroThread *thread;
   int i;
@@ -341,7 +364,8 @@ schro_async_add_cuda (SchroAsync *async)
 
   thread->async = async;
   thread->index = i;
-  thread->exec_domain = SCHRO_EXEC_DOMAIN_CUDA;
+  thread->exec_domain = exec_domain;
+
   thread->thread = (HANDLE) _beginthreadex (NULL, STACK_SIZE,
         schro_thread_main, thread, 0, &ignore);
   EnterCriticalSection (&async->mutex);
@@ -383,5 +407,6 @@ void
 schro_mutex_free (SchroMutex *mutex)
 {
   DeleteCriticalSection (&mutex->mutex);
+  schro_free (mutex);
 }
 
