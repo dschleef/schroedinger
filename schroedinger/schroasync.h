@@ -65,14 +65,8 @@ void schro_async_stop (SchroAsync *async);
  */
 void schro_async_start (SchroAsync *async);
 
-void schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr);
 void schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage);
-int schro_async_get_num_completed (SchroAsync *async);
-void schro_async_wait_one (SchroAsync *async);
 int schro_async_wait_locked (SchroAsync *async);
-void schro_async_wait (SchroAsync *async, int min_waiting);
-void *schro_async_pull (SchroAsync *async);
-void * schro_async_pull_locked (SchroAsync *async);
 void schro_async_signal_scheduler (SchroAsync *async);
 void schro_async_lock (SchroAsync *async);
 void schro_async_unlock (SchroAsync *async);
@@ -82,7 +76,9 @@ void schro_async_add_exec_domain (SchroAsync *async,
     SchroExecDomain exec_domain);
 
 SchroMutex *schro_mutex_new (void);
+#if 0
 SchroMutex *schro_mutex_new_recursive (void);
+#endif
 void schro_mutex_lock (SchroMutex *mutex);
 void schro_mutex_unlock (SchroMutex *mutex);
 void schro_mutex_free (SchroMutex *mutex);

@@ -47,10 +47,6 @@ struct _SchroThread {
   int index;
 };
 
-struct _SchroMutex {
-  GMutex *mutex;
-};
-
 static int domain_key_inited;
 static GPrivate *domain_key;
 
@@ -187,19 +183,6 @@ schro_async_stop (SchroAsync *async)
   g_mutex_unlock (async->mutex);
 }
 
-#ifdef unused
-void
-schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
-{
-  SCHRO_ASSERT(async->task.task_func == NULL);
-
-  async->task.task_func = func;
-  async->task.priv = ptr;
-
-  g_cond_signal (async->thread_cond);
-}
-#endif
-
 void
 schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
 {
@@ -210,13 +193,6 @@ schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
 
   g_cond_signal (async->thread_cond);
 }
-
-#ifdef unused
-int schro_async_get_num_completed (SchroAsync *async)
-{
-  return async->n_completed;
-}
-#endif
 
 static void
 schro_async_dump (SchroAsync *async)
@@ -233,7 +209,6 @@ schro_async_dump (SchroAsync *async)
 int
 schro_async_wait_locked (SchroAsync *async)
 {
-#if 1
   GTimeVal ts;
   int ret;
 
@@ -252,43 +227,7 @@ schro_async_wait_locked (SchroAsync *async)
     }
   }
   return TRUE;
-#else
-  g_cond_wait (async->app_cond, async->mutex);
-  return TRUE;
-#endif
 }
-
-#ifdef unused
-void
-schro_async_wait_one (SchroAsync *async)
-{
-  g_mutex_lock (async->mutex);
-  if (async->n_completed > 0) {
-    g_mutex_unlock (async->mutex);
-    return;
-  }
-
-  g_cond_wait (async->app_cond, async->mutex);
-  g_mutex_unlock (async->mutex);
-}
-#endif
-
-#ifdef unused
-void
-schro_async_wait (SchroAsync *async, int min_waiting)
-{
-  if (min_waiting < 1) min_waiting = 1;
-
-  g_mutex_lock (async->mutex);
-  if (async->n_completed > 0) {
-    g_mutex_unlock (async->mutex);
-    return;
-  }
-
-  g_cond_wait (async->app_cond, async->mutex);
-  g_mutex_unlock (async->mutex);
-}
-#endif
 
 static void *
 schro_thread_main (void *ptr)
@@ -425,43 +364,24 @@ schro_async_get_exec_domain (void)
 SchroMutex *
 schro_mutex_new (void)
 {
-  SchroMutex *mutex;
-
-  mutex = malloc(sizeof(SchroMutex));
-  mutex->mutex = g_mutex_new ();
-
-  return mutex;
+  return (SchroMutex *)g_mutex_new ();
 }
-
-#ifdef unused
-SchroMutex *
-schro_mutex_new_recursive (void)
-{
-  SchroMutex *mutex;
-
-  mutex = malloc(sizeof(SchroMutex));
-  mutex->mutex = g_mutex_new ();
-
-  return mutex;
-}
-#endif
 
 void
 schro_mutex_lock (SchroMutex *mutex)
 {
-  g_mutex_lock (mutex->mutex);
+  g_mutex_lock ((GMutex *)mutex);
 }
 
 void
 schro_mutex_unlock (SchroMutex *mutex)
 {
-  g_mutex_unlock (mutex->mutex);
+  g_mutex_unlock ((GMutex *)mutex);
 }
 
 void
 schro_mutex_free (SchroMutex *mutex)
 {
-  g_mutex_free (mutex->mutex);
-  free (mutex);
+  g_mutex_free ((GMutex *)mutex);
 }
 

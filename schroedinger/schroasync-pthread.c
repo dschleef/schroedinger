@@ -197,19 +197,6 @@ schro_async_stop (SchroAsync *async)
   pthread_mutex_unlock (&async->mutex);
 }
 
-#ifdef unused
-void
-schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
-{
-  SCHRO_ASSERT(async->task.task_func == NULL);
-
-  async->task.task_func = func;
-  async->task.priv = ptr;
-
-  pthread_cond_signal (&async->thread_cond);
-}
-#endif
-
 void
 schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
 {
@@ -220,13 +207,6 @@ schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
 
   pthread_cond_signal (&async->thread_cond);
 }
-
-#ifdef unused
-int schro_async_get_num_completed (SchroAsync *async)
-{
-  return async->n_completed;
-}
-#endif
 
 static void
 schro_async_dump (SchroAsync *async)
@@ -243,7 +223,6 @@ schro_async_dump (SchroAsync *async)
 int
 schro_async_wait_locked (SchroAsync *async)
 {
-#if 1
   struct timespec ts;
   int ret;
 
@@ -272,43 +251,7 @@ schro_async_wait_locked (SchroAsync *async)
     }
   }
   return TRUE;
-#else
-  pthread_cond_wait (&async->app_cond, &async->mutex);
-  return TRUE;
-#endif
 }
-
-#ifdef unused
-void
-schro_async_wait_one (SchroAsync *async)
-{
-  pthread_mutex_lock (&async->mutex);
-  if (async->n_completed > 0) {
-    pthread_mutex_unlock (&async->mutex);
-    return;
-  }
-
-  pthread_cond_wait (&async->app_cond, &async->mutex);
-  pthread_mutex_unlock (&async->mutex);
-}
-#endif
-
-#ifdef unused
-void
-schro_async_wait (SchroAsync *async, int min_waiting)
-{
-  if (min_waiting < 1) min_waiting = 1;
-
-  pthread_mutex_lock (&async->mutex);
-  if (async->n_completed > 0) {
-    pthread_mutex_unlock (&async->mutex);
-    return;
-  }
-
-  pthread_cond_wait (&async->app_cond, &async->mutex);
-  pthread_mutex_unlock (&async->mutex);
-}
-#endif
 
 static void *
 schro_thread_main (void *ptr)
@@ -459,23 +402,6 @@ schro_mutex_new (void)
 
   return mutex;
 }
-
-#ifdef unused
-SchroMutex *
-schro_mutex_new_recursive (void)
-{
-  SchroMutex *mutex;
-  pthread_mutexattr_t mutexattr;
-
-  mutex = malloc(sizeof(SchroMutex));
-  pthread_mutexattr_init (&mutexattr);
-  pthread_mutexattr_settype (&mutexattr, PTHREAD_MUTEX_RECURSIVE);
-  pthread_mutex_init (&mutex->mutex, &mutexattr);
-  pthread_mutexattr_destroy (&mutexattr);
-
-  return mutex;
-}
-#endif
 
 void
 schro_mutex_lock (SchroMutex *mutex)
