@@ -17,16 +17,11 @@
 #include <sys/sysctl.h>
 #endif
 
-enum {
-  STATE_IDLE,
-  STATE_BUSY,
-  STATE_STOP
-};
-
 struct _SchroAsync {
   int n_threads;
   int n_threads_running;
   int n_idle;
+  enum { RUNNING=0, STOP, DIE } stop;
 
   volatile int n_completed;
 
@@ -36,8 +31,7 @@ struct _SchroAsync {
 
   SchroThread *threads;
 
-  void (*task_func)(void *);
-  void *task_priv;
+  SchroAsyncTask task;
 
   SchroAsyncScheduleFunc schedule;
   void *schedule_closure;
@@ -49,8 +43,12 @@ struct _SchroThread {
   GThread *thread;
   SchroExecDomain exec_domain;
   SchroAsync *async;
-  int state;
+  int busy;
   int index;
+};
+
+struct _SchroMutex {
+  GMutex *mutex;
 };
 
 static int domain_key_inited;
@@ -151,9 +149,7 @@ schro_async_free (SchroAsync *async)
   int i;
 
   g_mutex_lock (async->mutex);
-  for(i=0;i<async->n_threads;i++){
-    async->threads[i].state = STATE_STOP;
-  }
+  async->stop = DIE;
   while(async->n_threads_running > 0) {
     g_cond_signal (async->thread_cond);
     g_cond_wait (async->app_cond, async->mutex);
@@ -175,12 +171,15 @@ schro_async_free (SchroAsync *async)
 void
 schro_async_start (SchroAsync *async)
 {
+  async->stop = RUNNING;
   g_cond_broadcast (async->thread_cond);
 }
 
 void
 schro_async_stop (SchroAsync *async)
 {
+  async->stop = STOP;
+
   g_mutex_lock (async->mutex);
   while(async->n_idle < async->n_threads_running) {
     g_cond_wait (async->app_cond, async->mutex);
@@ -192,10 +191,10 @@ schro_async_stop (SchroAsync *async)
 void
 schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 {
-  SCHRO_ASSERT(async->task_func == NULL);
+  SCHRO_ASSERT(async->task.task_func == NULL);
 
-  async->task_func = func;
-  async->task_priv = ptr;
+  async->task.task_func = func;
+  async->task.priv = ptr;
 
   g_cond_signal (async->thread_cond);
 }
@@ -204,10 +203,10 @@ schro_async_run_locked (SchroAsync *async, void (*func)(void *), void *ptr)
 void
 schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
 {
-  SCHRO_ASSERT(async->task_func == NULL);
+  SCHRO_ASSERT(async->task.task_func == NULL);
 
-  async->task_func = stage->task_func;
-  async->task_priv = stage;
+  async->task.task_func = stage->task_func;
+  async->task.priv = stage;
 
   g_cond_signal (async->thread_cond);
 }
@@ -223,27 +222,28 @@ static void
 schro_async_dump (SchroAsync *async)
 {
   int i;
+  SCHRO_WARNING ("stop = %d", async->stop);
   for(i=0;i<async->n_threads;i++){
     SchroThread *thread = async->threads + i;
-    const char *states[] = { "idle", "busy", "stopped" };
 
-    SCHRO_WARNING ("thread %d: %s", i, states[thread->state]);
+    SCHRO_WARNING ("thread %d: busy=%d", i, thread->busy);
   }
 }
 
 int
 schro_async_wait_locked (SchroAsync *async)
 {
+#if 1
   GTimeVal ts;
   int ret;
 
   g_get_current_time (&ts);
   g_time_val_add (&ts, 1000000);
   ret = g_cond_timed_wait (async->app_cond, async->mutex, &ts);
-  if (ret != 0) {
+  if (!ret) {
     int i;
     for(i=0;i<async->n_threads;i++){
-      if (async->threads[i].state != 0) break;
+      if (async->threads[i].busy != 0) break;
     }
     if (i == async->n_threads) {
       SCHRO_WARNING("timeout.  deadlock?");
@@ -252,6 +252,10 @@ schro_async_wait_locked (SchroAsync *async)
     }
   }
   return TRUE;
+#else
+  g_cond_wait (async->app_cond, async->mutex);
+  return TRUE;
+#endif
 }
 
 #ifdef unused
@@ -300,64 +304,71 @@ schro_thread_main (void *ptr)
   g_private_set (domain_key, (void *)(unsigned long)thread->exec_domain);
 
   async->n_threads_running++;
-  thread->state = STATE_IDLE;
+  thread->busy = FALSE;
   while (1) {
-    switch (thread->state) {
-      case STATE_IDLE:
-        async->n_idle++;
-        SCHRO_DEBUG("thread %d: idle", thread->index);
-        g_cond_wait (async->thread_cond, async->mutex);
-        SCHRO_DEBUG("thread %d: got signal", thread->index);
-        async->n_idle--;
-        if (thread->state == STATE_IDLE) {
-          thread->state = STATE_BUSY;
-        }
-        break;
-      case STATE_STOP:
-        g_cond_signal (async->app_cond);
+    /* check for deaths each time */
+    if (async->stop != RUNNING) {
+      async->n_idle++;
+      thread->busy = FALSE;
+      g_cond_signal (async->app_cond);
+      if (async->stop == DIE) {
         async->n_threads_running--;
         g_mutex_unlock (async->mutex);
-        SCHRO_DEBUG("thread %d: stopping", thread->index);
+        SCHRO_DEBUG("thread %d: dying", thread->index);
         return NULL;
-      case STATE_BUSY:
-        ret = async->schedule (async->schedule_closure, thread->exec_domain);
-        /* FIXME ignoring ret */
-        if (!async->task_func) {
-          thread->state = STATE_IDLE;
-          break;
-        }
+      }
+      SCHRO_DEBUG("thread %d: stopping (until restarted)", thread->index);
+      g_cond_wait (async->thread_cond, async->mutex);
+      SCHRO_DEBUG("thread %d: resuming", thread->index);
+      async->n_idle--;
+      continue;
+    }
+    if (thread->busy == 0) {
+      async->n_idle++;
+      SCHRO_DEBUG("thread %d: idle", thread->index);
+      g_cond_wait (async->thread_cond, async->mutex);
+      SCHRO_DEBUG("thread %d: got signal", thread->index);
+      async->n_idle--;
+      thread->busy = TRUE;
+      /* check for stop requests before doing work */
+      continue;
+    }
+    if (1) { /* avoiding indent change */
+      ret = async->schedule (async->schedule_closure, thread->exec_domain);
+      /* FIXME ignoring ret */
+      if (!async->task.task_func) {
+        thread->busy = FALSE;
+        continue;
+      }
 
-        thread->state = STATE_BUSY;
-        func = async->task_func;
-        priv = async->task_priv;
-        async->task_func = NULL;
+      thread->busy = TRUE;
+      func = async->task.task_func;
+      priv = async->task.priv;
+      async->task.task_func = NULL;
 
-        if (async->n_idle > 0) {
-          g_cond_signal (async->thread_cond);
-        }
-        g_mutex_unlock (async->mutex);
+      if (async->n_idle > 0) {
+        g_cond_signal (async->thread_cond);
+      }
+      g_mutex_unlock (async->mutex);
 
-        SCHRO_DEBUG("thread %d: running", thread->index);
-        func (priv);
-        SCHRO_DEBUG("thread %d: done", thread->index);
+      SCHRO_DEBUG("thread %d: running", thread->index);
+      func (priv);
+      SCHRO_DEBUG("thread %d: done", thread->index);
 
-        g_mutex_lock (async->mutex);
+      g_mutex_lock (async->mutex);
 
-        async->complete (priv);
+      async->complete (priv);
 
-        g_cond_signal (async->app_cond);
-#ifdef HAVE_CUDA
-        /* FIXME */
-        /* This is required because we don't have a better mechanism
-         * for indicating to threads in other exec domains that it is
-         * their turn to run.  It's mostly harmless, although causes
-         * a lot of unnecessary wakeups in some cases. */
-        g_cond_broadcast (async->thread_cond);
+      g_cond_signal (async->app_cond);
+#if defined HAVE_CUDA || defined HAVE_OPENGL
+      /* FIXME */
+      /* This is required because we don't have a better mechanism
+       * for indicating to threads in other exec domains that it is
+       * their turn to run.  It's mostly harmless, although causes
+       * a lot of unnecessary wakeups in some cases. */
+      g_cond_broadcast (async->thread_cond);
 #endif
 
-        break;
-      default:
-        SCHRO_ASSERT(0);
     }
   }
 }
@@ -378,7 +389,7 @@ void schro_async_signal_scheduler (SchroAsync *async)
 }
 
 void
-schro_async_add_cuda (SchroAsync *async)
+schro_async_add_exec_domain (SchroAsync *async, SchroExecDomain exec_domain)
 {
   SchroThread *thread;
   int i;
@@ -395,7 +406,8 @@ schro_async_add_cuda (SchroAsync *async)
 
   thread->async = async;
   thread->index = i;
-  thread->exec_domain = SCHRO_EXEC_DOMAIN_CUDA;
+  thread->exec_domain = exec_domain;
+
   async->threads[i].thread = g_thread_create (schro_thread_main,
       async->threads + i, TRUE, &error);
   g_mutex_lock (async->mutex);
@@ -410,25 +422,46 @@ schro_async_get_exec_domain (void)
   return (int)(unsigned long)domain;
 }
 
-SchroMutex *schro_mutex_new (void)
+SchroMutex *
+schro_mutex_new (void)
 {
-  return (SchroMutex *)g_mutex_new();
+  SchroMutex *mutex;
+
+  mutex = malloc(sizeof(SchroMutex));
+  mutex->mutex = g_mutex_new ();
+
+  return mutex;
 }
 
-void schro_mutex_lock (SchroMutex *mutex)
+#ifdef unused
+SchroMutex *
+schro_mutex_new_recursive (void)
 {
-  g_mutex_lock((GMutex *)mutex);
+  SchroMutex *mutex;
+
+  mutex = malloc(sizeof(SchroMutex));
+  mutex->mutex = g_mutex_new ();
+
+  return mutex;
+}
+#endif
+
+void
+schro_mutex_lock (SchroMutex *mutex)
+{
+  g_mutex_lock (mutex->mutex);
 }
 
 void
 schro_mutex_unlock (SchroMutex *mutex)
 {
-  g_mutex_unlock((GMutex *)mutex);
+  g_mutex_unlock (mutex->mutex);
 }
 
 void
 schro_mutex_free (SchroMutex *mutex)
 {
-  g_mutex_free((GMutex *)mutex);
+  g_mutex_free (mutex->mutex);
+  free (mutex);
 }
 
