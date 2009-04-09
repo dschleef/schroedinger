@@ -108,6 +108,7 @@ schro_async_new(int n_threads,
   async->n_threads = n_threads;
   async->threads = schro_malloc0 (sizeof(SchroThread) * (n_threads + 1));
 
+  async->stop = RUNNING;
   async->schedule = schedule;
   async->schedule_closure = closure;
   async->complete = complete;

@@ -124,7 +124,7 @@ schro_mutex_new (void)
 {
   SchroMutex *mutex;
 
-  mutex = malloc(sizeof(SchroMutex));
+  mutex = schro_malloc(sizeof(SchroMutex));
 
   return mutex;
 }
@@ -142,6 +142,6 @@ schro_mutex_unlock (SchroMutex *mutex)
 void
 schro_mutex_free (SchroMutex *mutex)
 {
-  free (mutex);
+  schro_free (mutex);
 }
 

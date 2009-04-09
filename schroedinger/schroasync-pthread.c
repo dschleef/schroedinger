@@ -118,6 +118,7 @@ schro_async_new(int n_threads,
   async->n_threads = n_threads;
   async->threads = schro_malloc0 (sizeof(SchroThread) * (n_threads + 1));
 
+  async->stop = RUNNING;
   async->schedule = schedule;
   async->schedule_closure = closure;
   async->complete = complete;
@@ -205,7 +206,7 @@ schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
   async->task.task_func = stage->task_func;
   async->task.priv = stage;
 
-  pthread_cond_signal (&async->thread_cond);
+  schro_async_signal_scheduler (async);
 }
 
 static void
@@ -395,7 +396,7 @@ schro_mutex_new (void)
   SchroMutex *mutex;
   pthread_mutexattr_t mutexattr;
 
-  mutex = malloc(sizeof(SchroMutex));
+  mutex = schro_malloc(sizeof(SchroMutex));
   pthread_mutexattr_init (&mutexattr);
   pthread_mutex_init (&mutex->mutex, &mutexattr);
   pthread_mutexattr_destroy (&mutexattr);
@@ -419,6 +420,6 @@ void
 schro_mutex_free (SchroMutex *mutex)
 {
   pthread_mutex_destroy (&mutex->mutex);
-  free (mutex);
+  schro_free (mutex);
 }
 
