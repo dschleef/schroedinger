@@ -598,7 +598,6 @@ schro_encoder_dump_subband_curves (SchroEncoderFrame *frame)
             &frame->subband_hists[component][i], j, params->is_noarith);
         est_error = schro_histogram_apply_table (hist,
             &frame->encoder->intra_hist_tables[j]);
-        est_error = pow(est_error, 2.0/encoder->magic_error_power);
         arith_entropy = schro_encoder_estimate_subband_arith (frame,
             component, i, j);
 
@@ -632,7 +631,6 @@ schro_encoder_calc_estimates (SchroEncoderFrame *frame)
         int position;
         SchroHistogram *hist;
         SchroFrameData fd;
-        double est_error;
 
         position = schro_subband_get_position (i);
         schro_subband_get_frame_data (&fd, frame->iwt_frame, component,
@@ -642,10 +640,8 @@ schro_encoder_calc_estimates (SchroEncoderFrame *frame)
         hist = &frame->subband_hists[component][i];
         frame->est_entropy[component][i][j] =
           schro_histogram_estimate_entropy (hist, j, params->is_noarith);
-        est_error = schro_histogram_apply_table (hist,
+        frame->est_error[component][i][j] = schro_histogram_apply_table (hist,
               &frame->encoder->intra_hist_tables[j]);
-        est_error = pow(est_error, 2.0/frame->encoder->magic_error_power);
-        frame->est_error[component][i][j] = est_error;
       }
     }
   }
