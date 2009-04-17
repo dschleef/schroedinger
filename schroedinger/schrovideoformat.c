@@ -20,6 +20,8 @@
 int
 schro_video_format_validate (SchroVideoFormat *format)
 {
+  int fix_clean_area = 0;
+
   if (format->aspect_ratio_numerator == 0) {
     SCHRO_ERROR("aspect_ratio_numerator is 0");
     format->aspect_ratio_numerator = 1;
@@ -27,6 +29,21 @@ schro_video_format_validate (SchroVideoFormat *format)
   if (format->aspect_ratio_denominator == 0) {
     SCHRO_ERROR("aspect_ratio_denominator is 0");
     format->aspect_ratio_denominator = 1;
+  }
+
+  if (format->clean_width + format->left_offset > format->width) {
+    SCHRO_ERROR("10.3.7: horizontal clean area is not legal (clean_width + left_offset > width)");
+    fix_clean_area = 1;
+  }
+  if (format->clean_height + format->top_offset > format->height) {
+    SCHRO_ERROR("10.3.7: vertical clean area is not legal (clean_height + top_offset > height)");
+    fix_clean_area = 1;
+  }
+  if (fix_clean_area) {
+    SCHRO_ERROR("resetting clean area to frame size");
+    format->clean_width = format->width;
+    format->clean_height = format->height;
+    format->left_offset = format->top_offset = 0;
   }
 
   if (schro_video_format_get_bit_depth (format) != 8) {
