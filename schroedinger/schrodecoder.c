@@ -648,6 +648,13 @@ schro_decoder_pull_is_ready_locked (SchroDecoder *decoder)
     return TRUE;
   }
   /* interlaced_coding with twofiled output: must be two pictures avaliable */
+  if (instance->flushing) {
+    /* except with broken streams and flushing.  there may only be 1,
+     * in which case, we are as ready as we'll ever be, and leave it
+     * up to _pull to fix missing field issue */
+    if (instance->reorder_queue->n == 1)
+      return TRUE;
+  }
   SCHRO_ASSERT(instance->reorder_queue->n >= 2);
 
   /* don't check if the second field is the pair to the first, since the
@@ -716,6 +723,14 @@ schro_decoder_pull (SchroDecoder *decoder)
     }
 
     picture = schro_queue_peek (decoder->instance->reorder_queue);
+    if (!picture) {
+      if (instance->flushing) {
+        /* when flushing, a broken stream might not have a pair of
+         * pictures */
+        break;
+      }
+      SCHRO_ASSERT(picture);
+    }
     if (picture_number+1 != picture->picture_number) {
       /* The second field in the frame can only be a pair to the first if
        * they have consecutive picture numbers */
