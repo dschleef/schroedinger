@@ -379,6 +379,11 @@ gst_schro_parse_parse_data (GstBaseVideoParse *base_video_parse,
     g_free (data);
   }
 
+  if (schro_parse->seq_header_buffer == NULL) {
+    gst_adapter_flush (base_video_parse->input_adapter, next);
+    return GST_FLOW_OK;
+  }
+
   if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
     GstVideoFrame *frame;
     guint8 tmp[4];
