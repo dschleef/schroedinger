@@ -726,7 +726,10 @@ schro_decoder_pull (SchroDecoder *decoder)
     if (!picture) {
       if (instance->flushing) {
         /* when flushing, a broken stream might not have a pair of
-         * pictures */
+         * pictures: discard the frame, (otherwise at a broken sequence
+         * boundry, could cause two frames to be emitted rather than one) */
+        schro_frame_unref (frame);
+        frame = NULL;
         break;
       }
       SCHRO_ASSERT(picture);
