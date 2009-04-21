@@ -742,9 +742,13 @@ schro_decoder_pull (SchroDecoder *decoder)
 
     /* second field is the pair to the first: discard it */
     picture = schro_queue_pull (decoder->instance->reorder_queue);
+    picture_number = picture->picture_number;
     schro_picture_unref (picture);
     picture = NULL;
   } while (0);
+
+  instance->last_picture_number = picture_number;
+  instance->last_picture_number_valid = TRUE;
 
   schro_async_unlock (decoder->async);
 
@@ -1238,6 +1242,24 @@ schro_decoder_iterate_picture (SchroDecoderInstance *instance, SchroBuffer *buff
 
   if (picture->error) {
     picture->skip = TRUE;
+  }
+
+  if (instance->last_picture_number_valid) {
+    if (schro_picture_n_before_m (picture->picture_number, instance->last_picture_number)) {
+      /* picture logically occurs before a picture that has already been
+       * emitted. The stream must have jumped backwards. It is important
+       * to detect this, otherwise pictures can get stuck in the reorder
+       * buffer.  NB, it isn't required to detect a forwards jump, since
+       * this will cause the reorder buffer to flush naturally */
+      /* xxx: future improvements would be to also note if a sequence header
+       * occured just before this picture, and to inject that into the new
+       * instance */
+      SCHRO_WARNING ("stream jumped backwards, %u before %u, treating as EOS",
+                    picture->picture_number, instance->last_picture_number);
+      schro_picture_unref (picture);
+      schro_decoder_push_end_of_stream (decoder);
+      return SCHRO_DECODER_EOS;
+    }
   }
 
   /* todo: prune pictures that are inaccessible in the first gop */

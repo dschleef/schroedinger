@@ -79,7 +79,10 @@ struct _SchroDecoderInstance {
   /* xxx: maybe this belongs in Decoder and not per instance */
   SchroQueue *output_queue;
 
-  SchroPictureNumber next_frame_number;
+  /* the last picture number to be emitted by decoder_pull().
+   * used to determine if a stream jumps backwards */
+  SchroPictureNumber last_picture_number;
+  int last_picture_number_valid;
 
   int major_version;
   int minor_version;
