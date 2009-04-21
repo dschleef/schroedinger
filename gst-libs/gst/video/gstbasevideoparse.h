@@ -86,7 +86,7 @@ struct _GstBaseVideoParse
   GstCaps *caps;
   gboolean set_output_caps;
 
-  GstClockTime buffer_timestamp;
+  GstClockTime last_timestamp;
 
   gint64 timestamp_offset;
 };

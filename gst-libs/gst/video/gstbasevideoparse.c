@@ -571,6 +571,9 @@ gst_base_video_parse_chain (GstPad *pad, GstBuffer *buf)
     base_video_parse->have_sync = FALSE;
   }
 
+  if (GST_BUFFER_TIMESTAMP (buf) != GST_CLOCK_TIME_NONE) {
+    base_video_parse->last_timestamp = GST_BUFFER_TIMESTAMP (buf);
+  }
   gst_adapter_push (base_video_parse->input_adapter, buf);
 
   if (!base_video_parse->have_sync) {
@@ -597,7 +600,7 @@ gst_base_video_parse_chain (GstPad *pad, GstBuffer *buf)
 
   buffer = gst_adapter_get_buffer (base_video_parse->input_adapter);
 
-  base_video_parse->buffer_timestamp = GST_BUFFER_TIMESTAMP (buffer);
+  //base_video_parse->buffer_timestamp = GST_BUFFER_TIMESTAMP (buffer);
   gst_buffer_unref (buffer);
 
   /* FIXME check klass->parse_data */
@@ -691,6 +694,14 @@ gst_base_video_parse_finish_frame (GstBaseVideoParse *base_video_parse)
 
   buffer = gst_adapter_take_buffer (base_video_parse->output_adapter,
       gst_adapter_available (base_video_parse->output_adapter));
+
+  if (frame->is_sync_point) {
+    base_video_parse->timestamp_offset = base_video_parse->last_timestamp -
+      gst_util_uint64_scale (frame->presentation_frame_number,
+          base_video_parse->state.fps_d * GST_SECOND,
+          base_video_parse->state.fps_n);
+    base_video_parse->distance_from_sync = 0;
+  }
 
   frame->distance_from_sync = base_video_parse->distance_from_sync;
   base_video_parse->distance_from_sync++;
