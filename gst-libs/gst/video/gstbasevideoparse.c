@@ -26,6 +26,9 @@
 #include <string.h>
 #include <math.h>
 
+GST_DEBUG_CATEGORY_EXTERN (basevideo_debug);
+#define GST_CAT_DEFAULT basevideo_debug
+
 
 
 /* GstBaseVideoParse signals and args */

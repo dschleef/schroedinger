@@ -13,6 +13,9 @@
 #include <string.h>
 #include "gstvideocompat.h"
 
+GST_DEBUG_CATEGORY_EXTERN (basevideo_debug);
+#define GST_CAT_DEFAULT basevideo_debug
+
 /**
  * gst_video_format_parse_caps:
  * @caps: the #GstCaps to parse

@@ -25,6 +25,9 @@
 
 #include <string.h>
 
+GST_DEBUG_CATEGORY_EXTERN (basevideo_debug);
+#define GST_CAT_DEFAULT basevideo_debug
+
 static void gst_base_video_decoder_finalize (GObject *object);
 
 static gboolean gst_base_video_decoder_sink_setcaps (GstPad *pad, GstCaps *caps);
@@ -502,6 +505,7 @@ error:
 }
 
 
+#if 0
 static gboolean
 gst_pad_is_negotiated (GstPad *pad)
 {
@@ -517,6 +521,7 @@ gst_pad_is_negotiated (GstPad *pad)
 
   return FALSE;
 }
+#endif
 
 static void
 gst_base_video_decoder_reset (GstBaseVideoDecoder *base_video_decoder)
@@ -537,6 +542,7 @@ gst_base_video_decoder_reset (GstBaseVideoDecoder *base_video_decoder)
   base_video_decoder->system_frame_number = 0;
   base_video_decoder->presentation_frame_number = 0;
   base_video_decoder->last_sink_timestamp = GST_CLOCK_TIME_NONE;
+  base_video_decoder->last_sink_offset_end = GST_CLOCK_TIME_NONE;
   base_video_decoder->base_picture_number = 0;
   base_video_decoder->last_timestamp = GST_CLOCK_TIME_NONE;
 
@@ -576,10 +582,16 @@ gst_base_video_decoder_chain (GstPad *pad, GstBuffer *buf)
   GstBuffer *buffer;
   GstFlowReturn ret;
 
+  GST_DEBUG("chain %lld", GST_BUFFER_TIMESTAMP(buf));
+
+#if 0
+  /* requiring the pad to be negotiated makes it impossible to use
+   * oggdemux or filesrc ! decoder */
   if (!gst_pad_is_negotiated (pad)) {
     GST_DEBUG("not negotiated");
     return GST_FLOW_NOT_NEGOTIATED;
   }
+#endif
 
   base_video_decoder = GST_BASE_VIDEO_DECODER (gst_pad_get_parent (pad));
   klass = GST_BASE_VIDEO_DECODER_GET_CLASS (base_video_decoder);
@@ -602,6 +614,10 @@ gst_base_video_decoder_chain (GstPad *pad, GstBuffer *buf)
     GST_DEBUG("timestamp %lld offset %lld", GST_BUFFER_TIMESTAMP(buf),
         base_video_decoder->offset);
     base_video_decoder->last_sink_timestamp = GST_BUFFER_TIMESTAMP(buf);
+  }
+  if (GST_BUFFER_OFFSET_END (buf) != -1) {
+    GST_DEBUG("gp %lld", GST_BUFFER_OFFSET_END(buf));
+    base_video_decoder->last_sink_offset_end = GST_BUFFER_OFFSET_END(buf);
   }
   base_video_decoder->offset += GST_BUFFER_SIZE(buf);
 
@@ -723,6 +739,7 @@ gst_base_video_decoder_new_frame (GstBaseVideoDecoder *base_video_decoder)
 
   frame->decode_timestamp = -1;
   frame->presentation_timestamp = -1;
+  frame->presentation_duration = -1;
   frame->n_fields = 2;
 
   return frame;
@@ -742,17 +759,27 @@ gst_base_video_decoder_finish_frame (GstBaseVideoDecoder *base_video_decoder,
   GST_DEBUG ("finish frame sync=%d pts=%lld", frame->is_sync_point,
       frame->presentation_timestamp);
 
-  if (frame->is_sync_point &&
-      GST_CLOCK_TIME_IS_VALID(frame->presentation_timestamp)) {
-
-    GST_DEBUG("sync timestamp %lld diff %lld",
-        frame->presentation_timestamp,
-        frame->presentation_timestamp - base_video_decoder->state.segment.start);
-    base_video_decoder->timestamp_offset = frame->presentation_timestamp;
-    base_video_decoder->field_index = 0;
-  } else {
-    if (frame->is_sync_point) {
+  if (frame->is_sync_point) {
+    if (GST_CLOCK_TIME_IS_VALID(frame->presentation_timestamp)) {
+      if (frame->presentation_timestamp != base_video_decoder->timestamp_offset) {
+        GST_DEBUG("sync timestamp %lld diff %lld",
+            frame->presentation_timestamp,
+            frame->presentation_timestamp - base_video_decoder->state.segment.start);
+        base_video_decoder->timestamp_offset = frame->presentation_timestamp;
+        base_video_decoder->field_index = 0;
+      } else {
+        /* This case is for one initial timestamp and no others, e.g.,
+         * filesrc ! decoder ! xvimagesink */
+        GST_WARNING("sync timestamp didn't change, ignoring");
+        frame->presentation_timestamp = GST_CLOCK_TIME_NONE;
+      }
+    } else {
       GST_WARNING ("sync point doesn't have timestamp");
+      if (GST_CLOCK_TIME_IS_VALID(base_video_decoder->timestamp_offset)) {
+        GST_ERROR ("No base timestamp.  Assuming frames start at 0");
+        base_video_decoder->timestamp_offset = 0;
+        base_video_decoder->field_index = 0;
+      }
     }
   }
   frame->field_index = base_video_decoder->field_index;
@@ -762,13 +789,16 @@ gst_base_video_decoder_finish_frame (GstBaseVideoDecoder *base_video_decoder,
     frame->presentation_timestamp =
       gst_base_video_decoder_get_field_timestamp(base_video_decoder,
           frame->field_index);
+    frame->presentation_duration = GST_CLOCK_TIME_NONE;
+    frame->decode_timestamp =
+      gst_base_video_decoder_get_timestamp(base_video_decoder,
+          frame->decode_frame_number);
+  }
+  if (frame->presentation_duration == GST_CLOCK_TIME_NONE) {
     frame->presentation_duration =
       gst_base_video_decoder_get_field_timestamp(base_video_decoder,
           frame->field_index + frame->n_fields) -
       frame->presentation_timestamp;
-    frame->decode_timestamp =
-      gst_base_video_decoder_get_timestamp(base_video_decoder,
-          frame->decode_frame_number);
   }
 
   if (GST_CLOCK_TIME_IS_VALID(base_video_decoder->last_timestamp)) {
@@ -1006,11 +1036,9 @@ gst_base_video_decoder_have_frame (GstBaseVideoDecoder *base_video_decoder)
       frame);
 
   /* do something with frame */
-  if (base_video_decoder_class->handle_frame (base_video_decoder, frame)) {
-    ret = GST_FLOW_OK;
-  } else {
+  ret = base_video_decoder_class->handle_frame (base_video_decoder, frame);
+  if (!GST_FLOW_IS_SUCCESS(ret)) {
     GST_DEBUG("flow error!");
-    ret = GST_FLOW_ERROR;
   }
 
   /* create new frame */

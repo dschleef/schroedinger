@@ -24,6 +24,9 @@
 #include "gstbasevideoencoder.h"
 #include "gstbasevideoutils.h"
 
+GST_DEBUG_CATEGORY_EXTERN (basevideo_debug);
+#define GST_CAT_DEFAULT basevideo_debug
+
 static void gst_base_video_encoder_finalize (GObject *object);
 
 static gboolean gst_base_video_encoder_sink_setcaps (GstPad *pad, GstCaps *caps);

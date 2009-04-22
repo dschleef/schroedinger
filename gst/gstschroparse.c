@@ -329,7 +329,7 @@ gst_schro_parse_parse_data (GstBaseVideoParse *base_video_parse,
 
   GST_DEBUG("available %d", gst_adapter_available (base_video_parse->input_adapter));
 
-  gst_adapter_copy_full (base_video_parse->input_adapter, header, 0, SCHRO_PARSE_HEADER_SIZE);
+  gst_adapter_copy (base_video_parse->input_adapter, header, 0, SCHRO_PARSE_HEADER_SIZE);
 
   parse_code = header[4];
   next = GST_READ_UINT32_BE (header + 5);
@@ -371,7 +371,7 @@ gst_schro_parse_parse_data (GstBaseVideoParse *base_video_parse,
     
     data = g_malloc (next);
 
-    gst_adapter_copy_full (base_video_parse->input_adapter, data, 0, next);
+    gst_adapter_copy (base_video_parse->input_adapter, data, 0, next);
     parse_sequence_header (schro_parse, data, next);
 
     base_video_parse->current_frame->is_sync_point = TRUE;
@@ -396,7 +396,7 @@ gst_schro_parse_parse_data (GstBaseVideoParse *base_video_parse,
     }
 #endif
 
-    gst_adapter_copy_full (base_video_parse->input_adapter, tmp, SCHRO_PARSE_HEADER_SIZE, 4);
+    gst_adapter_copy (base_video_parse->input_adapter, tmp, SCHRO_PARSE_HEADER_SIZE, 4);
 
     frame->presentation_frame_number = GST_READ_UINT32_BE (tmp);
 

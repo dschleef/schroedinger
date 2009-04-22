@@ -25,6 +25,9 @@
 
 #include <string.h>
 
+GST_DEBUG_CATEGORY_EXTERN (basevideo_debug);
+#define GST_CAT_DEFAULT basevideo_debug
+
 
 guint64
 gst_base_video_convert_bytes_to_frames (GstVideoState *state,
@@ -190,34 +193,6 @@ get_chunk (GstAdapter *adapter, int offset, int *skip)
   }
 
   g_assert_not_reached ();
-}
-
-void
-gst_adapter_copy_full (GstAdapter *adapter, void *dest, int offset,
-    int size)
-{
-  int skip;
-  guint8 *cdest = dest;
-  int n_bytes;
-  GSList *g;
-
-  g_return_if_fail (offset >= 0);
-  g_return_if_fail (offset + size <= adapter->size);
-
-  g = get_chunk (adapter, offset, &skip);
-  while (size > 0) {
-    n_bytes = MIN (GST_BUFFER_SIZE(GST_BUFFER(g->data)) - skip,
-        size);
-
-    memcpy (cdest, GST_BUFFER_DATA(GST_BUFFER(g->data)) + skip,
-        n_bytes);
-
-    size -= n_bytes;
-    cdest += n_bytes;
-    skip = 0;
-
-    g = g->next;
-  }
 }
 
 static int

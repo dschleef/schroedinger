@@ -102,6 +102,7 @@ struct _GstBaseVideoDecoder
   GstClockTime last_timestamp;
 
   GstClockTime last_sink_timestamp;
+  GstClockTime last_sink_offset_end;
   guint64 base_picture_number;
 
   int field_index;
@@ -121,7 +122,7 @@ struct _GstBaseVideoDecoderClass
       int offset, int n);
   GstFlowReturn (*parse_data) (GstBaseVideoDecoder *decoder, gboolean at_eos);
   gboolean (*finish) (GstBaseVideoDecoder *coder, GstVideoFrame *frame);
-  gboolean (*handle_frame) (GstBaseVideoDecoder *coder, GstVideoFrame *frame);
+  GstFlowReturn (*handle_frame) (GstBaseVideoDecoder *coder, GstVideoFrame *frame);
   GstFlowReturn (*shape_output) (GstBaseVideoDecoder *coder, GstVideoFrame *frame);
   GstCaps *(*get_caps) (GstBaseVideoDecoder *coder);
 
