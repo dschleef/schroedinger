@@ -368,7 +368,8 @@ init_params (SchroEncoderFrame *frame)
 
   schro_params_init (params, params->video_format->index);
 
-  if (encoder->enable_noarith && frame->num_refs == 0) {
+  if ((encoder->enable_noarith && frame->num_refs == 0) ||
+      params->is_lowdelay) {
     params->is_noarith = TRUE;
   }
 
