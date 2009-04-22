@@ -112,7 +112,7 @@ gst_base_video_codec_reset (GstBaseVideoCodec *base_video_codec)
 
   base_video_codec->system_frame_number = 0;
 
-  gst_segment_init (&base_video_codec->state.segment, GST_FORMAT_TIME);
+  //gst_segment_init (&base_video_codec->state.segment, GST_FORMAT_TIME);
   gst_adapter_clear (base_video_codec->input_adapter);
   gst_adapter_clear (base_video_codec->output_adapter);
 
@@ -512,6 +512,7 @@ gst_base_video_codec_change_state (GstElement *element, GstStateChange transitio
   return ret;
 }
 
+#if 0
 guint64
 gst_base_video_codec_get_timestamp (GstBaseVideoCodec *base_video_codec,
     int picture_number)
@@ -526,6 +527,7 @@ gst_base_video_codec_get_timestamp (GstBaseVideoCodec *base_video_codec,
           base_video_codec->state.fps_d * GST_SECOND, base_video_codec->state.fps_n);
   }
 }
+#endif
 
 GstVideoFrame *
 gst_base_video_codec_new_frame (GstBaseVideoCodec *base_video_codec)
@@ -554,5 +556,4 @@ gst_base_video_codec_free_frame (GstVideoFrame *frame)
 
   g_free (frame);
 }
-
 

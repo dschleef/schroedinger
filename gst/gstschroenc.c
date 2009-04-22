@@ -370,6 +370,10 @@ gst_schro_enc_start (GstBaseVideoEncoder *base_video_encoder)
     return FALSE;
   }
 
+  gst_base_video_encoder_set_latency_fields (base_video_encoder,
+      2 * (int)schro_encoder_setting_get_double (schro_enc->encoder,
+        "queue_depth"));
+
   gst_caps_unref (caps);
   return TRUE;
 }

@@ -72,6 +72,9 @@ struct _GstBaseVideoEncoder
 
   GstCaps *caps;
   gboolean set_output_caps;
+
+  gint64 min_latency;
+  gint64 max_latency;
 };
 
 struct _GstBaseVideoEncoderClass
@@ -102,6 +105,12 @@ GstFlowReturn gst_base_video_encoder_finish_frame (GstBaseVideoEncoder *base_vid
     GstVideoFrame *frame);
 GstFlowReturn gst_base_video_encoder_end_of_stream (GstBaseVideoEncoder *base_video_encoder,
     GstBuffer *buffer);
+
+void gst_base_video_encoder_set_latency (GstBaseVideoEncoder *base_video_encoder,
+    GstClockTime min_latency, GstClockTime max_latency);
+void gst_base_video_encoder_set_latency_fields (GstBaseVideoEncoder *base_video_encoder,
+    int n_fields);
+
 
 G_END_DECLS
 

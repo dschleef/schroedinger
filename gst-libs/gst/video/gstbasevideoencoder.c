@@ -201,6 +201,7 @@ gst_base_video_encoder_get_query_types (GstPad *pad)
     //GST_QUERY_POSITION,
     //GST_QUERY_DURATION,
     GST_QUERY_CONVERT,
+    GST_QUERY_LATENCY,
     0
   };
 
@@ -212,8 +213,10 @@ gst_base_video_encoder_src_query (GstPad *pad, GstQuery *query)
 {
   GstBaseVideoEncoder *enc;
   gboolean res;
+  GstPad *peerpad;
 
   enc = GST_BASE_VIDEO_ENCODER (gst_pad_get_parent (pad));
+  peerpad = gst_pad_get_peer (GST_BASE_VIDEO_CODEC_SINK_PAD(enc));
 
   switch GST_QUERY_TYPE (query) {
     case GST_QUERY_CONVERT:
@@ -228,14 +231,34 @@ gst_base_video_encoder_src_query (GstPad *pad, GstQuery *query)
         gst_query_set_convert (query, src_fmt, src_val, dest_fmt, dest_val);
         break;
       }
+    case GST_QUERY_LATENCY:
+      {
+        gboolean live;
+        GstClockTime min_latency, max_latency;
+
+        res = gst_pad_query (peerpad, query);
+        if (res) {
+          gst_query_parse_latency (query, &live, &min_latency, &max_latency);
+
+          min_latency += enc->min_latency;
+          if (max_latency != GST_CLOCK_TIME_NONE) {
+            max_latency += enc->max_latency;
+          }
+
+          gst_query_set_latency (query, live, min_latency, max_latency);
+        }
+      }
+      break;
     default:
       res = gst_pad_query_default (pad, query);
   }
+  gst_object_unref (peerpad);
   gst_object_unref (enc);
   return res;
 
 error:
   GST_DEBUG_OBJECT (enc, "query failed");
+  gst_object_unref (peerpad);
   gst_object_unref (enc);
   return res;
 }
@@ -419,5 +442,30 @@ gst_base_video_encoder_end_of_stream (GstBaseVideoEncoder *base_video_encoder,
   }
 
   return gst_pad_push (GST_BASE_VIDEO_CODEC_SRC_PAD(base_video_encoder), buffer);
+}
+
+void
+gst_base_video_encoder_set_latency (GstBaseVideoEncoder *base_video_encoder,
+    GstClockTime min_latency, GstClockTime max_latency)
+{
+  g_return_if_fail (min_latency >= 0);
+  g_return_if_fail (max_latency >= min_latency);
+
+  base_video_encoder->min_latency = min_latency;
+  base_video_encoder->max_latency = max_latency;
+}
+
+void
+gst_base_video_encoder_set_latency_fields (GstBaseVideoEncoder *base_video_encoder,
+    int n_fields)
+{
+  gint64 latency;
+
+  latency = gst_util_uint64_scale (n_fields,
+          base_video_encoder->state.fps_d * GST_SECOND,
+          2 * base_video_encoder->state.fps_n);
+
+  gst_base_video_encoder_set_latency (base_video_encoder, latency, latency);
+
 }
 
