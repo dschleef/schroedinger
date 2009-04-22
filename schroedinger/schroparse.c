@@ -65,10 +65,7 @@ schro_parse_decode_sequence_header (uint8_t *data, int length,
   /* scan format */
   bit = schro_unpack_decode_bit (unpack);
   if (bit) {
-    format->interlaced = schro_unpack_decode_bit (unpack);
-    if (format->interlaced) {
-      format->top_field_first = schro_unpack_decode_bit (unpack);
-    }
+    format->interlaced = schro_unpack_decode_uint (unpack);
   }
   SCHRO_DEBUG("interlaced %d top_field_first %d",
       format->interlaced, format->top_field_first);
