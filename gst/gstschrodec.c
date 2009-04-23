@@ -618,7 +618,7 @@ gst_schro_dec_process (GstSchroDec *schro_dec, gboolean eos)
           SchroTag *tag;
           GstVideoFrame *frame;
 
-          GST_ERROR("got frame");
+          GST_DEBUG("got frame");
 
           tag = schro_decoder_get_picture_tag (schro_dec->decoder);
           schro_frame = schro_decoder_pull (schro_dec->decoder);
@@ -650,7 +650,7 @@ gst_schro_dec_process (GstSchroDec *schro_dec, gboolean eos)
 
         break;
       case SCHRO_DECODER_EOS:
-        GST_ERROR("eos");
+        GST_DEBUG("eos");
         go = FALSE;
         break;
       case SCHRO_DECODER_ERROR:
