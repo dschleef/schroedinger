@@ -3103,13 +3103,13 @@ struct SchroEncoderSettings {
   SchroEncoderSetting s;
   int offset;
 } static const encoder_settings[] = {
-  ENUM(rate_control, rate_control_list, 0),
+  ENUM(rate_control, rate_control_list, 6),
   INT (bitrate, 0, INT_MAX, 13824000),
   INT (max_bitrate, 0, INT_MAX, 13824000),
   INT (min_bitrate, 0, INT_MAX, 13824000),
   INT (buffer_size, 0, INT_MAX, 0),
   INT (buffer_level, 0, INT_MAX, 0),
-  DOUB(quality, 0, 10.0, 7.0),
+  DOUB(quality, 0, 10.0, 5.0),
   DOUB(noise_threshold, 0, 100.0, 25.0),
   ENUM(gop_structure, gop_structure_list, 0),
   INT (queue_depth, 1, SCHRO_LIMIT_FRAME_QUEUE_LENGTH, 20),
