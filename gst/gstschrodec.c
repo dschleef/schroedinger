@@ -89,7 +89,9 @@ static gboolean gst_schro_dec_reset (GstBaseVideoDecoder *dec);
 static GstFlowReturn gst_schro_dec_parse_data (GstBaseVideoDecoder *base_video_decoder, gboolean at_eos);
 static int gst_schro_dec_scan_for_sync (GstBaseVideoDecoder *base_video_decoder, gboolean at_eos,
     int offset, int n);
-static gboolean gst_schro_dec_handle_frame (GstBaseVideoDecoder *decoder,
+static GstFlowReturn gst_schro_dec_handle_frame (GstBaseVideoDecoder *decoder,
+    GstVideoFrame *frame);
+static GstFlowReturn gst_schro_dec_finish (GstBaseVideoDecoder *base_video_decoder,
     GstVideoFrame *frame);
 static void gst_schrodec_send_tags (GstSchroDec *schro_dec);
 
@@ -148,6 +150,7 @@ gst_schro_dec_class_init (GstSchroDecClass *klass)
   base_video_decoder_class->parse_data = GST_DEBUG_FUNCPTR(gst_schro_dec_parse_data);
   base_video_decoder_class->scan_for_sync = GST_DEBUG_FUNCPTR(gst_schro_dec_scan_for_sync);
   base_video_decoder_class->handle_frame = GST_DEBUG_FUNCPTR(gst_schro_dec_handle_frame);
+  base_video_decoder_class->finish = GST_DEBUG_FUNCPTR(gst_schro_dec_finish);
 }
 
 static void
@@ -562,31 +565,11 @@ gst_schrodec_send_tags (GstSchroDec *schro_dec)
      GST_BASE_VIDEO_CODEC_SRC_PAD(schro_dec), list);
 }
 
-GstFlowReturn
-gst_schro_dec_handle_frame (GstBaseVideoDecoder *base_video_decoder,
-    GstVideoFrame *frame)
+static GstFlowReturn
+gst_schro_dec_process (GstSchroDec *schro_dec, gboolean eos)
 {
-  GstSchroDec *schro_dec;
-  int schro_ret;
-  SchroBuffer *input_buffer;
   gboolean go;
   GstFlowReturn ret;
-  GstVideoState *state;
-
-  schro_dec = GST_SCHRO_DEC (base_video_decoder);
-
-  GST_DEBUG("handle frame");
-
-  state = gst_base_video_decoder_get_state (base_video_decoder);
-
-  gst_base_video_decoder_set_src_caps (base_video_decoder);
-
-  input_buffer = gst_schro_wrap_gst_buffer (frame->sink_buffer);
-  frame->sink_buffer = NULL;
-
-  input_buffer->tag = schro_tag_new (frame, NULL);
-
-  schro_ret = schro_decoder_autoparse_push (schro_dec->decoder, input_buffer);
 
   ret = GST_FLOW_OK;
   go = TRUE;
@@ -612,7 +595,7 @@ gst_schro_dec_handle_frame (GstBaseVideoDecoder *base_video_decoder,
 
           GST_DEBUG("need frame");
 
-          state = gst_base_video_decoder_get_state (base_video_decoder);
+          state = gst_base_video_decoder_get_state (GST_BASE_VIDEO_DECODER(schro_dec));
           size = gst_video_format_get_size (state->format, state->width,
               state->height);
           flow_ret = gst_pad_alloc_buffer_and_set_caps (
@@ -633,8 +616,9 @@ gst_schro_dec_handle_frame (GstBaseVideoDecoder *base_video_decoder,
         {
           SchroFrame *schro_frame;
           SchroTag *tag;
+          GstVideoFrame *frame;
 
-          GST_DEBUG("got frame");
+          GST_ERROR("got frame");
 
           tag = schro_decoder_get_picture_tag (schro_dec->decoder);
           schro_frame = schro_decoder_pull (schro_dec->decoder);
@@ -648,7 +632,7 @@ gst_schro_dec_handle_frame (GstBaseVideoDecoder *base_video_decoder,
                 gst_buffer_ref(GST_BUFFER(schro_frame->priv));
         
               flow_ret = gst_base_video_decoder_finish_frame (
-                  base_video_decoder, frame);
+                  GST_BASE_VIDEO_DECODER(schro_dec), frame);
               if (flow_ret != GST_FLOW_OK) {
                 GST_DEBUG("finish frame returned %d", flow_ret);
                 return flow_ret;
@@ -659,12 +643,14 @@ gst_schro_dec_handle_frame (GstBaseVideoDecoder *base_video_decoder,
       
             schro_frame_unref (schro_frame);
           }
-          go = FALSE;
+          if (!eos) {
+            go = FALSE;
+          }
         }
 
         break;
       case SCHRO_DECODER_EOS:
-        GST_DEBUG("eos");
+        GST_ERROR("eos");
         go = FALSE;
         break;
       case SCHRO_DECODER_ERROR:
@@ -676,4 +662,49 @@ gst_schro_dec_handle_frame (GstBaseVideoDecoder *base_video_decoder,
   }
   return ret;
 }
+
+GstFlowReturn
+gst_schro_dec_handle_frame (GstBaseVideoDecoder *base_video_decoder,
+    GstVideoFrame *frame)
+{
+  GstSchroDec *schro_dec;
+  int schro_ret;
+  SchroBuffer *input_buffer;
+  GstVideoState *state;
+
+  schro_dec = GST_SCHRO_DEC (base_video_decoder);
+
+  GST_DEBUG("handle frame");
+
+  state = gst_base_video_decoder_get_state (base_video_decoder);
+
+  gst_base_video_decoder_set_src_caps (base_video_decoder);
+
+  input_buffer = gst_schro_wrap_gst_buffer (frame->sink_buffer);
+  frame->sink_buffer = NULL;
+
+  input_buffer->tag = schro_tag_new (frame, NULL);
+
+  schro_ret = schro_decoder_autoparse_push (schro_dec->decoder, input_buffer);
+
+  return gst_schro_dec_process (schro_dec, FALSE);
+}
+
+GstFlowReturn
+gst_schro_dec_finish (GstBaseVideoDecoder *base_video_decoder,
+    GstVideoFrame *frame)
+{
+  GstSchroDec *schro_dec;
+
+  schro_dec = GST_SCHRO_DEC (base_video_decoder);
+
+  GST_DEBUG("finish");
+
+  gst_base_video_decoder_set_src_caps (base_video_decoder);
+
+  schro_decoder_autoparse_push_end_of_sequence (schro_dec->decoder);
+
+  return gst_schro_dec_process (schro_dec, TRUE);
+}
+
 

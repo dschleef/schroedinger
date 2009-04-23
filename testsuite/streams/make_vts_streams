@@ -10,9 +10,9 @@ export SCHRO_MOTION_REF=1
 encode() {
   echo "ENCODING $testname with $schroopts"
   gst-launch-0.10 \
-    videotestsrc num-buffers=15 ! \
+    videotestsrc num-buffers=10 ! \
     timeoverlay ! \
-    cairotextoverlay text=$testname halign=left deltay=-100 ! \
+    textoverlay text=$testname halignment=center font-desc="sans 20" deltay=-100 ! \
     ffmpegcolorspace ! \
     video/x-raw-yuv,format=\(fourcc\)"$format",width=$width,height=$height,framerate=30/1 ! \
     schroenc enable-md5=1 au_distance=30 $schroopts ! \
