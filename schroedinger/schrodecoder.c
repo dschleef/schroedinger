@@ -1241,6 +1241,7 @@ schro_decoder_iterate_picture (SchroDecoderInstance *instance, SchroBuffer *buff
   schro_decoder_parse_picture (picture, unpack);
 
   if (picture->error) {
+    SCHRO_WARNING("skipping because of error");
     picture->skip = TRUE;
   }
 
@@ -1319,6 +1320,7 @@ schro_decoder_parse_picture (SchroPicture *picture, SchroUnpack *unpack)
     schro_async_lock (picture->decoder_instance->decoder->async);
     picture->ref0 = schro_decoder_reference_get (picture->decoder_instance, picture->reference1);
     if (picture->ref0 == NULL) {
+      SCHRO_WARNING ("ref0 not found");
       picture->error = TRUE;
       schro_async_unlock (picture->decoder_instance->decoder->async);
       return;
@@ -1329,6 +1331,7 @@ schro_decoder_parse_picture (SchroPicture *picture, SchroUnpack *unpack)
     if (params->num_refs > 1) {
       picture->ref1 = schro_decoder_reference_get (picture->decoder_instance, picture->reference2);
       if (picture->ref1 == NULL) {
+        SCHRO_WARNING ("ref1 not found");
         picture->error = TRUE;
         schro_async_unlock (picture->decoder_instance->decoder->async);
         return;
