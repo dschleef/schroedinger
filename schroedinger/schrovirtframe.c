@@ -568,25 +568,39 @@ unpack_yuyv (SchroFrame *frame, void *_dest, int component, int i)
 {
   uint8_t *dest = _dest;
   uint8_t *src;
+#ifndef HAVE_ORC
   int j;
+#endif
 
   src = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
 
   switch (component) {
     case 0:
+#ifdef HAVE_ORC
+      orc_unpack_yuyv_y (dest, (void *)src, frame->width);
+#else
       for(j=0;j<frame->width;j++){
         dest[j] = src[j*2];
       }
+#endif
       break;
     case 1:
+#ifdef HAVE_ORC
+      orc_unpack_yuyv_u (dest, (void *)src, frame->width/2);
+#else
       for(j=0;j<frame->width/2;j++){
         dest[j] = src[j*4 + 1];
       }
+#endif
       break;
     case 2:
+#ifdef HAVE_ORC
+      orc_unpack_yuyv_v (dest, (void *)src, frame->width/2);
+#else
       for(j=0;j<frame->width/2;j++){
         dest[j] = src[j*4 + 3];
       }
+#endif
   }
 }
 

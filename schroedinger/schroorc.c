@@ -3,13 +3,16 @@
 #include "config.h"
 #endif
 
+#include <schroedinger/schro.h>
 #include <schroedinger/schrooil.h>
 #include <schroedinger/schrodebug.h>
+#include <schroedinger/schroasync.h>
 #include <orc/orc.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
+SchroMutex *orc_mutex;
 
 void
 orc_add2_rshift_add_s16_22 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
@@ -26,6 +29,7 @@ orc_add2_rshift_add_s16_22 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int d1;
     int ret;
@@ -68,6 +72,7 @@ orc_add2_rshift_add_s16_22 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   SCHRO_ASSERT(d == s1);
   orc_executor_set_program (ex, p);
@@ -94,6 +99,7 @@ orc_add2_rshift_sub_s16_22 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int d1;
     int ret;
@@ -136,6 +142,7 @@ orc_add2_rshift_sub_s16_22 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   SCHRO_ASSERT(d == s1);
   orc_executor_set_program (ex, p);
@@ -161,6 +168,7 @@ orc_add2_rshift_add_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -195,6 +203,7 @@ orc_add2_rshift_add_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   SCHRO_ASSERT(d == s1);
   orc_executor_set_program (ex, p);
@@ -220,6 +229,7 @@ orc_add2_rshift_sub_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -254,6 +264,7 @@ orc_add2_rshift_sub_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   SCHRO_ASSERT(d == s1);
   orc_executor_set_program (ex, p);
@@ -278,6 +289,7 @@ orc_add_const_rshift_s16_11 (int16_t *d1, int16_t *s1, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -293,6 +305,7 @@ orc_add_const_rshift_s16_11 (int16_t *d1, int16_t *s1, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -308,6 +321,7 @@ orc_add_s16 (int16_t *d, int16_t *src1, int16_t *src2, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -320,6 +334,7 @@ orc_add_s16 (int16_t *d, int16_t *src1, int16_t *src2, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -348,6 +363,7 @@ orc_lshift1_s16 (int16_t *d1, int16_t *s1, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -361,6 +377,7 @@ orc_lshift1_s16 (int16_t *d1, int16_t *s1, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -376,6 +393,7 @@ orc_lshift2_s16 (int16_t *d1, int16_t *s1, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -389,6 +407,7 @@ orc_lshift2_s16 (int16_t *d1, int16_t *s1, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -404,6 +423,7 @@ orc_lshift_s16_ip (int16_t *d1, int shift, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -417,6 +437,7 @@ orc_lshift_s16_ip (int16_t *d1, int shift, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -458,6 +479,7 @@ orc_mas2_add_s16_ip (int16_t *d1, int16_t *s2, int mult, int offset,
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -480,6 +502,7 @@ orc_mas2_add_s16_ip (int16_t *d1, int16_t *s2, int mult, int offset,
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -511,6 +534,7 @@ orc_mas2_sub_s16_ip (int16_t *d1, int16_t *s2, int mult, int offset,
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -533,6 +557,7 @@ orc_mas2_sub_s16_ip (int16_t *d1, int16_t *s2, int mult, int offset,
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -582,6 +607,7 @@ orc_mas4_across_add_s16_1991_ip (int16_t *d1, int16_t *s2, int stride, int shift
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -630,6 +656,7 @@ orc_mas4_across_add_s16_1991_ip (int16_t *d1, int16_t *s2, int stride, int shift
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -661,6 +688,7 @@ orc_mas4_across_sub_s16_1991_ip (int16_t *d1, int16_t *s2, int stride, int shift
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -670,6 +698,7 @@ orc_mas4_across_sub_s16_1991_ip (int16_t *d1, int16_t *s2, int stride, int shift
     orc_program_add_source (p, 2, "s21");
     orc_program_add_source (p, 2, "s22");
     orc_program_add_source (p, 2, "s23");
+#if 0
     orc_program_add_constant (p, 2, 9, "c1");
     orc_program_add_parameter (p, 2, "p1");
     orc_program_add_parameter (p, 2, "p2");
@@ -683,12 +712,32 @@ orc_mas4_across_sub_s16_1991_ip (int16_t *d1, int16_t *s2, int stride, int shift
     orc_program_append_str (p, "addw", "t1", "t1", "p1");
     orc_program_append_str (p, "shrsw", "t1", "t1", "p2");
     orc_program_append_str (p, "subw", "d1", "d1", "t1");
+#else
+    orc_program_add_constant (p, 2, 9, "c1");
+    orc_program_add_parameter (p, 4, "p1");
+    orc_program_add_parameter (p, 4, "p2");
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 2, "t2");
+    orc_program_add_temporary (p, 4, "t3");
+    orc_program_add_temporary (p, 4, "t4");
+
+    orc_program_append_str (p, "addw", "t1", "s21", "s22");
+    orc_program_append_str (p, "mulswl", "t3", "t1", "c1");
+    orc_program_append_str (p, "addw", "t2", "s20", "s23");
+    orc_program_append_ds_str (p, "convswl", "t4", "t2");
+    orc_program_append_str (p, "subl", "t3", "t3", "t4");
+    orc_program_append_str (p, "addl", "t3", "t3", "p1");
+    orc_program_append_str (p, "shrsl", "t3", "t3", "p2");
+    orc_program_append_ds_str (p, "convlw", "t1", "t3");
+    orc_program_append_str (p, "subw", "d1", "d1", "t1");
+#endif
 
     ret = orc_program_compile (p);
     if (!ret) {
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -721,6 +770,7 @@ orc_mas4_add_s16_1991 (int16_t *d1, int16_t *s1, int16_t *s2, int shift, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -730,6 +780,7 @@ orc_mas4_add_s16_1991 (int16_t *d1, int16_t *s1, int16_t *s2, int shift, int n)
     orc_program_add_source (p, 2, "s21");
     orc_program_add_source (p, 2, "s22");
     orc_program_add_source (p, 2, "s23");
+#if 0
     orc_program_add_constant (p, 2, 9, "c1");
     orc_program_add_parameter (p, 2, "p1");
     orc_program_add_parameter (p, 2, "p2");
@@ -743,12 +794,32 @@ orc_mas4_add_s16_1991 (int16_t *d1, int16_t *s1, int16_t *s2, int shift, int n)
     orc_program_append_str (p, "addw", "t1", "t1", "p1");
     orc_program_append_str (p, "shrsw", "t1", "t1", "p2");
     orc_program_append_str (p, "addw", "d1", "d1", "t1");
+#else
+    orc_program_add_constant (p, 2, 9, "c1");
+    orc_program_add_parameter (p, 4, "p1");
+    orc_program_add_parameter (p, 4, "p2");
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 2, "t2");
+    orc_program_add_temporary (p, 4, "t3");
+    orc_program_add_temporary (p, 4, "t4");
+
+    orc_program_append_str (p, "addw", "t1", "s21", "s22");
+    orc_program_append_str (p, "mulswl", "t3", "t1", "c1");
+    orc_program_append_str (p, "addw", "t2", "s20", "s23");
+    orc_program_append_ds_str (p, "convswl", "t4", "t2");
+    orc_program_append_str (p, "subl", "t3", "t3", "t4");
+    orc_program_append_str (p, "addl", "t3", "t3", "p1");
+    orc_program_append_str (p, "shrsl", "t3", "t3", "p2");
+    orc_program_append_ds_str (p, "convlw", "t1", "t3");
+    orc_program_append_str (p, "addw", "d1", "d1", "t1");
+#endif
 
     ret = orc_program_compile (p);
     if (!ret) {
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   SCHRO_ASSERT(d1 == s1);
   orc_executor_set_program (ex, p);
@@ -781,6 +852,7 @@ orc_mas4_sub_s16_1991 (int16_t *d1, int16_t *s1, int16_t *s2, int shift, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -790,6 +862,7 @@ orc_mas4_sub_s16_1991 (int16_t *d1, int16_t *s1, int16_t *s2, int shift, int n)
     orc_program_add_source (p, 2, "s21");
     orc_program_add_source (p, 2, "s22");
     orc_program_add_source (p, 2, "s23");
+#if 0
     orc_program_add_constant (p, 2, 9, "c1");
     orc_program_add_parameter (p, 2, "p1");
     orc_program_add_parameter (p, 2, "p2");
@@ -803,12 +876,32 @@ orc_mas4_sub_s16_1991 (int16_t *d1, int16_t *s1, int16_t *s2, int shift, int n)
     orc_program_append_str (p, "addw", "t1", "t1", "p1");
     orc_program_append_str (p, "shrsw", "t1", "t1", "p2");
     orc_program_append_str (p, "subw", "d1", "d1", "t1");
+#else
+    orc_program_add_constant (p, 2, 9, "c1");
+    orc_program_add_parameter (p, 4, "p1");
+    orc_program_add_parameter (p, 4, "p2");
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 2, "t2");
+    orc_program_add_temporary (p, 4, "t3");
+    orc_program_add_temporary (p, 4, "t4");
+
+    orc_program_append_str (p, "addw", "t1", "s21", "s22");
+    orc_program_append_str (p, "mulswl", "t3", "t1", "c1");
+    orc_program_append_str (p, "addw", "t2", "s20", "s23");
+    orc_program_append_ds_str (p, "convswl", "t4", "t2");
+    orc_program_append_str (p, "subl", "t3", "t3", "t4");
+    orc_program_append_str (p, "addl", "t3", "t3", "p1");
+    orc_program_append_str (p, "shrsl", "t3", "t3", "p2");
+    orc_program_append_ds_str (p, "convlw", "t1", "t3");
+    orc_program_append_str (p, "subw", "d1", "d1", "t1");
+#endif
 
     ret = orc_program_compile (p);
     if (!ret) {
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   SCHRO_ASSERT(d1 == s1);
   orc_executor_set_program (ex, p);
@@ -830,6 +923,7 @@ orc_subtract_s16 (int16_t *d, int16_t *src1, int16_t *src2, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -842,6 +936,7 @@ orc_subtract_s16 (int16_t *d, int16_t *src1, int16_t *src2, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -858,6 +953,7 @@ orc_memcpy (void *dest, void *src, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -869,6 +965,7 @@ orc_memcpy (void *dest, void *src, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -884,6 +981,7 @@ orc_add_s16_u8 (int16_t *d, int16_t *src1, uint8_t *src2, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -898,6 +996,7 @@ orc_add_s16_u8 (int16_t *d, int16_t *src1, uint8_t *src2, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -914,6 +1013,7 @@ orc_convert_s16_u8 (int16_t *d, uint8_t *src1, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -926,6 +1026,7 @@ orc_convert_s16_u8 (int16_t *d, uint8_t *src1, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -941,6 +1042,7 @@ orc_convert_u8_s16 (uint8_t *d, int16_t *src1, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -953,6 +1055,7 @@ orc_convert_u8_s16 (uint8_t *d, int16_t *src1, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -968,6 +1071,7 @@ orc_subtract_s16_u8 (int16_t *d, int16_t *src1, uint8_t *src2, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -982,6 +1086,7 @@ orc_subtract_s16_u8 (int16_t *d, int16_t *src1, uint8_t *src2, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -999,6 +1104,7 @@ orc_multiply_and_add_s16_u8 (int16_t *d, int16_t *src1, int16_t *src2,
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -1014,6 +1120,7 @@ orc_multiply_and_add_s16_u8 (int16_t *d, int16_t *src1, int16_t *src2,
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   SCHRO_ASSERT(d == src1);
   orc_executor_set_program (ex, p);
@@ -1031,6 +1138,7 @@ orc_splat_s16_ns (int16_t *d1, int value, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -1045,6 +1153,7 @@ orc_splat_s16_ns (int16_t *d1, int value, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -1060,6 +1169,7 @@ orc_splat_u8_ns (uint8_t *d1, int value, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -1074,6 +1184,7 @@ orc_splat_u8_ns (uint8_t *d1, int value, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -1088,6 +1199,7 @@ void orc_average_u8 (uint8_t *d1, uint8_t *s1, uint8_t *s2, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -1100,6 +1212,7 @@ void orc_average_u8 (uint8_t *d1, uint8_t *s1, uint8_t *s2, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
@@ -1116,6 +1229,7 @@ orc_rrshift6_s16_ip (int16_t *d1, int n)
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
 
+  schro_mutex_lock (orc_mutex);
   if (p == NULL) {
     int ret;
 
@@ -1133,10 +1247,108 @@ orc_rrshift6_s16_ip (int16_t *d1, int n)
       SCHRO_ERROR("Orc compiler failure");
     }
   }
+  schro_mutex_unlock (orc_mutex);
 
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
   orc_executor_set_array (ex, ORC_VAR_D1, d1);
+
+  orc_executor_run (ex);
+}
+
+void
+orc_unpack_yuyv_y (uint8_t *d1, uint16_t *s1, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  schro_mutex_lock (orc_mutex);
+  if (p == NULL) {
+    int ret;
+
+    p = orc_program_new ();
+    orc_program_add_destination (p, 1, "d1");
+    orc_program_add_source (p, 2, "s1");
+
+    orc_program_append_ds_str (p, "select0wb", "d1", "s1");
+
+    ret = orc_program_compile (p);
+    if (!ret) {
+      SCHRO_ERROR("Orc compiler failure");
+    }
+  }
+  schro_mutex_unlock (orc_mutex);
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_array (ex, ORC_VAR_S1, s1);
+
+  orc_executor_run (ex);
+}
+
+void
+orc_unpack_yuyv_u (uint8_t *d1, uint32_t *s1, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  schro_mutex_lock (orc_mutex);
+  if (p == NULL) {
+    int ret;
+
+    p = orc_program_new ();
+    orc_program_add_destination (p, 1, "d1");
+    orc_program_add_source (p, 4, "s1");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append_ds_str (p, "select0lw", "t1", "s1");
+    orc_program_append_ds_str (p, "select1wb", "d1", "t1");
+
+    ret = orc_program_compile (p);
+    if (!ret) {
+      SCHRO_ERROR("Orc compiler failure");
+    }
+  }
+  schro_mutex_unlock (orc_mutex);
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_array (ex, ORC_VAR_S1, s1);
+
+  orc_executor_run (ex);
+}
+
+void
+orc_unpack_yuyv_v (uint8_t *d1, uint32_t *s1, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  schro_mutex_lock (orc_mutex);
+  if (p == NULL) {
+    int ret;
+
+    p = orc_program_new ();
+    orc_program_add_destination (p, 1, "d1");
+    orc_program_add_source (p, 4, "s1");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append_ds_str (p, "select1lw", "t1", "s1");
+    orc_program_append_ds_str (p, "select1wb", "d1", "t1");
+
+    ret = orc_program_compile (p);
+    if (!ret) {
+      SCHRO_ERROR("Orc compiler failure");
+    }
+  }
+  schro_mutex_unlock (orc_mutex);
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_array (ex, ORC_VAR_S1, s1);
 
   orc_executor_run (ex);
 }
