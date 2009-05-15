@@ -728,9 +728,9 @@ void
 schro_encoder_handle_gop_backref (SchroEncoder *encoder, int i)
 {
   SchroEncoderFrame *frame;
-  SchroEncoderFrame *f;
-  int j;
-  int gop_length;
+  SchroPictureNumber retire;
+  SchroPictureNumber ref0;
+  SchroPictureNumber ref1;
 
   frame = encoder->frame_queue->elements[i].data;
 
@@ -739,54 +739,26 @@ schro_encoder_handle_gop_backref (SchroEncoder *encoder, int i)
 
   schro_engine_check_new_sequence_header (encoder, frame);
 
-  gop_length = encoder->magic_subgroup_length;
-  SCHRO_DEBUG("handling gop from %d to %d (index %d)", encoder->gop_picture,
-      encoder->gop_picture + gop_length - 1, i);
+  //schro_engine_code_BBBP (encoder, i, 1);
+  if (frame->start_sequence_header) {
+    schro_encoder_pick_retire (frame, &retire);
 
-  if (i + gop_length >= encoder->frame_queue->n) {
-    if (encoder->end_of_stream) {
-      gop_length = encoder->frame_queue->n - i;
-    } else {
-      SCHRO_DEBUG("not enough pictures in queue");
-      return;
-    }
+    schro_engine_code_picture (frame, TRUE, retire, 0, -1, -1);
+    frame->picture_weight = encoder->magic_keyframe_weight;
+  } else {
+    schro_encoder_pick_retire (frame, &retire);
+    schro_encoder_pick_refs (frame, &ref0, &ref1);
+
+    schro_engine_code_picture (frame, TRUE, retire,
+        (ref1 == SCHRO_PICTURE_NUMBER_INVALID)?1:2, ref0, ref1);
+    frame->picture_weight = encoder->magic_inter_p_weight;
   }
-
-  for (j = 0; j < gop_length; j++) {
-    f = encoder->frame_queue->elements[i+j].data;
-
-    if (f->busy || !f->stages[SCHRO_ENCODER_FRAME_STAGE_ANALYSE].is_done) {
-      SCHRO_DEBUG("picture %d not ready", i + j);
-      return;
-    }
-
-    schro_engine_get_scene_change_score (encoder, i+j);
-
-    schro_dump (SCHRO_DUMP_SCENE_CHANGE, "%d %g %g\n",
-        f->frame_number, f->scene_change_score,
-        f->average_luma);
-
-    if (j>=1 && f->scene_change_score > encoder->magic_scene_change_threshold) {
-      /* probably a scene change.  terminate gop */
-      gop_length = j;
-    }
-  }
-
-  SCHRO_DEBUG("gop length %d", gop_length);
-
-  schro_engine_code_picture (frame, TRUE, encoder->last_ref, 0, -1, -1);
+  schro_encoder_expire_reference (encoder, frame->frame_number - 2);
   frame->presentation_frame = frame->frame_number;
-  frame->picture_weight = 1 + (gop_length - 1) * (1 - encoder->magic_inter_b_weight);
+  frame->picture_weight = 1;
   encoder->last_ref = frame->frame_number;
 
-  for (j = 1; j < gop_length; j++) {
-    f = encoder->frame_queue->elements[i+j].data;
-    schro_engine_code_picture (f, FALSE, -1, 1, frame->frame_number, -1);
-    f->presentation_frame = f->frame_number;
-    f->picture_weight = encoder->magic_inter_b_weight;
-  }
-
-  encoder->gop_picture += gop_length;
+  encoder->gop_picture += 1;
 }
 
 int
