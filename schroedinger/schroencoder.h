@@ -189,6 +189,7 @@ struct _SchroEncoderFrame {
   double scene_change_score;
   double average_luma;
 
+  int hard_limit_bits;
   int allocated_residual_bits;
   int allocated_mc_bits;
   double base_lambda;
