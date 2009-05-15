@@ -247,6 +247,7 @@ struct _SchroEncoder {
   schro_bool enable_psnr;
   schro_bool enable_ssim;
   schro_bool enable_md5;
+  schro_bool enable_roi;
 
   int ref_distance;
   int transform_depth;

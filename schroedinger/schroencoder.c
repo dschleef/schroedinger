@@ -2478,6 +2478,7 @@ schro_encoder_frame_set_quant_index (SchroEncoderFrame *frame, int component,
   int horiz_codeblocks;
   int vert_codeblocks;
   int i;
+  int j;
   
   position = schro_subband_get_position (index);
   horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
@@ -2489,9 +2490,24 @@ schro_encoder_frame_set_quant_index (SchroEncoderFrame *frame, int component,
   }
 
   codeblock_quants = frame->quant_indices[component][index];
-  for(i=0;i<horiz_codeblocks*vert_codeblocks;i++){
-    codeblock_quants[i] = quant_index;
+  for(j=0;j<vert_codeblocks;j++){
+    for(i=0;i<horiz_codeblocks;i++){
+      codeblock_quants[j*horiz_codeblocks + i] = quant_index;
+    }
   }
+
+  if (frame->encoder->enable_roi) {
+    /* primitive ROI stuff */
+    if (index > 0) {
+      for(j=vert_codeblocks-1;j<vert_codeblocks;j++){
+        for(i=0;i<horiz_codeblocks;i++){
+          codeblock_quants[j * horiz_codeblocks + i] = 10;
+        }
+      }
+    }
+  }
+
+  frame->quant_index[component][index] = quant_index;
 }
 
 static int
@@ -3145,6 +3161,7 @@ struct SchroEncoderSettings {
   BOOL(enable_global_motion, FALSE),
   INT (horiz_slices, 1, INT_MAX, 8),
   INT (vert_slices, 1, INT_MAX, 6),
+  BOOL(enable_roi, FALSE),
 
   DOUB(magic_dc_metric_offset, 0.0, 1000.0, 1.0),
   DOUB(magic_subband0_lambda_scale, 0.0, 1000.0, 10.0),
