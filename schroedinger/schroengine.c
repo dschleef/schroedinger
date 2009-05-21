@@ -776,6 +776,9 @@ schro_encoder_handle_gop_backref (SchroEncoder *encoder, int i)
   encoder->last_ref = frame->frame_number;
 
   encoder->gop_picture += 1;
+  if (frame->start_sequence_header) {
+    schro_encoder_expire_refs_before (encoder, frame->frame_number);
+  }
 }
 
 int
