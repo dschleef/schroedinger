@@ -190,23 +190,30 @@ schro_dequantise (int q, int quant_factor, int quant_offset)
 static int
 __schro_quantise (int value, int quant_factor, int quant_offset)
 {
-  unsigned int x;
+  int x;
+  int dead_zone = quant_offset;
+  int offset = quant_offset - quant_factor/2;
+  /*
+   * offset = quant_offset  always undershoots
+   * offset = quant_offset - quant_factor  always overshoots
+   * offset = quant_offset - quant_factor/2  gives an error that averages 0
+   */
 
   if (value == 0) return 0;
   if (value < 0) {
     x = (-value)<<2;
-    if (x < quant_factor) {
+    if (x < dead_zone) {
       x = 0;
     } else {
-      x /= quant_factor;
+      x = (x - offset) / quant_factor;
     }
     value = -x;
   } else {
     x = value<<2;
-    if (x < quant_factor) {
+    if (x < dead_zone) {
       x = 0;
     } else {
-      x /= quant_factor;
+      x = (x - offset) / quant_factor;
     }
     value = x;
   }
@@ -237,7 +244,7 @@ schro_quantise_s16_table (int16_t *dest, int16_t *src, int quant_index,
   int i;
   int16_t *table;
   
-  table = schro_tables_get_quantise_table(quant_index);
+  table = schro_tables_get_quantise_table(quant_index, is_intra);
 
   table += 32768;
 

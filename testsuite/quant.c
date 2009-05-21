@@ -1,7 +1,9 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <schroedinger/schro.h>
 
+#if 0
 static int
 dequantise (int q, int quant_factor, int quant_offset)
 {
@@ -32,6 +34,7 @@ quantise (int value, int quant_factor, int quant_offset)
   }
   return value;
 }
+#endif
 
 int
 main (int argc, char *argv[])
@@ -42,8 +45,8 @@ main (int argc, char *argv[])
   int q;
 
   for(i=-1000;i<1000;i++){
-    q = quantise(i,quant_factor,quant_offset);
-    printf("%d %d\n", i, dequantise(q,quant_factor,quant_offset));
+    q = schro_quantise(i,quant_factor,quant_offset);
+    printf("%d %d\n", i, schro_dequantise(q,quant_factor,quant_offset));
   }
 
   return 0;

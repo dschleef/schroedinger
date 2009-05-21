@@ -2371,7 +2371,7 @@ schro_encoder_encode_transform_data (SchroEncoderFrame *frame)
 
 static void
 schro_frame_data_quantise (SchroFrameData *quant_fd,
-    SchroFrameData *fd, int quant_index)
+    SchroFrameData *fd, int quant_index, schro_bool is_intra)
 {
   int j;
   int16_t *line;
@@ -2381,7 +2381,7 @@ schro_frame_data_quantise (SchroFrameData *quant_fd,
     line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
     quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
 
-    schro_quantise_s16_table (quant_line, line, quant_index, FALSE, fd->width);
+    schro_quantise_s16_table (quant_line, line, quant_index, is_intra, fd->width);
   }
 }
 
@@ -2561,7 +2561,8 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component,
         schro_frame_data_quantise_dc_predict (&quant_cb, &cb, quant_factor,
             quant_offset, x, y);
       } else {
-        schro_frame_data_quantise (&quant_cb, &cb, quant_index);
+        schro_frame_data_quantise (&quant_cb, &cb, quant_index,
+            (params->num_refs == 0));
         schro_frame_data_dequantise (&cb, &quant_cb, quant_index,
             (params->num_refs == 0));
       }
