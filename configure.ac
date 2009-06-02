@@ -57,14 +57,14 @@ AC_ARG_ENABLE(orc, AC_HELP_STRING([--enable-orc],
               [enable orc support (default=disabled)]))
 if test "x$enable_orc" = xyes
 then
-  ORC_VER="0.3.13"
-  PKG_CHECK_MODULES(ORC, orc-0.3 >= $ORC_VER, HAVE_ORC=yes, HAVE_ORC=no)
+  ORC_VER="0.4.0"
+  PKG_CHECK_MODULES(ORC, orc-0.4 >= $ORC_VER, HAVE_ORC=yes, HAVE_ORC=no)
 else
   HAVE_ORC=no
 fi
 if test "x${HAVE_ORC}" = xyes ; then
   AC_DEFINE(HAVE_ORC, 1, [Whether or not orc is enabled])
-  SCHRO_PKG_DEPS="$SCHRO_PKG_DEPS orc-0.3 >= $ORC_VER"
+  SCHRO_PKG_DEPS="$SCHRO_PKG_DEPS orc-0.4 >= $ORC_VER"
 fi
 AM_CONDITIONAL(HAVE_ORC, test "x$HAVE_ORC" = "xyes")
 
