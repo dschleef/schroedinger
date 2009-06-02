@@ -487,7 +487,7 @@ get_alloc (SchroEncoder *encoder, double requested_bits)
 
   alloc = must_use_bits + (encoder->buffer_level - must_use_bits) * y;
 
-  SCHRO_ERROR("request %g, level %d/%d, must use %d -> x %g y %g alloc %g",
+  SCHRO_INFO("request %g, level %d/%d, must use %d -> x %g y %g alloc %g",
       requested_bits,
       encoder->buffer_level, encoder->buffer_size,
       must_use_bits, x, y, alloc);
