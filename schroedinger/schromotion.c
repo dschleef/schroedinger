@@ -93,12 +93,11 @@ static int
 get_dc_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
 {
   SchroParams *params = motion->params;
-  SchroMotionVectorDC *mvdc;
+  SchroMotionVector *mv;
 
-  mvdc = (SchroMotionVectorDC *)
-    &motion->motion_vectors[j*params->x_num_blocks + i];
+  mv = &motion->motion_vectors[j*params->x_num_blocks + i];
 
-  return mvdc->dc[k] + 128;
+  return mv->u.dc.dc[k] + 128;
 }
 
 static int
@@ -113,8 +112,8 @@ get_ref1_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
   if (mv->using_global) {
     schro_motion_get_global_vector (motion, 0, x, y, &dx, &dy);
   } else {
-    dx = mv->dx[0];
-    dy = mv->dy[0];
+    dx = mv->u.vec.dx[0];
+    dy = mv->u.vec.dy[0];
   }
 
   value = (motion->ref1_weight + motion->ref2_weight) *
@@ -135,8 +134,8 @@ get_ref2_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
   if (mv->using_global) {
     schro_motion_get_global_vector (motion, 1, x, y, &dx, &dy);
   } else {
-    dx = mv->dx[1];
-    dy = mv->dy[1];
+    dx = mv->u.vec.dx[1];
+    dy = mv->u.vec.dy[1];
   }
 
   value = (motion->ref1_weight + motion->ref2_weight) *
@@ -158,10 +157,10 @@ get_biref_pixel (SchroMotion *motion, int i, int j, int k, int x, int y)
     schro_motion_get_global_vector (motion, 0, x, y, &dx0, &dy0);
     schro_motion_get_global_vector (motion, 1, x, y, &dx1, &dy1);
   } else {
-    dx0 = mv->dx[0];
-    dy0 = mv->dy[0];
-    dx1 = mv->dx[1];
-    dy1 = mv->dy[1];
+    dx0 = mv->u.vec.dx[0];
+    dy0 = mv->u.vec.dy[0];
+    dx1 = mv->u.vec.dx[1];
+    dy1 = mv->u.vec.dy[1];
   }
 
   value = motion->ref1_weight *
@@ -312,15 +311,14 @@ static void
 get_dc_block (SchroMotion *motion, int i, int j, int k, int x, int y)
 {
   SchroParams *params = motion->params;
-  SchroMotionVectorDC *mvdc;
+  SchroMotionVector *mv;
   int value;
   int ii, jj;
 
-  mvdc = (SchroMotionVectorDC *)
-    &motion->motion_vectors[j*params->x_num_blocks + i];
+  mv = &motion->motion_vectors[j*params->x_num_blocks + i];
 
   memcpy (&motion->block, &motion->alloc_block, sizeof(SchroFrameData));
-  value = mvdc->dc[k];
+  value = mv->u.dc.dc[k];
   for(jj=0;jj<motion->yblen;jj++) {
     uint8_t *data = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
     /* FIXME splat */
@@ -342,7 +340,7 @@ get_ref1_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   mv = &motion->motion_vectors[j*params->x_num_blocks + i];
   SCHRO_ASSERT (mv->using_global == FALSE);
 
-  get_block (motion, k, 0, i, j, mv->dx[0], mv->dy[0]);
+  get_block (motion, k, 0, i, j, mv->u.vec.dx[0], mv->u.vec.dy[0]);
 
   weight = motion->ref1_weight + motion->ref2_weight;
   shift = motion->ref_weight_precision;
@@ -375,7 +373,7 @@ get_ref2_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   mv = &motion->motion_vectors[j*params->x_num_blocks + i];
   SCHRO_ASSERT (mv->using_global == FALSE);
 
-  get_block (motion, k, 1, i, j, mv->dx[1], mv->dy[1]);
+  get_block (motion, k, 1, i, j, mv->u.vec.dx[1], mv->u.vec.dy[1]);
 
   weight = motion->ref1_weight + motion->ref2_weight;
   shift = motion->ref_weight_precision;
@@ -408,8 +406,8 @@ get_biref_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   mv = &motion->motion_vectors[j*params->x_num_blocks + i];
   SCHRO_ASSERT (mv->using_global == FALSE);
 
-  get_block (motion, k, 0, i, j, mv->dx[0], mv->dy[0]);
-  get_block (motion, k, 1, i, j, mv->dx[1], mv->dy[1]);
+  get_block (motion, k, 0, i, j, mv->u.vec.dx[0], mv->u.vec.dy[0]);
+  get_block (motion, k, 1, i, j, mv->u.vec.dx[1], mv->u.vec.dy[1]);
 
   weight0 = motion->ref1_weight;
   weight1 = motion->ref2_weight;
@@ -870,7 +868,7 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
 void
 schro_motion_dc_prediction (SchroMotion *motion, int x, int y, int *pred)
 {
-  SchroMotionVectorDC *mvdc;
+  SchroMotionVector *mv;
   int i;
 
   for(i=0;i<3;i++){
@@ -878,23 +876,23 @@ schro_motion_dc_prediction (SchroMotion *motion, int x, int y, int *pred)
     int n = 0;
 
     if (x>0) {
-      mvdc = SCHRO_MOTION_GET_DC_BLOCK(motion,x-1,y);
-      if (mvdc->pred_mode == 0) {
-        sum += mvdc->dc[i];
+      mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,y);
+      if (mv->pred_mode == 0) {
+        sum += mv->u.dc.dc[i];
         n++;
       }
     }
     if (y>0) {
-      mvdc = SCHRO_MOTION_GET_DC_BLOCK(motion,x,y-1);
-      if (mvdc->pred_mode == 0) {
-        sum += mvdc->dc[i];
+      mv = SCHRO_MOTION_GET_BLOCK(motion,x,y-1);
+      if (mv->pred_mode == 0) {
+        sum += mv->u.dc.dc[i];
         n++;
       }
     }
     if (x>0 && y>0) {
-      mvdc = SCHRO_MOTION_GET_DC_BLOCK(motion,x-1,y-1);
-      if (mvdc->pred_mode == 0) {
-        sum += mvdc->dc[i];
+      mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,y-1);
+      if (mv->pred_mode == 0) {
+        sum += mv->u.dc.dc[i];
         n++;
       }
     }
@@ -974,24 +972,24 @@ schro_motion_vector_prediction (SchroMotion *motion,
   if (x>0) {
     mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,y);
     if (mv->using_global == FALSE && (mv->pred_mode & mode)) {
-      vx[n] = mv->dx[mode-1];
-      vy[n] = mv->dy[mode-1];
+      vx[n] = mv->u.vec.dx[mode-1];
+      vy[n] = mv->u.vec.dy[mode-1];
       n++;
     }
   }
   if (y>0) {
     mv = SCHRO_MOTION_GET_BLOCK(motion,x,y-1);
     if (mv->using_global == FALSE && (mv->pred_mode & mode)) {
-      vx[n] = mv->dx[mode-1];
-      vy[n] = mv->dy[mode-1];
+      vx[n] = mv->u.vec.dx[mode-1];
+      vy[n] = mv->u.vec.dy[mode-1];
       n++;
     }
   }
   if (x>0 && y>0) {
     mv = SCHRO_MOTION_GET_BLOCK(motion,x-1,y-1);
     if (mv->using_global == FALSE && (mv->pred_mode & mode)) {
-      vx[n] = mv->dx[mode-1];
-      vy[n] = mv->dy[mode-1];
+      vx[n] = mv->u.vec.dx[mode-1];
+      vy[n] = mv->u.vec.dy[mode-1];
       n++;
     }
   }
@@ -1132,14 +1130,13 @@ schro_motion_verify (SchroMotion *motion)
       switch (mv->pred_mode) {
         case 0:
           {
-            SchroMotionVectorDC *mvdc = (SchroMotionVectorDC *)mv;
             int i;
 
             for(i=0;i<3;i++){
               /* FIXME 8bit */
-              if (mvdc->dc[i] < -128 || mvdc->dc[i] > 127) {
+              if (mv->u.dc.dc[i] < -128 || mv->u.dc.dc[i] > 127) {
                 SCHRO_ERROR("mv(%d,%d) has bad DC value [%d] %d", x, y,
-                    i, mvdc->dc[i]);
+                    i, mv->u.dc.dc[i]);
                 return 0;
               }
             }

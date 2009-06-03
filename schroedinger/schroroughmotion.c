@@ -113,8 +113,8 @@ schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
 
       mv = motion_field_get (mf, i, j);
       if (scan.scan_width <= 0 || scan.scan_height <= 0) {
-        mv->dx[0] = 0 << shift;
-        mv->dy[0] = 0 << shift;
+        mv->u.vec.dx[0] = 0 << shift;
+        mv->u.vec.dy[0] = 0 << shift;
         mv->metric = SCHRO_METRIC_INVALID;
         continue;
       }
@@ -123,8 +123,8 @@ schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
        * scan smaller block sizes */
       if (scan.x + scan.block_width >= scan.ref_frame->width ||
           scan.y + scan.block_height >= scan.ref_frame->height) {
-        mv->dx[0] = 0 << shift;
-        mv->dy[0] = 0 << shift;
+        mv->u.vec.dx[0] = 0 << shift;
+        mv->u.vec.dy[0] = 0 << shift;
         mv->metric = SCHRO_METRIC_INVALID;
         continue;
       }
@@ -135,8 +135,8 @@ schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
       dx <<= shift;
       dy <<= shift;
 
-      mv->dx[ref] = dx;
-      mv->dy[ref] = dy;
+      mv->u.vec.dx[ref] = dx;
+      mv->u.vec.dy[ref] = dy;
     }
   }
 
@@ -241,8 +241,8 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
         int width, height;
         int x,y;
 
-        dx = hint_mv[m]->dx[ref];
-        dy = hint_mv[m]->dy[ref];
+        dx = hint_mv[m]->u.vec.dx[ref];
+        dy = hint_mv[m]->u.vec.dy[ref];
 
 
         x = (i*params->xbsep_luma + dx) >> shift;
@@ -270,8 +270,8 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
         }
       }
 
-      dx = hint_mv[min_m]->dx[ref] >> shift;
-      dy = hint_mv[min_m]->dy[ref] >> shift;
+      dx = hint_mv[min_m]->u.vec.dx[ref] >> shift;
+      dy = hint_mv[min_m]->u.vec.dy[ref] >> shift;
 
       scan.x = (i>>shift) * params->xbsep_luma;
       scan.y = (j>>shift) * params->ybsep_luma;
@@ -281,8 +281,8 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
 
       mv = motion_field_get (mf, i, j);
       if (scan.scan_width <= 0 || scan.scan_height <= 0) {
-        mv->dx[ref] = 0;
-        mv->dy[ref] = 0;
+        mv->u.vec.dx[ref] = 0;
+        mv->u.vec.dy[ref] = 0;
         mv->metric = SCHRO_METRIC_INVALID;
         continue;
       }
@@ -292,8 +292,8 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
       dx <<= shift;
       dy <<= shift;
 
-      mv->dx[ref] = dx;
-      mv->dy[ref] = dy;
+      mv->u.vec.dx[ref] = dx;
+      mv->u.vec.dy[ref] = dy;
     }
   }
 

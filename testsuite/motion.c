@@ -67,8 +67,8 @@ main (int argc, char *argv[])
   printf("sizeof(SchroMotionVector) = %lu\n",(unsigned long) sizeof(SchroMotionVector));
   printf("num blocks %d x %d\n", params.x_num_blocks, params.y_num_blocks);
   for(i=0;i<params.x_num_blocks*params.y_num_blocks;i++){
-    motion_vectors[i].dx[0] = 0;
-    motion_vectors[i].dy[0] = 0;
+    motion_vectors[i].u.vec.dx[0] = 0;
+    motion_vectors[i].u.vec.dy[0] = 0;
     motion_vectors[i].pred_mode = 1;
     motion_vectors[i].split = 2;
   }

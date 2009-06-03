@@ -1931,8 +1931,8 @@ schro_encoder_encode_vector_data (SchroEncoderFrame *frame, int ref, int xy)
           if ((mv->pred_mode&(1<<ref)) && !mv->using_global) {
             schro_motion_vector_prediction (frame->motion,
                 i+k, j+l, &pred_x, &pred_y, 1<<ref);
-            x = mv->dx[ref];
-            y = mv->dy[ref];
+            x = mv->u.vec.dx[ref];
+            y = mv->u.vec.dy[ref];
 
             if (!params->is_noarith) {
               if (xy == 0) {
@@ -1999,7 +1999,6 @@ schro_encoder_encode_dc_data (SchroEncoderFrame *frame, int comp)
 
           if (mv->pred_mode == 0) {
             int pred[3];
-            SchroMotionVectorDC *mvdc = (SchroMotionVectorDC *)mv;
 
             schro_motion_dc_prediction (frame->motion, i+k, j+l, pred);
 
@@ -2009,25 +2008,25 @@ schro_encoder_encode_dc_data (SchroEncoderFrame *frame, int comp)
                   _schro_arith_encode_sint (arith,
                       SCHRO_CTX_LUMA_DC_CONT_BIN1, SCHRO_CTX_LUMA_DC_VALUE,
                       SCHRO_CTX_LUMA_DC_SIGN,
-                      mvdc->dc[0] - pred[0]);
+                      mv->u.dc.dc[0] - pred[0]);
                   break;
                 case 1:
                   _schro_arith_encode_sint (arith,
                       SCHRO_CTX_CHROMA1_DC_CONT_BIN1, SCHRO_CTX_CHROMA1_DC_VALUE,
                       SCHRO_CTX_CHROMA1_DC_SIGN,
-                      mvdc->dc[1] - pred[1]);
+                      mv->u.dc.dc[1] - pred[1]);
                   break;
                 case 2:
                   _schro_arith_encode_sint (arith,
                       SCHRO_CTX_CHROMA2_DC_CONT_BIN1, SCHRO_CTX_CHROMA2_DC_VALUE,
                       SCHRO_CTX_CHROMA2_DC_SIGN,
-                      mvdc->dc[2] - pred[2]);
+                      mv->u.dc.dc[2] - pred[2]);
                   break;
                 default:
                   SCHRO_ASSERT(0);
               }
             } else {
-              schro_pack_encode_sint (pack, mvdc->dc[comp] - pred[comp]);
+              schro_pack_encode_sint (pack, mv->u.dc.dc[comp] - pred[comp]);
             }
           }
         }

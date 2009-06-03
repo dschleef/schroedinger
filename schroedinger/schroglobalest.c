@@ -48,8 +48,8 @@ schro_motion_global_metric (SchroMotionField *field, SchroFrame *frame,
     for(i=0;i<field->x_num_blocks;i++){
       mv = field->motion_vectors + j*field->x_num_blocks + i;
 
-      x = i*8 + mv->dx[ref];
-      y = j*8 + mv->dy[ref];
+      x = i*8 + mv->u.vec.dx[ref];
+      y = j*8 + mv->u.vec.dy[ref];
 #if 0
       mv->metric = schro_metric_absdiff_u8 (
             frame->components[0].data + x + y*frame->components[0].stride,
@@ -111,8 +111,8 @@ schro_motion_field_global_estimation (SchroMotionField *mf,
       for(i=0;i<mf->x_num_blocks;i++) {
         mv = mf->motion_vectors + j*mf->x_num_blocks + i;
         if (mv->using_global) {
-          m_f += mv->dx[ref];
-          m_g += mv->dy[ref];
+          m_f += mv->u.vec.dx[ref];
+          m_g += mv->u.vec.dy[ref];
           m_x += i*xbsep;
           m_y += j*ybsep;
           n++;
@@ -137,10 +137,10 @@ schro_motion_field_global_estimation (SchroMotionField *mf,
       for(i=0;i<mf->x_num_blocks;i++) {
         mv = mf->motion_vectors + j*mf->x_num_blocks + i;
         if (mv->using_global) {
-          m_fx += (mv->dx[ref] - pan_x) * (i*xbsep - ave_x);
-          m_fy += (mv->dx[ref] - pan_x) * (j*ybsep - ave_y);
-          m_gx += (mv->dy[ref] - pan_y) * (i*xbsep - ave_x);
-          m_gy += (mv->dy[ref] - pan_y) * (j*ybsep - ave_y);
+          m_fx += (mv->u.vec.dx[ref] - pan_x) * (i*xbsep - ave_x);
+          m_fy += (mv->u.vec.dx[ref] - pan_x) * (j*ybsep - ave_y);
+          m_gx += (mv->u.vec.dy[ref] - pan_y) * (i*xbsep - ave_x);
+          m_gy += (mv->u.vec.dy[ref] - pan_y) * (j*ybsep - ave_y);
           m_xx += (i*xbsep - ave_x) * (i*xbsep - ave_x);
           m_yy += (j*ybsep - ave_y) * (j*ybsep - ave_y);
           n++;
@@ -164,8 +164,8 @@ schro_motion_field_global_estimation (SchroMotionField *mf,
         mv = mf->motion_vectors + j*mf->x_num_blocks + i;
         if (mv->using_global) {
           double dx, dy;
-          dx = mv->dx[ref] - (pan_x + a00 * i + a01 * j);
-          dy = mv->dy[ref] - (pan_y + a10 * i + a11 * j);
+          dx = mv->u.vec.dx[ref] - (pan_x + a00 * i + a01 * j);
+          dy = mv->u.vec.dy[ref] - (pan_y + a10 * i + a11 * j);
           sum2 += dx * dx + dy * dy;
         }
       }
@@ -181,8 +181,8 @@ schro_motion_field_global_estimation (SchroMotionField *mf,
       for(i=0;i<mf->x_num_blocks;i++) {
         double dx, dy;
         mv = mf->motion_vectors + j*mf->x_num_blocks + i;
-        dx = mv->dx[ref] - (pan_x + a00 * i + a01 * j);
-        dy = mv->dy[ref] - (pan_y + a10 * i + a11 * j);
+        dx = mv->u.vec.dx[ref] - (pan_x + a00 * i + a01 * j);
+        dy = mv->u.vec.dy[ref] - (pan_y + a10 * i + a11 * j);
         mv->using_global = (dx * dx + dy * dy < stddev2*16);
         n += mv->using_global;
       }
@@ -211,10 +211,10 @@ schro_motion_field_global_estimation (SchroMotionField *mf,
     for(i=0;i<mf->x_num_blocks;i++) {
       mv = mf->motion_vectors + j*mf->x_num_blocks + i;
       mv->using_global = 1;
-      //mv->dx[ref] = gm->b0 + ((gm->a00 * (i*8) + gm->a01 * (j*8))>>gm->a_exp) - i*8;
-      //mv->dy[ref] = gm->b1 + ((gm->a10 * (i*8) + gm->a11 * (j*8))>>gm->a_exp) - j*8;
-      mv->dx[ref] = 0;
-      mv->dy[ref] = 0;
+      //mv->u.vec.dx[ref] = gm->b0 + ((gm->a00 * (i*8) + gm->a01 * (j*8))>>gm->a_exp) - i*8;
+      //mv->u.vec.dy[ref] = gm->b1 + ((gm->a10 * (i*8) + gm->a11 * (j*8))>>gm->a_exp) - j*8;
+      mv->u.vec.dx[ref] = 0;
+      mv->u.vec.dy[ref] = 0;
     }
   }
 }
@@ -229,8 +229,8 @@ schro_motionest_superblock_global (SchroMotionEst *me, int ref,
   mv->split = 0;
   mv->pred_mode = 1<<ref;
   mv->using_global = 1;
-  mv->dx[ref] = 0;
-  mv->dy[ref] = 0;
+  mv->u.vec.dx[ref] = 0;
+  mv->u.vec.dy[ref] = 0;
   //block->error = schro_motionest_superblock_get_metric (me, block, i, j);
   block->error = (ref==1) ? -1000 : 1000;
   block->entropy = 0;

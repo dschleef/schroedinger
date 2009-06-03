@@ -120,6 +120,7 @@ print_subband_quants (double *a, int filter, int n_levels)
   double b[20];
   int i;
 
+  c[0] = 0;
   for(i=0;i<n_levels+1;i++){
     c[i] = 1/sqrt(a[i]);
     //printf("%d %g\n", i, c[i]);

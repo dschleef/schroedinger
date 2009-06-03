@@ -2515,29 +2515,28 @@ schro_decoder_decode_prediction_unit(SchroPicture *picture, SchroArith **arith,
 
   if (mv->pred_mode == 0) {
     int pred[3];
-    SchroMotionVectorDC *mvdc = (SchroMotionVectorDC *)mv;
 
     schro_motion_dc_prediction (motion, x, y, pred);
 
     if (!params->is_noarith) {
-      mvdc->dc[0] = pred[0] + _schro_arith_decode_sint (
+      mv->u.dc.dc[0] = pred[0] + _schro_arith_decode_sint (
           arith[SCHRO_DECODER_ARITH_DC_0],
           SCHRO_CTX_LUMA_DC_CONT_BIN1, SCHRO_CTX_LUMA_DC_VALUE,
           SCHRO_CTX_LUMA_DC_SIGN);
-      mvdc->dc[1] = pred[1] + _schro_arith_decode_sint (
+      mv->u.dc.dc[1] = pred[1] + _schro_arith_decode_sint (
           arith[SCHRO_DECODER_ARITH_DC_1],
           SCHRO_CTX_CHROMA1_DC_CONT_BIN1, SCHRO_CTX_CHROMA1_DC_VALUE,
           SCHRO_CTX_CHROMA1_DC_SIGN);
-      mvdc->dc[2] = pred[2] + _schro_arith_decode_sint (
+      mv->u.dc.dc[2] = pred[2] + _schro_arith_decode_sint (
           arith[SCHRO_DECODER_ARITH_DC_2],
           SCHRO_CTX_CHROMA2_DC_CONT_BIN1, SCHRO_CTX_CHROMA2_DC_VALUE,
           SCHRO_CTX_CHROMA2_DC_SIGN);
     } else {
-      mvdc->dc[0] = pred[0] +
+      mv->u.dc.dc[0] = pred[0] +
         schro_unpack_decode_sint (unpack + SCHRO_DECODER_ARITH_DC_0);
-      mvdc->dc[1] = pred[1] +
+      mv->u.dc.dc[1] = pred[1] +
         schro_unpack_decode_sint (unpack + SCHRO_DECODER_ARITH_DC_1);
-      mvdc->dc[2] = pred[2] +
+      mv->u.dc.dc[2] = pred[2] +
         schro_unpack_decode_sint (unpack + SCHRO_DECODER_ARITH_DC_2);
     }
   } else {
@@ -2562,18 +2561,18 @@ schro_decoder_decode_prediction_unit(SchroPicture *picture, SchroArith **arith,
             &pred_x, &pred_y, 1);
 
         if (!params->is_noarith) {
-          mv->dx[0] = pred_x + _schro_arith_decode_sint (
+          mv->u.vec.dx[0] = pred_x + _schro_arith_decode_sint (
                 arith[SCHRO_DECODER_ARITH_VECTOR_REF1_X],
                 SCHRO_CTX_MV_REF1_H_CONT_BIN1, SCHRO_CTX_MV_REF1_H_VALUE,
                 SCHRO_CTX_MV_REF1_H_SIGN);
-          mv->dy[0] = pred_y + _schro_arith_decode_sint (
+          mv->u.vec.dy[0] = pred_y + _schro_arith_decode_sint (
                 arith[SCHRO_DECODER_ARITH_VECTOR_REF1_Y],
                 SCHRO_CTX_MV_REF1_V_CONT_BIN1, SCHRO_CTX_MV_REF1_V_VALUE,
                 SCHRO_CTX_MV_REF1_V_SIGN);
         } else {
-          mv->dx[0] = pred_x + schro_unpack_decode_sint (
+          mv->u.vec.dx[0] = pred_x + schro_unpack_decode_sint (
                 unpack + SCHRO_DECODER_ARITH_VECTOR_REF1_X);
-          mv->dy[0] = pred_y + schro_unpack_decode_sint (
+          mv->u.vec.dy[0] = pred_y + schro_unpack_decode_sint (
                 unpack + SCHRO_DECODER_ARITH_VECTOR_REF1_Y);
         }
       }
@@ -2582,26 +2581,26 @@ schro_decoder_decode_prediction_unit(SchroPicture *picture, SchroArith **arith,
             &pred_x, &pred_y, 2);
 
         if (!params->is_noarith) {
-          mv->dx[1] = pred_x + _schro_arith_decode_sint (
+          mv->u.vec.dx[1] = pred_x + _schro_arith_decode_sint (
                 arith[SCHRO_DECODER_ARITH_VECTOR_REF2_X],
                 SCHRO_CTX_MV_REF2_H_CONT_BIN1, SCHRO_CTX_MV_REF2_H_VALUE,
                 SCHRO_CTX_MV_REF2_H_SIGN);
-          mv->dy[1] = pred_y + _schro_arith_decode_sint (
+          mv->u.vec.dy[1] = pred_y + _schro_arith_decode_sint (
                 arith[SCHRO_DECODER_ARITH_VECTOR_REF2_Y],
                 SCHRO_CTX_MV_REF2_V_CONT_BIN1, SCHRO_CTX_MV_REF2_V_VALUE,
                 SCHRO_CTX_MV_REF2_V_SIGN);
         } else {
-          mv->dx[1] = pred_x + schro_unpack_decode_sint (
+          mv->u.vec.dx[1] = pred_x + schro_unpack_decode_sint (
                 unpack + SCHRO_DECODER_ARITH_VECTOR_REF2_X);
-          mv->dy[1] = pred_y + schro_unpack_decode_sint (
+          mv->u.vec.dy[1] = pred_y + schro_unpack_decode_sint (
                 unpack + SCHRO_DECODER_ARITH_VECTOR_REF2_Y);
         }
       }
     } else {
-      mv->dx[0] = 0;
-      mv->dy[0] = 0;
-      mv->dx[1] = 0;
-      mv->dy[1] = 0;
+      mv->u.vec.dx[0] = 0;
+      mv->u.vec.dy[0] = 0;
+      mv->u.vec.dx[1] = 0;
+      mv->u.vec.dy[1] = 0;
     }
   }
 }

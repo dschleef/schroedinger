@@ -511,8 +511,8 @@ out:
   mv->split = 0;
   mv->pred_mode = 1<<ref;
   mv->using_global = 0;
-  mv->dx[ref] = dx;
-  mv->dy[ref] = dy;
+  mv->u.vec.dx[ref] = dx;
+  mv->u.vec.dy[ref] = dy;
   block->error = schro_motionest_superblock_get_metric (me, block, i, j);
   block->entropy = 0;
   schro_block_fixup (block);
