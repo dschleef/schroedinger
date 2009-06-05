@@ -2629,12 +2629,8 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
   } else {
     have_zero_flags = FALSE;
   }
-  if (horiz_codeblocks > 1 || vert_codeblocks > 1) {
-    if (params->codeblock_mode_index == 1) {
-      have_quant_offset = TRUE;
-    } else {
-      have_quant_offset = FALSE;
-    }
+  if (params->codeblock_mode_index == 1) {
+    have_quant_offset = TRUE;
   } else {
     have_quant_offset = FALSE;
   }

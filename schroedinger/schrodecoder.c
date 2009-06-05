@@ -3095,12 +3095,8 @@ schro_decoder_setup_codeblocks (SchroPicture *picture,
   } else {
     ctx->have_zero_flags = FALSE;
   }
-  if (ctx->horiz_codeblocks > 1 || ctx->vert_codeblocks > 1) {
-    if (params->codeblock_mode_index == 1) {
-      ctx->have_quant_offset = TRUE;
-    } else {
-      ctx->have_quant_offset = FALSE;
-    }
+  if (params->codeblock_mode_index == 1) {
+    ctx->have_quant_offset = TRUE;
   } else {
     ctx->have_quant_offset = FALSE;
   }
