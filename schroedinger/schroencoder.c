@@ -69,9 +69,6 @@ schro_encoder_new (void)
   schro_video_format_set_std_video_format (&encoder->video_format,
       SCHRO_VIDEO_FORMAT_CUSTOM);
 
-  encoder->frame_queue = schro_queue_new (encoder->queue_depth,
-      (SchroQueueFreeFunc)schro_encoder_frame_unref);
-
   encoder->inserted_buffers =
     schro_list_new_full ((SchroListFreeFunc)schro_buffer_unref, NULL);
 
@@ -137,6 +134,10 @@ schro_encoder_quality_get_lambda (double quality)
 void
 schro_encoder_start (SchroEncoder *encoder)
 {
+  encoder->frame_queue = schro_queue_new (encoder->queue_depth,
+      (SchroQueueFreeFunc)schro_encoder_frame_unref);
+  SCHRO_ERROR("queue depth %d", encoder->queue_depth);
+
   encoder->engine_init = 1;
   encoder->force_sequence_header = TRUE;
 
