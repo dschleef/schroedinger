@@ -15,7 +15,7 @@
 SchroMutex *orc_mutex;
 
 void
-orc_add2_rshift_add_s16_22 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
+orc_add2_rshift_add_s16_22 (int16_t *d, int16_t *s2, int16_t *s3,
     int n)
 {
 #if 0
@@ -74,7 +74,6 @@ orc_add2_rshift_add_s16_22 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
   }
   schro_mutex_unlock (orc_mutex);
 
-  SCHRO_ASSERT(d == s1);
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
   orc_executor_set_array (ex, ORC_VAR_S1, s2);
@@ -85,7 +84,7 @@ orc_add2_rshift_add_s16_22 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
 }
 
 void
-orc_add2_rshift_sub_s16_22 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
+orc_add2_rshift_sub_s16_22 (int16_t *d, int16_t *s2, int16_t *s3,
     int n)
 {
 #if 0
@@ -144,7 +143,6 @@ orc_add2_rshift_sub_s16_22 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
   }
   schro_mutex_unlock (orc_mutex);
 
-  SCHRO_ASSERT(d == s1);
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
   orc_executor_set_array (ex, ORC_VAR_S1, s2);
@@ -155,7 +153,7 @@ orc_add2_rshift_sub_s16_22 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
 }
 
 void
-orc_add2_rshift_add_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
+orc_add2_rshift_add_s16_11 (int16_t *d, int16_t *s2, int16_t *s3,
     int n)
 {
 #if 0
@@ -205,7 +203,6 @@ orc_add2_rshift_add_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
   }
   schro_mutex_unlock (orc_mutex);
 
-  SCHRO_ASSERT(d == s1);
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
   orc_executor_set_array (ex, ORC_VAR_S1, s2);
@@ -216,7 +213,7 @@ orc_add2_rshift_add_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
 }
 
 void
-orc_add2_rshift_sub_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
+orc_add2_rshift_sub_s16_11 (int16_t *d, int16_t *s2, int16_t *s3,
     int n)
 {
 #if 0
@@ -266,7 +263,6 @@ orc_add2_rshift_sub_s16_11 (int16_t *d, int16_t *s1, int16_t *s2, int16_t *s3,
   }
   schro_mutex_unlock (orc_mutex);
 
-  SCHRO_ASSERT(d == s1);
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
   orc_executor_set_array (ex, ORC_VAR_S1, s2);
@@ -754,9 +750,9 @@ orc_mas4_across_sub_s16_1991_ip (int16_t *d1, int16_t *s2, int stride, int shift
 
 
 void
-orc_mas4_add_s16_1991 (int16_t *d1, int16_t *s1, int16_t *s2, int shift, int n)
+orc_mas4_add_s16_1991 (int16_t *d1, int16_t *s2, int shift, int n)
 {
-#if 1
+#if 0
   int i;
   int x;
 
@@ -821,7 +817,6 @@ orc_mas4_add_s16_1991 (int16_t *d1, int16_t *s1, int16_t *s2, int shift, int n)
   }
   schro_mutex_unlock (orc_mutex);
 
-  SCHRO_ASSERT(d1 == s1);
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
   orc_executor_set_array (ex, ORC_VAR_S1, s2+0);
@@ -836,7 +831,7 @@ orc_mas4_add_s16_1991 (int16_t *d1, int16_t *s1, int16_t *s2, int shift, int n)
 }
 
 void
-orc_mas4_sub_s16_1991 (int16_t *d1, int16_t *s1, int16_t *s2, int shift, int n)
+orc_mas4_sub_s16_1991 (int16_t *d1, int16_t *s2, int shift, int n)
 {
 #if 0
   int i;
@@ -903,7 +898,6 @@ orc_mas4_sub_s16_1991 (int16_t *d1, int16_t *s1, int16_t *s2, int shift, int n)
   }
   schro_mutex_unlock (orc_mutex);
 
-  SCHRO_ASSERT(d1 == s1);
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
   orc_executor_set_array (ex, ORC_VAR_S1, s2+0);
@@ -1098,7 +1092,7 @@ orc_subtract_s16_u8 (int16_t *d, int16_t *src1, uint8_t *src2, int n)
 }
 
 void
-orc_multiply_and_add_s16_u8 (int16_t *d, int16_t *src1, int16_t *src2,
+orc_multiply_and_add_s16_u8 (int16_t *d, int16_t *src2,
     uint8_t *src3, int n)
 {
   static OrcProgram *p = NULL;
@@ -1122,7 +1116,6 @@ orc_multiply_and_add_s16_u8 (int16_t *d, int16_t *src1, int16_t *src2,
   }
   schro_mutex_unlock (orc_mutex);
 
-  SCHRO_ASSERT(d == src1);
   orc_executor_set_program (ex, p);
   orc_executor_set_n (ex, n);
   orc_executor_set_array (ex, ORC_VAR_S1, src2);

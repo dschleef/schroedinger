@@ -566,7 +566,6 @@ schro_motion_block_accumulate (SchroMotion *motion, SchroFrameData *comp,
 #ifdef HAVE_ORC
         orc_multiply_and_add_s16_u8 (
             SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y + j),
-            SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y + j),
             SCHRO_FRAME_DATA_GET_LINE (&motion->obmc_weight, j),
             SCHRO_FRAME_DATA_GET_LINE (&motion->block, j),
             motion->xblen);
