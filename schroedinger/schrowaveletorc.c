@@ -27,7 +27,7 @@ schro_split_ext_desl93 (int16_t *hi, int16_t *lo, int n)
   hi[n] = hi[n-1];
   hi[n+1] = hi[n-1];
 
-  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, sizeof(int16_t), 4, n);
+  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, hi, hi + 1, hi + 2, 1<<3, 4, n);
 
   lo[-1] = lo[0];
 
@@ -55,13 +55,13 @@ schro_split_ext_135 (int16_t *hi, int16_t *lo, int n)
   hi[n] = hi[n-1];
   hi[n+1] = hi[n-1];
 
-  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, sizeof(int16_t), 4, n);
+  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, hi, hi + 1, hi + 2, 1<<3, 4, n);
 
   lo[-1] = lo[0];
   lo[-2] = lo[0];
   lo[n] = lo[n-1];
 
-  orc_mas4_across_add_s16_1991_ip (hi, lo - 2, sizeof(int16_t), 5, n);
+  orc_mas4_across_add_s16_1991_ip (hi, lo - 2, lo - 1, lo, lo + 1, 1<<4, 5, n);
 }
 
 void
@@ -112,22 +112,22 @@ schro_split_ext_daub97 (int16_t *hi, int16_t *lo, int n)
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
 
-  orc_mas2_sub_s16_ip (lo, hi, 6497, 2048, 12, n);
+  orc_mas2_sub_s16_ip (lo, hi, hi + 1, 6497, 2048, 12, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n-1];
 
-  orc_mas2_sub_s16_ip (hi, lo - 1, 217, 2048, 12, n);
+  orc_mas2_sub_s16_ip (hi, lo - 1, lo, 217, 2048, 12, n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
 
-  orc_mas2_add_s16_ip (lo, hi, 3616, 2048, 12, n);
+  orc_mas2_add_s16_ip (lo, hi, hi + 1, 3616, 2048, 12, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n-1];
 
-  orc_mas2_add_s16_ip (hi, lo - 1, 1817, 2048, 12, n);
+  orc_mas2_add_s16_ip (hi, lo - 1, lo, 1817, 2048, 12, n);
 
 }
 
@@ -146,7 +146,7 @@ schro_synth_ext_desl93 (int16_t *hi, int16_t *lo, int n)
   hi[n] = hi[n-1];
   hi[n+1] = hi[n-1];
 
-  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, sizeof(int16_t), 4, n);
+  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, hi, hi + 1, hi + 2, 1<<3, 4, n);
 }
 
 void
@@ -169,12 +169,12 @@ schro_synth_ext_135 (int16_t *hi, int16_t *lo, int n)
   lo[-1] = lo[0];
   lo[-2] = lo[0];
   lo[n] = lo[n-1];
-  orc_mas4_across_sub_s16_1991_ip (hi, lo - 2, sizeof(int16_t), 5, n);
+  orc_mas4_across_sub_s16_1991_ip (hi, lo - 2, lo - 1, lo, lo + 1, 1<<4, 5, n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
   hi[n+1] = hi[n-1];
-  orc_mas4_across_add_s16_1991_ip (lo, hi-1, sizeof(int16_t), 4, n);
+  orc_mas4_across_add_s16_1991_ip (lo, hi-1, hi, hi + 1, hi + 2, 1<<3, 4, n);
 }
 
 void
@@ -225,22 +225,22 @@ schro_synth_ext_daub97 (int16_t *hi, int16_t *lo, int n)
   lo[-1] = lo[0];
   lo[n] = lo[n-1];
 
-  orc_mas2_sub_s16_ip (hi, lo - 1, 1817, 2048, 12, n);
+  orc_mas2_sub_s16_ip (hi, lo - 1, lo, 1817, 2048, 12, n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
 
-  orc_mas2_sub_s16_ip (lo, hi, 3616, 2048, 12, n);
+  orc_mas2_sub_s16_ip (lo, hi, hi + 1, 3616, 2048, 12, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n-1];
 
-  orc_mas2_add_s16_ip (hi, lo - 1, 217, 2048, 12, n);
+  orc_mas2_add_s16_ip (hi, lo - 1, lo, 217, 2048, 12, n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n-1];
 
-  orc_mas2_add_s16_ip (lo, hi, 6497, 2048, 12, n);
+  orc_mas2_add_s16_ip (lo, hi, hi + 1, 6497, 2048, 12, n);
 }
 
 
@@ -290,7 +290,11 @@ void schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
         //static const int16_t stage1_weights[] = { 1, -9, -9, 1 };
         orc_mas4_across_sub_s16_1991_ip (
             OFFSET(data,(i1+1)*stride),
-            OFFSET(data,(i1-2)*stride), stride * 2, 4, width);
+            OFFSET(data,(i1-2)*stride),
+            OFFSET(data,(i1-0)*stride),
+            OFFSET(data,(i1+2)*stride),
+            OFFSET(data,(i1+4)*stride),
+            1<<3, 4, width);
       }
     }
     if ((i2&1) == 0 && i2>=0 && i2 < height) {
@@ -394,7 +398,9 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
       } else {
         //static const int16_t stage1_weights[] = { 1, -9, -9, 1 };
         orc_mas4_across_sub_s16_1991_ip (
-            ROW(i1+1), ROW(i1-2), stride * 2, 4, width);
+            ROW(i1+1),
+            ROW(i1-2), ROW(i1+0), ROW(i1+2), ROW(i1+4),
+            1<<3, 4, width);
       }
     }
     if ((i2&1) == 0 && i2>=0 && i2 < height) {
@@ -417,7 +423,9 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
       } else {
         //static const int16_t stage2_weights[] = { -1, 9, 9, -1 };
         orc_mas4_across_add_s16_1991_ip (
-            ROW(i2), ROW(i2-3), stride * 2, 5, width);
+            ROW(i2),
+            ROW(i2-3), ROW(i2-1), ROW(i2+1), ROW(i2+3),
+            1<<4, 5, width);
       }
     }
 #undef ROW
@@ -700,7 +708,11 @@ void schro_iiwt_desl_9_3 (int16_t *data, int stride, int width, int height,
         //static const int16_t stage1_weights[] = { -1, 9, 9, -1 };
         orc_mas4_across_add_s16_1991_ip (
             OFFSET(data,(i1+1)*stride),
-            OFFSET(data,(i1-2)*stride), stride * 2, 4, width);
+            OFFSET(data,(i1-2)*stride),
+            OFFSET(data,(i1+0)*stride),
+            OFFSET(data,(i1+2)*stride),
+            OFFSET(data,(i1+4)*stride),
+            1<<3, 4, width);
       }
     }
     if (i >=0 && i < height) {

@@ -157,3 +157,9 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-version-info $(SCHRO_LIBVERSION) \
 	-export-symbols-regex '^schro_'
 
+orc:
+	orcc schro.orc
+	cp out.c schroorc.c
+	cp out.h schroorc.h
+	cp test_out.c ../testsuite/orc_test.c
+

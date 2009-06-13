@@ -23,6 +23,10 @@ noinst_PROGRAMS = arith arith_encode \
 	 downsample taps ramp \
 	 colorspace filter_coeff utils extension
 
+if HAVE_ORC
+noinst_PROGRAMS += orc_test
+endif
+
 if ENABLE_ENCODER
 noinst_PROGRAMS += encode ssim wavelet_gain \
 	wavelet_gain_curve perceptual_weight perceptual_curves \
@@ -139,6 +143,9 @@ perceptual_weight_SOURCES = perceptual_weight.c
 #perceptual_curves_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 #perceptual_curves_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 perceptual_curves_SOURCES = perceptual_curves.c
+
+orc_test_CFLAGS = $(ORC_CFLAGS)
+orc_test_LDADD = $(ORC_LIBS) -lorc-test-0.4
 
 
 zzuf_test:
