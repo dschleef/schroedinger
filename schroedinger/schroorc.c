@@ -216,6 +216,44 @@ orc_add_const_rshift_s16_11 (int16_t *d1, int16_t *s1, int n)
 }
 
 
+/* orc_add_const_rshift_s16 */
+void
+orc_add_const_rshift_s16 (int16_t *d1, int p1, int p2, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_add_const_rshift_s16");
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_parameter (p, 2, "p1");
+    orc_program_add_parameter (p, 2, "p2");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append (p, "addw", ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_P1);
+    orc_program_append (p, "shrsw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_P2);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_param (ex, ORC_VAR_P1, p1);
+  orc_executor_set_param (ex, ORC_VAR_P2, p2);
+
+  orc_executor_run (ex);
+}
+
+
 /* orc_add_s16 */
 void
 orc_add_s16 (int16_t *d1, int16_t *s1, int16_t *s2, int n)
@@ -784,6 +822,80 @@ orc_convert_u8_s16 (uint8_t *d1, int16_t *s1, int n)
 }
 
 
+/* orc_offsetconvert_u8_s16 */
+void
+orc_offsetconvert_u8_s16 (uint8_t *d1, int16_t *s1, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_offsetconvert_u8_s16");
+    orc_program_add_destination (p, 1, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_constant (p, 2, 128, "c1");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append (p, "addw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_C1);
+    orc_program_append (p, "convsuswb", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_array (ex, ORC_VAR_S1, s1);
+
+  orc_executor_run (ex);
+}
+
+
+/* orc_offsetconvert_s16_u8 */
+void
+orc_offsetconvert_s16_u8 (int16_t *d1, uint8_t *s1, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_offsetconvert_s16_u8");
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_source (p, 1, "s1");
+    orc_program_add_constant (p, 2, 128, "c1");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append (p, "convubw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_C1);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_array (ex, ORC_VAR_S1, s1);
+
+  orc_executor_run (ex);
+}
+
+
 /* orc_subtract_s16_u8 */
 void
 orc_subtract_s16_u8 (int16_t *d1, int16_t *s1, uint8_t *s2, int n)
@@ -1104,5 +1216,384 @@ orc_unpack_yuyv_v (uint8_t *d1, uint32_t *s1, int n)
   orc_executor_set_array (ex, ORC_VAR_S1, s1);
 
   orc_executor_run (ex);
+}
+
+
+/* orc_packyuyv */
+void
+orc_packyuyv (uint32_t *d1, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_packyuyv");
+    orc_program_add_destination (p, 4, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_source (p, 1, "s2");
+    orc_program_add_source (p, 1, "s3");
+    orc_program_add_temporary (p, 1, "t1");
+    orc_program_add_temporary (p, 1, "t2");
+    orc_program_add_temporary (p, 2, "t3");
+    orc_program_add_temporary (p, 2, "t4");
+
+    orc_program_append (p, "select0wb", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "select1wb", ORC_VAR_T2, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "mergebw", ORC_VAR_T3, ORC_VAR_T1, ORC_VAR_S2);
+    orc_program_append (p, "mergebw", ORC_VAR_T4, ORC_VAR_T2, ORC_VAR_S3);
+    orc_program_append (p, "mergewl", ORC_VAR_D1, ORC_VAR_T3, ORC_VAR_T4);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_array (ex, ORC_VAR_S1, s1);
+  orc_executor_set_array (ex, ORC_VAR_S2, s2);
+  orc_executor_set_array (ex, ORC_VAR_S3, s3);
+
+  orc_executor_run (ex);
+}
+
+
+/* orc_interleave2_s16 */
+void
+orc_interleave2_s16 (int16_t *d1, int16_t *s1, int16_t *s2, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_interleave2_s16");
+    orc_program_add_destination (p, 4, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_source (p, 2, "s2");
+
+    orc_program_append (p, "mergewl", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_array (ex, ORC_VAR_S1, s1);
+  orc_executor_set_array (ex, ORC_VAR_S2, s2);
+
+  orc_executor_run (ex);
+}
+
+
+/* orc_deinterleave2_s16 */
+void
+orc_deinterleave2_s16 (int16_t *d1, int16_t *d2, int16_t *s1, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_deinterleave2_s16");
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_destination (p, 2, "d2");
+    orc_program_add_source (p, 4, "s1");
+
+    orc_program_append (p, "select0lw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "select1lw", ORC_VAR_D2, ORC_VAR_S1, ORC_VAR_D1);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_array (ex, ORC_VAR_D2, d2);
+  orc_executor_set_array (ex, ORC_VAR_S1, s1);
+
+  orc_executor_run (ex);
+}
+
+
+/* orc_haar_sub_s16 */
+void
+orc_haar_sub_s16 (int16_t *d1, int16_t *d2, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_haar_sub_s16");
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_destination (p, 2, "d2");
+
+    orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_D2);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_array (ex, ORC_VAR_D2, d2);
+
+  orc_executor_run (ex);
+}
+
+
+/* orc_haar_add_half_s16 */
+void
+orc_haar_add_half_s16 (int16_t *d1, int16_t *d2, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_haar_add_half_s16");
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_destination (p, 2, "d2");
+    orc_program_add_constant (p, 2, 0, "c1");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append (p, "avgsw", ORC_VAR_T1, ORC_VAR_D2, ORC_VAR_C1);
+    orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_array (ex, ORC_VAR_D2, d2);
+
+  orc_executor_run (ex);
+}
+
+
+/* orc_haar_add_s16 */
+void
+orc_haar_add_s16 (int16_t *d1, int16_t *d2, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_haar_add_s16");
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_destination (p, 2, "d2");
+
+    orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_D2);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_array (ex, ORC_VAR_D2, d2);
+
+  orc_executor_run (ex);
+}
+
+
+/* orc_haar_sub_half_s16 */
+void
+orc_haar_sub_half_s16 (int16_t *d1, int16_t *d2, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_haar_sub_half_s16");
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_destination (p, 2, "d2");
+    orc_program_add_constant (p, 2, 0, "c1");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append (p, "avgsw", ORC_VAR_T1, ORC_VAR_D2, ORC_VAR_C1);
+    orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_D1, d1);
+  orc_executor_set_array (ex, ORC_VAR_D2, d2);
+
+  orc_executor_run (ex);
+}
+
+
+/* orc_sum_u8 */
+void
+orc_sum_u8 (int32_t *a1, uint8_t *s1, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_sum_u8");
+    orc_program_add_source (p, 1, "s1");
+    orc_program_add_accumulator (p, 4, "a1");
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 4, "t2");
+
+    orc_program_append_ds (p, "convubw", ORC_VAR_T1, ORC_VAR_S1);
+    orc_program_append_ds (p, "convuwl", ORC_VAR_T2, ORC_VAR_T1);
+    orc_program_append_ds (p, "accl", ORC_VAR_A1, ORC_VAR_T2);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_S1, s1);
+
+  orc_executor_run (ex);
+  *a1 = orc_executor_get_accumulator (ex, ORC_VAR_A1);
+}
+
+
+/* orc_sum_s16 */
+void
+orc_sum_s16 (int32_t *a1, int16_t *s1, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_sum_s16");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_accumulator (p, 4, "a1");
+    orc_program_add_temporary (p, 4, "t1");
+
+    orc_program_append_ds (p, "convuwl", ORC_VAR_T1, ORC_VAR_S1);
+    orc_program_append_ds (p, "accl", ORC_VAR_A1, ORC_VAR_T1);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_S1, s1);
+
+  orc_executor_run (ex);
+  *a1 = orc_executor_get_accumulator (ex, ORC_VAR_A1);
+}
+
+
+/* orc_sum_square_diff_u8 */
+void
+orc_sum_square_diff_u8 (int32_t *a1, uint8_t *s1, uint8_t *s2, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  MUTEX_LOCK
+  if (p == NULL) {
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_sum_square_diff_u8");
+    orc_program_add_source (p, 1, "s1");
+    orc_program_add_source (p, 1, "s2");
+    orc_program_add_accumulator (p, 4, "a1");
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 2, "t2");
+    orc_program_add_temporary (p, 4, "t3");
+
+    orc_program_append_ds (p, "convubw", ORC_VAR_T1, ORC_VAR_S1);
+    orc_program_append_ds (p, "convubw", ORC_VAR_T2, ORC_VAR_S2);
+    orc_program_append (p, "subw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_T2);
+    orc_program_append (p, "mullw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_T1);
+    orc_program_append_ds (p, "convuwl", ORC_VAR_T3, ORC_VAR_T1);
+    orc_program_append_ds (p, "accl", ORC_VAR_A1, ORC_VAR_T3);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+      abort();
+    }
+  }
+  MUTEX_UNLOCK
+
+  orc_executor_set_program (ex, p);
+  orc_executor_set_n (ex, n);
+  orc_executor_set_array (ex, ORC_VAR_S1, s1);
+  orc_executor_set_array (ex, ORC_VAR_S2, s2);
+
+  orc_executor_run (ex);
+  *a1 = orc_executor_get_accumulator (ex, ORC_VAR_A1);
 }
 

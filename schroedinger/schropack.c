@@ -8,6 +8,7 @@
 
 #include <schroedinger/schropack.h>
 #include <schroedinger/schro.h>
+#include <schroedinger/schrooil.h>
 
 
 SchroPack *
@@ -97,7 +98,11 @@ schro_pack_append (SchroPack *pack, uint8_t *data, int len)
 
   SCHRO_ASSERT(pack->n + len <= pack->buffer->length);
 
+#ifdef HAVE_ORC
+  orc_memcpy (pack->buffer->data + pack->n, data, len);
+#else
   oil_memcpy (pack->buffer->data + pack->n, data, len);
+#endif
   pack->n += len;
 }
 

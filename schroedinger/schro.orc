@@ -21,6 +21,7 @@ addw t1, t1, 2
 shrsw t1, t1, 2
 subw d1, d1, t1
 
+
 .function orc_add2_rshift_add_s16_11
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
@@ -32,6 +33,7 @@ avgsw t1, s1, s2
 #addw t1, t1, 1
 #shrsw t1, t1, 1
 addw d1, d1, t1
+
 
 .function orc_add2_rshift_sub_s16_11
 .dest 2 d1 int16_t
@@ -45,6 +47,7 @@ avgsw t1, s1, s2
 #shrsw t1, t1, 1
 subw d1, d1, t1
 
+
 .function orc_add_const_rshift_s16_11
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
@@ -52,6 +55,16 @@ subw d1, d1, t1
 
 addw t1, s1, 1
 shrsw d1, t1, 1
+
+
+.function orc_add_const_rshift_s16
+.dest 2 d1 int16_t
+.param 2 p1
+.param 2 p2
+.temp 2 t1
+
+addw t1, d1, p1
+shrsw d1, t1, p2
 
 
 .function orc_add_s16
@@ -217,6 +230,24 @@ convubw d1, s1
 convsuswb d1, s1
 
 
+.function orc_offsetconvert_u8_s16
+.dest 1 d1
+.source 2 s1 int16_t
+.temp 2 t1
+
+addw t1, s1, 128
+convsuswb d1, t1
+
+
+.function orc_offsetconvert_s16_u8
+.dest 2 d1 int16_t
+.source 1 s1
+.temp 2 t1
+
+convubw t1, s1
+subw d1, t1, 128
+
+
 .function orc_subtract_s16_u8
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
@@ -291,5 +322,108 @@ select1wb d1, t1
 
 select1lw t1, s1
 select1wb d1, t1
+
+
+.function orc_packyuyv
+.dest 4 d1
+.source 2 s1 uint8_t
+.source 1 s2
+.source 1 s3
+.temp 1 t1
+.temp 1 t2
+.temp 2 t3
+.temp 2 t4
+
+select0wb t1, s1
+select1wb t2, s1
+mergebw t3, t1, s2
+mergebw t4, t2, s3
+mergewl d1, t3, t4
+
+
+.function orc_interleave2_s16
+.dest 4 d1 int16_t
+.source 2 s1 int16_t
+.source 2 s2 int16_t
+
+mergewl d1, s1, s2
+
+
+.function orc_deinterleave2_s16
+.dest 2 d1 int16_t
+.dest 2 d2 int16_t
+.source 4 s1 int16_t
+
+select0lw d1, s1
+select1lw d2, s1
+
+
+.function orc_haar_sub_s16
+.dest 2 d1 int16_t
+.dest 2 s1 int16_t
+
+subw d1, d1, s1
+
+
+.function orc_haar_add_half_s16
+.dest 2 d1 int16_t
+.dest 2 s1 int16_t
+.temp 2 t1
+
+avgsw t1, s1, 0
+addw d1, d1, t1
+
+
+.function orc_haar_add_s16
+.dest 2 d1 int16_t
+.dest 2 s1 int16_t
+
+addw d1, d1, s1
+
+
+.function orc_haar_sub_half_s16
+.dest 2 d1 int16_t
+.dest 2 s1 int16_t
+.temp 2 t1
+
+avgsw t1, s1, 0
+subw d1, d1, t1
+
+
+.function orc_sum_u8
+.accumulator 4 a1 int32_t
+.source 1 s1
+.temp 2 t1
+.temp 4 t2
+
+convubw t1, s1
+convuwl t2, t1
+accl a1, t2
+
+
+.function orc_sum_s16
+.accumulator 4 a1 int32_t
+.source 2 s1 int16_t
+.temp 4 t1
+
+convuwl t1, s1
+accl a1, t1
+
+
+.function orc_sum_square_diff_u8
+.accumulator 4 a1 int32_t
+.source 1 s1
+.source 1 s2
+.temp 2 t1
+.temp 2 t2
+.temp 4 t3
+
+convubw t1, s1
+convubw t2, s2
+subw t1, t1, t2
+mullw t1, t1, t1
+convuwl t3, t1
+accl a1, t3
+
 
 

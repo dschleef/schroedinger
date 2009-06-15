@@ -174,10 +174,18 @@ copy (SchroFrame *frame, void *_dest, int component, int i)
   src = schro_virt_frame_get_line (frame, component, i);
   switch (SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
     case SCHRO_FRAME_FORMAT_DEPTH_U8:
+#ifdef HAVE_ORC
+      orc_memcpy (dest, src, frame->components[component].width);
+#else
       oil_memcpy (dest, src, frame->components[component].width);
+#endif
       break;
     case SCHRO_FRAME_FORMAT_DEPTH_S16:
+#ifdef HAVE_ORC
+      orc_memcpy (dest, src, frame->components[component].width * 2);
+#else
       oil_memcpy (dest, src, frame->components[component].width * 2);
+#endif
       break;
     default:
       SCHRO_ASSERT(0);
@@ -812,7 +820,11 @@ pack_yuyv (SchroFrame *frame, void *_dest, int component, int i)
   src_u = schro_virt_frame_get_line (frame->virt_frame1, 1, i);
   src_v = schro_virt_frame_get_line (frame->virt_frame1, 2, i);
 
+#ifdef HAVE_ORC
+  orc_packyuyv (dest, src_y, src_u, src_v, frame->width/2);
+#else
   oil_packyuyv (dest, src_y, src_u, src_v, frame->width/2);
+#endif
 }
 
 
@@ -1233,7 +1245,11 @@ convert_444_422 (SchroFrame *frame, void *_dest, int component, int i)
   src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
 
   if (component == 0) {
+#ifdef HAVE_ORC
+    orc_memcpy (dest, src, frame->width);
+#else
     oil_memcpy (dest, src, frame->width);
+#endif
   } else {
     for(j=0;j<frame->components[component].width;j++){
       dest[j] = src[j*2];
@@ -1250,7 +1266,11 @@ convert_444_420 (SchroFrame *frame, void *_dest, int component, int i)
 
   if (component == 0) {
     src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+#ifdef HAVE_ORC
+    orc_memcpy (dest, src, frame->components[component].width);
+#else
     oil_memcpy (dest, src, frame->components[component].width);
+#endif
   } else {
     src = schro_virt_frame_get_line (frame->virt_frame1, component, i*2);
     for(j=0;j<frame->components[component].width;j++){
@@ -1270,7 +1290,11 @@ convert_422_420 (SchroFrame *frame, void *_dest, int component, int i)
   } else {
     src = schro_virt_frame_get_line (frame->virt_frame1, component, i*2);
   }
+#ifdef HAVE_ORC
+  orc_memcpy (dest, src, frame->components[component].width);
+#else
   oil_memcpy (dest, src, frame->components[component].width);
+#endif
 }
 
 /* up */
@@ -1285,7 +1309,11 @@ convert_422_444 (SchroFrame *frame, void *_dest, int component, int i)
   src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
 
   if (component == 0) {
+#ifdef HAVE_ORC
+    orc_memcpy (dest, src, frame->width);
+#else
     oil_memcpy (dest, src, frame->width);
+#endif
   } else {
     for(j=0;j<frame->components[component].width;j++){
       dest[j] = src[j>>1];
@@ -1302,7 +1330,11 @@ convert_420_444 (SchroFrame *frame, void *_dest, int component, int i)
 
   if (component == 0) {
     src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+#ifdef HAVE_ORC
+    orc_memcpy (dest, src, frame->components[component].width);
+#else
     oil_memcpy (dest, src, frame->components[component].width);
+#endif
   } else {
     src = schro_virt_frame_get_line (frame->virt_frame1, component, i>>1);
     for(j=0;j<frame->components[component].width;j++){
@@ -1322,7 +1354,11 @@ convert_420_422 (SchroFrame *frame, void *_dest, int component, int i)
   } else {
     src = schro_virt_frame_get_line (frame->virt_frame1, component, i>>1);
   }
+#ifdef HAVE_ORC
+  orc_memcpy (dest, src, frame->components[component].width);
+#else
   oil_memcpy (dest, src, frame->components[component].width);
+#endif
 }
 
 SchroFrame *
@@ -1479,13 +1515,19 @@ convert_u8_s16 (SchroFrame *frame, void *_dest, int component, int i)
 {
   uint8_t *dest = _dest;
   int16_t *src;
+#ifndef HAVE_ORC
   int16_t c = 128;
+#endif
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+#ifdef HAVE_ORC
+  orc_offsetconvert_u8_s16 (dest, src, frame->components[component].width);
+#else
   oil_addc_s16 (frame->virt_priv, src, &c,
       frame->components[component].width);
   oil_convert_u8_s16 (dest, frame->virt_priv,
       frame->components[component].width);
+#endif
 }
 
 SchroFrame *
@@ -1509,12 +1551,18 @@ convert_s16_u8 (SchroFrame *frame, void *_dest, int component, int i)
 {
   int16_t *dest = _dest;
   uint8_t *src;
+#ifndef HAVE_ORC
   int16_t c = -128;
+#endif
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
 
+#ifdef HAVE_ORC
+  orc_offsetconvert_s16_u8 (dest, src, frame->components[component].width);
+#else
   oil_convert_s16_u8 (dest, src, frame->components[component].width);
   oil_addc_s16 (dest, dest, &c, frame->components[component].width);
+#endif
 }
 
 SchroFrame *
@@ -1539,7 +1587,11 @@ crop_u8 (SchroFrame *frame, void *_dest, int component, int i)
   uint8_t *src;
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+#ifdef HAVE_ORC
+  orc_memcpy (dest, src, frame->components[component].width);
+#else
   oil_memcpy (dest, src, frame->components[component].width);
+#endif
 }
 
 static void
@@ -1549,7 +1601,11 @@ crop_s16 (SchroFrame *frame, void *_dest, int component, int i)
   int16_t *src;
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+#ifdef HAVE_ORC
+  orc_memcpy (dest, src, frame->components[component].width * sizeof(int16_t));
+#else
   oil_memcpy (dest, src, frame->components[component].width * sizeof(int16_t));
+#endif
 }
 
 SchroFrame *
@@ -1588,11 +1644,19 @@ edge_extend_u8 (SchroFrame *frame, void *_dest, int component, int i)
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component,
       MIN(i,srcframe->components[component].height-1));
+#ifdef HAVE_ORC
+  orc_memcpy (dest, src, srcframe->components[component].width);
+  orc_splat_u8_ns (dest + srcframe->components[component].width,
+      dest[srcframe->components[component].width - 1],
+      frame->components[component].width -
+      srcframe->components[component].width);
+#else
   oil_memcpy (dest, src, srcframe->components[component].width);
   oil_splat_u8_ns (dest + srcframe->components[component].width,
       dest + srcframe->components[component].width - 1,
       frame->components[component].width -
       srcframe->components[component].width);
+#endif
 }
 
 static void
@@ -1604,12 +1668,21 @@ edge_extend_s16 (SchroFrame *frame, void *_dest, int component, int i)
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component,
       MIN(i,srcframe->components[component].height-1));
+#ifdef HAVE_ORC
+  orc_memcpy (dest, src,
+      srcframe->components[component].width * sizeof(int16_t));
+  orc_splat_s16_ns (dest + srcframe->components[component].width,
+      dest[srcframe->components[component].width - 1],
+      frame->components[component].width -
+      srcframe->components[component].width);
+#else
   oil_memcpy (dest, src,
       srcframe->components[component].width * sizeof(int16_t));
   oil_splat_s16_ns (dest + srcframe->components[component].width,
       dest + srcframe->components[component].width - 1,
       frame->components[component].width -
       srcframe->components[component].width);
+#endif
 }
 
 SchroFrame *

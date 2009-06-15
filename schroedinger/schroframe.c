@@ -1160,7 +1160,11 @@ schro_frame_convert_yuyv_u8_422 (SchroFrame *dest, SchroFrame *src)
     udata = SCHRO_FRAME_DATA_GET_LINE (&src->components[1], y);
     vdata = SCHRO_FRAME_DATA_GET_LINE (&src->components[2], y);
 
+#ifdef HAVE_ORC
+    orc_packyuyv (ddata, ydata, udata, vdata, n);
+#else
     oil_packyuyv (ddata, ydata, udata, vdata, n);
+#endif
   }
 
   /* FIXME edge extend */
@@ -1508,14 +1512,20 @@ void schro_frame_shift_right (SchroFrame *frame, int shift)
   int16_t *data;
   int i;
   int y;
+#ifndef HAVE_ORC
   int16_t s[2] = { (1<<shift)>>1, shift };
+#endif
 
   for(i=0;i<3;i++){
     comp = &frame->components[i];
 
     for(y=0;y<comp->height;y++){
       data = SCHRO_FRAME_DATA_GET_LINE (comp, y);
+#ifdef HAVE_ORC
+      orc_add_const_rshift_s16 (data, (1<<shift)>>1, shift, comp->width);
+#else
       oil_add_const_rshift_s16 (data, data, s, comp->width);
+#endif
     }
   }
 }
@@ -1919,16 +1929,26 @@ schro_frame_calculate_average_luma (SchroFrame *frame)
     case SCHRO_FRAME_FORMAT_DEPTH_U8:
       for(j=0;j<comp->height;j++){
         int32_t linesum;
+#ifdef HAVE_ORC
+        orc_sum_u8 (&linesum, SCHRO_FRAME_DATA_GET_LINE(comp, j),
+            comp->width);
+#else
         oil_sum_s32_u8 (&linesum, SCHRO_FRAME_DATA_GET_LINE(comp, j),
             comp->width);
+#endif
         sum += linesum;
       }
       break;
     case SCHRO_FRAME_FORMAT_DEPTH_S16:
       for(j=0;j<comp->height;j++){
         int32_t linesum;
+#ifdef HAVE_ORC
+        orc_sum_s16 (&linesum, SCHRO_FRAME_DATA_GET_LINE(comp, j),
+            comp->width);
+#else
         oil_sum_s32_s16 (&linesum, SCHRO_FRAME_DATA_GET_LINE(comp, j),
             comp->width);
+#endif
         sum += linesum;
       }
       break;

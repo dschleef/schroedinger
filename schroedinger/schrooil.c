@@ -8,6 +8,7 @@
 #include <math.h>
 
 
+#ifndef HAVE_ORC
 void
 oil_splat_s16_ns (int16_t *dest, const int16_t *src, int n)
 {
@@ -53,6 +54,7 @@ oil_sum_square_diff_u8 (int32_t *d_1, uint8_t *s1, uint8_t *s2, int n)
   }
   d_1[0] = sum;
 }
+#endif
 
 #ifdef unused
 void
