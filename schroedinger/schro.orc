@@ -333,9 +333,11 @@ select1wb d1, t1
 .temp 1 t2
 .temp 2 t3
 .temp 2 t4
+.temp 2 t5
 
-select0wb t1, s1
-select1wb t2, s1
+copyw t5, s1
+select0wb t1, t5
+select1wb t2, t5
 mergebw t3, t1, s2
 mergebw t4, t2, s3
 mergewl d1, t3, t4
@@ -353,9 +355,11 @@ mergewl d1, s1, s2
 .dest 2 d1 int16_t
 .dest 2 d2 int16_t
 .source 4 s1 int16_t
+.temp 4 t1
 
-select0lw d1, s1
-select1lw d2, s1
+copyl t1, s1
+select0lw d1, t1
+select1lw d2, t1
 
 
 .function orc_haar_sub_s16

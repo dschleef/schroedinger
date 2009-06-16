@@ -799,9 +799,11 @@ int main (int argc, char *argv[])
     orc_program_add_temporary (p, 1, "t2");
     orc_program_add_temporary (p, 2, "t3");
     orc_program_add_temporary (p, 2, "t4");
+    orc_program_add_temporary (p, 2, "t5");
 
-    orc_program_append (p, "select0wb", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
-    orc_program_append (p, "select1wb", ORC_VAR_T2, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "copyw", ORC_VAR_T5, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "select0wb", ORC_VAR_T1, ORC_VAR_T5, ORC_VAR_D1);
+    orc_program_append (p, "select1wb", ORC_VAR_T2, ORC_VAR_T5, ORC_VAR_D1);
     orc_program_append (p, "mergebw", ORC_VAR_T3, ORC_VAR_T1, ORC_VAR_S2);
     orc_program_append (p, "mergebw", ORC_VAR_T4, ORC_VAR_T2, ORC_VAR_S3);
     orc_program_append (p, "mergewl", ORC_VAR_D1, ORC_VAR_T3, ORC_VAR_T4);
@@ -847,9 +849,11 @@ int main (int argc, char *argv[])
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_destination (p, 2, "d2");
     orc_program_add_source (p, 4, "s1");
+    orc_program_add_temporary (p, 4, "t1");
 
-    orc_program_append (p, "select0lw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
-    orc_program_append (p, "select1lw", ORC_VAR_D2, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "copyl", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "select0lw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
+    orc_program_append (p, "select1lw", ORC_VAR_D2, ORC_VAR_T1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
     if (!ret) error = TRUE;
