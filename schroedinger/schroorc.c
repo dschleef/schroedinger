@@ -1412,7 +1412,7 @@ orc_deinterleave2_s16 (int16_t *d1, int16_t *d2, int16_t *s1, int n)
 
 /* orc_haar_sub_s16 */
 void
-orc_haar_sub_s16 (int16_t *d1, int16_t *d2, int n)
+orc_haar_sub_s16 (int16_t *d1, int16_t *s1, int n)
 {
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
@@ -1425,9 +1425,9 @@ orc_haar_sub_s16 (int16_t *d1, int16_t *d2, int n)
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_sub_s16");
       orc_program_add_destination (p, 2, "d1");
-      orc_program_add_destination (p, 2, "d2");
+      orc_program_add_source (p, 2, "s1");
 
-      orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_D2);
+      orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_S1);
 
       result = orc_program_compile (p);
       if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
@@ -1440,7 +1440,7 @@ orc_haar_sub_s16 (int16_t *d1, int16_t *d2, int n)
   ex->program = p;
   ex->n = n;
   ex->arrays[ORC_VAR_D1] = d1;
-  ex->arrays[ORC_VAR_D2] = d2;
+  ex->arrays[ORC_VAR_S1] = s1;
 
   orc_executor_run (ex);
 }
@@ -1448,7 +1448,7 @@ orc_haar_sub_s16 (int16_t *d1, int16_t *d2, int n)
 
 /* orc_haar_add_half_s16 */
 void
-orc_haar_add_half_s16 (int16_t *d1, int16_t *d2, int n)
+orc_haar_add_half_s16 (int16_t *d1, int16_t *s1, int n)
 {
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
@@ -1461,11 +1461,11 @@ orc_haar_add_half_s16 (int16_t *d1, int16_t *d2, int n)
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_add_half_s16");
       orc_program_add_destination (p, 2, "d1");
-      orc_program_add_destination (p, 2, "d2");
+      orc_program_add_source (p, 2, "s1");
       orc_program_add_constant (p, 2, 0, "c1");
       orc_program_add_temporary (p, 2, "t1");
 
-      orc_program_append (p, "avgsw", ORC_VAR_T1, ORC_VAR_D2, ORC_VAR_C1);
+      orc_program_append (p, "avgsw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_C1);
       orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
@@ -1479,7 +1479,7 @@ orc_haar_add_half_s16 (int16_t *d1, int16_t *d2, int n)
   ex->program = p;
   ex->n = n;
   ex->arrays[ORC_VAR_D1] = d1;
-  ex->arrays[ORC_VAR_D2] = d2;
+  ex->arrays[ORC_VAR_S1] = s1;
 
   orc_executor_run (ex);
 }
@@ -1487,7 +1487,7 @@ orc_haar_add_half_s16 (int16_t *d1, int16_t *d2, int n)
 
 /* orc_haar_add_s16 */
 void
-orc_haar_add_s16 (int16_t *d1, int16_t *d2, int n)
+orc_haar_add_s16 (int16_t *d1, int16_t *s1, int n)
 {
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
@@ -1500,9 +1500,9 @@ orc_haar_add_s16 (int16_t *d1, int16_t *d2, int n)
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_add_s16");
       orc_program_add_destination (p, 2, "d1");
-      orc_program_add_destination (p, 2, "d2");
+      orc_program_add_source (p, 2, "s1");
 
-      orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_D2);
+      orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_S1);
 
       result = orc_program_compile (p);
       if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
@@ -1515,7 +1515,7 @@ orc_haar_add_s16 (int16_t *d1, int16_t *d2, int n)
   ex->program = p;
   ex->n = n;
   ex->arrays[ORC_VAR_D1] = d1;
-  ex->arrays[ORC_VAR_D2] = d2;
+  ex->arrays[ORC_VAR_S1] = s1;
 
   orc_executor_run (ex);
 }
@@ -1523,7 +1523,7 @@ orc_haar_add_s16 (int16_t *d1, int16_t *d2, int n)
 
 /* orc_haar_sub_half_s16 */
 void
-orc_haar_sub_half_s16 (int16_t *d1, int16_t *d2, int n)
+orc_haar_sub_half_s16 (int16_t *d1, int16_t *s1, int n)
 {
   static OrcProgram *p = NULL;
   OrcExecutor _ex, *ex = &_ex;
@@ -1536,11 +1536,11 @@ orc_haar_sub_half_s16 (int16_t *d1, int16_t *d2, int n)
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_sub_half_s16");
       orc_program_add_destination (p, 2, "d1");
-      orc_program_add_destination (p, 2, "d2");
+      orc_program_add_source (p, 2, "s1");
       orc_program_add_constant (p, 2, 0, "c1");
       orc_program_add_temporary (p, 2, "t1");
 
-      orc_program_append (p, "avgsw", ORC_VAR_T1, ORC_VAR_D2, ORC_VAR_C1);
+      orc_program_append (p, "avgsw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_C1);
       orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
@@ -1554,7 +1554,7 @@ orc_haar_sub_half_s16 (int16_t *d1, int16_t *d2, int n)
   ex->program = p;
   ex->n = n;
   ex->arrays[ORC_VAR_D1] = d1;
-  ex->arrays[ORC_VAR_D2] = d2;
+  ex->arrays[ORC_VAR_S1] = s1;
 
   orc_executor_run (ex);
 }

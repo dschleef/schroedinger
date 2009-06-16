@@ -364,14 +364,14 @@ select1lw d2, t1
 
 .function orc_haar_sub_s16
 .dest 2 d1 int16_t
-.dest 2 s1 int16_t
+.source 2 s1 int16_t
 
 subw d1, d1, s1
 
 
 .function orc_haar_add_half_s16
 .dest 2 d1 int16_t
-.dest 2 s1 int16_t
+.source 2 s1 int16_t
 .temp 2 t1
 
 avgsw t1, s1, 0
@@ -380,14 +380,14 @@ addw d1, d1, t1
 
 .function orc_haar_add_s16
 .dest 2 d1 int16_t
-.dest 2 s1 int16_t
+.source 2 s1 int16_t
 
 addw d1, d1, s1
 
 
 .function orc_haar_sub_half_s16
 .dest 2 d1 int16_t
-.dest 2 s1 int16_t
+.source 2 s1 int16_t
 .temp 2 t1
 
 avgsw t1, s1, 0

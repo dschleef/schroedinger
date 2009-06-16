@@ -872,9 +872,9 @@ int main (int argc, char *argv[])
     p = orc_program_new ();
     orc_program_set_name (p, "orc_haar_sub_s16");
     orc_program_add_destination (p, 2, "d1");
-    orc_program_add_destination (p, 2, "d2");
+    orc_program_add_source (p, 2, "s1");
 
-    orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_D2);
+    orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_S1);
 
     ret = orc_test_compare_output (p);
     if (!ret) error = TRUE;
@@ -893,11 +893,11 @@ int main (int argc, char *argv[])
     p = orc_program_new ();
     orc_program_set_name (p, "orc_haar_add_half_s16");
     orc_program_add_destination (p, 2, "d1");
-    orc_program_add_destination (p, 2, "d2");
+    orc_program_add_source (p, 2, "s1");
     orc_program_add_constant (p, 2, 0, "c1");
     orc_program_add_temporary (p, 2, "t1");
 
-    orc_program_append (p, "avgsw", ORC_VAR_T1, ORC_VAR_D2, ORC_VAR_C1);
+    orc_program_append (p, "avgsw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_C1);
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
@@ -917,9 +917,9 @@ int main (int argc, char *argv[])
     p = orc_program_new ();
     orc_program_set_name (p, "orc_haar_add_s16");
     orc_program_add_destination (p, 2, "d1");
-    orc_program_add_destination (p, 2, "d2");
+    orc_program_add_source (p, 2, "s1");
 
-    orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_D2);
+    orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_S1);
 
     ret = orc_test_compare_output (p);
     if (!ret) error = TRUE;
@@ -938,11 +938,11 @@ int main (int argc, char *argv[])
     p = orc_program_new ();
     orc_program_set_name (p, "orc_haar_sub_half_s16");
     orc_program_add_destination (p, 2, "d1");
-    orc_program_add_destination (p, 2, "d2");
+    orc_program_add_source (p, 2, "s1");
     orc_program_add_constant (p, 2, 0, "c1");
     orc_program_add_temporary (p, 2, "t1");
 
-    orc_program_append (p, "avgsw", ORC_VAR_T1, ORC_VAR_D2, ORC_VAR_C1);
+    orc_program_append (p, "avgsw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_C1);
     orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
