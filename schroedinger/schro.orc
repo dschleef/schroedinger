@@ -410,7 +410,7 @@ accl a1, t2
 .source 2 s1 int16_t
 .temp 4 t1
 
-convuwl t1, s1
+convswl t1, s1
 accl a1, t1
 
 

@@ -990,7 +990,7 @@ int main (int argc, char *argv[])
     orc_program_add_accumulator (p, 4, "a1");
     orc_program_add_temporary (p, 4, "t1");
 
-    orc_program_append (p, "convuwl", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "convswl", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
     orc_program_append (p, "accl", ORC_VAR_A1, ORC_VAR_T1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);

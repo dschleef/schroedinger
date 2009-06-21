@@ -1618,7 +1618,7 @@ orc_sum_s16 (int32_t *a1, int16_t *s1, int n)
       orc_program_add_accumulator (p, 4, "a1");
       orc_program_add_temporary (p, 4, "t1");
 
-      orc_program_append_ds (p, "convuwl", ORC_VAR_T1, ORC_VAR_S1);
+      orc_program_append_ds (p, "convswl", ORC_VAR_T1, ORC_VAR_S1);
       orc_program_append_ds (p, "accl", ORC_VAR_A1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
