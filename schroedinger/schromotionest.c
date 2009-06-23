@@ -538,10 +538,10 @@ schro_motionest_superblock_dc (SchroMotionEst *me,
   schro_block_average (&mv->u.dc.dc[2], frame->components + 2,
       i * chroma_w, j * chroma_h, 4 * chroma_w, 4 * chroma_h);
 
-  mv->metric = metric/16;
+  mv->metric = metric;
   block->error = metric;
-  /* FIXME magic parameter */
-  block->error += 4 * 2 * me->params->xbsep_luma * 10;
+  block->error += 4 * 2 * me->params->xbsep_luma *
+    me->encoder_frame->encoder->magic_dc_metric_offset;
 
   schro_block_fixup (block);
 
@@ -567,9 +567,9 @@ schro_motionest_superblock_dc_predicted (SchroMotionEst *me,
   mv->u.dc.dc[2] = pred[2];
 
   block->error = schro_motionest_superblock_get_metric (me, block, i, j);
-  /* FIXME magic parameter */
-  block->error += 4 * 2 * me->params->xbsep_luma * 10;
-  mv->metric = block->error/16;
+  mv->metric = block->error;
+  block->error += 4 * 2 * me->params->xbsep_luma *
+    me->encoder_frame->encoder->magic_dc_metric_offset;
 
   schro_block_fixup (block);
   block->entropy = 0;
@@ -775,8 +775,8 @@ schro_motionest_block_dc (SchroMotionEst *me,
 
   mv->metric = metric;
   block->error = metric;
-  /* FIXME magic parameter */
-  block->error += 4 * 2 * me->params->xbsep_luma * 10;
+  block->error += 4 * 2 * me->params->xbsep_luma *
+    me->encoder_frame->encoder->magic_dc_metric_offset;
 
   block->entropy = schro_motion_block_estimate_entropy (me->motion,
       i + ii, j + jj);
@@ -920,17 +920,10 @@ schro_motionest_subsuperblock_dc (SchroMotionEst *me,
   schro_block_average (&mv->u.dc.dc[2], frame->components + 2,
       (i + ii) * chroma_w, (j+jj) * chroma_h, 2*chroma_w, 2*chroma_h);
 
-  mv->metric = metric / 4;
+  mv->metric = metric;
   block->error = metric;
-  /* FIXME magic parameter */
-  block->error += 4 * 2 * me->params->xbsep_luma * 10;
-
-#if 0
-  block->error = schro_motionest_superblock_get_metric (me, block, i, j);
-  /* FIXME magic parameter */
-  block->error += 4 * 2 * me->params->xbsep_luma * 10;
-  mv->metric = block->error/16;
-#endif
+  block->error += 4 * 2 * me->params->xbsep_luma *
+    me->encoder_frame->encoder->magic_dc_metric_offset;
 
   block->entropy = schro_motion_block_estimate_entropy (me->motion,
       i + ii, j + jj);
