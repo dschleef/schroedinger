@@ -42,6 +42,7 @@ struct _SchroDecoder {
 
   double skip_value;
   double skip_ratio;
+  int earliest_frame;
 
   /* output pictures in coded order */
   int coded_order;

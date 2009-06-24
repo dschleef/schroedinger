@@ -570,7 +570,7 @@ void
 schro_decoder_set_earliest_frame (SchroDecoder *decoder,
     SchroPictureNumber earliest_frame)
 {
-    /* todo: deprecate this function? */
+  decoder->earliest_frame = earliest_frame;
 }
 
 /**
@@ -1266,16 +1266,22 @@ schro_decoder_iterate_picture (SchroDecoderInstance *instance, SchroBuffer *buff
   /* todo: prune pictures that are inaccessible in the first gop */
 
   if (!instance->video_format.interlaced_coding &&
+      !picture->is_ref && picture->picture_number < decoder->earliest_frame) {
+    picture->skip = TRUE;
+    SCHRO_INFO("skipping frame %d (early)", picture->picture_number);
+  }
+
+  if (!instance->video_format.interlaced_coding &&
       !picture->is_ref && decoder->skip_value > decoder->skip_ratio) {
     decoder->skip_value = (1-SCHRO_SKIP_TIME_CONSTANT) * decoder->skip_value;
     SCHRO_INFO("skipping frame %d", picture->picture_number);
     SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
     picture->skip = TRUE;
+  } else {
+    decoder->skip_value = (1-SCHRO_SKIP_TIME_CONSTANT) * decoder->skip_value +
+      SCHRO_SKIP_TIME_CONSTANT;
   }
-
-  decoder->skip_value = (1-SCHRO_SKIP_TIME_CONSTANT) * decoder->skip_value +
-    SCHRO_SKIP_TIME_CONSTANT;
   SCHRO_DEBUG("skip value %g ratio %g", decoder->skip_value, decoder->skip_ratio);
 
   if (picture->skip) {
