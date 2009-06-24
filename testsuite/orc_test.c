@@ -836,6 +836,38 @@ int main (int argc, char *argv[])
     orc_program_free (p);
   }
 
+  /* orc_interleave2_rrshift1_s16 */
+  {
+    OrcProgram *p = NULL;
+    int ret;
+
+    OrcCompileResult result;
+
+    printf("orc_interleave2_rrshift1_s16:\n");
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_interleave2_rrshift1_s16");
+    orc_program_add_destination (p, 4, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_source (p, 2, "s2");
+    orc_program_add_constant (p, 2, 1, "c1");
+    orc_program_add_constant (p, 2, 1, "c2");
+    orc_program_add_constant (p, 2, 1, "c3");
+    orc_program_add_constant (p, 2, 1, "c4");
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 2, "t2");
+
+    orc_program_append (p, "addw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_C1);
+    orc_program_append (p, "shrsw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C2);
+    orc_program_append (p, "addw", ORC_VAR_T2, ORC_VAR_S2, ORC_VAR_C3);
+    orc_program_append (p, "shrsw", ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C4);
+    orc_program_append (p, "mergewl", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2);
+
+    ret = orc_test_compare_output (p);
+    if (!ret) error = TRUE;
+
+    orc_program_free (p);
+  }
+
   /* orc_deinterleave2_s16 */
   {
     OrcProgram *p = NULL;

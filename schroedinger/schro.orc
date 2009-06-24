@@ -351,6 +351,20 @@ mergewl d1, t3, t4
 mergewl d1, s1, s2
 
 
+.function orc_interleave2_rrshift1_s16
+.dest 4 d1 int16_t
+.source 2 s1 int16_t
+.source 2 s2 int16_t
+.temp 2 t1
+.temp 2 t2
+
+addw t1, s1, 1
+shrsw t1, t1, 1
+addw t2, s2, 1
+shrsw t2, t2, 1
+mergewl d1, t1, t2
+
+
 .function orc_deinterleave2_s16
 .dest 2 d1 int16_t
 .dest 2 d2 int16_t

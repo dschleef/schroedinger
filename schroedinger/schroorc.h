@@ -37,6 +37,7 @@ void orc_unpack_yuyv_u (uint8_t *d1, uint32_t *s1, int n);
 void orc_unpack_yuyv_v (uint8_t *d1, uint32_t *s1, int n);
 void orc_packyuyv (uint32_t *d1, uint8_t *s1, uint8_t *s2, uint8_t *s3, int n);
 void orc_interleave2_s16 (int16_t *d1, int16_t *s1, int16_t *s2, int n);
+void orc_interleave2_rrshift1_s16 (int16_t *d1, int16_t *s1, int16_t *s2, int n);
 void orc_deinterleave2_s16 (int16_t *d1, int16_t *d2, int16_t *s1, int n);
 void orc_deinterleave2_lshift1_s16 (int16_t *d1, int16_t *d2, int16_t *s1, int n);
 void orc_haar_sub_s16 (int16_t *d1, int16_t *s1, int n);

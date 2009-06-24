@@ -625,8 +625,7 @@ void schro_iiwt_desl_9_3 (int16_t *data, int stride, int width, int height,
       orc_memcpy (hi, ROW(i), width/2*sizeof(int16_t));
       orc_memcpy (lo, ROW(i) + width/2, width/2*sizeof(int16_t));
       schro_synth_ext_desl93 (hi, lo, width/2);
-      orc_interleave2_s16 (ROW(i), hi, lo, width/2);
-      orc_add_const_rshift_s16_11 (ROW(i), ROW(i), width);
+      orc_interleave2_rrshift1_s16 (ROW(i), hi, lo, width/2);
     }
   }
 }
@@ -673,8 +672,7 @@ void schro_iiwt_5_3 (int16_t *data, int stride, int width, int height,
       orc_memcpy (hi, ROW(i), width/2*sizeof(int16_t));
       orc_memcpy (lo, ROW(i) + width/2, width/2*sizeof(int16_t));
       schro_synth_ext_53 (hi, lo, width/2);
-      orc_interleave2_s16 (ROW(i), hi, lo, width/2);
-      orc_add_const_rshift_s16_11 (ROW(i), ROW(i), width);
+      orc_interleave2_rrshift1_s16 (ROW(i), hi, lo, width/2);
     }
   }
 #undef ROW
@@ -727,8 +725,7 @@ void schro_iiwt_13_5 (int16_t *data, int stride, int width, int height,
       orc_memcpy (hi, ROW(i), width/2*sizeof(int16_t));
       orc_memcpy (lo, ROW(i) + width/2, width/2*sizeof(int16_t));
       schro_synth_ext_135 (hi, lo, width/2);
-      orc_interleave2_s16 (ROW(i), hi, lo, width/2);
-      orc_add_const_rshift_s16_11 (ROW(i), ROW(i), width);
+      orc_interleave2_rrshift1_s16 (ROW(i), hi, lo, width/2);
     }
 #undef ROW
   }
