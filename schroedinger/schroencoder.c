@@ -136,7 +136,7 @@ schro_encoder_start (SchroEncoder *encoder)
 {
   encoder->frame_queue = schro_queue_new (encoder->queue_depth,
       (SchroQueueFreeFunc)schro_encoder_frame_unref);
-  SCHRO_ERROR("queue depth %d", encoder->queue_depth);
+  SCHRO_DEBUG("queue depth %d", encoder->queue_depth);
 
   encoder->engine_init = 1;
   encoder->force_sequence_header = TRUE;
