@@ -1041,7 +1041,7 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
         TRYBLOCK
       }
 
-      if (min_score > block_threshold) {
+      if (min_score > block_threshold || block.mv[0][0].pred_mode == 0) {
         schro_motionest_superblock_subsuperblock (me, &tryblock, i, j);
         TRYBLOCK
 
