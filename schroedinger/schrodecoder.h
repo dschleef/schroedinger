@@ -89,6 +89,7 @@ struct _SchroDecoderInstance {
   int profile;
   int level;
   SchroVideoFormat video_format;
+  int compat_quant_offset;
 
   SchroQueue *reorder_queue;
   int reorder_queue_size;

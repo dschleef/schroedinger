@@ -3096,6 +3096,10 @@ schro_decoder_setup_codeblocks (SchroPicture *picture,
   }
   if (params->codeblock_mode_index == 1) {
     ctx->have_quant_offset = TRUE;
+    if (picture->decoder_instance->compat_quant_offset && 
+        ctx->horiz_codeblocks == 1 && ctx->vert_codeblocks == 1) {
+      ctx->have_quant_offset = FALSE;
+    }
   } else {
     ctx->have_quant_offset = FALSE;
   }
@@ -3123,6 +3127,36 @@ schro_decoder_zero_block (SchroPictureSubbandContext *ctx,
 }
 
 static void
+schro_decoder_test_quant_offset_compat (SchroPicture *picture,
+    SchroPictureSubbandContext *ctx)
+{
+  SchroParams *params = &picture->params;
+  int quant_index = ctx->quant_index;
+
+  if (ctx->have_quant_offset && ctx->horiz_codeblocks == 1 &&
+      ctx->vert_codeblocks == 1 && ctx->index == 0 &&
+      ctx->ymin == 0 && ctx->xmin == 0) {
+    if (params->is_noarith) {
+      SchroUnpack unpack_copy;
+      schro_unpack_copy (&unpack_copy, &ctx->unpack);
+      quant_index += schro_unpack_decode_sint (&unpack_copy);
+    } else {
+      SchroArith arith_copy;
+      memcpy (&arith_copy, ctx->arith, sizeof(SchroArith));
+      quant_index += _schro_arith_decode_sint (&arith_copy,
+          SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
+          SCHRO_CTX_QUANTISER_SIGN);
+    }
+
+    if (quant_index < 0 || quant_index > 60) {
+      SCHRO_WARNING("turning on codeblock quantiser compatibility mode");
+      picture->decoder_instance->compat_quant_offset = TRUE;
+      ctx->have_quant_offset = FALSE;
+    }
+  }
+}
+
+static void
 schro_decoder_decode_codeblock (SchroPicture *picture,
     SchroPictureSubbandContext *ctx)
 {
@@ -3144,6 +3178,8 @@ schro_decoder_decode_codeblock (SchroPicture *picture,
       return;
     }
   }
+
+  schro_decoder_test_quant_offset_compat (picture, ctx);
 
   if (ctx->have_quant_offset) {
     if (params->is_noarith) {
@@ -3262,7 +3298,21 @@ schro_decoder_decode_subband (SchroPicture *picture,
     }
     schro_arith_free (ctx->arith);
   } else {
-    /* FIXME check noarith decoding */
+    int offset = (ctx->unpack.n_bits_read + 0) / 8;
+    if (offset < ctx->subband_length - 1) {
+      SCHRO_WARNING("vlc decoding didn't consume buffer (%d < %d) component=%d subband=%d",
+          offset, ctx->subband_length, ctx->component, ctx->index);
+#ifdef DONT_DO_THIS
+      ctx->broken = TRUE;
+#endif
+    }
+    if (offset > ctx->subband_length + 0) {
+      SCHRO_WARNING("vlc decoding overran buffer (%d > %d)",
+          offset, ctx->subband_length);
+#ifdef DONT_DO_THIS
+      ctx->broken = TRUE;
+#endif
+    }
   }
 
   if (ctx->broken && ctx->position != 0) {
