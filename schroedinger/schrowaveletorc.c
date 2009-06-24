@@ -248,8 +248,7 @@ void schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
     if (i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
-      orc_lshift1_s16(ROW(i), ROW(i), width);
-      orc_deinterleave2_s16 (hi, lo, ROW(i), width/2);
+      orc_deinterleave2_lshift1_s16 (hi, lo, ROW(i), width/2);
       schro_split_ext_desl93 (hi, lo, width/2);
       orc_memcpy (ROW(i), hi, width/2*sizeof(int16_t));
       orc_memcpy (ROW(i) + width/2, lo, width/2*sizeof(int16_t));
@@ -296,8 +295,7 @@ void schro_iwt_5_3 (int16_t *data, int stride, int width, int height,
     if (i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
-      orc_lshift1_s16(ROW(i), ROW(i), width);
-      orc_deinterleave2_s16 (hi, lo, ROW(i), width/2);
+      orc_deinterleave2_lshift1_s16 (hi, lo, ROW(i), width/2);
       schro_split_ext_53 (hi, lo, width/2);
       orc_memcpy (ROW(i), hi, width/2*sizeof(int16_t));
       orc_memcpy (ROW(i) + width/2, lo, width/2*sizeof(int16_t));
@@ -345,8 +343,7 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
     if (i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
-      orc_lshift1_s16(ROW(i), ROW(i), width);
-      orc_deinterleave2_s16 (hi, lo, ROW(i), width/2);
+      orc_deinterleave2_lshift1_s16 (hi, lo, ROW(i), width/2);
       schro_split_ext_135 (hi, lo, width/2);
       orc_memcpy (ROW(i), hi, width/2*sizeof(int16_t));
       orc_memcpy (ROW(i) + width/2, lo, width/2*sizeof(int16_t));
@@ -523,8 +520,7 @@ void schro_iwt_daub_9_7 (int16_t *data, int stride, int width, int height,
     if (i < height) {
       int16_t *hi = tmp + 2;
       int16_t *lo = tmp + 6 + width/2;
-      orc_lshift1_s16(ROW(i), ROW(i), width);
-      orc_deinterleave2_s16 (hi, lo, ROW(i), width/2);
+      orc_deinterleave2_lshift1_s16 (hi, lo, ROW(i), width/2);
       schro_split_ext_daub97 (hi, lo, width/2);
       orc_memcpy (ROW(i), hi, width/2*sizeof(int16_t));
       orc_memcpy (ROW(i) + width/2, lo, width/2*sizeof(int16_t));

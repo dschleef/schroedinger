@@ -362,6 +362,21 @@ select0lw d1, t1
 select1lw d2, t1
 
 
+.function orc_deinterleave2_lshift1_s16
+.dest 2 d1 int16_t
+.dest 2 d2 int16_t
+.source 4 s1 int16_t
+.temp 4 t1
+.temp 2 t2
+.temp 2 t3
+
+copyl t1, s1
+select0lw t2, t1
+shlw d1, t2, 1
+select1lw t3, t1
+shlw d2, t3, 1
+
+
 .function orc_haar_sub_s16
 .dest 2 d1 int16_t
 .source 2 s1 int16_t

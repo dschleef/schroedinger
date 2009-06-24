@@ -1410,6 +1410,53 @@ orc_deinterleave2_s16 (int16_t *d1, int16_t *d2, int16_t *s1, int n)
 }
 
 
+/* orc_deinterleave2_lshift1_s16 */
+void
+orc_deinterleave2_lshift1_s16 (int16_t *d1, int16_t *d2, int16_t *s1, int n)
+{
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  if (p == NULL) {
+    MUTEX_LOCK
+    if (p == NULL) {
+      OrcCompileResult result;
+
+      p = orc_program_new ();
+      orc_program_set_name (p, "orc_deinterleave2_lshift1_s16");
+      orc_program_add_destination (p, 2, "d1");
+      orc_program_add_destination (p, 2, "d2");
+      orc_program_add_source (p, 4, "s1");
+      orc_program_add_constant (p, 2, 1, "c1");
+      orc_program_add_constant (p, 2, 1, "c2");
+      orc_program_add_temporary (p, 4, "t1");
+      orc_program_add_temporary (p, 2, "t2");
+      orc_program_add_temporary (p, 2, "t3");
+
+      orc_program_append (p, "copyl", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+      orc_program_append (p, "select0lw", ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1);
+      orc_program_append (p, "shlw", ORC_VAR_D1, ORC_VAR_T2, ORC_VAR_C1);
+      orc_program_append (p, "select1lw", ORC_VAR_T3, ORC_VAR_T1, ORC_VAR_D1);
+      orc_program_append (p, "shlw", ORC_VAR_D2, ORC_VAR_T3, ORC_VAR_C2);
+
+      result = orc_program_compile (p);
+      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
+        abort();
+      }
+    }
+    MUTEX_UNLOCK
+  }
+
+  ex->program = p;
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_D2] = d2;
+  ex->arrays[ORC_VAR_S1] = s1;
+
+  orc_executor_run (ex);
+}
+
+
 /* orc_haar_sub_s16 */
 void
 orc_haar_sub_s16 (int16_t *d1, int16_t *s1, int n)
