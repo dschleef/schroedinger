@@ -3149,7 +3149,7 @@ struct SchroEncoderSettings {
   BOOL(enable_noarith, FALSE),
   BOOL(enable_md5, FALSE),
   BOOL(enable_fullscan_estimation, FALSE),
-  BOOL(enable_hierarchical_estimation, FALSE),
+  BOOL(enable_hierarchical_estimation, TRUE),
   BOOL(enable_zero_estimation, FALSE),
   BOOL(enable_phasecorr_estimation, FALSE),
   BOOL(enable_bigblock_estimation, TRUE),
@@ -3178,6 +3178,7 @@ struct SchroEncoderSettings {
   DOUB(magic_badblock_multiplier_nonref, 0.0, 1000.0, 4.0),
   DOUB(magic_badblock_multiplier_ref, 0.0, 1000.0, 8.0),
   DOUB(magic_block_search_threshold, 0.0, 1000.0, 15.0),
+  DOUB(magic_scan_distance, 0.0, 1000.0, 4.0),
 };
 
 int

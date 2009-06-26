@@ -57,7 +57,7 @@ schro_motionest_new (SchroEncoderFrame *frame)
   n = params->x_num_blocks * params->y_num_blocks / 16;
   me->sblocks = schro_malloc0(sizeof(SchroBlock)*n);
 
-
+  me->scan_distance = frame->encoder->magic_scan_distance;
 
   return me;
 }
@@ -95,18 +95,20 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
   SCHRO_ASSERT(params->y_num_blocks != 0);
   SCHRO_ASSERT(params->num_refs > 0);
 
-  for(ref=0;ref<params->num_refs;ref++){
-    frame->rme[ref] = schro_rough_me_new (frame, frame->ref_frame[ref]);
-    schro_rough_me_heirarchical_scan (frame->rme[ref]);
+  if (encoder->enable_hierarchical_estimation) {
+    for(ref=0;ref<params->num_refs;ref++){
+      frame->rme[ref] = schro_rough_me_new (frame, frame->ref_frame[ref]);
+      schro_rough_me_heirarchical_scan (frame->rme[ref]);
 
-    if (encoder->enable_phasecorr_estimation) {
-      frame->phasecorr[ref] = schro_phasecorr_new (frame,
-          frame->ref_frame[ref]);
-      schro_encoder_phasecorr_estimation (frame->phasecorr[ref]);
+      if (encoder->enable_phasecorr_estimation) {
+        frame->phasecorr[ref] = schro_phasecorr_new (frame,
+            frame->ref_frame[ref]);
+        schro_encoder_phasecorr_estimation (frame->phasecorr[ref]);
+      }
     }
-  }
-  if (encoder->enable_global_motion) {
-    schro_encoder_global_estimation (frame);
+    if (encoder->enable_global_motion) {
+      schro_encoder_global_estimation (frame);
+    }
   }
 
   frame->me = schro_motionest_new (frame);
@@ -808,13 +810,20 @@ schro_motionest_superblock_block (SchroMotionEst *me,
       double score;
       double min_score;
 
-      schro_motionest_block_scan (me, 0, 4, &block, i, j, ii, jj);
+      /* FIXME use better default than DC */
+      schro_motionest_block_dc (me, &tryblock, i, j, ii, jj);
       min_score = block.entropy + me->lambda * block.error;
 
-      if (params->num_refs > 1) {
+      if (me->encoder_frame->encoder->enable_hierarchical_estimation) {
         memcpy (&tryblock, &block, sizeof(block));
-        schro_motionest_block_scan (me, 1, 4, &tryblock, i, j, ii, jj);
-        TRYBLOCK
+        schro_motionest_block_scan (me, 0, me->scan_distance, &block, i, j, ii, jj);
+        min_score = block.entropy + me->lambda * block.error;
+
+        if (params->num_refs > 1) {
+          memcpy (&tryblock, &block, sizeof(block));
+          schro_motionest_block_scan (me, 1, me->scan_distance, &tryblock, i, j, ii, jj);
+          TRYBLOCK
+        }
       }
 
       memcpy (&tryblock, &block, sizeof(block));
@@ -955,26 +964,30 @@ schro_motionest_superblock_subsuperblock (SchroMotionEst *me,
       double score;
       double min_score;
 
-      schro_motionest_subsuperblock_scan (me, 0, 4, &block, i, j, ii, jj);
+      /* FIXME use better default than DC */
+      schro_motionest_subsuperblock_dc (me, &tryblock, i, j, ii, jj);
       min_score = block.entropy + me->lambda * block.error;
 
-      if (params->num_refs > 1) {
-        memcpy (&tryblock, &block, sizeof(block));
-        schro_motionest_subsuperblock_scan (me, 1, 4, &tryblock, i, j, ii, jj);
+      if (me->encoder_frame->encoder->enable_hierarchical_estimation) {
+        schro_motionest_subsuperblock_scan (me, 0, me->scan_distance, &block, i, j, ii, jj);
         TRYBLOCK
+
+        if (params->num_refs > 1) {
+          memcpy (&tryblock, &block, sizeof(block));
+          schro_motionest_subsuperblock_scan (me, 1, me->scan_distance, &tryblock, i, j, ii, jj);
+          TRYBLOCK
 
 #if 0
-        memcpy (&tryblock, &block, sizeof(block));
-        schro_motionest_block_biref_zero (me, 1, &tryblock, i, j, ii, jj);
-        TRYBLOCK
+          memcpy (&tryblock, &block, sizeof(block));
+          schro_motionest_block_biref_zero (me, 1, &tryblock, i, j, ii, jj);
+          TRYBLOCK
 #endif
+        }
       }
 
-if (1) {
       memcpy (&tryblock, &block, sizeof(block));
       schro_motionest_subsuperblock_dc (me, &tryblock, i, j, ii, jj);
       TRYBLOCK
-}
 
       total_error += block.error;
     }
@@ -1021,12 +1034,14 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
         TRYBLOCK
       }
 
-      /* 16 s */
-      schro_motionest_superblock_scan_one (me, 0, 4, &tryblock, i, j);
-      TRYBLOCK
-      if (params->num_refs > 1) {
-        schro_motionest_superblock_scan_one (me, 1, 4, &tryblock, i, j);
+      if (me->encoder_frame->encoder->enable_hierarchical_estimation) {
+        /* 16 s */
+        schro_motionest_superblock_scan_one (me, 0, me->scan_distance, &tryblock, i, j);
         TRYBLOCK
+        if (params->num_refs > 1) {
+          schro_motionest_superblock_scan_one (me, 1, me->scan_distance, &tryblock, i, j);
+          TRYBLOCK
+        }
       }
 
       /* 2.5 s */

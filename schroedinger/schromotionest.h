@@ -28,6 +28,7 @@ struct _SchroMotionEst {
   SchroBlock *sblocks;
 
   //SchroMotionField *downsampled_mf[2][8];
+  int scan_distance;
 
   int badblocks;
   double hier_score;
