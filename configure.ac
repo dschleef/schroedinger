@@ -151,6 +151,48 @@ SCHRO_CFLAGS="$SCHRO_CFLAGS -I\$(top_srcdir)"
 AC_SUBST(SCHRO_CFLAGS)
 
 ########################
+# GStreamer stuff
+########################
+
+GST_MAJORMINOR=0.10
+
+dnl *** check for arguments to configure ***
+
+if test "x$with_opengl" = xyes; then
+  GST_GL_DEP="gst-plugins-gl-0.10"
+fi
+
+AC_ARG_ENABLE(gstreamer, AC_HELP_STRING([--disable-gstreamer],
+              [disable gstreamer support (default=enabled)]))
+if test "x$enable_gstreamer" != xno
+then
+  PKG_CHECK_MODULES(GST, gstreamer-0.10 >= 0.10.19 gstreamer-base-0.10 >= 0.10.19 gstreamer-video-0.10 >= 0.10.19 ${GST_GL_DEP},
+      HAVE_GST=yes, HAVE_GST=no)
+else
+  HAVE_GST=no
+fi
+
+AM_CONDITIONAL(HAVE_GST, test "x$HAVE_GST" = "xyes")
+AC_SUBST(GST_CFLAGS)
+AC_SUBST(GST_LIBS)
+
+plugindir="\$(libdir)/gstreamer-$GST_MAJORMINOR"
+AC_SUBST(plugindir)
+
+GST_ALL_LDFLAGS="-no-undefined"
+AC_SUBST(GST_ALL_LDFLAGS)
+
+GST_PLUGIN_LDFLAGS="-module -avoid-version -export-symbols-regex '^[_]*gst_plugin_desc\$\$' $GST_ALL_LDFLAGS"
+AC_SUBST(GST_PLUGIN_LDFLAGS)
+
+AC_DEFINE(GST_PACKAGE_ORIGIN, "unknown", [Package origin in GStreamer plugin])
+
+AC_ARG_ENABLE(video-compat, AC_HELP_STRING([--disable-video-compat],
+    [disable gstvideo compatibility (default=enabled)]))
+AM_CONDITIONAL(ENABLE_VIDEO_COMPAT, test "x$enable_video_compat" != "xno")
+
+
+########################
 # Check for CUDA
 ########################
 AC_ARG_WITH([cuda],
@@ -237,6 +279,8 @@ doc/Makefile
 schroedinger/Makefile
 schroedinger/cuda/Makefile
 schroedinger/opengl/Makefile
+gst-libs/gst/video/Makefile
+gst/Makefile
 testsuite/Makefile
 testsuite/cache/Makefile
 testsuite/cuda/Makefile
