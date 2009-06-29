@@ -160,3 +160,69 @@ gst_video_state_get_timestamp (const GstVideoState * state, int frame_number)
         state->fps_d * GST_SECOND, state->fps_n);
   }
 }
+
+guint
+gst_adapter_masked_scan_uint32 (GstAdapter * adapter, guint32 mask,
+    guint32 pattern, guint offset, guint size)
+{
+  GSList *g;
+  guint skip, bsize, i;
+  guint32 state;
+  guint8 *bdata;
+  GstBuffer *buf;
+
+  g_return_val_if_fail (size > 0, -1);
+  g_return_val_if_fail (offset + size <= adapter->size, -1);
+
+  /* we can't find the pattern with less than 4 bytes */
+  if (G_UNLIKELY (size < 4))
+    return -1;
+
+  skip = offset + adapter->skip;
+
+  /* first step, do skipping and position on the first buffer */
+  g = adapter->buflist;
+  buf = g->data;
+  bsize = GST_BUFFER_SIZE (buf);
+  while (G_UNLIKELY (skip >= bsize)) {
+    skip -= bsize;
+    g = g_slist_next (g);
+    buf = g->data;
+    bsize = GST_BUFFER_SIZE (buf);
+  }
+  /* get the data now */
+  bsize -= skip;
+  bdata = GST_BUFFER_DATA (buf) + skip;
+  skip = 0;
+
+  /* set the state to something that does not match */
+  state = ~pattern;
+
+  /* now find data */
+  do {
+    bsize = MIN (bsize, size);
+    for (i = 0; i < bsize; i++) {
+      state = ((state << 8) | bdata[i]);
+      if (G_UNLIKELY ((state & mask) == pattern)) {
+        /* we have a match but we need to have skipped at
+         * least 4 bytes to fill the state. */
+        if (G_LIKELY (skip + i >= 3))
+          return offset + skip + i - 3;
+      }
+    }
+    size -= bsize;
+    if (size == 0)
+      break;
+
+    /* nothing found yet, go to next buffer */
+    skip += bsize;
+    g = g_slist_next (g);
+    buf = g->data;
+    bsize = GST_BUFFER_SIZE (buf);
+    bdata = GST_BUFFER_DATA (buf);
+  } while (TRUE);
+
+  /* nothing found */
+  return -1;
+}
+

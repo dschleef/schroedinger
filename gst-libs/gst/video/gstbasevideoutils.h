@@ -83,6 +83,8 @@ gboolean gst_base_video_state_from_caps (GstVideoState *state,
 
 GstClockTime gst_video_state_get_timestamp (const GstVideoState *state,
     int frame_number);
+guint gst_adapter_masked_scan_uint32 (GstAdapter * adapter, guint32 mask,
+    guint32 pattern, guint offset, guint size);
 
 G_END_DECLS
 
