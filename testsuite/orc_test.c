@@ -6,8 +6,952 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define ORC_CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
+#define ORC_ABS(a) ((a)<0 ? (-a) : (a))
+#define ORC_MIN(a,b) ((a)<(b) ? (a) : (b))
+#define ORC_MAX(a,b) ((a)>(b) ? (a) : (b))
+#define ORC_SB_MAX 127
+#define ORC_SB_MIN (-1-ORC_SB_MAX)
+#define ORC_UB_MAX 255
+#define ORC_UB_MIN 0
+#define ORC_SW_MAX 32767
+#define ORC_SW_MIN (-1-ORC_SW_MAX)
+#define ORC_UW_MAX 65535
+#define ORC_UW_MIN 0
+#define ORC_SL_MAX 2147483647
+#define ORC_SL_MIN (-1-ORC_SL_MAX)
+#define ORC_UL_MAX 4294967295U
+#define ORC_UL_MIN 0
+#define ORC_CLAMP_SB(x) ORC_CLAMP(x,ORC_SB_MIN,ORC_SB_MAX)
+#define ORC_CLAMP_UB(x) ORC_CLAMP(x,ORC_UB_MIN,ORC_UB_MAX)
+#define ORC_CLAMP_SW(x) ORC_CLAMP(x,ORC_SW_MIN,ORC_SW_MAX)
+#define ORC_CLAMP_UW(x) ORC_CLAMP(x,ORC_UW_MIN,ORC_UW_MAX)
+#define ORC_CLAMP_SL(x) ORC_CLAMP(x,ORC_SL_MIN,ORC_SL_MAX)
+#define ORC_CLAMP_UL(x) ORC_CLAMP(x,ORC_UL_MIN,ORC_UL_MAX)
+#define ORC_SWAP_W(x) ((((x)&0xff)<<8) | (((x)&0xff00)>>8))
+#define ORC_SWAP_L(x) ((((x)&0xff)<<24) | (((x)&0xff00)<<8) | (((x)&0xff0000)>>8) | (((x)&0xff000000)>>24))
 
-int main (int argc, char *argv[])
+/* orc_add2_rshift_add_s16_22 */
+static void
+_backup_orc_add2_rshift_add_s16_22 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+  const int16_t var16 = 2;
+  const int16_t var17 = 2;
+  int16_t var32;
+  int16_t var33;
+  int16_t var34;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var32 = var4[i] + var5[i];
+    /* 1: addw */
+    var33 = var32 + var16;
+    /* 2: shrsw */
+    var34 = var33 >> var17;
+    /* 3: addw */
+    var0[i] = var0[i] + var34;
+  }
+
+}
+
+/* orc_add2_rshift_sub_s16_22 */
+static void
+_backup_orc_add2_rshift_sub_s16_22 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+  const int16_t var16 = 2;
+  const int16_t var17 = 2;
+  int16_t var32;
+  int16_t var33;
+  int16_t var34;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var32 = var4[i] + var5[i];
+    /* 1: addw */
+    var33 = var32 + var16;
+    /* 2: shrsw */
+    var34 = var33 >> var17;
+    /* 3: subw */
+    var0[i] = var0[i] - var34;
+  }
+
+}
+
+/* orc_add2_rshift_add_s16_11 */
+static void
+_backup_orc_add2_rshift_add_s16_11 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: avgsw */
+    var32 = (var4[i] + var5[i] + 1)>>1;
+    /* 1: addw */
+    var0[i] = var0[i] + var32;
+  }
+
+}
+
+/* orc_add2_rshift_sub_s16_11 */
+static void
+_backup_orc_add2_rshift_sub_s16_11 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: avgsw */
+    var32 = (var4[i] + var5[i] + 1)>>1;
+    /* 1: subw */
+    var0[i] = var0[i] - var32;
+  }
+
+}
+
+/* orc_add_const_rshift_s16_11 */
+static void
+_backup_orc_add_const_rshift_s16_11 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t var16 = 1;
+  const int16_t var17 = 1;
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var32 = var4[i] + var16;
+    /* 1: shrsw */
+    var0[i] = var32 >> var17;
+  }
+
+}
+
+/* orc_add_const_rshift_s16 */
+static void
+_backup_orc_add_const_rshift_s16 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t var24 = ex->params[24];
+  const int16_t var25 = ex->params[25];
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var32 = var0[i] + var24;
+    /* 1: shrsw */
+    var0[i] = var32 >> var25;
+  }
+
+}
+
+/* orc_add_s16 */
+static void
+_backup_orc_add_s16 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var0[i] = var4[i] + var5[i];
+  }
+
+}
+
+/* orc_addc_rshift_s16 */
+static void
+_backup_orc_addc_rshift_s16 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+  const int16_t var24 = ex->params[24];
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var32 = var4[i] + var5[i];
+    /* 1: shrsw */
+    var0[i] = var32 >> var24;
+  }
+
+}
+
+/* orc_lshift1_s16 */
+static void
+_backup_orc_lshift1_s16 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t var16 = 1;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: shlw */
+    var0[i] = var4[i] << var16;
+  }
+
+}
+
+/* orc_lshift2_s16 */
+static void
+_backup_orc_lshift2_s16 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t var16 = 2;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: shlw */
+    var0[i] = var4[i] << var16;
+  }
+
+}
+
+/* orc_lshift_s16_ip */
+static void
+_backup_orc_lshift_s16_ip (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t var24 = ex->params[24];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: shlw */
+    var0[i] = var0[i] << var24;
+  }
+
+}
+
+/* orc_mas2_add_s16_ip */
+static void
+_backup_orc_mas2_add_s16_ip (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+  const int16_t var24 = ex->params[24];
+  const int32_t var25 = ex->params[25];
+  const int32_t var26 = ex->params[26];
+  int16_t var32;
+  int32_t var33;
+  int32_t var34;
+  int32_t var35;
+  int16_t var36;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var32 = var4[i] + var5[i];
+    /* 1: mulswl */
+    var33 = var32 * var24;
+    /* 2: addl */
+    var34 = var33 + var25;
+    /* 3: shrsl */
+    var35 = var34 >> var26;
+    /* 4: convlw */
+    var36 = var35;
+    /* 5: addw */
+    var0[i] = var0[i] + var36;
+  }
+
+}
+
+/* orc_mas2_sub_s16_ip */
+static void
+_backup_orc_mas2_sub_s16_ip (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+  const int16_t var24 = ex->params[24];
+  const int32_t var25 = ex->params[25];
+  const int32_t var26 = ex->params[26];
+  int16_t var32;
+  int32_t var33;
+  int32_t var34;
+  int32_t var35;
+  int16_t var36;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var32 = var4[i] + var5[i];
+    /* 1: mulswl */
+    var33 = var32 * var24;
+    /* 2: addl */
+    var34 = var33 + var25;
+    /* 3: shrsl */
+    var35 = var34 >> var26;
+    /* 4: convlw */
+    var36 = var35;
+    /* 5: subw */
+    var0[i] = var0[i] - var36;
+  }
+
+}
+
+/* orc_mas4_across_add_s16_1991_ip */
+static void
+_backup_orc_mas4_across_add_s16_1991_ip (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+  const int16_t * var6 = ex->arrays[6];
+  const int16_t * var7 = ex->arrays[7];
+  const int16_t var16 = 9;
+  const int32_t var24 = ex->params[24];
+  const int32_t var25 = ex->params[25];
+  int16_t var32;
+  int16_t var33;
+  int32_t var34;
+  int32_t var35;
+  int32_t var36;
+  int32_t var37;
+  int32_t var38;
+  int16_t var39;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var32 = var5[i] + var6[i];
+    /* 1: mulswl */
+    var34 = var32 * var16;
+    /* 2: addw */
+    var33 = var4[i] + var7[i];
+    /* 3: convswl */
+    var35 = var33;
+    /* 4: subl */
+    var36 = var34 - var35;
+    /* 5: addl */
+    var37 = var36 + var24;
+    /* 6: shrsl */
+    var38 = var37 >> var25;
+    /* 7: convlw */
+    var39 = var38;
+    /* 8: addw */
+    var0[i] = var0[i] + var39;
+  }
+
+}
+
+/* orc_mas4_across_sub_s16_1991_ip */
+static void
+_backup_orc_mas4_across_sub_s16_1991_ip (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+  const int16_t * var6 = ex->arrays[6];
+  const int16_t * var7 = ex->arrays[7];
+  const int16_t var16 = 9;
+  const int32_t var24 = ex->params[24];
+  const int32_t var25 = ex->params[25];
+  int16_t var32;
+  int16_t var33;
+  int32_t var34;
+  int32_t var35;
+  int32_t var36;
+  int32_t var37;
+  int32_t var38;
+  int16_t var39;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var32 = var5[i] + var6[i];
+    /* 1: mulswl */
+    var34 = var32 * var16;
+    /* 2: addw */
+    var33 = var4[i] + var7[i];
+    /* 3: convswl */
+    var35 = var33;
+    /* 4: subl */
+    var36 = var34 - var35;
+    /* 5: addl */
+    var37 = var36 + var24;
+    /* 6: shrsl */
+    var38 = var37 >> var25;
+    /* 7: convlw */
+    var39 = var38;
+    /* 8: subw */
+    var0[i] = var0[i] - var39;
+  }
+
+}
+
+/* orc_subtract_s16 */
+static void
+_backup_orc_subtract_s16 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: subw */
+    var0[i] = var4[i] - var5[i];
+  }
+
+}
+
+/* orc_memcpy */
+static void
+_backup_orc_memcpy (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int8_t * var4 = ex->arrays[4];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: copyb */
+    var0[i] = var4[i];
+  }
+
+}
+
+/* orc_add_s16_u8 */
+static void
+_backup_orc_add_s16_u8 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int8_t * var5 = ex->arrays[5];
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: convubw */
+    var32 = (uint8_t)var5[i];
+    /* 1: addw */
+    var0[i] = var32 + var4[i];
+  }
+
+}
+
+/* orc_convert_s16_u8 */
+static void
+_backup_orc_convert_s16_u8 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int8_t * var4 = ex->arrays[4];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: convubw */
+    var0[i] = (uint8_t)var4[i];
+  }
+
+}
+
+/* orc_convert_u8_s16 */
+static void
+_backup_orc_convert_u8_s16 (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: convsuswb */
+    var0[i] = ORC_CLAMP_UB(var4[i]);
+  }
+
+}
+
+/* orc_offsetconvert_u8_s16 */
+static void
+_backup_orc_offsetconvert_u8_s16 (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t var16 = 128;
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var32 = var4[i] + var16;
+    /* 1: convsuswb */
+    var0[i] = ORC_CLAMP_UB(var32);
+  }
+
+}
+
+/* orc_offsetconvert_s16_u8 */
+static void
+_backup_orc_offsetconvert_s16_u8 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int8_t * var4 = ex->arrays[4];
+  const int16_t var16 = 128;
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: convubw */
+    var32 = (uint8_t)var4[i];
+    /* 1: subw */
+    var0[i] = var32 - var16;
+  }
+
+}
+
+/* orc_subtract_s16_u8 */
+static void
+_backup_orc_subtract_s16_u8 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int8_t * var5 = ex->arrays[5];
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: convubw */
+    var32 = (uint8_t)var5[i];
+    /* 1: subw */
+    var0[i] = var4[i] - var32;
+  }
+
+}
+
+/* orc_multiply_and_add_s16_u8 */
+static void
+_backup_orc_multiply_and_add_s16_u8 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int8_t * var5 = ex->arrays[5];
+  int16_t var32;
+  int16_t var33;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: convubw */
+    var32 = (uint8_t)var5[i];
+    /* 1: mullw */
+    var33 = (var32 * var4[i]) & 0xffff;
+    /* 2: addw */
+    var0[i] = var0[i] + var33;
+  }
+
+}
+
+/* orc_splat_s16_ns */
+static void
+_backup_orc_splat_s16_ns (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t var24 = ex->params[24];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: copyw */
+    var0[i] = var24;
+  }
+
+}
+
+/* orc_splat_u8_ns */
+static void
+_backup_orc_splat_u8_ns (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int8_t var24 = ex->params[24];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: copyb */
+    var0[i] = var24;
+  }
+
+}
+
+/* orc_average_u8 */
+static void
+_backup_orc_average_u8 (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int8_t * var4 = ex->arrays[4];
+  const int8_t * var5 = ex->arrays[5];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: avgub */
+    var0[i] = ((uint8_t)var4[i] + (uint8_t)var5[i] + 1)>>1;
+  }
+
+}
+
+/* orc_rrshift6_s16_ip */
+static void
+_backup_orc_rrshift6_s16_ip (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t var16 = 8160;
+  const int16_t var17 = 6;
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: subw */
+    var32 = var0[i] - var16;
+    /* 1: shrsw */
+    var0[i] = var32 >> var17;
+  }
+
+}
+
+/* orc_unpack_yuyv_y */
+static void
+_backup_orc_unpack_yuyv_y (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: select0wb */
+    var0[i] = (uint16_t)var4[i] & 0xff;
+  }
+
+}
+
+/* orc_unpack_yuyv_u */
+static void
+_backup_orc_unpack_yuyv_u (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int32_t * var4 = ex->arrays[4];
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: select0lw */
+    var32 = (uint32_t)var4[i] & 0xffff;
+    /* 1: select1wb */
+    var0[i] = ((uint16_t)var32 >> 8)&0xff;
+  }
+
+}
+
+/* orc_unpack_yuyv_v */
+static void
+_backup_orc_unpack_yuyv_v (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int32_t * var4 = ex->arrays[4];
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: select1lw */
+    var32 = ((uint32_t)var4[i] >> 16)&0xffff;
+    /* 1: select1wb */
+    var0[i] = ((uint16_t)var32 >> 8)&0xff;
+  }
+
+}
+
+/* orc_packyuyv */
+static void
+_backup_orc_packyuyv (OrcExecutor *ex)
+{
+  int i;
+  int32_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int8_t * var5 = ex->arrays[5];
+  const int8_t * var6 = ex->arrays[6];
+  int8_t var32;
+  int8_t var33;
+  int16_t var34;
+  int16_t var35;
+  int16_t var36;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: copyw */
+    var36 = var4[i];
+    /* 1: select0wb */
+    var32 = (uint16_t)var36 & 0xff;
+    /* 2: select1wb */
+    var33 = ((uint16_t)var36 >> 8)&0xff;
+    /* 3: mergebw */
+    var34 = ((uint8_t)var32) | ((uint8_t)var5[i] << 8);
+    /* 4: mergebw */
+    var35 = ((uint8_t)var33) | ((uint8_t)var6[i] << 8);
+    /* 5: mergewl */
+    var0[i] = ((uint16_t)var34) | ((uint16_t)var35 << 16);
+  }
+
+}
+
+/* orc_interleave2_s16 */
+static void
+_backup_orc_interleave2_s16 (OrcExecutor *ex)
+{
+  int i;
+  int32_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: mergewl */
+    var0[i] = ((uint16_t)var4[i]) | ((uint16_t)var5[i] << 16);
+  }
+
+}
+
+/* orc_interleave2_rrshift1_s16 */
+static void
+_backup_orc_interleave2_rrshift1_s16 (OrcExecutor *ex)
+{
+  int i;
+  int32_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+  const int16_t var16 = 1;
+  const int16_t var17 = 1;
+  const int16_t var18 = 1;
+  const int16_t var19 = 1;
+  int16_t var32;
+  int16_t var33;
+  int16_t var34;
+  int16_t var35;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var32 = var4[i] + var16;
+    /* 1: shrsw */
+    var34 = var32 >> var17;
+    /* 2: addw */
+    var33 = var5[i] + var18;
+    /* 3: shrsw */
+    var35 = var33 >> var19;
+    /* 4: mergewl */
+    var0[i] = ((uint16_t)var34) | ((uint16_t)var35 << 16);
+  }
+
+}
+
+/* orc_deinterleave2_s16 */
+static void
+_backup_orc_deinterleave2_s16 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  int16_t * var1 = ex->arrays[1];
+  const int32_t * var4 = ex->arrays[4];
+  int32_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: copyl */
+    var32 = var4[i];
+    /* 1: select0lw */
+    var0[i] = (uint32_t)var32 & 0xffff;
+    /* 2: select1lw */
+    var1[i] = ((uint32_t)var32 >> 16)&0xffff;
+  }
+
+}
+
+/* orc_deinterleave2_lshift1_s16 */
+static void
+_backup_orc_deinterleave2_lshift1_s16 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  int16_t * var1 = ex->arrays[1];
+  const int32_t * var4 = ex->arrays[4];
+  const int16_t var16 = 1;
+  const int16_t var17 = 1;
+  int32_t var32;
+  int16_t var33;
+  int16_t var34;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: copyl */
+    var32 = var4[i];
+    /* 1: select0lw */
+    var33 = (uint32_t)var32 & 0xffff;
+    /* 2: shlw */
+    var0[i] = var33 << var16;
+    /* 3: select1lw */
+    var34 = ((uint32_t)var32 >> 16)&0xffff;
+    /* 4: shlw */
+    var1[i] = var34 << var17;
+  }
+
+}
+
+/* orc_haar_sub_s16 */
+static void
+_backup_orc_haar_sub_s16 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: subw */
+    var0[i] = var0[i] - var4[i];
+  }
+
+}
+
+/* orc_haar_add_half_s16 */
+static void
+_backup_orc_haar_add_half_s16 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t var16 = 0;
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: avgsw */
+    var32 = (var4[i] + var16 + 1)>>1;
+    /* 1: addw */
+    var0[i] = var0[i] + var32;
+  }
+
+}
+
+/* orc_haar_add_s16 */
+static void
+_backup_orc_haar_add_s16 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: addw */
+    var0[i] = var0[i] + var4[i];
+  }
+
+}
+
+/* orc_haar_sub_half_s16 */
+static void
+_backup_orc_haar_sub_half_s16 (OrcExecutor *ex)
+{
+  int i;
+  int16_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t var16 = 0;
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: avgsw */
+    var32 = (var4[i] + var16 + 1)>>1;
+    /* 1: subw */
+    var0[i] = var0[i] - var32;
+  }
+
+}
+
+/* orc_sum_u8 */
+static void
+_backup_orc_sum_u8 (OrcExecutor *ex)
+{
+  int i;
+  const int8_t * var4 = ex->arrays[4];
+  int32_t var12 = 0;
+  int16_t var32;
+  int32_t var33;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: convubw */
+    var32 = (uint8_t)var4[i];
+    /* 1: convuwl */
+    var33 = (uint16_t)var32;
+    /* 2: accl */
+    var12 = var12 + var33;
+  ex->accumulators[0] = var12;
+  }
+
+}
+
+/* orc_sum_s16 */
+static void
+_backup_orc_sum_s16 (OrcExecutor *ex)
+{
+  int i;
+  const int16_t * var4 = ex->arrays[4];
+  int32_t var12 = 0;
+  int32_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: convswl */
+    var32 = var4[i];
+    /* 1: accl */
+    var12 = var12 + var32;
+  ex->accumulators[0] = var12;
+  }
+
+}
+
+/* orc_sum_square_diff_u8 */
+static void
+_backup_orc_sum_square_diff_u8 (OrcExecutor *ex)
+{
+  int i;
+  const int8_t * var4 = ex->arrays[4];
+  const int8_t * var5 = ex->arrays[5];
+  int32_t var12 = 0;
+  int16_t var32;
+  int16_t var33;
+  int32_t var34;
+  int16_t var35;
+  int16_t var36;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: convubw */
+    var32 = (uint8_t)var4[i];
+    /* 1: convubw */
+    var33 = (uint8_t)var5[i];
+    /* 2: subw */
+    var35 = var32 - var33;
+    /* 3: mullw */
+    var36 = (var35 * var35) & 0xffff;
+    /* 4: convuwl */
+    var34 = (uint16_t)var36;
+    /* 5: accl */
+    var12 = var12 + var34;
+  ex->accumulators[0] = var12;
+  }
+
+}
+
+
+int
+main (int argc, char *argv[])
 {
   int error = FALSE;
 
@@ -20,9 +964,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_add2_rshift_add_s16_22:\n");
+    printf ("orc_add2_rshift_add_s16_22:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_add2_rshift_add_s16_22");
+    orc_program_set_backup_function (p, _backup_orc_add2_rshift_add_s16_22);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -36,7 +981,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -48,9 +995,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_add2_rshift_sub_s16_22:\n");
+    printf ("orc_add2_rshift_sub_s16_22:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_add2_rshift_sub_s16_22");
+    orc_program_set_backup_function (p, _backup_orc_add2_rshift_sub_s16_22);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -64,7 +1012,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -76,9 +1026,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_add2_rshift_add_s16_11:\n");
+    printf ("orc_add2_rshift_add_s16_11:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_add2_rshift_add_s16_11");
+    orc_program_set_backup_function (p, _backup_orc_add2_rshift_add_s16_11);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -88,7 +1039,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -100,9 +1053,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_add2_rshift_sub_s16_11:\n");
+    printf ("orc_add2_rshift_sub_s16_11:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_add2_rshift_sub_s16_11");
+    orc_program_set_backup_function (p, _backup_orc_add2_rshift_sub_s16_11);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -112,7 +1066,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -124,9 +1080,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_add_const_rshift_s16_11:\n");
+    printf ("orc_add_const_rshift_s16_11:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_add_const_rshift_s16_11");
+    orc_program_set_backup_function (p, _backup_orc_add_const_rshift_s16_11);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_constant (p, 2, 1, "c1");
@@ -137,7 +1094,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "shrsw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_C2);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -149,9 +1108,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_add_const_rshift_s16:\n");
+    printf ("orc_add_const_rshift_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_add_const_rshift_s16");
+    orc_program_set_backup_function (p, _backup_orc_add_const_rshift_s16);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_parameter (p, 2, "p1");
     orc_program_add_parameter (p, 2, "p2");
@@ -161,7 +1121,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "shrsw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_P2);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -173,9 +1135,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_add_s16:\n");
+    printf ("orc_add_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_add_s16");
+    orc_program_set_backup_function (p, _backup_orc_add_s16);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -183,7 +1146,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -195,9 +1160,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_addc_rshift_s16:\n");
+    printf ("orc_addc_rshift_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_addc_rshift_s16");
+    orc_program_set_backup_function (p, _backup_orc_addc_rshift_s16);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -208,7 +1174,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "shrsw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_P1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -220,9 +1188,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_lshift1_s16:\n");
+    printf ("orc_lshift1_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_lshift1_s16");
+    orc_program_set_backup_function (p, _backup_orc_lshift1_s16);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_constant (p, 2, 1, "c1");
@@ -230,7 +1199,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "shlw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_C1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -242,9 +1213,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_lshift2_s16:\n");
+    printf ("orc_lshift2_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_lshift2_s16");
+    orc_program_set_backup_function (p, _backup_orc_lshift2_s16);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_constant (p, 2, 2, "c1");
@@ -252,7 +1224,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "shlw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_C1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -264,16 +1238,19 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_lshift_s16_ip:\n");
+    printf ("orc_lshift_s16_ip:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_lshift_s16_ip");
+    orc_program_set_backup_function (p, _backup_orc_lshift_s16_ip);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_parameter (p, 2, "p1");
 
     orc_program_append (p, "shlw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_P1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -285,9 +1262,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_mas2_add_s16_ip:\n");
+    printf ("orc_mas2_add_s16_ip:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_mas2_add_s16_ip");
+    orc_program_set_backup_function (p, _backup_orc_mas2_add_s16_ip);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -305,7 +1283,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -317,9 +1297,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_mas2_sub_s16_ip:\n");
+    printf ("orc_mas2_sub_s16_ip:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_mas2_sub_s16_ip");
+    orc_program_set_backup_function (p, _backup_orc_mas2_sub_s16_ip);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -337,7 +1318,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -349,9 +1332,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_mas4_across_add_s16_1991_ip:\n");
+    printf ("orc_mas4_across_add_s16_1991_ip:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_mas4_across_add_s16_1991_ip");
+    orc_program_set_backup_function (p, _backup_orc_mas4_across_add_s16_1991_ip);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -376,7 +1360,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -388,9 +1374,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_mas4_across_sub_s16_1991_ip:\n");
+    printf ("orc_mas4_across_sub_s16_1991_ip:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_mas4_across_sub_s16_1991_ip");
+    orc_program_set_backup_function (p, _backup_orc_mas4_across_sub_s16_1991_ip);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -415,7 +1402,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -427,9 +1416,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_subtract_s16:\n");
+    printf ("orc_subtract_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_subtract_s16");
+    orc_program_set_backup_function (p, _backup_orc_subtract_s16);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -437,7 +1427,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -449,16 +1441,19 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_memcpy:\n");
+    printf ("orc_memcpy:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_memcpy");
+    orc_program_set_backup_function (p, _backup_orc_memcpy);
     orc_program_add_destination (p, 1, "d1");
     orc_program_add_source (p, 1, "s1");
 
     orc_program_append (p, "copyb", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -470,9 +1465,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_add_s16_u8:\n");
+    printf ("orc_add_s16_u8:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_add_s16_u8");
+    orc_program_set_backup_function (p, _backup_orc_add_s16_u8);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 1, "s2");
@@ -482,7 +1478,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_S1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -494,16 +1492,19 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_convert_s16_u8:\n");
+    printf ("orc_convert_s16_u8:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_convert_s16_u8");
+    orc_program_set_backup_function (p, _backup_orc_convert_s16_u8);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 1, "s1");
 
     orc_program_append (p, "convubw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -515,16 +1516,19 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_convert_u8_s16:\n");
+    printf ("orc_convert_u8_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_convert_u8_s16");
+    orc_program_set_backup_function (p, _backup_orc_convert_u8_s16);
     orc_program_add_destination (p, 1, "d1");
     orc_program_add_source (p, 2, "s1");
 
     orc_program_append (p, "convsuswb", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -536,9 +1540,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_offsetconvert_u8_s16:\n");
+    printf ("orc_offsetconvert_u8_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_offsetconvert_u8_s16");
+    orc_program_set_backup_function (p, _backup_orc_offsetconvert_u8_s16);
     orc_program_add_destination (p, 1, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_constant (p, 2, 128, "c1");
@@ -548,7 +1553,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "convsuswb", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -560,9 +1567,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_offsetconvert_s16_u8:\n");
+    printf ("orc_offsetconvert_s16_u8:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_offsetconvert_s16_u8");
+    orc_program_set_backup_function (p, _backup_orc_offsetconvert_s16_u8);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 1, "s1");
     orc_program_add_constant (p, 2, 128, "c1");
@@ -572,7 +1580,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_C1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -584,9 +1594,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_subtract_s16_u8:\n");
+    printf ("orc_subtract_s16_u8:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_subtract_s16_u8");
+    orc_program_set_backup_function (p, _backup_orc_subtract_s16_u8);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 1, "s2");
@@ -596,7 +1607,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -608,9 +1621,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_multiply_and_add_s16_u8:\n");
+    printf ("orc_multiply_and_add_s16_u8:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_multiply_and_add_s16_u8");
+    orc_program_set_backup_function (p, _backup_orc_multiply_and_add_s16_u8);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 1, "s2");
@@ -621,7 +1635,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -633,16 +1649,19 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_splat_s16_ns:\n");
+    printf ("orc_splat_s16_ns:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_splat_s16_ns");
+    orc_program_set_backup_function (p, _backup_orc_splat_s16_ns);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_parameter (p, 2, "p1");
 
     orc_program_append (p, "copyw", ORC_VAR_D1, ORC_VAR_P1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -654,16 +1673,19 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_splat_u8_ns:\n");
+    printf ("orc_splat_u8_ns:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_splat_u8_ns");
+    orc_program_set_backup_function (p, _backup_orc_splat_u8_ns);
     orc_program_add_destination (p, 1, "d1");
     orc_program_add_parameter (p, 1, "p1");
 
     orc_program_append (p, "copyb", ORC_VAR_D1, ORC_VAR_P1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -675,9 +1697,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_average_u8:\n");
+    printf ("orc_average_u8:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_average_u8");
+    orc_program_set_backup_function (p, _backup_orc_average_u8);
     orc_program_add_destination (p, 1, "d1");
     orc_program_add_source (p, 1, "s1");
     orc_program_add_source (p, 1, "s2");
@@ -685,7 +1708,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "avgub", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -697,9 +1722,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_rrshift6_s16_ip:\n");
+    printf ("orc_rrshift6_s16_ip:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_rrshift6_s16_ip");
+    orc_program_set_backup_function (p, _backup_orc_rrshift6_s16_ip);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_constant (p, 2, 8160, "c1");
     orc_program_add_constant (p, 2, 6, "c2");
@@ -709,7 +1735,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "shrsw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_C2);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -721,16 +1749,19 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_unpack_yuyv_y:\n");
+    printf ("orc_unpack_yuyv_y:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_unpack_yuyv_y");
+    orc_program_set_backup_function (p, _backup_orc_unpack_yuyv_y);
     orc_program_add_destination (p, 1, "d1");
     orc_program_add_source (p, 2, "s1");
 
     orc_program_append (p, "select0wb", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -742,9 +1773,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_unpack_yuyv_u:\n");
+    printf ("orc_unpack_yuyv_u:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_unpack_yuyv_u");
+    orc_program_set_backup_function (p, _backup_orc_unpack_yuyv_u);
     orc_program_add_destination (p, 1, "d1");
     orc_program_add_source (p, 4, "s1");
     orc_program_add_temporary (p, 2, "t1");
@@ -753,7 +1785,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "select1wb", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -765,9 +1799,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_unpack_yuyv_v:\n");
+    printf ("orc_unpack_yuyv_v:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_unpack_yuyv_v");
+    orc_program_set_backup_function (p, _backup_orc_unpack_yuyv_v);
     orc_program_add_destination (p, 1, "d1");
     orc_program_add_source (p, 4, "s1");
     orc_program_add_temporary (p, 2, "t1");
@@ -776,7 +1811,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "select1wb", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -788,9 +1825,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_packyuyv:\n");
+    printf ("orc_packyuyv:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_packyuyv");
+    orc_program_set_backup_function (p, _backup_orc_packyuyv);
     orc_program_add_destination (p, 4, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 1, "s2");
@@ -809,7 +1847,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "mergewl", ORC_VAR_D1, ORC_VAR_T3, ORC_VAR_T4);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -821,9 +1861,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_interleave2_s16:\n");
+    printf ("orc_interleave2_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_interleave2_s16");
+    orc_program_set_backup_function (p, _backup_orc_interleave2_s16);
     orc_program_add_destination (p, 4, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -831,7 +1872,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "mergewl", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -843,9 +1886,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_interleave2_rrshift1_s16:\n");
+    printf ("orc_interleave2_rrshift1_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_interleave2_rrshift1_s16");
+    orc_program_set_backup_function (p, _backup_orc_interleave2_rrshift1_s16);
     orc_program_add_destination (p, 4, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_source (p, 2, "s2");
@@ -863,7 +1907,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "mergewl", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -875,9 +1921,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_deinterleave2_s16:\n");
+    printf ("orc_deinterleave2_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_deinterleave2_s16");
+    orc_program_set_backup_function (p, _backup_orc_deinterleave2_s16);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_destination (p, 2, "d2");
     orc_program_add_source (p, 4, "s1");
@@ -888,7 +1935,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "select1lw", ORC_VAR_D2, ORC_VAR_T1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -900,9 +1949,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_deinterleave2_lshift1_s16:\n");
+    printf ("orc_deinterleave2_lshift1_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_deinterleave2_lshift1_s16");
+    orc_program_set_backup_function (p, _backup_orc_deinterleave2_lshift1_s16);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_destination (p, 2, "d2");
     orc_program_add_source (p, 4, "s1");
@@ -919,7 +1969,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "shlw", ORC_VAR_D2, ORC_VAR_T3, ORC_VAR_C2);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -931,16 +1983,19 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_haar_sub_s16:\n");
+    printf ("orc_haar_sub_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_haar_sub_s16");
+    orc_program_set_backup_function (p, _backup_orc_haar_sub_s16);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
 
     orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_S1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -952,9 +2007,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_haar_add_half_s16:\n");
+    printf ("orc_haar_add_half_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_haar_add_half_s16");
+    orc_program_set_backup_function (p, _backup_orc_haar_add_half_s16);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_constant (p, 2, 0, "c1");
@@ -964,7 +2020,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -976,16 +2034,19 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_haar_add_s16:\n");
+    printf ("orc_haar_add_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_haar_add_s16");
+    orc_program_set_backup_function (p, _backup_orc_haar_add_s16);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
 
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_S1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -997,9 +2058,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_haar_sub_half_s16:\n");
+    printf ("orc_haar_sub_half_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_haar_sub_half_s16");
+    orc_program_set_backup_function (p, _backup_orc_haar_sub_half_s16);
     orc_program_add_destination (p, 2, "d1");
     orc_program_add_source (p, 2, "s1");
     orc_program_add_constant (p, 2, 0, "c1");
@@ -1009,7 +2071,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -1021,9 +2085,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_sum_u8:\n");
+    printf ("orc_sum_u8:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_sum_u8");
+    orc_program_set_backup_function (p, _backup_orc_sum_u8);
     orc_program_add_source (p, 1, "s1");
     orc_program_add_accumulator (p, 4, "a1");
     orc_program_add_temporary (p, 2, "t1");
@@ -1034,7 +2099,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "accl", ORC_VAR_A1, ORC_VAR_T2, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -1046,9 +2113,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_sum_s16:\n");
+    printf ("orc_sum_s16:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_sum_s16");
+    orc_program_set_backup_function (p, _backup_orc_sum_s16);
     orc_program_add_source (p, 2, "s1");
     orc_program_add_accumulator (p, 4, "a1");
     orc_program_add_temporary (p, 4, "t1");
@@ -1057,7 +2125,9 @@ int main (int argc, char *argv[])
     orc_program_append (p, "accl", ORC_VAR_A1, ORC_VAR_T1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
@@ -1069,9 +2139,10 @@ int main (int argc, char *argv[])
 
     OrcCompileResult result;
 
-    printf("orc_sum_square_diff_u8:\n");
+    printf ("orc_sum_square_diff_u8:\n");
     p = orc_program_new ();
     orc_program_set_name (p, "orc_sum_square_diff_u8");
+    orc_program_set_backup_function (p, _backup_orc_sum_square_diff_u8);
     orc_program_add_source (p, 1, "s1");
     orc_program_add_source (p, 1, "s2");
     orc_program_add_accumulator (p, 4, "a1");
@@ -1087,12 +2158,16 @@ int main (int argc, char *argv[])
     orc_program_append (p, "accl", ORC_VAR_A1, ORC_VAR_T3, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
-    if (!ret) error = TRUE;
+    if (!ret) {
+      error = TRUE;
+    }
 
     orc_program_free (p);
   }
 
 
-  if (error) return 1;
+  if (error) {
+    return 1;
+  };
   return 0;
 }
