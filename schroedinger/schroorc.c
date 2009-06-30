@@ -97,9 +97,6 @@ orc_add2_rshift_add_s16_22 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -169,9 +166,6 @@ orc_add2_rshift_sub_s16_22 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -229,9 +223,6 @@ orc_add2_rshift_add_s16_11 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -289,9 +280,6 @@ orc_add2_rshift_sub_s16_11 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -351,9 +339,6 @@ orc_add_const_rshift_s16_11 (int16_t * d1, int16_t * s1, int n)
       orc_program_append (p, "shrsw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_C2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -410,9 +395,6 @@ orc_add_const_rshift_s16 (int16_t * d1, int p1, int p2, int n)
       orc_program_append (p, "shrsw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_P2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -465,9 +447,6 @@ orc_add_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -527,9 +506,6 @@ orc_addc_rshift_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int p1, int n)
       orc_program_append (p, "shrsw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_P1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -583,9 +559,6 @@ orc_lshift1_s16 (int16_t * d1, int16_t * s1, int n)
       orc_program_append (p, "shlw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_C1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -637,9 +610,6 @@ orc_lshift2_s16 (int16_t * d1, int16_t * s1, int n)
       orc_program_append (p, "shlw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_C1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -689,9 +659,6 @@ orc_lshift_s16_ip (int16_t * d1, int p1, int n)
       orc_program_append (p, "shlw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_P1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -771,9 +738,6 @@ orc_mas2_add_s16_ip (int16_t * d1, int16_t * s1, int16_t * s2, int p1, int p2, i
       orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -857,9 +821,6 @@ orc_mas2_sub_s16_ip (int16_t * d1, int16_t * s1, int16_t * s2, int p1, int p2, i
       orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -961,9 +922,6 @@ orc_mas4_across_add_s16_1991_ip (int16_t * d1, int16_t * s1, int16_t * s2, int16
       orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1066,9 +1024,6 @@ orc_mas4_across_sub_s16_1991_ip (int16_t * d1, int16_t * s1, int16_t * s2, int16
       orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1125,9 +1080,6 @@ orc_subtract_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1178,9 +1130,6 @@ orc_memcpy (void * d1, void * s1, int n)
       orc_program_append (p, "copyb", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1237,9 +1186,6 @@ orc_add_s16_u8 (int16_t * d1, int16_t * s1, uint8_t * s2, int n)
       orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_S1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1290,9 +1236,6 @@ orc_convert_s16_u8 (uint16_t * d1, uint8_t * s1, int n)
       orc_program_append (p, "convubw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1342,9 +1285,6 @@ orc_convert_u8_s16 (uint8_t * d1, int16_t * s1, int n)
       orc_program_append (p, "convsuswb", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1401,9 +1341,6 @@ orc_offsetconvert_u8_s16 (uint8_t * d1, int16_t * s1, int n)
       orc_program_append (p, "convsuswb", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1460,9 +1397,6 @@ orc_offsetconvert_s16_u8 (int16_t * d1, uint8_t * s1, int n)
       orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_C1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1519,9 +1453,6 @@ orc_subtract_s16_u8 (int16_t * d1, int16_t * s1, uint8_t * s2, int n)
       orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1583,9 +1514,6 @@ orc_multiply_and_add_s16_u8 (int16_t * d1, int16_t * s1, uint8_t * s2, int n)
       orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1636,9 +1564,6 @@ orc_splat_s16_ns (int16_t * d1, int p1, int n)
       orc_program_append (p, "copyw", ORC_VAR_D1, ORC_VAR_P1, ORC_VAR_D1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1688,9 +1613,6 @@ orc_splat_u8_ns (uint8_t * d1, int p1, int n)
       orc_program_append (p, "copyb", ORC_VAR_D1, ORC_VAR_P1, ORC_VAR_D1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1742,9 +1664,6 @@ orc_average_u8 (uint8_t * d1, uint8_t * s1, uint8_t * s2, int n)
       orc_program_append (p, "avgub", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1802,9 +1721,6 @@ orc_rrshift6_s16_ip (int16_t * d1, int n)
       orc_program_append (p, "shrsw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_C2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1853,9 +1769,6 @@ orc_unpack_yuyv_y (uint8_t * d1, uint16_t * s1, int n)
       orc_program_append (p, "select0wb", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1910,9 +1823,6 @@ orc_unpack_yuyv_u (uint8_t * d1, uint32_t * s1, int n)
       orc_program_append (p, "select1wb", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -1967,9 +1877,6 @@ orc_unpack_yuyv_v (uint8_t * d1, uint32_t * s1, int n)
       orc_program_append (p, "select1wb", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2048,9 +1955,6 @@ orc_packyuyv (uint32_t * d1, uint8_t * s1, uint8_t * s2, uint8_t * s3, int n)
       orc_program_append (p, "mergewl", ORC_VAR_D1, ORC_VAR_T3, ORC_VAR_T4);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2104,9 +2008,6 @@ orc_interleave2_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       orc_program_append (p, "mergewl", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2185,9 +2086,6 @@ orc_interleave2_rrshift1_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       orc_program_append (p, "mergewl", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2248,9 +2146,6 @@ orc_deinterleave2_s16 (int16_t * d1, int16_t * d2, int16_t * s1, int n)
       orc_program_append (p, "select1lw", ORC_VAR_D2, ORC_VAR_T1, ORC_VAR_D1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2325,9 +2220,6 @@ orc_deinterleave2_lshift1_s16 (int16_t * d1, int16_t * d2, int16_t * s1, int n)
       orc_program_append (p, "shlw", ORC_VAR_D2, ORC_VAR_T3, ORC_VAR_C2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2378,9 +2270,6 @@ orc_haar_sub_s16 (int16_t * d1, int16_t * s1, int n)
       orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_S1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2437,9 +2326,6 @@ orc_haar_add_half_s16 (int16_t * d1, int16_t * s1, int n)
       orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2489,9 +2375,6 @@ orc_haar_add_s16 (int16_t * d1, int16_t * s1, int n)
       orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_S1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2548,9 +2431,6 @@ orc_haar_sub_half_s16 (int16_t * d1, int16_t * s1, int n)
       orc_program_append (p, "subw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2611,9 +2491,6 @@ orc_sum_u8 (int32_t * a1, uint8_t * s1, int n)
       orc_program_append_ds (p, "accl", ORC_VAR_A1, ORC_VAR_T2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2669,9 +2546,6 @@ orc_sum_s16 (int32_t * a1, int16_t * s1, int n)
       orc_program_append_ds (p, "accl", ORC_VAR_A1, ORC_VAR_T1);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2747,9 +2621,6 @@ orc_sum_square_diff_u8 (int32_t * a1, uint8_t * s1, uint8_t * s2, int n)
       orc_program_append_ds (p, "accl", ORC_VAR_A1, ORC_VAR_T3);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2830,9 +2701,6 @@ orc_dequantise_s16_ip (int16_t * d1, int p1, int p2, int n)
       orc_program_append (p, "mullw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -2915,9 +2783,6 @@ orc_dequantise_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int n)
       orc_program_append (p, "mullw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -3007,9 +2872,6 @@ orc_quantise1_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int p3, int n)
       orc_program_append (p, "mullw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -3094,9 +2956,6 @@ orc_quantise2_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int n)
       orc_program_append (p, "mullw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -3193,9 +3052,6 @@ orc_quantise1_large_s16 (int16_t * d1, int p1, int p2, int p3, int n)
       orc_program_append (p, "mullw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
@@ -3286,9 +3142,6 @@ orc_quantise2_large_s16 (int16_t * d1, int p1, int p2, int n)
       orc_program_append (p, "mullw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2);
 
       result = orc_program_compile (p);
-      if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL (result)) {
-        abort ();
-      }
     }
     p_inited = TRUE;
     MUTEX_UNLOCK ();
