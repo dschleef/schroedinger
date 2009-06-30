@@ -6,6 +6,7 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schrowavelet.h>
 #include <schroedinger/schrooil.h>
+#include <schroedinger/schroorc.h>
 
 #define OIL_ENABLE_UNSTABLE_API
 #include <liboil/liboil.h>
@@ -15,7 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define N 10000
+#define N 100
 
 int16_t a[N];
 int16_t b[N];
@@ -158,7 +159,7 @@ generate_table (int16_t *table, int quant_index, schro_bool is_intra)
 }
 
 void
-quantise_speed (int quant_index)
+dequantise_speed (int quant_index, int n)
 {
   OilProfile prof1;
   OilProfile prof2;
@@ -169,26 +170,34 @@ quantise_speed (int quant_index)
   int i;
   int j;
   schro_bool is_intra = TRUE;
+  int quant_factor;
+  int quant_offset;
+
+  quant_factor = 10;
+  quant_offset = 10;
 
   oil_profile_init (&prof1);
   oil_profile_init (&prof2);
   oil_profile_init (&prof3);
 
   for(i=0;i<10;i++) {
-    for(j=0;j<N;j++){
+    for(j=0;j<n;j++){
       a[j] = (rand () & 0xff) - 128;
     }
     generate_table (table, quant_index, is_intra);
 
     oil_profile_start (&prof1);
-    schro_dequantise_s16_ref (b, a, quant_index, FALSE, N);
+    schro_dequantise_s16_ref (b, a, quant_index, FALSE, n);
     oil_profile_stop (&prof1);
     oil_profile_start (&prof2);
-    schro_dequantise_s16_table (c, a, quant_index, FALSE, N);
+    schro_dequantise_s16_table (c, a, quant_index, FALSE, n);
     oil_profile_stop (&prof2);
+#ifdef HAVE_ORC
+    memcpy (c, a, N*sizeof(int16_t));
     oil_profile_start (&prof3);
-    schro_dequantise_s16_test (c, a, quant_index, FALSE, N);
+    orc_dequantise_s16_ip (c, quant_factor, quant_offset + 2, n);
     oil_profile_stop (&prof3);
+#endif
 
 #if 0
     for(j=0;j<N;j++){
@@ -204,7 +213,7 @@ quantise_speed (int quant_index)
   ave1 = oil_profile_get_min (&prof1);
   ave2 = oil_profile_get_min (&prof2);
   ave3 = oil_profile_get_min (&prof3);
-  printf("%d %g %g %g\n", quant_index, ave1, ave2, ave3);
+  printf("%d %d %g %g %g\n", quant_index, n, ave1, ave2, ave3);
 }
 
 
@@ -213,10 +222,11 @@ main (int argc, char *argv[])
 {
   int i;
 
+  schro_init();
   oil_init();
 
-  for(i=0;i<60;i++){
-    quantise_speed (i);
+  for(i=0;i<N;i++){
+    dequantise_speed (10, i);
   }
 
   return 0;
