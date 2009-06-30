@@ -43,11 +43,12 @@ get_offset_1_2 (int i)
   return (quant + 1)/2;
 }
 
-unsigned int
+uint16_t
 get_inv_quant (int i)
 {
-  int q = get_quant(i);
-  return (1ULL<<32)/q;
+  int quant_factor = get_quant(i);
+  int quant_shift = i/4 + 2;
+  return rint(65536.0 / quant_factor * (1<<quant_shift));
 }
 
 int
@@ -166,6 +167,8 @@ main (int argc, char *argv[])
   int n = 60;
 
   printf("\n");
+  printf("#include \"config.h\"\n");
+  printf("\n");
   printf("#include <schroedinger/schrotables.h>\n");
   printf("\n");
 
@@ -209,9 +212,9 @@ main (int argc, char *argv[])
   printf("\n");
 
   /* schro_table_inverse_quant */
-  printf("const uint32_t schro_table_inverse_quant[%d] = {\n", n + 1);
+  printf("const uint16_t schro_table_inverse_quant[%d] = {\n", n + 1);
   for(i=0;i<n;i+=4) {
-    printf("  %10uu, %10uu, %10uu, %10uu,\n",
+    printf("  %6uu, %6uu, %6uu, %6uu,\n",
         get_inv_quant(i),
         get_inv_quant(i+1),
         get_inv_quant(i+2),
@@ -234,6 +237,7 @@ main (int argc, char *argv[])
   printf("};\n\n");
 
   /* schro_table_error_hist */
+  printf("#ifdef ENABLE_ENCODER\n");
   printf("const double schro_table_error_hist_shift3_1_2[60][%d] = {\n",
       ((16-SHIFT)<<SHIFT));
   for(i=0;i<60;i++){
@@ -317,6 +321,7 @@ main (int argc, char *argv[])
     printf("  },\n");
   }
   printf("};\n\n");
+  printf("#endif\n");
 
   return 0;
 }
