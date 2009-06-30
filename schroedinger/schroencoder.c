@@ -8,6 +8,7 @@
 #include <string.h>
 #include <math.h>
 #include <stddef.h>
+#include "schroorc.h"
 
 #if 0
 /* Used for testing bitstream */
@@ -2376,13 +2377,51 @@ schro_frame_data_quantise (SchroFrameData *quant_fd,
   int j;
   int16_t *line;
   int16_t *quant_line;
+#ifdef HAVE_ORC
+  int quant_factor = schro_table_quant[quant_index];
+  int quant_offset;
+  int quant_shift = (quant_index>>2) + 2;
+  int inv_quant = schro_table_inverse_quant[quant_index];
 
+  if (is_intra) {
+    quant_offset = schro_table_offset_1_2[quant_index];
+  } else {
+    quant_offset = schro_table_offset_3_8[quant_index];
+  }
+  quant_offset -= quant_factor>>1;
+
+  if (quant_index == 0) {
+    for(j=0;j<fd->height;j++){
+      line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+      quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
+
+      memcpy (quant_line, line, fd->width * sizeof(int16_t));
+    }
+  } else if ((quant_index & 3) == 0) {
+    for(j=0;j<fd->height;j++){
+      line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+      quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
+
+      orc_quantise2_s16 (quant_line, line, quant_shift,
+          quant_offset, fd->width);
+    }
+  } else {
+    for(j=0;j<fd->height;j++){
+      line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+      quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
+
+      orc_quantise1_s16 (quant_line, line, inv_quant, quant_offset,
+          quant_shift, fd->width);
+    }
+  }
+#else
   for(j=0;j<fd->height;j++){
     line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
     quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
 
     schro_quantise_s16_table (quant_line, line, quant_index, is_intra, fd->width);
   }
+#endif
 }
 
 static void
@@ -2392,7 +2431,33 @@ schro_frame_data_dequantise (SchroFrameData *fd,
   int j;
   int16_t *line;
   int16_t *quant_line;
+#ifdef HAVE_ORC
+  int quant_factor = schro_table_quant[quant_index];
+  int quant_offset;
 
+  if (is_intra) {
+    quant_offset = schro_table_offset_1_2[quant_index];
+  } else {
+    quant_offset = schro_table_offset_3_8[quant_index];
+  }
+
+  if (quant_index == 0) {
+    for(j=0;j<fd->height;j++){
+      line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+      quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
+
+      memcpy (line, quant_line, fd->width * sizeof(int16_t));
+    }
+  } else {
+    for(j=0;j<fd->height;j++){
+      line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+      quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
+
+      orc_dequantise_s16 (line, quant_line, quant_factor, quant_offset + 2,
+          fd->width);
+    }
+  }
+#else
   for(j=0;j<fd->height;j++){
     line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
     quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
@@ -2400,6 +2465,7 @@ schro_frame_data_dequantise (SchroFrameData *fd,
     schro_dequantise_s16_table (line, quant_line, quant_index, is_intra,
         fd->width);
   }
+#endif
 }
 
 static void
