@@ -459,4 +459,114 @@ convuwl t3, t1
 accl a1, t3
 
 
+.function orc_dequantise_s16_ip
+.dest 2 d1 int16_t
+.param 2 p1
+.param 2 p2
+.temp 2 t1
+.temp 2 t2
+
+copyw t1, d1
+signw t2, t1
+absw t1, t1
+mullw t1, t1, p1
+addw t1, t1, p2
+shrsw t1, t1, 2
+mullw d1, t1, t2
+
+
+.function orc_dequantise_s16
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.param 2 p1
+.param 2 p2
+.temp 2 t1
+.temp 2 t2
+
+copyw t1, s1
+signw t2, t1
+absw t1, t1
+mullw t1, t1, p1
+addw t1, t1, p2
+shrsw t1, t1, 2
+mullw d1, t1, t2
+
+
+# only works for values between -16384 and 16384
+.function orc_quantise1_s16
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.temp 2 t1
+.temp 2 t2
+
+copyw t1, s1
+signw t2, t1
+absw t1, t1
+shlw t1, t1, 2
+subw t1, t1, p2
+mulhuw t1, t1, p1
+shruw t1, t1, p3
+mullw d1, t1, t2
+
+
+# only works for values between -16384 and 16384
+.function orc_quantise2_s16
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.param 2 p1
+.param 2 p2
+.temp 2 t1
+.temp 2 t2
+
+copyw t1, s1
+signw t2, t1
+absw t1, t1
+shlw t1, t1, 2
+subw t1, t1, p2
+shruw t1, t1, p1
+mullw d1, t1, t2
+
+
+.function orc_quantise1_large_s16
+.dest 2 d1 int16_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.temp 2 t1
+.temp 2 t2
+.temp 4 t3
+
+copyw t1, d1
+signw t2, t1
+absw t1, t1
+convuwl t3, t1
+shll t3, t3, 2
+subl t3, t3, p2
+mulhul t3, t3, p1
+shrul t3, t3, p3
+convlw t1, t3
+mullw d1, t1, t2
+
+
+.function orc_quantise2_large_s16
+.dest 2 d1 int16_t
+.param 2 p1
+.param 2 p2
+.temp 2 t1
+.temp 2 t2
+.temp 4 t3
+
+copyw t1, d1
+signw t2, t1
+absw t1, t1
+convuwl t3, t1
+shll t3, t3, 2
+subl t3, t3, p2
+shrul t3, t3, p1
+convlw t1, t3
+mullw d1, t1, t2
+
 

@@ -47,6 +47,12 @@ void orc_haar_sub_half_s16 (int16_t * d1, int16_t * s1, int n);
 void orc_sum_u8 (int32_t * a1, uint8_t * s1, int n);
 void orc_sum_s16 (int32_t * a1, int16_t * s1, int n);
 void orc_sum_square_diff_u8 (int32_t * a1, uint8_t * s1, uint8_t * s2, int n);
+void orc_dequantise_s16_ip (int16_t * d1, int p1, int p2, int n);
+void orc_dequantise_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int n);
+void orc_quantise1_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int p3, int n);
+void orc_quantise2_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int n);
+void orc_quantise1_large_s16 (int16_t * d1, int p1, int p2, int p3, int n);
+void orc_quantise2_large_s16 (int16_t * d1, int p1, int p2, int n);
 
 #endif
 
