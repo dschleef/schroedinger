@@ -2883,7 +2883,11 @@ codeblock_line_decode_noarith (SchroPictureSubbandContext *ctx,
   line += ctx->xmin;
 
   schro_unpack_decode_sint_s16 (line, &ctx->unpack, n);
+#ifdef HAVE_ORC
+  orc_dequantise_s16_ip (line, ctx->quant_factor, ctx->quant_offset + 2, n);
+#else
   schro_dequantise_s16_table (line, line, ctx->quant_index, ctx->is_intra, n);
+#endif
 }
 
 #if 0
