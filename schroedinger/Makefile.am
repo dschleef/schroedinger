@@ -57,9 +57,7 @@ pkginclude_HEADERS = \
 	schroutils.h \
 	schrovideoformat.h \
 	schrovirtframe.h \
-	schrowavelet.h \
-	schrobitstream.h \
-	schromotion.h
+	schrowavelet.h
 
 nodist_pkginclude_HEADERS = \
 	schroversion.h
