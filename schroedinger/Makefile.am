@@ -111,6 +111,11 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	$(cuda_sources) \
 	schroasync-@THREAD_IMPL@.c
 
+if ENABLE_MOTION_REF
+libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
+	schromotionref.c
+endif
+
 if ENABLE_ENCODER
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
 	schroanalysis.c \
