@@ -461,6 +461,11 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
   }
 #endif
 
+  if (schro_motion_render_fast_allowed (motion)) {
+    schro_motion_render_fast (motion, dest);
+    return;
+  }
+
   if (params->have_global_motion) {
 #ifdef ENABLE_MOTION_REF
     SCHRO_WARNING ("global motion enabled, using reference motion renderer");
@@ -639,7 +644,6 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
 
 /* original */
 
-#if 0
 
 void
 schro_motion_dc_prediction (SchroMotion *motion, int x, int y, int *pred)
@@ -941,5 +945,4 @@ schro_motion_verify (SchroMotion *motion)
   return 1;
 }
 
-#endif
 

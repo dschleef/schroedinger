@@ -84,6 +84,9 @@ void schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest);
 void schro_motion_render (SchroMotion *motion, SchroFrame *dest);
 void schro_motion_init_obmc_weight (SchroMotion *motion);
 
+void schro_motion_render_fast (SchroMotion *motion, SchroFrame *dest);
+int schro_motion_render_fast_allowed (SchroMotion *motion);
+
 void schro_motion_vector_prediction (SchroMotion *motion,
     int x, int y, int *pred_x, int *pred_y, int mode);
 int schro_motion_split_prediction (SchroMotion *motion, int x, int y);
