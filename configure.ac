@@ -57,7 +57,7 @@ AC_ARG_ENABLE(orc, AC_HELP_STRING([--enable-orc],
               [enable orc support (default=disabled)]))
 if test "x$enable_orc" = xyes
 then
-  ORC_VER="0.4.0"
+  ORC_VER="0.4.1"
   PKG_CHECK_MODULES(ORC, orc-0.4 >= $ORC_VER, HAVE_ORC=yes, HAVE_ORC=no)
 else
   HAVE_ORC=no
