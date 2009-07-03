@@ -268,9 +268,13 @@ schro_encoder_free (SchroEncoder *encoder)
       encoder->reference_pictures[i] = NULL;
     }
   }
-  schro_queue_free (encoder->frame_queue);
+  if (encoder->frame_queue) {
+    schro_queue_free (encoder->frame_queue);
+  }
 
-  schro_list_free (encoder->inserted_buffers);
+  if (encoder->inserted_buffers) {
+    schro_list_free (encoder->inserted_buffers);
+  }
 
   schro_free (encoder);
 }
