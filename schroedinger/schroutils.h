@@ -51,6 +51,7 @@ typedef int SchroCUDAStream;
 #define ROUND_UP_2(x) ROUND_UP_POW2(x,1)
 #define ROUND_UP_4(x) ROUND_UP_POW2(x,2)
 #define ROUND_UP_8(x) ROUND_UP_POW2(x,3)
+#define ROUND_UP_16(x) ROUND_UP_POW2(x,4)
 #define ROUND_UP_64(x) ROUND_UP_POW2(x,6)
 #define OFFSET(ptr,offset) ((void *)(((uint8_t *)(ptr)) + (offset)))
 #define ROUND_SHIFT(x,y) (((x) + (1<<((y)-1)))>>(y))
