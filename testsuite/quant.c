@@ -71,7 +71,9 @@ test_quant  (int quant_index)
 {
   int quant_factor = schro_table_quant[quant_index];
   int quant_offset = schro_table_offset_3_8[quant_index];
+#ifdef HAVE_ORC
   int quant_shift = quant_index/4 + 2;
+#endif
   int error = FALSE;
   int i;
 
