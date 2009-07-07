@@ -1632,7 +1632,7 @@ schro_encoder_reconstruct_picture (SchroAsyncStage *stage)
     schro_encoder_encode_md5_checksum (encoder_frame);
   }
 
-  if (encoder_frame->is_ref) {
+  if (encoder_frame->is_ref && encoder_frame->encoder->mv_precision > 0) {
     schro_upsampled_frame_upsample (encoder_frame->reconstructed_frame);
   }
 }
