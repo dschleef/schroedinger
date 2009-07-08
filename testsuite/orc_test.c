@@ -1051,9 +1051,9 @@ _backup_orc_quantise1_s16 (OrcExecutor *ex)
     /* 4: subw */
     var36 = var35 - var25;
     /* 5: mulhuw */
-    var37 = (var36 * var24) >> 16;
+    var37 = ((uint32_t)((uint16_t)var36) * (uint32_t)((uint16_t)var24)) >> 16;
     /* 6: shruw */
-    var38 = var37 >> var26;
+    var38 = ((uint16_t)var37) >> var26;
     /* 7: mullw */
     var0[i] = (var38 * var33) & 0xffff;
   }
@@ -1089,7 +1089,7 @@ _backup_orc_quantise2_s16 (OrcExecutor *ex)
     /* 4: subw */
     var36 = var35 - var25;
     /* 5: shruw */
-    var37 = var36 >> var24;
+    var37 = ((uint16_t)var36) >> var24;
     /* 6: mullw */
     var0[i] = (var37 * var33) & 0xffff;
   }
