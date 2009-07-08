@@ -270,6 +270,7 @@ struct _SchroEncoder {
   schro_bool enable_global_motion;
   int horiz_slices;
   int vert_slices;
+  int codeblock_size;
 
   double magic_dc_metric_offset;
   double magic_subband0_lambda_scale;

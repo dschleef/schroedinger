@@ -3171,6 +3171,13 @@ static char *block_size_list[] = {
   "medium",
   "large"
 };
+static char *codeblock_size_list[] = {
+  "automatic",
+  "small",
+  "medium",
+  "large",
+  "full"
+};
 static char *block_overlap_list[] = {
   "automatic",
   "none",
@@ -3228,6 +3235,7 @@ struct SchroEncoderSettings {
   BOOL(enable_global_motion, FALSE),
   INT (horiz_slices, 1, INT_MAX, 8),
   INT (vert_slices, 1, INT_MAX, 6),
+  ENUM(codeblock_size, codeblock_size_list, 0),
   BOOL(enable_roi, FALSE),
 
   DOUB(magic_dc_metric_offset, 0.0, 1000.0, 1.0),
@@ -3282,10 +3290,12 @@ schro_encoder_setting_set_defaults (SchroEncoder *encoder)
     case SCHRO_ENCODER_SETTING_TYPE_BOOLEAN:
     case SCHRO_ENCODER_SETTING_TYPE_INT:
     case SCHRO_ENCODER_SETTING_TYPE_ENUM:
-      *(int*)((void*)encoder + encoder_settings[i].offset) = encoder_settings[i].s.default_value;
+      *(int*)SCHRO_OFFSET(encoder,encoder_settings[i].offset) =
+        encoder_settings[i].s.default_value;
       break;
     case SCHRO_ENCODER_SETTING_TYPE_DOUBLE:
-      *(double*)((void*)encoder + encoder_settings[i].offset) = encoder_settings[i].s.default_value;
+      *(double*)SCHRO_OFFSET(encoder,encoder_settings[i].offset) =
+        encoder_settings[i].s.default_value;
       break;
     default:
       break;

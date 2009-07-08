@@ -362,6 +362,8 @@ init_params (SchroEncoderFrame *frame)
   SchroParams *params = &frame->params;
   SchroEncoder *encoder = frame->encoder;
   SchroVideoFormat *video_format = params->video_format;
+  int shift;
+  int codeblock_size;
   int i;
 
   params->video_format = &encoder->video_format;
@@ -425,22 +427,58 @@ init_params (SchroEncoderFrame *frame)
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
 
-  {
-    int shift = params->transform_depth;
-    if (encoder->enable_dc_multiquant) {
-      params->horiz_codeblocks[0] = params->iwt_luma_width >> (shift + 3);
-      params->vert_codeblocks[0] = params->iwt_luma_height >> (shift + 3);
+  codeblock_size = encoder->codeblock_size;
+  if (codeblock_size == 0) {
+    if (params->is_noarith) {
+      codeblock_size = 1;
     } else {
-      /* This is to work around a bug in the decoder that was fixed 8/2008. */
+      codeblock_size = 2;
+    }
+  }
+  switch (codeblock_size) {
+    case 1: /* small (blocks of size 5x5) */
+      shift = params->transform_depth;
+      params->horiz_codeblocks[0] = (params->iwt_luma_width >> shift) / 5;
+      params->vert_codeblocks[0] = (params->iwt_luma_height >> shift) / 5;
+      for(i=1;i<params->transform_depth+1;i++){
+        shift = params->transform_depth + 1 - i;
+        /* These values are empirically derived from fewer than 2 test results */
+        params->horiz_codeblocks[i] = (params->iwt_luma_width >> shift) / 5;
+        params->vert_codeblocks[i] = (params->iwt_luma_height >> shift) / 5;
+        SCHRO_DEBUG("codeblocks %d %d %d", i, params->horiz_codeblocks[i],
+            params->vert_codeblocks[i]);
+      }
+      break;
+    case 0:
+    default:
+    case 2: /* medium (blocks of size 8x8) */
+      shift = params->transform_depth;
+      params->horiz_codeblocks[0] = (params->iwt_luma_width >> shift) / 8;
+      params->vert_codeblocks[0] = (params->iwt_luma_height >> shift) / 8;
+      for(i=1;i<params->transform_depth+1;i++){
+        shift = params->transform_depth + 1 - i;
+        params->horiz_codeblocks[i] = (params->iwt_luma_width >> shift) / 8;
+        params->vert_codeblocks[i] = (params->iwt_luma_height >> shift) / 8;
+        SCHRO_DEBUG("codeblocks %d %d %d", i, params->horiz_codeblocks[i],
+            params->vert_codeblocks[i]);
+      }
+      break;
+    case 3: /* large (uses spec defaults) */
+      break;
+    case 4: /* full (codeblocks are entire subband) */
       params->horiz_codeblocks[0] = 1;
       params->vert_codeblocks[0] = 1;
-    }
-    for(i=1;i<params->transform_depth+1;i++){
-      shift = params->transform_depth + 1 - i;
+      for(i=1;i<params->transform_depth+1;i++){
+        params->horiz_codeblocks[i] = 1;
+        params->vert_codeblocks[i] = 1;
+      }
+      break;
+  }
 
-      params->horiz_codeblocks[i] = params->iwt_luma_width >> (shift + 3);
-      params->vert_codeblocks[i] = params->iwt_luma_height >> (shift + 3);
-    }
+  if (!encoder->enable_dc_multiquant) {
+    /* This is to work around a bug in the decoder that was fixed 8/2008. */
+    params->horiz_codeblocks[0] = 1;
+    params->vert_codeblocks[0] = 1;
   }
 
   if (frame->params.is_noarith) {

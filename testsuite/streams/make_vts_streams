@@ -10,7 +10,7 @@ export SCHRO_MOTION_REF=1
 encode() {
   echo "ENCODING $testname with $schroopts"
   gst-launch-0.10 \
-    videotestsrc num-buffers=10 ! \
+    videotestsrc num-buffers=30 ! \
     timeoverlay ! \
     textoverlay text=$testname halignment=center font-desc="sans 20" deltay=-100 ! \
     ffmpegcolorspace ! \
@@ -29,8 +29,9 @@ format=I420
 #exit 0
 
 testname="default"
-schroopts=""
+schroopts="rate-control=0"
 encode
+exit 0
 
 
 # for testing java decoder
@@ -209,4 +210,11 @@ done
 testname="dc-multiquant"
 schroopts="enable-dc-multiquant=TRUE"
 encode
+
+for i in 1 2 3 4
+do
+  testname="codeblock-$i"
+  schroopts="codeblock-size=$i"
+  encode
+done
 
