@@ -343,6 +343,31 @@ mergebw t4, t2, s3
 mergewl d1, t3, t4
 
 
+.function orc_unpack_uyvy_y
+.dest 1 d1
+.source 2 s1
+
+select1wb d1, s1
+
+
+.function orc_unpack_uyvy_u
+.dest 1 d1
+.source 4 s1
+.temp 2 t1
+
+select0lw t1, s1
+select0wb d1, t1
+
+
+.function orc_unpack_uyvy_v
+.dest 1 d1
+.source 4 s1
+.temp 2 t1
+
+select1lw t1, s1
+select0wb d1, t1
+
+
 .function orc_interleave2_s16
 .dest 4 d1 int16_t
 .source 2 s1 int16_t
@@ -528,6 +553,7 @@ shlw t1, t1, 2
 subw t1, t1, p2
 shruw t1, t1, p1
 mullw d1, t1, t2
+
 
 
 .function orc_quantise1_large_s16

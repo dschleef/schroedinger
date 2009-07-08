@@ -1970,6 +1970,163 @@ orc_packyuyv (uint32_t * d1, uint8_t * s1, uint8_t * s2, uint8_t * s3, int n)
   orc_executor_run (ex);
 }
 
+/* orc_unpack_uyvy_y */
+static void
+_backup_orc_unpack_uyvy_y (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: select1wb */
+    var0[i] = ((uint16_t)var4[i] >> 8)&0xff;
+  }
+
+}
+
+void
+orc_unpack_uyvy_y (uint8_t * d1, uint16_t * s1, int n)
+{
+  static int p_inited = 0;
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  if (!p_inited) {
+    MUTEX_LOCK ();
+    if (!p_inited) {
+      OrcCompileResult result;
+
+      p = orc_program_new ();
+      orc_program_set_name (p, "orc_unpack_uyvy_y");
+      orc_program_set_backup_function (p, _backup_orc_unpack_uyvy_y);
+      orc_program_add_destination (p, 1, "d1");
+      orc_program_add_source (p, 2, "s1");
+
+      orc_program_append (p, "select1wb", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
+
+      result = orc_program_compile (p);
+    }
+    p_inited = TRUE;
+    MUTEX_UNLOCK ();
+  }
+
+  ex->program = p;
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = s1;
+
+  orc_executor_run (ex);
+}
+
+/* orc_unpack_uyvy_u */
+static void
+_backup_orc_unpack_uyvy_u (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int32_t * var4 = ex->arrays[4];
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: select0lw */
+    var32 = (uint32_t)var4[i] & 0xffff;
+    /* 1: select0wb */
+    var0[i] = (uint16_t)var32 & 0xff;
+  }
+
+}
+
+void
+orc_unpack_uyvy_u (uint8_t * d1, uint32_t * s1, int n)
+{
+  static int p_inited = 0;
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  if (!p_inited) {
+    MUTEX_LOCK ();
+    if (!p_inited) {
+      OrcCompileResult result;
+
+      p = orc_program_new ();
+      orc_program_set_name (p, "orc_unpack_uyvy_u");
+      orc_program_set_backup_function (p, _backup_orc_unpack_uyvy_u);
+      orc_program_add_destination (p, 1, "d1");
+      orc_program_add_source (p, 4, "s1");
+      orc_program_add_temporary (p, 2, "t1");
+
+      orc_program_append (p, "select0lw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+      orc_program_append (p, "select0wb", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
+
+      result = orc_program_compile (p);
+    }
+    p_inited = TRUE;
+    MUTEX_UNLOCK ();
+  }
+
+  ex->program = p;
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = s1;
+
+  orc_executor_run (ex);
+}
+
+/* orc_unpack_uyvy_v */
+static void
+_backup_orc_unpack_uyvy_v (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int32_t * var4 = ex->arrays[4];
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: select1lw */
+    var32 = ((uint32_t)var4[i] >> 16)&0xffff;
+    /* 1: select0wb */
+    var0[i] = (uint16_t)var32 & 0xff;
+  }
+
+}
+
+void
+orc_unpack_uyvy_v (uint8_t * d1, uint32_t * s1, int n)
+{
+  static int p_inited = 0;
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  if (!p_inited) {
+    MUTEX_LOCK ();
+    if (!p_inited) {
+      OrcCompileResult result;
+
+      p = orc_program_new ();
+      orc_program_set_name (p, "orc_unpack_uyvy_v");
+      orc_program_set_backup_function (p, _backup_orc_unpack_uyvy_v);
+      orc_program_add_destination (p, 1, "d1");
+      orc_program_add_source (p, 4, "s1");
+      orc_program_add_temporary (p, 2, "t1");
+
+      orc_program_append (p, "select1lw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+      orc_program_append (p, "select0wb", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
+
+      result = orc_program_compile (p);
+    }
+    p_inited = TRUE;
+    MUTEX_UNLOCK ();
+  }
+
+  ex->program = p;
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = s1;
+
+  orc_executor_run (ex);
+}
+
 /* orc_interleave2_s16 */
 static void
 _backup_orc_interleave2_s16 (OrcExecutor *ex)

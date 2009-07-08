@@ -710,6 +710,57 @@ _backup_orc_packyuyv (OrcExecutor *ex)
 
 }
 
+/* orc_unpack_uyvy_y */
+static void
+_backup_orc_unpack_uyvy_y (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: select1wb */
+    var0[i] = ((uint16_t)var4[i] >> 8)&0xff;
+  }
+
+}
+
+/* orc_unpack_uyvy_u */
+static void
+_backup_orc_unpack_uyvy_u (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int32_t * var4 = ex->arrays[4];
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: select0lw */
+    var32 = (uint32_t)var4[i] & 0xffff;
+    /* 1: select0wb */
+    var0[i] = (uint16_t)var32 & 0xff;
+  }
+
+}
+
+/* orc_unpack_uyvy_v */
+static void
+_backup_orc_unpack_uyvy_v (OrcExecutor *ex)
+{
+  int i;
+  int8_t * var0 = ex->arrays[0];
+  const int32_t * var4 = ex->arrays[4];
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: select1lw */
+    var32 = ((uint32_t)var4[i] >> 16)&0xffff;
+    /* 1: select0wb */
+    var0[i] = (uint16_t)var32 & 0xff;
+  }
+
+}
+
 /* orc_interleave2_s16 */
 static void
 _backup_orc_interleave2_s16 (OrcExecutor *ex)
@@ -2078,6 +2129,82 @@ main (int argc, char *argv[])
     orc_program_append (p, "mergebw", ORC_VAR_T3, ORC_VAR_T1, ORC_VAR_S2);
     orc_program_append (p, "mergebw", ORC_VAR_T4, ORC_VAR_T2, ORC_VAR_S3);
     orc_program_append (p, "mergewl", ORC_VAR_D1, ORC_VAR_T3, ORC_VAR_T4);
+
+    ret = orc_test_compare_output (p);
+    if (!ret) {
+      error = TRUE;
+    }
+
+    orc_program_free (p);
+  }
+
+  /* orc_unpack_uyvy_y */
+  {
+    OrcProgram *p = NULL;
+    int ret;
+
+    OrcCompileResult result;
+
+    printf ("orc_unpack_uyvy_y:\n");
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_unpack_uyvy_y");
+    orc_program_set_backup_function (p, _backup_orc_unpack_uyvy_y);
+    orc_program_add_destination (p, 1, "d1");
+    orc_program_add_source (p, 2, "s1");
+
+    orc_program_append (p, "select1wb", ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
+
+    ret = orc_test_compare_output (p);
+    if (!ret) {
+      error = TRUE;
+    }
+
+    orc_program_free (p);
+  }
+
+  /* orc_unpack_uyvy_u */
+  {
+    OrcProgram *p = NULL;
+    int ret;
+
+    OrcCompileResult result;
+
+    printf ("orc_unpack_uyvy_u:\n");
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_unpack_uyvy_u");
+    orc_program_set_backup_function (p, _backup_orc_unpack_uyvy_u);
+    orc_program_add_destination (p, 1, "d1");
+    orc_program_add_source (p, 4, "s1");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append (p, "select0lw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "select0wb", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
+
+    ret = orc_test_compare_output (p);
+    if (!ret) {
+      error = TRUE;
+    }
+
+    orc_program_free (p);
+  }
+
+  /* orc_unpack_uyvy_v */
+  {
+    OrcProgram *p = NULL;
+    int ret;
+
+    OrcCompileResult result;
+
+    printf ("orc_unpack_uyvy_v:\n");
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_unpack_uyvy_v");
+    orc_program_set_backup_function (p, _backup_orc_unpack_uyvy_v);
+    orc_program_add_destination (p, 1, "d1");
+    orc_program_add_source (p, 4, "s1");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append (p, "select1lw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "select0wb", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
     ret = orc_test_compare_output (p);
     if (!ret) {
