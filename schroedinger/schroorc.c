@@ -2618,8 +2618,8 @@ _backup_orc_sum_u8 (OrcExecutor *ex)
     var33 = (uint16_t)var32;
     /* 2: accl */
     var12 = var12 + var33;
-  ex->accumulators[0] = var12;
   }
+  ex->accumulators[0] = var12;
 
 }
 
@@ -2675,8 +2675,8 @@ _backup_orc_sum_s16 (OrcExecutor *ex)
     var32 = var4[i];
     /* 1: accl */
     var12 = var12 + var32;
-  ex->accumulators[0] = var12;
   }
+  ex->accumulators[0] = var12;
 
 }
 
@@ -2743,8 +2743,8 @@ _backup_orc_sum_square_diff_u8 (OrcExecutor *ex)
     var34 = (uint16_t)var36;
     /* 5: accl */
     var12 = var12 + var34;
-  ex->accumulators[0] = var12;
   }
+  ex->accumulators[0] = var12;
 
 }
 
@@ -3128,53 +3128,63 @@ orc_quantise2_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int n)
   orc_executor_run (ex);
 }
 
-/* orc_quantise1_large_s16 */
+/* orc_downsample_vert_u8 */
 static void
-_backup_orc_quantise1_large_s16 (OrcExecutor *ex)
+_backup_orc_downsample_vert_u8 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t var16 = 2;
-  const int16_t var24 = ex->params[24];
-  const int16_t var25 = ex->params[25];
-  const int16_t var26 = ex->params[26];
+  int8_t * var0 = ex->arrays[0];
+  const int8_t * var4 = ex->arrays[4];
+  const int8_t * var5 = ex->arrays[5];
+  const int8_t * var6 = ex->arrays[6];
+  const int8_t * var7 = ex->arrays[7];
+  const int16_t var16 = 6;
+  const int16_t var17 = 26;
+  const int16_t var18 = 32;
+  const int16_t var19 = 6;
   int16_t var32;
   int16_t var33;
-  int32_t var34;
+  int16_t var34;
   int16_t var35;
-  int32_t var36;
-  int32_t var37;
-  int32_t var38;
-  int32_t var39;
+  int16_t var36;
+  int16_t var37;
+  int16_t var38;
+  int16_t var39;
   int16_t var40;
+  int16_t var41;
+  int16_t var42;
 
   for (i = 0; i < ex->n; i++) {
-    /* 0: copyw */
-    var32 = var0[i];
-    /* 1: signw */
-    var33 = ORC_CLAMP(var32,-1,1);
-    /* 2: absw */
-    var35 = ORC_ABS(var32);
-    /* 3: convuwl */
-    var34 = (uint16_t)var35;
-    /* 4: shll */
-    var36 = var34 << var16;
-    /* 5: subl */
-    var37 = var36 - var25;
-    /* 6: mulhul */
-    var38 = ((uint64_t)var37 * (uint64_t)var24) >> 32;
-    /* 7: shrul */
-    var39 = ((uint32_t)var38) >> var26;
-    /* 8: convlw */
-    var40 = var39;
-    /* 9: mullw */
-    var0[i] = (var40 * var33) & 0xffff;
+    /* 0: convubw */
+    var32 = (uint8_t)var4[i];
+    /* 1: convubw */
+    var33 = (uint8_t)var7[i];
+    /* 2: addw */
+    var35 = var32 + var33;
+    /* 3: mullw */
+    var36 = (var35 * var16) & 0xffff;
+    /* 4: convubw */
+    var37 = (uint8_t)var5[i];
+    /* 5: convubw */
+    var34 = (uint8_t)var6[i];
+    /* 6: addw */
+    var38 = var37 + var34;
+    /* 7: mullw */
+    var39 = (var38 * var17) & 0xffff;
+    /* 8: addw */
+    var40 = var39 + var36;
+    /* 9: addw */
+    var41 = var40 + var18;
+    /* 10: shruw */
+    var42 = ((uint16_t)var41) >> var19;
+    /* 11: convwb */
+    var0[i] = var42;
   }
 
 }
 
 void
-orc_quantise1_large_s16 (int16_t * d1, int p1, int p2, int p3, int n)
+orc_downsample_vert_u8 (uint8_t * d1, uint8_t * s1, uint8_t * s2, uint8_t * s3, uint8_t * s4, int n)
 {
   static int p_inited = 0;
   static OrcProgram *p = NULL;
@@ -3186,27 +3196,33 @@ orc_quantise1_large_s16 (int16_t * d1, int p1, int p2, int p3, int n)
       OrcCompileResult result;
 
       p = orc_program_new ();
-      orc_program_set_name (p, "orc_quantise1_large_s16");
-      orc_program_set_backup_function (p, _backup_orc_quantise1_large_s16);
-      orc_program_add_destination (p, 2, "d1");
-      orc_program_add_constant (p, 2, 2, "c1");
-      orc_program_add_parameter (p, 2, "p1");
-      orc_program_add_parameter (p, 2, "p2");
-      orc_program_add_parameter (p, 2, "p3");
+      orc_program_set_name (p, "orc_downsample_vert_u8");
+      orc_program_set_backup_function (p, _backup_orc_downsample_vert_u8);
+      orc_program_add_destination (p, 1, "d1");
+      orc_program_add_source (p, 1, "s1");
+      orc_program_add_source (p, 1, "s2");
+      orc_program_add_source (p, 1, "s3");
+      orc_program_add_source (p, 1, "s4");
+      orc_program_add_constant (p, 2, 6, "c1");
+      orc_program_add_constant (p, 2, 26, "c2");
+      orc_program_add_constant (p, 2, 32, "c3");
+      orc_program_add_constant (p, 2, 6, "c4");
       orc_program_add_temporary (p, 2, "t1");
       orc_program_add_temporary (p, 2, "t2");
-      orc_program_add_temporary (p, 4, "t3");
+      orc_program_add_temporary (p, 2, "t3");
 
-      orc_program_append (p, "copyw", ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
-      orc_program_append (p, "signw", ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1);
-      orc_program_append (p, "absw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_D1);
-      orc_program_append (p, "convuwl", ORC_VAR_T3, ORC_VAR_T1, ORC_VAR_D1);
-      orc_program_append (p, "shll", ORC_VAR_T3, ORC_VAR_T3, ORC_VAR_C1);
-      orc_program_append (p, "subl", ORC_VAR_T3, ORC_VAR_T3, ORC_VAR_P2);
-      orc_program_append (p, "mulhul", ORC_VAR_T3, ORC_VAR_T3, ORC_VAR_P1);
-      orc_program_append (p, "shrul", ORC_VAR_T3, ORC_VAR_T3, ORC_VAR_P3);
-      orc_program_append (p, "convlw", ORC_VAR_T1, ORC_VAR_T3, ORC_VAR_D1);
-      orc_program_append (p, "mullw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2);
+      orc_program_append (p, "convubw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+      orc_program_append (p, "convubw", ORC_VAR_T2, ORC_VAR_S4, ORC_VAR_D1);
+      orc_program_append (p, "addw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_T2);
+      orc_program_append (p, "mullw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1);
+      orc_program_append (p, "convubw", ORC_VAR_T2, ORC_VAR_S2, ORC_VAR_D1);
+      orc_program_append (p, "convubw", ORC_VAR_T3, ORC_VAR_S3, ORC_VAR_D1);
+      orc_program_append (p, "addw", ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_T3);
+      orc_program_append (p, "mullw", ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C2);
+      orc_program_append (p, "addw", ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_T1);
+      orc_program_append (p, "addw", ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C3);
+      orc_program_append (p, "shruw", ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C4);
+      orc_program_append (p, "convwb", ORC_VAR_D1, ORC_VAR_T2, ORC_VAR_D1);
 
       result = orc_program_compile (p);
     }
@@ -3217,56 +3233,87 @@ orc_quantise1_large_s16 (int16_t * d1, int p1, int p2, int p3, int n)
   ex->program = p;
   ex->n = n;
   ex->arrays[ORC_VAR_D1] = d1;
-  ex->params[ORC_VAR_P1] = p1;
-  ex->params[ORC_VAR_P2] = p2;
-  ex->params[ORC_VAR_P3] = p3;
+  ex->arrays[ORC_VAR_S1] = s1;
+  ex->arrays[ORC_VAR_S2] = s2;
+  ex->arrays[ORC_VAR_S3] = s3;
+  ex->arrays[ORC_VAR_S4] = s4;
 
   orc_executor_run (ex);
 }
 
-/* orc_quantise2_large_s16 */
+/* orc_downsample_horiz_u8 */
 static void
-_backup_orc_quantise2_large_s16 (OrcExecutor *ex)
+_backup_orc_downsample_horiz_u8 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t var16 = 2;
-  const int16_t var24 = ex->params[24];
-  const int16_t var25 = ex->params[25];
+  int8_t * var0 = ex->arrays[0];
+  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var5 = ex->arrays[5];
+  const int16_t var16 = 6;
+  const int16_t var17 = 26;
+  const int16_t var18 = 32;
+  const int16_t var19 = 6;
   int16_t var32;
   int16_t var33;
-  int32_t var34;
+  int8_t var34;
   int16_t var35;
-  int32_t var36;
-  int32_t var37;
-  int32_t var38;
+  int16_t var36;
+  int16_t var37;
+  int8_t var38;
   int16_t var39;
+  int16_t var40;
+  int8_t var41;
+  int16_t var42;
+  int8_t var43;
+  int16_t var44;
+  int16_t var45;
+  int16_t var46;
+  int16_t var47;
+  int16_t var48;
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyw */
-    var32 = var0[i];
-    /* 1: signw */
-    var33 = ORC_CLAMP(var32,-1,1);
-    /* 2: absw */
-    var35 = ORC_ABS(var32);
-    /* 3: convuwl */
-    var34 = (uint16_t)var35;
-    /* 4: shll */
-    var36 = var34 << var16;
-    /* 5: subl */
-    var37 = var36 - var25;
-    /* 6: shrul */
-    var38 = ((uint32_t)var37) >> var24;
-    /* 7: convlw */
-    var39 = var38;
-    /* 8: mullw */
-    var0[i] = (var39 * var33) & 0xffff;
+    var32 = var4[i];
+    /* 1: copyw */
+    var33 = var5[i];
+    /* 2: select0wb */
+    var34 = (uint16_t)var32 & 0xff;
+    /* 3: convubw */
+    var35 = (uint8_t)var34;
+    /* 4: select1wb */
+    var38 = ((uint16_t)var33 >> 8)&0xff;
+    /* 5: convubw */
+    var36 = (uint8_t)var38;
+    /* 6: addw */
+    var39 = var35 + var36;
+    /* 7: mullw */
+    var40 = (var39 * var16) & 0xffff;
+    /* 8: select1wb */
+    var41 = ((uint16_t)var32 >> 8)&0xff;
+    /* 9: convubw */
+    var42 = (uint8_t)var41;
+    /* 10: select0wb */
+    var43 = (uint16_t)var33 & 0xff;
+    /* 11: convubw */
+    var37 = (uint8_t)var43;
+    /* 12: addw */
+    var44 = var42 + var37;
+    /* 13: mullw */
+    var45 = (var44 * var17) & 0xffff;
+    /* 14: addw */
+    var46 = var40 + var45;
+    /* 15: addw */
+    var47 = var46 + var18;
+    /* 16: shruw */
+    var48 = ((uint16_t)var47) >> var19;
+    /* 17: convwb */
+    var0[i] = var48;
   }
 
 }
 
 void
-orc_quantise2_large_s16 (int16_t * d1, int p1, int p2, int n)
+orc_downsample_horiz_u8 (uint8_t * d1, uint8_t * s1, uint8_t * s2, int n)
 {
   static int p_inited = 0;
   static OrcProgram *p = NULL;
@@ -3278,25 +3325,40 @@ orc_quantise2_large_s16 (int16_t * d1, int p1, int p2, int n)
       OrcCompileResult result;
 
       p = orc_program_new ();
-      orc_program_set_name (p, "orc_quantise2_large_s16");
-      orc_program_set_backup_function (p, _backup_orc_quantise2_large_s16);
-      orc_program_add_destination (p, 2, "d1");
-      orc_program_add_constant (p, 2, 2, "c1");
-      orc_program_add_parameter (p, 2, "p1");
-      orc_program_add_parameter (p, 2, "p2");
+      orc_program_set_name (p, "orc_downsample_horiz_u8");
+      orc_program_set_backup_function (p, _backup_orc_downsample_horiz_u8);
+      orc_program_add_destination (p, 1, "d1");
+      orc_program_add_source (p, 2, "s1");
+      orc_program_add_source (p, 2, "s2");
+      orc_program_add_constant (p, 2, 6, "c1");
+      orc_program_add_constant (p, 2, 26, "c2");
+      orc_program_add_constant (p, 2, 32, "c3");
+      orc_program_add_constant (p, 2, 6, "c4");
       orc_program_add_temporary (p, 2, "t1");
       orc_program_add_temporary (p, 2, "t2");
-      orc_program_add_temporary (p, 4, "t3");
+      orc_program_add_temporary (p, 1, "t3");
+      orc_program_add_temporary (p, 2, "t4");
+      orc_program_add_temporary (p, 2, "t5");
+      orc_program_add_temporary (p, 2, "t6");
 
-      orc_program_append (p, "copyw", ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
-      orc_program_append (p, "signw", ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1);
-      orc_program_append (p, "absw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_D1);
-      orc_program_append (p, "convuwl", ORC_VAR_T3, ORC_VAR_T1, ORC_VAR_D1);
-      orc_program_append (p, "shll", ORC_VAR_T3, ORC_VAR_T3, ORC_VAR_C1);
-      orc_program_append (p, "subl", ORC_VAR_T3, ORC_VAR_T3, ORC_VAR_P2);
-      orc_program_append (p, "shrul", ORC_VAR_T3, ORC_VAR_T3, ORC_VAR_P1);
-      orc_program_append (p, "convlw", ORC_VAR_T1, ORC_VAR_T3, ORC_VAR_D1);
-      orc_program_append (p, "mullw", ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2);
+      orc_program_append (p, "copyw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+      orc_program_append (p, "copyw", ORC_VAR_T2, ORC_VAR_S2, ORC_VAR_D1);
+      orc_program_append (p, "select0wb", ORC_VAR_T3, ORC_VAR_T1, ORC_VAR_D1);
+      orc_program_append (p, "convubw", ORC_VAR_T4, ORC_VAR_T3, ORC_VAR_D1);
+      orc_program_append (p, "select1wb", ORC_VAR_T3, ORC_VAR_T2, ORC_VAR_D1);
+      orc_program_append (p, "convubw", ORC_VAR_T5, ORC_VAR_T3, ORC_VAR_D1);
+      orc_program_append (p, "addw", ORC_VAR_T4, ORC_VAR_T4, ORC_VAR_T5);
+      orc_program_append (p, "mullw", ORC_VAR_T4, ORC_VAR_T4, ORC_VAR_C1);
+      orc_program_append (p, "select1wb", ORC_VAR_T3, ORC_VAR_T1, ORC_VAR_D1);
+      orc_program_append (p, "convubw", ORC_VAR_T5, ORC_VAR_T3, ORC_VAR_D1);
+      orc_program_append (p, "select0wb", ORC_VAR_T3, ORC_VAR_T2, ORC_VAR_D1);
+      orc_program_append (p, "convubw", ORC_VAR_T6, ORC_VAR_T3, ORC_VAR_D1);
+      orc_program_append (p, "addw", ORC_VAR_T5, ORC_VAR_T5, ORC_VAR_T6);
+      orc_program_append (p, "mullw", ORC_VAR_T5, ORC_VAR_T5, ORC_VAR_C2);
+      orc_program_append (p, "addw", ORC_VAR_T4, ORC_VAR_T4, ORC_VAR_T5);
+      orc_program_append (p, "addw", ORC_VAR_T4, ORC_VAR_T4, ORC_VAR_C3);
+      orc_program_append (p, "shruw", ORC_VAR_T4, ORC_VAR_T4, ORC_VAR_C4);
+      orc_program_append (p, "convwb", ORC_VAR_D1, ORC_VAR_T4, ORC_VAR_D1);
 
       result = orc_program_compile (p);
     }
@@ -3307,8 +3369,8 @@ orc_quantise2_large_s16 (int16_t * d1, int p1, int p2, int n)
   ex->program = p;
   ex->n = n;
   ex->arrays[ORC_VAR_D1] = d1;
-  ex->params[ORC_VAR_P1] = p1;
-  ex->params[ORC_VAR_P2] = p2;
+  ex->arrays[ORC_VAR_S1] = s1;
+  ex->arrays[ORC_VAR_S2] = s2;
 
   orc_executor_run (ex);
 }

@@ -1750,6 +1750,9 @@ downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src)
       x +=  6*src[CLAMP(i*2 + 2, 0, n_src-1)];
       dest[i] = CLAMP((x+32)>>6, 0, 255);
     }
+#ifdef HAVE_ORC
+    orc_downsample_horiz_u8 (dest + 1, src + 1, src + 3, n_src/2 - 2);
+#else
     for(i=1;i<n_src/2-2;i++){
       int x = 0;
       x +=  6*src[i*2 - 1];
@@ -1758,6 +1761,7 @@ downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src)
       x +=  6*src[i*2 + 2];
       dest[i] = (x+32)>>6;
     }
+#endif
     for(i=n_src/2-2;i<n_dest;i++){
       int x = 0;
       x +=  6*src[CLAMP(i*2 - 1, 0, n_src-1)];
@@ -1770,6 +1774,7 @@ downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src)
   }
 }
 
+#ifndef HAVE_ORC
 static void
 downsample_vert_u8 (uint8_t *dest, int n_dest, uint8_t *src1,
     uint8_t *src2, uint8_t *src3, uint8_t *src4)
@@ -1785,6 +1790,7 @@ downsample_vert_u8 (uint8_t *dest, int n_dest, uint8_t *src1,
     dest[i] = CLAMP((x+32)>>6, 0, 255);
   }
 }
+#endif
 
 static void
 schro_frame_component_downsample (SchroFrameData *dest,
@@ -1796,11 +1802,20 @@ schro_frame_component_downsample (SchroFrameData *dest,
   tmp = schro_malloc(src->width);
 
   for(i=0;i<dest->height;i++){
+#ifdef HAVE_ORC
+    orc_downsample_vert_u8 (tmp,
+        SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2-1,0,src->height - 1)),
+        SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+0,0,src->height - 1)),
+        SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+1,0,src->height - 1)),
+        SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+2,0,src->height - 1)),
+        src->width);
+#else
     downsample_vert_u8 (tmp, src->width,
         SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2-1,0,src->height - 1)),
         SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+0,0,src->height - 1)),
         SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+1,0,src->height - 1)),
         SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+2,0,src->height - 1)));
+#endif
     downsample_horiz_u8 (
         SCHRO_FRAME_DATA_GET_LINE(dest, i), dest->width,
         tmp, src->width);

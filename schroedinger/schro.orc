@@ -556,43 +556,59 @@ mullw d1, t1, t2
 
 
 
-.function orc_quantise1_large_s16
-.dest 2 d1 int16_t
-.param 2 p1
-.param 2 p2
-.param 2 p3
+.function orc_downsample_vert_u8
+.dest 1 d1
+.source 1 s1
+.source 1 s2
+.source 1 s3
+.source 1 s4
 .temp 2 t1
 .temp 2 t2
-.temp 4 t3
+.temp 2 t3
 
-copyw t1, d1
-signw t2, t1
-absw t1, t1
-convuwl t3, t1
-shll t3, t3, 2
-subl t3, t3, p2
-mulhul t3, t3, p1
-shrul t3, t3, p3
-convlw t1, t3
-mullw d1, t1, t2
+convubw t1, s1
+convubw t2, s4
+addw t1, t1, t2
+mullw t1, t1, 6
+convubw t2, s2
+convubw t3, s3
+addw t2, t2, t3
+mullw t2, t2, 26
+addw t2, t2, t1
+addw t2, t2, 32
+shruw t2, t2, 6
+convwb d1, t2
 
 
-.function orc_quantise2_large_s16
-.dest 2 d1 int16_t
-.param 2 p1
-.param 2 p2
+.function orc_downsample_horiz_u8
+.dest 1 d1
+.source 2 s1 uint8_t
+.source 2 s2 uint8_t
 .temp 2 t1
 .temp 2 t2
-.temp 4 t3
+.temp 1 t3
+.temp 2 t4
+.temp 2 t5
+.temp 2 t6
 
-copyw t1, d1
-signw t2, t1
-absw t1, t1
-convuwl t3, t1
-shll t3, t3, 2
-subl t3, t3, p2
-shrul t3, t3, p1
-convlw t1, t3
-mullw d1, t1, t2
+copyw t1, s1
+copyw t2, s2
+select0wb t3, t1
+convubw t4, t3
+select1wb t3, t2
+convubw t5, t3
+addw t4, t4, t5
+mullw t4, t4, 6
+select1wb t3, t1
+convubw t5, t3
+select0wb t3, t2
+convubw t6, t3
+addw t5, t5, t6
+mullw t5, t5, 26
+addw t4, t4, t5
+addw t4, t4, 32
+shruw t4, t4, 6
+convwb d1, t4
+
 
 
