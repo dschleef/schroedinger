@@ -532,7 +532,7 @@ schro_encoder_calculate_allocation (SchroEncoderFrame *frame)
         encoder->magic_allocation_scale);
     frame->allocated_residual_bits -= frame->estimated_mc_bits;
     if (frame->allocated_residual_bits < 0) {
-      SCHRO_ERROR("allocated residual bits less than 0");
+      SCHRO_DEBUG("allocated residual bits less than 0");
       frame->allocated_residual_bits = 0;
     }
     frame->hard_limit_bits = encoder->buffer_level;
