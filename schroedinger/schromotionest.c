@@ -965,11 +965,12 @@ schro_motionest_superblock_subsuperblock (SchroMotionEst *me,
       double min_score;
 
       /* FIXME use better default than DC */
-      schro_motionest_subsuperblock_dc (me, &tryblock, i, j, ii, jj);
+      schro_motionest_subsuperblock_dc (me, &block, i, j, ii, jj);
       min_score = block.entropy + me->lambda * block.error;
 
       if (me->encoder_frame->encoder->enable_hierarchical_estimation) {
-        schro_motionest_subsuperblock_scan (me, 0, me->scan_distance, &block, i, j, ii, jj);
+        memcpy (&tryblock, &block, sizeof(block));
+        schro_motionest_subsuperblock_scan (me, 0, me->scan_distance, &tryblock, i, j, ii, jj);
         TRYBLOCK
 
         if (params->num_refs > 1) {
