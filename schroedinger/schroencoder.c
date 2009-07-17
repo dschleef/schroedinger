@@ -2751,76 +2751,89 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
         int16_t *quant_line = SCHRO_FRAME_DATA_GET_LINE(&qd, j);
         int16_t *parent_line = SCHRO_FRAME_DATA_GET_LINE(&parent_fd, (j>>1));
 
-        for(i=xmin;i<xmax;i++){
-          int parent;
-          int cont_context;
-          int value_context;
-          int nhood_or;
-          int previous_value;
-          int sign_context;
+#define STUFF(have_parent,is_horiz,is_vert) \
+        for(i=xmin;i<xmax;i++){ \
+          int parent; \
+          int cont_context; \
+          int value_context; \
+          int nhood_or; \
+          int previous_value; \
+          int sign_context; \
+ \
+          if (have_parent) { \
+            parent = parent_line[(i>>1)]; \
+          } else { \
+            parent = 0; \
+          } \
+\
+          nhood_or = 0; \
+          if (j>0) { \
+            nhood_or |= prev_quant_line[i]; \
+          } \
+          if (i>0) { \
+            nhood_or |= quant_line[i - 1]; \
+          } \
+          if (i>0 && j>0) { \
+            nhood_or |= prev_quant_line[i - 1]; \
+          } \
+ \
+          previous_value = 0; \
+          if (is_horiz) { \
+            if (i > 0) { \
+              previous_value = quant_line[i - 1]; \
+            } \
+          } else if (is_vert) { \
+            if (j > 0) { \
+              previous_value = prev_quant_line[i]; \
+            } \
+          } \
+ \
+          if (previous_value < 0) { \
+            sign_context = SCHRO_CTX_SIGN_NEG; \
+          } else { \
+            if (previous_value > 0) { \
+              sign_context = SCHRO_CTX_SIGN_POS; \
+            } else { \
+              sign_context = SCHRO_CTX_SIGN_ZERO; \
+            } \
+          } \
+ \
+          if (parent == 0) { \
+            if (nhood_or == 0) { \
+              cont_context = SCHRO_CTX_ZPZN_F1; \
+            } else { \
+              cont_context = SCHRO_CTX_ZPNN_F1; \
+            } \
+          } else { \
+            if (nhood_or == 0) { \
+              cont_context = SCHRO_CTX_NPZN_F1; \
+            } else { \
+              cont_context = SCHRO_CTX_NPNN_F1; \
+            } \
+          } \
+ \
+          value_context = SCHRO_CTX_COEFF_DATA; \
+ \
+          _schro_arith_encode_sint (arith, cont_context, value_context, \
+              sign_context, quant_line[i]); \
+        }
 
-          /* FIXME This code is so ugly.  Most of these if statements
-           * are constant over the entire codeblock. */
-
-          if (position >= 4) {
-            parent = parent_line[(i>>1)];
-          } else {
-            parent = 0;
-          }
-//parent = 0;
-
-          nhood_or = 0;
-          if (j>0) {
-            nhood_or |= prev_quant_line[i];
-          }
-          if (i>0) {
-            nhood_or |= quant_line[i - 1];
-          }
-          if (i>0 && j>0) {
-            nhood_or |= prev_quant_line[i - 1];
-          }
-//nhood_or = 0;
-
-          previous_value = 0;
+        if (position >= 4) {
           if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position)) {
-            if (i > 0) {
-              previous_value = quant_line[i - 1];
-            }
+            STUFF(TRUE, TRUE, FALSE);
           } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position)) {
-            if (j > 0) {
-              previous_value = prev_quant_line[i];
-            }
-          }
-//previous_value = 0;
-
-          if (previous_value < 0) {
-            sign_context = SCHRO_CTX_SIGN_NEG;
+            STUFF(TRUE, FALSE, TRUE);
           } else {
-            if (previous_value > 0) {
-              sign_context = SCHRO_CTX_SIGN_POS;
-            } else {
-              sign_context = SCHRO_CTX_SIGN_ZERO;
-            }
+            STUFF(TRUE, FALSE, FALSE);
           }
-
-          if (parent == 0) {
-            if (nhood_or == 0) {
-              cont_context = SCHRO_CTX_ZPZN_F1;
-            } else {
-              cont_context = SCHRO_CTX_ZPNN_F1;
-            }
+        } else {
+          if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position)) {
+            STUFF(FALSE, TRUE, FALSE);
+          } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position)) {
+            STUFF(FALSE, FALSE, TRUE);
           } else {
-            if (nhood_or == 0) {
-              cont_context = SCHRO_CTX_NPZN_F1;
-            } else {
-              cont_context = SCHRO_CTX_NPNN_F1;
-            }
+            STUFF(FALSE, FALSE, FALSE);
           }
-
-          value_context = SCHRO_CTX_COEFF_DATA;
-
-          _schro_arith_encode_sint (arith, cont_context, value_context,
-              sign_context, quant_line[i]);
         }
       }
     }
