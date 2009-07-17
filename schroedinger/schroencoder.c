@@ -2,6 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#define SCHRO_ARITH_DEFINE_INLINE
 #include <schroedinger/schro.h>
 #include <liboil/liboil.h>
 #include <unistd.h>

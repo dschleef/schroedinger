@@ -131,13 +131,6 @@ int schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
 int schro_arith_decode_sint (SchroArith *arith, unsigned int cont_context,
     unsigned int value_context, unsigned int sign_context);
 
-void _schro_arith_encode_bit (SchroArith *arith, int context, int
-    value) SCHRO_INTERNAL;
-void _schro_arith_encode_uint (SchroArith *arith, int cont_context,
-    int value_context, int value) SCHRO_INTERNAL;
-void _schro_arith_encode_sint (SchroArith *arith, int cont_context,
-    int value_context, int sign_context, int value) SCHRO_INTERNAL;
-
 int _schro_arith_decode_sint (SchroArith *arith, unsigned int cont_context,
     unsigned int value_context, unsigned int sign_context) SCHRO_INTERNAL;
 
@@ -148,7 +141,7 @@ void schro_arith_estimate_sint (SchroArith *arith, int cont_context,
     int value_context, int sign_context, int value);
 
 #ifdef SCHRO_ARITH_DEFINE_INLINE
-static int
+static inline int
 _schro_arith_decode_bit (SchroArith *arith, unsigned int i)
 {
   unsigned int range_x_prob;
@@ -200,7 +193,7 @@ _schro_arith_decode_bit (SchroArith *arith, unsigned int i)
   return value;
 }
 
-static int
+static inline int
 _schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
     unsigned int value_context)
 {
@@ -213,10 +206,143 @@ _schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
   }
   return bits - 1;
 }
+
+static inline void
+_schro_arith_encode_bit (SchroArith *arith, int i, int value)
+{
+  unsigned int range;
+  unsigned int probability0;
+  unsigned int range_x_prob;
+
+  probability0 = arith->probabilities[i];
+  range = arith->range[1];
+  range_x_prob = (range * probability0) >> 16;
+
+  if (value) {
+    arith->range[0] = arith->range[0] + range_x_prob;
+    arith->range[1] -= range_x_prob;
+    arith->probabilities[i] -= arith->lut[arith->probabilities[i]>>8];
+  } else {
+    arith->range[1] = range_x_prob;
+    arith->probabilities[i] += arith->lut[255-(arith->probabilities[i]>>8)];
+  }
+
+  while (arith->range[1] <= 0x4000) {
+    arith->range[0] <<= 1;
+    arith->range[1] <<= 1;
+    arith->cntr++;
+
+    if (arith->cntr == 8) {
+      if (arith->range[0] < (1<<24) &&
+          (arith->range[0] + arith->range[1]) >= (1<<24)) {
+        arith->carry++;
+      } else {
+        if (arith->range[0] >= (1<<24)) {
+          arith->dataptr[arith->offset-1]++;
+          while (arith->carry) {
+            arith->dataptr[arith->offset] = 0x00;
+            arith->carry--;
+            arith->offset++;
+          }
+        } else {
+          while (arith->carry) {
+            arith->dataptr[arith->offset] = 0xff;
+            arith->carry--;
+            arith->offset++;
+          }
+        }
+        arith->dataptr[arith->offset] = arith->range[0] >> 16;
+        arith->offset++;
+      }
+
+      arith->range[0] &= 0xffff;
+      arith->cntr = 0;
+    }
+  }
+}
+
+static inline int
+maxbit (unsigned int x)
+{
+#if 0
+  int i;
+  for(i=0;x;i++){
+    x >>= 1;
+  }
+  return i;
+#else
+  int i = 0;
+  if (x == 0) return 0;
+  if (x > 0x00ff) {
+    i += 8;
+    x >>= 8;
+  }
+  if (x > 0x000f) {
+    i += 4;
+    x >>= 4;
+  }
+  if (x > 0x0003) {
+    i += 2;
+    x >>= 2;
+  }
+  if (x > 0x0001) {
+    i += 1;
+    x >>= 1;
+  }
+  if (x > 0x0000) {
+    i += 1;
+  }
+  return i;
+#endif
+}
+
+static inline void
+_schro_arith_encode_uint (SchroArith *arith, int cont_context,
+    int value_context, int value)
+{
+  int i;
+  int n_bits;
+
+  value++;
+  n_bits = maxbit(value);
+  for(i=0;i<n_bits - 1;i++){
+    _schro_arith_encode_bit (arith, cont_context, 0);
+    _schro_arith_encode_bit (arith, value_context,
+        (value>>(n_bits - 2 - i))&1);
+    cont_context = arith->contexts[cont_context].next;
+  }
+  _schro_arith_encode_bit (arith, cont_context, 1);
+}
+
+static inline void
+_schro_arith_encode_sint (SchroArith *arith, int cont_context,
+    int value_context, int sign_context, int value)
+{
+  int sign;
+
+  if (value < 0) {
+    sign = 1;
+    value = -value;
+  } else {
+    sign = 0;
+  }
+  _schro_arith_encode_uint (arith, cont_context, value_context, value);
+  if (value) {
+    _schro_arith_encode_bit (arith, sign_context, sign);
+  }
+}
+
 #else /* SCHRO_ARITH_DEFINE_INLINE */
 int _schro_arith_decode_bit (SchroArith *arith, unsigned int context);
 int _schro_arith_decode_uint (SchroArith *arith, unsigned int cont_context,
     unsigned int value_context);
+void _schro_arith_encode_bit (SchroArith *arith, int context, int
+    value) SCHRO_INTERNAL;
+void _schro_arith_encode_uint (SchroArith *arith, int cont_context,
+    int value_context, int value) SCHRO_INTERNAL;
+void _schro_arith_encode_sint (SchroArith *arith, int cont_context,
+    int value_context, int sign_context, int value) SCHRO_INTERNAL;
+
 #endif /* SCHRO_ARITH_DEFINE_INLINE */
 
 #endif

@@ -189,6 +189,11 @@ schro_arith_encode_init (SchroArith *arith, SchroBuffer *buffer)
     arith->contexts[i].next = next_list[i];
     arith->probabilities[i] = 0x8000;
   }
+
+  for(i=0;i<256;i++){
+    arith->lut[i] = lut[i];
+    arith->lut[511-i] = lut[255-i];
+  }
 }
 
 #ifdef unused
@@ -369,6 +374,7 @@ _schro_arith_decode_bit (SchroArith *arith, unsigned int i)
 }
 #endif
 
+#ifndef SCHRO_ARITH_DEFINE_INLINE
 void
 _schro_arith_encode_bit (SchroArith *arith, int i, int value)
 {
@@ -422,6 +428,7 @@ _schro_arith_encode_bit (SchroArith *arith, int i, int value)
     }
   }
 }
+#endif
 
 #ifdef unused
 void
@@ -452,6 +459,7 @@ schro_arith_estimate_bit (SchroArith *arith, int i, int value)
 }
 #endif
 
+#ifndef SCHRO_ARITH_DEFINE_INLINE
 static int
 maxbit (unsigned int x)
 {
@@ -497,6 +505,7 @@ _schro_arith_encode_sint (SchroArith *arith, int cont_context,
     _schro_arith_encode_bit (arith, sign_context, sign);
   }
 }
+#endif
 
 #ifdef unused
 void
