@@ -2409,20 +2409,16 @@ schro_frame_data_quantise (SchroFrameData *quant_fd,
       line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
       quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
 
-      orc_quantise2_s16 (quant_line, line, quant_shift,
-          quant_offset, fd->width);
-      orc_dequantise_s16 (line, quant_line, quant_factor, real_quant_offset + 2,
-          fd->width);
+      orc_quantdequant2_s16 (quant_line, line, quant_shift,
+          quant_offset, quant_factor, real_quant_offset + 2, fd->width);
     }
   } else {
     for(j=0;j<fd->height;j++){
       line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
       quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
 
-      orc_quantise1_s16 (quant_line, line, inv_quant, quant_offset,
-          quant_shift, fd->width);
-      orc_dequantise_s16 (line, quant_line, quant_factor, real_quant_offset + 2,
-          fd->width);
+      orc_quantdequant1_s16 (quant_line, line, inv_quant, quant_offset,
+          quant_shift, quant_factor, real_quant_offset + 2, fd->width);
     }
   }
 #else
