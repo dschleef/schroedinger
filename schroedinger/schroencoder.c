@@ -631,20 +631,20 @@ schro_encoder_frame_assemble_buffer (SchroEncoderFrame *frame,
   if (frame->sequence_header_buffer) {
     buf = frame->sequence_header_buffer;
     schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
-    memcpy (buffer->data + offset, buf->data, buf->length);
+    orc_memcpy (buffer->data + offset, buf->data, buf->length);
     offset += frame->sequence_header_buffer->length;
   }
 
   for(i=0;i<schro_list_get_size (frame->inserted_buffers);i++){
     buf = schro_list_get (frame->inserted_buffers, i);
     schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
-    memcpy (buffer->data + offset, buf->data, buf->length);
+    orc_memcpy (buffer->data + offset, buf->data, buf->length);
     offset += buf->length;
   }
   while(schro_list_get_size (frame->encoder->inserted_buffers)>0){
     buf = schro_list_remove (frame->encoder->inserted_buffers, 0);
     schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
-    memcpy (buffer->data + offset, buf->data, buf->length);
+    orc_memcpy (buffer->data + offset, buf->data, buf->length);
     offset += buf->length;
     schro_buffer_unref (buf);
     buf = NULL;
@@ -652,7 +652,7 @@ schro_encoder_frame_assemble_buffer (SchroEncoderFrame *frame,
 
   buf = frame->output_buffer;
   schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
-  memcpy (buffer->data + offset, buf->data, buf->length);
+  orc_memcpy (buffer->data + offset, buf->data, buf->length);
   offset += buf->length;
 }
 
@@ -2402,7 +2402,7 @@ schro_frame_data_quantise (SchroFrameData *quant_fd,
       line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
       quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
 
-      memcpy (quant_line, line, fd->width * sizeof(int16_t));
+      orc_memcpy (quant_line, line, fd->width * sizeof(int16_t));
     }
   } else if ((quant_index & 3) == 0) {
     for(j=0;j<fd->height;j++){
@@ -2456,7 +2456,7 @@ schro_frame_data_dequantise (SchroFrameData *fd,
       line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
       quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
 
-      memcpy (line, quant_line, fd->width * sizeof(int16_t));
+      orc_memcpy (line, quant_line, fd->width * sizeof(int16_t));
     }
   } else {
     for(j=0;j<fd->height;j++){
