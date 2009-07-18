@@ -544,6 +544,15 @@ schro_encoder_calculate_allocation (SchroEncoderFrame *frame)
 {
   SchroEncoder *encoder = frame->encoder;
 
+  if (frame->encoder->rate_control != SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE) {
+    /* FIXME this function shouldn't be called for CBR */
+
+    frame->hard_limit_bits = frame->output_buffer_size * 8;
+    frame->allocated_mc_bits = frame->hard_limit_bits;
+    frame->allocated_residual_bits = frame->hard_limit_bits;
+    return;
+  }
+
   /* FIXME should be fixed elsewhere */
   if (frame->picture_weight == 0.0) frame->picture_weight = 1.0;
 
