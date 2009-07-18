@@ -782,7 +782,7 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
         encoder->buffer_level -= buffer->length * 8;
         if (is_picture) {
           if (encoder->buffer_level < 0) {
-            SCHRO_ERROR("buffer underrun by %d bytes", -encoder->buffer_level);
+            SCHRO_ERROR("buffer underrun by %d bits", -encoder->buffer_level);
             encoder->buffer_level = 0;
           }
           encoder->buffer_level += encoder->bits_per_picture;
