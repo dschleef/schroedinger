@@ -1453,6 +1453,25 @@ _backup_orc_stats_above_s16 (OrcExecutor *ex)
 
 }
 
+/* orc_accw */
+static void
+_backup_orc_accw (OrcExecutor *ex)
+{
+  int i;
+  const int16_t * var4 = ex->arrays[4];
+  int16_t var12 = 0;
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: absw */
+    var32 = ORC_ABS(var4[i]);
+    /* 1: accw */
+    var12 = var12 + var32;
+  }
+  ex->accumulators[0] = var12;
+
+}
+
 
 int
 main (int argc, char *argv[])
@@ -3293,6 +3312,35 @@ main (int argc, char *argv[])
     orc_program_append (p, "minsw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C3);
     orc_program_append (p, "convuwl", ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1);
     orc_program_append (p, "accl", ORC_VAR_A1, ORC_VAR_T2, ORC_VAR_D1);
+
+    ret = orc_test_compare_output_backup (p);
+    if (!ret) {
+      error = TRUE;
+    }
+
+    ret = orc_test_compare_output (p);
+    if (!ret) {
+      error = TRUE;
+    }
+
+    orc_program_free (p);
+  }
+
+  /* orc_accw */
+  {
+    OrcProgram *p = NULL;
+    int ret;
+
+    printf ("orc_accw:\n");
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_accw");
+    orc_program_set_backup_function (p, _backup_orc_accw);
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_accumulator (p, 2, "a1");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append (p, "absw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "accw", ORC_VAR_A1, ORC_VAR_T1, ORC_VAR_D1);
 
     ret = orc_test_compare_output_backup (p);
     if (!ret) {

@@ -692,3 +692,11 @@ convuwl t2, t1
 accl a1, t2
 
 
+.function orc_accw
+.accumulator 2 a1 int
+.source 2 s1 int16_t
+.temp 2 t1
+
+absw t1, s1
+accw a1, t1
+

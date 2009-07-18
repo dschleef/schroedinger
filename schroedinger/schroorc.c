@@ -3749,3 +3749,58 @@ orc_stats_above_s16 (int32_t * a1, int16_t * s1, int n)
   orc_executor_run (ex);
   *a1 = orc_executor_get_accumulator (ex, ORC_VAR_A1);
 }
+
+/* orc_accw */
+static void
+_backup_orc_accw (OrcExecutor *ex)
+{
+  int i;
+  const int16_t * var4 = ex->arrays[4];
+  int16_t var12 = 0;
+  int16_t var32;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: absw */
+    var32 = ORC_ABS(var4[i]);
+    /* 1: accw */
+    var12 = var12 + var32;
+  }
+  ex->accumulators[0] = var12;
+
+}
+
+void
+orc_accw (int * a1, int16_t * s1, int n)
+{
+  static int p_inited = 0;
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  if (!p_inited) {
+    orc_once_mutex_lock ();
+    if (!p_inited) {
+      OrcCompileResult result;
+
+      p = orc_program_new ();
+      orc_program_set_name (p, "orc_accw");
+      orc_program_set_backup_function (p, _backup_orc_accw);
+      orc_program_add_source (p, 2, "s1");
+      orc_program_add_accumulator (p, 2, "a1");
+      orc_program_add_temporary (p, 2, "t1");
+
+      orc_program_append_ds (p, "absw", ORC_VAR_T1, ORC_VAR_S1);
+      orc_program_append_ds (p, "accw", ORC_VAR_A1, ORC_VAR_T1);
+
+      result = orc_program_compile (p);
+    }
+    p_inited = TRUE;
+    orc_once_mutex_unlock ();
+  }
+
+  ex->program = p;
+  ex->n = n;
+  ex->arrays[ORC_VAR_S1] = s1;
+
+  orc_executor_run (ex);
+  *a1 = orc_executor_get_accumulator (ex, ORC_VAR_A1);
+}

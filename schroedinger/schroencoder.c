@@ -2871,14 +2871,26 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
 static schro_bool
 schro_frame_data_is_zero (SchroFrameData *fd)
 {
-  int i,j;
+  int j;
   int16_t *line;
+#ifdef HAVE_ORC
+  int acc;
+#else
+  int i;
+#endif
 
   for(j=0;j<fd->height;j++){
     line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+#ifdef HAVE_ORC
+    /* FIXME this could theoretically cause false positives.  Fix when
+     * Orc gets an accorw opcode. */
+    orc_accw (&acc, line, fd->width);
+    if (acc != 0) return FALSE;
+#else
     for(i=0;i<fd->width;i++){
       if (line[i] != 0) return FALSE;
     }
+#endif
   }
 
   return TRUE;
