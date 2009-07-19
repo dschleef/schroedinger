@@ -2612,14 +2612,11 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component,
   int quant_offset;
   SchroFrameData fd;
   SchroFrameData qd;
-  int subband_zero_flag;
   int position;
   SchroParams *params = &frame->params;
   int horiz_codeblocks;
   int vert_codeblocks;
   int x,y;
-
-  subband_zero_flag = 1;
 
   position = schro_subband_get_position (index);
   schro_subband_get_frame_data (&fd, frame->iwt_frame, component,
