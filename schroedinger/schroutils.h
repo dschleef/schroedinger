@@ -57,6 +57,7 @@ typedef int SchroCUDAStream;
 #define ROUND_SHIFT(x,y) (((x) + (1<<((y)-1)))>>(y))
 
 #define schro_divide(a,b) (((a)<0)?(((a) - (b) + 1)/(b)):((a)/(b)))
+#define schro_divide3(a) (((a)*21845 + 10922)>>16)
 
 #endif
 

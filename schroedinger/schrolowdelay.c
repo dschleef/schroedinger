@@ -243,7 +243,7 @@ schro_dc_predict (int16_t *line, int stride, int x, int y)
 
   if (y > 0) {
     if (x > 0) {
-      return schro_divide(line[-1] + prev_line[0] + prev_line[-1] + 1,3);
+      return schro_divide3(line[-1] + prev_line[0] + prev_line[-1] + 1);
     } else {
       return prev_line[0];
     }

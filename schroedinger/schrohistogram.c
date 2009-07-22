@@ -359,8 +359,8 @@ schro_frame_data_generate_histogram_dc_predict (SchroFrameData *fd,
       int pred_value;
       if (y+j>0) {
         if (x+i>0) {
-          pred_value = schro_divide(line[i - 1] +
-              prev_line[i] + prev_line[i - 1] + 1,3);
+          pred_value = schro_divide3(line[i - 1] +
+              prev_line[i] + prev_line[i - 1] + 1);
         } else {
           pred_value = prev_line[i];
         }

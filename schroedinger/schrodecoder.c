@@ -3083,8 +3083,8 @@ schro_decoder_subband_dc_predict (SchroFrameData *fd)
     line[0] += pred_value;
 
     for(i=1;i<fd->width;i++){
-      pred_value = schro_divide(line[i-1] + prev_line[i] +
-          prev_line[i-1] + 1,3);
+      pred_value = schro_divide3(line[i-1] + prev_line[i] +
+          prev_line[i-1] + 1);
       line[i] += pred_value;
     }
   }
