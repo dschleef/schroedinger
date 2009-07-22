@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #define ORC_CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
-#define ORC_ABS(a) ((a)<0 ? (-a) : (a))
+#define ORC_ABS(a) ((a)<0 ? -(a) : (a))
 #define ORC_MIN(a,b) ((a)<(b) ? (a) : (b))
 #define ORC_MAX(a,b) ((a)>(b) ? (a) : (b))
 #define ORC_SB_MAX 127
@@ -1270,6 +1270,70 @@ _backup_orc_downsample_horiz_u8 (OrcExecutor *ex)
     /* 17: convwb */
     var0[i] = var48;
   }
+
+}
+
+/* orc_stats_moment_s16 */
+static void
+_backup_orc_stats_moment_s16 (OrcExecutor *ex)
+{
+  int i;
+  const int16_t * var4 = ex->arrays[4];
+  int32_t var12 = 0;
+  const int16_t var16 = 2;
+  const int16_t var17 = 0;
+  int16_t var32;
+  int32_t var33;
+  int16_t var34;
+  int16_t var35;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: absw */
+    var32 = ORC_ABS(var4[i]);
+    /* 1: subw */
+    var34 = var32 - var16;
+    /* 2: maxsw */
+    var35 = ORC_MAX(var34, var17);
+    /* 3: convuwl */
+    var33 = (uint16_t)var35;
+    /* 4: accl */
+    var12 = var12 + var33;
+  }
+  ex->accumulators[0] = var12;
+
+}
+
+/* orc_stats_above_s16 */
+static void
+_backup_orc_stats_above_s16 (OrcExecutor *ex)
+{
+  int i;
+  const int16_t * var4 = ex->arrays[4];
+  int32_t var12 = 0;
+  const int16_t var16 = 1;
+  const int16_t var17 = 0;
+  const int16_t var18 = 1;
+  int16_t var32;
+  int32_t var33;
+  int16_t var34;
+  int16_t var35;
+  int16_t var36;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: absw */
+    var32 = ORC_ABS(var4[i]);
+    /* 1: subw */
+    var34 = var32 - var16;
+    /* 2: maxsw */
+    var35 = ORC_MAX(var34, var17);
+    /* 3: minsw */
+    var36 = ORC_MIN(var35, var18);
+    /* 4: convuwl */
+    var33 = (uint16_t)var36;
+    /* 5: accl */
+    var12 = var12 + var33;
+  }
+  ex->accumulators[0] = var12;
 
 }
 
@@ -2945,6 +3009,78 @@ main (int argc, char *argv[])
     orc_program_append (p, "addw", ORC_VAR_T4, ORC_VAR_T4, ORC_VAR_C3);
     orc_program_append (p, "shruw", ORC_VAR_T4, ORC_VAR_T4, ORC_VAR_C4);
     orc_program_append (p, "convwb", ORC_VAR_D1, ORC_VAR_T4, ORC_VAR_D1);
+
+    ret = orc_test_compare_output_backup (p);
+    if (!ret) {
+      error = TRUE;
+    }
+
+    ret = orc_test_compare_output (p);
+    if (!ret) {
+      error = TRUE;
+    }
+
+    orc_program_free (p);
+  }
+
+  /* orc_stats_moment_s16 */
+  {
+    OrcProgram *p = NULL;
+    int ret;
+
+    printf ("orc_stats_moment_s16:\n");
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_stats_moment_s16");
+    orc_program_set_backup_function (p, _backup_orc_stats_moment_s16);
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_accumulator (p, 4, "a1");
+    orc_program_add_constant (p, 2, 2, "c1");
+    orc_program_add_constant (p, 2, 0, "c2");
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 4, "t2");
+
+    orc_program_append (p, "absw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "subw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1);
+    orc_program_append (p, "maxsw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C2);
+    orc_program_append (p, "convuwl", ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1);
+    orc_program_append (p, "accl", ORC_VAR_A1, ORC_VAR_T2, ORC_VAR_D1);
+
+    ret = orc_test_compare_output_backup (p);
+    if (!ret) {
+      error = TRUE;
+    }
+
+    ret = orc_test_compare_output (p);
+    if (!ret) {
+      error = TRUE;
+    }
+
+    orc_program_free (p);
+  }
+
+  /* orc_stats_above_s16 */
+  {
+    OrcProgram *p = NULL;
+    int ret;
+
+    printf ("orc_stats_above_s16:\n");
+    p = orc_program_new ();
+    orc_program_set_name (p, "orc_stats_above_s16");
+    orc_program_set_backup_function (p, _backup_orc_stats_above_s16);
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_accumulator (p, 4, "a1");
+    orc_program_add_constant (p, 2, 1, "c1");
+    orc_program_add_constant (p, 2, 0, "c2");
+    orc_program_add_constant (p, 2, 1, "c3");
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 4, "t2");
+
+    orc_program_append (p, "absw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
+    orc_program_append (p, "subw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1);
+    orc_program_append (p, "maxsw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C2);
+    orc_program_append (p, "minsw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C3);
+    orc_program_append (p, "convuwl", ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1);
+    orc_program_append (p, "accl", ORC_VAR_A1, ORC_VAR_T2, ORC_VAR_D1);
 
     ret = orc_test_compare_output_backup (p);
     if (!ret) {

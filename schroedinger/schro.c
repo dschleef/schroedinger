@@ -15,10 +15,6 @@ extern int _schro_decode_prediction_only;
 extern int _schro_dump_enable;
 extern int _schro_motion_ref;
 
-#ifdef HAVE_ORC
-extern SchroMutex *orc_mutex;
-#endif
-
 /**
  * schro_init:
  *
@@ -38,7 +34,6 @@ schro_init(void)
   oil_init();
 #ifdef HAVE_ORC
   orc_init();
-  orc_mutex = schro_mutex_new ();
 #endif
 
   s = getenv ("SCHRO_DEBUG");

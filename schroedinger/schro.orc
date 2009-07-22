@@ -611,4 +611,30 @@ shruw t4, t4, 6
 convwb d1, t4
 
 
+.function orc_stats_moment_s16
+.source 2 s1 int16_t
+.accumulator 4 a1 int32_t
+.temp 2 t1
+.temp 4 t2
+
+absw t1, s1
+subw t1, t1, 2
+maxsw t1, t1, 0
+convuwl t2, t1
+accl a1, t2
+
+
+.function orc_stats_above_s16
+.source 2 s1 int16_t
+.accumulator 4 a1 int32_t
+.temp 2 t1
+.temp 4 t2
+
+absw t1, s1
+subw t1, t1, 1
+maxsw t1, t1, 0
+minsw t1, t1, 1
+convuwl t2, t1
+accl a1, t2
+
 

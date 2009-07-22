@@ -4,20 +4,10 @@
 #include <orc/orc.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <schroedinger/schro.h>
-#define MUTEX_LOCK() schro_mutex_lock (orc_mutex)
-#define MUTEX_UNLOCK() schro_mutex_unlock (orc_mutex)
-SchroMutex *orc_mutex;
 
-#ifndef MUTEX_LOCK
-#define MUTEX_LOCK do { } while (0)
-#endif
-#ifndef MUTEX_UNLOCK
-#define MUTEX_UNLOCK do { } while (0)
-#endif
 
 #define ORC_CLAMP(x,a,b) ((x)<(a) ? (a) : ((x)>(b) ? (b) : (x)))
-#define ORC_ABS(a) ((a)<0 ? (-a) : (a))
+#define ORC_ABS(a) ((a)<0 ? -(a) : (a))
 #define ORC_MIN(a,b) ((a)<(b) ? (a) : (b))
 #define ORC_MAX(a,b) ((a)>(b) ? (a) : (b))
 #define ORC_SB_MAX 127
@@ -77,7 +67,7 @@ orc_add2_rshift_add_s16_22 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -99,7 +89,7 @@ orc_add2_rshift_add_s16_22 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -146,7 +136,7 @@ orc_add2_rshift_sub_s16_22 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -168,7 +158,7 @@ orc_add2_rshift_sub_s16_22 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -207,7 +197,7 @@ orc_add2_rshift_add_s16_11 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -225,7 +215,7 @@ orc_add2_rshift_add_s16_11 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -264,7 +254,7 @@ orc_add2_rshift_sub_s16_11 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -282,7 +272,7 @@ orc_add2_rshift_sub_s16_11 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -322,7 +312,7 @@ orc_add_const_rshift_s16_11 (int16_t * d1, int16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -341,7 +331,7 @@ orc_add_const_rshift_s16_11 (int16_t * d1, int16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -379,7 +369,7 @@ orc_add_const_rshift_s16 (int16_t * d1, int p1, int p2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -397,7 +387,7 @@ orc_add_const_rshift_s16 (int16_t * d1, int p1, int p2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -433,7 +423,7 @@ orc_add_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -449,7 +439,7 @@ orc_add_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -489,7 +479,7 @@ orc_addc_rshift_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int p1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -508,7 +498,7 @@ orc_addc_rshift_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int p1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -545,7 +535,7 @@ orc_lshift1_s16 (int16_t * d1, int16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -561,7 +551,7 @@ orc_lshift1_s16 (int16_t * d1, int16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -596,7 +586,7 @@ orc_lshift2_s16 (int16_t * d1, int16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -612,7 +602,7 @@ orc_lshift2_s16 (int16_t * d1, int16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -646,7 +636,7 @@ orc_lshift_s16_ip (int16_t * d1, int p1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -661,7 +651,7 @@ orc_lshift_s16_ip (int16_t * d1, int p1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -714,7 +704,7 @@ orc_mas2_add_s16_ip (int16_t * d1, int16_t * s1, int16_t * s2, int p1, int p2, i
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -740,7 +730,7 @@ orc_mas2_add_s16_ip (int16_t * d1, int16_t * s1, int16_t * s2, int p1, int p2, i
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -797,7 +787,7 @@ orc_mas2_sub_s16_ip (int16_t * d1, int16_t * s1, int16_t * s2, int p1, int p2, i
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -823,7 +813,7 @@ orc_mas2_sub_s16_ip (int16_t * d1, int16_t * s1, int16_t * s2, int p1, int p2, i
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -891,7 +881,7 @@ orc_mas4_across_add_s16_1991_ip (int16_t * d1, int16_t * s1, int16_t * s2, int16
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -924,7 +914,7 @@ orc_mas4_across_add_s16_1991_ip (int16_t * d1, int16_t * s1, int16_t * s2, int16
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -993,7 +983,7 @@ orc_mas4_across_sub_s16_1991_ip (int16_t * d1, int16_t * s1, int16_t * s2, int16
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1026,7 +1016,7 @@ orc_mas4_across_sub_s16_1991_ip (int16_t * d1, int16_t * s1, int16_t * s2, int16
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1066,7 +1056,7 @@ orc_subtract_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1082,7 +1072,7 @@ orc_subtract_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1117,7 +1107,7 @@ orc_memcpy (void * d1, void * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1132,7 +1122,7 @@ orc_memcpy (void * d1, void * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1170,7 +1160,7 @@ orc_add_s16_u8 (int16_t * d1, int16_t * s1, uint8_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1188,7 +1178,7 @@ orc_add_s16_u8 (int16_t * d1, int16_t * s1, uint8_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1223,7 +1213,7 @@ orc_convert_s16_u8 (uint16_t * d1, uint8_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1238,7 +1228,7 @@ orc_convert_s16_u8 (uint16_t * d1, uint8_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1272,7 +1262,7 @@ orc_convert_u8_s16 (uint8_t * d1, int16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1287,7 +1277,7 @@ orc_convert_u8_s16 (uint8_t * d1, int16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1325,7 +1315,7 @@ orc_offsetconvert_u8_s16 (uint8_t * d1, int16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1343,7 +1333,7 @@ orc_offsetconvert_u8_s16 (uint8_t * d1, int16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1381,7 +1371,7 @@ orc_offsetconvert_s16_u8 (int16_t * d1, uint8_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1399,7 +1389,7 @@ orc_offsetconvert_s16_u8 (int16_t * d1, uint8_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1437,7 +1427,7 @@ orc_subtract_s16_u8 (int16_t * d1, int16_t * s1, uint8_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1455,7 +1445,7 @@ orc_subtract_s16_u8 (int16_t * d1, int16_t * s1, uint8_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1497,7 +1487,7 @@ orc_multiply_and_add_s16_u8 (int16_t * d1, int16_t * s1, uint8_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1516,7 +1506,7 @@ orc_multiply_and_add_s16_u8 (int16_t * d1, int16_t * s1, uint8_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1551,7 +1541,7 @@ orc_splat_s16_ns (int16_t * d1, int p1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1566,7 +1556,7 @@ orc_splat_s16_ns (int16_t * d1, int p1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1600,7 +1590,7 @@ orc_splat_u8_ns (uint8_t * d1, int p1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1615,7 +1605,7 @@ orc_splat_u8_ns (uint8_t * d1, int p1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1650,7 +1640,7 @@ orc_average_u8 (uint8_t * d1, uint8_t * s1, uint8_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1666,7 +1656,7 @@ orc_average_u8 (uint8_t * d1, uint8_t * s1, uint8_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1705,7 +1695,7 @@ orc_rrshift6_s16_ip (int16_t * d1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1723,7 +1713,7 @@ orc_rrshift6_s16_ip (int16_t * d1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1756,7 +1746,7 @@ orc_unpack_yuyv_y (uint8_t * d1, uint16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1771,7 +1761,7 @@ orc_unpack_yuyv_y (uint8_t * d1, uint16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1808,7 +1798,7 @@ orc_unpack_yuyv_u (uint8_t * d1, uint32_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1825,7 +1815,7 @@ orc_unpack_yuyv_u (uint8_t * d1, uint32_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1862,7 +1852,7 @@ orc_unpack_yuyv_v (uint8_t * d1, uint32_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1879,7 +1869,7 @@ orc_unpack_yuyv_v (uint8_t * d1, uint32_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1930,7 +1920,7 @@ orc_packyuyv (uint32_t * d1, uint8_t * s1, uint8_t * s2, uint8_t * s3, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -1957,7 +1947,7 @@ orc_packyuyv (uint32_t * d1, uint8_t * s1, uint8_t * s2, uint8_t * s3, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -1993,7 +1983,7 @@ orc_unpack_uyvy_y (uint8_t * d1, uint16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2008,7 +1998,7 @@ orc_unpack_uyvy_y (uint8_t * d1, uint16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2045,7 +2035,7 @@ orc_unpack_uyvy_u (uint8_t * d1, uint32_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2062,7 +2052,7 @@ orc_unpack_uyvy_u (uint8_t * d1, uint32_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2099,7 +2089,7 @@ orc_unpack_uyvy_v (uint8_t * d1, uint32_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2116,7 +2106,7 @@ orc_unpack_uyvy_v (uint8_t * d1, uint32_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2151,7 +2141,7 @@ orc_interleave2_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2167,7 +2157,7 @@ orc_interleave2_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2219,7 +2209,7 @@ orc_interleave2_rrshift1_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2245,7 +2235,7 @@ orc_interleave2_rrshift1_s16 (int16_t * d1, int16_t * s1, int16_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2286,7 +2276,7 @@ orc_deinterleave2_s16 (int16_t * d1, int16_t * d2, int16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2305,7 +2295,7 @@ orc_deinterleave2_s16 (int16_t * d1, int16_t * d2, int16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2354,7 +2344,7 @@ orc_deinterleave2_lshift1_s16 (int16_t * d1, int16_t * d2, int16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2379,7 +2369,7 @@ orc_deinterleave2_lshift1_s16 (int16_t * d1, int16_t * d2, int16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2414,7 +2404,7 @@ orc_haar_sub_s16 (int16_t * d1, int16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2429,7 +2419,7 @@ orc_haar_sub_s16 (int16_t * d1, int16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2467,7 +2457,7 @@ orc_haar_add_half_s16 (int16_t * d1, int16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2485,7 +2475,7 @@ orc_haar_add_half_s16 (int16_t * d1, int16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2519,7 +2509,7 @@ orc_haar_add_s16 (int16_t * d1, int16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2534,7 +2524,7 @@ orc_haar_add_s16 (int16_t * d1, int16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2572,7 +2562,7 @@ orc_haar_sub_half_s16 (int16_t * d1, int16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2590,7 +2580,7 @@ orc_haar_sub_half_s16 (int16_t * d1, int16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2631,7 +2621,7 @@ orc_sum_u8 (int32_t * a1, uint8_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2650,7 +2640,7 @@ orc_sum_u8 (int32_t * a1, uint8_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2688,7 +2678,7 @@ orc_sum_s16 (int32_t * a1, int16_t * s1, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2705,7 +2695,7 @@ orc_sum_s16 (int32_t * a1, int16_t * s1, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2756,7 +2746,7 @@ orc_sum_square_diff_u8 (int32_t * a1, uint8_t * s1, uint8_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2780,7 +2770,7 @@ orc_sum_square_diff_u8 (int32_t * a1, uint8_t * s1, uint8_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2835,7 +2825,7 @@ orc_dequantise_s16_ip (int16_t * d1, int p1, int p2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2860,7 +2850,7 @@ orc_dequantise_s16_ip (int16_t * d1, int p1, int p2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -2916,7 +2906,7 @@ orc_dequantise_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -2942,7 +2932,7 @@ orc_dequantise_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -3003,7 +2993,7 @@ orc_quantise1_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int p3, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -3031,7 +3021,7 @@ orc_quantise1_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int p3, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -3089,7 +3079,7 @@ orc_quantise2_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -3115,7 +3105,7 @@ orc_quantise2_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -3191,7 +3181,7 @@ orc_downsample_vert_u8 (uint8_t * d1, uint8_t * s1, uint8_t * s2, uint8_t * s3, 
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -3227,7 +3217,7 @@ orc_downsample_vert_u8 (uint8_t * d1, uint8_t * s1, uint8_t * s2, uint8_t * s3, 
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -3320,7 +3310,7 @@ orc_downsample_horiz_u8 (uint8_t * d1, uint8_t * s1, uint8_t * s2, int n)
   OrcExecutor _ex, *ex = &_ex;
 
   if (!p_inited) {
-    MUTEX_LOCK ();
+    orc_once_mutex_lock ();
     if (!p_inited) {
       OrcCompileResult result;
 
@@ -3363,7 +3353,7 @@ orc_downsample_horiz_u8 (uint8_t * d1, uint8_t * s1, uint8_t * s2, int n)
       result = orc_program_compile (p);
     }
     p_inited = TRUE;
-    MUTEX_UNLOCK ();
+    orc_once_mutex_unlock ();
   }
 
   ex->program = p;
@@ -3373,4 +3363,154 @@ orc_downsample_horiz_u8 (uint8_t * d1, uint8_t * s1, uint8_t * s2, int n)
   ex->arrays[ORC_VAR_S2] = s2;
 
   orc_executor_run (ex);
+}
+
+/* orc_stats_moment_s16 */
+static void
+_backup_orc_stats_moment_s16 (OrcExecutor *ex)
+{
+  int i;
+  const int16_t * var4 = ex->arrays[4];
+  int32_t var12 = 0;
+  const int16_t var16 = 2;
+  const int16_t var17 = 0;
+  int16_t var32;
+  int32_t var33;
+  int16_t var34;
+  int16_t var35;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: absw */
+    var32 = ORC_ABS(var4[i]);
+    /* 1: subw */
+    var34 = var32 - var16;
+    /* 2: maxsw */
+    var35 = ORC_MAX(var34, var17);
+    /* 3: convuwl */
+    var33 = (uint16_t)var35;
+    /* 4: accl */
+    var12 = var12 + var33;
+  }
+  ex->accumulators[0] = var12;
+
+}
+
+void
+orc_stats_moment_s16 (int32_t * a1, int16_t * s1, int n)
+{
+  static int p_inited = 0;
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  if (!p_inited) {
+    orc_once_mutex_lock ();
+    if (!p_inited) {
+      OrcCompileResult result;
+
+      p = orc_program_new ();
+      orc_program_set_name (p, "orc_stats_moment_s16");
+      orc_program_set_backup_function (p, _backup_orc_stats_moment_s16);
+      orc_program_add_source (p, 2, "s1");
+      orc_program_add_accumulator (p, 4, "a1");
+      orc_program_add_constant (p, 2, 2, "c1");
+      orc_program_add_constant (p, 2, 0, "c2");
+      orc_program_add_temporary (p, 2, "t1");
+      orc_program_add_temporary (p, 4, "t2");
+
+      orc_program_append_ds (p, "absw", ORC_VAR_T1, ORC_VAR_S1);
+      orc_program_append (p, "subw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1);
+      orc_program_append (p, "maxsw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C2);
+      orc_program_append_ds (p, "convuwl", ORC_VAR_T2, ORC_VAR_T1);
+      orc_program_append_ds (p, "accl", ORC_VAR_A1, ORC_VAR_T2);
+
+      result = orc_program_compile (p);
+    }
+    p_inited = TRUE;
+    orc_once_mutex_unlock ();
+  }
+
+  ex->program = p;
+  ex->n = n;
+  ex->arrays[ORC_VAR_S1] = s1;
+
+  orc_executor_run (ex);
+  *a1 = orc_executor_get_accumulator (ex, ORC_VAR_A1);
+}
+
+/* orc_stats_above_s16 */
+static void
+_backup_orc_stats_above_s16 (OrcExecutor *ex)
+{
+  int i;
+  const int16_t * var4 = ex->arrays[4];
+  int32_t var12 = 0;
+  const int16_t var16 = 1;
+  const int16_t var17 = 0;
+  const int16_t var18 = 1;
+  int16_t var32;
+  int32_t var33;
+  int16_t var34;
+  int16_t var35;
+  int16_t var36;
+
+  for (i = 0; i < ex->n; i++) {
+    /* 0: absw */
+    var32 = ORC_ABS(var4[i]);
+    /* 1: subw */
+    var34 = var32 - var16;
+    /* 2: maxsw */
+    var35 = ORC_MAX(var34, var17);
+    /* 3: minsw */
+    var36 = ORC_MIN(var35, var18);
+    /* 4: convuwl */
+    var33 = (uint16_t)var36;
+    /* 5: accl */
+    var12 = var12 + var33;
+  }
+  ex->accumulators[0] = var12;
+
+}
+
+void
+orc_stats_above_s16 (int32_t * a1, int16_t * s1, int n)
+{
+  static int p_inited = 0;
+  static OrcProgram *p = NULL;
+  OrcExecutor _ex, *ex = &_ex;
+
+  if (!p_inited) {
+    orc_once_mutex_lock ();
+    if (!p_inited) {
+      OrcCompileResult result;
+
+      p = orc_program_new ();
+      orc_program_set_name (p, "orc_stats_above_s16");
+      orc_program_set_backup_function (p, _backup_orc_stats_above_s16);
+      orc_program_add_source (p, 2, "s1");
+      orc_program_add_accumulator (p, 4, "a1");
+      orc_program_add_constant (p, 2, 1, "c1");
+      orc_program_add_constant (p, 2, 0, "c2");
+      orc_program_add_constant (p, 2, 1, "c3");
+      orc_program_add_temporary (p, 2, "t1");
+      orc_program_add_temporary (p, 4, "t2");
+
+      orc_program_append_ds (p, "absw", ORC_VAR_T1, ORC_VAR_S1);
+      orc_program_append (p, "subw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1);
+      orc_program_append (p, "maxsw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C2);
+      orc_program_append (p, "minsw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C3);
+      orc_program_append_ds (p, "convuwl", ORC_VAR_T2, ORC_VAR_T1);
+      orc_program_append_ds (p, "accl", ORC_VAR_A1, ORC_VAR_T2);
+
+      result = orc_program_compile (p);
+    }
+    p_inited = TRUE;
+    orc_once_mutex_unlock ();
+  }
+
+  ex->program = p;
+  ex->n = n;
+  ex->arrays[ORC_VAR_S1] = s1;
+
+  orc_executor_run (ex);
+  *a1 = orc_executor_get_accumulator (ex, ORC_VAR_A1);
 }

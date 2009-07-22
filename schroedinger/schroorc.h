@@ -56,6 +56,8 @@ void orc_quantise1_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int p3, int 
 void orc_quantise2_s16 (int16_t * d1, int16_t * s1, int p1, int p2, int n);
 void orc_downsample_vert_u8 (uint8_t * d1, uint8_t * s1, uint8_t * s2, uint8_t * s3, uint8_t * s4, int n);
 void orc_downsample_horiz_u8 (uint8_t * d1, uint8_t * s1, uint8_t * s2, int n);
+void orc_stats_moment_s16 (int32_t * a1, int16_t * s1, int n);
+void orc_stats_above_s16 (int32_t * a1, int16_t * s1, int n);
 
 #endif
 
