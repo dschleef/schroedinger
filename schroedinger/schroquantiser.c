@@ -787,82 +787,82 @@ double
 schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy)
 {
   int j;
-  double log_lambda_hi, log_lambda_lo, log_lambda_mid;
+  double lambda_hi, lambda_lo, lambda_mid;
   double entropy_hi, entropy_lo, entropy_mid;
 
-  log_lambda_hi = log(1);
-  entropy_hi = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_hi));
-  SCHRO_DEBUG("start target=%g log_lambda=%g entropy=%g",
-      entropy, log_lambda_hi, entropy_hi, log_lambda_hi, entropy);
+  lambda_hi = 1;
+  entropy_hi = schro_encoder_lambda_to_entropy (frame, lambda_hi);
+  SCHRO_DEBUG("start target=%g lambda=%g entropy=%g",
+      entropy, lambda_hi, entropy_hi);
 
   if (entropy_hi < entropy) {
     entropy_lo = entropy_hi;
-    log_lambda_lo = log_lambda_hi;
+    lambda_lo = lambda_hi;
 
     for(j=0;j<5;j++) {
-      log_lambda_hi = log_lambda_lo + log(100);
-      entropy_hi = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_hi));
+      lambda_hi = lambda_lo*100;
+      entropy_hi = schro_encoder_lambda_to_entropy (frame, lambda_hi);
 
-      SCHRO_DEBUG("have: log_lambda=[%g,%g] entropy=[%g,%g] target=%g",
-          log_lambda_lo, log_lambda_hi, entropy_lo, entropy_hi, entropy);
+      SCHRO_DEBUG("have: lambda=[%g,%g] entropy=[%g,%g] target=%g",
+          lambda_lo, lambda_hi, entropy_lo, entropy_hi, entropy);
       if (entropy_hi > entropy) break;
 
       SCHRO_DEBUG("--> step up");
 
       entropy_lo = entropy_hi;
-      log_lambda_lo = log_lambda_hi;
+      lambda_lo = lambda_hi;
     }
     SCHRO_DEBUG("--> stopping");
   } else {
     for(j=0;j<5;j++) {
-      log_lambda_lo = log_lambda_hi - log(100);
-      entropy_lo = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_lo));
+      lambda_lo = lambda_hi*0.01;
+      entropy_lo = schro_encoder_lambda_to_entropy (frame, lambda_lo);
 
-      SCHRO_DEBUG("have: log_lambda=[%g,%g] entropy=[%g,%g] target=%g",
-          log_lambda_lo, log_lambda_hi, entropy_lo, entropy_hi, entropy);
+      SCHRO_DEBUG("have: lambda=[%g,%g] entropy=[%g,%g] target=%g",
+          lambda_lo, lambda_hi, entropy_lo, entropy_hi, entropy);
 
       SCHRO_DEBUG("--> step down");
       if (entropy_lo < entropy) break;
 
       entropy_hi = entropy_lo;
-      log_lambda_hi = log_lambda_lo;
+      lambda_hi = lambda_lo;
     }
     SCHRO_DEBUG("--> stopping");
   }
   if (entropy_lo == entropy_hi) {
-    return exp(0.5*(log_lambda_lo + log_lambda_hi));
+    return sqrt(lambda_lo*lambda_hi);
   }
 
   if (entropy_lo > entropy || entropy_hi < entropy) {
     SCHRO_ERROR("entropy not bracketed");
   }
 
-  for(j=0;j<14;j++){
+  for(j=0;j<7;j++){
     if (entropy_hi == entropy_lo) break;
 
-    SCHRO_DEBUG("have: log_lambda=[%g,%g] entropy=[%g,%g] target=%g",
-        log_lambda_lo, log_lambda_hi, entropy_lo, entropy_hi, entropy);
+    SCHRO_DEBUG("have: lambda=[%g,%g] entropy=[%g,%g] target=%g",
+        lambda_lo, lambda_hi, entropy_lo, entropy_hi, entropy);
 
-    log_lambda_mid = log_lambda_lo + (log_lambda_hi - log_lambda_lo) * 0.5;
-    entropy_mid = schro_encoder_lambda_to_entropy (frame, exp(log_lambda_mid));
+    lambda_mid = sqrt(lambda_lo * lambda_hi);
+    entropy_mid = schro_encoder_lambda_to_entropy (frame, lambda_mid);
 
-    SCHRO_DEBUG("picking log_lambda_mid=%g entropy=%g",
-        log_lambda_mid, entropy_mid);
+    SCHRO_DEBUG("picking lambda_mid=%g entropy=%g",
+        lambda_mid, entropy_mid);
 
     if (entropy_mid > entropy) {
-      log_lambda_hi = log_lambda_mid;
+      lambda_hi = lambda_mid;
       entropy_hi = entropy_mid;
       SCHRO_DEBUG("--> focus up");
     } else {
-      log_lambda_lo = log_lambda_mid;
+      lambda_lo = lambda_mid;
       entropy_lo = entropy_mid;
       SCHRO_DEBUG("--> focus down");
     }
   }
 
-  log_lambda_mid = 0.5*(log_lambda_hi + log_lambda_lo);
-  SCHRO_DEBUG("done %g", exp(log_lambda_mid));
-  return exp(log_lambda_mid);
+  lambda_mid = sqrt(lambda_hi * lambda_lo);
+  SCHRO_DEBUG("done %g", lambda_mid);
+  return lambda_mid;
 }
 
 static double
@@ -905,50 +905,50 @@ double
 schro_encoder_error_to_lambda (SchroEncoderFrame *frame, double error)
 {
   int j;
-  double log_lambda_hi, log_lambda_lo, log_lambda_mid;
+  double lambda_hi, lambda_lo, lambda_mid;
   double error_hi, error_lo, error_mid;
 
-  log_lambda_lo = log(1);
-  error_lo = schro_encoder_lambda_to_error (frame, exp(log_lambda_lo));
-  SCHRO_DEBUG("start target=%g log_lambda=%g error=%g",
-      error, log_lambda_lo, error_lo, log_lambda_lo, error);
+  lambda_lo = 1;
+  error_lo = schro_encoder_lambda_to_error (frame, lambda_lo);
+  SCHRO_DEBUG("start target=%g lambda=%g error=%g",
+      error, lambda_lo, error_lo, lambda_lo, error);
 
   if (error < error_lo) {
     error_hi = error_lo;
-    log_lambda_hi = log_lambda_lo;
+    lambda_hi = lambda_lo;
 
     for(j=0;j<5;j++) {
-      log_lambda_lo = log_lambda_hi + log(100);
-      error_lo = schro_encoder_lambda_to_error (frame, exp(log_lambda_lo));
+      lambda_lo = lambda_hi * 100;
+      error_lo = schro_encoder_lambda_to_error (frame, lambda_lo);
 
-      SCHRO_DEBUG("have: log_lambda=[%g,%g] error=[%g,%g] target=%g",
-          log_lambda_lo, log_lambda_hi, error_lo, error_hi, error);
+      SCHRO_DEBUG("have: lambda=[%g,%g] error=[%g,%g] target=%g",
+          lambda_lo, lambda_hi, error_lo, error_hi, error);
       if (error > error_lo) break;
 
       SCHRO_DEBUG("--> step up");
 
       error_hi = error_lo;
-      log_lambda_hi = log_lambda_lo;
+      lambda_hi = lambda_lo;
     }
     SCHRO_DEBUG("--> stopping");
   } else {
     for(j=0;j<5;j++) {
-      log_lambda_hi = log_lambda_lo - log(100);
-      error_hi = schro_encoder_lambda_to_error (frame, exp(log_lambda_hi));
+      lambda_hi = lambda_lo * 0.01;
+      error_hi = schro_encoder_lambda_to_error (frame, lambda_hi);
 
-      SCHRO_DEBUG("have: log_lambda=[%g,%g] error=[%g,%g] target=%g",
-          log_lambda_lo, log_lambda_hi, error_lo, error_hi, error);
+      SCHRO_DEBUG("have: lambda=[%g,%g] error=[%g,%g] target=%g",
+          lambda_lo, lambda_hi, error_lo, error_hi, error);
 
       SCHRO_DEBUG("--> step down");
       if (error < error_hi) break;
 
       error_lo = error_hi;
-      log_lambda_lo = log_lambda_hi;
+      lambda_lo = lambda_hi;
     }
     SCHRO_DEBUG("--> stopping");
   }
   if (error_lo == error_hi) {
-    return exp(0.5*(log_lambda_lo + log_lambda_hi));
+    return sqrt(lambda_lo * lambda_hi);
   }
 
   if (error_lo > error || error_hi < error) {
@@ -958,29 +958,29 @@ schro_encoder_error_to_lambda (SchroEncoderFrame *frame, double error)
   for(j=0;j<14;j++){
     if (error_hi == error_lo) break;
 
-    SCHRO_DEBUG("have: log_lambda=[%g,%g] error=[%g,%g] target=%g",
-        log_lambda_lo, log_lambda_hi, error_lo, error_hi, error);
+    SCHRO_DEBUG("have: lambda=[%g,%g] error=[%g,%g] target=%g",
+        lambda_lo, lambda_hi, error_lo, error_hi, error);
 
-    log_lambda_mid = log_lambda_lo + (log_lambda_hi - log_lambda_lo) * 0.5;
-    error_mid = schro_encoder_lambda_to_error (frame, exp(log_lambda_mid));
+    lambda_mid = sqrt(lambda_lo * lambda_hi);
+    error_mid = schro_encoder_lambda_to_error (frame, lambda_mid);
 
-    SCHRO_DEBUG("picking log_lambda_mid=%g error=%g",
-        log_lambda_mid, error_mid);
+    SCHRO_DEBUG("picking lambda_mid=%g error=%g",
+        lambda_mid, error_mid);
 
     if (error_mid > error) {
-      log_lambda_hi = log_lambda_mid;
+      lambda_hi = lambda_mid;
       error_hi = error_mid;
       SCHRO_DEBUG("--> focus up");
     } else {
-      log_lambda_lo = log_lambda_mid;
+      lambda_lo = lambda_mid;
       error_lo = error_mid;
       SCHRO_DEBUG("--> focus down");
     }
   }
 
-  log_lambda_mid = 0.5*(log_lambda_hi + log_lambda_lo);
-  SCHRO_DEBUG("done %g", exp(log_lambda_mid));
-  return exp(log_lambda_mid);
+  lambda_mid = sqrt(lambda_hi * lambda_lo);
+  SCHRO_DEBUG("done %g", lambda_mid);
+  return lambda_mid;
 }
 
 void
