@@ -1790,9 +1790,13 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
   }
 
   if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
-    planar_output_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
-        schro_params_get_frame_format (8, picture->decoder_instance->video_format.chroma_format),
-        picture->decoder_instance->video_format.width, picture->decoder_instance->video_format.height);
+    if (picture->has_md5 || decoder->use_cuda || decoder->use_opengl) {
+      planar_output_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
+          schro_params_get_frame_format (8, picture->decoder_instance->video_format.chroma_format),
+          picture->decoder_instance->video_format.width, picture->decoder_instance->video_format.height);
+    } else {
+      planar_output_frame = NULL;
+    }
     if (decoder->use_cuda) {
 #ifdef HAVE_CUDA
       SchroFrame *cuda_output_frame;
@@ -1824,8 +1828,7 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       SCHRO_ASSERT(0);
 #endif
     } else {
-      schro_frame_convert (planar_output_frame, output_frame);
-      schro_frame_convert (&output_picture, planar_output_frame);
+      schro_frame_convert (&output_picture, output_frame);
     }
   } else {
     /* may look unsafe since this doesn't reference count the storage
@@ -1919,8 +1922,10 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       SCHRO_ERROR("MD5 checksum mismatch (%s should be %s)", a, b);
     }
   }
-  schro_frame_unref(planar_output_frame);
-  planar_output_frame = NULL;
+  if (planar_output_frame) {
+    schro_frame_unref(planar_output_frame);
+    planar_output_frame = NULL;
+  }
 
   /* eagerly unreference any storage that is nolonger required */
   if (picture->mc_tmp_frame) {
