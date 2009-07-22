@@ -716,6 +716,18 @@ schro_frame_convert (SchroFrame *dest, SchroFrame *src)
     SCHRO_DEBUG("subsample %p", frame);
   }
 
+  if (dest->width < frame->width || dest->height < frame->height) {
+    SCHRO_DEBUG("crop %d %d to %d %d",
+        frame->width, frame->height, dest->width, dest->height);
+
+    frame = schro_virt_frame_new_crop (frame, dest->width, dest->height);
+    SCHRO_DEBUG("crop %p", frame);
+  }
+  if (dest->width > src->width || dest->height > src->height) {
+    frame = schro_virt_frame_new_edgeextend (frame, dest->width, dest->height);
+    SCHRO_DEBUG("edgeextend %p", frame);
+  }
+
   switch (dest->format) {
     case SCHRO_FRAME_FORMAT_YUYV:
       frame = schro_virt_frame_new_pack_YUY2 (frame);
@@ -739,18 +751,6 @@ schro_frame_convert (SchroFrame *dest, SchroFrame *src)
       break;
     default:
       break;
-  }
-
-  if (dest->width < frame->width || dest->height < frame->height) {
-    SCHRO_DEBUG("crop %d %d to %d %d",
-        frame->width, frame->height, dest->width, dest->height);
-
-    frame = schro_virt_frame_new_crop (frame, dest->width, dest->height);
-    SCHRO_DEBUG("crop %p", frame);
-  }
-  if (dest->width > src->width || dest->height > src->height) {
-    frame = schro_virt_frame_new_edgeextend (frame, dest->width, dest->height);
-    SCHRO_DEBUG("edgeextend %p", frame);
   }
 
   schro_virt_frame_render (frame, dest);
