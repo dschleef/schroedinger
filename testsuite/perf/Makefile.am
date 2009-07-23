@@ -1,7 +1,7 @@
 
 
 noinst_PROGRAMS = wavelet_speed upsample_speed report \
-	quantise_speed dequantise_speed
+	quantise_speed dequantise_speed unpack_speed
 
 # Doesn't compile on windows
 #noinst_PROGRAMS = wavelet
