@@ -971,6 +971,22 @@ shrsw t1, t1, 2
 mullw d1, t1, t2
 
 
+.function orc_dequantise_var_s16_ip
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.source 2 s2 int16_t
+.temp 2 t1
+.temp 2 t2
+
+copyw t1, d1
+signw t2, t1
+absw t1, t1
+mullw t1, t1, s1
+addw t1, t1, s2
+shrsw t1, t1, 2
+mullw d1, t1, t2
+
+
 # only works for values between -16384 and 16384
 .function orc_quantise1_s16
 .dest 2 d1 int16_t
