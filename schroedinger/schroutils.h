@@ -91,6 +91,13 @@ typedef int SchroCUDAStream;
 #define SCHRO_END_DECLS
 #endif
 
+#if SCHRO_GNUC_PREREQ(3,0) && defined(__OPTIMIZE__)
+#define SCHRO_LIKELY(expr) (__builtin_expect ((expr), 1))
+#define SCHRO_UNLIKELY(expr) (__builtin_expect ((expr), 0))
+#else
+#define SCHRO_LIKELY(expr) (expr)
+#define SCHRO_UNLIKELY(expr) (expr)
+#endif
 
 SCHRO_BEGIN_DECLS
 
