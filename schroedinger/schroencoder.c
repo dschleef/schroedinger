@@ -3401,10 +3401,10 @@ schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
     case SCHRO_ENCODER_SETTING_TYPE_BOOLEAN:
     case SCHRO_ENCODER_SETTING_TYPE_INT:
     case SCHRO_ENCODER_SETTING_TYPE_ENUM:
-      *(int*)((void*)encoder + encoder_settings[i].offset) = value;
+      *(int*)SCHRO_OFFSET(encoder, encoder_settings[i].offset) = value;
       return;
     case SCHRO_ENCODER_SETTING_TYPE_DOUBLE:
-      *(double*)((void*)encoder + encoder_settings[i].offset) = value;
+      *(double*)SCHRO_OFFSET(encoder, encoder_settings[i].offset) = value;
       return;
     default:
       return;
@@ -3430,9 +3430,9 @@ schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name)
     case SCHRO_ENCODER_SETTING_TYPE_BOOLEAN:
     case SCHRO_ENCODER_SETTING_TYPE_INT:
     case SCHRO_ENCODER_SETTING_TYPE_ENUM:
-      return *(int*)((void*)encoder + encoder_settings[i].offset);
+      return *(int*)SCHRO_OFFSET(encoder, encoder_settings[i].offset);
     case SCHRO_ENCODER_SETTING_TYPE_DOUBLE:
-      return *(double*)((void*)encoder + encoder_settings[i].offset);
+      return *(double*)SCHRO_OFFSET(encoder, encoder_settings[i].offset);
     default:
       return 0;
     }

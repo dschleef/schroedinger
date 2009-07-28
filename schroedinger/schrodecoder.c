@@ -1143,8 +1143,6 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
   }
 
   if (SCHRO_PARSE_CODE_IS_PICTURE(parse_code)) {
-    SchroDecoder *decoder = instance->decoder;
-
     if (!instance->have_sequence_header) {
       SCHRO_INFO ("no sequence header -- dropping picture");
       if (decoder->next_picture_tag) {

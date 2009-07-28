@@ -160,14 +160,14 @@ schro_frame_new_and_alloc_extended (SchroMemoryDomain *domain,
         frame->components[1].length + frame->components[2].length);
   }
 
-  frame->components[0].data = frame->regions[0] +
-    frame->components[0].stride * extension + bytes_pp * extension;
-  frame->components[1].data = frame->regions[0] +
+  frame->components[0].data = SCHRO_OFFSET(frame->regions[0],
+    frame->components[0].stride * extension + bytes_pp * extension);
+  frame->components[1].data = SCHRO_OFFSET(frame->regions[0],
     frame->components[0].length +
-    frame->components[1].stride * extension + bytes_pp * extension;
-  frame->components[2].data = frame->regions[0] +
+    frame->components[1].stride * extension + bytes_pp * extension);
+  frame->components[2].data = SCHRO_OFFSET(frame->regions[0],
     frame->components[0].length + frame->components[1].length +
-    frame->components[2].stride * extension + bytes_pp * extension;
+    frame->components[2].stride * extension + bytes_pp * extension);
 
   return frame;
 }
@@ -408,8 +408,8 @@ schro_frame_new_from_data_I420 (void *data, int width, int height)
   frame->components[1].stride = ROUND_UP_POW2(frame->components[1].width,2);
   frame->components[1].length =
     frame->components[1].stride * frame->components[1].height;
-  frame->components[1].data =
-    frame->components[0].data + frame->components[0].length;
+  frame->components[1].data = SCHRO_OFFSET(frame->components[0].data,
+      frame->components[0].length);
   frame->components[1].v_shift = 1;
   frame->components[1].h_shift = 1;
 
@@ -419,8 +419,8 @@ schro_frame_new_from_data_I420 (void *data, int width, int height)
   frame->components[2].stride = ROUND_UP_POW2(frame->components[2].width,2);
   frame->components[2].length =
     frame->components[2].stride * frame->components[2].height;
-  frame->components[2].data =
-    frame->components[1].data + frame->components[1].length;
+  frame->components[2].data = SCHRO_OFFSET(frame->components[1].data,
+      frame->components[1].length);
   frame->components[2].v_shift = 1;
   frame->components[2].h_shift = 1;
 
@@ -464,8 +464,8 @@ schro_frame_new_from_data_YV12 (void *data, int width, int height)
   frame->components[2].stride = ROUND_UP_POW2(frame->components[2].width,2);
   frame->components[2].length =
     frame->components[2].stride * frame->components[2].height;
-  frame->components[2].data =
-    frame->components[0].data + frame->components[0].length;
+  frame->components[2].data = SCHRO_OFFSET(frame->components[0].data,
+      frame->components[0].length);
   frame->components[2].v_shift = 1;
   frame->components[2].h_shift = 1;
 
@@ -475,8 +475,8 @@ schro_frame_new_from_data_YV12 (void *data, int width, int height)
   frame->components[1].stride = ROUND_UP_POW2(frame->components[1].width,2);
   frame->components[1].length =
     frame->components[1].stride * frame->components[1].height;
-  frame->components[1].data =
-    frame->components[2].data + frame->components[2].length;
+  frame->components[1].data = SCHRO_OFFSET(frame->components[2].data,
+      frame->components[2].length);
   frame->components[1].v_shift = 1;
   frame->components[1].h_shift = 1;
 
@@ -1734,18 +1734,28 @@ schro_frame_mc_edgeextend_vert (SchroFrame *frame, SchroFrame *src)
 
     for(j=0;j<frame->extension;j++){
 #ifdef HAVE_ORC
-      orc_memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, -j-1) - frame->extension,
-          SCHRO_FRAME_DATA_GET_LINE(src->components + k, 0) - frame->extension,
+      orc_memcpy (
+          SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(frame->components + k, -j-1),
+            -frame->extension),
+          SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(src->components + k, 0),
+            -frame->extension),
           width + frame->extension*2);
-      orc_memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height + j) - frame->extension,
-          SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1) - frame->extension,
+      orc_memcpy (SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height + j),
+            -frame->extension),
+          SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1),
+            -frame->extension),
           width + frame->extension*2);
 #else
-      oil_memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, -j-1) - frame->extension,
-          SCHRO_FRAME_DATA_GET_LINE(src->components + k, 0) - frame->extension,
+      oil_memcpy (
+          SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(frame->components + k, -j-1),
+            -frame->extension),
+          SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(src->components + k, 0),
+            -frame->extension),
           width + frame->extension*2);
-      oil_memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height + j) - frame->extension,
-          SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1) - frame->extension,
+      oil_memcpy (SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height + j),
+            -frame->extension),
+          SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1),
+            -frame->extension),
           width + frame->extension*2);
 #endif
     }
@@ -1754,12 +1764,16 @@ schro_frame_mc_edgeextend_vert (SchroFrame *frame, SchroFrame *src)
      * Copy the src into the bottom line of frame.
      * NB, this assumes that oil_memcpy is safe when src == dest */
 #ifdef HAVE_ORC
-    orc_memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height - 1) - frame->extension,
-        SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1) - frame->extension,
+    orc_memcpy (SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height - 1),
+          -frame->extension),
+        SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1),
+          -frame->extension),
         width + frame->extension*2);
 #else
-    oil_memcpy (SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height - 1) - frame->extension,
-        SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1) - frame->extension,
+    oil_memcpy (SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height - 1),
+          -frame->extension),
+        SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1),
+          -frame->extension),
         width + frame->extension*2);
 #endif
   }
