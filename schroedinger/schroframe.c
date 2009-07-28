@@ -1571,82 +1571,6 @@ schro_frame_calculate_average_luma (SchroFrame *frame)
   return (double)sum / n;
 }
 
-static void
-schro_frame_component_planar_copy_u8 (SchroFrameData *dest,
-    SchroFrameData *src)
-{
-  int j;
-
-  for(j=0;j<dest->height;j++) {
-#ifdef HAVE_ORC
-    orc_memcpy (dest->data + dest->stride * j, src->data + src->stride * j,
-        dest->width);
-#else
-    oil_memcpy (dest->data + dest->stride * j, src->data + src->stride * j,
-        dest->width);
-#endif
-  }
-}
-
-static void
-horiz_upsample (uint8_t *d, uint8_t *s, int n)
-{
-  int i;
-
-  d[0] = s[0];
-
-  for (i = 0; i < n-3; i+=2) {
-    d[i + 1] = (3*s[i/2] + s[i/2+1] + 2)>>2;
-    d[i + 2] = (s[i/2] + 3*s[i/2+1] + 2)>>2;
-  }
-
-  if (n&1) {
-    i = n-3;
-    d[n-2] = s[n/2];
-    d[n-1] = s[n/2];
-  } else {
-    d[n-1] = s[n/2-1];
-  }
-}
-
-static void
-schro_frame_component_convert_420_to_444 (SchroFrameData *dest,
-    SchroFrameData *src)
-{
-  int j;
-  uint8_t *tmp;
-#ifndef HAVE_ORC
-  uint32_t weight = 128;
-#endif
-
-  SCHRO_ASSERT(dest->height <= src->height * 2);
-  SCHRO_ASSERT(dest->width <= src->width * 2);
-
-  tmp = schro_malloc (src->width);
-  for(j=0;j<dest->height;j++) {
-    if (j&1) {
-#ifdef HAVE_ORC
-      orc_average_u8 (tmp,
-          src->data + src->stride * ((j-1)>>1),
-          src->data + src->stride * ((j+1)>>1),
-          src->width);
-#else
-      oil_merge_linear_u8 (tmp,
-          src->data + src->stride * ((j-1)>>1),
-          src->data + src->stride * ((j+1)>>1),
-          &weight,
-          src->width);
-#endif
-      horiz_upsample (dest->data + dest->stride * j,
-          tmp, dest->width);
-    } else {
-      horiz_upsample (dest->data + dest->stride * j,
-          src->data + src->stride * (j>>1), dest->width);
-    }
-  }
-  schro_free(tmp);
-}
-
 SchroFrame *
 schro_frame_convert_to_444 (SchroFrame *frame)
 {
@@ -1657,12 +1581,7 @@ schro_frame_convert_to_444 (SchroFrame *frame)
   dest = schro_frame_new_and_alloc (frame->domain, SCHRO_FRAME_FORMAT_U8_444,
       frame->width, frame->height);
 
-  schro_frame_component_planar_copy_u8 (&dest->components[0],
-      &frame->components[0]);
-  schro_frame_component_convert_420_to_444 (&dest->components[1],
-      &frame->components[1]);
-  schro_frame_component_convert_420_to_444 (&dest->components[2],
-      &frame->components[2]);
+  schro_frame_convert (dest, frame);
 
   return dest;
 }
