@@ -71,8 +71,6 @@ void
 schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
     int distance)
 {
-  SCHRO_ASSERT(rme && rme->encoder_frame && rme->ref_frame);
-
   SchroMetricScan scan;
   SchroMotionVector *mv;
   SchroMotionField *mf;
@@ -147,8 +145,6 @@ void
 schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
     int distance)
 {
-  SCHRO_ASSERT (rme && rme->encoder_frame && rme->ref_frame);
-
   SchroMetricScan scan;
   SchroMotionVector *mv;
   SchroMotionField *mf;
