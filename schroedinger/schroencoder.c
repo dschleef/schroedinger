@@ -9,7 +9,10 @@
 #include <string.h>
 #include <math.h>
 #include <stddef.h>
+#include <schroedinger/schrooil.h>
+#ifdef HAVE_ORC
 #include "schroorc.h"
+#endif
 
 #if 0
 /* Used for testing bitstream */
@@ -631,20 +634,32 @@ schro_encoder_frame_assemble_buffer (SchroEncoderFrame *frame,
   if (frame->sequence_header_buffer) {
     buf = frame->sequence_header_buffer;
     schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
+#ifdef HAVE_ORC
     orc_memcpy (buffer->data + offset, buf->data, buf->length);
+#else
+    memcpy (buffer->data + offset, buf->data, buf->length);
+#endif
     offset += frame->sequence_header_buffer->length;
   }
 
   for(i=0;i<schro_list_get_size (frame->inserted_buffers);i++){
     buf = schro_list_get (frame->inserted_buffers, i);
     schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
+#ifdef HAVE_ORC
     orc_memcpy (buffer->data + offset, buf->data, buf->length);
+#else
+    memcpy (buffer->data + offset, buf->data, buf->length);
+#endif
     offset += buf->length;
   }
   while(schro_list_get_size (frame->encoder->inserted_buffers)>0){
     buf = schro_list_remove (frame->encoder->inserted_buffers, 0);
     schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
+#ifdef HAVE_ORC
     orc_memcpy (buffer->data + offset, buf->data, buf->length);
+#else
+    memcpy (buffer->data + offset, buf->data, buf->length);
+#endif
     offset += buf->length;
     schro_buffer_unref (buf);
     buf = NULL;
@@ -652,7 +667,11 @@ schro_encoder_frame_assemble_buffer (SchroEncoderFrame *frame,
 
   buf = frame->output_buffer;
   schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
+#ifdef HAVE_ORC
   orc_memcpy (buffer->data + offset, buf->data, buf->length);
+#else
+  memcpy (buffer->data + offset, buf->data, buf->length);
+#endif
   offset += buf->length;
 }
 

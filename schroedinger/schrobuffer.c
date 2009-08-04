@@ -5,7 +5,9 @@
 
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schrodebug.h>
+#ifdef HAVE_ORC
 #include <schroedinger/schroorc.h>
+#endif
 #include <liboil/liboil.h>
 #include <string.h>
 

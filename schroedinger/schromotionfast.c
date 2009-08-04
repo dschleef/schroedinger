@@ -6,7 +6,9 @@
 #include <liboil/liboil.h>
 #include <string.h>
 #include <schroedinger/schrooil.h>
+#ifdef HAVE_ORC
 #include <schroedinger/schroorc.h>
+#endif
 
 /*
  * This is a slimmed-down implementation of normal OBMC for non-overlapped

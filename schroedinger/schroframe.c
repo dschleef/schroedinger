@@ -12,7 +12,9 @@
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <liboil/liboil.h>
 #include <schroedinger/schrovirtframe.h>
+#ifdef HAVE_ORC
 #include <schroedinger/schroorc.h>
+#endif
 
 #include <stdlib.h>
 #include <string.h>

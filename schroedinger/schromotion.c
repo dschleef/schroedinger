@@ -6,7 +6,9 @@
 #include <liboil/liboil.h>
 #include <string.h>
 #include <schroedinger/schrooil.h>
+#ifdef HAVE_ORC
 #include <schroedinger/schroorc.h>
+#endif
 
 extern int _schro_motion_ref;
 

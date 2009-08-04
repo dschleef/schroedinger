@@ -30,20 +30,25 @@
 #define ORC_CLAMP_UL(x) ORC_CLAMP(x,ORC_UL_MIN,ORC_UL_MAX)
 #define ORC_SWAP_W(x) ((((x)&0xff)<<8) | (((x)&0xff00)>>8))
 #define ORC_SWAP_L(x) ((((x)&0xff)<<24) | (((x)&0xff00)<<8) | (((x)&0xff0000)>>8) | (((x)&0xff000000)>>24))
+#define ORC_PTR_OFFSET(ptr,offset) ((void *)(((unsigned char *)(ptr)) + (offset)))
 
 /* orc_add2_rshift_add_s16_22 */
 static void
 _backup_orc_add2_rshift_add_s16_22 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
+  int16_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
   const int16_t var16 = 2;
   const int16_t var17 = 2;
   int16_t var32;
   int16_t var33;
   int16_t var34;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -63,14 +68,18 @@ static void
 _backup_orc_add2_rshift_sub_s16_22 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
+  int16_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
   const int16_t var16 = 2;
   const int16_t var17 = 2;
   int16_t var32;
   int16_t var33;
   int16_t var34;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -90,10 +99,14 @@ static void
 _backup_orc_add2_rshift_add_s16_11 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
+  int16_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: avgsw */
@@ -109,10 +122,14 @@ static void
 _backup_orc_add2_rshift_sub_s16_11 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
+  int16_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: avgsw */
@@ -128,11 +145,14 @@ static void
 _backup_orc_add_const_rshift_s16_11 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  const int16_t * var4;
   const int16_t var16 = 1;
   const int16_t var17 = 1;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -148,10 +168,12 @@ static void
 _backup_orc_add_const_rshift_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
+  int16_t * var0;
   const int16_t var24 = ex->params[24];
   const int16_t var25 = ex->params[25];
   int16_t var32;
+
+  var0 = ex->arrays[0];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -167,9 +189,13 @@ static void
 _backup_orc_add_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
+  int16_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -183,11 +209,15 @@ static void
 _backup_orc_addc_rshift_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
+  int16_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
   const int16_t var24 = ex->params[24];
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -203,9 +233,12 @@ static void
 _backup_orc_lshift1_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  const int16_t * var4;
   const int16_t var16 = 1;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: shlw */
@@ -219,9 +252,12 @@ static void
 _backup_orc_lshift2_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  const int16_t * var4;
   const int16_t var16 = 2;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: shlw */
@@ -235,8 +271,10 @@ static void
 _backup_orc_lshift_s16_ip (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
+  int16_t * var0;
   const int16_t var24 = ex->params[24];
+
+  var0 = ex->arrays[0];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: shlw */
@@ -250,9 +288,9 @@ static void
 _backup_orc_mas2_add_s16_ip (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
+  int16_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
   const int16_t var24 = ex->params[24];
   const int32_t var25 = ex->params[25];
   const int32_t var26 = ex->params[26];
@@ -261,6 +299,10 @@ _backup_orc_mas2_add_s16_ip (OrcExecutor *ex)
   int32_t var34;
   int32_t var35;
   int16_t var36;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -284,9 +326,9 @@ static void
 _backup_orc_mas2_sub_s16_ip (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
+  int16_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
   const int16_t var24 = ex->params[24];
   const int32_t var25 = ex->params[25];
   const int32_t var26 = ex->params[26];
@@ -295,6 +337,10 @@ _backup_orc_mas2_sub_s16_ip (OrcExecutor *ex)
   int32_t var34;
   int32_t var35;
   int16_t var36;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -318,11 +364,11 @@ static void
 _backup_orc_mas4_across_add_s16_1991_ip (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
-  const int16_t * var6 = ex->arrays[6];
-  const int16_t * var7 = ex->arrays[7];
+  int16_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
+  const int16_t * var6;
+  const int16_t * var7;
   const int16_t var16 = 9;
   const int32_t var24 = ex->params[24];
   const int32_t var25 = ex->params[25];
@@ -334,6 +380,12 @@ _backup_orc_mas4_across_add_s16_1991_ip (OrcExecutor *ex)
   int32_t var37;
   int32_t var38;
   int16_t var39;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
+  var6 = ex->arrays[6];
+  var7 = ex->arrays[7];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -363,11 +415,11 @@ static void
 _backup_orc_mas4_across_sub_s16_1991_ip (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
-  const int16_t * var6 = ex->arrays[6];
-  const int16_t * var7 = ex->arrays[7];
+  int16_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
+  const int16_t * var6;
+  const int16_t * var7;
   const int16_t var16 = 9;
   const int32_t var24 = ex->params[24];
   const int32_t var25 = ex->params[25];
@@ -379,6 +431,12 @@ _backup_orc_mas4_across_sub_s16_1991_ip (OrcExecutor *ex)
   int32_t var37;
   int32_t var38;
   int16_t var39;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
+  var6 = ex->arrays[6];
+  var7 = ex->arrays[7];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -408,9 +466,13 @@ static void
 _backup_orc_subtract_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
+  int16_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: subw */
@@ -424,8 +486,11 @@ static void
 _backup_orc_memcpy (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
-  const int8_t * var4 = ex->arrays[4];
+  int8_t * var0;
+  const int8_t * var4;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyb */
@@ -439,10 +504,14 @@ static void
 _backup_orc_add_s16_u8 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int8_t * var5 = ex->arrays[5];
+  int16_t * var0;
+  const int16_t * var4;
+  const int8_t * var5;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: convubw */
@@ -458,8 +527,11 @@ static void
 _backup_orc_convert_s16_u8 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int8_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  const int8_t * var4;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: convubw */
@@ -473,8 +545,11 @@ static void
 _backup_orc_convert_u8_s16 (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int8_t * var0;
+  const int16_t * var4;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: convsuswb */
@@ -488,10 +563,13 @@ static void
 _backup_orc_offsetconvert_u8_s16 (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int8_t * var0;
+  const int16_t * var4;
   const int16_t var16 = 128;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -507,10 +585,13 @@ static void
 _backup_orc_offsetconvert_s16_u8 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int8_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  const int8_t * var4;
   const int16_t var16 = 128;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: convubw */
@@ -526,10 +607,14 @@ static void
 _backup_orc_subtract_s16_u8 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int8_t * var5 = ex->arrays[5];
+  int16_t * var0;
+  const int16_t * var4;
+  const int8_t * var5;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: convubw */
@@ -545,11 +630,15 @@ static void
 _backup_orc_multiply_and_add_s16_u8 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int8_t * var5 = ex->arrays[5];
+  int16_t * var0;
+  const int16_t * var4;
+  const int8_t * var5;
   int16_t var32;
   int16_t var33;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: convubw */
@@ -567,8 +656,10 @@ static void
 _backup_orc_splat_s16_ns (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
+  int16_t * var0;
   const int16_t var24 = ex->params[24];
+
+  var0 = ex->arrays[0];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyw */
@@ -582,8 +673,10 @@ static void
 _backup_orc_splat_u8_ns (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
+  int8_t * var0;
   const int8_t var24 = ex->params[24];
+
+  var0 = ex->arrays[0];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyb */
@@ -597,9 +690,13 @@ static void
 _backup_orc_average_u8 (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
-  const int8_t * var4 = ex->arrays[4];
-  const int8_t * var5 = ex->arrays[5];
+  int8_t * var0;
+  const int8_t * var4;
+  const int8_t * var5;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: avgub */
@@ -613,10 +710,12 @@ static void
 _backup_orc_rrshift6_s16_ip (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
+  int16_t * var0;
   const int16_t var16 = 8160;
   const int16_t var17 = 6;
   int16_t var32;
+
+  var0 = ex->arrays[0];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: subw */
@@ -632,8 +731,11 @@ static void
 _backup_orc_unpack_yuyv_y (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int8_t * var0;
+  const int16_t * var4;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: select0wb */
@@ -647,9 +749,12 @@ static void
 _backup_orc_unpack_yuyv_u (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
-  const int32_t * var4 = ex->arrays[4];
+  int8_t * var0;
+  const int32_t * var4;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: select0lw */
@@ -665,9 +770,12 @@ static void
 _backup_orc_unpack_yuyv_v (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
-  const int32_t * var4 = ex->arrays[4];
+  int8_t * var0;
+  const int32_t * var4;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: select1lw */
@@ -683,15 +791,20 @@ static void
 _backup_orc_packyuyv (OrcExecutor *ex)
 {
   int i;
-  int32_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int8_t * var5 = ex->arrays[5];
-  const int8_t * var6 = ex->arrays[6];
+  int32_t * var0;
+  const int16_t * var4;
+  const int8_t * var5;
+  const int8_t * var6;
   int8_t var32;
   int8_t var33;
   int16_t var34;
   int16_t var35;
   int16_t var36;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
+  var6 = ex->arrays[6];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyw */
@@ -715,8 +828,11 @@ static void
 _backup_orc_unpack_uyvy_y (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int8_t * var0;
+  const int16_t * var4;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: select1wb */
@@ -730,9 +846,12 @@ static void
 _backup_orc_unpack_uyvy_u (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
-  const int32_t * var4 = ex->arrays[4];
+  int8_t * var0;
+  const int32_t * var4;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: select0lw */
@@ -748,9 +867,12 @@ static void
 _backup_orc_unpack_uyvy_v (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
-  const int32_t * var4 = ex->arrays[4];
+  int8_t * var0;
+  const int32_t * var4;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: select1lw */
@@ -766,9 +888,13 @@ static void
 _backup_orc_interleave2_s16 (OrcExecutor *ex)
 {
   int i;
-  int32_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
+  int32_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: mergewl */
@@ -782,9 +908,9 @@ static void
 _backup_orc_interleave2_rrshift1_s16 (OrcExecutor *ex)
 {
   int i;
-  int32_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
+  int32_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
   const int16_t var16 = 1;
   const int16_t var17 = 1;
   const int16_t var18 = 1;
@@ -793,6 +919,10 @@ _backup_orc_interleave2_rrshift1_s16 (OrcExecutor *ex)
   int16_t var33;
   int16_t var34;
   int16_t var35;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -814,10 +944,14 @@ static void
 _backup_orc_deinterleave2_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  int16_t * var1 = ex->arrays[1];
-  const int32_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  int16_t * var1;
+  const int32_t * var4;
   int32_t var32;
+
+  var0 = ex->arrays[0];
+  var1 = ex->arrays[1];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyl */
@@ -835,14 +969,18 @@ static void
 _backup_orc_deinterleave2_lshift1_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  int16_t * var1 = ex->arrays[1];
-  const int32_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  int16_t * var1;
+  const int32_t * var4;
   const int16_t var16 = 1;
   const int16_t var17 = 1;
   int32_t var32;
   int16_t var33;
   int16_t var34;
+
+  var0 = ex->arrays[0];
+  var1 = ex->arrays[1];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyl */
@@ -864,8 +1002,11 @@ static void
 _backup_orc_haar_sub_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  const int16_t * var4;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: subw */
@@ -879,10 +1020,13 @@ static void
 _backup_orc_haar_add_half_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  const int16_t * var4;
   const int16_t var16 = 0;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: avgsw */
@@ -898,8 +1042,11 @@ static void
 _backup_orc_haar_add_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  const int16_t * var4;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: addw */
@@ -913,10 +1060,13 @@ static void
 _backup_orc_haar_sub_half_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  const int16_t * var4;
   const int16_t var16 = 0;
   int16_t var32;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: avgsw */
@@ -932,10 +1082,12 @@ static void
 _backup_orc_sum_u8 (OrcExecutor *ex)
 {
   int i;
-  const int8_t * var4 = ex->arrays[4];
+  const int8_t * var4;
   int32_t var12 = 0;
   int16_t var32;
   int32_t var33;
+
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: convubw */
@@ -954,9 +1106,11 @@ static void
 _backup_orc_sum_s16 (OrcExecutor *ex)
 {
   int i;
-  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var4;
   int32_t var12 = 0;
   int32_t var32;
+
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: convswl */
@@ -973,14 +1127,17 @@ static void
 _backup_orc_sum_square_diff_u8 (OrcExecutor *ex)
 {
   int i;
-  const int8_t * var4 = ex->arrays[4];
-  const int8_t * var5 = ex->arrays[5];
+  const int8_t * var4;
+  const int8_t * var5;
   int32_t var12 = 0;
   int16_t var32;
   int16_t var33;
   int32_t var34;
   int16_t var35;
   int16_t var36;
+
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: convubw */
@@ -1005,7 +1162,7 @@ static void
 _backup_orc_dequantise_s16_ip (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
+  int16_t * var0;
   const int16_t var16 = 2;
   const int16_t var24 = ex->params[24];
   const int16_t var25 = ex->params[25];
@@ -1015,6 +1172,8 @@ _backup_orc_dequantise_s16_ip (OrcExecutor *ex)
   int16_t var35;
   int16_t var36;
   int16_t var37;
+
+  var0 = ex->arrays[0];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyw */
@@ -1040,8 +1199,8 @@ static void
 _backup_orc_dequantise_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  const int16_t * var4;
   const int16_t var16 = 2;
   const int16_t var24 = ex->params[24];
   const int16_t var25 = ex->params[25];
@@ -1051,6 +1210,9 @@ _backup_orc_dequantise_s16 (OrcExecutor *ex)
   int16_t var35;
   int16_t var36;
   int16_t var37;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyw */
@@ -1076,8 +1238,8 @@ static void
 _backup_orc_quantise1_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  const int16_t * var4;
   const int16_t var16 = 2;
   const int16_t var24 = ex->params[24];
   const int16_t var25 = ex->params[25];
@@ -1089,6 +1251,9 @@ _backup_orc_quantise1_s16 (OrcExecutor *ex)
   int16_t var36;
   int16_t var37;
   int16_t var38;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyw */
@@ -1116,8 +1281,8 @@ static void
 _backup_orc_quantise2_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
+  int16_t * var0;
+  const int16_t * var4;
   const int16_t var16 = 2;
   const int16_t var24 = ex->params[24];
   const int16_t var25 = ex->params[25];
@@ -1127,6 +1292,9 @@ _backup_orc_quantise2_s16 (OrcExecutor *ex)
   int16_t var35;
   int16_t var36;
   int16_t var37;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyw */
@@ -1152,8 +1320,8 @@ static void
 _backup_orc_quantdequant1_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  int16_t * var1 = ex->arrays[1];
+  int16_t * var0;
+  int16_t * var1;
   const int16_t var16 = 2;
   const int16_t var17 = 2;
   const int16_t var24 = ex->params[24];
@@ -1173,6 +1341,9 @@ _backup_orc_quantdequant1_s16 (OrcExecutor *ex)
   int16_t var41;
   int16_t var42;
   int16_t var43;
+
+  var0 = ex->arrays[0];
+  var1 = ex->arrays[1];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyw */
@@ -1212,8 +1383,8 @@ static void
 _backup_orc_quantdequant2_s16 (OrcExecutor *ex)
 {
   int i;
-  int16_t * var0 = ex->arrays[0];
-  int16_t * var1 = ex->arrays[1];
+  int16_t * var0;
+  int16_t * var1;
   const int16_t var16 = 2;
   const int16_t var17 = 2;
   const int16_t var24 = ex->params[24];
@@ -1231,6 +1402,9 @@ _backup_orc_quantdequant2_s16 (OrcExecutor *ex)
   int16_t var40;
   int16_t var41;
   int16_t var42;
+
+  var0 = ex->arrays[0];
+  var1 = ex->arrays[1];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyw */
@@ -1268,11 +1442,11 @@ static void
 _backup_orc_downsample_vert_u8 (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
-  const int8_t * var4 = ex->arrays[4];
-  const int8_t * var5 = ex->arrays[5];
-  const int8_t * var6 = ex->arrays[6];
-  const int8_t * var7 = ex->arrays[7];
+  int8_t * var0;
+  const int8_t * var4;
+  const int8_t * var5;
+  const int8_t * var6;
+  const int8_t * var7;
   const int16_t var16 = 6;
   const int16_t var17 = 26;
   const int16_t var18 = 32;
@@ -1288,6 +1462,12 @@ _backup_orc_downsample_vert_u8 (OrcExecutor *ex)
   int16_t var40;
   int16_t var41;
   int16_t var42;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
+  var6 = ex->arrays[6];
+  var7 = ex->arrays[7];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: convubw */
@@ -1323,9 +1503,9 @@ static void
 _backup_orc_downsample_horiz_u8 (OrcExecutor *ex)
 {
   int i;
-  int8_t * var0 = ex->arrays[0];
-  const int16_t * var4 = ex->arrays[4];
-  const int16_t * var5 = ex->arrays[5];
+  int8_t * var0;
+  const int16_t * var4;
+  const int16_t * var5;
   const int16_t var16 = 6;
   const int16_t var17 = 26;
   const int16_t var18 = 32;
@@ -1347,6 +1527,10 @@ _backup_orc_downsample_horiz_u8 (OrcExecutor *ex)
   int16_t var46;
   int16_t var47;
   int16_t var48;
+
+  var0 = ex->arrays[0];
+  var4 = ex->arrays[4];
+  var5 = ex->arrays[5];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: copyw */
@@ -1394,7 +1578,7 @@ static void
 _backup_orc_stats_moment_s16 (OrcExecutor *ex)
 {
   int i;
-  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var4;
   int32_t var12 = 0;
   const int16_t var16 = 2;
   const int16_t var17 = 0;
@@ -1402,6 +1586,8 @@ _backup_orc_stats_moment_s16 (OrcExecutor *ex)
   int32_t var33;
   int16_t var34;
   int16_t var35;
+
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: absw */
@@ -1424,7 +1610,7 @@ static void
 _backup_orc_stats_above_s16 (OrcExecutor *ex)
 {
   int i;
-  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var4;
   int32_t var12 = 0;
   const int16_t var16 = 1;
   const int16_t var17 = 0;
@@ -1434,6 +1620,8 @@ _backup_orc_stats_above_s16 (OrcExecutor *ex)
   int16_t var34;
   int16_t var35;
   int16_t var36;
+
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: absw */
@@ -1458,9 +1646,11 @@ static void
 _backup_orc_accw (OrcExecutor *ex)
 {
   int i;
-  const int16_t * var4 = ex->arrays[4];
+  const int16_t * var4;
   int16_t var12 = 0;
   int16_t var32;
+
+  var4 = ex->arrays[4];
 
   for (i = 0; i < ex->n; i++) {
     /* 0: absw */
@@ -1468,7 +1658,7 @@ _backup_orc_accw (OrcExecutor *ex)
     /* 1: accw */
     var12 = var12 + var32;
   }
-  ex->accumulators[0] = var12;
+  ex->accumulators[0] = (var12 & 0xffff);
 
 }
 
