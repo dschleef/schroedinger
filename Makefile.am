@@ -4,11 +4,7 @@ SUBDIRS = schroedinger doc tools testsuite
 
 DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc
 
-if HAVE_GST
-SUBDIRS += gst-libs/gst/video gst
-endif
-
-DIST_SUBDIRS = schroedinger doc tools gst testsuite gst-libs/gst/video
+DIST_SUBDIRS = schroedinger doc tools testsuite
 
 EXTRA_DIST = COPYING COPYING.GPL COPYING.LGPL COPYING.MIT COPYING.MPL \
 	     autogen.sh schroedinger.spec TODO NEWS
