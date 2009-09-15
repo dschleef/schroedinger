@@ -186,8 +186,8 @@ struct _SchroEncoderFrame {
   struct _SchroMotionEst *me;
   struct _SchroRoughME *rme[2];
   struct _SchroPhaseCorr *phasecorr[2];
-  struct SchroHierBm* hier_bm[2];
-  struct SchroMe* deep_me;
+  struct _SchroHierBm* hier_bm[2];
+  struct _SchroMe* deep_me;
 
   SchroMotion *motion;
 

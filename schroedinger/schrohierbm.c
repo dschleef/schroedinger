@@ -6,8 +6,8 @@
 #include <string.h>
 #include <limits.h>
 
-
-struct SchroHierBm {
+/***
+struct _SchroHierBm {
   int                ref_count;
   int                ref;
   int                hierarchy_levels;
@@ -16,6 +16,7 @@ struct SchroHierBm {
   SchroFrame**       downsampled_ref;
   SchroMotionField** downsampled_mf;
 };
+***/
 
 static int get_hier_levels        (SchroHierBm schro_hbm);
 static int schro_hbm_ref_number   ( SchroHierBm schro_hbm );
@@ -28,7 +29,7 @@ schro_hbm_new (SchroEncoderFrame* frame, int ref)
   int i;
   SchroEncoderFrame* ref_frame = frame->ref_frame[ref];
   SCHRO_ASSERT (ref_frame);
-  SchroHierBm schro_hbm = schro_malloc0 (sizeof (struct SchroHierBm));
+  SchroHierBm schro_hbm = schro_malloc0 (sizeof (struct _SchroHierBm));
   schro_hbm->ref_count = 1;
   schro_hbm->hierarchy_levels = frame->encoder->downsample_levels;
   schro_hbm->params = &frame->params;

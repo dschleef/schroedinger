@@ -96,6 +96,7 @@ schro_dequantise_s16_ref (int16_t *dest, int16_t *src, int quant_index,
   }
 }
 
+#if 0
 void
 schro_dequantise_s16_table (int16_t *dest, int16_t *src, int quant_index,
     schro_bool is_intra, int n)
@@ -106,6 +107,7 @@ schro_dequantise_s16_table (int16_t *dest, int16_t *src, int quant_index,
     dest[i] = table[src[i] + 32768];
   }
 }
+#endif
 
 #if 0
 void

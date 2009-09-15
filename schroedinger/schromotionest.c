@@ -1579,6 +1579,8 @@ schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
       best_mv.split = 2;
       best_mv.pred_mode = 1;
 
+      mv_ref[0] = mv_ref[1] = NULL;
+      entropy[0] = entropy[1] = 0;
       mv = motion->motion_vectors + (j+jj)*xnum_blocks + i + ii;
       /* check that the block lies whitin the frame */
       if (   !(orig_frame->width > (i+ii) * xblen)
@@ -2340,7 +2342,7 @@ struct SchroMeElement {
 typedef struct SchroMeElement* SchroMeElement;
 
 /* supports motion estimation */
-struct SchroMe {
+struct _SchroMe {
   SchroFrame*            src;
 
   SchroParams*           params;
@@ -2387,7 +2389,7 @@ schro_me_new (SchroEncoderFrame* frame)
 {
   SCHRO_ASSERT (frame );
   int ref;
-  SchroMe me = schro_malloc0 (sizeof(struct SchroMe));
+  SchroMe me = schro_malloc0 (sizeof(struct _SchroMe));
   SCHRO_ASSERT (me);
   me->src = schro_frame_ref (frame->filtered_frame);
   /* FIXME: SchroUpsampledFrame, SchroMotion and SchroParams

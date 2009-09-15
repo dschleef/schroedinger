@@ -11,13 +11,23 @@ typedef struct _SchroRoughME SchroRoughME;
 typedef struct _SchroBlock SchroBlock;
 
 /* supports hierarchical block-matching motion estimation */
-typedef struct SchroHierBm* SchroHierBm;
+typedef struct _SchroHierBm* SchroHierBm;
 /* supports motion estimation */
-typedef struct SchroMe* SchroMe;
+typedef struct _SchroMe* SchroMe;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
 #define SCHRO_MAX_HIER_LEVELS 8
+
+struct _SchroHierBm {
+  int                ref_count;
+  int                ref;
+  int                hierarchy_levels;
+  SchroParams*       params;
+  SchroFrame**       downsampled_src;
+  SchroFrame**       downsampled_ref;
+  SchroMotionField** downsampled_mf;
+};
 
 struct _SchroMotionEst {
   SchroEncoderFrame *encoder_frame;
