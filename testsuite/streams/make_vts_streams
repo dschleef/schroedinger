@@ -31,7 +31,7 @@ format=I420
 testname="default"
 schroopts="rate-control=0"
 encode
-exit 0
+#exit 0
 
 
 # for testing java decoder
@@ -104,19 +104,19 @@ encode
 # noise threshold
 
 testname="10dB"
-schroopts="noise-threshold=10"
+schroopts="rate-control=0 noise-threshold=10"
 encode
 
 testname="20dB"
-schroopts="noise-threshold=20"
+schroopts="rate-control=0 noise-threshold=20"
 encode
 
 testname="30dB"
-schroopts="noise-threshold=30"
+schroopts="rate-control=0 noise-threshold=30"
 encode
 
 testname="40dB"
-schroopts="noise-threshold=40"
+schroopts="rate-control=0 noise-threshold=40"
 encode
 
 # perceptual weighting
