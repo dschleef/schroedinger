@@ -71,9 +71,7 @@ test_quant  (int quant_index)
 {
   int quant_factor = schro_table_quant[quant_index];
   int quant_offset = schro_table_offset_3_8[quant_index];
-#ifdef HAVE_ORC
   int quant_shift = quant_index/4 + 2;
-#endif
   int error = FALSE;
   int i;
 
@@ -89,7 +87,6 @@ test_quant  (int quant_index)
     a[i] = schro_quantise(a[i],quant_factor,quant_offset);
   }
 
-#ifdef HAVE_ORC
   if (quant_index == 0) {
     /* do nothing */
   } else if ((quant_index & 3) == 0) {
@@ -101,7 +98,6 @@ test_quant  (int quant_index)
 
     orc_quantise1_s16 (b, b, inv_quant, quant_offset - quant_factor/2, quant_shift, N);
   }
-#endif
 
   for(i=0;i<N;i++){
     if (a[i] < b[i] - 1 || a[i] > b[i] + 1) error = TRUE;
@@ -138,7 +134,6 @@ test_dequant  (int quant_index)
   schro_dequantise_s16_table (b, b, quant_index, FALSE, N);
 #endif
 
-#ifdef HAVE_ORC
   if (quant_index == 0) {
     /* do nothing */
   } else {
@@ -148,7 +143,6 @@ test_dequant  (int quant_index)
 
     orc_dequantise_s16 (c, c, quant_factor, quant_offset, N);
   }
-#endif
 
   for(i=0;i<N;i++){
     if (b[i] < c[i] - 1 || b[i] > c[i] + 1) error = TRUE;

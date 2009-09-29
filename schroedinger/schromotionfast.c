@@ -6,9 +6,7 @@
 #include <liboil/liboil.h>
 #include <string.h>
 #include <schroedinger/schrooil.h>
-#ifdef HAVE_ORC
 #include <schroedinger/schroorc.h>
-#endif
 
 /*
  * This is a slimmed-down implementation of normal OBMC for non-overlapped
@@ -222,9 +220,6 @@ schro_motion_render_fast (SchroMotion *motion, SchroFrame *dest)
   SchroParams *params = motion->params;
   int max_x_blocks;
   int max_y_blocks;
-#ifndef HAVE_ORC
-  int16_t zero = 0;
-#endif
 
   SCHRO_ASSERT (schro_motion_render_fast_allowed (motion));
 
@@ -267,13 +262,8 @@ schro_motion_render_fast (SchroMotion *motion, SchroFrame *dest)
     motion->alloc_block.height = motion->yblen;
 
     for(j=0;j<comp->height;j++){
-#ifdef HAVE_ORC
       orc_splat_s16_ns (SCHRO_FRAME_DATA_GET_LINE(comp, j), 0,
           comp->width);
-#else
-      oil_splat_s16_ns (SCHRO_FRAME_DATA_GET_LINE(comp, j), &zero,
-          comp->width);
-#endif
     }
 
     max_x_blocks = MIN(params->x_num_blocks,

@@ -2368,17 +2368,9 @@ schro_decoder_decode_block_data (SchroPicture *picture)
   SchroArith *arith[9];
   SchroUnpack unpack[9];
   int i, j;
-#ifndef HAVE_ORC
-  uint8_t zero = 0;
-#endif
 
-#ifdef HAVE_ORC
   orc_splat_u8_ns ((uint8_t *)picture->motion->motion_vectors, 0,
       sizeof(SchroMotionVector)*params->y_num_blocks*params->x_num_blocks);
-#else
-  oil_splat_u8_ns ((uint8_t *)picture->motion->motion_vectors, &zero,
-      sizeof(SchroMotionVector)*params->y_num_blocks*params->x_num_blocks);
-#endif
 
   for(i=0;i<9;i++){
     if (params->num_refs < 2 && (i == SCHRO_DECODER_ARITH_VECTOR_REF2_X ||
@@ -2887,11 +2879,7 @@ codeblock_line_decode_noarith (SchroPictureSubbandContext *ctx,
   line += ctx->xmin;
 
   schro_unpack_decode_sint_s16 (line, &ctx->unpack, n);
-#ifdef HAVE_ORC
   orc_dequantise_s16_ip (line, ctx->quant_factor, ctx->quant_offset + 2, n);
-#else
-  schro_dequantise_s16_table (line, line, ctx->quant_index, ctx->is_intra, n);
-#endif
 }
 
 #if 0
@@ -3125,18 +3113,11 @@ schro_decoder_zero_block (SchroPictureSubbandContext *ctx,
 {
   int j;
   int16_t *line;
-#ifndef HAVE_ORC
-  int16_t zero = 0;
-#endif
 
   //SCHRO_DEBUG("subband is zero");
   for(j=y1;j<y2;j++){
     line = SCHRO_FRAME_DATA_GET_LINE (ctx->frame_data, j);
-#ifdef HAVE_ORC
     orc_splat_s16_ns (line + x1, 0, x2 - x1);
-#else
-    oil_splat_s16_ns (line + x1, &zero, x2 - x1);
-#endif
   }
 }
 

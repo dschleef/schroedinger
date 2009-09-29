@@ -192,12 +192,10 @@ dequantise_speed (int quant_index, int n)
     oil_profile_start (&prof2);
     schro_dequantise_s16_table (c, a, quant_index, FALSE, n);
     oil_profile_stop (&prof2);
-#ifdef HAVE_ORC
     memcpy (c, a, N*sizeof(int16_t));
     oil_profile_start (&prof3);
     orc_dequantise_s16_ip (c, quant_factor, quant_offset + 2, n);
     oil_profile_stop (&prof3);
-#endif
 
 #if 0
     for(j=0;j<N;j++){

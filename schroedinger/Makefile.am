@@ -143,12 +143,6 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
 	schrowavelettables.c
 endif
 
-if HAVE_ORC
-else
-libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += schrowavelet.c
-endif
-
-
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = \
 	$(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ORC_CFLAGS) $(ERROR_CFLAGS) \

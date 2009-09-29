@@ -8,54 +8,6 @@
 #include <math.h>
 
 
-#ifndef HAVE_ORC
-void
-oil_splat_s16_ns (int16_t *dest, const int16_t *src, int n)
-{
-  oil_splat_u16_ns ((uint16_t *)dest, (const uint16_t *)src, n);
-}
-
-void
-oil_sum_s32_u8 (int32_t *d_1, uint8_t *src, int n)
-{
-  int i;
-  int x = 0;
-
-  for(i=0;i<n;i++){
-    x += src[i];
-  }
-
-  d_1[0] = x;
-}
-
-void
-oil_sum_s32_s16 (int32_t *d_1, int16_t *src, int n)
-{
-  int i;
-  int x = 0;
-
-  for(i=0;i<n;i++){
-    x += src[i];
-  }
-
-  d_1[0] = x;
-}
-
-void
-oil_sum_square_diff_u8 (int32_t *d_1, uint8_t *s1, uint8_t *s2, int n)
-{
-  int sum = 0;
-  int i;
-  int x;
-
-  for(i=0;i<n;i++){
-    x = s1[i] - s2[i];
-    sum += x*x;
-  }
-  d_1[0] = sum;
-}
-#endif
-
 #ifdef unused
 void
 oil_mas10_s16 (int16_t *d, const int16_t *s1_np3, const int32_t *s2_4,

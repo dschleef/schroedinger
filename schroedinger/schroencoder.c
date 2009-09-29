@@ -10,9 +10,7 @@
 #include <math.h>
 #include <stddef.h>
 #include <schroedinger/schrooil.h>
-#ifdef HAVE_ORC
 #include "schroorc.h"
-#endif
 
 #if 0
 /* Used for testing bitstream */
@@ -634,32 +632,20 @@ schro_encoder_frame_assemble_buffer (SchroEncoderFrame *frame,
   if (frame->sequence_header_buffer) {
     buf = frame->sequence_header_buffer;
     schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
-#ifdef HAVE_ORC
     orc_memcpy (buffer->data + offset, buf->data, buf->length);
-#else
-    memcpy (buffer->data + offset, buf->data, buf->length);
-#endif
     offset += frame->sequence_header_buffer->length;
   }
 
   for(i=0;i<schro_list_get_size (frame->inserted_buffers);i++){
     buf = schro_list_get (frame->inserted_buffers, i);
     schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
-#ifdef HAVE_ORC
     orc_memcpy (buffer->data + offset, buf->data, buf->length);
-#else
-    memcpy (buffer->data + offset, buf->data, buf->length);
-#endif
     offset += buf->length;
   }
   while(schro_list_get_size (frame->encoder->inserted_buffers)>0){
     buf = schro_list_remove (frame->encoder->inserted_buffers, 0);
     schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
-#ifdef HAVE_ORC
     orc_memcpy (buffer->data + offset, buf->data, buf->length);
-#else
-    memcpy (buffer->data + offset, buf->data, buf->length);
-#endif
     offset += buf->length;
     schro_buffer_unref (buf);
     buf = NULL;
@@ -667,11 +653,7 @@ schro_encoder_frame_assemble_buffer (SchroEncoderFrame *frame,
 
   buf = frame->output_buffer;
   schro_encoder_fixup_offsets (frame->encoder, buf, FALSE);
-#ifdef HAVE_ORC
   orc_memcpy (buffer->data + offset, buf->data, buf->length);
-#else
-  memcpy (buffer->data + offset, buf->data, buf->length);
-#endif
   offset += buf->length;
 }
 
@@ -2417,7 +2399,6 @@ schro_frame_data_quantise (SchroFrameData *quant_fd,
   int j;
   int16_t *line;
   int16_t *quant_line;
-#ifdef HAVE_ORC
   int quant_factor = schro_table_quant[quant_index];
   int quant_offset;
   int quant_shift = (quant_index>>2) + 2;
@@ -2456,16 +2437,6 @@ schro_frame_data_quantise (SchroFrameData *quant_fd,
           quant_shift, quant_factor, real_quant_offset + 2, fd->width);
     }
   }
-#else
-  for(j=0;j<fd->height;j++){
-    line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
-    quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
-
-    schro_quantise_s16_table (quant_line, line, quant_index, is_intra, fd->width);
-    schro_dequantise_s16_table (line, quant_line, quant_index, is_intra,
-        fd->width);
-  }
-#endif
 }
 
 #if 0
@@ -2476,7 +2447,6 @@ schro_frame_data_dequantise (SchroFrameData *fd,
   int j;
   int16_t *line;
   int16_t *quant_line;
-#ifdef HAVE_ORC
   int quant_factor = schro_table_quant[quant_index];
   int quant_offset;
 
@@ -2502,15 +2472,6 @@ schro_frame_data_dequantise (SchroFrameData *fd,
           fd->width);
     }
   }
-#else
-  for(j=0;j<fd->height;j++){
-    line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
-    quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
-
-    schro_dequantise_s16_table (line, quant_line, quant_index, is_intra,
-        fd->width);
-  }
-#endif
 }
 #endif
 
@@ -2673,11 +2634,7 @@ schro_frame_data_clear (SchroFrameData *fd)
   int i;
 
   for(i=0;i<fd->height;i++){
-#ifdef HAVE_ORC
     orc_splat_s16_ns (SCHRO_FRAME_DATA_GET_LINE(fd, i), 0, fd->width);
-#else
-    oil_splat_s16_ns (SCHRO_FRAME_DATA_GET_LINE(fd, i), 0, fd->width);
-#endif
   }
 }
 
@@ -2921,24 +2878,14 @@ schro_frame_data_is_zero (SchroFrameData *fd)
 {
   int j;
   int16_t *line;
-#ifdef HAVE_ORC
   int acc;
-#else
-  int i;
-#endif
 
   for(j=0;j<fd->height;j++){
     line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
-#ifdef HAVE_ORC
     /* FIXME this could theoretically cause false positives.  Fix when
      * Orc gets an accorw opcode. */
     orc_accw (&acc, line, fd->width);
     if (acc != 0) return FALSE;
-#else
-    for(i=0;i<fd->width;i++){
-      if (line[i] != 0) return FALSE;
-    }
-#endif
   }
 
   return TRUE;

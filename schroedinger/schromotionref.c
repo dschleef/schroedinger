@@ -5,10 +5,6 @@
 #include <schroedinger/schro.h>
 #include <liboil/liboil.h>
 #include <string.h>
-#include <schroedinger/schrooil.h>
-#ifdef HAVE_ORC
-#include <schroedinger/schroorc.h>
-#endif
 
 int _schro_motion_ref = FALSE;
 

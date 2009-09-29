@@ -5,9 +5,7 @@
 
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schrodebug.h>
-#ifdef HAVE_ORC
 #include <schroedinger/schroorc.h>
-#endif
 #include <liboil/liboil.h>
 #include <string.h>
 
@@ -110,11 +108,7 @@ schro_buffer_dup (SchroBuffer * buffer)
   SchroBuffer *dup;
 
   dup = schro_buffer_new_and_alloc (buffer->length);
-#ifdef HAVE_ORC
   orc_memcpy (dup->data, buffer->data, buffer->length);
-#else
-  oil_memcpy (dup->data, buffer->data, buffer->length);
-#endif
 
   return dup;
 }

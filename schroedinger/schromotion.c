@@ -6,9 +6,7 @@
 #include <liboil/liboil.h>
 #include <string.h>
 #include <schroedinger/schrooil.h>
-#ifdef HAVE_ORC
 #include <schroedinger/schroorc.h>
-#endif
 
 extern int _schro_motion_ref;
 
@@ -341,20 +339,11 @@ schro_motion_block_accumulate (SchroMotion *motion, SchroFrameData *comp,
       break;
     default:
       for(j=0;j<motion->yblen;j++) {
-#ifdef HAVE_ORC
         orc_multiply_and_add_s16_u8 (
             SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y + j),
             SCHRO_FRAME_DATA_GET_LINE (&motion->obmc_weight, j),
             SCHRO_FRAME_DATA_GET_LINE (&motion->block, j),
             motion->xblen);
-#else
-        oil_multiply_and_add_s16_u8 (
-            SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y + j),
-            SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y + j),
-            SCHRO_FRAME_DATA_GET_LINE (&motion->obmc_weight, j),
-            SCHRO_FRAME_DATA_GET_LINE (&motion->block, j),
-            motion->xblen);
-#endif
       }
       break;
   }
@@ -452,9 +441,6 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
   SchroParams *params = motion->params;
   int max_x_blocks;
   int max_y_blocks;
-#ifndef HAVE_ORC
-  int16_t zero = 0;
-#endif
 
 #ifdef ENABLE_MOTION_REF
   if (_schro_motion_ref) {
@@ -562,13 +548,8 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
     schro_motion_init_obmc_weight (motion);
 
     for(j=0;j<comp->height;j++){
-#ifdef HAVE_ORC
       orc_splat_s16_ns (SCHRO_FRAME_DATA_GET_LINE(comp, j), 0,
           comp->width);
-#else
-      oil_splat_s16_ns (SCHRO_FRAME_DATA_GET_LINE(comp, j), &zero,
-          comp->width);
-#endif
     }
 
     max_x_blocks = MIN(params->x_num_blocks - 1,
@@ -621,17 +602,7 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
 
 
     for(j=0;j<comp->height;j++){
-#ifdef HAVE_ORC
       orc_rrshift6_s16_ip (SCHRO_FRAME_DATA_GET_LINE(comp, j), motion->width);
-#else
-      int16_t as[2] = { 1, 1 };
-
-      as[1] = 6;
-      as[0] = ((1<<as[1])>>1) - (128<<6);
-
-      oil_add_const_rshift_s16 (SCHRO_FRAME_DATA_GET_LINE(comp, j),
-          SCHRO_FRAME_DATA_GET_LINE(comp, j), as, motion->width);
-#endif
     }
 
     schro_free (motion->alloc_block.data);

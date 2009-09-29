@@ -12,9 +12,7 @@
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <liboil/liboil.h>
 #include <schroedinger/schrovirtframe.h>
-#ifdef HAVE_ORC
 #include <schroedinger/schroorc.h>
-#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -618,31 +616,17 @@ schro_frame_component_clear (SchroFrameData *fd)
 
   if (SCHRO_FRAME_FORMAT_DEPTH(fd->format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
     uint8_t *line;
-#ifndef HAVE_ORC
-    uint8_t zero = 128;
-#endif
 
     for(j=0;j<fd->height;j++){
       line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
-#ifdef HAVE_ORC
       orc_splat_u8_ns (line, 128, fd->width);
-#else
-      oil_splat_u8_ns (line, &zero, fd->width);
-#endif
     }
   } else {
     int16_t *line;
-#ifndef HAVE_ORC
-    int16_t zero = 0;
-#endif
 
     for(j=0;j<fd->height;j++){
       line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
-#ifdef HAVE_ORC
       orc_splat_s16_ns (line, 0, fd->width);
-#else
-      oil_splat_s16_ns (line, &zero, fd->width);
-#endif
     }
   }
 }
@@ -870,11 +854,7 @@ schro_frame_add_s16_s16 (SchroFrame *dest, SchroFrame *src)
     for(y=0;y<height;y++){
       sdata = SCHRO_FRAME_DATA_GET_LINE (scomp, y);
       ddata = SCHRO_FRAME_DATA_GET_LINE (dcomp, y);
-#ifdef HAVE_ORC
       orc_add_s16 (ddata, ddata, sdata, width);
-#else
-      oil_add_s16 (ddata, ddata, sdata, width);
-#endif
     }
   }
 }
@@ -900,11 +880,7 @@ schro_frame_add_s16_u8 (SchroFrame *dest, SchroFrame *src)
     for(y=0;y<height;y++){
       sdata = SCHRO_FRAME_DATA_GET_LINE (scomp, y);
       ddata = SCHRO_FRAME_DATA_GET_LINE (dcomp, y);
-#ifdef HAVE_ORC
       orc_add_s16_u8 (ddata, ddata, sdata, width);
-#else
-      oil_add_s16_u8 (ddata, ddata, sdata, width);
-#endif
     }
   }
 }
@@ -930,11 +906,7 @@ schro_frame_subtract_s16_s16 (SchroFrame *dest, SchroFrame *src)
     for(y=0;y<height;y++){
       sdata = SCHRO_FRAME_DATA_GET_LINE (scomp, y);
       ddata = SCHRO_FRAME_DATA_GET_LINE (dcomp, y);
-#ifdef HAVE_ORC
       orc_subtract_s16 (ddata, ddata, sdata, width);
-#else
-      oil_subtract_s16 (ddata, ddata, sdata, width);
-#endif
     }
   }
 }
@@ -960,11 +932,7 @@ schro_frame_subtract_s16_u8 (SchroFrame *dest, SchroFrame *src)
     for(y=0;y<height;y++){
       sdata = SCHRO_FRAME_DATA_GET_LINE (scomp, y);
       ddata = SCHRO_FRAME_DATA_GET_LINE (dcomp, y);
-#ifdef HAVE_ORC
       orc_subtract_s16_u8 (ddata, ddata, sdata, width);
-#else
-      oil_subtract_s16_u8 (ddata, ddata, sdata, width);
-#endif
     }
   }
 }
@@ -1077,20 +1045,13 @@ void schro_frame_shift_left (SchroFrame *frame, int shift)
   int16_t *data;
   int i;
   int y;
-#ifndef HAVE_ORC
-  int16_t x = shift;
-#endif
 
   for(i=0;i<3;i++){
     comp = &frame->components[i];
 
     for(y=0;y<comp->height;y++){
       data = SCHRO_FRAME_DATA_GET_LINE (comp, y);
-#ifdef HAVE_ORC
       orc_lshift_s16_ip (data, shift, comp->width);
-#else
-      oil_lshift_s16 (data, data, &x, comp->width);
-#endif
     }
   }
 }
@@ -1109,20 +1070,13 @@ void schro_frame_shift_right (SchroFrame *frame, int shift)
   int16_t *data;
   int i;
   int y;
-#ifndef HAVE_ORC
-  int16_t s[2] = { (1<<shift)>>1, shift };
-#endif
 
   for(i=0;i<3;i++){
     comp = &frame->components[i];
 
     for(y=0;y<comp->height;y++){
       data = SCHRO_FRAME_DATA_GET_LINE (comp, y);
-#ifdef HAVE_ORC
       orc_add_const_rshift_s16 (data, (1<<shift)>>1, shift, comp->width);
-#else
-      oil_add_const_rshift_s16 (data, data, s, comp->width);
-#endif
     }
   }
 }
@@ -1172,21 +1126,12 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
         if (w < comp->width) {
           for(y = 0; y<MIN(h,comp->height); y++) {
             data = SCHRO_FRAME_DATA_GET_LINE (comp, y);
-#ifdef HAVE_ORC
             orc_splat_u8_ns (data + w, data[w - 1], comp->width - w);
-#else
-            oil_splat_u8_ns (data + w, data + w - 1, comp->width - w);
-#endif
           }
         }
         for(y=h; y < comp->height; y++) {
-#ifdef HAVE_ORC
           orc_memcpy (SCHRO_FRAME_DATA_GET_LINE (comp, y),
               SCHRO_FRAME_DATA_GET_LINE (comp, h-1), comp->width);
-#else
-          oil_memcpy (SCHRO_FRAME_DATA_GET_LINE (comp, y),
-              SCHRO_FRAME_DATA_GET_LINE (comp, h-1), comp->width);
-#endif
         }
       }
       break;
@@ -1204,21 +1149,12 @@ schro_frame_edge_extend (SchroFrame *frame, int width, int height)
         if (w < comp->width) {
           for(y = 0; y<MIN(h,comp->height); y++) {
             data = SCHRO_FRAME_DATA_GET_LINE (comp, y);
-#ifdef HAVE_ORC
             orc_splat_s16_ns (data + w, data[w - 1], comp->width - w);
-#else
-            oil_splat_s16_ns (data + w, data + w - 1, comp->width - w);
-#endif
           }
         }
         for(y=h; y < comp->height; y++) {
-#ifdef HAVE_ORC
           orc_memcpy (SCHRO_FRAME_DATA_GET_LINE (comp, y),
               SCHRO_FRAME_DATA_GET_LINE (comp, h-1), comp->width * 2);
-#else
-          oil_memcpy (SCHRO_FRAME_DATA_GET_LINE (comp, y),
-              SCHRO_FRAME_DATA_GET_LINE (comp, h-1), comp->width * 2);
-#endif
         }
       }
       break;
@@ -1250,9 +1186,6 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
   switch(SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
     case SCHRO_FRAME_FORMAT_DEPTH_U8:
       for(i=0;i<3;i++){
-#ifndef HAVE_ORC
-        uint8_t zero = 0;
-#endif
         uint8_t *data;
         int w,h;
 
@@ -1265,21 +1198,12 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
         if (w < comp->width) {
           for(y = 0; y<h; y++) {
             data = SCHRO_FRAME_DATA_GET_LINE (comp, y);
-#ifdef HAVE_ORC
             orc_splat_u8_ns (data + w, 0, comp->width - w);
-#else
-            oil_splat_u8_ns (data + w, &zero, comp->width - w);
-#endif
           }
         }
         for(y=h; y < comp->height; y++) {
-#ifdef HAVE_ORC
           orc_splat_u8_ns (SCHRO_FRAME_DATA_GET_LINE (comp, y), 0,
               comp->width);
-#else
-          oil_splat_u8_ns (SCHRO_FRAME_DATA_GET_LINE (comp, y), &zero,
-              comp->width);
-#endif
         }
       }
       break;
@@ -1287,9 +1211,6 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
       for(i=0;i<3;i++){
         int16_t *data;
         int w,h;
-#ifndef HAVE_ORC
-        int16_t zero = 0;
-#endif
 
         comp = &frame->components[i];
         data = comp->data;
@@ -1300,21 +1221,12 @@ schro_frame_zero_extend (SchroFrame *frame, int width, int height)
         if (w < comp->width) {
           for(y = 0; y<h; y++) {
             data = SCHRO_FRAME_DATA_GET_LINE (comp, y);
-#ifdef HAVE_ORC
             orc_splat_s16_ns (data + w, 0, comp->width - w);
-#else
-            oil_splat_s16_ns (data + w, &zero, comp->width - w);
-#endif
           }
         }
         for(y=h; y < comp->height; y++) {
-#ifdef HAVE_ORC
           orc_splat_s16_ns (SCHRO_FRAME_DATA_GET_LINE (comp, y), 0,
               comp->width);
-#else
-          oil_splat_s16_ns (SCHRO_FRAME_DATA_GET_LINE (comp, y), &zero,
-              comp->width);
-#endif
         }
       }
       break;
@@ -1347,18 +1259,7 @@ downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src)
       x +=  6*src[CLAMP(i*2 + 2, 0, n_src-1)];
       dest[i] = CLAMP((x+32)>>6, 0, 255);
     }
-#ifdef HAVE_ORC
     orc_downsample_horiz_u8 (dest + 1, src + 1, src + 3, n_src/2 - 2);
-#else
-    for(i=1;i<n_src/2-2;i++){
-      int x = 0;
-      x +=  6*src[i*2 - 1];
-      x += 26*src[i*2 + 0];
-      x += 26*src[i*2 + 1];
-      x +=  6*src[i*2 + 2];
-      dest[i] = (x+32)>>6;
-    }
-#endif
     for(i=n_src/2-2;i<n_dest;i++){
       int x = 0;
       x +=  6*src[CLAMP(i*2 - 1, 0, n_src-1)];
@@ -1371,24 +1272,6 @@ downsample_horiz_u8 (uint8_t *dest, int n_dest, uint8_t *src, int n_src)
   }
 }
 
-#ifndef HAVE_ORC
-static void
-downsample_vert_u8 (uint8_t *dest, int n_dest, uint8_t *src1,
-    uint8_t *src2, uint8_t *src3, uint8_t *src4)
-{
-  int i;
-
-  for(i=0;i<n_dest;i++){
-    int x = 0;
-    x +=  6*src1[i];
-    x += 26*src2[i];
-    x += 26*src3[i];
-    x +=  6*src4[i];
-    dest[i] = CLAMP((x+32)>>6, 0, 255);
-  }
-}
-#endif
-
 static void
 schro_frame_component_downsample (SchroFrameData *dest,
     SchroFrameData *src)
@@ -1399,20 +1282,12 @@ schro_frame_component_downsample (SchroFrameData *dest,
   tmp = schro_malloc(src->width);
 
   for(i=0;i<dest->height;i++){
-#ifdef HAVE_ORC
     orc_downsample_vert_u8 (tmp,
         SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2-1,0,src->height - 1)),
         SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+0,0,src->height - 1)),
         SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+1,0,src->height - 1)),
         SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+2,0,src->height - 1)),
         src->width);
-#else
-    downsample_vert_u8 (tmp, src->width,
-        SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2-1,0,src->height - 1)),
-        SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+0,0,src->height - 1)),
-        SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+1,0,src->height - 1)),
-        SCHRO_FRAME_DATA_GET_LINE(src, CLAMP(i*2+2,0,src->height - 1)));
-#endif
     downsample_horiz_u8 (
         SCHRO_FRAME_DATA_GET_LINE(dest, i), dest->width,
         tmp, src->width);
@@ -1517,13 +1392,8 @@ schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
       }
     }
     j = dcomp->height - 1;
-#ifdef HAVE_ORC
     orc_memcpy (SCHRO_FRAME_DATA_GET_LINE(dcomp, j),
         SCHRO_FRAME_DATA_GET_LINE (scomp, j), dcomp->width);
-#else
-    oil_memcpy (SCHRO_FRAME_DATA_GET_LINE(dcomp, j),
-        SCHRO_FRAME_DATA_GET_LINE (scomp, j), dcomp->width);
-#endif
   }
 }
 
@@ -1541,26 +1411,16 @@ schro_frame_calculate_average_luma (SchroFrame *frame)
     case SCHRO_FRAME_FORMAT_DEPTH_U8:
       for(j=0;j<comp->height;j++){
         int32_t linesum;
-#ifdef HAVE_ORC
         orc_sum_u8 (&linesum, SCHRO_FRAME_DATA_GET_LINE(comp, j),
             comp->width);
-#else
-        oil_sum_s32_u8 (&linesum, SCHRO_FRAME_DATA_GET_LINE(comp, j),
-            comp->width);
-#endif
         sum += linesum;
       }
       break;
     case SCHRO_FRAME_FORMAT_DEPTH_S16:
       for(j=0;j<comp->height;j++){
         int32_t linesum;
-#ifdef HAVE_ORC
         orc_sum_s16 (&linesum, SCHRO_FRAME_DATA_GET_LINE(comp, j),
             comp->width);
-#else
-        oil_sum_s32_s16 (&linesum, SCHRO_FRAME_DATA_GET_LINE(comp, j),
-            comp->width);
-#endif
         sum += linesum;
       }
       break;
@@ -1735,7 +1595,6 @@ schro_frame_mc_edgeextend_vert (SchroFrame *frame, SchroFrame *src)
     int width = frame->components[k].width;
 
     for(j=0;j<frame->extension;j++){
-#ifdef HAVE_ORC
       orc_memcpy (
           SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(frame->components + k, -j-1),
             -frame->extension),
@@ -1747,37 +1606,16 @@ schro_frame_mc_edgeextend_vert (SchroFrame *frame, SchroFrame *src)
           SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1),
             -frame->extension),
           width + frame->extension*2);
-#else
-      oil_memcpy (
-          SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(frame->components + k, -j-1),
-            -frame->extension),
-          SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(src->components + k, 0),
-            -frame->extension),
-          width + frame->extension*2);
-      oil_memcpy (SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height + j),
-            -frame->extension),
-          SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1),
-            -frame->extension),
-          width + frame->extension*2);
-#endif
     }
     /* A picture of size (w,h) is upconverted to (2*w-1,2*h-1)
      * However, schroedinger's effective upconverted size is (2*w,2*h)
      * Copy the src into the bottom line of frame.
      * NB, this assumes that oil_memcpy is safe when src == dest */
-#ifdef HAVE_ORC
     orc_memcpy (SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height - 1),
           -frame->extension),
         SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1),
           -frame->extension),
         width + frame->extension*2);
-#else
-    oil_memcpy (SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height - 1),
-          -frame->extension),
-        SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1),
-          -frame->extension),
-        width + frame->extension*2);
-#endif
   }
 }
 
@@ -1939,11 +1777,7 @@ schro_upsampled_frame_get_block_fast_prec1 (SchroUpsampledFrame *upframe, int k,
   for(j=0;j<fd->height;j++) {
     uint8_t *dest = SCHRO_FRAME_DATA_GET_LINE (fd, j);
     uint8_t *src = SCHRO_FRAME_DATA_GET_LINE (comp, y + j);
-#ifdef HAVE_ORC
     orc_memcpy (dest, src + x, fd->width);
-#else
-    oil_memcpy (dest, src + x, fd->width);
-#endif
   }
 }
 

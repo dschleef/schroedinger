@@ -91,7 +91,7 @@ main (int argc, char *argv[])
   }
 #endif
   for(i=16;i<=2048;i+=16){
-    wavelet_speed (1, i, 256);
+    wavelet_speed (3, i, 256);
   }
 
   free(data);

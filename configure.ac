@@ -53,20 +53,13 @@ if test "x${HAVE_LIBOIL}" != xyes ; then
 fi
 SCHRO_PKG_DEPS="liboil-0.3 >= $OIL_VER"
 
-AC_ARG_ENABLE(orc, AC_HELP_STRING([--enable-orc],
-              [enable orc support (default=disabled)]))
-if test "x$enable_orc" = xyes
-then
-  ORC_VER="0.4.2"
-  PKG_CHECK_MODULES(ORC, orc-0.4 >= $ORC_VER, HAVE_ORC=yes, HAVE_ORC=no)
-else
-  HAVE_ORC=no
+dnl Orc is required
+ORC_VER="0.4.2.1"
+PKG_CHECK_MODULES(ORC, orc-0.4 >= $ORC_VER, HAVE_ORC=yes, HAVE_ORC=no)
+if test "x${HAVE_ORC}" != xyes ; then
+  AC_ERROR([orc-0.4 >= $ORC_VER is required])
 fi
-if test "x${HAVE_ORC}" = xyes ; then
-  AC_DEFINE(HAVE_ORC, 1, [Whether or not orc is enabled])
-  SCHRO_PKG_DEPS="$SCHRO_PKG_DEPS orc-0.4 >= $ORC_VER"
-fi
-AM_CONDITIONAL(HAVE_ORC, test "x$HAVE_ORC" = "xyes")
+SCHRO_PKG_DEPS="$SCHRO_PKG_DEPS orc-0.4 >= $ORC_VER"
 
 AC_ARG_WITH([thread],
     AS_HELP_STRING([--with-thread=IMPL],[use threading library {auto,pthread,gthread,win32,none} [[default=auto]]]),
