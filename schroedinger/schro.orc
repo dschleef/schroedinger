@@ -416,6 +416,52 @@ select1lw t3, t1
 shlw d2, t3, 1
 
 
+.function orc_haar_deint_split_s16
+.dest 2 d1 int16_t
+.dest 2 d2 int16_t
+.source 4 s1 int16_t
+.temp 2 t1
+.temp 2 t2
+.temp 4 t3
+
+copyl t3, s1
+select0lw t1, t3
+select1lw t2, t3
+subw t2, t2, t1
+copyw d2, t2
+avgsw t2, t2, 0
+addw d1, t1, t2
+
+
+.function orc_haar_split_s16
+.dest 2 d1 int16_t
+.dest 2 d2 int16_t
+.temp 2 t1
+.temp 2 t2
+
+copyw t1, d1
+copyw t2, d2
+subw t2, t2, t1
+copyw d2, t2
+avgsw t2, t2, 0
+addw d1, t1, t2
+
+
+.function orc_haar_synth_s16
+.dest 2 d1 int16_t
+.dest 2 d2 int16_t
+.temp 2 t1
+.temp 2 t2
+.temp 2 t3
+
+copyw t1, d1
+copyw t2, d2
+avgsw t3, t2, 0
+subw t1, t1, t3
+copyw d1, t1
+addw d2, t2, t1
+
+
 .function orc_haar_sub_s16
 .dest 2 d1 int16_t
 .source 2 s1 int16_t

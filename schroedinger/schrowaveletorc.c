@@ -6,6 +6,7 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schrooil.h>
 #include <liboil/liboil.h>
+#include <schroedinger/schroorc.h>
 
 
 /**
@@ -67,8 +68,7 @@ schro_split_ext_135 (int16_t *hi, int16_t *lo, int n)
 void
 schro_split_ext_haar (int16_t *hi, int16_t *lo, int n)
 {
-  orc_haar_sub_s16 (lo, hi, n);
-  orc_haar_add_half_s16 (hi, lo, n);
+  orc_haar_split_s16 (hi, lo, n);
 }
 
 void
@@ -174,8 +174,7 @@ schro_synth_ext_135 (int16_t *hi, int16_t *lo, int n)
 void
 schro_synth_ext_haar (int16_t *hi, int16_t *lo, int n)
 {
-  orc_haar_sub_half_s16 (hi, lo, n);
-  orc_haar_add_s16 (lo, hi, n);
+  orc_haar_synth_s16 (hi, lo, n);
 }
 
 void
@@ -388,7 +387,6 @@ schro_iwt_haar (int16_t *data, int stride, int width, int height,
   int16_t *data1;
   int16_t *data2;
   int i;
-  int j;
 
   for(i=0;i<height;i+=2){
     data1 = OFFSET(data,i*stride);
@@ -397,8 +395,7 @@ schro_iwt_haar (int16_t *data, int stride, int width, int height,
     } else {
       orc_memcpy (tmp, data1, width*sizeof(int16_t));
     }
-    orc_deinterleave2_s16 (data1, data1 + width/2, tmp, width/2);
-    schro_split_ext_haar (data1, data1 + width/2, width/2);
+    orc_haar_deint_split_s16 (data1, data1 + width/2, tmp, width/2);
 
     data2 = OFFSET(data,(i+1)*stride);
     if (shift == 1) {
@@ -406,13 +403,9 @@ schro_iwt_haar (int16_t *data, int stride, int width, int height,
     } else {
       orc_memcpy (tmp, data2, width*sizeof(int16_t));
     }
-    orc_deinterleave2_s16 (data2, data2 + width/2, tmp, width/2);
-    schro_split_ext_haar (data2, data2 + width/2, width/2);
+    orc_haar_deint_split_s16 (data2, data2 + width/2, tmp, width/2);
 
-    for(j=0;j<width;j++){
-      data2[j] -= data1[j];
-      data1[j] += (data2[j] + 1)>>1;
-    }
+    orc_haar_split_s16 (data1, data2, width);
   }
 }
 
@@ -738,18 +731,14 @@ schro_iiwt_haar (int16_t *data, int stride, int width, int height,
   int16_t *data1;
   int16_t *data2;
   int i;
-  int j;
 
   for(i=0;i<height;i+=2){
     data1 = OFFSET(data,i*stride);
     data2 = OFFSET(data,(i+1)*stride);
 
-    for(j=0;j<width;j++){
-      data1[j] -= (data2[j] + 1)>>1;
-      data2[j] += data1[j];
-    }
+    orc_haar_synth_s16 (data1, data2, width);
 
-    schro_synth_ext_haar (data1, data1 + width/2, width/2);
+    orc_haar_synth_s16 (data1, data1 + width/2, width/2);
     if (shift) {
       orc_add_const_rshift_s16_11 (tmp, data1, width);
     } else {
@@ -757,7 +746,7 @@ schro_iiwt_haar (int16_t *data, int stride, int width, int height,
     }
     orc_interleave2_s16 (data1, tmp, tmp + width/2, width/2);
 
-    schro_synth_ext_haar (data2, data2 + width/2, width/2);
+    orc_haar_synth_s16 (data2, data2 + width/2, width/2);
     if (shift) {
       orc_add_const_rshift_s16_11 (tmp, data2, width);
     } else {
