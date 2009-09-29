@@ -8,6 +8,7 @@
 #include <schroedinger/schrotables.h>
 
 #include <string.h>
+#include <schroedinger/schroorc.h>
 
 static void _schro_unpack_shift_in (SchroUnpack *unpack);
 static unsigned int _schro_unpack_shift_out (SchroUnpack *unpack, int n);

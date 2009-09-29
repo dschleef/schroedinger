@@ -13,6 +13,8 @@
 #include <string.h>
 #include <math.h>
 
+#include <schroedinger/schroorc.h>
+
 
 SchroFrame *
 schro_frame_new_virtual (SchroMemoryDomain *domain, SchroFrameFormat format,

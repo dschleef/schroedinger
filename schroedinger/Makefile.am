@@ -12,7 +12,13 @@ pkgincludedir = $(includedir)/schroedinger-@SCHRO_MAJORMINOR@/schroedinger
 lib_LTLIBRARIES = libschroedinger-@SCHRO_MAJORMINOR@.la
 
 BUILT_SOURCES = \
-	schroversion.h
+	schroversion.h \
+	schroorc.c \
+	schroorc.h
+
+CLEANFILES = \
+	schroorc.c \
+	schroorc.h
 
 DISTCLEANFILES = schroversion.h
 
@@ -64,7 +70,6 @@ nodist_pkginclude_HEADERS = \
 
 noinst_HEADERS = \
 	schrooil.h \
-	schroorc.h \
 	schrogpuframe.h
 
 if HAVE_CUDA
@@ -107,8 +112,13 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schroutils.c \
 	schrovideoformat.c \
 	schrovirtframe.c \
+	schrowaveletorc.c \
 	$(cuda_sources) \
 	schroasync-@THREAD_IMPL@.c
+
+nodist_libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
+	schroorc.c \
+	schroorc.h
 
 if ENABLE_MOTION_REF
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
@@ -134,8 +144,6 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
 endif
 
 if HAVE_ORC
-libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
-	schroorc.c schrowaveletorc.c
 else
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += schrowavelet.c
 endif
@@ -161,9 +169,10 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-version-info $(SCHRO_LIBVERSION) \
 	-export-symbols-regex '^(schro|orc)_'
 
-orc:
-	orcc schro.orc
-	cp out.c schroorc.c
-	cp out.h schroorc.h
-	cp test_out.c ../testsuite/orc_test.c
+schroorc.c: schro.orc
+	orcc --implementation -o schroorc.c schro.orc
+
+schroorc.h: schro.orc
+	orcc --header -o schroorc.h schro.orc
+
 

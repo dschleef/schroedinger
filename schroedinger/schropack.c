@@ -9,6 +9,7 @@
 #include <schroedinger/schropack.h>
 #include <schroedinger/schro.h>
 #include <schroedinger/schrooil.h>
+#include <schroedinger/schroorc.h>
 
 
 SchroPack *

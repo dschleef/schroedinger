@@ -5,6 +5,7 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schrooil.h>
+#include <schroedinger/schroorc.h>
 
 void
 schro_encoder_frame_downsample (SchroEncoderFrame *frame)
