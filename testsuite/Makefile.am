@@ -23,9 +23,7 @@ noinst_PROGRAMS = arith arith_encode \
 	 downsample taps ramp \
 	 colorspace filter_coeff utils extension
 
-if HAVE_ORC
 noinst_PROGRAMS += orc_test
-endif
 
 if ENABLE_ENCODER
 noinst_PROGRAMS += encode ssim wavelet_gain \
@@ -147,6 +145,11 @@ perceptual_curves_SOURCES = perceptual_curves.c
 orc_test_CFLAGS = $(ORC_CFLAGS)
 orc_test_LDADD = $(ORC_LIBS) -lorc-test-0.4
 
+BUILT_SOURCES = orc_test.c
+CLEANFILES = orc_test.c
+
+orc_test.c: $(top_srcdir)/schroedinger/schro.orc
+	$(ORCC) --test -o orc_test.c $(top_srcdir)/schroedinger/schro.orc
 
 zzuf_test:
 	zzuf -A -s0:10000 -r0.00001 -c -v ./decode test_stream.drc

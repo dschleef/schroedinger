@@ -164,9 +164,9 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-export-symbols-regex '^(schro|orc)_'
 
 schroorc.c: schro.orc
-	orcc --implementation -o schroorc.c schro.orc
+	$(ORCC) --implementation -o schroorc.c schro.orc
 
 schroorc.h: schro.orc
-	orcc --header -o schroorc.h schro.orc
+	$(ORCC) --header -o schroorc.h schro.orc
 
 

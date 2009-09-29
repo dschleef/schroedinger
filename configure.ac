@@ -60,6 +60,8 @@ if test "x${HAVE_ORC}" != xyes ; then
   AC_ERROR([orc-0.4 >= $ORC_VER is required])
 fi
 SCHRO_PKG_DEPS="$SCHRO_PKG_DEPS orc-0.4 >= $ORC_VER"
+ORCC=`$PKG_CONFIG --variable=orcc orc-0.4`
+AC_SUBST(ORCC)
 
 AC_ARG_WITH([thread],
     AS_HELP_STRING([--with-thread=IMPL],[use threading library {auto,pthread,gthread,win32,none} [[default=auto]]]),
