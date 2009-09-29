@@ -1,4 +1,26 @@
 
+1.0.8
+=====
+
+ - encoder: various performance enhancements
+ - Orc: More Orc conversion.  The next release will likely require Orc
+   to build.
+ - Add a fast path for 8x8 non-obmc motion blocks.
+ - encoder: Fix the queue-depth setting so that it actually works.
+ - Fix a bitstream conformance bug.  Shows up as a psychadelic color
+   pattern.  Broken bitstreams should be uncommon, however, if the
+   decoder detects a broken bitstream, it will be played correctly.
+ - Move GStreamer plugin to gst-plugins-bad
+ - encoder: Strictly enforce bit rate.  Encoded pictures are cut off
+   if they are larger than the available buffer.
+ - encoder: Change the backref engine to use an IPPPP... structure,
+   using the last two pictures as references.
+
+1.0.7
+=====
+
+ - Somebody forgot to write release notes for 1.0.7
+
 1.0.6
 =====
 
