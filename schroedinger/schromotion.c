@@ -175,7 +175,6 @@ get_biref_block (SchroMotion *motion, int i, int j, int k, int x, int y)
 {
   SchroParams *params = motion->params;
   SchroMotionVector *mv;
-  int ii, jj;
   int weight0, weight1;
   int shift;
 
@@ -193,75 +192,67 @@ get_biref_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   if (weight0 == 1 && weight1 == 1 && shift == 1) {
     switch (motion->xblen) {
       case 8:
-        oil_avg2_8xn_u8(motion->block.data, motion->block.stride,
+        orc_avg2_8xn_u8(motion->block.data, motion->block.stride,
             motion->block_ref[0].data, motion->block_ref[0].stride,
             motion->block_ref[1].data, motion->block_ref[1].stride,
             motion->yblen);
         break;
       case 12:
-        oil_avg2_12xn_u8(motion->block.data, motion->block.stride,
+        orc_avg2_12xn_u8(motion->block.data, motion->block.stride,
             motion->block_ref[0].data, motion->block_ref[0].stride,
             motion->block_ref[1].data, motion->block_ref[1].stride,
             motion->yblen);
         break;
       case 16:
-        oil_avg2_16xn_u8(motion->block.data, motion->block.stride,
+        orc_avg2_16xn_u8(motion->block.data, motion->block.stride,
             motion->block_ref[0].data, motion->block_ref[0].stride,
             motion->block_ref[1].data, motion->block_ref[1].stride,
             motion->yblen);
         break;
       case 32:
-        oil_avg2_32xn_u8(motion->block.data, motion->block.stride,
+        orc_avg2_32xn_u8(motion->block.data, motion->block.stride,
             motion->block_ref[0].data, motion->block_ref[0].stride,
             motion->block_ref[1].data, motion->block_ref[1].stride,
             motion->yblen);
         break;
       default:
-        for(jj=0;jj<motion->yblen;jj++) {
-          uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-          uint8_t *s0 = SCHRO_FRAME_DATA_GET_LINE (&motion->block_ref[0], jj);
-          uint8_t *s1 = SCHRO_FRAME_DATA_GET_LINE (&motion->block_ref[1], jj);
-          for(ii=0;ii<motion->xblen;ii++) {
-            d[ii] = (s0[ii] + s1[ii] + 1)>>1;
-          }
-        }
+        orc_avg2_nxm_u8(motion->block.data, motion->block.stride,
+            motion->block_ref[0].data, motion->block_ref[0].stride,
+            motion->block_ref[1].data, motion->block_ref[1].stride,
+            motion->xblen, motion->yblen);
         break;
     }
   } else {
-    int16_t as[4];
-    as[0] = weight0;
-    as[1] = weight1;
-    as[2] = (1<<shift)>>1;
-    as[3] = shift;
-
     switch (motion->xblen) {
+#if 0
       case 8:
-        oil_combine2_8xn_u8(motion->block.data, motion->block.stride,
+        orc_combine2_8xn_u8(motion->block.data, motion->block.stride,
             motion->block_ref[0].data, motion->block_ref[0].stride,
             motion->block_ref[1].data, motion->block_ref[1].stride,
-            as, motion->yblen);
+            weight0, weight1, (1<<shift)>>1, shift,
+            motion->yblen);
         break;
       case 12:
-        oil_combine2_16xn_u8(motion->block.data, motion->block.stride,
+        orc_combine2_12xn_u8(motion->block.data, motion->block.stride,
             motion->block_ref[0].data, motion->block_ref[0].stride,
             motion->block_ref[1].data, motion->block_ref[1].stride,
-            as, motion->yblen);
+            weight0, weight1, (1<<shift)>>1, shift,
+            motion->yblen);
         break;
       case 16:
-        oil_combine2_16xn_u8(motion->block.data, motion->block.stride,
+        orc_combine2_16xn_u8(motion->block.data, motion->block.stride,
             motion->block_ref[0].data, motion->block_ref[0].stride,
             motion->block_ref[1].data, motion->block_ref[1].stride,
-            as, motion->yblen);
+            weight0, weight1, (1<<shift)>>1, shift,
+            motion->yblen);
         break;
+#endif
       default:
-        for(jj=0;jj<motion->yblen;jj++) {
-          uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-          uint8_t *s0 = SCHRO_FRAME_DATA_GET_LINE (&motion->block_ref[0], jj);
-          uint8_t *s1 = SCHRO_FRAME_DATA_GET_LINE (&motion->block_ref[1], jj);
-          for(ii=0;ii<motion->xblen;ii++) {
-            d[ii] = ROUND_SHIFT(s0[ii] * weight0 + s1[ii] * weight1, shift);
-          }
-        }
+        orc_combine2_nxm_u8 (motion->block.data, motion->block.stride,
+            motion->block_ref[0].data, motion->block_ref[0].stride,
+            motion->block_ref[1].data, motion->block_ref[1].stride,
+            weight0, weight1, (1<<shift)>>1, shift,
+            motion->xblen, motion->yblen);
         break;
     }
   }
@@ -299,52 +290,51 @@ void
 schro_motion_block_accumulate (SchroMotion *motion, SchroFrameData *comp,
     int x, int y)
 {
-  int j;
 
   switch (motion->xblen) {
+#if 0
     case 6:
-      oil_multiply_and_acc_6xn_s16_u8 (
+      orc_multiply_and_acc_6xn_s16_u8 (
           SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
           motion->obmc_weight.data, motion->obmc_weight.stride,
           motion->block.data, motion->block.stride,
           motion->yblen);
       break;
     case 8:
-      oil_multiply_and_acc_8xn_s16_u8 (
+      orc_multiply_and_acc_8xn_s16_u8 (
           SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
           motion->obmc_weight.data, motion->obmc_weight.stride,
           motion->block.data, motion->block.stride,
           motion->yblen);
       break;
     case 12:
-      oil_multiply_and_acc_12xn_s16_u8 (
+      orc_multiply_and_acc_12xn_s16_u8 (
           SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
           motion->obmc_weight.data, motion->obmc_weight.stride,
           motion->block.data, motion->block.stride,
           motion->yblen);
       break;
     case 16:
-      oil_multiply_and_acc_16xn_s16_u8 (
+      orc_multiply_and_acc_16xn_s16_u8 (
           SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
           motion->obmc_weight.data, motion->obmc_weight.stride,
           motion->block.data, motion->block.stride,
           motion->yblen);
       break;
     case 24:
-      oil_multiply_and_acc_24xn_s16_u8 (
+      orc_multiply_and_acc_24xn_s16_u8 (
           SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
           motion->obmc_weight.data, motion->obmc_weight.stride,
           motion->block.data, motion->block.stride,
           motion->yblen);
       break;
+#endif
     default:
-      for(j=0;j<motion->yblen;j++) {
-        orc_multiply_and_add_s16_u8 (
-            SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y + j),
-            SCHRO_FRAME_DATA_GET_LINE (&motion->obmc_weight, j),
-            SCHRO_FRAME_DATA_GET_LINE (&motion->block, j),
-            motion->xblen);
-      }
+      orc_multiply_and_acc_nxm_s16_u8 (
+          SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
+          motion->obmc_weight.data, motion->obmc_weight.stride,
+          motion->block.data, motion->block.stride,
+          motion->xblen, motion->yblen);
       break;
   }
 }

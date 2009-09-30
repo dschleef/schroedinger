@@ -106,22 +106,10 @@ get_biref_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   get_block (motion, k, 1, i, j, mv->u.vec.dx[1], mv->u.vec.dy[1]);
 
   memcpy (&motion->block, &motion->alloc_block, sizeof(SchroFrameData));
-  if (motion->xblen == 8) {
-    oil_avg2_8xn_u8(motion->block.data, motion->block.stride,
-        motion->block_ref[0].data, motion->block_ref[0].stride,
-        motion->block_ref[1].data, motion->block_ref[1].stride,
-        motion->yblen);
-  } else {
-    int ii,jj;
-    for(jj=0;jj<motion->yblen;jj++) {
-      uint8_t *d = SCHRO_FRAME_DATA_GET_LINE (&motion->block, jj);
-      uint8_t *s0 = SCHRO_FRAME_DATA_GET_LINE (&motion->block_ref[0], jj);
-      uint8_t *s1 = SCHRO_FRAME_DATA_GET_LINE (&motion->block_ref[1], jj);
-      for(ii=0;ii<motion->xblen;ii++) {
-        d[ii] = (s0[ii] + s1[ii] + 1)>>1;
-      }
-    }
-  }
+  orc_avg2_8xn_u8(motion->block.data, motion->block.stride,
+      motion->block_ref[0].data, motion->block_ref[0].stride,
+      motion->block_ref[1].data, motion->block_ref[1].stride,
+      motion->yblen);
 }
 
 static void

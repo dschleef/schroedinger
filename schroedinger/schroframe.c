@@ -1731,7 +1731,7 @@ schro_frame_mc_edgeextend_vert (SchroFrame *frame, SchroFrame *src)
     /* A picture of size (w,h) is upconverted to (2*w-1,2*h-1)
      * However, schroedinger's effective upconverted size is (2*w,2*h)
      * Copy the src into the bottom line of frame.
-     * NB, this assumes that oil_memcpy is safe when src == dest */
+     * NB, this assumes that orc_memcpy is safe when src == dest */
     orc_memcpy (SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(frame->components + k, height - 1),
           -frame->extension),
         SCHRO_OFFSET(SCHRO_FRAME_DATA_GET_LINE(src->components + k, height - 1),
@@ -2002,11 +2002,9 @@ void
 schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
     int x, int y, SchroFrameData *fd)
 {
-  int i,j;
   int hx, hy;
   int rx, ry;
   int w00, w01, w10, w11;
-  int value;
   SchroFrameData fd00;
   SchroFrameData fd01;
   SchroFrameData fd10;
@@ -2034,39 +2032,33 @@ schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
 
       switch (fd->width) {
         case 8:
-          oil_avg2_8xn_u8 (fd->data, fd->stride,
+          orc_avg2_8xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
           break;
         case 12:
-          oil_avg2_12xn_u8 (fd->data, fd->stride,
+          orc_avg2_12xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
           break;
         case 16:
-          oil_avg2_16xn_u8 (fd->data, fd->stride,
+          orc_avg2_16xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
           break;
         case 24:
-          oil_avg2_16xn_u8 (fd->data, fd->stride,
+          orc_avg2_16xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
-          oil_avg2_8xn_u8 (SCHRO_OFFSET(fd->data,16), fd->stride,
+          orc_avg2_8xn_u8 (SCHRO_OFFSET(fd->data,16), fd->stride,
               SCHRO_OFFSET(fd00.data, 16), fd00.stride,
               SCHRO_OFFSET(fd10.data, 16), fd10.stride,
               fd->height);
           break;
         case 32:
-          oil_avg2_32xn_u8 (fd->data, fd->stride,
+          orc_avg2_32xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
           break;
         default:
-          for(j=0;j<fd->height;j++) {
-            uint8_t *data = SCHRO_FRAME_DATA_GET_LINE (fd, j);
-            uint8_t *d00 = SCHRO_FRAME_DATA_GET_LINE (&fd00, j);
-            uint8_t *d10 = SCHRO_FRAME_DATA_GET_LINE (&fd10, j);
-
-            for(i=0;i<fd->width;i++) {
-              data[i] = (1 + d00[i] + d10[i]) >> 1;
-            }
-          }
+          orc_avg2_nxm_u8 (fd->data, fd->stride,
+              fd00.data, fd00.stride, fd10.data, fd10.stride,
+              fd->width, fd->height);
           break;
       }
       break;
@@ -2089,62 +2081,61 @@ schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
       p[5] = 4;
 
       switch (fd->width) {
+#if 0
         case 8:
-          oil_combine4_8xn_u8 (fd->data, fd->stride,
+          orc_combine4_8xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride,
               fd01.data, fd01.stride,
               fd10.data, fd10.stride,
-              fd11.data, fd11.stride, p, fd->height);
+              fd11.data, fd11.stride,
+              w00, w01, w10, w11,
+              fd->height);
           break;
         case 12:
-          oil_combine4_12xn_u8 (fd->data, fd->stride,
+          orc_combine4_12xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride,
               fd01.data, fd01.stride,
               fd10.data, fd10.stride,
-              fd11.data, fd11.stride, p, fd->height);
+              fd11.data, fd11.stride,
+              w00, w01, w10, w11,
+              fd->height);
           break;
         case 16:
-          oil_combine4_16xn_u8 (fd->data, fd->stride,
+          orc_combine4_16xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride,
               fd01.data, fd01.stride,
               fd10.data, fd10.stride,
-              fd11.data, fd11.stride, p, fd->height);
+              fd11.data, fd11.stride,
+              w00, w01, w10, w11,
+              fd->height);
           break;
         case 24:
-          oil_combine4_16xn_u8 (fd->data, fd->stride,
+          orc_combine4_24xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride,
               fd01.data, fd01.stride,
               fd10.data, fd10.stride,
-              fd11.data, fd11.stride, p, fd->height);
-          oil_combine4_8xn_u8 (SCHRO_OFFSET(fd->data,16), fd->stride,
-              SCHRO_OFFSET(fd00.data,16), fd00.stride,
-              SCHRO_OFFSET(fd01.data,16), fd01.stride,
-              SCHRO_OFFSET(fd10.data,16), fd10.stride,
-              SCHRO_OFFSET(fd11.data,16), fd11.stride, p, fd->height);
+              fd11.data, fd11.stride,
+              w00, w01, w10, w11,
+              fd->height);
           break;
         case 32:
-          oil_combine4_32xn_u8 (fd->data, fd->stride,
+          orc_combine4_32xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride,
               fd01.data, fd01.stride,
               fd10.data, fd10.stride,
-              fd11.data, fd11.stride, p, fd->height);
+              fd11.data, fd11.stride,
+              w00, w01, w10, w11,
+              fd->height);
           break;
+#endif
         default:
-          for(j=0;j<fd->height;j++) {
-            uint8_t *data = SCHRO_FRAME_DATA_GET_LINE (fd, j);
-            uint8_t *d00 = SCHRO_FRAME_DATA_GET_LINE (&fd00, j);
-            uint8_t *d01 = SCHRO_FRAME_DATA_GET_LINE (&fd01, j);
-            uint8_t *d10 = SCHRO_FRAME_DATA_GET_LINE (&fd10, j);
-            uint8_t *d11 = SCHRO_FRAME_DATA_GET_LINE (&fd11, j);
-
-            for(i=0;i<fd->width;i++) {
-              value = w00 * d00[i];
-              value += w01 * d01[i];
-              value += w10 * d10[i];
-              value += w11 * d11[i];
-              data[i] = ROUND_SHIFT(value, 4);
-            }
-          }
+          orc_combine4_nxm_u8 (fd->data, fd->stride,
+              fd00.data, fd00.stride,
+              fd01.data, fd01.stride,
+              fd10.data, fd10.stride,
+              fd11.data, fd11.stride,
+              w00, w01, w10, w11,
+              fd->width, fd->height);
           break;
       }
       break;

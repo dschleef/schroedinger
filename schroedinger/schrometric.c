@@ -4,77 +4,25 @@
 #endif
 #include <schroedinger/schro.h>
 #include <liboil/liboil.h>
+#include "schroorc.h"
 
 
 int
 schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
     int width, int height)
 {
-  int i;
-  int j;
-  int metric = 0;
+  int32_t metric = 0;
 
   if (height == 8 && width == 8) {
-    uint32_t m;
-    oil_sad8x8_u8 (&m, a, a_stride, b, b_stride);
-    metric = m;
+    orc_sad_8x8_u8 (&metric, a, a_stride, b, b_stride);
   } else if (height == 12 && width == 12) {
-    uint32_t m;
-    oil_sad12x12_u8 (&m, a, a_stride, b, b_stride);
-    metric = m;
-  } else if (height == 16 && width == 16) {
-    uint32_t m;
-    oil_sad16x16_u8 (&m, a, a_stride, b, b_stride);
-    metric = m;
-  } else if (height == 32 && width == 16) {
-    uint32_t m;
-    oil_sad16x16_u8 (&m, a, a_stride, b, b_stride);
-    metric = m;
-    a += a_stride * 16;
-    b += b_stride * 16;
-    oil_sad16x16_u8 (&m, a, a_stride, b, b_stride);
-    metric += m;
-  } else if (height == 32 && width == 32) {
-    uint32_t m;
-    oil_sad16x16_u8 (&m, a, a_stride, b, b_stride);
-    metric = m;
-    oil_sad16x16_u8 (&m, a + 16, a_stride, b + 16, b_stride);
-    metric += m;
-    a += a_stride * 16;
-    b += b_stride * 16;
-    oil_sad16x16_u8 (&m, a, a_stride, b, b_stride);
-    metric += m;
-    oil_sad16x16_u8 (&m, a + 16, a_stride, b + 16, b_stride);
-    metric += m;
-  } else if ((height&15) == 0 && (width&15) == 0) {
-    uint32_t m;
-    metric = 0;
-    for(j=0;j<height;j+=16){
-      for(i=0;i<width;i+=16){
-        oil_sad16x16_u8 (&m, a + i + j*a_stride, a_stride,
-            b + i + j*b_stride, b_stride);
-        metric += m;
-      }
-    }
-  } else if ((height&7) == 0 && (width&7) == 0) {
-    uint32_t m;
-    metric = 0;
-    for(j=0;j<height;j+=8){
-      for(i=0;i<width;i+=8){
-        oil_sad8x8_u8 (&m, a + i + j*a_stride, a_stride,
-            b + i + j*b_stride, b_stride);
-        metric += m;
-      }
-    }
+    orc_sad_12x12_u8 (&metric, a, a_stride, b, b_stride);
+  } else if (width == 16) {
+    orc_sad_16xn_u8 (&metric, a, a_stride, b, b_stride, height);
+  } else if (width == 32) {
+    orc_sad_32xn_u8 (&metric, a, a_stride, b, b_stride, height);
   } else {
-    //SCHRO_ERROR("slow metric %dx%d", width, height);
-    for(j=0;j<height;j++){
-      for(i=0;i<width;i++){
-        int x;
-        x = (int)(a[j*a_stride + i]) - (int)(b[j*b_stride + i]);
-        metric += (x < 0) ? -x : x;
-      }
-    }
+    orc_sad_nxm_u8 (&metric, a, a_stride, b, b_stride, width, height);
   }
 
   return metric;
@@ -185,10 +133,7 @@ int
 schro_metric_get (SchroFrameData *src1, SchroFrameData *src2, int width,
     int height)
 {
-  int i,j;
-  int metric = 0;
-  uint8_t *line1;
-  uint8_t *line2;
+  int32_t metric = 0;
 
 #if 0
   SCHRO_ASSERT(src1->width >= width);
@@ -197,27 +142,28 @@ schro_metric_get (SchroFrameData *src1, SchroFrameData *src2, int width,
   SCHRO_ASSERT(src2->height >= height);
 #endif
 
-  if (width == 8 && height == 8) {
-    uint32_t m;
-    oil_sad8x8_u8 (&m, src1->data, src1->stride, src2->data, src2->stride);
-    metric = m;
+  if (height == 8 && width == 8) {
+    orc_sad_8x8_u8 (&metric,
+        src1->data, src1->stride, src2->data, src2->stride);
   } else if (height == 12 && width == 12) {
-    uint32_t m;
-    oil_sad12x12_u8 (&m, src1->data, src1->stride, src2->data, src2->stride);
-    metric = m;
-  } else if (height == 16 && width == 16) {
-    uint32_t m;
-    oil_sad16x16_u8 (&m, src1->data, src1->stride, src2->data, src2->stride);
-    metric = m;
+    orc_sad_12x12_u8 (&metric,
+        src1->data, src1->stride, src2->data, src2->stride);
+  } else if (width == 16) {
+    orc_sad_16xn_u8 (&metric,
+        src1->data, src1->stride, src2->data, src2->stride,
+        height);
+#if 0
+  } else if (width == 32) {
+    orc_sad_32xn_u8 (&metric,
+        src1->data, src1->stride, src2->data, src2->stride,
+        height);
+#endif
   } else {
-    for(j=0;j<height;j++){
-      line1 = SCHRO_FRAME_DATA_GET_LINE(src1, j);
-      line2 = SCHRO_FRAME_DATA_GET_LINE(src2, j);
-      for(i=0;i<width;i++){
-        metric += abs(line1[i] - line2[i]);
-      }
-    }
+    orc_sad_nxm_u8 (&metric,
+        src1->data, src1->stride, src2->data, src2->stride,
+        width, height);
   }
+
   return metric;
 }
 

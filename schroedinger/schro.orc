@@ -746,3 +746,396 @@ accl a1, t2
 absw t1, s1
 accw a1, t1
 
+
+.function orc_avg2_8xn_u8
+.flags 2d
+.n 8
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+
+avgub d1, s1, s2
+
+
+.function orc_avg2_12xn_u8
+.flags 2d
+.n 12
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+
+avgub d1, s1, s2
+
+
+.function orc_avg2_16xn_u8
+.flags 2d
+.n 16
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+
+avgub d1, s1, s2
+
+
+.function orc_avg2_32xn_u8
+.flags 2d
+.n 32
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+
+avgub d1, s1, s2
+
+
+.function orc_avg2_nxm_u8
+.flags 2d
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+
+avgub d1, s1, s2
+
+
+.function orc_combine4_8xn_u8
+.flags 2d
+.n 8
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.source 1 s4 uint8_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.param 2 p4
+.temp 2 t1
+.temp 2 t2
+
+convubw t1, s1
+mullw t2, t1, p1
+convubw t1, s2
+mullw t1, t1, p2
+addw t2, t2, t1
+convubw t1, s3
+mullw t1, t1, p3
+addw t2, t2, t1
+convubw t1, s4
+mullw t1, t1, p4
+addw t2, t2, t1
+addw t2, t2, 8
+convsuswb d1, t2
+
+
+.function orc_combine4_12xn_u8
+.flags 2d
+.n 12
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.source 1 s4 uint8_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.param 2 p4
+.temp 2 t1
+.temp 2 t2
+
+convubw t1, s1
+mullw t2, t1, p1
+convubw t1, s2
+mullw t1, t1, p2
+addw t2, t2, t1
+convubw t1, s3
+mullw t1, t1, p3
+addw t2, t2, t1
+convubw t1, s4
+mullw t1, t1, p4
+addw t2, t2, t1
+addw t2, t2, 8
+convsuswb d1, t2
+
+
+.function orc_combine4_16xn_u8
+.flags 2d
+.n 16
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.source 1 s4 uint8_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.param 2 p4
+.temp 2 t1
+.temp 2 t2
+
+convubw t1, s1
+mullw t2, t1, p1
+convubw t1, s2
+mullw t1, t1, p2
+addw t2, t2, t1
+convubw t1, s3
+mullw t1, t1, p3
+addw t2, t2, t1
+convubw t1, s4
+mullw t1, t1, p4
+addw t2, t2, t1
+addw t2, t2, 8
+convsuswb d1, t2
+
+
+.function orc_combine4_24xn_u8
+.flags 2d
+.n 24
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.source 1 s4 uint8_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.param 2 p4
+.temp 2 t1
+.temp 2 t2
+
+convubw t1, s1
+mullw t2, t1, p1
+convubw t1, s2
+mullw t1, t1, p2
+addw t2, t2, t1
+convubw t1, s3
+mullw t1, t1, p3
+addw t2, t2, t1
+convubw t1, s4
+mullw t1, t1, p4
+addw t2, t2, t1
+addw t2, t2, 8
+convsuswb d1, t2
+
+
+.function orc_combine4_32xn_u8
+.flags 2d
+.n 32
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.source 1 s4 uint8_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.param 2 p4
+.temp 2 t1
+.temp 2 t2
+
+convubw t1, s1
+mullw t2, t1, p1
+convubw t1, s2
+mullw t1, t1, p2
+addw t2, t2, t1
+convubw t1, s3
+mullw t1, t1, p3
+addw t2, t2, t1
+convubw t1, s4
+mullw t1, t1, p4
+addw t2, t2, t1
+addw t2, t2, 8
+convsuswb d1, t2
+
+
+.function orc_combine4_nxm_u8
+.flags 2d
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.source 1 s4 uint8_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.param 2 p4
+.temp 2 t1
+.temp 2 t2
+
+convubw t1, s1
+mullw t2, t1, p1
+convubw t1, s2
+mullw t1, t1, p2
+addw t2, t2, t1
+convubw t1, s3
+mullw t1, t1, p3
+addw t2, t2, t1
+convubw t1, s4
+mullw t1, t1, p4
+addw t2, t2, t1
+addw t2, t2, 8
+shrsw t2, t2, 4
+convsuswb d1, t2
+
+
+.function orc_combine2_8xn_u8
+.flags 2d
+.n 8
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.param 2 p4
+.temp 2 t1
+.temp 2 t2
+
+convubw t1, s1
+convubw t2, s2
+mullw t1, p1
+mullw t2, p2
+addw t1, t1, t2
+addw t1, t1, p3
+shrsw t1, t1, p4
+convsuswb d1, t1
+
+
+
+.function orc_combine2_12xn_u8
+.flags 2d
+.n 12
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.param 2 p4
+.temp 2 t1
+.temp 2 t2
+
+convubw t1, s1
+convubw t2, s2
+mullw t1, p1
+mullw t2, p2
+addw t1, t1, t2
+addw t1, t1, p3
+shrsw t1, t1, p4
+convsuswb d1, t1
+
+
+
+.function orc_combine2_16xn_u8
+.flags 2d
+.n 16
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.param 2 p4
+.temp 2 t1
+.temp 2 t2
+
+convubw t1, s1
+convubw t2, s2
+mullw t1, p1
+mullw t2, p2
+addw t1, t1, t2
+addw t1, t1, p3
+shrsw t1, t1, p4
+convsuswb d1, t1
+
+
+
+.function orc_combine2_nxm_u8
+.flags 2d
+.dest 1 d1 uint8_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.param 2 p4
+.temp 2 t1
+.temp 2 t2
+
+convubw t1, s1
+convubw t2, s2
+mullw t1, p1
+mullw t2, p2
+addw t1, t1, t2
+addw t1, t1, p3
+shrsw t1, t1, p4
+convsuswb d1, t1
+
+
+
+.function orc_multiply_and_acc_nxm_s16_u8
+.flags 2d
+.dest 2 d1 int16_t
+.source 2 s1 uint8_t
+.source 1 s2 int16_t
+.temp 2 t1
+
+convubw t1, s2
+mullw t1, t1, s1
+addw d1, d1, t1
+
+
+
+.function orc_sad_nxm_u8
+.flags 2d
+.accumulator 4 a1 int32_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+
+accsadubl a1, s1, s2
+
+
+.function orc_sad_8x8_u8
+.flags 2d
+.n 8
+.m 8
+.accumulator 4 a1 int32_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+
+accsadubl a1, s1, s2
+
+
+
+.function orc_sad_12x12_u8
+.flags 2d
+.n 12
+.m 12
+.accumulator 4 a1 int32_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+
+accsadubl a1, s1, s2
+
+
+
+.function orc_sad_16xn_u8
+.flags 2d
+.n 16
+.accumulator 4 a1 int32_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+
+accsadubl a1, s1, s2
+
+
+
+.function orc_sad_32xn_u8
+.flags 2d
+.n 32
+.accumulator 4 a1 int32_t
+.source 1 s1 uint8_t
+.source 1 s2 uint8_t
+
+accsadubl a1, s1, s2
+
+
+
