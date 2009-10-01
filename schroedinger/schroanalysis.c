@@ -4,7 +4,6 @@
 #endif
 
 #include <schroedinger/schro.h>
-#include <schroedinger/schrooil.h>
 #include <schroedinger/schroorc.h>
 
 void

@@ -3,7 +3,6 @@
 #include "config.h"
 #endif
 #include <schroedinger/schro.h>
-#include <schroedinger/schrooil.h>
 #include <schroedinger/schrounpack.h>
 #include <string.h>
 

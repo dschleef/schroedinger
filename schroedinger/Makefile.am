@@ -68,7 +68,6 @@ nodist_pkginclude_HEADERS = \
 	schroversion.h
 
 noinst_HEADERS = \
-	schrooil.h \
 	schrogpuframe.h
 
 if HAVE_CUDA
@@ -98,7 +97,6 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrolowdelay.c \
 	schromotion.c \
 	schromotionfast.c \
-	schrooil.c \
 	schroparams.c \
 	schroparse.c \
 	schroroughmotion.c \

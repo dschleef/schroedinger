@@ -10,7 +10,6 @@
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schrohistogram.h>
 #include <schroedinger/schroparams.h>
-#include <schroedinger/schrooil.h>
 
 #include <string.h>
 #include <math.h>
@@ -515,6 +514,121 @@ schro_frame_filter_lowpass_16 (SchroFrame *frame)
 }
 #endif
 
+static void
+schro_convert_f64_u8 (double *dest, uint8_t *src, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    dest[i] = src[i];
+  }
+}
+
+static void
+schro_iir3_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
+{
+  int i;
+
+  for(i=0;i<n;i++){
+    double x;
+
+    x = s2_4[0]*s[i] + s2_4[1]*i_3[0] + s2_4[2]*i_3[1] + s2_4[3]*i_3[2];
+    i_3[2] = i_3[1];
+    i_3[1] = i_3[0];
+    i_3[0] = x;
+    d[i] = rint(x);
+  }
+}
+
+static void
+schro_iir3_rev_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
+{
+  int i;
+
+  for(i=n-1;i>=0;i--){
+    double x;
+
+    x = s2_4[0]*s[i] + s2_4[1]*i_3[0] + s2_4[2]*i_3[1] + s2_4[3]*i_3[2];
+    i_3[2] = i_3[1];
+    i_3[1] = i_3[0];
+    i_3[0] = x;
+    d[i] = rint(x);
+  }
+}
+
+static void
+schro_iir3_across_u8_f64 (uint8_t *d, uint8_t *s, double *i1, double *i2, double *i3,
+    double *s2_4, int n)
+{
+  int i;
+
+  for(i=0;i<n;i++){
+    double x;
+
+    x = s2_4[0]*s[i] + s2_4[1]*i1[i] + s2_4[2]*i2[i] + s2_4[3]*i3[i];
+    i3[i] = i2[i];
+    i2[i] = i1[i];
+    i1[i] = x;
+    d[i] = rint(x);
+  }
+}
+
+static void
+schro_iir3_across_s16_f64 (int16_t *d, int16_t *s, double *i1, double *i2, double *i3,
+    double *s2_4, int n)
+{
+  int i;
+
+  for(i=0;i<n;i++){
+    double x;
+
+    x = s2_4[0]*s[i] + s2_4[1]*i1[i] + s2_4[2]*i2[i] + s2_4[3]*i3[i];
+    i3[i] = i2[i];
+    i2[i] = i1[i];
+    i1[i] = x;
+    d[i] = rint(x);
+  }
+}
+
+static void
+schro_convert_f64_s16 (double *dest, int16_t *src, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    dest[i] = src[i];
+  }
+}
+
+static void
+schro_iir3_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
+{
+  int i;
+
+  for(i=0;i<n;i++){
+    double x;
+
+    x = s2_4[0]*s[i] + s2_4[1]*i_3[0] + s2_4[2]*i_3[1] + s2_4[3]*i_3[2];
+    i_3[2] = i_3[1];
+    i_3[1] = i_3[0];
+    i_3[0] = x;
+    d[i] = rint(x);
+  }
+}
+
+static void
+schro_iir3_rev_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
+{
+  int i;
+
+  for(i=n-1;i>=0;i--){
+    double x;
+
+    x = s2_4[0]*s[i] + s2_4[1]*i_3[0] + s2_4[2]*i_3[1] + s2_4[3]*i_3[2];
+    i_3[2] = i_3[1];
+    i_3[1] = i_3[0];
+    i_3[0] = x;
+    d[i] = rint(x);
+  }
+}
 
 static void
 lowpass2_u8 (uint8_t *d, uint8_t *s, double *coeff, int n)

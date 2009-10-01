@@ -7,7 +7,6 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schrogpuframe.h>
-#include <schroedinger/schrooil.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <schroedinger/schrovirtframe.h>
 #include <schroedinger/schroorc.h>

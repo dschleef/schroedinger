@@ -8,7 +8,6 @@
 #include <string.h>
 #include <math.h>
 #include <stddef.h>
-#include <schroedinger/schrooil.h>
 #include "schroorc.h"
 
 #if 0

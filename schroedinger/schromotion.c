@@ -4,7 +4,6 @@
 #endif
 #include <schroedinger/schro.h>
 #include <string.h>
-#include <schroedinger/schrooil.h>
 #include <schroedinger/schroorc.h>
 
 extern int _schro_motion_ref;
