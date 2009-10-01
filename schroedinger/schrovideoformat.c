@@ -3,7 +3,6 @@
 #include "config.h"
 #endif
 #include <schroedinger/schro.h>
-#include <liboil/liboil.h>
 #include <string.h>
 #include <stdlib.h>
 

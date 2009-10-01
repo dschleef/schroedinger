@@ -5,7 +5,6 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schrogpuframe.h>
 #include <schroedinger/schrooil.h>
-#include <liboil/liboil.h>
 
 #include <stdlib.h>
 #include <string.h>

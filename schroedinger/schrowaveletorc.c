@@ -5,7 +5,6 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schrooil.h>
-#include <liboil/liboil.h>
 #include <schroedinger/schroorc.h>
 
 
@@ -71,13 +70,30 @@ schro_split_ext_haar (int16_t *hi, int16_t *lo, int n)
   orc_haar_split_s16 (hi, lo, n);
 }
 
+static void
+mas8_add_s16 (int16_t *dest, const int16_t *src, const int16_t *weights, int offset,
+    int shift, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    int x = offset;
+    x += src[i+0];
+    x += src[i+1];
+    x += src[i+2];
+    x += src[i+3];
+    x += src[i+4];
+    x += src[i+5];
+    x += src[i+6];
+    x += src[i+7];
+    dest[i] += x >> shift;
+  }
+}
+
 void
 schro_split_ext_fidelity (int16_t *hi, int16_t *lo, int n)
 {
   static const int16_t stage1_weights[] = { -8, 21, -46, 161, 161, -46, 21, -8 };
   static const int16_t stage2_weights[] = { 2, -10, 25, -81, -81, 25, -10, 2 };
-  static const int16_t stage1_offset_shift[] = { 128, 8 };
-  static const int16_t stage2_offset_shift[] = { 127, 8 };
 
   lo[-4] = lo[0];
   lo[-3] = lo[0];
@@ -87,7 +103,7 @@ schro_split_ext_fidelity (int16_t *hi, int16_t *lo, int n)
   lo[n+1] = lo[n-1];
   lo[n+2] = lo[n-1];
 
-  oil_mas8_add_s16 (hi, hi, lo - 4, stage1_weights, stage1_offset_shift, n);
+  mas8_add_s16 (hi, lo - 4, stage1_weights, 128, 8, n);
 
   hi[-3] = hi[0];
   hi[-2] = hi[0];
@@ -97,7 +113,7 @@ schro_split_ext_fidelity (int16_t *hi, int16_t *lo, int n)
   hi[n+2] = hi[n-1];
   hi[n+3] = hi[n-1];
 
-  oil_mas8_add_s16 (lo, lo, hi - 3, stage2_weights, stage2_offset_shift, n);
+  mas8_add_s16 (lo, hi - 3, stage2_weights, 127, 8, n);
 }
 
 void
@@ -182,8 +198,6 @@ schro_synth_ext_fidelity (int16_t *hi, int16_t *lo, int n)
 {
   static const int16_t stage1_weights[] = { -2, 10, -25, 81, 81, -25, 10, -2 };
   static const int16_t stage2_weights[] = { 8, -21, 46, -161, -161, 46, -21, 8 };
-  static const int16_t stage1_offset_shift[] = { 128, 8 };
-  static const int16_t stage2_offset_shift[] = { 127, 8 };
 
   hi[-3] = hi[0];
   hi[-2] = hi[0];
@@ -193,7 +207,7 @@ schro_synth_ext_fidelity (int16_t *hi, int16_t *lo, int n)
   hi[n+2] = hi[n-1];
   hi[n+3] = hi[n-1];
 
-  oil_mas8_add_s16 (lo, lo, hi - 3, stage1_weights, stage1_offset_shift, n);
+  mas8_add_s16 (lo, hi - 3, stage1_weights, 128, 8, n);
 
   lo[-4] = lo[0];
   lo[-3] = lo[0];
@@ -203,7 +217,7 @@ schro_synth_ext_fidelity (int16_t *hi, int16_t *lo, int n)
   lo[n+1] = lo[n-1];
   lo[n+2] = lo[n-1];
 
-  oil_mas8_add_s16 (hi, hi, lo - 4, stage2_weights, stage2_offset_shift, n);
+  mas8_add_s16 (hi, lo - 4, stage2_weights, 127, 8, n);
 }
 
 void
@@ -419,6 +433,25 @@ void schro_iwt_haar1 (int16_t *data, int stride, int width, int height, int16_t 
   schro_iwt_haar (data, stride, width, height, tmp, 1);
 }
 
+static void
+mas8_across_add_s16 (int16_t *dest, const int16_t *src, int stride,
+    const int16_t *weights, int offset, int shift, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    int x = offset;
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*0))[i];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*1))[i];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*2))[i];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*3))[i];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*4))[i];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*5))[i];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*6))[i];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*7))[i];
+    dest[i] += x >> shift;
+  }
+}
+
 void schro_iwt_fidelity (int16_t *data, int stride, int width, int height,
     int16_t *tmp)
 {
@@ -440,7 +473,6 @@ void schro_iwt_fidelity (int16_t *data, int stride, int width, int height,
       orc_memcpy (ROW(i) + width/2, lo, width/2*sizeof(int16_t));
     }
     if ((i1&1) == 0 && i1>=0 && i1 < height) {
-      static const int16_t stage1_offset_shift[] = { 128, 8 };
       static const int16_t stage1_weights[][8] = {
         { 161 + 161 - 46 + 21 - 8, -46, 21, -8, 0, 0, 0, 0 },
         { 161 - 46 + 21 - 8, 161, -46, 21, -8, 0, 0, 0 },
@@ -463,12 +495,10 @@ void schro_iwt_fidelity (int16_t *data, int stride, int width, int height,
         weights = stage1_weights[4];
         offset = i1 - 7;
       }
-      oil_mas8_across_add_s16 (
-          ROW(i1), ROW(i1), ROW(offset), stride * 2,
-          weights, stage1_offset_shift, width);
+      mas8_across_add_s16 (ROW(i1), ROW(offset), stride * 2,
+          weights, 128, 8, width);
     }
     if ((i2&1) == 0 && i2>=0 && i2 < height) {
-      static const int16_t stage2_offset_shift[] = { 127, 8 };
       static const int16_t stage2_weights[][8] = {
         { 2 - 10 + 25 - 81, -81, 25, -10, 2, 0, 0, 0 },
         { 2 - 10 + 25, -81, -81, 25, -10, 2, 0, 0 },
@@ -491,9 +521,8 @@ void schro_iwt_fidelity (int16_t *data, int stride, int width, int height,
         weights = stage2_weights[3];
         offset = i2 - 6;
       }
-      oil_mas8_across_add_s16 (
-          ROW(i2+1), ROW(i2+1), ROW(offset), stride * 2,
-          weights, stage2_offset_shift, width);
+      mas8_across_add_s16 (ROW(i2+1), ROW(offset), stride * 2,
+          weights, 127, 8, width);
     }
   }
 #undef ROW
@@ -779,7 +808,6 @@ void schro_iiwt_fidelity (int16_t *data, int stride, int width, int height,
     int i1 = i+8;
     int i2 = i+16;
     if ((i2&1) == 0 && i2>=0 && i2 < height) {
-      static const int16_t stage2_offset_shift[] = { 128, 8 };
       static const int16_t stage2_weights[][8] = {
         { -2 + 10 - 25 + 81, 81, -25, 10, -2, 0, 0, 0 },
         { -2 + 10 - 25, 81, 81, -25, 10, -2, 0, 0 },
@@ -802,12 +830,10 @@ void schro_iiwt_fidelity (int16_t *data, int stride, int width, int height,
         weights = stage2_weights[3];
         offset = i2 - 6;
       }
-      oil_mas8_across_add_s16 (
-          ROW(i2+1), ROW(i2+1), ROW(offset), stride * 2,
-          weights, stage2_offset_shift, width);
+      mas8_across_add_s16 (ROW(i2+1), ROW(offset), stride * 2,
+          weights, 128, 8, width);
     }
     if ((i1&1) == 0 && i1>=0 && i1 < height) {
-      static const int16_t stage1_offset_shift[] = { 127, 8 };
       static const int16_t stage1_weights[][8] = {
         { 8 - 21 + 46 - 161 - 161, 46, -21, 8, 0, 0, 0, 0 },
         { 8 - 21 + 46 - 161, -161, 46, -21, 8, 0, 0, 0 },
@@ -830,9 +856,8 @@ void schro_iiwt_fidelity (int16_t *data, int stride, int width, int height,
         weights = stage1_weights[4];
         offset = i1 - 7;
       }
-      oil_mas8_across_add_s16 (
-          ROW(i1), ROW(i1), ROW(offset), stride * 2,
-          weights, stage1_offset_shift, width);
+      mas8_across_add_s16 (ROW(i1), ROW(offset), stride * 2,
+          weights, 127, 8, width);
     }
     if (i >=0 && i < height) {
       int16_t *hi = tmp + 4;

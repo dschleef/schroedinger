@@ -3,7 +3,6 @@
 #include "config.h"
 #endif
 #include <schroedinger/schro.h>
-#include <liboil/liboil.h>
 #include "schroorc.h"
 
 
@@ -11,7 +10,7 @@ int
 schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
     int width, int height)
 {
-  int32_t metric = 0;
+  uint32_t metric = 0;
 
   if (height == 8 && width == 8) {
     orc_sad_8x8_u8 (&metric, a, a_stride, b, b_stride);
@@ -43,13 +42,14 @@ schro_metric_scan_do_scan (SchroMetricScan *scan)
   SCHRO_ASSERT (scan->scan_height > 0);
 
   if (scan->block_width == 8 && scan->block_height == 8) {
-    for(i=0;i<scan->scan_width;i++){
-      oil_sad8x8_8xn_u8 (scan->metrics + i * scan->scan_height,
-          SCHRO_FRAME_DATA_GET_PIXEL_U8(fd, scan->x, scan->y),
-          fd->stride,
-          SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, scan->ref_x + i, scan->ref_y),
-          fd_ref->stride,
-          scan->scan_height);
+    for(j=0;j<scan->scan_height;j++){
+      for(i=0;i<scan->scan_width;i++){
+        orc_sad_8x8_u8 (scan->metrics + i * scan->scan_height + j,
+            SCHRO_FRAME_DATA_GET_PIXEL_U8(fd, scan->x, scan->y),
+            fd->stride,
+            SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, scan->ref_x + i, scan->ref_y + j),
+            fd_ref->stride);
+      }
     }
     return;
   }
@@ -133,7 +133,7 @@ int
 schro_metric_get (SchroFrameData *src1, SchroFrameData *src2, int width,
     int height)
 {
-  int32_t metric = 0;
+  uint32_t metric = 0;
 
 #if 0
   SCHRO_ASSERT(src1->width >= width);

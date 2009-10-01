@@ -12,7 +12,6 @@
 #include <schroedinger/schroparams.h>
 #include <schroedinger/schrooil.h>
 
-#include <liboil/liboil.h>
 #include <string.h>
 #include <math.h>
 
@@ -346,7 +345,7 @@ lowpass_u8 (uint8_t *d, uint8_t *s, int n)
     }
     d[i] = (x + 128)>>8;
   }
-  oil_mas10_u8 (d+4, s, taps, offsetshift, n - 9);
+  schro_mas10_u8 (d+4, s, taps, offsetshift, n - 9);
   for(i=n-6;i<n;i++){
     x = 0;
     for(j=0;j<9;j++) {
@@ -439,7 +438,7 @@ lowpass_s16 (int16_t *d, int16_t *s, int n)
     }
     d[i] = (x + 128)>>8;
   }
-  oil_mas10_s16 (d+4, s, taps, offsetshift, n - 9);
+  schro_mas10_s16 (d+4, s, taps, offsetshift, n - 9);
   for(i=n-6;i<n;i++){
     x = 0;
     for(j=0;j<9;j++) {
@@ -525,12 +524,12 @@ lowpass2_u8 (uint8_t *d, uint8_t *s, double *coeff, int n)
   state[0] = s[0];
   state[1] = s[0];
   state[2] = s[0];
-  oil_iir3_u8_f64 (d, s, state, coeff, n);
+  schro_iir3_u8_f64 (d, s, state, coeff, n);
 
   state[0] = d[n-1];
   state[1] = d[n-1];
   state[2] = d[n-1];
-  oil_iir3_rev_u8_f64 (d, s, state, coeff, n);
+  schro_iir3_rev_u8_f64 (d, s, state, coeff, n);
 }
 
 static void
@@ -541,12 +540,12 @@ lowpass2_s16 (int16_t *d, int16_t *s, double *coeff, int n)
   state[0] = s[0];
   state[1] = s[0];
   state[2] = s[0];
-  oil_iir3_s16_f64 (d, s, state, coeff, n);
+  schro_iir3_s16_f64 (d, s, state, coeff, n);
 
   state[0] = d[n-1];
   state[1] = d[n-1];
   state[2] = d[n-1];
-  oil_iir3_rev_s16_f64 (d, s, state, coeff, n);
+  schro_iir3_rev_s16_f64 (d, s, state, coeff, n);
 }
 
 static void
@@ -595,22 +594,22 @@ schro_frame_component_filter_lowpass2_u8 (SchroFrameData *comp,
         OFFSET(comp->data, comp->stride * i), h_coeff, comp->width);
   }
 
-  oil_convert_f64_u8 (i1, OFFSET(comp->data, comp->stride * 0), comp->width);
+  schro_convert_f64_u8 (i1, OFFSET(comp->data, comp->stride * 0), comp->width);
   memcpy (i2, i1, sizeof(double)*comp->width);
   memcpy (i3, i1, sizeof(double)*comp->width);
   for(i=0;i<comp->height;i++){
-    oil_iir3_across_u8_f64 (
+    schro_iir3_across_u8_f64 (
         OFFSET(comp->data, comp->stride * i),
         OFFSET(comp->data, comp->stride * i),
         i1, i2, i3, v_coeff, comp->width);
   }
 
-  oil_convert_f64_u8 (i1,OFFSET(comp->data, comp->stride * (comp->height-1)),
+  schro_convert_f64_u8 (i1,OFFSET(comp->data, comp->stride * (comp->height-1)),
       comp->width);
   memcpy (i2, i1, sizeof(double)*comp->width);
   memcpy (i3, i1, sizeof(double)*comp->width);
   for(i=comp->height-1;i>=0;i--){
-    oil_iir3_across_u8_f64 (
+    schro_iir3_across_u8_f64 (
         OFFSET(comp->data, comp->stride * i),
         OFFSET(comp->data, comp->stride * i),
         i1, i2, i3, v_coeff, comp->width);
@@ -642,22 +641,22 @@ schro_frame_component_filter_lowpass2_s16 (SchroFrameData *comp,
         OFFSET(comp->data, comp->stride * i), h_coeff, comp->width);
   }
 
-  oil_convert_f64_s16 (i1, OFFSET(comp->data, comp->stride * 0), comp->width);
+  schro_convert_f64_s16 (i1, OFFSET(comp->data, comp->stride * 0), comp->width);
   memcpy (i2, i1, sizeof(double)*comp->width);
   memcpy (i3, i1, sizeof(double)*comp->width);
   for(i=0;i<comp->height;i++){
-    oil_iir3_across_s16_f64 (
+    schro_iir3_across_s16_f64 (
         OFFSET(comp->data, comp->stride * i),
         OFFSET(comp->data, comp->stride * i),
         i1, i2, i3, v_coeff, comp->width);
   }
 
-  oil_convert_f64_s16 (i1,OFFSET(comp->data, comp->stride * (comp->height-1)),
+  schro_convert_f64_s16 (i1,OFFSET(comp->data, comp->stride * (comp->height-1)),
       comp->width);
   memcpy (i2, i1, sizeof(double)*comp->width);
   memcpy (i3, i1, sizeof(double)*comp->width);
   for(i=comp->height-1;i>=0;i--){
-    oil_iir3_across_s16_f64 (
+    schro_iir3_across_s16_f64 (
         OFFSET(comp->data, comp->stride * i),
         OFFSET(comp->data, comp->stride * i),
         i1, i2, i3, v_coeff, comp->width);

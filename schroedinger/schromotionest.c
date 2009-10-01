@@ -4,7 +4,6 @@
 #endif
 #include <schroedinger/schro.h>
 #include <schroedinger/schrophasecorrelation.h>
-#include <liboil/liboil.h>
 #include <string.h>
 #include <math.h>
 

@@ -3,7 +3,6 @@
 #include "config.h"
 #endif
 #include <schroedinger/schro.h>
-#include <liboil/liboil.h>
 #include <string.h>
 
 int _schro_motion_ref = FALSE;

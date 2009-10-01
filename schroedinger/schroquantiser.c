@@ -4,7 +4,6 @@
 #endif
 #include <schroedinger/schro.h>
 #include <schroedinger/schrohistogram.h>
-#include <liboil/liboil.h>
 #include <string.h>
 #include <math.h>
 

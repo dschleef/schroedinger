@@ -4,7 +4,6 @@
 #endif
 
 #include <string.h>
-#include <liboil/liboil.h>
 
 #include <schroedinger/schropack.h>
 #include <schroedinger/schro.h>

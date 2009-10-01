@@ -3,7 +3,6 @@
 #include "config.h"
 #endif
 #include <schroedinger/schro.h>
-#include <liboil/liboil.h>
 #include <stdlib.h>
 #include <schroedinger/schrocuda.h>
 #include <orc/orc.h>
@@ -29,7 +28,6 @@ schro_init(void)
 
   inited = TRUE;
 
-  oil_init();
   orc_init();
 
   s = getenv ("SCHRO_DEBUG");

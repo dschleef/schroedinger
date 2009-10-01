@@ -1086,7 +1086,7 @@ addw d1, d1, t1
 
 .function orc_sad_nxm_u8
 .flags 2d
-.accumulator 4 a1 int32_t
+.accumulator 4 a1 uint32_t
 .source 1 s1 uint8_t
 .source 1 s2 uint8_t
 
@@ -1097,7 +1097,7 @@ accsadubl a1, s1, s2
 .flags 2d
 .n 8
 .m 8
-.accumulator 4 a1 int32_t
+.accumulator 4 a1 uint32_t
 .source 1 s1 uint8_t
 .source 1 s2 uint8_t
 
@@ -1109,7 +1109,7 @@ accsadubl a1, s1, s2
 .flags 2d
 .n 12
 .m 12
-.accumulator 4 a1 int32_t
+.accumulator 4 a1 uint32_t
 .source 1 s1 uint8_t
 .source 1 s2 uint8_t
 
@@ -1120,7 +1120,7 @@ accsadubl a1, s1, s2
 .function orc_sad_16xn_u8
 .flags 2d
 .n 16
-.accumulator 4 a1 int32_t
+.accumulator 4 a1 uint32_t
 .source 1 s1 uint8_t
 .source 1 s2 uint8_t
 
@@ -1131,7 +1131,7 @@ accsadubl a1, s1, s2
 .function orc_sad_32xn_u8
 .flags 2d
 .n 32
-.accumulator 4 a1 int32_t
+.accumulator 4 a1 uint32_t
 .source 1 s1 uint8_t
 .source 1 s2 uint8_t
 

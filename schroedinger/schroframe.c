@@ -7,10 +7,8 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schrogpuframe.h>
-#include <schroedinger/schrocog.h>
 #include <schroedinger/schrooil.h>
 #include <schroedinger/opengl/schroopenglframe.h>
-#include <liboil/liboil.h>
 #include <schroedinger/schrovirtframe.h>
 #include <schroedinger/schroorc.h>
 
@@ -1307,6 +1305,48 @@ schro_frame_downsample (SchroFrame *dest, SchroFrame *src)
       &src->components[2]);
 }
 
+static void
+mas8_u8_edgeextend (uint8_t *d, const uint8_t *s,
+    const int16_t *taps, int offset, int shift, int index_offset, int n)
+{
+  int i,j;
+  int x;
+
+  if (n <= 8) {
+    for(i=0;i<n;i++){
+      x = 0;
+      for(j=0;j<8;j++) {
+        x += s[CLAMP(i+j-index_offset,0,n-1)]*taps[j];
+      }
+      d[i] = CLAMP((x + offset)>>shift,0,255);
+    }
+  } else {
+    for(i=0;i<index_offset;i++){
+      x = 0;
+      for(j=0;j<8;j++) {
+        x += s[CLAMP(i+j-index_offset,0,n-1)]*taps[j];
+      }
+      d[i] = CLAMP((x + offset)>>shift,0,255);
+    }
+    for(i=index_offset;i<n-8+index_offset;i++){
+      x = 0;
+      for(j=0;j<8;j++) {
+        x += s[i+j-index_offset]*taps[j];
+      }
+      d[i] = CLAMP((x + offset)>>shift,0,255);
+    }
+    for(i=n-8+index_offset;i<n;i++){
+      x = 0;
+      for(j=0;j<8;j++) {
+        x += s[CLAMP(i+j-index_offset,0,n-1)]*taps[j];
+      }
+      d[i] = CLAMP((x + offset)>>shift,0,255);
+    }
+    i = n-1;
+    d[i] = s[i];
+  }
+}
+
 void
 schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src)
 {
@@ -1328,7 +1368,7 @@ schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src)
     scomp = &src->components[k];
 
     for(j=0;j<dcomp->height;j++){
-      schro_cog_mas8_u8_edgeextend (
+      mas8_u8_edgeextend (
           SCHRO_FRAME_DATA_GET_LINE(dcomp, j),
           SCHRO_FRAME_DATA_GET_LINE(scomp, j),
           taps, 16, 5, 3, scomp->width);
@@ -1337,8 +1377,27 @@ schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src)
 }
 
 static void
+mas8_across_u8 (uint8_t *dest, const uint8_t *src, int stride,
+    const int16_t *weights, int offset, int shift, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    int x = offset;
+    x += ((uint8_t *)SCHRO_OFFSET(src,stride*0))[i] * weights[0];
+    x += ((uint8_t *)SCHRO_OFFSET(src,stride*1))[i] * weights[1];
+    x += ((uint8_t *)SCHRO_OFFSET(src,stride*2))[i] * weights[2];
+    x += ((uint8_t *)SCHRO_OFFSET(src,stride*3))[i] * weights[3];
+    x += ((uint8_t *)SCHRO_OFFSET(src,stride*4))[i] * weights[4];
+    x += ((uint8_t *)SCHRO_OFFSET(src,stride*5))[i] * weights[5];
+    x += ((uint8_t *)SCHRO_OFFSET(src,stride*6))[i] * weights[6];
+    x += ((uint8_t *)SCHRO_OFFSET(src,stride*7))[i] * weights[7];
+    dest[i] = CLAMP (x >> shift, 0, 255);
+  }
+}
+
+static void
 mas8_across_u8_slow (uint8_t *d, uint8_t **s1_a8,
-    const int16_t *s2_8, const int16_t *s3_2, int n)
+    const int16_t *s2_8, int offset, int shift, int n)
 {
   int i;
   int j;
@@ -1349,7 +1408,7 @@ mas8_across_u8_slow (uint8_t *d, uint8_t **s1_a8,
     for(j=0;j<8;j++){
       x += s1_a8[j][i] * s2_8[j];
     }
-    d[i] = CLAMP((x + s3_2[0])>>s3_2[1],0,255);
+    d[i] = CLAMP((x + offset)>>shift,0,255);
   }
 }
 
@@ -1370,7 +1429,6 @@ schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
   for(k=0;k<3;k++){
     static const int16_t taps[8] = { -1, 3, -7, 21, 21, -7, 3, -1 };
     uint8_t *list[8];
-    const int16_t offsetshift[2] = { 16, 5 };
 
     dcomp = &dest->components[k];
     scomp = &src->components[k];
@@ -1382,13 +1440,13 @@ schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src)
               CLAMP(i+j-3,0,scomp->height-1));
         }
         mas8_across_u8_slow (SCHRO_FRAME_DATA_GET_LINE(dcomp, j), list,
-          taps, offsetshift, scomp->width);
+          taps, 16, 5, scomp->width);
       } else {
         SCHRO_ASSERT(j-3 >= 0);
         SCHRO_ASSERT(j-3+7 < scomp->height);
-        oil_mas8_across_u8 (SCHRO_FRAME_DATA_GET_LINE(dcomp, j),
+        mas8_across_u8 (SCHRO_FRAME_DATA_GET_LINE(dcomp, j),
             SCHRO_FRAME_DATA_GET_LINE (scomp, j-3), scomp->stride,
-            taps, offsetshift, scomp->width);
+            taps, 16, 5, scomp->width);
       }
     }
     j = dcomp->height - 1;

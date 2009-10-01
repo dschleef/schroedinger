@@ -6,7 +6,6 @@
 #include <schroedinger/schrobuffer.h>
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schroorc.h>
-#include <liboil/liboil.h>
 #include <string.h>
 
 static void schro_buffer_free_mem (SchroBuffer * buffer, void *);

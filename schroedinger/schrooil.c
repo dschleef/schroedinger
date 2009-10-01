@@ -4,13 +4,12 @@
 #endif
 
 #include <schroedinger/schrooil.h>
-#include <liboil/liboil.h>
 #include <math.h>
 
 
 #ifdef unused
 void
-oil_mas10_s16 (int16_t *d, const int16_t *s1_np3, const int32_t *s2_4,
+schro_mas10_s16 (int16_t *d, const int16_t *s1_np3, const int32_t *s2_4,
     const int32_t *s3_2, int n)
 {
   int i;
@@ -28,7 +27,7 @@ oil_mas10_s16 (int16_t *d, const int16_t *s1_np3, const int32_t *s2_4,
 #endif
 
 void
-oil_convert_f64_u8 (double *dest, uint8_t *src, int n)
+schro_convert_f64_u8 (double *dest, uint8_t *src, int n)
 {
   int i;
   for(i=0;i<n;i++){
@@ -37,7 +36,7 @@ oil_convert_f64_u8 (double *dest, uint8_t *src, int n)
 }
 
 void
-oil_iir3_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
+schro_iir3_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
 {
   int i;
 
@@ -53,7 +52,7 @@ oil_iir3_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
 }
 
 void
-oil_iir3_rev_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
+schro_iir3_rev_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
 {
   int i;
 
@@ -69,7 +68,7 @@ oil_iir3_rev_s16_f64 (int16_t *d, int16_t *s, double *i_3, double *s2_4, int n)
 }
 
 void
-oil_iir3_across_u8_f64 (uint8_t *d, uint8_t *s, double *i1, double *i2, double *i3,
+schro_iir3_across_u8_f64 (uint8_t *d, uint8_t *s, double *i1, double *i2, double *i3,
     double *s2_4, int n)
 {
   int i;
@@ -86,7 +85,7 @@ oil_iir3_across_u8_f64 (uint8_t *d, uint8_t *s, double *i1, double *i2, double *
 }
 
 void
-oil_iir3_across_s16_f64 (int16_t *d, int16_t *s, double *i1, double *i2, double *i3,
+schro_iir3_across_s16_f64 (int16_t *d, int16_t *s, double *i1, double *i2, double *i3,
     double *s2_4, int n)
 {
   int i;
@@ -103,7 +102,7 @@ oil_iir3_across_s16_f64 (int16_t *d, int16_t *s, double *i1, double *i2, double 
 }
 
 void
-oil_convert_f64_s16 (double *dest, int16_t *src, int n)
+schro_convert_f64_s16 (double *dest, int16_t *src, int n)
 {
   int i;
   for(i=0;i<n;i++){
@@ -112,7 +111,7 @@ oil_convert_f64_s16 (double *dest, int16_t *src, int n)
 }
 
 void
-oil_iir3_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
+schro_iir3_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
 {
   int i;
 
@@ -128,7 +127,7 @@ oil_iir3_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
 }
 
 void
-oil_iir3_rev_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
+schro_iir3_rev_u8_f64 (uint8_t *d, uint8_t *s, double *i_3, double *s2_4, int n)
 {
   int i;
 

@@ -9,7 +9,6 @@
 #include <schroedinger/opengl/schroopengl.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <schroedinger/opengl/schroopenglmotion.h>
-#include <liboil/liboil.h>
 #include <schroedinger/schrooil.h>
 #include <schroedinger/schroorc.h>
 #include <string.h>

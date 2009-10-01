@@ -8,7 +8,6 @@
 #include "schrovirtframe.h"
 #include <schroedinger/schro.h>
 #include <schroedinger/schroutils.h>
-#include <liboil/liboil.h>
 #include <schroedinger/schrooil.h>
 #include <string.h>
 #include <math.h>
