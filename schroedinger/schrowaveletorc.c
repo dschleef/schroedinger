@@ -76,14 +76,14 @@ mas8_add_s16 (int16_t *dest, const int16_t *src, const int16_t *weights, int off
   int i;
   for(i=0;i<n;i++){
     int x = offset;
-    x += src[i+0];
-    x += src[i+1];
-    x += src[i+2];
-    x += src[i+3];
-    x += src[i+4];
-    x += src[i+5];
-    x += src[i+6];
-    x += src[i+7];
+    x += src[i+0] * weights[0];
+    x += src[i+1] * weights[1];
+    x += src[i+2] * weights[2];
+    x += src[i+3] * weights[3];
+    x += src[i+4] * weights[4];
+    x += src[i+5] * weights[5];
+    x += src[i+6] * weights[6];
+    x += src[i+7] * weights[7];
     dest[i] += x >> shift;
   }
 }
@@ -439,14 +439,14 @@ mas8_across_add_s16 (int16_t *dest, const int16_t *src, int stride,
   int i;
   for(i=0;i<n;i++){
     int x = offset;
-    x += ((int16_t *)SCHRO_OFFSET(src,stride*0))[i];
-    x += ((int16_t *)SCHRO_OFFSET(src,stride*1))[i];
-    x += ((int16_t *)SCHRO_OFFSET(src,stride*2))[i];
-    x += ((int16_t *)SCHRO_OFFSET(src,stride*3))[i];
-    x += ((int16_t *)SCHRO_OFFSET(src,stride*4))[i];
-    x += ((int16_t *)SCHRO_OFFSET(src,stride*5))[i];
-    x += ((int16_t *)SCHRO_OFFSET(src,stride*6))[i];
-    x += ((int16_t *)SCHRO_OFFSET(src,stride*7))[i];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*0))[i] * weights[0];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*1))[i] * weights[1];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*2))[i] * weights[2];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*3))[i] * weights[3];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*4))[i] * weights[4];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*5))[i] * weights[5];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*6))[i] * weights[6];
+    x += ((int16_t *)SCHRO_OFFSET(src,stride*7))[i] * weights[7];
     dest[i] += x >> shift;
   }
 }
