@@ -4,7 +4,11 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <schroedinger/schroframe.h>
+#include <orc-test/orcrandom.h>
+
+extern OrcRandomContext context;
 
 double sgn(double x);
 double random_std (void);
@@ -27,6 +31,9 @@ int frame_compare (SchroFrame *dest, SchroFrame *src);
 void frame_dump (SchroFrame *test, SchroFrame *ref);
 
 int parse_packet (FILE *file, void **data, int *size);
+
+#define rand_u8() (rand()&0xff)
+#define rand_f64() (((rand()/(RAND_MAX+1.0))+rand())/(RAND_MAX+1.0))
 
 #endif
 

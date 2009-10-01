@@ -7,15 +7,12 @@
 #include <schroedinger/schromotion.h>
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schroutils.h>
-#include <schroedinger/schrooil.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboilrandom.h>
-#include <liboil/liboil.h>
+#include <orc-test/orcrandom.h>
 
 #include "common.h"
 
@@ -135,18 +132,13 @@ ref_frame_downsample (SchroFrame *dest, SchroFrame *src)
 void
 frame_create_test_pattern(SchroFrame *frame, int type)
 {
-  int i,j,k;
+  int j,k;
   uint8_t *data;
 
   for(k=0;k<3;k++){
     for(j=0;j<frame->components[k].height;j++){
       data = OFFSET(frame->components[k].data,j*frame->components[k].stride);
-      for(i=0;i<frame->components[k].width;i++) {
-        //data[i] = 100;
-        //data[i] = i*10;
-        //data[i] = j*10;
-        data[i] = oil_rand_u8();
-      }
+      orc_random_bits (&context, data, frame->components[k].width);
     }
   }
 }

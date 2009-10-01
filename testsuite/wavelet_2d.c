@@ -5,16 +5,13 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schrowavelet.h>
+#include <schroedinger/schroorc.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
 #include "common.h"
-
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboil.h>
-#include <liboil/liboilrandom.h>
 
 int filtershift[] = { 1, 1, 1, 0, 1, 0, 1 };
 
@@ -258,7 +255,7 @@ void iwt_ref(SchroFrameData *p, int filter)
 
   for(i=0;i<p->height;i++){
     data = OFFSET(p->data,i*p->stride);
-    oil_deinterleave2_s16 (hi, lo, data, p->width/2);
+    orc_deinterleave2_s16 (hi, lo, data, p->width/2);
     schro_split_ext (hi, lo, p->width/2, filter);
     copy(data, sizeof(int16_t), hi, sizeof(int16_t), p->width/2);
     copy(data + p->width/2, sizeof(int16_t), lo, sizeof(int16_t), p->width/2);
@@ -267,9 +264,9 @@ void iwt_ref(SchroFrameData *p, int filter)
   for(i=0;i<p->width;i++){
     data = OFFSET(p->data,i*sizeof(int16_t));
     copy(tmp3, sizeof(int16_t), data, p->stride, p->height);
-    oil_deinterleave2_s16 (hi, lo, tmp3, p->height/2);
+    orc_deinterleave2_s16 (hi, lo, tmp3, p->height/2);
     schro_split_ext (hi, lo, p->height/2, filter);
-    oil_interleave2_s16 (tmp3, hi, lo, p->height/2);
+    orc_interleave2_s16 (tmp3, hi, lo, p->height/2);
     copy(data, p->stride, tmp3, sizeof(int16_t), p->height);
   }
 
@@ -289,9 +286,9 @@ void iiwt_ref(SchroFrameData *p, int filter)
   for(i=0;i<p->width;i++){
     data = OFFSET(p->data,i*sizeof(int16_t));
     copy(tmp3, sizeof(int16_t), data, p->stride, p->height);
-    oil_deinterleave2_s16 (hi, lo, tmp3, p->height/2);
+    orc_deinterleave2_s16 (hi, lo, tmp3, p->height/2);
     schro_synth_ext (hi, lo, p->height/2, filter);
-    oil_interleave2_s16 (tmp3, hi, lo, p->height/2);
+    orc_interleave2_s16 (tmp3, hi, lo, p->height/2);
     copy(data, p->stride, tmp3, sizeof(int16_t), p->height);
   }
 
@@ -300,7 +297,7 @@ void iiwt_ref(SchroFrameData *p, int filter)
     copy(hi, sizeof(int16_t), data, sizeof(int16_t), p->width/2);
     copy(lo, sizeof(int16_t), data + p->width/2, sizeof(int16_t), p->width/2);
     schro_synth_ext (hi, lo, p->width/2, filter);
-    oil_interleave2_s16 (data, hi, lo, p->width/2);
+    orc_interleave2_s16 (data, hi, lo, p->width/2);
   }
 
   rshift(p, filtershift[filter]);

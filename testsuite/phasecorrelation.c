@@ -7,8 +7,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-
-#define oil_rand_f64() (((rand()/(RAND_MAX+1.0))+rand())/(RAND_MAX+1.0))
+#include "common.h"
 
 
 void
@@ -106,7 +105,7 @@ int main (int argc, char *argv[])
   sincos_array (c, s, 2*M_PI/N, N);
 
   for(i=0;i<N;i++){
-    image1[i] = oil_rand_f64();
+    image1[i] = rand_f64();
     image2[i] = 0;
   }
 

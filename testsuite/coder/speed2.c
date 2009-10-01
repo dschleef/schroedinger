@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <schroedinger/schro.h>
 #include <schroedinger/schroarith.h>
-#include <liboil/liboil.h>
-#include <liboil/liboilrandom.h>
 #include <math.h>
 
 #include "arith.h"

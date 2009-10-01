@@ -5,9 +5,8 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schrowavelet.h>
+#include <schroedinger/schroorc.h>
 #include <schroedinger/schrofft.h>
-#include <schroedinger/schrooil.h>
-#include <liboil/liboil.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -296,7 +295,7 @@ split_schro_ext (int16_t *a, int n, int filter)
   hi = tmp1 + 4;
   lo = tmp2 + 4;
 
-  oil_deinterleave2_s16 (hi, lo, a, n/2);
+  orc_deinterleave2_s16 (hi, lo, a, n/2);
 
   switch (filter) {
     case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
@@ -319,7 +318,7 @@ split_schro_ext (int16_t *a, int n, int filter)
       schro_split_ext_daub97(hi, lo, n/2);
       break;
   }
-  oil_interleave2_s16 (a, hi, lo, n/2);
+  orc_interleave2_s16 (a, hi, lo, n/2);
 
 }
 
@@ -332,7 +331,7 @@ synth_schro_ext (int16_t *a, int n, int filter)
   hi = tmp1 + 4;
   lo = tmp2 + 4;
 
-  oil_deinterleave2_s16 (hi, lo, a, n/2);
+  orc_deinterleave2_s16 (hi, lo, a, n/2);
 
   switch (filter) {
     case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
@@ -356,6 +355,6 @@ synth_schro_ext (int16_t *a, int n, int filter)
       break;
   }
 
-  oil_interleave2_s16 (a, hi, lo, n/2);
+  orc_interleave2_s16 (a, hi, lo, n/2);
 }
 

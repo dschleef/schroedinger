@@ -12,9 +12,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include <liboil/liboil.h>
-#include <liboil/liboilrandom.h>
-
 #include "common.h"
 
 #define SHIFT 8

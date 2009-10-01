@@ -3,10 +3,6 @@
 
 #include <stdio.h>
 
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboil.h>
-#include <liboil/liboilrandom.h>
-
 #include "arith.h"
 
 

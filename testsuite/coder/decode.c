@@ -5,12 +5,10 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schroarith.h>
 
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboil.h>
-#include <liboil/liboilrandom.h>
 #include <math.h>
 
 #include "arith.h"
+#include "../common.h"
 
 #define N 10000
 
@@ -60,7 +58,7 @@ main (int argc, char *argv[])
 
   x = 100;
   for(i=0;i<N;i++){
-    in_data[i] = oil_rand_u8() < x;
+    in_data[i] = rand_u8() < x;
   }
 
   dumpbits(in_data + 9900, 100);

@@ -5,11 +5,9 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schrowavelet.h>
-#include <schroedinger/schrooil.h>
 
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboil.h>
-#include <liboil/liboilprofile.h>
+#include <orc/orc.h>
+#include <orc-test/orcprofile.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -18,7 +16,7 @@
 
 int16_t tmp[2048+100];
 
-int oil_profile_get_min (OilProfile *prof)
+int orc_profile_get_min (OrcProfile *prof)
 {
   int i;
   int min;
@@ -59,7 +57,7 @@ upsample_speed (int filter, int width, int height)
 int
 main (int argc, char *argv[])
 {
-  oil_init();
+  orc_init();
 
   upsample_speed (1, 1920, 1080);
 

@@ -7,15 +7,12 @@
 #include <schroedinger/schromotion.h>
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schroutils.h>
-#include <schroedinger/schrooil.h>
 #include <schroedinger/schrocuda.h>
 #include <schroedinger/schrogpuframe.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <liboil/liboilrandom.h>
-#include <liboil/liboil.h>
 
 #include "common.h"
 

@@ -6,11 +6,8 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schrowavelet.h>
 #include <schroedinger/schrofft.h>
-#include <schroedinger/schrooil.h>
 
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboil.h>
-#include <liboil/liboilrandom.h>
+#include <orc-test/orcrandom.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -88,6 +85,8 @@ multsum_f64 (double *a, double *b, int n)
 
 /* Test patterns */
 
+OrcRandomContext context;
+
 static void
 gen_random (SchroFrameData *fd, int type)
 {
@@ -97,16 +96,14 @@ gen_random (SchroFrameData *fd, int type)
     uint8_t *data;
     for(j=0;j<fd->height;j++){
       data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
-      for(i=0;i<fd->width;i++) {
-        data[i] = oil_rand_u8();
-      }
+      orc_random_bits (&context, data, fd->width);
     }
   } else {
     int16_t *data;
     for(j=0;j<fd->height;j++){
       data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
       for(i=0;i<fd->width;i++) {
-        data[i] = oil_rand_u8();
+        data[i] = orc_random(&context)&0xff;
       }
     }
   }

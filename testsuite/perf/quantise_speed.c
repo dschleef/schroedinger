@@ -5,11 +5,9 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schrowavelet.h>
-#include <schroedinger/schrooil.h>
 
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboil.h>
-#include <liboil/liboilprofile.h>
+#include <orc/orc.h>
+#include <orc-test/orcprofile.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -23,7 +21,7 @@ int16_t c[N];
 
 int16_t table[65536];
 
-int oil_profile_get_min (OilProfile *prof)
+int orc_profile_get_min (OrcProfile *prof)
 {
   int i;
   int min;
@@ -184,9 +182,9 @@ generate_table (int16_t *table, int quant_index, schro_bool is_intra)
 void
 quantise_speed (int quant_index)
 {
-  OilProfile prof1;
-  OilProfile prof2;
-  OilProfile prof3;
+  OrcProfile prof1;
+  OrcProfile prof2;
+  OrcProfile prof3;
   double ave1;
   double ave2;
   double ave3;
@@ -194,9 +192,9 @@ quantise_speed (int quant_index)
   int j;
   schro_bool is_intra = TRUE;
 
-  oil_profile_init (&prof1);
-  oil_profile_init (&prof2);
-  oil_profile_init (&prof3);
+  orc_profile_init (&prof1);
+  orc_profile_init (&prof2);
+  orc_profile_init (&prof3);
 
   for(i=0;i<10;i++) {
     for(j=0;j<N;j++){
@@ -204,15 +202,15 @@ quantise_speed (int quant_index)
     }
     generate_table (table, quant_index, is_intra);
 
-    oil_profile_start (&prof1);
+    orc_profile_start (&prof1);
     schro_quantise_s16_ref (b, a, quant_index, FALSE, N);
-    oil_profile_stop (&prof1);
-    oil_profile_start (&prof2);
+    orc_profile_stop (&prof1);
+    orc_profile_start (&prof2);
     schro_quantise_s16_table (c, a, quant_index, FALSE, N);
-    oil_profile_stop (&prof2);
-    oil_profile_start (&prof3);
+    orc_profile_stop (&prof2);
+    orc_profile_start (&prof3);
     schro_quantise_s16_test (c, a, quant_index, FALSE, N);
-    oil_profile_stop (&prof3);
+    orc_profile_stop (&prof3);
 
 #if 0
     for(j=0;j<N;j++){
@@ -225,9 +223,9 @@ quantise_speed (int quant_index)
 #endif
   }
 
-  ave1 = oil_profile_get_min (&prof1);
-  ave2 = oil_profile_get_min (&prof2);
-  ave3 = oil_profile_get_min (&prof3);
+  ave1 = orc_profile_get_min (&prof1);
+  ave2 = orc_profile_get_min (&prof2);
+  ave3 = orc_profile_get_min (&prof3);
   printf("%d %g %g %g\n", quant_index, ave1, ave2, ave3);
 }
 
@@ -237,7 +235,7 @@ main (int argc, char *argv[])
 {
   int i;
 
-  oil_init();
+  orc_init();
 
   for(i=0;i<60;i++){
     quantise_speed (i);

@@ -2,9 +2,6 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboil.h>
-#include <liboil/liboilrandom.h>
 #include <string.h>
 #include <stdlib.h>
 #include "../common.h"
@@ -174,9 +171,9 @@ static void
 opengl_custom_pattern_random (SchroFrameData *frame_data)
 {
   CUSTOM_PATTERN_CONST({
-    data_u8[i] = oil_rand_u8();
+    data_u8[i] = orc_rand_u8();
   },{
-    data_s16[i] = oil_rand_s16();
+    data_s16[i] = orc_rand_s16();
 
     /* FIXME: can't use full S16 range here, schro_frame_convert_u8_s16 doesn't
               support it, but I need to use schro_frame_convert_u8_s16 to get a
@@ -190,9 +187,9 @@ static void
 opengl_custom_pattern_random_u8 (SchroFrameData *frame_data)
 {
   CUSTOM_PATTERN_CONST({
-    data_u8[i] = oil_rand_u8();
+    data_u8[i] = orc_rand_u8();
   },{
-    data_s16[i] = oil_rand_u8();
+    data_s16[i] = orc_rand_u8();
   })
 }
 
@@ -200,9 +197,9 @@ static void
 opengl_custom_pattern_random_s8 (SchroFrameData *frame_data)
 {
   CUSTOM_PATTERN_CONST({
-    data_u8[i] = oil_rand_u8();
+    data_u8[i] = orc_rand_u8();
   },{
-    data_s16[i] = oil_rand_s8();
+    data_s16[i] = orc_rand_s8();
   })
 }
 

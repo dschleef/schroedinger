@@ -6,8 +6,6 @@
 #include <schroedinger/schroarith.h>
 #include <schroedinger/schrotables.h>
 
-#include <liboil/liboilprofile.h>
-#include <liboil/liboilrandom.h>
 
 #define BUFFER_SIZE 10000
 

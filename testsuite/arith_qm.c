@@ -1,7 +1,5 @@
 
 #include <stdio.h>
-#include <liboil/liboil.h>
-#include <liboil/liboilrandom.h>
 
 #include "arith_qm.h"
 

@@ -8,8 +8,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include <liboil/liboilprofile.h>
-#include <liboil/liboilrandom.h>
+#include <orc-test/orcprofile.h>
+#include <orc-test/orcrandom.h>
 
 #define BUFFER_SIZE 1000000
 
@@ -28,7 +28,7 @@ decode(SchroBuffer *buffer, int n, OilProfile *prof, int type)
   int j;
   int x = 0;
 
-  oil_profile_init (prof);
+  orc_profile_init (prof);
   for(j=0;j<10;j++){
     a = schro_arith_new();
 
@@ -36,25 +36,25 @@ decode(SchroBuffer *buffer, int n, OilProfile *prof, int type)
 
     switch (type) {
       case 0:
-        oil_profile_start (prof);
+        orc_profile_start (prof);
         for(i=0;i<n;i++){
           x += orig_arith_decode_bit (a, 0);
         }
-        oil_profile_stop (prof);
+        orc_profile_stop (prof);
         break;
       case 1:
-        oil_profile_start (prof);
+        orc_profile_start (prof);
         for(i=0;i<n;i++){
           x += ref_arith_decode_bit (a, 0);
         }
-        oil_profile_stop (prof);
+        orc_profile_stop (prof);
         break;
       case 2:
-        oil_profile_start (prof);
+        orc_profile_start (prof);
         for(i=0;i<n;i++){
           x += test_arith_decode_bit (a, 0);
         }
-        oil_profile_stop (prof);
+        orc_profile_stop (prof);
         break;
     }
 
@@ -122,7 +122,7 @@ encode (SchroBuffer *buffer, int n, int freq)
   schro_arith_encode_init (a, buffer);
 
   for(i=0;i<n;i++){
-    bit = oil_rand_u8() < freq;
+    bit = ((orc_random(rand_context)>>8)&0xff) < freq;
     schro_arith_encode_bit (a, 0, bit);
   }
   schro_arith_flush (a);
@@ -147,15 +147,15 @@ check (int n, int freq)
   print_speed();
 
   x = decode(buffer, n, &prof, 0);
-  oil_profile_get_ave_std (&prof, &ave, &std);
+  orc_profile_get_ave_std (&prof, &ave, &std);
   printf("orig %d,%d: %g (%g) %d\n", n, freq, ave, std, x);
 
   x = decode(buffer, n, &prof, 1);
-  oil_profile_get_ave_std (&prof, &ave, &std);
+  orc_profile_get_ave_std (&prof, &ave, &std);
   printf("ref  %d,%d: %g (%g) %d\n", n, freq, ave, std, x);
 
   y = decode(buffer, n, &prof, 2);
-  oil_profile_get_ave_std (&prof, &ave, &std);
+  orc_profile_get_ave_std (&prof, &ave, &std);
   printf("test %d,%d: %g (%g) %d\n", n, freq, ave, std, y);
   if (x != y) {
     printf("BROKEN\n");

@@ -11,8 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboilrandom.h>
+#include "common.h"
 
 void
 schro_frame_create_pattern (SchroFrame *frame, int type)
@@ -22,9 +21,9 @@ schro_frame_create_pattern (SchroFrame *frame, int type)
 
   switch (type) {
     case 0:
-      oil_random_u8 (frame->components[0].data, frame->components[0].length);
-      oil_random_u8 (frame->components[1].data, frame->components[1].length);
-      oil_random_u8 (frame->components[2].data, frame->components[2].length);
+      orc_random_bits (&context, frame->components[0].data, frame->components[0].length);
+      orc_random_bits (&context, frame->components[1].data, frame->components[1].length);
+      orc_random_bits (&context, frame->components[2].data, frame->components[2].length);
       break;
     case 1:
       for(k=0;k<3;k++){

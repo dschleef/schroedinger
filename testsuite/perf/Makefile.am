@@ -6,9 +6,9 @@ noinst_PROGRAMS = wavelet_speed upsample_speed report \
 # Doesn't compile on windows
 #noinst_PROGRAMS = wavelet
 
-AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS) \
+AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(ORC_CFLAGS) \
 	    -DSCHRO_ENABLE_UNSTABLE_API
-LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+LDADD = ../libschrotest.la
 
 wavelet_speed_SOURCES = wavelet_speed.c
 

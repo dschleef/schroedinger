@@ -1,24 +1,17 @@
 
 SUBDIRS = . perf coder installation prototype streams tables2 dirac \
-	  manual cache
-
-if HAVE_CUDA
-SUBDIRS += cuda
-endif
-
-if HAVE_OPENGL
-SUBDIRS += opengl
-endif
+	  manual cache cuda opengl
 
 buildnoinstdir = $(libdir)
 buildnoinst_LTLIBRARIES = libschrotest.la
+
 
 noinst_PROGRAMS = arith arith_encode \
 	 wavelet wavelet_2d \
 	 phasecorrelation motion \
 	 quant decode decode_coded_order decode_loop divide \
 	 upsample \
-	 motion2 sort gaussian fft \
+	 motion2 sort fft \
 	 wavelet_noise_gain \
 	 downsample taps ramp \
 	 colorspace filter_coeff utils extension
@@ -39,12 +32,12 @@ endif
 
 TESTS = arith encode wavelet wavelet_2d unpack downsample
 
-AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS) \
+AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(ORC_CFLAGS) $(LIBOIL_CFLAGS) \
 	    -DSCHRO_ENABLE_UNSTABLE_API
-LDADD = $(SCHRO_LIBS) $(LIBM) libschrotest.la
+LDADD = $(LIBM) libschrotest.la
 
 libschrotest_la_SOURCES = common.c
-libschrotest_la_LIBADD = $(LIBM)
+libschrotest_la_LIBADD = $(SCHRO_LIBS) $(ORC_LIBS) -lorc-test-0.4 $(LIBM)
 
 install-buildnoinstLTLIBRARIES:
 
@@ -127,10 +120,6 @@ sort_SOURCES = sort.c
 #ssim_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 #ssim_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
 ssim_SOURCES = ssim.c
-
-#gaussian_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-#gaussian_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
-gaussian_SOURCES = gaussian.c
 
 #fft_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
 #fft_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)

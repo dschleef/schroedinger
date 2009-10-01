@@ -5,11 +5,8 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schrowavelet.h>
-#include <schroedinger/schrooil.h>
 
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboil.h>
-#include <liboil/liboilprofile.h>
+#include <orc-test/orcprofile.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -19,7 +16,7 @@
 int16_t tmp[2048+100];
 int16_t *data;
 
-int oil_profile_get_min (OilProfile *prof)
+int orc_profile_get_min (OrcProfile *prof)
 {
   int i;
   int min;
@@ -37,8 +34,8 @@ int oil_profile_get_min (OilProfile *prof)
 void
 wavelet_speed (int filter, int width, int height)
 {
-  OilProfile prof1;
-  OilProfile prof2;
+  OrcProfile prof1;
+  OrcProfile prof2;
   double ave_fwd, ave_rev;
   int i;
   SchroFrameData fd;
@@ -49,27 +46,27 @@ wavelet_speed (int filter, int width, int height)
   fd.width = width;
   fd.height = height;
 
-  oil_profile_init (&prof1);
-  oil_profile_init (&prof2);
+  orc_profile_init (&prof1);
+  orc_profile_init (&prof2);
 
   for(i=0;i<10;i++){
-    oil_profile_start (&prof1);
+    orc_profile_start (&prof1);
     schro_wavelet_transform_2d (&fd, filter, tmp);
-    oil_profile_stop (&prof1);
+    orc_profile_stop (&prof1);
 
-    oil_profile_start (&prof2);
+    orc_profile_start (&prof2);
     schro_wavelet_inverse_transform_2d (&fd, filter, tmp);
-    oil_profile_stop (&prof2);
+    orc_profile_stop (&prof2);
   }
 
-  //oil_profile_get_ave_std (&prof1, &ave_fwd, &std);
+  //orc_profile_get_ave_std (&prof1, &ave_fwd, &std);
   //printf("fwd %g (%g)\n", ave, std);
 
-  //oil_profile_get_ave_std (&prof2, &ave_rev, &std);
+  //orc_profile_get_ave_std (&prof2, &ave_rev, &std);
   //printf("rev %g (%g)\n", ave, std);
 
-  ave_fwd = oil_profile_get_min (&prof1);
-  ave_rev = oil_profile_get_min (&prof2);
+  ave_fwd = orc_profile_get_min (&prof1);
+  ave_rev = orc_profile_get_min (&prof2);
   printf("%d %d %g %g %g %g\n", width, height, ave_fwd, ave_rev,
       ave_fwd/(width*height), ave_rev/(width*height));
 }

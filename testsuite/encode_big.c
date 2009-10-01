@@ -8,7 +8,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <schroedinger/schro.h>
-#include <liboil/liboilrandom.h>
+
+#include "common.h"
 
 static void
 frame_free (SchroFrame *frame, void *priv)
@@ -50,7 +51,7 @@ test (int w, int h)
           //SCHRO_ERROR("frame %d", n_frames);
 
           picture = malloc(size);
-          oil_random_u8(picture, size);
+          orc_random_bits (&context, picture, size);
 
           frame = schro_frame_new_from_data_I420 (picture, w, h);
 

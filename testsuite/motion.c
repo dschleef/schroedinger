@@ -10,8 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboilprofile.h>
+#include <orc-test/orcprofile.h>
 
 int
 main (int argc, char *argv[])
@@ -24,7 +23,7 @@ main (int argc, char *argv[])
   SchroMotionVector *motion_vectors;
   int i;
   int j;
-  OilProfile prof;
+  OrcProfile prof;
   double ave, std;
 
   schro_init();
@@ -74,7 +73,7 @@ main (int argc, char *argv[])
   }
 
   for(i=0;i<10;i++){
-    oil_profile_init (&prof);
+    orc_profile_init (&prof);
     for(j=0;j<10;j++){
       SchroMotion *motion;
       void *mv_save;
@@ -82,13 +81,13 @@ main (int argc, char *argv[])
       motion = schro_motion_new (&params, uref, NULL);
       mv_save = motion->motion_vectors;
       motion->motion_vectors = motion_vectors;
-      oil_profile_start(&prof);
+      orc_profile_start(&prof);
       schro_motion_render (motion, dest);
-      oil_profile_stop(&prof);
+      orc_profile_stop(&prof);
       motion->motion_vectors = mv_save;
       schro_motion_free (motion);
     }
-    oil_profile_get_ave_std (&prof, &ave, &std);
+    orc_profile_get_ave_std (&prof, &ave, &std);
     printf("cycles %g %g\n", ave, std);
   }
 

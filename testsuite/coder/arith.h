@@ -2,9 +2,8 @@
 #ifndef _ARITH_H_
 #define _ARITH_H_
 
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboilrandom.h>
-#include <liboil/liboilprofile.h>
+#include "../common.h"
+#include <orc-test/orcprofile.h>
 
 typedef struct _Arith Arith;
 typedef struct _Context Context;
@@ -53,7 +52,7 @@ int efficiency_arith_ ## name (int x, unsigned char *data, int n) \
   arith_ ## name ## _init (&a); \
   a.data = data; \
   for(i=0;i<n;i++){ \
-    value = (oil_rand_u8() < x); \
+    value = (rand_u8() < x); \
     arith_ ## name ## _encode (&a, 0, value); \
   } \
   arith_ ## name ## _flush(&a); \
@@ -68,22 +67,22 @@ double speed_arith_ ## name (int x, unsigned char *data, int n) \
   int j; \
   double ave, std; \
   unsigned char *indata; \
-  OilProfile prof; \
+  OrcProfile prof; \
   indata = malloc(n); \
-  oil_profile_init (&prof); \
+  orc_profile_init (&prof); \
   for(i=0;i<n;i++){ \
-    indata[i] = (oil_rand_u8() < x); \
+    indata[i] = (rand_u8() < x); \
   } \
   for(j=0;j<20;j++) { \
     arith_ ## name ## _init (&a); \
     a.data = data; \
-    oil_profile_start(&prof); \
+    orc_profile_start(&prof); \
     for(i=0;i<n;i++){ \
       arith_ ## name ## _encode (&a, 0, indata[i]); \
     } \
-    oil_profile_stop(&prof); \
+    orc_profile_stop(&prof); \
   } \
-  oil_profile_get_ave_std (&prof, &ave, &std); \
+  orc_profile_get_ave_std (&prof, &ave, &std); \
   free (indata); \
   return ave/n; \
 }

@@ -5,12 +5,9 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schrowavelet.h>
-#include <schroedinger/schrooil.h>
 #include <schroedinger/schrodomain.h>
 
-#define OIL_ENABLE_UNSTABLE_API
-#include <liboil/liboil.h>
-#include <liboil/liboilprofile.h>
+#include <orc-test/orcprofile.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -29,7 +26,7 @@ gettime (void)
   return ts.tv_sec + ts.tv_nsec*1e-9;
 }
 
-int oil_profile_get_min (OilProfile *prof)
+int orc_profile_get_min (OrcProfile *prof)
 {
   int i;
   int min;
@@ -113,7 +110,7 @@ main (int argc, char *argv[])
   width = 1920; height = 1088;
   //width = 1280; height = 720;
 
-  oil_init();
+  orc_init();
   schro_init();
 
   printf ("size %dx%d\n", width, height);

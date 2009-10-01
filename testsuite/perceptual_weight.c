@@ -5,8 +5,6 @@
 
 #include <schroedinger/schro.h>
 #include <schroedinger/schrowavelet.h>
-#include <schroedinger/schrooil.h>
-#include <liboil/liboil.h>
 
 #include <stdio.h>
 #include <string.h>

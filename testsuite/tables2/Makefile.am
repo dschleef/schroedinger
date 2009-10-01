@@ -9,9 +9,9 @@ noinst_PROGRAMS += \
 	wavelet_tables
 endif
 
-AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(LIBOIL_CFLAGS) -I$(srcdir)/.. \
+AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(ORC_CFLAGS) -I$(srcdir)/.. \
 	    -DSCHRO_ENABLE_UNSTABLE_API
-LDADD = $(SCHRO_LIBS) ../libschrotest.la
+LDADD = ../libschrotest.la
 
 lowdelay_tables_SOURCES = lowdelay_tables.c
 
