@@ -46,14 +46,6 @@ dnl the version check needs to stay here because autopoint greps for it
 AC_CHECK_LIBM
 AC_SUBST(LIBM)
 
-dnl liboil is required
-OIL_VER="0.3.16"
-PKG_CHECK_MODULES(LIBOIL, liboil-0.3 >= $OIL_VER, HAVE_LIBOIL=yes, HAVE_LIBOIL=no)
-if test "x${HAVE_LIBOIL}" != xyes ; then
-  AC_ERROR([liboil-0.3 >= $OIL_VER is required])
-fi
-SCHRO_PKG_DEPS="liboil-0.3 >= $OIL_VER"
-
 dnl Orc is required
 ORC_VER="0.4.2.1"
 PKG_CHECK_MODULES(ORC, orc-0.4 >= $ORC_VER, HAVE_ORC=yes, HAVE_ORC=no)
@@ -218,7 +210,7 @@ AM_CONDITIONAL(BUILD_BROKEN_TESTS, false)
 
 SCHRO_LIBS="\$(top_builddir)/schroedinger/libschroedinger-$SCHRO_MAJORMINOR.la"
 # hack around ld bug
-SCHRO_LIBS="$SCHRO_LIBS $LIBOIL_LIBS $CUDA_LIBS $OPENGL_LIBS $PTHREAD_LIBS $GTHREAD_LIBS $LIBM"
+SCHRO_LIBS="$SCHRO_LIBS $ORC_LIBS $CUDA_LIBS $OPENGL_LIBS $PTHREAD_LIBS $GTHREAD_LIBS $LIBM"
 #SCHRO_LIBS="$SCHRO_LIBS -lprofiler"
 AC_SUBST(SCHRO_LIBS)
 

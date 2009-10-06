@@ -32,7 +32,7 @@ endif
 
 TESTS = arith encode wavelet wavelet_2d unpack downsample
 
-AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(ORC_CFLAGS) $(LIBOIL_CFLAGS) \
+AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(ORC_CFLAGS) \
 	    -DSCHRO_ENABLE_UNSTABLE_API
 LDADD = $(LIBM) libschrotest.la
 
@@ -53,8 +53,8 @@ arith_encode_SOURCES = arith_encode.c
 # arith_decode_LDADD = $(SCHRO_LIBS)
 # arith_decode_SOURCES = arith_decode.c
 
-# arith_fixup_shift_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-# arith_fixup_shift_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+# arith_fixup_shift_CFLAGS = $(SCHRO_CFLAGS)
+# arith_fixup_shift_LDADD = $(SCHRO_LIBS)
 # arith_fixup_shift_SOURCES = arith_fixup_shift.c
 
 #bits_CFLAGS = $(SCHRO_CFLAGS)
@@ -69,16 +69,16 @@ bits2_SOURCES = bits2.c
 #codes_LDADD = $(SCHRO_LIBS)
 #codes_SOURCES = codes.c
 
-#encode_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-#encode_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+#encode_CFLAGS = $(SCHRO_CFLAGS)
+#encode_LDADD = $(SCHRO_LIBS)
 encode_SOURCES = encode.c
 
-#encode_big_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-#encode_big_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+#encode_big_CFLAGS = $(SCHRO_CFLAGS)
+#encode_big_LDADD = $(SCHRO_LIBS)
 #encode_big_SOURCES = encode_big.c
 
-#wavelet_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-#wavelet_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+#wavelet_CFLAGS = $(SCHRO_CFLAGS)
+#wavelet_LDADD = $(SCHRO_LIBS)
 wavelet_SOURCES = wavelet.c
 
 wavelet_gain_SOURCES = wavelet_gain.c
@@ -91,8 +91,8 @@ wavelet_gain_curve_SOURCES = wavelet_gain_curve.c
 #wavelet2_LDADD = $(SCHRO_LIBS)
 #wavelet2_SOURCES = wavelet2.c
 
-#wavelet_2d_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-#wavelet_2d_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+#wavelet_2d_CFLAGS = $(SCHRO_CFLAGS)
+#wavelet_2d_LDADD = $(SCHRO_LIBS)
 wavelet_2d_SOURCES = wavelet_2d.c
 
 wavelet_noise_2d_SOURCES = wavelet_noise_2d.c
@@ -101,34 +101,34 @@ wavelet_noise_2d_SOURCES = wavelet_noise_2d.c
 #phasecorrelation_LDADD = $(SCHRO_LIBS) -lm
 phasecorrelation_SOURCES = phasecorrelation.c
 
-#motion_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-#motion_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+#motion_CFLAGS = $(SCHRO_CFLAGS)
+#motion_LDADD = $(SCHRO_LIBS)
 motion_SOURCES = motion.c
 
-#motion2_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-#motion2_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+#motion2_CFLAGS = $(SCHRO_CFLAGS)
+#motion2_LDADD = $(SCHRO_LIBS)
 motion2_SOURCES = motion2.c
 
 #quant_CFLAGS = 
 #quant_LDADD = -lm
 quant_SOURCES = quant.c
 
-#sort_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-#sort_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+#sort_CFLAGS = $(SCHRO_CFLAGS)
+#sort_LDADD = $(SCHRO_LIBS)
 sort_SOURCES = sort.c
 
-#ssim_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-#ssim_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+#ssim_CFLAGS = $(SCHRO_CFLAGS)
+#ssim_LDADD = $(SCHRO_LIBS)
 ssim_SOURCES = ssim.c
 
-#fft_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-#fft_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+#fft_CFLAGS = $(SCHRO_CFLAGS)
+#fft_LDADD = $(SCHRO_LIBS)
 fft_SOURCES = fft.c
 
 perceptual_weight_SOURCES = perceptual_weight.c
 
-#perceptual_curves_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS)
-#perceptual_curves_LDADD = $(SCHRO_LIBS) $(LIBOIL_LIBS)
+#perceptual_curves_CFLAGS = $(SCHRO_CFLAGS)
+#perceptual_curves_LDADD = $(SCHRO_LIBS)
 perceptual_curves_SOURCES = perceptual_curves.c
 
 orc_test_CFLAGS = $(ORC_CFLAGS)

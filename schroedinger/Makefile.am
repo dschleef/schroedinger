@@ -141,7 +141,7 @@ endif
 
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = \
-	$(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(ORC_CFLAGS) $(ERROR_CFLAGS) \
+	$(SCHRO_CFLAGS) $(ORC_CFLAGS) $(ERROR_CFLAGS) \
 	-DSCHRO_ENABLE_UNSTABLE_API \
 	$(GTHREAD_CFLAGS) \
 	$(CUDA_CFLAGS) -I$(srcdir)/cuda -I$(srcdir)/opengl
@@ -151,7 +151,6 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = \
 	$(CUDA_LIBS) \
 	$(opengl_libs) \
 	$(OPENGL_LIBS) \
-	$(LIBOIL_LIBS) \
 	$(ORC_LIBS) \
 	$(PTHREAD_LIBS)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \

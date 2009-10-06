@@ -17,7 +17,7 @@ libopengl_la_SOURCES = \
 	schroopengltypes.h \
 	schroopenglwavelet.c
 
-libopengl_la_CFLAGS = $(SCHRO_CFLAGS) $(LIBOIL_CFLAGS) $(OPENGL_CFLAGS) $(ERROR_CFLAGS) \
+libopengl_la_CFLAGS = $(SCHRO_CFLAGS) $(OPENGL_CFLAGS) $(ERROR_CFLAGS) \
 	-DSCHRO_ENABLE_UNSTABLE_API -D_GNU_SOURCE -DSCHRO_OPENGL_UNBIND_TEXTURES=1
 
 libopengl_la_LIBADD = $(OPENGL_LIBS)
