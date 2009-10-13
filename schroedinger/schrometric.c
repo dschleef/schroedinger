@@ -74,8 +74,8 @@ schro_metric_scan_do_scan (SchroMetricScan *scan)
       , ref_x = scan->ref_x / skip_h, ref_y = scan->ref_y / skip_v;
     int block_width = scan->block_width / skip_h
       , block_height = scan->block_height / skip_v;
-    int scan_width = scan->scan_width / skip_h
-      , scan_height = scan->scan_height / skip_v;
+    int scan_width = (scan->scan_width / skip_h) + (scan->scan_width % skip_h)
+      , scan_height = (scan->scan_height / skip_v) + (scan->scan_height % skip_v);
     memset(scan->chroma_metrics, 0, sizeof(scan->chroma_metrics));
     uint32_t metrics[SCHRO_LIMIT_METRIC_SCAN*SCHRO_LIMIT_METRIC_SCAN];
     int k;
@@ -84,18 +84,18 @@ schro_metric_scan_do_scan (SchroMetricScan *scan)
       fd_ref = scan->ref_frame->components + k;
       for (i=0; i<scan_width; ++i) {
         for (j=0; j<scan_height; ++j) {
-          metrics[i*2*scan_height+j*2] = schro_metric_absdiff_u8 (
+          metrics[i*2*scan->scan_height+j*2] = schro_metric_absdiff_u8 (
               SCHRO_FRAME_DATA_GET_PIXEL_U8 (fd, x, y), fd->stride
               , SCHRO_FRAME_DATA_GET_PIXEL_U8 (fd_ref, ref_x+i, ref_y+j)
               , fd_ref->stride
               , block_width, block_height);
           if (skip_v > 1) {
-            metrics[i*2*scan_height+1+j*2] = metrics[i*2*scan_height+j*2];
+            metrics[i*2*scan->scan_height+1+j*2] = metrics[i*2*scan->scan_height+j*2];
           }
         }
         if (skip_h > 1) {
-          for (j=0; j<scan_width; ++j) {
-            metrics[(i*2+1)*scan_height+j*2] = metrics[i*2*scan_height+j*2];
+          for (j=0; j<scan->scan_height; ++j) {
+            metrics[(i*2+1)*scan->scan_height+j] = metrics[i*2*scan->scan_height+j];
           }
         }
       }

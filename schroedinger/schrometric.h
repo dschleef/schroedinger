@@ -12,7 +12,7 @@ typedef struct _SchroMetricScan SchroMetricScan;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
-#define SCHRO_LIMIT_METRIC_SCAN 41
+#define SCHRO_LIMIT_METRIC_SCAN 42
 
 struct _SchroMetricScan {
   SchroFrame *frame;

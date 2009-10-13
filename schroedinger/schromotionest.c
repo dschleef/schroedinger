@@ -1570,8 +1570,8 @@ schro_get_split2_metric (SchroMe me, int ref, int i, int j
       *metric = INT_MAX;
       return;
     }
-    width[k] = MIN(block_x[k], orig[k].width);
-    height[k] = MIN(block_y[k], orig[k].height);
+    width[k] = MIN(block_x[k], orig[k-1].width);
+    height[k] = MIN(block_y[k], orig[k-1].height);
   }
   upframe = schro_me_ref (me, ref);
   *metric = 0;
@@ -1657,7 +1657,9 @@ schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
       best_mv.pred_mode = 1;
 
       mv_ref[0] = mv_ref[1] = NULL;
-      entropy[0] = entropy[1] = 0;
+      memset(entropy, 0, sizeof(entropy));
+      memset(width, 0, sizeof(width));
+      memset(height, 0, sizeof(height));
       mv = motion->motion_vectors + (j+jj)*xnum_blocks + i + ii;
       /* check that the block lies whitin the frame */
       if (   !(orig_frame->width > (i+ii) * xblen)
