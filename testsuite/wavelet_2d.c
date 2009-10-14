@@ -31,30 +31,37 @@ fwd_test (int filter, int width, int height)
   int i;
   SchroFrame *test;
   SchroFrame *ref;
+  SchroFrame *orig;
   SchroFrameData *fd_test;
   SchroFrameData *fd_ref;
+  SchroFrameData *fd_orig;
   char name[TEST_PATTERN_NAME_SIZE] = { 0 };
 
   test = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
       width, height);
   fd_test = test->components + 0;
+  orig = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_orig = orig->components + 0;
   ref = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
       width, height);
   fd_ref = ref->components + 0;
 
   for(i=0;i<test_pattern_get_n_generators();i++){
-    test_pattern_generate (fd_ref, name, i);
+    test_pattern_generate (fd_orig, name, i);
     printf("  forward test \"%s\":\n", name);
     fflush(stdout);
 
-    schro_frame_convert (test, ref);
+    schro_frame_convert (ref, orig);
+    schro_frame_convert (test, orig);
     iwt_ref(fd_ref,filter);
     iwt_test(fd_test,filter);
     if (!frame_data_compare(fd_test, fd_ref)) { 
-      frame_data_dump (fd_test, fd_ref);
+      frame_data_dump_full (fd_test, fd_ref, fd_orig);
       fail = TRUE;
     }
   }
+  schro_frame_unref (orig);
   schro_frame_unref (test);
   schro_frame_unref (ref);
 }
@@ -64,11 +71,16 @@ inv_test (int filter, int width, int height)
 {
   int i;
   SchroFrame *test;
+  SchroFrame *orig;
   SchroFrame *ref;
   SchroFrameData *fd_test;
+  SchroFrameData *fd_orig;
   SchroFrameData *fd_ref;
   char name[TEST_PATTERN_NAME_SIZE] = { 0 };
 
+  orig = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_orig = orig->components + 0;
   test = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
       width, height);
   fd_test = test->components + 0;
@@ -77,19 +89,21 @@ inv_test (int filter, int width, int height)
   fd_ref = ref->components + 0;
 
   for(i=0;i<test_pattern_get_n_generators();i++){
-    test_pattern_generate (fd_ref, name, i);
+    test_pattern_generate (fd_orig, name, i);
     printf("  reverse test \"%s\":\n", name);
     fflush(stdout);
 
-    iwt_ref(fd_ref,filter);
-    schro_frame_convert (test, ref);
+    iwt_ref(fd_orig,filter);
+    schro_frame_convert (test, orig);
+    schro_frame_convert (ref, orig);
     iiwt_ref(fd_ref,filter);
     iiwt_test(fd_test,filter);
     if (!frame_data_compare(fd_test, fd_ref)) { 
-      frame_data_dump (fd_test, fd_ref);
+      frame_data_dump_full (fd_test, fd_ref, fd_orig);
       fail = TRUE;
     }
   }
+  schro_frame_unref (orig);
   schro_frame_unref (test);
   schro_frame_unref (ref);
 }
@@ -98,11 +112,16 @@ void
 fwd_random_test (int filter, int width, int height)
 {
   SchroFrame *test;
+  SchroFrame *orig;
   SchroFrame *ref;
+  SchroFrameData *fd_orig;
   SchroFrameData *fd_test;
   SchroFrameData *fd_ref;
   char name[TEST_PATTERN_NAME_SIZE] = { 0 };
 
+  orig = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_orig = orig->components + 0;
   test = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
       width, height);
   fd_test = test->components + 0;
@@ -110,18 +129,20 @@ fwd_random_test (int filter, int width, int height)
       width, height);
   fd_ref = ref->components + 0;
 
-  test_pattern_generate (fd_ref, name, 0);
+  test_pattern_generate (fd_orig, name, 0);
   printf("  forward test \"%s\":\n", name);
   fflush(stdout);
 
-  schro_frame_convert (test, ref);
+  schro_frame_convert (ref, orig);
+  schro_frame_convert (test, orig);
   iwt_ref(fd_ref,filter);
   iwt_test(fd_test,filter);
   if (!frame_data_compare(fd_test, fd_ref)) { 
-    frame_data_dump (fd_test, fd_ref);
+    frame_data_dump_full (fd_test, fd_ref, fd_orig);
     fail = TRUE;
   }
   
+  schro_frame_unref (orig);
   schro_frame_unref (test);
   schro_frame_unref (ref);
 }
@@ -130,11 +151,16 @@ void
 inv_random_test (int filter, int width, int height)
 {
   SchroFrame *test;
+  SchroFrame *orig;
   SchroFrame *ref;
   SchroFrameData *fd_test;
+  SchroFrameData *fd_orig;
   SchroFrameData *fd_ref;
   char name[TEST_PATTERN_NAME_SIZE] = { 0 };
 
+  orig = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_orig = orig->components + 0;
   test = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
       width, height);
   fd_test = test->components + 0;
@@ -142,18 +168,20 @@ inv_random_test (int filter, int width, int height)
       width, height);
   fd_ref = ref->components + 0;
 
-  test_pattern_generate (fd_ref, name, 0);
+  test_pattern_generate (fd_orig, name, 0);
   printf("  reverse test \"%s\":\n", name);
   fflush(stdout);
 
-  iwt_ref(fd_ref,filter);
-  schro_frame_convert (test, ref);
+  iwt_ref(fd_orig,filter);
+  schro_frame_convert (test, orig);
+  schro_frame_convert (ref, orig);
   iiwt_ref(fd_ref,filter);
   iiwt_test(fd_test,filter);
   if (!frame_data_compare(fd_test, fd_ref)) { 
-    frame_data_dump (fd_test, fd_ref);
+    frame_data_dump_full (fd_test, fd_ref, fd_orig);
     fail = TRUE;
   }
+  schro_frame_unref (orig);
   schro_frame_unref (test);
   schro_frame_unref (ref);
 }
@@ -361,6 +389,8 @@ void iwt_test(SchroFrameData *p, int filter)
 
   tmp = malloc((p->width + 32)*sizeof(int16_t));
 
+  schro_wavelet_transform_2d (p, filter, tmp);
+#if 0
   switch (filter) {
     case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
       schro_iwt_desl_9_3 (p->data, p->stride, p->width, p->height, tmp);
@@ -384,6 +414,7 @@ void iwt_test(SchroFrameData *p, int filter)
       schro_iwt_daub_9_7(p->data, p->stride, p->width, p->height, tmp);
       break;
   }
+#endif
 
   free(tmp);
 }
@@ -394,6 +425,8 @@ void iiwt_test(SchroFrameData *p, int filter)
 
   tmp = malloc((p->width + 32)*sizeof(int16_t));
 
+  schro_wavelet_inverse_transform_2d (p, filter, tmp);
+#if 0
   switch (filter) {
     case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
       schro_iiwt_desl_9_3 (p->data, p->stride, p->width, p->height, tmp);
@@ -417,6 +450,7 @@ void iiwt_test(SchroFrameData *p, int filter)
       schro_iiwt_daub_9_7(p->data, p->stride, p->width, p->height, tmp);
       break;
   }
+#endif
 
   free(tmp);
 }

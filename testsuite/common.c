@@ -485,19 +485,19 @@ frame_data_dump_full (SchroFrameData *test, SchroFrameData *ref, SchroFrameData 
       rline = SCHRO_FRAME_DATA_GET_LINE(ref, j);
       oline = SCHRO_FRAME_DATA_GET_LINE(orig, j);
       for(i=0;i<test->width;i++){
-        printf("\033[00;35m%3d\033[00m ", oline[i]);
+        printf("\033[00;35m%4d\033[00m ", oline[i]);
+      }
+      printf("\n");
+      for(i=0;i<test->width;i++){
+        printf("\033[00;32m%4d\033[00m ", rline[i]);
       }
       printf("\n");
       for(i=0;i<test->width;i++){
         if (tline[i] == rline[i]) {
-          printf("%3d ", tline[i]);
+          printf("%4d ", tline[i]);
         } else {
-          printf("\033[00;01;37;41m%3d\033[00m ", tline[i]);
+          printf("\033[00;01;37;41m%4d\033[00m ", tline[i]);
         }
-      }
-      printf("\n");
-      for(i=0;i<test->width;i++){
-        printf("\033[00;32m%3d\033[00m ", rline[i]);
       }
       printf("\n");
     }
@@ -505,14 +505,24 @@ frame_data_dump_full (SchroFrameData *test, SchroFrameData *ref, SchroFrameData 
     for(j=0;j<test->height;j++){
       int16_t *tline;
       int16_t *rline;
+      int16_t *oline;
 
       tline = SCHRO_FRAME_DATA_GET_LINE(test, j);
       rline = SCHRO_FRAME_DATA_GET_LINE(ref, j);
+      oline = SCHRO_FRAME_DATA_GET_LINE(orig, j);
+      for(i=0;i<test->width;i++){
+        printf("\033[00;35m%4d\033[00m ", oline[i]);
+      }
+      printf("\n");
+      for(i=0;i<test->width;i++){
+        printf("\033[00;32m%4d\033[00m ", rline[i]);
+      }
+      printf("\n");
       for(i=0;i<test->width;i++){
         if (tline[i] == rline[i]) {
-          printf("%3d ", tline[i]);
+          printf("%4d ", tline[i]);
         } else {
-          printf("\033[00;01;37;41m%3d\033[00m ", tline[i]);
+          printf("\033[00;01;37;41m%4d\033[00m ", tline[i]);
         }
       }
       printf("\n");
