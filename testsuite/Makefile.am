@@ -7,7 +7,7 @@ buildnoinst_LTLIBRARIES = libschrotest.la
 
 
 noinst_PROGRAMS = arith arith_encode \
-	 wavelet wavelet_2d \
+	 wavelet_2d \
 	 phasecorrelation motion \
 	 quant decode decode_coded_order decode_loop divide \
 	 upsample \
@@ -30,7 +30,7 @@ if BUILD_BROKEN_TESTS
 noinst_PROGRAMS += bits bits2 bits3
 endif
 
-TESTS = arith encode wavelet wavelet_2d unpack downsample
+TESTS = arith encode wavelet_2d unpack downsample
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(ORC_CFLAGS) \
 	    -DSCHRO_ENABLE_UNSTABLE_API
@@ -79,7 +79,7 @@ encode_SOURCES = encode.c
 
 #wavelet_CFLAGS = $(SCHRO_CFLAGS)
 #wavelet_LDADD = $(SCHRO_LIBS)
-wavelet_SOURCES = wavelet.c
+#wavelet_SOURCES = wavelet.c
 
 wavelet_gain_SOURCES = wavelet_gain.c
 

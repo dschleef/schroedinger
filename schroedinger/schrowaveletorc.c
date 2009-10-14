@@ -10,7 +10,7 @@
 
 /* horizontal in-place wavelet transforms */
 
-void
+static void
 schro_split_ext_desl93 (int16_t *hi, int16_t *lo, int n)
 {
   hi[-1] = hi[0];
@@ -24,7 +24,7 @@ schro_split_ext_desl93 (int16_t *hi, int16_t *lo, int n)
   orc_add2_rshift_add_s16_22 (hi, lo - 1, lo, n);
 }
 
-void
+static void
 schro_split_ext_53 (int16_t *hi, int16_t *lo, int n)
 {
   hi[-1] = hi[0];
@@ -38,7 +38,7 @@ schro_split_ext_53 (int16_t *hi, int16_t *lo, int n)
   orc_add2_rshift_add_s16_22 (hi, lo - 1, lo, n);
 }
 
-void
+static void
 schro_split_ext_135 (int16_t *hi, int16_t *lo, int n)
 {
   hi[-1] = hi[0];
@@ -54,11 +54,13 @@ schro_split_ext_135 (int16_t *hi, int16_t *lo, int n)
   orc_mas4_across_add_s16_1991_ip (hi, lo - 2, lo - 1, lo, lo + 1, 1<<4, 5, n);
 }
 
-void
+#if 0
+static void
 schro_split_ext_haar (int16_t *hi, int16_t *lo, int n)
 {
   orc_haar_split_s16 (hi, lo, n);
 }
+#endif
 
 static void
 mas8_add_s16 (int16_t *dest, const int16_t *src, const int16_t *weights, int offset,
@@ -79,7 +81,7 @@ mas8_add_s16 (int16_t *dest, const int16_t *src, const int16_t *weights, int off
   }
 }
 
-void
+static void
 schro_split_ext_fidelity (int16_t *hi, int16_t *lo, int n)
 {
   static const int16_t stage1_weights[] = { -8, 21, -46, 161, 161, -46, 21, -8 };
@@ -106,7 +108,7 @@ schro_split_ext_fidelity (int16_t *hi, int16_t *lo, int n)
   mas8_add_s16 (lo, hi - 3, stage2_weights, 127, 8, n);
 }
 
-void
+static void
 schro_split_ext_daub97 (int16_t *hi, int16_t *lo, int n)
 {
   hi[-1] = hi[0];
@@ -131,7 +133,7 @@ schro_split_ext_daub97 (int16_t *hi, int16_t *lo, int n)
 
 }
 
-void
+static void
 schro_synth_ext_desl93 (int16_t *hi, int16_t *lo, int n)
 {
   lo[-2] = lo[0];
@@ -149,7 +151,7 @@ schro_synth_ext_desl93 (int16_t *hi, int16_t *lo, int n)
   orc_mas4_across_add_s16_1991_ip (lo, hi - 1, hi, hi + 1, hi + 2, 1<<3, 4, n);
 }
 
-void
+static void
 schro_synth_ext_53 (int16_t *hi, int16_t *lo, int n)
 {
   lo[-1] = lo[0];
@@ -163,7 +165,7 @@ schro_synth_ext_53 (int16_t *hi, int16_t *lo, int n)
   orc_add2_rshift_add_s16_11 (lo, hi, hi+1, n);
 }
 
-void
+static void
 schro_synth_ext_135 (int16_t *hi, int16_t *lo, int n)
 {
   lo[-1] = lo[0];
@@ -177,13 +179,15 @@ schro_synth_ext_135 (int16_t *hi, int16_t *lo, int n)
   orc_mas4_across_add_s16_1991_ip (lo, hi-1, hi, hi + 1, hi + 2, 1<<3, 4, n);
 }
 
-void
+#if 0
+static void
 schro_synth_ext_haar (int16_t *hi, int16_t *lo, int n)
 {
   orc_haar_synth_s16 (hi, lo, n);
 }
+#endif
 
-void
+static void
 schro_synth_ext_fidelity (int16_t *hi, int16_t *lo, int n)
 {
   static const int16_t stage1_weights[] = { -2, 10, -25, 81, 81, -25, 10, -2 };
@@ -210,7 +214,7 @@ schro_synth_ext_fidelity (int16_t *hi, int16_t *lo, int n)
   mas8_add_s16 (hi, lo - 4, stage2_weights, 127, 8, n);
 }
 
-void
+static void
 schro_synth_ext_daub97 (int16_t *hi, int16_t *lo, int n)
 {
   lo[-1] = lo[0];

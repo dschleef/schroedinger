@@ -12,19 +12,6 @@ SCHRO_BEGIN_DECLS
 void schro_wavelet_transform_2d (SchroFrameData *fd, int type, int16_t *tmp);
 void schro_wavelet_inverse_transform_2d (SchroFrameData *fd, int type, int16_t *tmp);
 
-void schro_split_ext_desl93 (int16_t *hi, int16_t *lo, int n);
-void schro_split_ext_53 (int16_t *hi, int16_t *lo, int n);
-void schro_split_ext_135 (int16_t *hi, int16_t *lo, int n);
-void schro_split_ext_haar (int16_t *hi, int16_t *lo, int n);
-void schro_split_ext_fidelity (int16_t *hi, int16_t *lo, int n);
-void schro_split_ext_daub97 (int16_t *hi, int16_t *lo, int n);
-void schro_synth_ext_desl93 (int16_t *hi, int16_t *lo, int n);
-void schro_synth_ext_53 (int16_t *hi, int16_t *lo, int n);
-void schro_synth_ext_135 (int16_t *hi, int16_t *lo, int n);
-void schro_synth_ext_haar (int16_t *hi, int16_t *lo, int n);
-void schro_synth_ext_fidelity (int16_t *hi, int16_t *lo, int n);
-void schro_synth_ext_daub97 (int16_t *hi, int16_t *lo, int n);
-
 void schro_iwt_desl_9_3 (int16_t *data, int stride, int width, int height,
     int16_t *tmp);
 void schro_iwt_5_3 (int16_t *data, int stride, int width, int height,
