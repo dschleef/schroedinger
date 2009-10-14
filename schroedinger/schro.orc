@@ -545,6 +545,46 @@ avgsw t2, t2, 0
 addw d1, t1, t2
 
 
+.function orc_haar_synth_s16_lo
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.source 2 s2 int16_t
+.temp 2 t1
+
+avgsw t1, s2, 0
+subw d1, s1, t1
+
+
+.function orc_haar_synth_s16_hi
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.source 2 s2 int16_t
+.temp 2 t1
+.temp 2 t2
+.temp 2 t3
+
+copyw t2, s2
+avgsw t3, t2, 0
+subw t1, s1, t3
+addw d1, t2, t1
+
+
+.function orc_haar_synth_s16_op
+.dest 2 d1 int16_t
+.dest 2 d2 int16_t
+.source 2 s1 int16_t
+.source 2 s2 int16_t
+.temp 2 t1
+.temp 2 t2
+.temp 2 t3
+
+copyw t2, s2
+avgsw t3, t2, 0
+subw t1, s1, t3
+copyw d1, t1
+addw d2, t2, t1
+
+
 .function orc_haar_synth_s16
 .dest 2 d1 int16_t
 .dest 2 d2 int16_t
@@ -558,6 +598,36 @@ avgsw t3, t2, 0
 subw t1, t1, t3
 copyw d1, t1
 addw d2, t2, t1
+
+
+.function orc_haar_synth_rrshift1_int_s16
+.dest 4 d1 int16_t
+.source 2 s1 int16_t
+.source 2 s2 int16_t
+.temp 2 t1
+.temp 2 t2
+
+copyw t2, s2
+avgsw t1, t2, 0
+subw t1, s1, t1
+addw t2, t2, t1
+avgsw t1, t1, 0
+avgsw t2, t2, 0
+mergewl d1, t1, t2
+
+
+.function orc_haar_synth_int_s16
+.dest 4 d1 int16_t
+.source 2 s1 int16_t
+.source 2 s2 int16_t
+.temp 2 t1
+.temp 2 t2
+
+copyw t2, s2
+avgsw t1, t2, 0
+subw t1, s1, t1
+addw t2, t2, t1
+mergewl d1, t1, t2
 
 
 .function orc_haar_sub_s16
