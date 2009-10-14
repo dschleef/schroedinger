@@ -13,6 +13,8 @@ SchroFrame *schro_frame_new_virtual (SchroMemoryDomain *domain,
     SchroFrameFormat format, int width, int height);
 
 void *schro_virt_frame_get_line (SchroFrame *frame, int component, int i);
+void *schro_virt_frame_get_line_unrendered (SchroFrame *frame, int component, int i);
+void schro_virt_frame_set_line_rendered (SchroFrame *frame, int component, int i);
 void schro_virt_frame_render_line (SchroFrame *frame, void *dest,
     int component, int i);
 

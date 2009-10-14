@@ -51,7 +51,7 @@ schro_frame_new_virtual (SchroMemoryDomain *domain, SchroFrameFormat format,
 
     frame->regions[0] = malloc (frame->components[0].stride * SCHRO_FRAME_CACHE_SIZE);
     for(i=0;i<SCHRO_FRAME_CACHE_SIZE;i++){
-      frame->cached_lines[0][i] = -1;
+      frame->cached_lines[0][i] = 0;
     }
     frame->is_virtual = TRUE;
 
@@ -112,7 +112,7 @@ schro_frame_new_virtual (SchroMemoryDomain *domain, SchroFrameFormat format,
 
     frame->regions[i] = malloc (comp->stride * SCHRO_FRAME_CACHE_SIZE);
     for(j=0;j<SCHRO_FRAME_CACHE_SIZE;j++){
-      frame->cached_lines[i][j] = -1;
+      frame->cached_lines[i][j] = 0;
     }
   }
   frame->is_virtual = TRUE;
@@ -120,13 +120,35 @@ schro_frame_new_virtual (SchroMemoryDomain *domain, SchroFrameFormat format,
   return frame;
 }
 
+static void
+schro_virt_frame_prep_cache_line (SchroFrame *frame, int component, int i)
+{
+  int j;
+
+  if (i < frame->cache_offset[component]) {
+    SCHRO_ERROR ("cache failure: %d outside [%d,%d]", i,
+        frame->cache_offset[component],
+        frame->cache_offset[component] + SCHRO_FRAME_CACHE_SIZE - 1);
+
+    frame->cache_offset[component] = i;
+    for(j=0;j<SCHRO_FRAME_CACHE_SIZE; j++) {
+      frame->cached_lines[component][j] = 0;
+    }
+  }
+
+  while (i >= frame->cache_offset[component] + SCHRO_FRAME_CACHE_SIZE) {
+    j = frame->cache_offset[component] & (SCHRO_FRAME_CACHE_SIZE - 1);
+    frame->cached_lines[component][j] = 0;
+
+    frame->cache_offset[component]++;
+  }
+}
+
 void *
-schro_virt_frame_get_line (SchroFrame *frame, int component, int i)
+schro_virt_frame_get_line_unrendered (SchroFrame *frame, int component, int i)
 {
   SchroFrameData *comp = &frame->components[component];
   int j;
-  int min;
-  int min_j;
 
   //SCHRO_ASSERT(i >= 0);
   //SCHRO_ASSERT(i < comp->height);
@@ -135,27 +157,48 @@ schro_virt_frame_get_line (SchroFrame *frame, int component, int i)
     return SCHRO_FRAME_DATA_GET_LINE(&frame->components[component], i);
   }
 
-  for(j=0;j<SCHRO_FRAME_CACHE_SIZE;j++){
-    if (frame->cached_lines[component][j] == i) {
-      return SCHRO_OFFSET(frame->regions[component], comp->stride * j);
-    }
+  schro_virt_frame_prep_cache_line (frame, component, i);
+  j = i & (SCHRO_FRAME_CACHE_SIZE - 1);
+
+  return SCHRO_OFFSET (frame->regions[component], comp->stride * j);
+}
+
+void *
+schro_virt_frame_get_line (SchroFrame *frame, int component, int i)
+{
+  SchroFrameData *comp = &frame->components[component];
+  int j;
+
+  //SCHRO_ASSERT(i >= 0);
+  //SCHRO_ASSERT(i < comp->height);
+
+  if (!frame->is_virtual) {
+    return SCHRO_FRAME_DATA_GET_LINE(&frame->components[component], i);
   }
 
-  min_j = 0;
-  min = frame->cached_lines[component][0];
-  for(j=1;j<SCHRO_FRAME_CACHE_SIZE;j++){
-    if (frame->cached_lines[component][j] < min) {
-      min = frame->cached_lines[component][j];
-      min_j = j;
-    }
+  schro_virt_frame_prep_cache_line (frame, component, i);
+  j = i & (SCHRO_FRAME_CACHE_SIZE - 1);
+
+  if (!frame->cached_lines[component][j]) {
+    schro_virt_frame_render_line (frame,
+        SCHRO_OFFSET (frame->regions[component], comp->stride * j), component, i);
+    frame->cached_lines[component][j] = 1;
   }
-  frame->cached_lines[component][min_j] = i;
 
-  schro_virt_frame_render_line (frame,
-      SCHRO_OFFSET(frame->regions[component], comp->stride * min_j),
-      component, i);
+  return SCHRO_OFFSET (frame->regions[component], comp->stride * j);
+}
 
-  return SCHRO_OFFSET(frame->regions[component], comp->stride * min_j);
+void
+schro_virt_frame_set_line_rendered (SchroFrame *frame, int component, int i)
+{
+  int j;
+
+  //SCHRO_ASSERT(i >= 0);
+  //SCHRO_ASSERT(i < comp->height);
+  //SCHRO_ASSERT(frame->is_virtual);
+
+  j = i & (SCHRO_FRAME_CACHE_SIZE - 1);
+  frame->cached_lines[component][j] = 1;
 }
 
 void

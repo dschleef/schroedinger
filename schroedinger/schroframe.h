@@ -88,6 +88,7 @@ struct _SchroFrame {
   void *virt_priv2;
 
   int extension;
+  int cache_offset[3];
 };
 
 struct _SchroUpsampledFrame {
