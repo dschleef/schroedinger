@@ -20,12 +20,6 @@ int16_t tmp2[2000];
 
 int filtershift[] = { 1, 1, 1, 0, 1, 0, 1 };
 
-void synth(int16_t *a, int filter, int n);
-void split (int16_t *a, int filter, int n);
-void synth_schro_ext (int16_t *a, int filter, int n);
-void split_schro_ext (int16_t *a, int n, int filter);
-void deinterleave (int16_t *a, int n);
-void interleave (int16_t *a, int n);
 void dump (int16_t *a, int n);
 void dump_cmp (int16_t *a, int16_t *b, int n);
 void solve (double *matrix, double *col, int n);
@@ -72,7 +66,7 @@ random_test(double *dest, int filter, int n_levels, int hl)
 
     for(i=n_levels-1;i>=0;i--){
       interleave(a,N>>i);
-      synth_schro_ext(a,N>>i,filter);
+      synth(a,N>>i,filter);
     }
 
     for(i=0;i<N;i++){
@@ -284,77 +278,5 @@ deinterleave (int16_t *a, int n)
   for(i=0;i<n;i++){
     a[i] = tmp2[i];
   }
-}
-
-void
-split_schro_ext (int16_t *a, int n, int filter)
-{
-  int16_t tmp1[2000], *hi;
-  int16_t tmp2[2000], *lo;
-
-  hi = tmp1 + 4;
-  lo = tmp2 + 4;
-
-  orc_deinterleave2_s16 (hi, lo, a, n/2);
-
-  switch (filter) {
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
-      schro_split_ext_desl93 (hi, lo, n/2);
-      break;
-    case SCHRO_WAVELET_LE_GALL_5_3:
-      schro_split_ext_53 (hi, lo, n/2);
-      break;
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
-      schro_split_ext_135 (hi, lo, n/2);
-      break;
-    case SCHRO_WAVELET_HAAR_0:
-    case SCHRO_WAVELET_HAAR_1:
-      schro_split_ext_haar (hi, lo, n/2);
-      break;
-    case SCHRO_WAVELET_FIDELITY:
-      schro_split_ext_fidelity (hi, lo, n/2);
-      break;
-    case SCHRO_WAVELET_DAUBECHIES_9_7:
-      schro_split_ext_daub97(hi, lo, n/2);
-      break;
-  }
-  orc_interleave2_s16 (a, hi, lo, n/2);
-
-}
-
-void
-synth_schro_ext (int16_t *a, int n, int filter)
-{
-  int16_t tmp1[2000], *hi;
-  int16_t tmp2[2000], *lo;
-
-  hi = tmp1 + 4;
-  lo = tmp2 + 4;
-
-  orc_deinterleave2_s16 (hi, lo, a, n/2);
-
-  switch (filter) {
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_9_7:
-      schro_synth_ext_desl93 (hi, lo, n/2);
-      break;
-    case SCHRO_WAVELET_LE_GALL_5_3:
-      schro_synth_ext_53 (hi, lo, n/2);
-      break;
-    case SCHRO_WAVELET_DESLAURIES_DUBUC_13_7:
-      schro_synth_ext_135 (hi, lo, n/2);
-      break;
-    case SCHRO_WAVELET_HAAR_0:
-    case SCHRO_WAVELET_HAAR_1:
-      schro_synth_ext_haar (hi, lo, n/2);
-      break;
-    case SCHRO_WAVELET_FIDELITY:
-      schro_synth_ext_fidelity (hi, lo, n/2);
-      break;
-    case SCHRO_WAVELET_DAUBECHIES_9_7:
-      schro_synth_ext_daub97(hi, lo, n/2);
-      break;
-  }
-
-  orc_interleave2_s16 (a, hi, lo, n/2);
 }
 

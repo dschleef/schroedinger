@@ -22,8 +22,6 @@ void iiwt_ref(SchroFrameData *p, int filter);
 void iwt_test(SchroFrameData *p, int filter);
 void iiwt_test(SchroFrameData *p, int filter);
 
-void schro_split_ext (int16_t *hi, int16_t *lo, int n, int filter);
-void schro_synth_ext (int16_t *hi, int16_t *lo, int n, int filter);
 
 void
 fwd_test (int filter, int width, int height)
@@ -272,30 +270,30 @@ void iwt_ref(SchroFrameData *p, int filter)
 {
   int16_t tmp1[100], *hi;
   int16_t tmp2[100], *lo;
-  int16_t tmp3[100];
+  int16_t tmp3[100], *tmpbuf;
   int16_t *data;
   int i;
 
   hi = tmp1 + 4;
   lo = tmp2 + 4;
+  tmpbuf = tmp3 + 8;
 
   lshift(p, filtershift[filter]);
 
   for(i=0;i<p->height;i++){
     data = OFFSET(p->data,i*p->stride);
-    orc_deinterleave2_s16 (hi, lo, data, p->width/2);
-    schro_split_ext (hi, lo, p->width/2, filter);
-    copy(data, sizeof(int16_t), hi, sizeof(int16_t), p->width/2);
-    copy(data + p->width/2, sizeof(int16_t), lo, sizeof(int16_t), p->width/2);
+    copy(tmpbuf, sizeof(int16_t), data, sizeof(int16_t), p->width);
+    split (tmpbuf, p->width, filter);
+    orc_deinterleave2_s16 (lo, hi, tmpbuf, p->width/2);
+    copy(data, sizeof(int16_t), lo, sizeof(int16_t), p->width/2);
+    copy(data + p->width/2, sizeof(int16_t), hi, sizeof(int16_t), p->width/2);
   }
 
   for(i=0;i<p->width;i++){
     data = OFFSET(p->data,i*sizeof(int16_t));
-    copy(tmp3, sizeof(int16_t), data, p->stride, p->height);
-    orc_deinterleave2_s16 (hi, lo, tmp3, p->height/2);
-    schro_split_ext (hi, lo, p->height/2, filter);
-    orc_interleave2_s16 (tmp3, hi, lo, p->height/2);
-    copy(data, p->stride, tmp3, sizeof(int16_t), p->height);
+    copy(tmpbuf, sizeof(int16_t), data, p->stride, p->height);
+    split (tmpbuf, p->height, filter);
+    copy(data, p->stride, tmpbuf, sizeof(int16_t), p->height);
   }
 
 }
@@ -304,83 +302,31 @@ void iiwt_ref(SchroFrameData *p, int filter)
 {
   int16_t tmp1[100], *hi;
   int16_t tmp2[100], *lo;
-  int16_t tmp3[100];
+  int16_t tmp3[100], *tmpbuf;
   int16_t *data;
   int i;
 
   hi = tmp1 + 4;
   lo = tmp2 + 4;
+  tmpbuf = tmp3 + 8;
 
   for(i=0;i<p->width;i++){
     data = OFFSET(p->data,i*sizeof(int16_t));
-    copy(tmp3, sizeof(int16_t), data, p->stride, p->height);
-    orc_deinterleave2_s16 (hi, lo, tmp3, p->height/2);
-    schro_synth_ext (hi, lo, p->height/2, filter);
-    orc_interleave2_s16 (tmp3, hi, lo, p->height/2);
-    copy(data, p->stride, tmp3, sizeof(int16_t), p->height);
+    copy(tmpbuf, sizeof(int16_t), data, p->stride, p->height);
+    synth (tmpbuf, p->height, filter);
+    copy(data, p->stride, tmpbuf, sizeof(int16_t), p->height);
   }
 
   for(i=0;i<p->height;i++){
     data = OFFSET(p->data,i*p->stride);
     copy(hi, sizeof(int16_t), data, sizeof(int16_t), p->width/2);
     copy(lo, sizeof(int16_t), data + p->width/2, sizeof(int16_t), p->width/2);
-    schro_synth_ext (hi, lo, p->width/2, filter);
-    orc_interleave2_s16 (data, hi, lo, p->width/2);
+    orc_interleave2_s16 (tmpbuf, hi, lo, p->width/2);
+    synth (tmpbuf, p->width, filter);
+    copy(data, sizeof(int16_t), tmpbuf, sizeof(int16_t), p->width);
   }
 
   rshift(p, filtershift[filter]);
-}
-
-void
-schro_split_ext (int16_t *hi, int16_t *lo, int n, int filter)
-{
-  switch (filter) {
-    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
-      schro_split_ext_desl93 (hi, lo, n);
-      break;
-    case SCHRO_WAVELET_LE_GALL_5_3:
-      schro_split_ext_53 (hi, lo, n);
-      break;
-    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
-      schro_split_ext_135 (hi, lo, n);
-      break;
-    case SCHRO_WAVELET_HAAR_0:
-    case SCHRO_WAVELET_HAAR_1:
-      schro_split_ext_haar (hi, lo, n);
-      break;
-    case SCHRO_WAVELET_FIDELITY:
-      schro_split_ext_fidelity (hi, lo, n);
-      break;
-    case SCHRO_WAVELET_DAUBECHIES_9_7:
-      schro_split_ext_daub97(hi, lo, n);
-      break;
-  }
-}
-
-void
-schro_synth_ext (int16_t *hi, int16_t *lo, int n, int filter)
-{
-  switch (filter) {
-    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
-      schro_synth_ext_desl93 (hi, lo, n);
-      break;
-    case SCHRO_WAVELET_LE_GALL_5_3:
-      schro_synth_ext_53 (hi, lo, n);
-      break;
-    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
-      schro_synth_ext_135 (hi, lo, n);
-      break;
-    case SCHRO_WAVELET_HAAR_0:
-    case SCHRO_WAVELET_HAAR_1:
-      schro_synth_ext_haar (hi, lo, n);
-      break;
-    case SCHRO_WAVELET_FIDELITY:
-      schro_synth_ext_fidelity (hi, lo, n);
-      break;
-    case SCHRO_WAVELET_DAUBECHIES_9_7:
-      schro_synth_ext_daub97(hi, lo, n);
-      break;
-  }
 }
 
 void iwt_test(SchroFrameData *p, int filter)
@@ -390,31 +336,6 @@ void iwt_test(SchroFrameData *p, int filter)
   tmp = malloc((p->width + 32)*sizeof(int16_t));
 
   schro_wavelet_transform_2d (p, filter, tmp);
-#if 0
-  switch (filter) {
-    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
-      schro_iwt_desl_9_3 (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_LE_GALL_5_3:
-      schro_iwt_5_3 (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
-      schro_iwt_13_5 (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_HAAR_0:
-      schro_iwt_haar0 (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_HAAR_1:
-      schro_iwt_haar1 (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_FIDELITY:
-      schro_iwt_fidelity (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_DAUBECHIES_9_7:
-      schro_iwt_daub_9_7(p->data, p->stride, p->width, p->height, tmp);
-      break;
-  }
-#endif
 
   free(tmp);
 }
@@ -426,31 +347,6 @@ void iiwt_test(SchroFrameData *p, int filter)
   tmp = malloc((p->width + 32)*sizeof(int16_t));
 
   schro_wavelet_inverse_transform_2d (p, filter, tmp);
-#if 0
-  switch (filter) {
-    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
-      schro_iiwt_desl_9_3 (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_LE_GALL_5_3:
-      schro_iiwt_5_3 (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
-      schro_iiwt_13_5 (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_HAAR_0:
-      schro_iiwt_haar0 (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_HAAR_1:
-      schro_iiwt_haar1 (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_FIDELITY:
-      schro_iiwt_fidelity (p->data, p->stride, p->width, p->height, tmp);
-      break;
-    case SCHRO_WAVELET_DAUBECHIES_9_7:
-      schro_iiwt_daub_9_7(p->data, p->stride, p->width, p->height, tmp);
-      break;
-  }
-#endif
 
   free(tmp);
 }

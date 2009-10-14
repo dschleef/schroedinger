@@ -35,5 +35,11 @@ int parse_packet (FILE *file, void **data, int *size);
 #define rand_u8() (rand()&0xff)
 #define rand_f64() (((rand()/(RAND_MAX+1.0))+rand())/(RAND_MAX+1.0))
 
+void interleave (int16_t *a, int n);
+void deinterleave (int16_t *a, int n);
+void extend(int16_t *a, int n);
+void synth(int16_t *a, int n, int filter);
+void split (int16_t *a, int n, int filter);
+
 #endif
 

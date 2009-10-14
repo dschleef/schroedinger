@@ -176,7 +176,7 @@ gen_horiz_lines (SchroFrameData *fd, int type)
     for(j=0;j<fd->height;j++){
       data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
       for(i=0;i<fd->width;i++) {
-        data[i] = CONST*((j%pitch)==0);
+        data[i] = CONST*(((j+1)%pitch)==0);
       }
     }
   } else {
@@ -184,7 +184,7 @@ gen_horiz_lines (SchroFrameData *fd, int type)
     for(j=0;j<fd->height;j++){
       data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
       for(i=0;i<fd->width;i++) {
-        data[i] = CONST*((j%pitch)==0);
+        data[i] = CONST*(((j+1)%pitch)==0);
       }
     }
   }
@@ -350,7 +350,7 @@ Generator generators_u8[] = {
   { "random", gen_random, 1 },
   { "const", gen_const, ARRAY_SIZE(gen_const_array) },
   { "vert_lines", gen_vert_lines, 8 },
-  { "horiz_lines", gen_horiz_lines, 8 },
+  { "horiz_lines", gen_horiz_lines, 16 },
   { "vert_bands", gen_vert_bands, 8 },
   { "horiz_bands", gen_horiz_bands, 8 },
   { "vert_edge", gen_vert_edge, 1 },
@@ -616,5 +616,210 @@ parse_packet (FILE *file, void **p_data, int *p_size)
   *p_data = packet;
   *p_size = size;
   return 1;
+}
+
+void
+interleave (int16_t *a, int n)
+{
+  int i;
+  int16_t tmp[300];
+  for(i=0;i<n/2;i++){
+    tmp[i*2] = a[i];
+    tmp[i*2 + 1] = a[n/2 + i];
+  }
+  for(i=0;i<n;i++){
+    a[i] = tmp[i];
+  }
+}
+
+void
+deinterleave (int16_t *a, int n)
+{
+  int i;
+  int16_t tmp[300];
+  for(i=0;i<n/2;i++){
+    tmp[i] = a[i*2];
+    tmp[n/2 + i] = a[i*2+1];
+  }
+  for(i=0;i<n;i++){
+    a[i] = tmp[i];
+  }
+}
+
+void
+extend(int16_t *a, int n)
+{
+  a[-8] = a[0];
+  a[-7] = a[1];
+  a[-6] = a[0];
+  a[-5] = a[1];
+  a[-4] = a[0];
+  a[-3] = a[1];
+  a[-2] = a[0];
+  a[-1] = a[1];
+  a[n+0] = a[n-2];
+  a[n+1] = a[n-1];
+  a[n+2] = a[n-2];
+  a[n+3] = a[n-1];
+  a[n+4] = a[n-2];
+  a[n+5] = a[n-1];
+  a[n+6] = a[n-2];
+  a[n+7] = a[n-1];
+}
+
+void
+synth(int16_t *a, int n, int filter)
+{
+  int i;
+
+  switch (filter) {
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i] -= (a[i-1] + a[i+1] + 2)>>2;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i + 1] += (-a[i-2] + 9 * a[i] + 9 * a[i+2] - a[i+4] + 8)>>4;
+      }
+      break;
+    case SCHRO_WAVELET_LE_GALL_5_3:
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i] -= (a[i-1] + a[i+1] + 2)>>2;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i + 1] += (a[i] + a[i+2] + 1)>>1;
+      }
+      break;
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i] -= (-a[i-3] + 9 * a[i-1] + 9 * a[i+1] - a[i+3] + 16)>>5;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i+1] += (-a[i-2] + 9 * a[i] + 9 * a[i+2] - a[i+4] + 8)>>4;
+      }
+      break;
+    case SCHRO_WAVELET_HAAR_0:
+    case SCHRO_WAVELET_HAAR_1:
+      for(i=0;i<n;i+=2){
+        a[i] -= (a[i+1] + 1)>>1;
+      }
+      for(i=0;i<n;i+=2){
+        a[i+1] += a[i];
+      }
+      break;
+    case SCHRO_WAVELET_FIDELITY:
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i+1] += (-2*a[i-6] + 10*a[i-4] - 25*a[i-2] + 81*a[i] +
+            81*a[i+2] - 25*a[i+4] + 10*a[i+6] - 2*a[i+8] + 128) >> 8;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i] -= (-8*a[i-7] + 21*a[i-5] - 46*a[i-3] + 161*a[i-1] +
+            161*a[i+1] - 46*a[i+3] + 21*a[i+5] - 8*a[i+7] + 128) >> 8;
+      }
+      break;
+    case SCHRO_WAVELET_DAUBECHIES_9_7:
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i] -= (1817*a[i-1] + 1817 * a[i+1] + 2048)>>12;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i+1] -= (3616*a[i] + 3616 * a[i+2] + 2048)>>12;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i] += (217*a[i-1] + 217 * a[i+1] + 2048)>>12;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i+1] += (6497*a[i] + 6497 * a[i+2] + 2048)>>12;
+      }
+      break;
+  }
+}
+
+void
+split (int16_t *a, int n, int filter)
+{
+  int i;
+
+  switch (filter) {
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i + 1] -= (-a[i-2] + 9 * a[i] + 9 * a[i+2] - a[i+4] + 8)>>4;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i] += (a[i-1] + a[i+1] + 2)>>2;
+      }
+      break;
+    case SCHRO_WAVELET_LE_GALL_5_3:
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i + 1] -= (a[i] + a[i+2] + 1)>>1;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i] += (a[i-1] + a[i+1] + 2)>>2;
+      }
+      break;
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i+1] -= (-a[i-2] + 9 * a[i] + 9 * a[i+2] - a[i+4] + 8)>>4;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i] += (-a[i-3] + 9 * a[i-1] + 9 * a[i+1] - a[i+3] + 16)>>5;
+      }
+      break;
+    case SCHRO_WAVELET_HAAR_0:
+    case SCHRO_WAVELET_HAAR_1:
+      for(i=0;i<n;i+=2){
+        a[i+1] -= a[i];
+      }
+      for(i=0;i<n;i+=2){
+        a[i] += (a[i+1] + 1)>>1;
+      }
+      break;
+    case SCHRO_WAVELET_FIDELITY:
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i] += (-8*a[i-7] + 21*a[i-5] - 46*a[i-3] + 161*a[i-1] +
+            161*a[i+1] - 46*a[i+3] + 21*a[i+5] - 8*a[i+7] + 128) >> 8;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i+1] -= (-2*a[i-6] + 10*a[i-4] - 25*a[i-2] + 81*a[i] +
+            81*a[i+2] - 25*a[i+4] + 10*a[i+6] - 2*a[i+8] + 128) >> 8;
+      }
+      break;
+    case SCHRO_WAVELET_DAUBECHIES_9_7:
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i+1] -= (6497*a[i] + 6497 * a[i+2] + 2048)>>12;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i] -= (217*a[i-1] + 217 * a[i+1] + 2048)>>12;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i+1] += (3616*a[i] + 3616 * a[i+2] + 2048)>>12;
+      }
+      extend(a,n);
+      for(i=0;i<n;i+=2){
+        a[i] += (1817*a[i-1] + 1817 * a[i+1] + 2048)>>12;
+      }
+      break;
+  }
 }
 
