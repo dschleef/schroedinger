@@ -53,7 +53,7 @@ typedef enum _SchroFrameFormat {
 
 #define SCHRO_FRAME_IS_PACKED(format) (((format)>>8) & 0x1)
 
-#define SCHRO_FRAME_CACHE_SIZE 8
+#define SCHRO_FRAME_CACHE_SIZE 16
 
 struct _SchroFrameData {
   SchroFrameFormat format;
