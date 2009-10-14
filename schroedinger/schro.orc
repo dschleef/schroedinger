@@ -150,6 +150,25 @@ shlw d1, s1, 2
 shlw d1, d1, p1
 
 
+.function orc_mas2_add_s16_op
+.dest 2 d1 int16_t
+.source 2 s0 int16_t
+.source 2 s1 int16_t
+.source 2 s2 int16_t
+.temp 2 t1
+.temp 4 t2
+.param 2 p1
+.param 4 p2
+.param 4 p3
+
+addw t1, s1, s2
+mulswl t2, t1, p1
+addl t2, t2, p2
+shrsl t2, t2, p3
+convlw t1, t2
+addw d1, s0, t1
+
+
 .function orc_mas2_add_s16_ip
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
@@ -166,6 +185,25 @@ addl t2, t2, p2
 shrsl t2, t2, p3
 convlw t1, t2
 addw d1, d1, t1
+
+
+.function orc_mas2_sub_s16_op
+.dest 2 d1 int16_t
+.source 2 s0 int16_t
+.source 2 s1 int16_t
+.source 2 s2 int16_t
+.temp 2 t1
+.temp 4 t2
+.param 2 p1
+.param 4 p2
+.param 4 p3
+
+addw t1, s1, s2
+mulswl t2, t1, p1
+addl t2, t2, p2
+shrsl t2, t2, p3
+convlw t1, t2
+subw d1, s0, t1
 
 
 .function orc_mas2_sub_s16_ip
