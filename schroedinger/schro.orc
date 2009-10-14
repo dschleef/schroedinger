@@ -516,6 +516,21 @@ addw d1, t1, t2
 subw d1, s2, s1
 
 
+.function orc_haar_split_s16_op
+.dest 2 d1 int16_t
+.dest 2 d2 int16_t
+.source 2 s1 int16_t
+.source 2 s2 int16_t
+.temp 2 t1
+.temp 2 t2
+
+copyw t1, s1
+subw t2, s2, t1
+copyw d2, t2
+avgsw t2, t2, 0
+addw d1, t1, t2
+
+
 .function orc_haar_split_s16
 .dest 2 d1 int16_t
 .dest 2 d2 int16_t

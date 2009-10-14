@@ -1162,6 +1162,36 @@ wavelet_iwt_haar_shift1_horiz (SchroFrame *frame, void *_dest, int component,
   orc_haar_deint_lshift1_split_s16 (lo, hi, src, width/2);
 }
 
+#ifdef aligned_virtframes
+/* This would be a lot faster if we could guarantee alignment for
+ * both destinations. */
+static void
+wavelet_iwt_haar_vert (SchroFrame *frame, void *_dest, int component,
+    int i)
+{
+  int width = frame->components[component].width;
+  int16_t *odd;
+  int16_t *even;
+  int16_t *hi;
+  int16_t *lo;
+
+  even = schro_virt_frame_get_line (frame->virt_frame1, component, i & (~1));
+  odd = schro_virt_frame_get_line (frame->virt_frame1, component,
+      (i & (~1)) + 1);
+
+  if (i & 1) {
+    lo = schro_virt_frame_get_line_unrendered (frame, component, i-1);
+    hi = _dest;
+  } else {
+    lo = _dest;
+    hi = schro_virt_frame_get_line_unrendered (frame, component, i+1);
+  }
+
+  orc_haar_split_s16_op (lo, hi, even, odd, width);
+
+  schro_virt_frame_set_line_rendered (frame, component, i^1);
+}
+#else
 static void
 wavelet_iwt_haar_vert (SchroFrame *frame, void *_dest, int component,
     int i)
@@ -1187,6 +1217,7 @@ wavelet_iwt_haar_vert (SchroFrame *frame, void *_dest, int component,
     orc_haar_split_s16_lo (dest, lo, hi, width);
   }
 }
+#endif
 
 static void
 schro_iwt_haar (int16_t *data, int stride, int width, int height,
