@@ -396,6 +396,7 @@ void schro_iwt_13_5 (int16_t *data, int stride, int width, int height,
   }
 }
 
+#if 0
 static void
 schro_iwt_haar (int16_t *data, int stride, int width, int height,
     int16_t *tmp, int16_t shift)
@@ -434,6 +435,7 @@ void schro_iwt_haar1 (int16_t *data, int stride, int width, int height, int16_t 
 {
   schro_iwt_haar (data, stride, width, height, tmp, 1);
 }
+#endif
 
 static void
 mas8_across_add_s16 (int16_t *dest, const int16_t *src, int stride,
@@ -1128,5 +1130,110 @@ void schro_iwt_5_3 (int16_t *data, int stride, int width, int height,
   schro_virt_frame_render (vf2, frame);
 
   schro_frame_unref (vf2);
+}
+
+static void
+wavelet_iwt_haar_horiz (SchroFrame *frame, void *_dest, int component,
+    int i)
+{
+  int16_t *dest = _dest;
+  int width = frame->components[component].width;
+  int16_t *src;
+  int16_t *hi = dest + width/2;
+  int16_t *lo = dest;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+
+  orc_haar_deint_split_s16 (lo, hi, src, width/2);
+}
+
+static void
+wavelet_iwt_haar_shift1_horiz (SchroFrame *frame, void *_dest, int component,
+    int i)
+{
+  int16_t *dest = _dest;
+  int width = frame->components[component].width;
+  int16_t *src;
+  int16_t *hi = dest + width/2;
+  int16_t *lo = dest;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+
+  orc_haar_deint_lshift1_split_s16 (lo, hi, src, width/2);
+}
+
+static void
+wavelet_iwt_haar_vert (SchroFrame *frame, void *_dest, int component,
+    int i)
+{
+  int16_t *dest = _dest;
+  int width = frame->components[component].width;
+
+  if (i & 1) {
+    int16_t *hi;
+    int16_t *lo;
+
+    hi = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+    lo = schro_virt_frame_get_line (frame->virt_frame1, component, i-1);
+
+    orc_haar_split_s16_hi (dest, lo, hi, width);
+  } else {
+    int16_t *lo;
+    int16_t *hi;
+
+    lo = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+    hi = schro_virt_frame_get_line (frame->virt_frame1, component, i+1);
+
+    orc_haar_split_s16_lo (dest, lo, hi, width);
+  }
+}
+
+static void
+schro_iwt_haar (int16_t *data, int stride, int width, int height,
+    int16_t *tmp, int16_t shift)
+{
+  SchroFrame *frame;
+  SchroFrame *vf1;
+  SchroFrame *vf2;
+
+  frame = schro_frame_new ();
+
+  frame->format = SCHRO_FRAME_FORMAT_S16_444;
+  frame->width = width;
+  frame->height = height;
+
+  frame->components[0].format = SCHRO_FRAME_FORMAT_S16_444;
+  frame->components[0].width = width;
+  frame->components[0].height = height;
+  frame->components[0].stride = stride;
+  frame->components[0].data = data;
+
+  vf1 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf1->virt_frame1 = frame;
+  vf1->virt_priv2 = tmp;
+  if (shift) {
+    vf1->render_line = wavelet_iwt_haar_shift1_horiz;
+  } else {
+    vf1->render_line = wavelet_iwt_haar_horiz;
+  }
+
+  vf2 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf2->virt_frame1 = vf1;
+  vf2->virt_priv2 = tmp;
+  vf2->render_line = wavelet_iwt_haar_vert;
+
+  schro_virt_frame_render (vf2, frame);
+
+  schro_frame_unref (vf2);
+}
+
+void schro_iwt_haar0 (int16_t *data, int stride, int width, int height, int16_t *tmp)
+{
+  schro_iwt_haar (data, stride, width, height, tmp, 0);
+}
+
+void schro_iwt_haar1 (int16_t *data, int stride, int width, int height, int16_t *tmp)
+{
+  schro_iwt_haar (data, stride, width, height, tmp, 1);
 }
 
