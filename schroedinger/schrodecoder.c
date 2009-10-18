@@ -1124,6 +1124,21 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
       instance->has_md5 = TRUE;
     }
 
+    if (code == SCHRO_AUX_DATA_ENCODER_STRING) {
+      char s[20];
+      int i;
+
+      for(i=0;i<20;i++){
+        s[i] = schro_unpack_decode_bits (&unpack, 8);
+      }
+      if (memcmp ("Schroedinger 1.0.", s, 17) == 0) {
+        if (s[17] >= '0' && s[17] <= '7' && (s[18] == '.' || s[18] == 0xff)) {
+          SCHRO_WARNING("turning on codeblock quantiser compatibility mode");
+          instance->compat_quant_offset = TRUE;
+        }
+      }
+    }
+
     schro_buffer_unref (buffer);
     return SCHRO_DECODER_OK;
   }
@@ -3275,7 +3290,7 @@ schro_decoder_decode_subband (SchroPicture *picture,
   }
   if (!params->is_noarith) {
     schro_arith_decode_flush (ctx->arith);
-    if (ctx->arith->offset < ctx->subband_length) {
+    if (ctx->arith->offset < ctx->subband_length - 1) {
       SCHRO_WARNING("arith decoding didn't consume buffer (%d < %d)",
           ctx->arith->offset, ctx->subband_length);
 #ifdef DONT_DO_THIS
