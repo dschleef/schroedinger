@@ -1247,8 +1247,8 @@ convsuswb d1, t2
 
 convubw t1, s1
 convubw t2, s2
-mullw t1, p1
-mullw t2, p2
+mullw t1, t1, p1
+mullw t2, t2, p2
 addw t1, t1, t2
 addw t1, t1, p3
 shrsw t1, t1, p4
@@ -1271,8 +1271,8 @@ convsuswb d1, t1
 
 convubw t1, s1
 convubw t2, s2
-mullw t1, p1
-mullw t2, p2
+mullw t1, t1, p1
+mullw t2, t2, p2
 addw t1, t1, t2
 addw t1, t1, p3
 shrsw t1, t1, p4
@@ -1295,8 +1295,8 @@ convsuswb d1, t1
 
 convubw t1, s1
 convubw t2, s2
-mullw t1, p1
-mullw t2, p2
+mullw t1, t1, p1
+mullw t2, t2, p2
 addw t1, t1, t2
 addw t1, t1, p3
 shrsw t1, t1, p4
@@ -1318,8 +1318,8 @@ convsuswb d1, t1
 
 convubw t1, s1
 convubw t2, s2
-mullw t1, p1
-mullw t2, p2
+mullw t1, t1, p1
+mullw t2, t2, p2
 addw t1, t1, t2
 addw t1, t1, p3
 shrsw t1, t1, p4
