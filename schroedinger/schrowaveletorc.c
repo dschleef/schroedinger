@@ -1619,3 +1619,265 @@ void schro_iiwt_daub_9_7 (int16_t *data, int stride, int width, int height,
   schro_frame_unref (vf3);
 }
 
+
+/* Planar transforms */
+
+
+void
+schro_wavelet_convert_interleaved_planar4 (SchroFrameData *fd,
+    SchroFrame **frames)
+{
+  int j;
+  SchroFrameData *dest_fd;
+
+  dest_fd = &frames[0]->components[0];
+  for(j=0;j<fd->height/2;j++) {
+    orc_memcpy (SCHRO_FRAME_DATA_GET_LINE(dest_fd, j),
+        SCHRO_FRAME_DATA_GET_PIXEL_S16 (fd, j*2 + 0, 0),
+        (fd->width/2)*sizeof(int16_t));
+  }
+
+  dest_fd = &frames[1]->components[0];
+  for(j=0;j<fd->height/2;j++) {
+    orc_memcpy (SCHRO_FRAME_DATA_GET_LINE(dest_fd, j),
+        SCHRO_FRAME_DATA_GET_PIXEL_S16 (fd, j*2 + 0, fd->width/2),
+        (fd->width/2)*sizeof(int16_t));
+  }
+
+  dest_fd = &frames[2]->components[0];
+  for(j=0;j<fd->height/2;j++) {
+    orc_memcpy (SCHRO_FRAME_DATA_GET_LINE(dest_fd, j),
+        SCHRO_FRAME_DATA_GET_PIXEL_S16 (fd, j*2 + 1, 0),
+        (fd->width/2)*sizeof(int16_t));
+  }
+
+  dest_fd = &frames[3]->components[0];
+  for(j=0;j<fd->height/2;j++) {
+    orc_memcpy (SCHRO_FRAME_DATA_GET_LINE(dest_fd, j),
+        SCHRO_FRAME_DATA_GET_PIXEL_S16 (fd, j*2 + 1, fd->width/2),
+        (fd->width/2)*sizeof(int16_t));
+  }
+}
+
+void
+schro_wavelet_convert_planar4_interleaved (SchroFrameData *fd,
+    SchroFrame **frames)
+{
+  int j;
+  SchroFrameData *src_fd;
+
+  src_fd = &frames[0]->components[0];
+  for(j=0;j<fd->height/2;j++) {
+    orc_memcpy (
+        SCHRO_FRAME_DATA_GET_PIXEL_S16 (fd, 0, j*2 + 0),
+        SCHRO_FRAME_DATA_GET_LINE(src_fd, j),
+        (fd->width/2)*sizeof(int16_t));
+  }
+
+  src_fd = &frames[1]->components[0];
+  for(j=0;j<fd->height/2;j++) {
+    orc_memcpy (
+        SCHRO_FRAME_DATA_GET_PIXEL_S16 (fd, fd->width/2, j*2 + 0),
+        SCHRO_FRAME_DATA_GET_LINE(src_fd, j),
+        (fd->width/2)*sizeof(int16_t));
+  }
+
+  src_fd = &frames[2]->components[0];
+  for(j=0;j<fd->height/2;j++) {
+    orc_memcpy (
+        SCHRO_FRAME_DATA_GET_PIXEL_S16 (fd, 0, j*2 + 1),
+        SCHRO_FRAME_DATA_GET_LINE(src_fd, j),
+        (fd->width/2)*sizeof(int16_t));
+  }
+
+  src_fd = &frames[3]->components[0];
+  for(j=0;j<fd->height/2;j++) {
+    orc_memcpy (
+        SCHRO_FRAME_DATA_GET_PIXEL_S16 (fd, fd->width/2, j*2 + 1),
+        SCHRO_FRAME_DATA_GET_LINE(src_fd, j),
+        (fd->width/2)*sizeof(int16_t));
+  }
+}
+
+static void
+wavelet_iwt_5_3_horiz_lo (SchroFrame *frame, void *_dest, int component,
+    int i)
+{
+  int16_t *dest = _dest;
+  int width = frame->components[component].width;
+  int16_t *tmp = frame->virt_priv2;
+  int16_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  int16_t *hi = tmp + 2;
+  int16_t *lo = tmp + 6 + width;
+
+  orc_deinterleave2_lshift1_s16 (lo, hi, src, width);
+  schro_split_ext_53 (lo, hi, width);
+  orc_memcpy (dest, lo, width*sizeof(int16_t));
+}
+
+static void
+wavelet_iwt_5_3_horiz_hi (SchroFrame *frame, void *_dest, int component,
+    int i)
+{
+  int16_t *dest = _dest;
+  int width = frame->components[component].width;
+  int16_t *tmp = frame->virt_priv2;
+  int16_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  int16_t *hi = tmp + 2;
+  int16_t *lo = tmp + 6 + width;
+
+  orc_deinterleave2_lshift1_s16 (lo, hi, src, width);
+  schro_split_ext_53 (lo, hi, width);
+  orc_memcpy (dest, hi, width*sizeof(int16_t));
+}
+
+static void
+wavelet_iwt_5_3_vert_lo (SchroFrame *frame, void *_dest, int component,
+    int i)
+{
+  int16_t *dest = _dest;
+  int width = frame->components[component].width;
+
+  int16_t *lo;
+  int16_t *hi1, *hi2;
+
+  lo = schro_virt_frame_get_line (frame->virt_frame1, component, i*2);
+  if (i == 0) {
+    hi1 = schro_virt_frame_get_line (frame->virt_frame2, component, 0);
+  } else {
+    hi1 = schro_virt_frame_get_line (frame->virt_frame2, component, i-1);
+  }
+  hi2 = schro_virt_frame_get_line (frame->virt_frame2, component, i);
+
+  orc_add2_rshift_add_s16_22_op (dest, lo, hi1, hi2, width);
+}
+
+static void
+wavelet_iwt_5_3_vert_hi (SchroFrame *frame, void *_dest, int component,
+    int i)
+{
+  int16_t *dest = _dest;
+  int width = frame->components[component].width;
+  int16_t *hi;
+  int16_t *lo1, *lo2;
+
+  hi = schro_virt_frame_get_line (frame->virt_frame1, component, i*2+1);
+  lo1 = schro_virt_frame_get_line (frame->virt_frame1, component, i*2);
+  if (i*2+2 < frame->height*2) {
+    lo2 = schro_virt_frame_get_line (frame->virt_frame1, component, i*2+2);
+  } else {
+    lo2 = lo1;
+  }
+
+  orc_add2_rshift_sub_s16_11_op (dest, hi, lo1, lo2, width);
+}
+
+void schro_iwt_5_3_planar (SchroFrameData *fd, SchroFrame **frames)
+{
+  SchroFrame *frame;
+  SchroFrame *vf1_lo;
+  SchroFrame *vf1_hi;
+  SchroFrame *vf[4];
+  int width = fd->width/2;
+  int height = fd->height/2;
+  int i,j;
+
+  frame = schro_frame_new ();
+
+  frame->format = SCHRO_FRAME_FORMAT_S16_444;
+  frame->width = width;
+  frame->height = height;
+
+  frame->components[0].format = SCHRO_FRAME_FORMAT_S16_444;
+  frame->components[0].width = width*2;
+  frame->components[0].height = height*2;
+  frame->components[0].stride = fd->stride;
+  frame->components[0].data = fd->data;
+
+  vf1_lo = schro_frame_new_virtual (NULL, frame->format, width, height*2);
+  vf1_lo->virt_frame1 = schro_frame_ref(frame);
+  vf1_lo->virt_priv2 = schro_malloc ((width+4)*2*sizeof(int16_t));
+  vf1_lo->render_line = wavelet_iwt_5_3_horiz_lo;
+
+  vf1_hi = schro_frame_new_virtual (NULL, frame->format, width, height*2);
+  vf1_hi->virt_frame1 = schro_frame_ref(frame);
+  vf1_hi->virt_priv2 = schro_malloc ((width+4)*2*sizeof(int16_t));
+  vf1_hi->render_line = wavelet_iwt_5_3_horiz_hi;
+
+  vf[2] = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf[2]->virt_frame1 = schro_frame_ref(vf1_lo);
+  vf[2]->render_line = wavelet_iwt_5_3_vert_hi;
+
+  vf[3] = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf[3]->virt_frame1 = schro_frame_ref(vf1_hi);
+  vf[3]->render_line = wavelet_iwt_5_3_vert_hi;
+
+  vf[0] = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf[0]->virt_frame1 = schro_frame_ref(vf1_lo);
+  vf[0]->virt_frame2 = schro_frame_ref(vf[2]);
+  vf[0]->render_line = wavelet_iwt_5_3_vert_lo;
+
+  vf[1] = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf[1]->virt_frame1 = schro_frame_ref(vf1_hi);
+  vf[1]->virt_frame2 = schro_frame_ref(vf[3]);
+  vf[1]->render_line = wavelet_iwt_5_3_vert_lo;
+
+  for(j=0;j<height;j++){
+    for(i=0;i<4;i++){
+      schro_virt_frame_render_line (vf[i],
+          SCHRO_FRAME_DATA_GET_LINE (frames[i]->components + 0, j), 0, j);
+    }
+  }
+
+  schro_frame_unref (vf[0]);
+  schro_frame_unref (vf[1]);
+  schro_frame_unref (vf[2]);
+  schro_frame_unref (vf[3]);
+  schro_frame_unref (vf1_lo);
+  schro_frame_unref (vf1_hi);
+}
+
+/* Forward transform splitter function (planar) */
+
+void
+schro_wavelet_transform_2d_planar (SchroFrameData *fd,
+    int filter, int16_t *tmp)
+{
+  int i;
+  SchroFrame *frames[4];
+
+  SCHRO_ASSERT(SCHRO_FRAME_FORMAT_DEPTH(fd->format) ==
+      SCHRO_FRAME_FORMAT_DEPTH_S16);
+
+  for(i=0;i<4;i++){
+    frames[i] = schro_frame_new_and_alloc (NULL,
+        SCHRO_FRAME_FORMAT_S16_444, fd->width/2, fd->height/2);
+  }
+
+  switch (filter) {
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
+      schro_iwt_desl_9_3 (fd->data, fd->stride, fd->width, fd->height, tmp);
+      break;
+    case SCHRO_WAVELET_LE_GALL_5_3:
+      schro_iwt_5_3_planar (fd, frames);
+      schro_wavelet_convert_planar4_interleaved (fd, frames);
+      break;
+    case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
+      schro_iwt_13_5 (fd->data, fd->stride, fd->width, fd->height, tmp);
+      break;
+    case SCHRO_WAVELET_HAAR_0:
+      schro_iwt_haar0 (fd->data, fd->stride, fd->width, fd->height, tmp);
+      break;
+    case SCHRO_WAVELET_HAAR_1:
+      schro_iwt_haar1 (fd->data, fd->stride, fd->width, fd->height, tmp);
+      break;
+    case SCHRO_WAVELET_FIDELITY:
+      schro_iwt_fidelity (fd->data, fd->stride, fd->width, fd->height, tmp);
+      break;
+    case SCHRO_WAVELET_DAUBECHIES_9_7:
+      schro_iwt_daub_9_7(fd->data, fd->stride, fd->width, fd->height, tmp);
+      break;
+  }
+
+}
+
