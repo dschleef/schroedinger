@@ -32,6 +32,11 @@ schro_hbm_new (SchroEncoderFrame* frame, int ref)
   SchroHierBm schro_hbm = schro_malloc0 (sizeof (struct _SchroHierBm));
   schro_hbm->ref_count = 1;
   schro_hbm->hierarchy_levels = frame->encoder->downsample_levels;
+  if (frame->encoder->enable_chroma_me)
+     schro_hbm->use_chroma = TRUE;
+  else
+     schro_hbm->use_chroma = FALSE;
+  schro_hbm->hierarchy_levels = frame->encoder->downsample_levels;
   schro_hbm->params = &frame->params;
   schro_hbm->ref = ref;
 
@@ -354,7 +359,7 @@ schro_hierarchical_bm_scan_hint (SchroHierBm schro_hbm, int shift, int h_range)
       dy = MAX (-height[0] - scan.y, MIN (scan.ref_frame->height - scan.y, dy));
       scan.gravity_x = dx;
       scan.gravity_y = dy;
-      schro_metric_scan_setup (&scan, dx, dy, h_range, TRUE);
+      schro_metric_scan_setup (&scan, dx, dy, h_range, schro_hbm->use_chroma);
       SCHRO_ASSERT (!(0 > scan.scan_width) && !(0 > scan.scan_height));
 
       mv = mf->motion_vectors + j*params->x_num_blocks + i;

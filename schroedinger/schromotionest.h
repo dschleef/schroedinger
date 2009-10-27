@@ -27,6 +27,7 @@ struct _SchroHierBm {
   SchroFrame**       downsampled_src;
   SchroFrame**       downsampled_ref;
   SchroMotionField** downsampled_mf;
+  schro_bool         use_chroma;
 };
 
 struct _SchroMotionEst {

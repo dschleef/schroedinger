@@ -286,6 +286,7 @@ struct _SchroEncoder {
   schro_bool enable_scene_change_detection;
   schro_bool enable_deep_estimation;
   schro_bool enable_rdo_cbr;
+  schro_bool enable_chroma_me;
   int horiz_slices;
   int vert_slices;
   int codeblock_size;
