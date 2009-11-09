@@ -478,6 +478,7 @@ SchroEncoder *
 schro_encoder_new (void)
 {
   SchroEncoder *encoder;
+  int c,b;
 
   encoder = schro_malloc0 (sizeof(SchroEncoder));
 
@@ -495,8 +496,6 @@ schro_encoder_new (void)
 
   encoder->inserted_buffers =
     schro_list_new_full ((SchroListFreeFunc)schro_buffer_unref, NULL);
-
-  int c,b;
 
   for (c=0; c<3; ++c){
     for (b=0; b<SCHRO_LIMIT_SUBBANDS; ++b){
