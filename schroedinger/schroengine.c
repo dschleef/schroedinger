@@ -936,6 +936,7 @@ schro_encoder_setup_frame_lossless (SchroEncoderFrame *frame)
 
   params->num_refs = frame->num_refs;
   params->video_format = &encoder->video_format;
+  init_params(frame);
 
   params->xbsep_luma = 8;
   params->xblen_luma = 8;
