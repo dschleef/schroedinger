@@ -66,6 +66,7 @@ schro_metric_scan_do_scan (SchroMetricScan *scan)
       }
     }
   }
+  memset(scan->chroma_metrics, 0, sizeof(scan->chroma_metrics));
   if (scan->use_chroma) {
     /* now do chroma ME */
     int skip_h = 1 << SCHRO_FRAME_FORMAT_H_SHIFT(scan->frame->format)
@@ -76,7 +77,6 @@ schro_metric_scan_do_scan (SchroMetricScan *scan)
       , block_height = scan->block_height / skip_v;
     int scan_width = (scan->scan_width / skip_h) + (scan->scan_width % skip_h)
       , scan_height = (scan->scan_height / skip_v) + (scan->scan_height % skip_v);
-    memset(scan->chroma_metrics, 0, sizeof(scan->chroma_metrics));
     uint32_t metrics[SCHRO_LIMIT_METRIC_SCAN*SCHRO_LIMIT_METRIC_SCAN];
     int k;
     for (k=1; 3>k; ++k) {

@@ -99,14 +99,16 @@ schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
   for(j=0;j<params->y_num_blocks;j+=skip){
     for(i=0;i<params->x_num_blocks;i+=skip){
       int dx, dy;
-      scan.gravity_x = 0;
-      scan.gravity_y = 0;
 
       scan.x = (i>>shift) * params->xbsep_luma;
       scan.y = (j>>shift) * params->ybsep_luma;
       scan.block_width = MIN(scan.frame->width - scan.x, params->xbsep_luma);
       scan.block_height = MIN(scan.frame->height - scan.y, params->ybsep_luma);
       schro_metric_scan_setup (&scan, 0, 0, distance, FALSE);
+      dx = scan.ref_x + 0 - scan.x;
+      dy = scan.ref_y + 0 - scan.y;
+      scan.gravity_x = dx;
+      scan.gravity_y = dy;
 
       mv = motion_field_get (mf, i, j);
       if (scan.scan_width <= 0 || scan.scan_height <= 0) {
