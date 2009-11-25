@@ -1132,7 +1132,7 @@ schro_decoder_push (SchroDecoder *decoder, SchroBuffer *buffer)
         s[i] = schro_unpack_decode_bits (&unpack, 8);
       }
       if (memcmp ("Schroedinger 1.0.", s, 17) == 0) {
-        if (s[17] >= '0' && s[17] <= '7' && (s[18] == '.' || s[18] == 0xff)) {
+        if (s[17] >= '0' && s[17] <= '7' && (s[18] == '.' || s[18] == (char)0xff)) {
           SCHRO_WARNING("turning on codeblock quantiser compatibility mode");
           instance->compat_quant_offset = TRUE;
         }

@@ -7,6 +7,7 @@
 #include <schroedinger/schrowavelet.h>
 #include <schroedinger/schroorc.h>
 
+#include <orc/orc.h>
 #include <orc-test/orcprofile.h>
 
 #include <stdio.h>
@@ -217,6 +218,7 @@ main (int argc, char *argv[])
 {
   int i;
 
+  orc_init();
   schro_init();
 
   for(i=0;i<N;i++){
