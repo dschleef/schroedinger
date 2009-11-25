@@ -254,29 +254,3 @@ sum2 *= 4;
 }
 
 
-void
-interleave (int16_t *a, int n)
-{
-  int i;
-  for(i=0;i<n/2;i++){
-    tmp2[i*2] = a[i];
-    tmp2[i*2 + 1] = a[n/2 + i];
-  }
-  for(i=0;i<n;i++){
-    a[i] = tmp2[i];
-  }
-}
-
-void
-deinterleave (int16_t *a, int n)
-{
-  int i;
-  for(i=0;i<n/2;i++){
-    tmp2[i] = a[i*2];
-    tmp2[n/2 + i] = a[i*2+1];
-  }
-  for(i=0;i<n;i++){
-    a[i] = tmp2[i];
-  }
-}
-
