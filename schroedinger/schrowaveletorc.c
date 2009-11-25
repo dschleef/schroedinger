@@ -6,6 +6,7 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schroorc.h>
 #include <schroedinger/schrovirtframe.h>
+#include <orc/orc.h>
 
 
 /* horizontal in-place wavelet transforms */

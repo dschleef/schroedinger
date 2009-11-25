@@ -8,6 +8,7 @@
 #include <schroedinger/schropack.h>
 #include <schroedinger/schro.h>
 #include <schroedinger/schroorc.h>
+#include <orc/orc.h>
 
 
 SchroPack *

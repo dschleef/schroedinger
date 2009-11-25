@@ -11,6 +11,8 @@
 #include <schroedinger/schrovirtframe.h>
 #include <schroedinger/schroorc.h>
 
+#include <orc/orc.h>
+
 #include <stdlib.h>
 #include <string.h>
 

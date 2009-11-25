@@ -8,6 +8,7 @@
 #include <string.h>
 #include <math.h>
 #include <stddef.h>
+#include <orc/orc.h>
 #include "schroorc.h"
 
 #if 0

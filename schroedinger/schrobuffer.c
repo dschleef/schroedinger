@@ -7,6 +7,7 @@
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schroorc.h>
 #include <string.h>
+#include <orc/orc.h>
 
 static void schro_buffer_free_mem (SchroBuffer * buffer, void *);
 static void schro_buffer_free_subbuffer (SchroBuffer * buffer, void *priv);

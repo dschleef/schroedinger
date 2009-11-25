@@ -330,13 +330,6 @@ subw d1, d1, t1
 subw d1, s1, s2
 
 
-.function orc_memcpy
-.dest 1 d1 void
-.source 1 s1 void
-
-copyb d1, s1
-
-
 .function orc_add_s16_u8
 .dest 2 d1 int16_t
 .source 2 s1 int16_t

@@ -10,6 +10,7 @@
 #include <schroedinger/schroutils.h>
 #include <string.h>
 #include <math.h>
+#include <orc/orc.h>
 
 #include <schroedinger/schroorc.h>
 
