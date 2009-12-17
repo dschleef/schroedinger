@@ -98,7 +98,7 @@ schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
   skip = 1<<shift;
   for(j=0;j<params->y_num_blocks;j+=skip){
     for(i=0;i<params->x_num_blocks;i+=skip){
-      int dx, dy;
+      int dx=0, dy=0;
 
       scan.x = (i>>shift) * params->xbsep_luma;
       scan.y = (j>>shift) * params->ybsep_luma;

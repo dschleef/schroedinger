@@ -66,6 +66,8 @@ schro_metric_scan_do_scan (SchroMetricScan *scan)
   }
 }
 
+/* Note: dx and dy should contain the seed-MV so that we can
+ * bias the search towards that point - a better solution needed - FIXME */
 int
 schro_metric_scan_get_min (SchroMetricScan *scan, int *dx, int *dy)
 {
@@ -79,9 +81,9 @@ schro_metric_scan_get_min (SchroMetricScan *scan, int *dx, int *dy)
   SCHRO_ASSERT (scan->scan_width > 0);
   SCHRO_ASSERT (scan->scan_height > 0);
 
-  min_metric = scan->metrics[0];
-  *dx = scan->ref_x + 0 - scan->x;
-  *dy = scan->ref_y + 0 - scan->y;
+  i = *dx + scan->x - scan->ref_x;
+  j = *dy + scan->y - scan->ref_y;
+  min_metric = scan->metrics[j + i * scan->scan_height];
   min_gravity = scan->gravity_scale *
     (abs(*dx - scan->gravity_x) + abs(*dy - scan->gravity_y));
 
