@@ -21,8 +21,6 @@ void schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
 void schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
     int distance);
 static SchroFrame * get_downsampled(SchroEncoderFrame *frame, int i);
-static void schro_motion_field_set (SchroMotionField *field, int split,
-    int pred_mode);
 
 
 
@@ -295,24 +293,6 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
   rme->motion_fields[shift] = mf;
 }
 
-
-void
-schro_motion_field_set (SchroMotionField *field, int split, int pred_mode)
-{
-  SchroMotionVector *mv;
-  int i;
-  int j;
-
-  for(j=0;j<field->y_num_blocks;j++){
-    for(i=0;i<field->x_num_blocks;i++){
-      mv = field->motion_vectors + j*field->x_num_blocks + i;
-      memset (mv, 0, sizeof (*mv));
-      mv->split = split;
-      mv->pred_mode = pred_mode;
-      mv->metric = SCHRO_METRIC_INVALID;
-    }
-  }
-}
 
 static SchroFrame *
 get_downsampled(SchroEncoderFrame *frame, int i)

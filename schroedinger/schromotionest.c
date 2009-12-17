@@ -17,7 +17,6 @@
   ((mf)->motion_vectors + (y)*(mf)->x_num_blocks + (x))
 
 void schro_encoder_bigblock_estimation (SchroMotionEst *me);
-void schro_motion_field_set (SchroMotionField *field, int split, int pred_mode);
 void schro_motionest_rough_scan_nohint (SchroMotionEst *me,
     int shift, int ref, int distance);
 void schro_motionest_rough_scan_hint (SchroMotionEst *me,
@@ -304,7 +303,6 @@ schro_motion_field_free (SchroMotionField *field)
   schro_free (field);
 }
 
-#if 0
 void
 schro_motion_field_set (SchroMotionField *field, int split, int pred_mode)
 {
@@ -322,9 +320,7 @@ schro_motion_field_set (SchroMotionField *field, int split, int pred_mode)
     }
   }
 }
-#endif
 
-#if 0
 void
 schro_motion_field_copy (SchroMotionField *field, SchroMotionField *parent)
 {
@@ -341,7 +337,6 @@ schro_motion_field_copy (SchroMotionField *field, SchroMotionField *parent)
     }
   }
 }
-#endif
 
 #if 0
 void
