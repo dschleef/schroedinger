@@ -64,8 +64,6 @@ schro_encoder_new (void)
 
   encoder->last_ref = -1;
 
-  encoder->downsample_levels = 5;
-
   schro_encoder_setting_set_defaults(encoder);
 
   schro_video_format_set_std_video_format (&encoder->video_format,
@@ -3247,6 +3245,7 @@ struct SchroEncoderSettings {
   ENUM(intra_wavelet, wavelet_list, SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7),
   ENUM(inter_wavelet, wavelet_list, SCHRO_WAVELET_LE_GALL_5_3),
   INT (mv_precision, 0, 3, 0),
+  INT (downsample_levels, 2, 8, 5),
   ENUM(motion_block_size, block_size_list, 0),
   ENUM(motion_block_overlap, block_overlap_list, 0),
   BOOL(interlaced_coding, FALSE),
