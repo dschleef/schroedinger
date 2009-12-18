@@ -1353,6 +1353,7 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
 
     if (TODO(SCHRO_ENCODER_FRAME_STAGE_ANALYSE)) {
       encoder->init_frame (frame);
+      init_params (frame);
       run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_ANALYSE);
       return TRUE;
     }
@@ -1438,6 +1439,7 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
 
       if (TODO(SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL) &&
           frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_ROUGH].is_done) {
+        schro_frame_set_wavelet_params (frame);
         run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL);
         return TRUE;
       }

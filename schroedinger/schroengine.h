@@ -42,6 +42,10 @@ int schro_encoder_setup_frame_lowdelay (SchroEncoderFrame *frame);
 void schro_encoder_handle_gop_lossless (SchroEncoder *encoder, int i);
 int schro_encoder_setup_frame_lossless (SchroEncoderFrame *frame);
 
+void schro_frame_set_wavelet_params (SchroEncoderFrame* frame);
+
+void init_params (SchroEncoderFrame* frame);
+
 #endif
 
 SCHRO_END_DECLS
