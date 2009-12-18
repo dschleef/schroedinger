@@ -2381,7 +2381,7 @@ schro_me_new (SchroEncoderFrame* frame)
    * are not reference-counted but they should if we use them like this */
   me->params = &frame->params;
   me->motion = frame->motion;
-  me->lambda = frame->encoder->magic_mc_lambda;
+  me->lambda = frame->base_lambda;
   for (ref=0; me->params->num_refs > ref; ++ref) {
     me->meElement[ref] = schro_me_element_new (frame, ref);
   }
