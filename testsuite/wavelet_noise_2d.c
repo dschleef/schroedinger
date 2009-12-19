@@ -115,7 +115,7 @@ main (int argc, char *argv[])
 
   for(k=0;k<N_TRIALS;k++){
     generate_noise (frame, transform_depth,
-        encoder->subband_weights[filter][transform_depth-1]);
+        encoder->intra_subband_weights[filter][transform_depth-1]);
 
     schro_frame_inverse_iwt_transform (frame, &params);
 

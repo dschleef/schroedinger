@@ -290,6 +290,7 @@ struct _SchroEncoder {
   double magic_chroma_lambda_scale;
   double magic_nonref_lambda_scale;
   double magic_allocation_scale;
+  double magic_inter_cpd_scale;
   double magic_keyframe_weight;
   double magic_scene_change_threshold;
   double magic_inter_p_weight;
@@ -341,7 +342,8 @@ struct _SchroEncoder {
   double cycles_per_degree_horiz;
   double cycles_per_degree_vert;
 
-  double subband_weights[SCHRO_N_WAVELETS][SCHRO_LIMIT_TRANSFORM_DEPTH][SCHRO_LIMIT_SUBBANDS];
+  double intra_subband_weights[SCHRO_N_WAVELETS][SCHRO_LIMIT_TRANSFORM_DEPTH][SCHRO_LIMIT_SUBBANDS];
+  double inter_subband_weights[SCHRO_N_WAVELETS][SCHRO_LIMIT_TRANSFORM_DEPTH][SCHRO_LIMIT_SUBBANDS];
   SchroHistogramTable intra_hist_tables[60];
 
   int bits_per_picture;

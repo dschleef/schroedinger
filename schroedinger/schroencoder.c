@@ -3522,6 +3522,7 @@ struct SchroEncoderSettings {
   DOUB(magic_chroma_lambda_scale, 0.0, 1000.0, 0.01),
   DOUB(magic_nonref_lambda_scale, 0.0, 1000.0, 0.01),
   DOUB(magic_allocation_scale, 0.0, 1000.0, 1.1),
+  DOUB(magic_inter_cpd_scale, 0.0, 1.0, 1.0),
   DOUB(magic_keyframe_weight, 0.0, 1000.0, 7.5),
   DOUB(magic_scene_change_threshold, 0.0, 1000.0, 0.2),
   DOUB(magic_inter_p_weight, 0.0, 1000.0, 1.5),
