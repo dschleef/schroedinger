@@ -747,10 +747,11 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
 
         if (frame->num_refs == 0) {
           frame->badblock_ratio = 0;
+          frame->dcblock_ratio = 0;
           frame->mc_error = 0;
         }
 
-        schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g %d %g %g %g %g %g %g %g\n",
+        schro_dump (SCHRO_DUMP_PICTURE, "%d %d %d %d %d %g %d %d %d %d %g %d %g %g %g %g %g %g %g %g\n",
             frame->frame_number, /* 0 */
             frame->num_refs,
             frame->is_ref,
@@ -769,6 +770,7 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
             frame->mean_squared_error_chroma, /* 15 */
             elapsed_time,
             frame->badblock_ratio,
+            frame->dcblock_ratio,
             frame->hist_slope);
 
 
