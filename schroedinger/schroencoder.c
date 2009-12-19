@@ -43,6 +43,28 @@ void schro_encoder_encode_sequence_header_header (SchroEncoder *encoder,
 static schro_bool schro_frame_data_is_zero (SchroFrameData *fd);
 static void schro_encoder_setting_set_defaults (SchroEncoder *encoder);
 
+/*
+ * schro_encoder_init_rc_buffer
+ *
+ * Initialises the buffer model for rate control
+ *
+ */
+void schro_encoder_init_rc_buffer(SchroEncoder* encoder)
+{
+  if (encoder->buffer_size == 0) {
+    encoder->buffer_size = 3 * encoder->bitrate;
+  }
+  if (encoder->buffer_level == 0) {
+    encoder->buffer_level = encoder->buffer_size;
+  }
+  encoder->bits_per_picture = muldiv64 (encoder->bitrate,
+        encoder->video_format.frame_rate_denominator,
+        encoder->video_format.frame_rate_numerator);
+  if (encoder->video_format.interlaced_coding) {
+    encoder->bits_per_picture /= 2;
+  }
+}
+
 /**
  * schro_encoder_new:
  *
@@ -186,19 +208,7 @@ schro_encoder_start (SchroEncoder *encoder)
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE:
       handle_gop_enum (encoder);
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RDO_BIT_ALLOCATION;
-
-      if (encoder->buffer_size == 0) {
-        encoder->buffer_size = 3 * encoder->bitrate;
-      }
-      if (encoder->buffer_level == 0) {
-        encoder->buffer_level = encoder->buffer_size;
-      }
-      encoder->bits_per_picture = muldiv64 (encoder->bitrate,
-            encoder->video_format.frame_rate_denominator,
-            encoder->video_format.frame_rate_numerator);
-      if (encoder->video_format.interlaced_coding) {
-        encoder->bits_per_picture /= 2;
-      }
+      schro_encoder_init_rc_buffer (encoder);
 
       schro_encoder_encode_bitrate_comment (encoder, encoder->bitrate);
       break;
