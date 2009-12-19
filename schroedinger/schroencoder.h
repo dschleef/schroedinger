@@ -171,6 +171,7 @@ struct _SchroEncoderFrame {
   int *quant_indices[3][SCHRO_LIMIT_SUBBANDS];
 
   double est_entropy[3][SCHRO_LIMIT_SUBBANDS][60];
+  double actual_subband_bits[3][SCHRO_LIMIT_SUBBANDS];
   double est_error[3][SCHRO_LIMIT_SUBBANDS][60];
   SchroPack *pack;
   SchroParams params;
@@ -211,8 +212,6 @@ struct _SchroEncoderFrame {
   double mc_error;
   double mean_squared_error_luma;
   double mean_squared_error_chroma;
-
-  double estimated_arith_context_ratio;
 
   double badblock_ratio;
   double dcblock_ratio;
@@ -349,8 +348,8 @@ struct _SchroEncoder {
 
   /* statistics */
 
-  double average_arith_context_ratio_intra;
-  double average_arith_context_ratio_inter;
+  double average_arith_context_ratios_intra[3][SCHRO_LIMIT_SUBBANDS];
+  double average_arith_context_ratios_inter[3][SCHRO_LIMIT_SUBBANDS];
 
   /* engine specific stuff */
 

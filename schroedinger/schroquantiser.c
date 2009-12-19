@@ -654,7 +654,16 @@ schro_encoder_calc_estimates (SchroEncoderFrame *frame)
   schro_encoder_dump_subband_curves (frame);
 #endif
 
+  double *arith_context_ratios;
+
   for(component=0;component<3;component++){
+    if (frame->num_refs==0){
+      arith_context_ratios = frame->encoder->average_arith_context_ratios_intra[component];
+    }
+    else {
+      arith_context_ratios = frame->encoder->average_arith_context_ratios_inter[component];
+    }
+
     for(i=0;i<1 + 3*params->transform_depth; i++) {
       for(j=0;j<60;j++){
         int vol;
@@ -670,6 +679,7 @@ schro_encoder_calc_estimates (SchroEncoderFrame *frame)
         hist = &frame->subband_hists[component][i];
         frame->est_entropy[component][i][j] =
           schro_histogram_estimate_entropy (hist, j, params->is_noarith);
+        frame->est_entropy[component][i][j] *= arith_context_ratios[i];
         frame->est_error[component][i][j] = schro_histogram_apply_table (hist,
               &frame->encoder->intra_hist_tables[j]);
       }
@@ -683,19 +693,12 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
 {
   double base_lambda;
   int bits;
-  double ratio;
 
   schro_encoder_generate_subband_histograms (frame);
   schro_encoder_calc_estimates (frame);
 
   SCHRO_ASSERT(frame->have_estimate_tables);
 
-  if (frame->num_refs == 0) {
-    ratio = frame->encoder->average_arith_context_ratio_intra;
-  } else {
-    ratio = frame->encoder->average_arith_context_ratio_inter;
-  }
-  frame->estimated_arith_context_ratio = CLAMP(ratio, 0.5, 1.2);
   bits = frame->allocated_residual_bits;
 
   base_lambda = schro_encoder_entropy_to_lambda (frame, bits);
@@ -735,7 +738,7 @@ schro_encoder_estimate_entropy (SchroEncoderFrame *frame)
       n += frame->est_entropy[component][i][frame->quant_indices[component][i][0]];
     }
   }
-  frame->estimated_residual_bits = n * frame->estimated_arith_context_ratio;
+  frame->estimated_residual_bits = n;
 
   if (frame->allocated_residual_bits > 0 &&
       frame->estimated_residual_bits >

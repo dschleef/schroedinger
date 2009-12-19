@@ -72,8 +72,14 @@ schro_encoder_new (void)
   encoder->inserted_buffers =
     schro_list_new_full ((SchroListFreeFunc)schro_buffer_unref, NULL);
 
-  encoder->average_arith_context_ratio_intra = 1.0;
-  encoder->average_arith_context_ratio_inter = 1.0;
+  int c,b;
+
+  for (c=0; c<3; ++c){
+    for (b=0; b<SCHRO_LIMIT_SUBBANDS; ++b){
+      encoder->average_arith_context_ratios_intra[c][b] = 1.0;
+      encoder->average_arith_context_ratios_inter[c][b] = 1.0;
+    }
+  }
 
   return encoder;
 }
@@ -765,24 +771,6 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
             frame->badblock_ratio,
             frame->hist_slope);
 
-        /* FIXME move this */
-        if (frame->num_refs == 0) {
-          double x;
-          double alpha = 0.9;
-
-          x = frame->estimated_arith_context_ratio * (double)frame->actual_residual_bits / frame->estimated_residual_bits;
-          encoder->average_arith_context_ratio_intra *= alpha;
-          encoder->average_arith_context_ratio_intra += (1.0-alpha) * x;
-          SCHRO_DEBUG("arith ratio %g", encoder->average_arith_context_ratio_intra);
-        } else {
-          double x;
-          double alpha = 0.9;
-
-          x = frame->estimated_arith_context_ratio * (double)frame->actual_residual_bits / frame->estimated_residual_bits;
-          encoder->average_arith_context_ratio_inter *= alpha;
-          encoder->average_arith_context_ratio_inter += (1.0-alpha) * x;
-          SCHRO_DEBUG("arith ratio %g", encoder->average_arith_context_ratio_inter);
-        }
 
         schro_encoder_shift_frame_queue (encoder);
       }
@@ -1834,6 +1822,44 @@ schro_encoder_encode_picture (SchroAsyncStage *stage)
   schro_pack_flush (frame->pack);
   frame->actual_residual_bits += schro_pack_get_offset (frame->pack)*8;
 
+  SCHRO_DEBUG("Actual frame %d residual bits : %d", frame->frame_number,frame->actual_residual_bits);
+  // Update the fiddle factors for estimating entropy
+  double factor;
+  double est_subband_bits;
+  if (frame->num_refs == 0) {
+    int component, b;
+    for (component=0; component<3; ++component){
+      for (b=0; b<1+3*frame->params.transform_depth; ++b){
+        est_subband_bits = frame->est_entropy[component][b][frame->quant_indices[component][b][0]];
+        SCHRO_DEBUG("Actual versus estimated band bits : %d %d %g %g", component, b,
+            frame->actual_subband_bits[component][b], est_subband_bits );
+        if (est_subband_bits > 200.0){
+          double ratio;
+          factor = frame->actual_subband_bits[component][b]/est_subband_bits;
+          ratio = frame->encoder->average_arith_context_ratios_intra[component][b];
+          ratio = ratio * 0.9 + factor * 0.1;
+          frame->encoder->average_arith_context_ratios_intra[component][b] = ratio;
+        }
+      }
+    }
+  } else {
+    int component, b;
+    for (component=0; component<3; ++component){
+      for (b=0; b<1+3*frame->params.transform_depth; ++b){
+        est_subband_bits = frame->est_entropy[component][b][frame->quant_indices[component][b][0]];
+        SCHRO_DEBUG("Actual versus estimated band bits : %d %d %g %g", component, b,
+            frame->actual_subband_bits[component][b], est_subband_bits );
+        if (est_subband_bits > 200.0){
+          double ratio;
+          factor = frame->actual_subband_bits[component][b]/est_subband_bits;
+          ratio = frame->encoder->average_arith_context_ratios_inter[component][b];
+          ratio = ratio * 0.9 + factor * 0.1;
+          frame->encoder->average_arith_context_ratios_inter[component][b] = ratio;
+        }
+      }
+    }
+  }
+
   if (schro_pack_get_offset (frame->pack)*8 > frame->hard_limit_bits) {
     SCHRO_ERROR("over hard_limit_bits after residual (%d>%d)",
         schro_pack_get_offset (frame->pack)*8, frame->hard_limit_bits);
@@ -2621,11 +2647,13 @@ schro_encoder_encode_transform_data (SchroEncoderFrame *frame)
   for(component=0;component<3;component++) {
     for (i=0;i < 1 + 3*params->transform_depth; i++) {
       schro_pack_sync (frame->pack);
+      frame->actual_subband_bits[component][i] = -schro_pack_get_offset(frame->pack)*8;
       if (params->is_noarith) {
         schro_encoder_encode_subband_noarith (frame, component, i);
       } else {
         schro_encoder_encode_subband (frame, component, i);
       }
+      frame->actual_subband_bits[component][i] += schro_pack_get_offset(frame->pack)*8;
     }
   }
 }
