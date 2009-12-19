@@ -2761,22 +2761,16 @@ schro_encoder_frame_get_quant_index (SchroEncoderFrame *frame, int component,
   SchroParams *params = &frame->params;
   int position;
   int horiz_codeblocks;
+  int *codeblock_quants;
   
   position = schro_subband_get_position (index);
   horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
 
-  if (params->codeblock_mode_index == 1) {
-    int *codeblock_quants = frame->quant_indices[component][index];
+  codeblock_quants = frame->quant_indices[component][index];
 
-    /* FIXME */
-    if (codeblock_quants == NULL) {
-      return frame->quant_index[component][index];
-    }
+  SCHRO_ASSERT (codeblock_quants);
 
-    return codeblock_quants[y*horiz_codeblocks + x];
-  } else {
-    return frame->quant_index[component][index];
-  }
+  return codeblock_quants[y*horiz_codeblocks + x];
 }
 
 void
@@ -3079,7 +3073,7 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
 
   schro_dump(SCHRO_DUMP_SUBBAND_EST, "%d %d %d %g %d\n",
       frame->frame_number, component, index,
-      frame->est_entropy[component][index][frame->quant_index[component][index]],
+      frame->est_entropy[component][index][frame->quant_indices[component][index][0]],
       arith->offset*8);
 
   n_subbands_left = (3-component) * (1 + 3*params->transform_depth) - index;

@@ -292,7 +292,7 @@ schro_encoder_choose_quantisers_lossless (SchroEncoderFrame *frame)
 
   for(component=0;component<3;component++){
     for(i=0;i<1 + 3*frame->params.transform_depth; i++) {
-      frame->quant_index[component][i] = 0;
+      schro_encoder_frame_set_quant_index (frame, component, i, 0, 0, 0);
     }
   }
 }
@@ -324,7 +324,8 @@ schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame)
     for(i=0;i<1 + 3*params->transform_depth; i++) {
       a = noise_amplitude * table[i];
 
-      frame->quant_index[component][i] = schro_utils_multiplier_to_quant_index (a);
+      schro_encoder_frame_set_quant_index (frame, component, i, 0, 0,
+          schro_utils_multiplier_to_quant_index (a));
     }
   }
 
@@ -352,12 +353,16 @@ schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame)
       [MAX(0,params->transform_depth-1)];
 
   for(component=0;component<3;component++){
-    frame->quant_index[component][0] = base - table[0];
+    schro_encoder_frame_set_quant_index (frame, component, 0, 0, 0,
+        base - table[0]);
 
     for(i=0;i<params->transform_depth; i++) {
-      frame->quant_index[component][1+3*i+0] = base - table[1 + 2*i + 0];
-      frame->quant_index[component][1+3*i+1] = base - table[1 + 2*i + 0];
-      frame->quant_index[component][1+3*i+2] = base - table[1 + 2*i + 1];
+      schro_encoder_frame_set_quant_index (frame, component, 1+3*i+0, 0, 0,
+          base - table[1 + 2*i + 0]);
+      schro_encoder_frame_set_quant_index (frame, component, 1+3*i+1, 0, 0,
+          base - table[1 + 2*i + 0]);
+      schro_encoder_frame_set_quant_index (frame, component, 1+3*i+2, 0, 0,
+          base - table[1 + 2*i + 1]);
     }
   }
 
@@ -727,7 +732,7 @@ schro_encoder_estimate_entropy (SchroEncoderFrame *frame)
 
   for(component=0;component<3;component++){
     for(i=0;i<1 + 3*params->transform_depth; i++) {
-      n += frame->est_entropy[component][i][frame->quant_index[component][i]];
+      n += frame->est_entropy[component][i][frame->quant_indices[component][i][0]];
     }
   }
   frame->estimated_residual_bits = n * frame->estimated_arith_context_ratio;
@@ -937,7 +942,8 @@ schro_encoder_lambda_to_error (SchroEncoderFrame *frame, double frame_lambda)
 
       quant_index = schro_subband_pick_quant (frame, component, i, lambda);
       error += frame->est_error[component][i][quant_index];
-      frame->quant_index[component][i] = quant_index;
+      schro_encoder_frame_set_quant_index (frame, component, i, 0, 0,
+          quant_index);
     }
   }
 

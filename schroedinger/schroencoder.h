@@ -170,7 +170,6 @@ struct _SchroEncoderFrame {
 
   int *quant_indices[3][SCHRO_LIMIT_SUBBANDS];
 
-  int quant_index[3][SCHRO_LIMIT_SUBBANDS];
   double est_entropy[3][SCHRO_LIMIT_SUBBANDS][60];
   double est_error[3][SCHRO_LIMIT_SUBBANDS][60];
   SchroPack *pack;
