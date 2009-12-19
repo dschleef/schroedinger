@@ -10,10 +10,10 @@
 //#define DUMP_SUBBAND_CURVES
 
 void schro_encoder_choose_quantisers_simple (SchroEncoderFrame *frame);
-void schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame);
+void schro_encoder_choose_quantisers_rdo_bit_allocation (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_lossless (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame);
-void schro_encoder_choose_quantisers_constant_lambda (SchroEncoderFrame *frame);
+void schro_encoder_choose_quantisers_rdo_lambda (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_constant_error (SchroEncoderFrame *frame);
 
 double schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy);
@@ -266,8 +266,8 @@ schro_encoder_choose_quantisers (SchroEncoderFrame *frame)
     case SCHRO_QUANTISER_ENGINE_SIMPLE:
       schro_encoder_choose_quantisers_simple (frame);
       break;
-    case SCHRO_QUANTISER_ENGINE_RATE_DISTORTION:
-      schro_encoder_choose_quantisers_rate_distortion (frame);
+    case SCHRO_QUANTISER_ENGINE_RDO_BIT_ALLOCATION:
+      schro_encoder_choose_quantisers_rdo_bit_allocation (frame);
       break;
     case SCHRO_QUANTISER_ENGINE_LOSSLESS:
       schro_encoder_choose_quantisers_lossless (frame);
@@ -275,8 +275,8 @@ schro_encoder_choose_quantisers (SchroEncoderFrame *frame)
     case SCHRO_QUANTISER_ENGINE_LOWDELAY:
       schro_encoder_choose_quantisers_lowdelay (frame);
       break;
-    case SCHRO_QUANTISER_ENGINE_CONSTANT_LAMBDA:
-      schro_encoder_choose_quantisers_constant_lambda (frame);
+    case SCHRO_QUANTISER_ENGINE_RDO_LAMBDA:
+      schro_encoder_choose_quantisers_rdo_lambda (frame);
       break;
     case SCHRO_QUANTISER_ENGINE_CONSTANT_ERROR:
       schro_encoder_choose_quantisers_constant_error (frame);
@@ -689,7 +689,7 @@ schro_encoder_calc_estimates (SchroEncoderFrame *frame)
 }
 
 void
-schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
+schro_encoder_choose_quantisers_rdo_bit_allocation (SchroEncoderFrame *frame)
 {
   double base_lambda;
   int bits;
@@ -709,7 +709,7 @@ schro_encoder_choose_quantisers_rate_distortion (SchroEncoderFrame *frame)
 }
 
 void
-schro_encoder_choose_quantisers_constant_lambda (SchroEncoderFrame *frame)
+schro_encoder_choose_quantisers_rdo_lambda (SchroEncoderFrame *frame)
 {
   schro_encoder_generate_subband_histograms (frame);
   schro_encoder_calc_estimates (frame);

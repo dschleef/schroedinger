@@ -185,7 +185,7 @@ schro_encoder_start (SchroEncoder *encoder)
       break;
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE:
       handle_gop_enum (encoder);
-      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RATE_DISTORTION;
+      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RDO_BIT_ALLOCATION;
 
       if (encoder->buffer_size == 0) {
         encoder->buffer_size = 3 * encoder->bitrate;
@@ -223,7 +223,7 @@ schro_encoder_start (SchroEncoder *encoder)
       break;
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_LAMBDA:
       handle_gop_enum (encoder);
-      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_CONSTANT_LAMBDA;
+      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RDO_LAMBDA;
       break;
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_ERROR:
       handle_gop_enum (encoder);
@@ -231,7 +231,7 @@ schro_encoder_start (SchroEncoder *encoder)
       break;
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_QUALITY:
       handle_gop_enum (encoder);
-      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_CONSTANT_LAMBDA;
+      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RDO_LAMBDA;
       encoder->magic_lambda = schro_encoder_quality_get_lambda (encoder->quality);
       break;
   }
