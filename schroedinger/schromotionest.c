@@ -25,6 +25,10 @@ static SchroFrame * get_downsampled(SchroEncoderFrame *frame, int i);
 
 void schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame);
 
+double schro_encoder_get_me_lambda (SchroEncoderFrame* frame)
+{
+  return frame->encoder->magic_mc_lambda;
+}
 
 SchroMotionEst *
 schro_motionest_new (SchroEncoderFrame *frame)
@@ -114,14 +118,14 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
     }
   }
 
-  frame->me = schro_motionest_new (frame);
-  if (encoder->enable_deep_estimation) {
+  if (encoder->enable_bigblock_estimation) {
+    frame->me = schro_motionest_new (frame);
+  } else if (encoder->enable_deep_estimation) {
     frame->deep_me = schro_me_new (frame);
   }
 
   frame->motion = schro_motion_new (params, NULL, NULL);
-  if (encoder->enable_bigblock_estimation
-      || encoder->enable_deep_estimation) {
+  if (encoder->enable_bigblock_estimation) {
     frame->me->motion = frame->motion;
   }
 
@@ -185,13 +189,16 @@ schro_encoder_motion_refine_block_subpel (SchroEncoderFrame *frame,
   if (block->mv[0][0].split < 3) {
     for(jj=0;jj<4;jj+=skip){
       for(ii=0;ii<4;ii+=skip){
+        if (SCHRO_METRIC_INVALID == block->mv[jj][ii].metric) {
+          continue;
+        }
         if (block->mv[jj][ii].pred_mode == 1 || block->mv[jj][ii].pred_mode == 2) {
           SchroUpsampledFrame *ref_upframe;
           SchroFrameData orig;
           SchroFrameData ref_fd;
           int dx,dy;
           int x,y;
-          int metric;
+          int metric = SCHRO_METRIC_INVALID_2;
           int width, height;
           int min_metric;
           int min_dx, min_dy;
@@ -227,15 +234,16 @@ schro_encoder_motion_refine_block_subpel (SchroEncoderFrame *frame,
               }
             }
           }
-          block->mv[ii][ii].u.vec.dx[ref] += min_dx;
-          block->mv[jj][ii].u.vec.dy[ref] += min_dy;
-          block->error = metric;
+          if (SCHRO_METRIC_INVALID > min_metric) {
+            block->mv[ii][ii].u.vec.dx[ref] += min_dx;
+            block->mv[jj][ii].u.vec.dy[ref] += min_dy;
+            block->mv[jj][ii].metric = min_metric;
+          }
         }
       }
     }
   }
 
-  schro_block_fixup (block);
 }
 
 void
@@ -2306,6 +2314,9 @@ schro_mode_decision (SchroMe me)
   schro_me_set_badblock_ratio (me
       , badblocks / (params->x_num_blocks*params->y_num_blocks / 16));
 
+  schro_me_set_dcblock_ratio (me
+      , (double)(dcblocks) / (params->x_num_blocks*params->y_num_blocks));
+
   if (1 < params->mv_precision) {
     for (ref=0; params->num_refs > ref; ++ref) {
       schro_free (fd[ref].data);
@@ -2337,6 +2348,7 @@ struct SchroMe {
 
   double                 mc_error;
   double                 badblocks_ratio;
+  double                 dcblock_ratio;
 
   SchroMeElement         meElement[2];
 };
@@ -2381,7 +2393,7 @@ schro_me_new (SchroEncoderFrame* frame)
    * are not reference-counted but they should if we use them like this */
   me->params = &frame->params;
   me->motion = frame->motion;
-  me->lambda = frame->base_lambda;
+  me->lambda = frame->encoder->magic_mc_lambda;
   for (ref=0; me->params->num_refs > ref; ++ref) {
     me->meElement[ref] = schro_me_element_new (frame, ref);
   }
@@ -2542,6 +2554,20 @@ schro_me_badblocks_ratio (SchroMe me)
 {
   SCHRO_ASSERT (me);
   return me->badblocks_ratio;
+}
+
+void
+schro_me_set_dcblock_ratio (SchroMe me, double dcblock_ratio)
+{
+  SCHRO_ASSERT (me);
+  me->dcblock_ratio = dcblock_ratio;
+}
+
+double
+schro_me_dcblock_ratio (SchroMe me)
+{
+  SCHRO_ASSERT (me);
+  return me->dcblock_ratio;
 }
 
 

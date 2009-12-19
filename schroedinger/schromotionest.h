@@ -100,6 +100,8 @@ void schro_motion_copy_to (SchroMotion *motion, int i, int j, SchroBlock *block)
 void schro_block_fixup (SchroBlock *block);
 int schro_block_check (SchroBlock *block);
 
+double schro_encoder_get_me_lambda (SchroEncoderFrame* frame);
+
 /* SchroHierBm interface */
 SchroHierBm schro_hbm_new ( SchroEncoderFrame* frame, int ref_number );
 SchroHierBm schro_hbm_ref ( SchroHierBm schro_hbm );
@@ -138,6 +140,8 @@ void schro_me_set_mc_error ( SchroMe me, double mc_err );
 double schro_me_mc_error ( SchroMe me );
 void schro_me_set_badblock_ratio ( SchroMe me, double badblocks_ratio );
 double schro_me_badblocks_ratio ( SchroMe me );
+void schro_me_set_dcblock_ratio ( SchroMe me, double dcblock_ratio );
+double schro_me_dcblock_ratio ( SchroMe me );
 void schro_mode_decision (SchroMe me);
 
 void schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame);

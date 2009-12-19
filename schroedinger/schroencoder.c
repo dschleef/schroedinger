@@ -1646,6 +1646,7 @@ schro_encoder_predict_subpel_picture (SchroAsyncStage *stage)
       }
     }
     if (frame->params.num_refs > 0 && frame->params.mv_precision > 0) {
+      schro_me_set_lambda (frame->deep_me, schro_encoder_get_me_lambda (frame));
       schro_encoder_motion_predict_subpel_deep (frame->deep_me);
     }
   }
@@ -1689,10 +1690,12 @@ schro_encoder_mode_decision (SchroAsyncStage *stage)
       SCHRO_INFO("mode decision and superblock splitting picture %d"
           , frame->frame_number);
       schro_me_set_motion (frame->deep_me, frame->motion);
+      schro_me_set_lambda (frame->deep_me, schro_encoder_get_me_lambda (frame));
       schro_mode_decision (frame->deep_me);
       schro_motion_calculate_stats (frame->motion, frame);
       frame->estimated_mc_bits = schro_motion_estimate_entropy (frame->motion);
       frame->badblock_ratio = schro_me_badblocks_ratio (frame->deep_me);
+      frame->dcblock_ratio = schro_me_dcblock_ratio (frame->deep_me);
       frame->mc_error = schro_me_mc_error (frame->deep_me);
 
       SCHRO_DEBUG("DC block ratio for frame %d s %g", frame->frame_number
