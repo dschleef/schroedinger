@@ -3313,7 +3313,7 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
     }
 #endif
 
-    for(i=0;i<5;i++){
+    for(i=0;i<frame->encoder->downsample_levels;i++){
       if (frame->downsampled_frames[i]) {
         schro_frame_unref (frame->downsampled_frames[i]);
       }
@@ -3343,6 +3343,7 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
     if (frame->rme[1]) schro_rough_me_free (frame->rme[1]);
     if (frame->hier_bm[0]) schro_hbm_unref (&frame->hier_bm[0]);
     if (frame->hier_bm[1]) schro_hbm_unref (&frame->hier_bm[1]);
+    if (frame->deep_me) schro_me_free (&frame->deep_me);
     if (frame->phasecorr[0]) schro_phasecorr_free (frame->phasecorr[0]);
     if (frame->phasecorr[1]) schro_phasecorr_free (frame->phasecorr[1]);
 
@@ -3352,7 +3353,6 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
       if (frame->quant_indices[2][i]) schro_free (frame->quant_indices[2][i]);
     }
 
-    if (frame->deep_me) schro_me_free (&frame->deep_me);
 
     schro_free (frame);
   }
