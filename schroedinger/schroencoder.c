@@ -3517,6 +3517,7 @@ struct SchroEncoderSettings {
   DOUB(filter_value, 0, 100.0, 5.0),
   INT (profile, 0, 0, 0),
   INT (level, 0, 0, 0),
+  INT (max_refs, 1, 4, 3),
   BOOL(open_gop, TRUE),
   INT (au_distance, 1, INT_MAX, 120),
   BOOL(enable_psnr, FALSE),
