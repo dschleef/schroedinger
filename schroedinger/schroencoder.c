@@ -3501,7 +3501,7 @@ struct SchroEncoderSettings {
   BOOL(enable_noarith, FALSE),
   BOOL(enable_md5, FALSE),
   BOOL(enable_fullscan_estimation, FALSE),
-  BOOL(enable_hierarchical_estimation, FALSE),
+  BOOL(enable_hierarchical_estimation, TRUE),
   BOOL(enable_zero_estimation, FALSE),
   BOOL(enable_phasecorr_estimation, FALSE),
   BOOL(enable_bigblock_estimation, TRUE),
