@@ -1400,7 +1400,7 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
 
       if (frame->busy) continue;
 
-      if (0 == i || 0 == frame->need_mad) {
+      if (0 == i || FALSE == frame->need_mad) {
         /* we can't calculate a MAD for first frame in the queue */
         frame->stages[SCHRO_ENCODER_FRAME_STAGE_SC_DETECT_1].is_done = TRUE;
         continue;
@@ -1476,6 +1476,19 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
         return TRUE;
       }
 
+    }
+  }
+
+  for (i=0; encoder->frame_queue->n > i; ++i) {
+    frame = encoder->frame_queue->elements[i].data;
+    SCHRO_DEBUG("serialised stage i=%d picture=%d state=%d slot=%d quant_slot=%d"
+        , i, frame->frame_number, 0 /* frame>state */
+        , frame->slot, encoder->quant_slot);
+
+    if (frame->busy) continue;
+
+    if (frame->slot == encoder->quant_slot) {
+      int ret;
       if (TODO(SCHRO_ENCODER_FRAME_STAGE_PREDICT_SUBPEL) &&
           frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL].is_done) {
         run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_PREDICT_SUBPEL);
@@ -1484,20 +1497,19 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
 
       if (TODO(SCHRO_ENCODER_FRAME_STAGE_MODE_DECISION) &&
           frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_SUBPEL].is_done) {
-        if (!check_refs (frame)) continue;
         run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_MODE_DECISION);
         return TRUE;
       }
 
-    }
-  }
-
-  for(i=0;i<encoder->frame_queue->n;i++) {
-    frame = encoder->frame_queue->elements[i].data;
-    if (frame->slot == encoder->quant_slot) {
-      int ret;
+      /* analyse the residual in preparation for quantisation */
       ret = encoder->handle_quants (encoder, i);
-      if (!ret) break;
+      if (!ret) continue;
+
+      if (TODO(SCHRO_ENCODER_FRAME_STAGE_ENCODING) &&
+          frame->stages[SCHRO_ENCODER_FRAME_STAGE_HAVE_QUANTS].is_done) {
+        run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_ENCODING);
+        return TRUE;
+      }
     }
   }
 
@@ -1509,11 +1521,6 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
 
       if (frame->busy) continue;
 
-      if (TODO(SCHRO_ENCODER_FRAME_STAGE_ENCODING) &&
-          frame->stages[SCHRO_ENCODER_FRAME_STAGE_HAVE_QUANTS].is_done) {
-        run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_ENCODING);
-        return TRUE;
-      }
       if (TODO(SCHRO_ENCODER_FRAME_STAGE_RECONSTRUCT) &&
           frame->stages[SCHRO_ENCODER_FRAME_STAGE_ENCODING].is_done) {
         run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_RECONSTRUCT);
@@ -1727,16 +1734,6 @@ schro_encoder_render_picture (SchroEncoderFrame *frame)
 
     SCHRO_ASSERT(schro_motion_verify (frame->motion));
 
-    if ((frame->encoder->bits_per_picture &&
-        frame->estimated_mc_bits > frame->encoder->bits_per_picture * frame->encoder->magic_me_bailout_limit) ||
-        frame->badblock_ratio > 0.5) {
-      SCHRO_DEBUG("%d: MC bailout %d > %g", frame->frame_number,
-          frame->estimated_mc_bits,
-          frame->encoder->bits_per_picture*frame->encoder->magic_me_bailout_limit);
-      frame->picture_weight = frame->encoder->magic_bailout_weight;
-      frame->params.num_refs = 0;
-      frame->num_refs = 0;
-    }
   }
 
   if (frame->params.num_refs > 0) {
