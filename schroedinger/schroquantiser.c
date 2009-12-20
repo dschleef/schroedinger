@@ -691,7 +691,7 @@ schro_encoder_calc_estimates (SchroEncoderFrame *frame)
 void
 schro_encoder_choose_quantisers_rdo_bit_allocation (SchroEncoderFrame *frame)
 {
-  double base_lambda;
+  double frame_lambda;
   int bits;
 
   schro_encoder_generate_subband_histograms (frame);
@@ -701,11 +701,11 @@ schro_encoder_choose_quantisers_rdo_bit_allocation (SchroEncoderFrame *frame)
 
   bits = frame->allocated_residual_bits;
 
-  base_lambda = schro_encoder_entropy_to_lambda (frame, bits);
-  frame->base_lambda = base_lambda;
-  SCHRO_DEBUG("LAMBDA: %d %g %d", frame->frame_number, base_lambda, bits);
+  frame_lambda = schro_encoder_entropy_to_lambda (frame, bits);
+  frame->frame_lambda = frame_lambda;
+  SCHRO_DEBUG("LAMBDA: %d %g %d", frame->frame_number, frame_lambda, bits);
 
-  schro_encoder_lambda_to_entropy (frame, base_lambda);
+  schro_encoder_lambda_to_entropy (frame, frame_lambda);
 }
 
 void
@@ -716,12 +716,12 @@ schro_encoder_choose_quantisers_rdo_lambda (SchroEncoderFrame *frame)
 
   SCHRO_ASSERT(frame->have_estimate_tables);
 
-  frame->base_lambda = frame->encoder->magic_lambda;
+  frame->frame_lambda = frame->encoder->magic_lambda;
   if (!frame->is_ref) {
-    frame->base_lambda *= frame->encoder->magic_nonref_lambda_scale;
+    frame->frame_lambda *= frame->encoder->magic_nonref_lambda_scale;
   }
 
-  schro_encoder_lambda_to_entropy (frame, frame->base_lambda);
+  schro_encoder_lambda_to_entropy (frame, frame->frame_lambda);
 }
 
 
@@ -1052,7 +1052,7 @@ schro_encoder_choose_quantisers_constant_error (SchroEncoderFrame *frame)
 
   frame_lambda = schro_encoder_error_to_lambda (frame, error);
 
-  frame->base_lambda = frame_lambda;
+  frame->frame_lambda = frame_lambda;
   SCHRO_DEBUG("LAMBDA: %d %g", frame->frame_number, frame_lambda);
 }
 

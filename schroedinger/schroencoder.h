@@ -203,7 +203,7 @@ struct _SchroEncoderFrame {
   int hard_limit_bits;
   int allocated_residual_bits;
   int allocated_mc_bits;
-  double base_lambda;
+  double frame_lambda;
   int estimated_residual_bits;
   int estimated_mc_bits;
 

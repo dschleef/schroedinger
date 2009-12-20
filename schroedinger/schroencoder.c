@@ -774,7 +774,7 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
             frame->actual_residual_bits,
             frame->scene_change_score, /* 10 */
             encoder->buffer_level,
-            frame->base_lambda,
+            frame->frame_lambda,
             frame->mc_error,
             frame->mean_squared_error_luma,
             frame->mean_squared_error_chroma, /* 15 */
