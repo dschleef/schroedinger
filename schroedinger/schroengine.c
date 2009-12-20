@@ -136,6 +136,7 @@ schro_encoder_pick_refs (SchroEncoderFrame *frame,
       ref1 = encoder->reference_pictures[i]->frame_number;
     }
   }
+
   if (ref1 == SCHRO_PICTURE_NUMBER_INVALID) {
     /* if there's no fwd ref, pick an older back ref */
     for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
@@ -174,8 +175,7 @@ schro_encoder_pick_retire (SchroEncoderFrame *frame,
     }
   }
 
-  if (retire == SCHRO_PICTURE_NUMBER_INVALID &&
-      n_refs == frame->encoder->max_refs) {
+  if (retire == SCHRO_PICTURE_NUMBER_INVALID && n_refs == 3) {
     /* if we have a full queue, forceably retire something */
     for(i=0;i<SCHRO_LIMIT_REFERENCE_FRAMES;i++){
       if (encoder->reference_pictures[i] == NULL) continue;
@@ -554,7 +554,8 @@ schro_encoder_calculate_allocation (SchroEncoderFrame *frame)
 {
   SchroEncoder *encoder = frame->encoder;
 
-  if (frame->encoder->rate_control != SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE) {
+  if (encoder->rate_control != SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE ||
+      encoder->enable_rdo_cbr == TRUE) {
     /* FIXME this function shouldn't be called for CBR */
 
     frame->hard_limit_bits = frame->output_buffer_size * 8;
@@ -779,8 +780,6 @@ schro_encoder_handle_quants (SchroEncoder *encoder, int i)
 
   if (frame->busy || !frame->stages[SCHRO_ENCODER_FRAME_STAGE_MODE_DECISION].is_done) return FALSE;
 
-  encoder->quant_slot++;
-
   schro_encoder_calculate_allocation (frame);
   schro_encoder_choose_quantisers (frame);
   schro_encoder_estimate_entropy (frame);
@@ -817,7 +816,6 @@ schro_encoder_handle_gop_backref (SchroEncoder *encoder, int i)
   //schro_engine_code_BBBP (encoder, i, 1);
   if (frame->start_sequence_header) {
     schro_encoder_pick_retire (frame, &retire);
-
     schro_engine_code_picture (frame, TRUE, retire, 0, -1, -1);
     frame->picture_weight = encoder->magic_keyframe_weight;
   } else {

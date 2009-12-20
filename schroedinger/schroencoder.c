@@ -44,6 +44,96 @@ static schro_bool schro_frame_data_is_zero (SchroFrameData *fd);
 static void schro_encoder_setting_set_defaults (SchroEncoder *encoder);
 
 /*
+ * Set a frame lambda based on the encoder lambda
+ */
+void
+schro_encoder_set_frame_lambda (SchroEncoderFrame *frame)
+{
+  SCHRO_ASSERT(frame);
+  SCHRO_ASSERT(frame->encoder);
+  switch (frame->encoder->rate_control) {
+    case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE:
+      if (frame->encoder->enable_rdo_cbr) {
+        frame->frame_lambda = pow( 10.0 , -(12.0-frame->encoder->qf )/2.5 )/16.0;
+        frame->frame_me_lambda = frame->encoder->magic_me_lambda_scale *
+          sqrt(frame->frame_lambda);
+      } else {
+        /* overwritten in schro_encoder_choose_quantisers_rdo_bit_allocation */
+        frame->frame_lambda = 0;
+        frame->frame_me_lambda = frame->encoder->magic_mc_lambda;
+      }
+      break;
+    case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_QUALITY:
+      frame->frame_lambda = exp(((frame->encoder->quality-5)/0.7 - 7.0)*M_LN10*0.5);
+      frame->frame_me_lambda = frame->encoder->magic_mc_lambda;
+      break;
+    default:
+      /* others don't use lambda */
+      frame->frame_lambda = frame->encoder->magic_lambda;
+      frame->frame_me_lambda = frame->encoder->magic_mc_lambda;
+      break;
+  }
+  if ((frame->num_refs != 0)){
+    if (schro_encoder_frame_is_B_frame(frame) ) {
+      frame->frame_lambda *= frame->encoder->magic_B_lambda_scale;
+    } else {
+      frame->frame_lambda *= frame->encoder->magic_P_lambda_scale;
+    }
+  }
+  else{
+    if (frame->encoder->rate_control == SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE ){
+      if (frame->encoder->intra_cbr_lambda != -1) {
+        frame->frame_lambda = sqrt (frame->frame_lambda *
+            frame->encoder->intra_cbr_lambda);
+      }
+      frame->encoder->intra_cbr_lambda = frame->frame_lambda;
+      SCHRO_DEBUG("Using filtered CBR value for intra lambda %g (picture %d)", frame->frame_lambda,frame->frame_number);
+    }
+  }
+}
+
+/*
+ * Return 1 if the last subgroup has been coded, 0 otherwise
+ *
+ */
+#if 0
+int
+schro_encoder_last_subgroup_coded(SchroEncoder* encoder, int picnum)
+{
+  int subgroup_coded = 1;
+  int pos,fnum;
+
+  int last_P_frame = (picnum + encoder->subgroup_length - 1)/encoder->subgroup_length;
+  last_P_frame *= encoder->subgroup_length;
+  last_P_frame -= encoder->subgroup_length;
+
+  if ( picnum > encoder->subgroup_length){
+    for (pos=0; pos<encoder->frame_queue->n; ++pos){
+      SchroEncoderFrame* frame = encoder->frame_queue->elements[pos].data;
+      fnum = frame->frame_number;
+      if (fnum<=last_P_frame && fnum>= last_P_frame-encoder->subgroup_length+1){
+        if (!(frame->state & SCHRO_ENCODER_FRAME_STATE_ENCODING) )
+          subgroup_coded = 0;
+      }
+    }
+  }
+  else{
+    for (pos=0; pos<encoder->frame_queue->n; ++pos){
+      SchroEncoderFrame* frame = encoder->frame_queue->elements[pos].data;
+      fnum = frame->frame_number;
+      if (fnum==0 &&!(frame->state & SCHRO_ENCODER_FRAME_STATE_ENCODING) )
+          subgroup_coded = 0;
+    }
+  }
+
+  SCHRO_DEBUG("Last subgroup coded value %d at %d", subgroup_coded, picnum );
+
+  return subgroup_coded;
+
+}
+#endif
+
+/*
  * schro_encoder_init_rc_buffer
  *
  * Initialises the buffer model for rate control
@@ -51,18 +141,330 @@ static void schro_encoder_setting_set_defaults (SchroEncoder *encoder);
  */
 void schro_encoder_init_rc_buffer(SchroEncoder* encoder)
 {
+  SCHRO_ASSERT (encoder);
+  int gop_length = encoder->au_distance;
   if (encoder->buffer_size == 0) {
     encoder->buffer_size = 3 * encoder->bitrate;
   }
+
+  // Set initial level at 100%
   if (encoder->buffer_level == 0) {
     encoder->buffer_level = encoder->buffer_size;
   }
   encoder->bits_per_picture = muldiv64 (encoder->bitrate,
-        encoder->video_format.frame_rate_denominator,
-        encoder->video_format.frame_rate_numerator);
+                              encoder->video_format.frame_rate_denominator,
+                              encoder->video_format.frame_rate_numerator);
+  encoder->gop_target = muldiv64 ( encoder->bitrate * gop_length,
+                              encoder->video_format.frame_rate_denominator,
+                              encoder->video_format.frame_rate_numerator );
+
   if (encoder->video_format.interlaced_coding) {
     encoder->bits_per_picture /= 2;
   }
+
+  encoder->B_complexity_sum = 0;
+
+  // Set up an initial allocation
+  if (encoder->gop_structure == SCHRO_ENCODER_GOP_INTRA_ONLY ){
+    encoder->I_frame_alloc = encoder->bits_per_picture;
+    encoder->P_frame_alloc = 0;
+    encoder->B_frame_alloc = 0;
+  }
+  else{
+    int num_P_frames = encoder->au_distance / encoder->magic_subgroup_length - 1;
+    int num_B_frames = gop_length - num_P_frames - 1;
+    int total;
+    encoder->I_frame_alloc = 2^24;
+    encoder->P_frame_alloc = encoder->I_frame_alloc / 3;
+    encoder->B_frame_alloc = encoder->P_frame_alloc / 3;
+    total = encoder->I_frame_alloc + num_P_frames*encoder->P_frame_alloc +
+                                     num_B_frames*encoder->B_frame_alloc;
+    encoder->I_frame_alloc = (encoder->I_frame_alloc*encoder->gop_target)/total;
+    encoder->P_frame_alloc = (encoder->P_frame_alloc*encoder->gop_target)/total;
+    encoder->B_frame_alloc = (encoder->B_frame_alloc*encoder->gop_target)/total;
+  }
+  encoder->I_complexity = encoder->I_frame_alloc;
+  encoder->P_complexity = encoder->P_frame_alloc;
+  encoder->B_complexity = encoder->B_frame_alloc;
+
+  SCHRO_DEBUG("Initialising buffer with allocations (I, B, P) %d, %d, %d",encoder->I_frame_alloc,
+               encoder->P_frame_alloc, encoder->B_frame_alloc);
+
+  encoder->subgroup_position = 1;
+}
+
+/*
+ * schro_encoder_projected_subgroup_bits
+ *
+ * Returns the total number of bits expected for the next subgroup
+ *
+ */
+int
+schro_encoder_projected_subgroup_bits(SchroEncoder* encoder)
+{
+    // FIXME: take account of subgroups with an I instead of a P??
+    int bits = encoder->P_complexity +
+                   (encoder->magic_subgroup_length-1)*encoder->B_complexity;
+    return bits;
+}
+
+/*
+ * schro_encoder_target_subgroup_bits
+ *
+ * Returns the target for the next subgroup
+ *
+ */
+int
+schro_encoder_target_subgroup_bits(SchroEncoder* encoder)
+{
+    // FIXME: take account of subgroups with an I instead of a P??
+    int bits = encoder->P_frame_alloc +
+                   (encoder->magic_subgroup_length-1)*encoder->B_frame_alloc;
+    return bits;
+}
+
+/*
+ * schro_encoder_cbr_allocate:
+ *
+ * TM5-style bit allocation routine
+ *
+ */
+void
+schro_encoder_cbr_allocate(SchroEncoder* encoder, int fnum )
+{
+  SCHRO_ASSERT(encoder);
+  int gop_length = encoder->au_distance;
+  int Icty = encoder->I_complexity;
+  int Pcty = encoder->P_complexity;
+  int Bcty = encoder->B_complexity;
+
+  int num_I_frames = 1;
+  int num_P_frames = encoder->au_distance / encoder->magic_subgroup_length - 1;
+  int num_B_frames = gop_length - num_I_frames - num_P_frames;
+
+  int total_gop_bits = muldiv64 (encoder->bitrate * gop_length,
+                       encoder->video_format.frame_rate_denominator,
+                       encoder->video_format.frame_rate_numerator);
+  int sg_len = encoder->magic_subgroup_length;
+
+  double buffer_occ = ( (double)encoder->buffer_level)/((double)encoder->buffer_size);
+
+  if ( encoder->gop_structure != SCHRO_ENCODER_GOP_INTRA_ONLY){
+    double correction;
+    if (buffer_occ<0.9 && ( (fnum+1) % 4*sg_len)==0 ){
+      // If we're undershooting buffer target, correct slowly
+      correction = MIN( 0.25, 0.25*(0.9 - buffer_occ )/0.9 );
+      encoder->gop_target = (long int)((double)(total_gop_bits)*( 1.0-correction) );
+    }
+    else if (buffer_occ>0.9 && ( (fnum+1) % sg_len )==0 ){
+      // If we're overshooting buffer target, correct quickly
+      correction = MIN( 0.5, 0.5*( buffer_occ - 0.9 )/0.9 );
+      encoder->gop_target = (long int)((double)(total_gop_bits)*( 1.0+correction) );
+    }
+  }
+
+  const long int min_bits = total_gop_bits/(100*gop_length);
+
+  encoder->I_frame_alloc = (long int) (encoder->gop_target
+                         / (num_I_frames
+                          +(double)(num_P_frames*Pcty)/Icty
+                          +(double)(num_B_frames*Bcty)/Icty));
+
+  encoder->I_frame_alloc = MAX( min_bits, encoder->I_frame_alloc );
+
+  encoder->P_frame_alloc = (long int) (encoder->gop_target
+                         / (num_P_frames
+                          +(double)(num_I_frames*Icty)/Pcty
+                          +(double)(num_B_frames*Bcty)/Pcty));
+
+  encoder->P_frame_alloc = MAX( min_bits, encoder->P_frame_alloc );
+
+  encoder->B_frame_alloc = (long int) (encoder->gop_target
+                         / (num_B_frames
+                          +(double)(num_I_frames*Icty)/Bcty
+                          +(double)(num_P_frames*Pcty)/Bcty));
+
+  encoder->B_frame_alloc = MAX( min_bits, encoder->B_frame_alloc );
+
+}
+
+/*
+ * schro_encoder_cbr_update
+ *
+ * Sets the qf (and hence lambdas) for the next subgroup to be coded
+ *
+ */
+void
+schro_encoder_cbr_update(SchroEncoderFrame* frame, int num_bits)
+{
+  SCHRO_ASSERT(frame);
+  SchroEncoder* encoder = frame->encoder;
+
+
+  // The target buffer occupancy
+  double target_ratio = 0.9;
+  double actual_ratio = (double)(encoder->buffer_level)/
+                        (double)(encoder->buffer_size);
+  double filter_tap;
+  int P_separation=encoder->magic_subgroup_length;
+
+  // 1 is coding frames, 2 if coding fields
+  int field_factor = 1;
+  if (encoder->video_format.interlaced_coding)
+    field_factor = 2;
+
+  int emergency_realloc = 0;
+  int target;
+  double tbits, pbits;
+
+  // Decrement the subgroup frame counter. This is zero just after the last
+  // B frame before the next P frame i.e. before the start of a subgroup
+  encoder->subgroup_position--;
+
+  /* Determine the filter tap for adjusting lambda */
+  if ((frame->frame_number/field_factor)<=3*P_separation ){
+    // Adjust immediately at the beginning of the sequence
+    filter_tap = 1.0;
+  }
+  else{
+    if (actual_ratio>target_ratio)
+      filter_tap = (actual_ratio-target_ratio)/(1.0-target_ratio);
+    else
+      filter_tap = (target_ratio-actual_ratio)/target_ratio;
+
+    filter_tap = CLAMP( filter_tap, 0.25, 1.0 );
+  }
+
+  // Now for the actual update
+  if (encoder->gop_structure != SCHRO_ENCODER_GOP_INTRA_ONLY){
+    // Long-GOP coding
+
+    if ( frame->num_refs == 0 ){
+      encoder->I_complexity = num_bits;
+      target = encoder->I_frame_alloc;
+
+      if (num_bits < target/2 || num_bits > 3*target)
+        emergency_realloc = 1;
+
+      if ((frame->frame_number/field_factor)==0){//FIXME: needed?
+        // We've just coded the very first frame, which is a special
+        // case as the B frames which normally follow are missing
+        encoder->subgroup_position = P_separation;
+      }
+    }
+
+    if ( ((frame->frame_number)/field_factor) % P_separation !=0 ){
+      // Scheduled B picture
+      encoder->B_complexity_sum += num_bits;
+      target = encoder->B_frame_alloc;
+
+      if (num_bits < target/2  || num_bits > 3*target){
+        emergency_realloc = 1;
+      }
+
+    }
+    else if ( frame->num_refs != 0 ){
+      // Scheduled P picture (if inserted I picture, don't change the complexity)
+      encoder->P_complexity = num_bits;
+      target = encoder->P_frame_alloc;
+
+      if (num_bits < target/2 || num_bits > 3*target){
+        emergency_realloc = 1;
+      }
+
+    }
+
+    if ( encoder->subgroup_position==0 || emergency_realloc==1){
+      if (emergency_realloc==1 )
+        SCHRO_DEBUG("Major undershoot of frame bit rate: Reallocating");
+
+      // We recompute allocations for the next subgroup
+      if ( P_separation>1 && encoder->subgroup_position < P_separation-1){
+        encoder->B_complexity = encoder->B_complexity_sum/(P_separation-1-encoder->subgroup_position);
+      }
+      schro_encoder_cbr_allocate( encoder, frame->frame_number/field_factor );
+
+      // We work out what this means for the quality factor and set it
+
+      tbits = (double)(schro_encoder_target_subgroup_bits(encoder));
+      pbits = (double)(schro_encoder_projected_subgroup_bits(encoder));
+
+      SCHRO_DEBUG("Reallocating: target bits = %g, projected bits = %g",tbits,pbits);
+
+      // Determine K value in model
+      double K = pow(pbits, 2)*pow(10.0, ((double)2/5*(12-encoder->qf)))/16;
+
+      // Determine a new qf from K
+      double new_qf= 12 - (double)5/2*log10(16*K/pow(tbits, 2));
+
+      if ( ( abs(encoder->qf-new_qf)>=0.25 || new_qf <= 4.0 ) && new_qf<=8.0)
+        new_qf = filter_tap*new_qf+(1.0-filter_tap)*encoder->qf;
+
+      if ( new_qf<=8.0 ){
+        if (pbits<2*tbits){
+          new_qf = MAX(new_qf, encoder->qf-1.0);
+        }
+        else{
+          new_qf = MAX(new_qf, encoder->qf-2.0);
+        }
+      }
+
+      encoder->qf = new_qf;
+      SCHRO_DEBUG("Setting qf for next subgroup to %g",encoder->qf);
+
+      // Reset the frame counter
+      if (encoder->subgroup_position==0){
+        encoder->subgroup_position = encoder->magic_subgroup_length;
+        encoder->B_complexity_sum = 0;
+      }
+
+    }
+  }
+  else{
+    // We're doing intraonly coding
+
+    double tbits = (double) encoder->bits_per_picture;
+    double pbits = (double) num_bits;
+
+    // Determine K value
+    double K = pow(pbits, 2)*pow(10.0, ((double)2/5*(12-encoder->qf)))/16;
+
+    // Determine a new QF
+    double new_qf = 12 - (double)5/2*log10(16*K/pow(tbits, 2));
+
+    // Adjust the QF to meet the target
+    double abs_delta = abs( new_qf - encoder->qf );
+    if ( abs_delta>0.01)
+    {
+      // Rate of convergence to new QF
+      double r;
+
+      // Use an Sshaped curve to compute r
+      //   Where the qf difference is less than 1/2, r decreases to zero
+      //   exponentially, so for small differences in QF we jump straight
+      //   to the target value. For large differences in QF, r converges
+      //   exponentially to 0.75, so we converge to the target value at
+      //   a fixed rate.
+
+      //   Overall behaviour is to converge steadily for 2 or 3 frames until
+      //   close and then lock to the correct value. This avoids very rapid
+      //   changes in quality.
+
+      //   Actual parameters may be adjusted later. Some applications may
+      //   require instant lock.
+
+      double lg_diff = log( abs_delta/2.0 );
+      if ( lg_diff< 0.0 )
+        r = 0.5*exp(-lg_diff*lg_diff/2.0);
+      else
+        r = 1.0-0.5*exp(-lg_diff*lg_diff/2.0);
+
+      r *= 0.75;
+      encoder->qf = r*encoder->qf + (1.0-r)*new_qf;
+      SCHRO_DEBUG("Setting qf for next subgroup to %g",encoder->qf);
+    }
+  }
+
 }
 
 /**
@@ -192,6 +594,8 @@ schro_encoder_start (SchroEncoder *encoder)
 
   schro_tables_init ();
   schro_encoder_init_perceptual_weighting (encoder);
+  /* special value indicating invalid */
+  encoder->intra_cbr_lambda = -1;
 
   schro_encoder_init_error_tables (encoder);
 
@@ -207,7 +611,11 @@ schro_encoder_start (SchroEncoder *encoder)
       break;
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE:
       handle_gop_enum (encoder);
-      encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RDO_BIT_ALLOCATION;
+      if (encoder->enable_rdo_cbr) {
+        encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_CBR;
+      } else {
+        encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RDO_BIT_ALLOCATION;
+      }
       schro_encoder_init_rc_buffer (encoder);
 
       schro_encoder_encode_bitrate_comment (encoder, encoder->bitrate);
@@ -1140,6 +1548,23 @@ schro_encoder_wait (SchroEncoder *encoder)
   return ret;
 }
 
+int
+schro_encoder_frame_is_B_frame(SchroEncoderFrame *frame)
+{
+  int is_B_frame= 0;
+
+  if (frame->num_refs==2 &&
+          ( (frame->picture_number_ref[0]<frame->frame_number && frame->picture_number_ref[1]>frame->frame_number) ||
+          (frame->picture_number_ref[1]<frame->frame_number && frame->picture_number_ref[0]>frame->frame_number) ) )
+  {
+    is_B_frame = 1;
+  }
+
+  return is_B_frame;
+
+}
+
+
 static void
 schro_encoder_frame_complete (SchroAsyncStage *stage)
 {
@@ -1491,6 +1916,7 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
       int ret;
       if (TODO(SCHRO_ENCODER_FRAME_STAGE_PREDICT_SUBPEL) &&
           frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL].is_done) {
+        schro_encoder_set_frame_lambda (frame);
         run_stage (frame, SCHRO_ENCODER_FRAME_STAGE_PREDICT_SUBPEL);
         return TRUE;
       }
@@ -1653,7 +2079,7 @@ schro_encoder_predict_subpel_picture (SchroAsyncStage *stage)
       }
     }
     if (frame->params.num_refs > 0 && frame->params.mv_precision > 0) {
-      schro_me_set_lambda (frame->deep_me, schro_encoder_get_me_lambda (frame));
+      schro_me_set_lambda (frame->deep_me, frame->frame_me_lambda);
       schro_encoder_motion_predict_subpel_deep (frame->deep_me);
     }
   }
@@ -1697,7 +2123,7 @@ schro_encoder_mode_decision (SchroAsyncStage *stage)
       SCHRO_INFO("mode decision and superblock splitting picture %d"
           , frame->frame_number);
       schro_me_set_motion (frame->deep_me, frame->motion);
-      schro_me_set_lambda (frame->deep_me, schro_encoder_get_me_lambda (frame));
+      schro_me_set_lambda (frame->deep_me, frame->frame_me_lambda);
       schro_mode_decision (frame->deep_me);
       schro_motion_calculate_stats (frame->motion, frame);
       frame->estimated_mc_bits = schro_motion_estimate_entropy (frame->motion);
@@ -1781,6 +2207,8 @@ schro_encoder_encode_picture (SchroAsyncStage *stage)
   frame->pack = schro_pack_new ();
   schro_pack_encode_init (frame->pack, frame->output_buffer);
 
+  int total_frame_bits = -schro_pack_get_offset (frame->pack)*8;
+
   /* encode header */
   schro_encoder_encode_parse_info (frame->pack,
       SCHRO_PARSE_CODE_PICTURE(frame->is_ref, frame->params.num_refs,
@@ -1830,6 +2258,7 @@ schro_encoder_encode_picture (SchroAsyncStage *stage)
 
   schro_pack_flush (frame->pack);
   frame->actual_residual_bits += schro_pack_get_offset (frame->pack)*8;
+  total_frame_bits += schro_pack_get_offset(frame->pack)*8;
 
   SCHRO_DEBUG("Actual frame %d residual bits : %d", frame->frame_number,frame->actual_residual_bits);
   // Update the fiddle factors for estimating entropy
@@ -1869,6 +2298,31 @@ schro_encoder_encode_picture (SchroAsyncStage *stage)
     }
   }
 
+  // Update the buffer model
+  if (frame->encoder->rate_control == SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE ){
+    SchroEncoder* encoder = frame->encoder;
+    encoder->buffer_level -= total_frame_bits;
+    encoder->buffer_level += encoder->bits_per_picture;
+
+    if (encoder->buffer_level < 0) {
+      SCHRO_DEBUG("buffer underrun by %d bytes", -encoder->buffer_level);
+      encoder->buffer_level = 0;
+    }
+
+    if (encoder->buffer_level > encoder->buffer_size) {
+      int n;
+
+      n = (encoder->buffer_level - encoder->buffer_size + 7)/8;
+      SCHRO_DEBUG("buffer overrun, adding padding of %d bytes", n);
+      n = schro_encoder_encode_padding (encoder, n);
+      encoder->buffer_level -= n*8;
+    }
+    SCHRO_DEBUG("At frame %d, buffer level %d of %d bits", frame->frame_number,
+      encoder->buffer_level, encoder->buffer_size);
+
+    schro_encoder_cbr_update(frame, total_frame_bits);
+  }
+
   if (schro_pack_get_offset (frame->pack)*8 > frame->hard_limit_bits) {
     SCHRO_ERROR("over hard_limit_bits after residual (%d>%d)",
         schro_pack_get_offset (frame->pack)*8, frame->hard_limit_bits);
@@ -1893,6 +2347,7 @@ schro_encoder_encode_picture (SchroAsyncStage *stage)
     frame->pack = NULL;
   }
 
+  frame->encoder->quant_slot++;
 }
 
 void
@@ -2821,6 +3276,7 @@ schro_encoder_frame_set_quant_index (SchroEncoderFrame *frame, int component,
   int vert_codeblocks;
   int i;
   
+
   position = schro_subband_get_position (index);
   horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
   vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
@@ -3545,6 +4001,7 @@ struct SchroEncoderSettings {
   BOOL(enable_global_motion, FALSE),
   BOOL(enable_scene_change_detection, TRUE),
   BOOL(enable_deep_estimation, FALSE),
+  BOOL(enable_rdo_cbr, FALSE),
   INT (horiz_slices, 1, INT_MAX, 8),
   INT (vert_slices, 1, INT_MAX, 6),
   ENUM(codeblock_size, codeblock_size_list, 0),
@@ -3553,6 +4010,9 @@ struct SchroEncoderSettings {
   DOUB(magic_subband0_lambda_scale, 0.0, 1000.0, 10.0),
   DOUB(magic_chroma_lambda_scale, 0.0, 1000.0, 0.01),
   DOUB(magic_nonref_lambda_scale, 0.0, 1000.0, 0.01),
+  DOUB(magic_me_lambda_scale, 0.0, 100.0, 32.0),
+  DOUB(magic_P_lambda_scale, 0.0, 10.0, 0.25),
+  DOUB(magic_B_lambda_scale, 0.0, 10.0, 0.03125),
   DOUB(magic_allocation_scale, 0.0, 1000.0, 1.1),
   DOUB(magic_inter_cpd_scale, 0.0, 1.0, 1.0),
   DOUB(magic_keyframe_weight, 0.0, 1000.0, 7.5),

@@ -14,6 +14,7 @@ void schro_encoder_choose_quantisers_rdo_bit_allocation (SchroEncoderFrame *fram
 void schro_encoder_choose_quantisers_lossless (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_lowdelay (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_rdo_lambda (SchroEncoderFrame *frame);
+void schro_encoder_choose_quantisers_rdo_cbr (SchroEncoderFrame *frame);
 void schro_encoder_choose_quantisers_constant_error (SchroEncoderFrame *frame);
 
 double schro_encoder_entropy_to_lambda (SchroEncoderFrame *frame, double entropy);
@@ -268,6 +269,9 @@ schro_encoder_choose_quantisers (SchroEncoderFrame *frame)
       break;
     case SCHRO_QUANTISER_ENGINE_RDO_BIT_ALLOCATION:
       schro_encoder_choose_quantisers_rdo_bit_allocation (frame);
+      break;
+    case SCHRO_QUANTISER_ENGINE_CBR:
+      schro_encoder_choose_quantisers_rdo_cbr(frame);
       break;
     case SCHRO_QUANTISER_ENGINE_LOSSLESS:
       schro_encoder_choose_quantisers_lossless (frame);
@@ -688,7 +692,11 @@ schro_encoder_calc_estimates (SchroEncoderFrame *frame)
   frame->have_estimate_tables = TRUE;
 }
 
-void
+/*
+ * Quantiser engine which picks the best RDO quantisers to fit in
+ * a frame bit allocation.
+ */
+ void
 schro_encoder_choose_quantisers_rdo_bit_allocation (SchroEncoderFrame *frame)
 {
   double frame_lambda;
@@ -711,6 +719,8 @@ schro_encoder_choose_quantisers_rdo_bit_allocation (SchroEncoderFrame *frame)
 void
 schro_encoder_choose_quantisers_rdo_lambda (SchroEncoderFrame *frame)
 {
+  SCHRO_DEBUG("Using rdo_lambda quant selection on frame %d with lambda %g",frame->frame_number,frame->frame_lambda);
+
   schro_encoder_generate_subband_histograms (frame);
   schro_encoder_calc_estimates (frame);
 
@@ -724,6 +734,62 @@ schro_encoder_choose_quantisers_rdo_lambda (SchroEncoderFrame *frame)
   schro_encoder_lambda_to_entropy (frame, frame->frame_lambda);
 }
 
+
+void
+schro_encoder_choose_quantisers_rdo_cbr(SchroEncoderFrame *frame)
+{
+  // SCHRO_ERROR("Using rdo_cbr quant selection on frame %d with lambda %g",frame>frame_number,frame>frame_lambda);
+  /* SCHRO_ASSERT(frame>state & SCHRO_ENCODER_FRAME_STATE_HAVE_LAMBDA ); */
+
+  int est_bits, alloc_bits;
+
+  schro_encoder_generate_subband_histograms (frame);
+  schro_encoder_calc_estimates (frame);
+
+  SCHRO_ASSERT(frame->have_estimate_tables);
+
+  est_bits = (int) (schro_encoder_lambda_to_entropy (frame, frame->frame_lambda) );
+
+  // SCHRO_ERROR("Estimated bits for frame %d residual : %d", frame>frame_number, est_bits);
+
+  // Check that we're within reasonable bounds of the allocation
+  SchroEncoder* encoder = frame->encoder;
+
+  if (frame->num_refs==0 ){
+    alloc_bits = encoder->I_frame_alloc;
+  }
+  else if (schro_encoder_frame_is_B_frame(frame) == TRUE ){
+    alloc_bits = encoder->B_frame_alloc;
+  }
+  else{
+    alloc_bits = encoder->P_frame_alloc;
+  }
+  // FIXME: maybe want to subtract motion data bits for Inter pictures first
+  // for a more accurate result
+ 
+  int enforce;
+
+  if (encoder->buffer_level > (encoder->buffer_size/10) &&
+      encoder->buffer_level < (19*encoder->buffer_size)/20 ) {
+    enforce = 0;
+  }
+  else{
+    enforce = 1;
+    /*
+    SCHRO_ERROR("Setting max bits for frame %d at extrema :  %d %g", frame>frame_number,
+                                                          alloc_bits,
+                                                          (double)(encoder>buffer_level)/
+                                                          (double)(encoder>buffer_size)); */
+  }
+
+  if (est_bits > alloc_bits && enforce == 1){
+
+    frame->frame_lambda = schro_encoder_entropy_to_lambda (frame, alloc_bits);
+    SCHRO_DEBUG("Setting revised lambda based on allocation: %d %g %d", frame->frame_number, frame->frame_lambda, alloc_bits);
+
+    schro_encoder_lambda_to_entropy (frame, frame->frame_lambda);
+  }
+}
 
 void
 schro_encoder_estimate_entropy (SchroEncoderFrame *frame)

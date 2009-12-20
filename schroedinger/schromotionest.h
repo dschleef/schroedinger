@@ -100,8 +100,6 @@ void schro_motion_copy_to (SchroMotion *motion, int i, int j, SchroBlock *block)
 void schro_block_fixup (SchroBlock *block);
 int schro_block_check (SchroBlock *block);
 
-double schro_encoder_get_me_lambda (SchroEncoderFrame* frame);
-
 /* SchroHierBm interface */
 SchroHierBm schro_hbm_new ( SchroEncoderFrame* frame, int ref_number );
 SchroHierBm schro_hbm_ref ( SchroHierBm schro_hbm );

@@ -204,6 +204,7 @@ struct _SchroEncoderFrame {
   int allocated_residual_bits;
   int allocated_mc_bits;
   double frame_lambda;
+  double frame_me_lambda;
   int estimated_residual_bits;
   int estimated_mc_bits;
 
@@ -212,6 +213,8 @@ struct _SchroEncoderFrame {
   double mc_error;
   double mean_squared_error_luma;
   double mean_squared_error_chroma;
+
+  double estimated_arith_context_ratio;
 
   double badblock_ratio;
   double dcblock_ratio;
@@ -241,6 +244,8 @@ struct _SchroEncoder {
   int bitrate;
   int max_bitrate;
   int min_bitrate;
+
+  // Buffer model parameters for CBR and (TODO) constrained VBR coding
   int buffer_size;
   int buffer_level;
   double quality;
@@ -280,6 +285,7 @@ struct _SchroEncoder {
   schro_bool enable_global_motion;
   schro_bool enable_scene_change_detection;
   schro_bool enable_deep_estimation;
+  schro_bool enable_rdo_cbr;
   int horiz_slices;
   int vert_slices;
   int codeblock_size;
@@ -288,6 +294,9 @@ struct _SchroEncoder {
   double magic_subband0_lambda_scale;
   double magic_chroma_lambda_scale;
   double magic_nonref_lambda_scale;
+  double magic_P_lambda_scale;
+  double magic_B_lambda_scale;
+  double magic_me_lambda_scale;
   double magic_allocation_scale;
   double magic_inter_cpd_scale;
   double magic_keyframe_weight;
@@ -345,7 +354,6 @@ struct _SchroEncoder {
   double inter_subband_weights[SCHRO_N_WAVELETS][SCHRO_LIMIT_TRANSFORM_DEPTH][SCHRO_LIMIT_SUBBANDS];
   SchroHistogramTable intra_hist_tables[60];
 
-  int bits_per_picture;
 
   /* statistics */
 
@@ -353,6 +361,22 @@ struct _SchroEncoder {
   double average_arith_context_ratios_inter[3][SCHRO_LIMIT_SUBBANDS];
 
   /* engine specific stuff */
+
+  int bits_per_picture;
+  int subgroup_position;
+  int I_complexity;
+  int P_complexity;
+  int B_complexity;
+  int B_complexity_sum;
+  long int I_frame_alloc;
+  long int P_frame_alloc;
+  long int B_frame_alloc;
+  long int gop_target;
+
+  // Current qf, from which is derived ...
+  double qf;
+  // lambda to use for intra pictures in CBR mode
+  double intra_cbr_lambda;
 
   int gop_picture;
   int quant_slot;
@@ -406,6 +430,7 @@ void schro_encoder_free (SchroEncoder *encoder);
 SchroVideoFormat * schro_encoder_get_video_format (SchroEncoder *encoder);
 void schro_encoder_set_video_format (SchroEncoder *encoder,
     SchroVideoFormat *video_format);
+void schro_encoder_set_frame_lambda (SchroEncoderFrame* frame);
 void schro_encoder_end_of_stream (SchroEncoder *encoder);
 int schro_encoder_push_ready (SchroEncoder *encoder);
 void schro_encoder_push_frame (SchroEncoder *encoder, SchroFrame *frame);
@@ -475,7 +500,7 @@ void schro_encoder_output_push (SchroEncoder *encoder,
 SchroEncoderFrame * schro_encoder_frame_new (SchroEncoder *encoder);
 void schro_encoder_frame_ref (SchroEncoderFrame *frame);
 void schro_encoder_frame_unref (SchroEncoderFrame *frame);
-
+int schro_encoder_frame_is_B_frame (SchroEncoderFrame* frame);
 void schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame *frame);
 void schro_encoder_estimate_entropy (SchroEncoderFrame *frame);
 void schro_encoder_recalculate_allocations (SchroEncoder *encoder);

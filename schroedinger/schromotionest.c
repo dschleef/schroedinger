@@ -25,11 +25,6 @@ static SchroFrame * get_downsampled(SchroEncoderFrame *frame, int i);
 
 void schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame);
 
-double schro_encoder_get_me_lambda (SchroEncoderFrame* frame)
-{
-  return frame->encoder->magic_mc_lambda;
-}
-
 SchroMotionEst *
 schro_motionest_new (SchroEncoderFrame *frame)
 {
