@@ -33,6 +33,10 @@ test (int w, int h)
   format = schro_encoder_get_video_format(encoder);
   format->width = w;
   format->height = h;
+  format->clean_width = w;
+  format->clean_height = h;
+  format->left_offset = 0;
+  format->top_offset = 0;
   schro_encoder_set_video_format (encoder, format);
   free (format);
   schro_encoder_start (encoder);
