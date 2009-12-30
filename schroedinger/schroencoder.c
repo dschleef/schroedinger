@@ -3312,6 +3312,9 @@ schro_encoder_frame_set_quant_index (SchroEncoderFrame *frame, int component,
   horiz_codeblocks = params->horiz_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
   vert_codeblocks = params->vert_codeblocks[SCHRO_SUBBAND_SHIFT(position)+1];
 
+  SCHRO_ASSERT(horiz_codeblocks > 0);
+  SCHRO_ASSERT(vert_codeblocks > 0);
+
   if (frame->quant_indices[component][index] == NULL) {
     frame->quant_indices[component][index] =
       schro_malloc (horiz_codeblocks * vert_codeblocks * sizeof(int));

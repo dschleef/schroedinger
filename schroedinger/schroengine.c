@@ -433,13 +433,13 @@ init_params (SchroEncoderFrame *frame)
   switch (codeblock_size) {
     case 1: /* small (blocks of size 5x5) */
       shift = params->transform_depth;
-      params->horiz_codeblocks[0] = (params->iwt_luma_width >> shift) / 5;
-      params->vert_codeblocks[0] = (params->iwt_luma_height >> shift) / 5;
+      params->horiz_codeblocks[0] = MAX(1,(params->iwt_luma_width >> shift) / 5);
+      params->vert_codeblocks[0] = MAX(1,(params->iwt_luma_height >> shift) / 5);
       for(i=1;i<params->transform_depth+1;i++){
         shift = params->transform_depth + 1 - i;
         /* These values are empirically derived from fewer than 2 test results */
-        params->horiz_codeblocks[i] = (params->iwt_luma_width >> shift) / 5;
-        params->vert_codeblocks[i] = (params->iwt_luma_height >> shift) / 5;
+        params->horiz_codeblocks[i] = MAX(1,(params->iwt_luma_width >> shift) / 5);
+        params->vert_codeblocks[i] = MAX(1,(params->iwt_luma_height >> shift) / 5);
         SCHRO_DEBUG("codeblocks %d %d %d", i, params->horiz_codeblocks[i],
             params->vert_codeblocks[i]);
       }
@@ -448,12 +448,12 @@ init_params (SchroEncoderFrame *frame)
     default:
     case 2: /* medium (blocks of size 8x8) */
       shift = params->transform_depth;
-      params->horiz_codeblocks[0] = (params->iwt_luma_width >> shift) / 8;
-      params->vert_codeblocks[0] = (params->iwt_luma_height >> shift) / 8;
+      params->horiz_codeblocks[0] = MAX(1,(params->iwt_luma_width >> shift) / 8);
+      params->vert_codeblocks[0] = MAX(1,(params->iwt_luma_height >> shift) / 8);
       for(i=1;i<params->transform_depth+1;i++){
         shift = params->transform_depth + 1 - i;
-        params->horiz_codeblocks[i] = (params->iwt_luma_width >> shift) / 8;
-        params->vert_codeblocks[i] = (params->iwt_luma_height >> shift) / 8;
+        params->horiz_codeblocks[i] = MAX(1,(params->iwt_luma_width >> shift) / 8);
+        params->vert_codeblocks[i] = MAX(1,(params->iwt_luma_height >> shift) / 8);
         SCHRO_DEBUG("codeblocks %d %d %d", i, params->horiz_codeblocks[i],
             params->vert_codeblocks[i]);
       }
@@ -484,8 +484,8 @@ init_params (SchroEncoderFrame *frame)
     for(i=1;i<params->transform_depth+1;i++){
       shift = params->transform_depth + 1 - i;
       /* These values are empirically derived from fewer than 2 test results */
-      params->horiz_codeblocks[i] = (params->iwt_luma_width >> shift) / 5;
-      params->vert_codeblocks[i] = (params->iwt_luma_height >> shift) / 5;
+      params->horiz_codeblocks[i] = MAX(1,(params->iwt_luma_width >> shift) / 5);
+      params->vert_codeblocks[i] = MAX(1,(params->iwt_luma_height >> shift) / 5);
       SCHRO_DEBUG("codeblocks %d %d %d", i, params->horiz_codeblocks[i],
           params->vert_codeblocks[i]);
     }
