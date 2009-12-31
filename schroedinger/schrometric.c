@@ -73,11 +73,13 @@ schro_metric_scan_do_scan (SchroMetricScan *scan, int use_chroma)
       uint32_t tmp;
       for(i=0;i<scan->scan_width;i++) {
         for(j=0;j<scan->scan_height;j++) {
+          ref_x = 0 == k ? scan->ref_x + i : (scan->ref_x + i) >> shift_h;
+          ref_y = 0 == k ? scan->ref_y + j : (scan->ref_y + j) >> shift_v;
           tmp = schro_metric_absdiff_u8 (
               SCHRO_FRAME_DATA_GET_PIXEL_U8(fd, x, y),
               fd->stride,
-              SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, ref_x + i,
-                ref_y + j), fd_ref->stride,
+              SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, ref_x,
+                ref_y), fd_ref->stride,
               block_width, block_height);
           scan->metrics[i*scan->scan_height+j] += tmp;
         }
