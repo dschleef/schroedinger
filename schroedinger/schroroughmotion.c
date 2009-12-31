@@ -98,13 +98,15 @@ schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
   skip = 1<<shift;
   for(j=0;j<params->y_num_blocks;j+=skip){
     for(i=0;i<params->x_num_blocks;i+=skip){
-      int dx=0, dy=0;
+      int dx, dy;
+      scan.gravity_x = 0;
+      scan.gravity_y = 0;
 
       scan.x = (i>>shift) * params->xbsep_luma;
       scan.y = (j>>shift) * params->ybsep_luma;
       scan.block_width = MIN(scan.frame->width - scan.x, params->xbsep_luma);
       scan.block_height = MIN(scan.frame->height - scan.y, params->ybsep_luma);
-      schro_metric_scan_setup (&scan, 0, 0, distance);
+      schro_metric_scan_setup (&scan, 0, 0, distance, FALSE);
 
       mv = motion_field_get (mf, i, j);
       if (scan.scan_width <= 0 || scan.scan_height <= 0) {
@@ -125,8 +127,9 @@ schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
       }
 #endif
 
-      schro_metric_scan_do_scan (&scan, FALSE);
-      mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy);
+      schro_metric_scan_do_scan (&scan);
+      uint32_t dummy;
+      mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy, &dummy);
       dx <<= shift;
       dy <<= shift;
 
@@ -265,12 +268,14 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
 
       dx = hint_mv[min_m]->u.vec.dx[ref] >> shift;
       dy = hint_mv[min_m]->u.vec.dy[ref] >> shift;
+      scan.gravity_x = dx;
+      scan.gravity_y = dy;
 
       scan.x = (i>>shift) * params->xbsep_luma;
       scan.y = (j>>shift) * params->ybsep_luma;
       scan.block_width = MIN(scan.frame->width - scan.x, params->xbsep_luma);
       scan.block_height = MIN(scan.frame->height - scan.y, params->ybsep_luma);
-      schro_metric_scan_setup (&scan, dx, dy, distance);
+      schro_metric_scan_setup (&scan, dx, dy, distance, FALSE);
 
       mv = motion_field_get (mf, i, j);
       if (scan.scan_width <= 0 || scan.scan_height <= 0) {
@@ -280,8 +285,9 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
         continue;
       }
 
-      schro_metric_scan_do_scan (&scan, FALSE);
-      mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy);
+      schro_metric_scan_do_scan (&scan);
+      uint32_t dummy;
+      mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy, &dummy);
       dx <<= shift;
       dy <<= shift;
 

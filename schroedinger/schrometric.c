@@ -4,6 +4,7 @@
 #endif
 #include <schroedinger/schro.h>
 #include "schroorc.h"
+#include <string.h>
 
 
 int
@@ -28,109 +29,158 @@ schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
 }
 
 void
-schro_metric_scan_do_scan (SchroMetricScan *scan, int use_chroma)
+schro_metric_scan_do_scan (SchroMetricScan *scan)
 {
-  SCHRO_ASSERT (scan->ref_x + scan->block_width + scan->scan_width - 1 <= scan->frame->width + scan->frame->extension);
-  SCHRO_ASSERT (scan->ref_y + scan->block_height + scan->scan_height - 1 <= scan->frame->height + scan->frame->extension);
+  SCHRO_ASSERT (scan->ref_x + scan->block_width + scan->scan_width - 1 <=
+      scan->frame->width + scan->frame->extension);
+  SCHRO_ASSERT (scan->ref_y + scan->block_height + scan->scan_height - 1 <=
+      scan->frame->height + scan->frame->extension);
   SCHRO_ASSERT (scan->ref_x >= -scan->frame->extension);
   SCHRO_ASSERT (scan->ref_y >= -scan->frame->extension);
   SCHRO_ASSERT (scan->scan_width > 0);
   SCHRO_ASSERT (scan->scan_height > 0);
 
-  int k;
-  uint32_t metrics[SCHRO_LIMIT_METRIC_SCAN*SCHRO_LIMIT_METRIC_SCAN];
-  int shift_h = SCHRO_FRAME_FORMAT_H_SHIFT(scan->frame->format)
-    , shift_v = SCHRO_FRAME_FORMAT_V_SHIFT(scan->frame->format);
-  int components_number = use_chroma ? 3 : 1;
-  orc_splat_u8_ns ((uint8_t *)scan->metrics, 0,
-      sizeof(uint32_t)*scan->scan_width * scan->scan_height);
-  for (k=0; components_number>k; ++k) {
-    SchroFrameData *fd = scan->frame->components + k;
-    SchroFrameData *fd_ref = scan->ref_frame->components + k;
-    int i,j;
-    int block_width = 0 == k ? scan->block_width : scan->block_width >> shift_h
-      , block_height = 0 == k ? scan->block_height : scan->block_height >> shift_v
-      , x = 0 == k ? scan->x : scan->x >> shift_h
-      , y = 0 == k ? scan->y : scan->y >> shift_v
-      , ref_x = 0 == k ? scan->ref_x : scan->ref_x >> shift_h
-      , ref_y = 0 == k ? scan->ref_y : scan->ref_y >> shift_v;
-
-    if (block_width == 8 && block_height == 8) {
-      for(j=0;j<scan->scan_height;j++){
-      for(i=0;i<scan->scan_width;i++){
-        orc_sad_8x8_u8 (metrics + i * scan->scan_height + j,
-            SCHRO_FRAME_DATA_GET_PIXEL_U8(fd, x, y),
+  /* do luma first */
+  SchroFrameData* fd = scan->frame->components + 0;
+  SchroFrameData* fd_ref = scan->ref_frame->components + 0;
+  int i, j;
+  if (scan->block_width == 8 && scan->block_height == 8) {
+    for(j=0;j<scan->scan_height;j++){
+    for(i=0;i<scan->scan_width;i++){
+      orc_sad_8x8_u8 (scan->metrics + i * scan->scan_height + j,
+          SCHRO_FRAME_DATA_GET_PIXEL_U8(fd, scan->x, scan->y),
+          fd->stride,
+          SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, scan->ref_x + i, scan->ref_y + j),
+          fd_ref->stride);
+    }
+    }
+  } else {
+    for(i=0;i<scan->scan_width;i++) {
+      for(j=0;j<scan->scan_height;j++) {
+        scan->metrics[i*scan->scan_height + j] = schro_metric_absdiff_u8 (
+            SCHRO_FRAME_DATA_GET_PIXEL_U8(fd, scan->x, scan->y),
             fd->stride,
-            SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, ref_x + i, ref_y + j),
-            fd_ref->stride);
+            SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, scan->ref_x + i,
+              scan->ref_y + j), fd_ref->stride,
+            scan->block_width, scan->block_height);
       }
-      }
-      for (i=0; scan->scan_width * scan->scan_height>i; ++i) {
-        scan->metrics[i] += metrics[i];
-      }
-    } else {
-
-      uint32_t tmp;
-      for(i=0;i<scan->scan_width;i++) {
-        for(j=0;j<scan->scan_height;j++) {
-          ref_x = 0 == k ? scan->ref_x + i : (scan->ref_x + i) >> shift_h;
-          ref_y = 0 == k ? scan->ref_y + j : (scan->ref_y + j) >> shift_v;
-          tmp = schro_metric_absdiff_u8 (
-              SCHRO_FRAME_DATA_GET_PIXEL_U8(fd, x, y),
-              fd->stride,
-              SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, ref_x,
-                ref_y), fd_ref->stride,
-              block_width, block_height);
-          scan->metrics[i*scan->scan_height+j] += tmp;
+    }
+  }
+  if (scan->use_chroma) {
+    /* now do chroma ME */
+    int skip_h = 1 << SCHRO_FRAME_FORMAT_H_SHIFT(scan->frame->format)
+      , skip_v = 1 << SCHRO_FRAME_FORMAT_V_SHIFT(scan->frame->format);
+    int x = scan->x/skip_h, y = scan->y/skip_v, ref_x, ref_y;
+    int block_width = scan->block_width / skip_h
+      , block_height = scan->block_height / skip_v;
+    memset(scan->chroma_metrics, 0, sizeof(scan->chroma_metrics));
+    uint32_t metrics[SCHRO_LIMIT_METRIC_SCAN*SCHRO_LIMIT_METRIC_SCAN];
+    int k;
+    for (k=1; 3>k; ++k) {
+      fd = scan->frame->components + k;
+      fd_ref = scan->ref_frame->components + k;
+      int last_i = FALSE, last_j = FALSE;
+      for (i=0, ref_x = scan->ref_x/skip_h; scan->scan_width > i; ++i, ++ref_x) {
+        if (last_i && ref_x & 0x01) {
+          for (j=0; scan->scan_height > j; ++j) {
+            metrics[i * scan->scan_height + j] =
+              metrics[(i-1) * scan->scan_height + j];
+           }
+          last_i = FALSE;
+        } else {
+          for (j=0, ref_y = scan->ref_y/skip_v; scan->scan_height > j
+              ; ++j, ++ref_y) {
+            if (last_j && ref_y & 0x01) {
+              metrics[i * scan->scan_height + j] =
+                metrics[i * scan->scan_height + j - 1];
+              last_j = FALSE;
+            } else {
+              metrics[i * scan->scan_height + j] = schro_metric_absdiff_u8 (
+                  SCHRO_FRAME_DATA_GET_PIXEL_U8(fd, x, y)
+                  , fd->stride
+                  , SCHRO_FRAME_DATA_GET_PIXEL_U8(fd_ref, ref_x, ref_y)
+                  , fd_ref->stride
+                  , block_width, block_height);
+              last_j = TRUE;
+            }
+          }
+          last_i = TRUE;
         }
+      }
+      for (i=0; scan->scan_width * scan->scan_height > i; ++i) {
+        scan->chroma_metrics[i] += metrics[i];
       }
     }
   }
 }
 
-/* Note: dx and dy should contain the seed-MV so that we can
- * bias the search towards that point - a better solution needed - FIXME */
+
+/* note that gravity_x and gravity_y should contain the seed MV
+ * we use to bias our search */
 int
-schro_metric_scan_get_min (SchroMetricScan *scan, int *dx, int *dy)
+schro_metric_scan_get_min (SchroMetricScan *scan, int *dx, int *dy
+    , uint32_t* chroma_error)
 {
   int i,j;
   uint32_t min_metric;
   int min_gravity;
   uint32_t metric;
+  uint32_t chroma_metric;
+  uint32_t min_chroma_metric=0;
+  uint32_t min_total_metric=0;
+  uint32_t tmp;
   int gravity;
   int x,y;
 
   SCHRO_ASSERT (scan->scan_width > 0);
   SCHRO_ASSERT (scan->scan_height > 0);
 
-  i = *dx + scan->x - scan->ref_x;
-  j = *dy + scan->y - scan->ref_y;
+  i = scan->gravity_x + scan->x - scan->ref_x;
+  j = scan->gravity_y + scan->y - scan->ref_y;
   min_metric = scan->metrics[j + i * scan->scan_height];
+  if (scan->use_chroma) {
+    min_chroma_metric = scan->chroma_metrics[j + i * scan->scan_height];
+    min_total_metric = min_metric + min_chroma_metric;
+  }
   min_gravity = scan->gravity_scale *
     (abs(*dx - scan->gravity_x) + abs(*dy - scan->gravity_y));
 
   for(i=0;i<scan->scan_width;i++) {
     for(j=0;j<scan->scan_height;j++) {
       metric = scan->metrics[i*scan->scan_height + j];
+      chroma_metric = scan->chroma_metrics[i*scan->scan_height + j];
       x = scan->ref_x + i - scan->x;
       y = scan->ref_y + j - scan->y;
       gravity = scan->gravity_scale *
         (abs(x - scan->gravity_x) + abs(y - scan->gravity_y));
-      //if (metric + gravity < min_metric + min_gravity) {
-      if (metric < min_metric) {
-        min_metric = metric;
-        min_gravity = gravity;
-        *dx = x;
-        *dy = y;
+      if (scan->use_chroma) {
+        tmp = metric+chroma_metric;
+        if (tmp < min_total_metric) {
+          min_total_metric = tmp;
+          min_metric = metric;
+          min_chroma_metric = chroma_metric;
+          min_gravity = gravity;
+          *dx = x;
+          *dy = y;
+        }
+      } else {
+        if (metric < min_metric) {
+          min_metric = metric;
+          min_gravity = gravity;
+          *dx = x;
+          *dy = y;
+        }
       }
     }
   }
+  *chroma_error = min_chroma_metric;
   return min_metric;
 }
 
 
 void
-schro_metric_scan_setup (SchroMetricScan *scan, int dx, int dy, int dist)
+schro_metric_scan_setup (SchroMetricScan *scan, int dx, int dy, int dist
+    , int use_chroma)
 {
   int xmin;
   int xmax;
@@ -159,6 +209,8 @@ schro_metric_scan_setup (SchroMetricScan *scan, int dx, int dy, int dist)
 
   scan->scan_width = xrange + 1;
   scan->scan_height = yrange + 1;
+
+  scan->use_chroma = use_chroma;
 
   SCHRO_ASSERT (scan->scan_width <= SCHRO_LIMIT_METRIC_SCAN);
   SCHRO_ASSERT (scan->scan_height <= SCHRO_LIMIT_METRIC_SCAN);
