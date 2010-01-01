@@ -121,8 +121,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
 	schromotionref.c
 endif
 
-if ENABLE_ENCODER
-libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
+encoder_sources = \
 	schroanalysis.c \
 	schroencoder.c \
 	schroengine.c \
@@ -138,6 +137,10 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
 	schroquantiser.c \
 	schrossim.c \
 	schrowavelettables.c
+
+if ENABLE_ENCODER
+libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
+	$(encoder_sources)
 endif
 
 
@@ -145,6 +148,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_CFLAGS = \
 	$(SCHRO_CFLAGS) $(ORC_CFLAGS) $(ERROR_CFLAGS) \
 	-DSCHRO_ENABLE_UNSTABLE_API \
 	$(GTHREAD_CFLAGS) \
+	$(GCOV_CFLAGS) \
 	$(CUDA_CFLAGS) -I$(srcdir)/cuda -I$(srcdir)/opengl
 
 libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = \
@@ -153,6 +157,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_LIBADD = \
 	$(opengl_libs) \
 	$(OPENGL_LIBS) \
 	$(ORC_LIBS) \
+	$(GCOV_LIBS) \
 	$(PTHREAD_LIBS)
 libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-no-undefined \
@@ -165,4 +170,9 @@ schroorc.c: schro.orc
 schroorc.h: schro.orc
 	$(ORCC) --header -o schroorc.h $(srcdir)/schro.orc
 
+
+%.c.gcov: .libs/libschroedinger_@SCHRO_MAJORMINOR@_la-%.gcda %.c
+	$(GCOV) -b -f -o $^ > $@.out
+
+gcov: $(libschroedinger_1.0_la_SOURCES:=.gcov) $(encoder_sources:=.gcov)
 
