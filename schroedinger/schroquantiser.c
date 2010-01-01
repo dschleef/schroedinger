@@ -175,7 +175,7 @@ schro_encoder_calculate_subband_weights (SchroEncoder *encoder,
   }
 
   for(wavelet=0;wavelet<SCHRO_N_WAVELETS;wavelet++) {
-    for(n_levels=1;n_levels<=4;n_levels++){
+    for(n_levels=1;n_levels<=SCHRO_LIMIT_ENCODER_TRANSFORM_DEPTH;n_levels++){
       const float *h_curve[SCHRO_LIMIT_SUBBANDS];
       const float *v_curve[SCHRO_LIMIT_SUBBANDS];
       int hi[SCHRO_LIMIT_SUBBANDS];

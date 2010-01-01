@@ -677,6 +677,20 @@ schro_encoder_start (SchroEncoder *encoder)
       SCHRO_ASSERT(0);
   }
 
+  {
+    /* 1, 3, 4, 6 have overflows at transform-depth>=5
+     * 5 has errors at transform-depth=any */
+    const int max_transform_depths[] = { 5, 4, 5, 4, 4, 3, 4 };
+
+    encoder->transform_depth = MIN(encoder->transform_depth,
+        max_transform_depths[encoder->intra_wavelet]);
+    if (encoder->gop_structure != SCHRO_ENCODER_GOP_INTRA_ONLY) {
+      encoder->transform_depth = MIN(encoder->transform_depth,
+          max_transform_depths[encoder->inter_wavelet]);
+    }
+  }
+
+
   encoder->start_time = schro_utils_get_time ();
 }
 
