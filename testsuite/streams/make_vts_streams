@@ -34,11 +34,6 @@ encode
 #exit 0
 
 
-# for testing java decoder
-#testname="java"
-#schroopts="noise-threshold=40 gop-structure=1 intra-wavelet=1 enable-noarith=1 transform-depth=4"
-#encode
-
 # gop structure
 
 testname="intra-only"
@@ -207,6 +202,10 @@ done
 
 # codeblocks
 
+testname="no-multiquant"
+schroopts="enable-multiquant=false"
+encode
+
 testname="dc-multiquant"
 schroopts="enable-dc-multiquant=TRUE"
 encode
@@ -217,4 +216,40 @@ do
   schroopts="codeblock-size=$i"
   encode
 done
+
+# various tools
+
+testname="phasecorr"
+schroopts="enable-phasecorr-estimation=true"
+encode
+
+testname="global-motion"
+schroopts="enable-global-motion=true"
+encode
+
+# Broken
+#testname="interlaced-coding"
+#schroopts="interlaced-coding=true"
+#encode
+
+testname="old-scene-change-detection"
+schroopts="enable-scene-change-detection=false"
+encode
+
+testname="scene-change-detection"
+schroopts="enable-scene-change-detection=true"
+encode
+
+testname="hierarchical-estimation"
+schroopts="enable-hierarchical-estimation=true"
+encode
+
+testname="deep-estimation"
+schroopts="mv-precision=2 enable-hierarchical-estimation=true enable-deep-estimation=true"
+encode
+
+testname="rdo-cbr"
+schroopts="rate-control=1 bitrate=2000000 enable-rdo-cbr=true"
+encode
+
 
