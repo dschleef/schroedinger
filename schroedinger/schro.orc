@@ -1466,6 +1466,203 @@ mullw t1, t1, s1
 addw d1, d1, t1
 
 
+.function orc_multiply_and_acc_dc_4xn_s16_u8
+.flags 2d
+.n 4
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.param 2 p1
+.temp 2 t1
+
+mullw t1, s1, p1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_dc_6xn_s16_u8
+.flags 2d
+.n 6
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.param 2 p1
+.temp 2 t1
+
+mullw t1, s1, p1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_dc_8xn_s16_u8
+.flags 2d
+.n 8
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.param 2 p1
+.temp 2 t1
+
+mullw t1, s1, p1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_dc_12xn_s16_u8
+.flags 2d
+.n 12
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.param 2 p1
+.temp 2 t1
+
+mullw t1, s1, p1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_dc_16xn_s16_u8
+.flags 2d
+.n 16
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.param 2 p1
+.temp 2 t1
+
+mullw t1, s1, p1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_dc_24xn_s16_u8
+.flags 2d
+.n 24
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.param 2 p1
+.temp 2 t1
+
+mullw t1, s1, p1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_dc_32xn_s16_u8
+.flags 2d
+.n 32
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.param 2 p1
+.temp 2 t1
+
+mullw t1, s1, p1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_avg_4xn_s16_u8
+.flags 2d
+.n 4
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.temp 2 t1
+.temp 1 t2
+
+avgub t2, s2, s3
+convubw t1, t2
+mullw t1, t1, s1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_avg_6xn_s16_u8
+.flags 2d
+.n 6
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.temp 2 t1
+.temp 1 t2
+
+avgub t2, s2, s3
+convubw t1, t2
+mullw t1, t1, s1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_avg_8xn_s16_u8
+.flags 2d
+.n 8
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.temp 2 t1
+.temp 1 t2
+
+avgub t2, s2, s3
+convubw t1, t2
+mullw t1, t1, s1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_avg_12xn_s16_u8
+.flags 2d
+.n 12
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.temp 2 t1
+.temp 1 t2
+
+avgub t2, s2, s3
+convubw t1, t2
+mullw t1, t1, s1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_avg_16xn_s16_u8
+.flags 2d
+.n 16
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.temp 2 t1
+.temp 1 t2
+
+avgub t2, s2, s3
+convubw t1, t2
+mullw t1, t1, s1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_avg_24xn_s16_u8
+.flags 2d
+.n 24
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.temp 2 t1
+.temp 1 t2
+
+avgub t2, s2, s3
+convubw t1, t2
+mullw t1, t1, s1
+addw d1, d1, t1
+
+
+.function orc_multiply_and_acc_avg_32xn_s16_u8
+.flags 2d
+.n 32
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
+.source 1 s3 uint8_t
+.temp 2 t1
+.temp 1 t2
+
+avgub t2, s2, s3
+convubw t1, t2
+mullw t1, t1, s1
+addw d1, d1, t1
+
+
+
 .function orc_sad_nxm_u8
 .flags 2d
 .accumulator 4 a1 uint32_t

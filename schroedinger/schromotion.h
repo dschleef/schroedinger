@@ -81,9 +81,9 @@ struct _SchroMotion {
       int src,
       int n);
   void (*block_accumulate_avg) (int16_t *dest, int dest_stride,
+      const int16_t *weight, int weight_stride,
       const uint8_t *src1, int src1_stride,
       const uint8_t *src2, int src2_stride,
-      const int16_t *weight, int weight_stride,
       int n);
 };
 
