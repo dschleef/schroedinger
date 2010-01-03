@@ -71,6 +71,20 @@ struct _SchroMotion {
   int height;
   int max_fast_x;
   int max_fast_y;
+
+  void (*block_accumulate) (int16_t *dest, int dest_stride,
+      const uint8_t *src, int src_stride,
+      const int16_t *weight, int weight_stride,
+      int n);
+  void (*block_accumulate_dc) (int16_t *dest, int dest_stride,
+      int src,
+      const int16_t *weight, int weight_stride,
+      int n);
+  void (*block_accumulate_avg) (int16_t *dest, int dest_stride,
+      const uint8_t *src1, int src1_stride,
+      const uint8_t *src2, int src2_stride,
+      const int16_t *weight, int weight_stride,
+      int n);
 };
 
 #define SCHRO_MOTION_GET_BLOCK(motion,x,y) \

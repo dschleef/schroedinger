@@ -8,6 +8,8 @@
 
 extern int _schro_motion_ref;
 
+static void schro_motion_set_block_accumulate (SchroMotion *motion);
+
 
 SchroMotion *
 schro_motion_new (SchroParams *params, SchroUpsampledFrame *ref1,
@@ -284,11 +286,39 @@ schro_motion_block_predict_block (SchroMotion *motion, int x, int y, int k,
   }
 }
 
+static void
+schro_motion_set_block_accumulate (SchroMotion *motion)
+{
+  switch (motion->xblen) {
+    case 4:
+      motion->block_accumulate = orc_multiply_and_acc_4xn_s16_u8;
+      break;
+    case 6:
+      motion->block_accumulate = orc_multiply_and_acc_6xn_s16_u8;
+      break;
+    case 8:
+      motion->block_accumulate = orc_multiply_and_acc_8xn_s16_u8;
+      break;
+    case 12:
+      motion->block_accumulate = orc_multiply_and_acc_12xn_s16_u8;
+      break;
+    case 16:
+      motion->block_accumulate = orc_multiply_and_acc_16xn_s16_u8;
+      break;
+    case 24:
+      motion->block_accumulate = orc_multiply_and_acc_24xn_s16_u8;
+      break;
+    default:
+      SCHRO_ASSERT(0);
+      break;
+  }
+}
+
+#if 0
 void
 schro_motion_block_accumulate (SchroMotion *motion, SchroFrameData *comp,
     int x, int y)
 {
-
   switch (motion->xblen) {
     case 4:
       orc_multiply_and_acc_4xn_s16_u8 (
@@ -341,6 +371,7 @@ schro_motion_block_accumulate (SchroMotion *motion, SchroFrameData *comp,
       break;
   }
 }
+#endif
 
 void
 schro_motion_block_accumulate_slow (SchroMotion *motion, SchroFrameData *comp,
@@ -539,6 +570,7 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
     motion->alloc_block_ref[1].height = motion->yblen;
 
     schro_motion_init_obmc_weight (motion);
+    schro_motion_set_block_accumulate (motion);
 
     orc_splat_s16_2d (comp->data, comp->stride, 0, comp->width, comp->height);
 
@@ -570,7 +602,11 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
         x = motion->xbsep * i - motion->xoffset;
 
         schro_motion_block_predict_block (motion, x, y, k, i, j);
-        schro_motion_block_accumulate (motion, comp, x, y);
+        motion->block_accumulate (
+            SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
+            motion->obmc_weight.data, motion->obmc_weight.stride,
+            motion->block.data, motion->block.stride,
+            motion->yblen);
       }
 
       for(;i<params->x_num_blocks;i++){
