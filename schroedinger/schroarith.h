@@ -89,10 +89,12 @@ typedef struct _SchroArithContext SchroArithContext;
 
 struct _SchroArithContext {
   unsigned int next;
+#ifdef unused
   int stat_range;
   int n_bits;
   int n_symbols;
   int ones;
+#endif
 };
 
 struct _SchroArith {
