@@ -4,6 +4,9 @@
 
 #include <schroedinger/schroframe.h>
 #include <schroedinger/schroparams.h>
+#ifdef SCHRO_ENABLE_UNSTABLE_API
+#include <orc/orc.h>
+#endif
 
 SCHRO_BEGIN_DECLS
 
@@ -12,6 +15,7 @@ typedef struct _SchroMotionVectorDC SchroMotionVectorDC;
 typedef struct _SchroMotionField SchroMotionField;
 typedef struct _SchroMotion SchroMotion;
 typedef struct _SchroMotionScan SchroMotionScan;
+typedef struct _SchroMotionFuncs SchroMotionFuncs;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 struct _SchroMotionVector {
@@ -37,6 +41,12 @@ struct _SchroMotionField {
   int x_num_blocks;
   int y_num_blocks;
   SchroMotionVector *motion_vectors;
+};
+
+struct _SchroMotionFuncs {
+  OrcProgram *block_accumulate;
+  OrcProgram *block_accumulate_dc;
+  OrcProgram *block_accumulate_avg;
 };
 
 struct _SchroMotion {

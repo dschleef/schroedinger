@@ -5,6 +5,7 @@
 #include <schroedinger/schro.h>
 #include <string.h>
 #include <schroedinger/schroorc.h>
+#include <orc/orc.h>
 
 extern int _schro_motion_ref;
 
@@ -47,6 +48,163 @@ get_ramp (int x, int offset)
     return 5;
   }
   return 1 + (6 * x + offset - 1)/(2*offset - 1);
+}
+
+
+/* runtime orc code generation */
+
+static SchroMotionFuncs motion_funcs[32];
+
+void
+schro_motion_init_functions (SchroMotion *motion)
+{
+  if (motion_funcs[motion->xblen>>1].block_accumulate == NULL) {
+    OrcProgram *p;
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_constant_n (p, motion->xblen);
+    orc_program_set_2d (p);
+    orc_program_set_name (p, "block_acc_Xxn");
+
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_source (p, 1, "s2");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append (p, "convubw", ORC_VAR_T1, ORC_VAR_S2, ORC_VAR_D1);
+    orc_program_append (p, "mullw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_S1);
+    orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
+
+    result = orc_program_compile (p);
+
+    motion_funcs[motion->xblen/2].block_accumulate = p;
+  }
+
+  if (motion_funcs[motion->xblen>>1].block_accumulate_dc == NULL) {
+    OrcProgram *p;
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_constant_n (p, motion->xblen);
+    orc_program_set_2d (p);
+    orc_program_set_name (p, "block_acc_dc_Xxn");
+
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_parameter (p, 2, "p1");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append (p, "mullw", ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_P1);
+    orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
+
+    result = orc_program_compile (p);
+
+    motion_funcs[motion->xblen/2].block_accumulate_dc = p;
+  }
+
+  if (motion_funcs[motion->xblen>>1].block_accumulate_avg == NULL) {
+    OrcProgram *p;
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_constant_n (p, motion->xblen);
+    orc_program_set_2d (p);
+    orc_program_set_name (p, "block_acc_avg_Xxn");
+
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_source (p, 1, "s2");
+    orc_program_add_source (p, 1, "s3");
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 1, "t2");
+
+    orc_program_append (p, "avgub", ORC_VAR_T2, ORC_VAR_S2, ORC_VAR_S3);
+    orc_program_append (p, "convubw", ORC_VAR_T1, ORC_VAR_T2, 0);
+    orc_program_append (p, "mullw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_S1);
+    orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
+
+    result = orc_program_compile (p);
+
+    motion_funcs[motion->xblen/2].block_accumulate_avg = p;
+  }
+
+}
+
+void
+orc_multiply_and_acc_Xxn_s16_u8 (int16_t * d1, int d1_stride,
+    const int16_t * s1, int s1_stride, const uint8_t * s2, int s2_stride,
+    int n, int m)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcProgram *p = 0;
+  void (*func) (OrcExecutor *);
+
+  p = motion_funcs[n>>1].block_accumulate;
+  ex->program = p;
+
+  ex->n = n;
+  ORC_EXECUTOR_M(ex) = m;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->params[ORC_VAR_D1] = d1_stride;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->params[ORC_VAR_S1] = s1_stride;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+  ex->params[ORC_VAR_S2] = s2_stride;
+
+  func = p->code_exec;
+  func (ex);
+}
+
+void
+orc_multiply_and_acc_dc_Xxn_s16_u8 (int16_t * d1, int d1_stride,
+    const int16_t * s1, int s1_stride, int p1, int n, int m)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcProgram *p = 0;
+  void (*func) (OrcExecutor *);
+
+  p = motion_funcs[n>>1].block_accumulate_dc;
+  ex->program = p;
+
+  ex->n = n;
+  ORC_EXECUTOR_M(ex) = m;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->params[ORC_VAR_D1] = d1_stride;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->params[ORC_VAR_S1] = s1_stride;
+  ex->params[ORC_VAR_P1] = p1;
+
+  func = p->code_exec;
+  func (ex);
+}
+
+void
+orc_multiply_and_acc_avg_Xxn_s16_u8 (int16_t * d1, int d1_stride,
+    const int16_t * s1, int s1_stride, const uint8_t * s2, int s2_stride,
+    const uint8_t * s3, int s3_stride, int n, int m)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcProgram *p;
+  void (*func) (OrcExecutor *);
+
+  p = motion_funcs[n>>1].block_accumulate_avg;
+  
+  ex->program = p;
+
+  ex->n = n;
+  ORC_EXECUTOR_M(ex) = m;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->params[ORC_VAR_D1] = d1_stride;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->params[ORC_VAR_S1] = s1_stride;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+  ex->params[ORC_VAR_S2] = s2_stride;
+  ex->arrays[ORC_VAR_S3] = (void *)s3;
+  ex->params[ORC_VAR_S3] = s3_stride;
+
+  func = p->code_exec;
+  func (ex);
 }
 
 /* motion render (faster) */
@@ -355,27 +513,27 @@ schro_motion_block_predict_and_acc (SchroMotion *motion, int x, int y, int k,
 
   switch (mv->pred_mode) {
     case 0:
-      motion->block_accumulate_dc (
+      orc_multiply_and_acc_dc_Xxn_s16_u8 (
           SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
           motion->obmc_weight.data, motion->obmc_weight.stride,
           mv->u.dc.dc[k]+128,
-          motion->yblen);
+          motion->xblen, motion->yblen);
       break;
     case 1:
       get_ref1_block (motion, i, j, k, x, y);
-      motion->block_accumulate (
+      orc_multiply_and_acc_Xxn_s16_u8 (
           SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
           motion->obmc_weight.data, motion->obmc_weight.stride,
           motion->block.data, motion->block.stride,
-          motion->yblen);
+          motion->xblen, motion->yblen);
       break;
     case 2:
       get_ref2_block (motion, i, j, k, x, y);
-      motion->block_accumulate (
+      orc_multiply_and_acc_Xxn_s16_u8 (
           SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
           motion->obmc_weight.data, motion->obmc_weight.stride,
           motion->block.data, motion->block.stride,
-          motion->yblen);
+          motion->xblen, motion->yblen);
       break;
     case 3:
       weight0 = motion->ref1_weight;
@@ -384,19 +542,19 @@ schro_motion_block_predict_and_acc (SchroMotion *motion, int x, int y, int k,
 
       if (weight0 == 1 && weight1 == 1 && shift == 1) {
         get_biref_block_simple (motion, i, j, k, x, y);
-        motion->block_accumulate_avg (
+        orc_multiply_and_acc_avg_Xxn_s16_u8 (
             SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
             motion->obmc_weight.data, motion->obmc_weight.stride,
             motion->block_ref[0].data, motion->block_ref[0].stride,
             motion->block_ref[1].data, motion->block_ref[1].stride,
-            motion->yblen);
+            motion->xblen, motion->yblen);
       } else {
         get_biref_block (motion, i, j, k, x, y);
-        motion->block_accumulate (
+        orc_multiply_and_acc_Xxn_s16_u8 (
             SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
             motion->obmc_weight.data, motion->obmc_weight.stride,
             motion->block.data, motion->block.stride,
-            motion->yblen);
+            motion->xblen, motion->yblen);
       }
       break;
     default:
@@ -707,6 +865,7 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
     motion->alloc_block_ref[1].height = motion->yblen;
 
     schro_motion_init_obmc_weight (motion);
+    schro_motion_init_functions (motion);
     schro_motion_set_block_accumulate (motion);
 
     orc_splat_s16_2d (comp->data, comp->stride, 0, comp->width, comp->height);
