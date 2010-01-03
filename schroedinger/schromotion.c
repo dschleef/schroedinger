@@ -540,10 +540,7 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
 
     schro_motion_init_obmc_weight (motion);
 
-    for(j=0;j<comp->height;j++){
-      orc_splat_s16_ns (SCHRO_FRAME_DATA_GET_LINE(comp, j), 0,
-          comp->width);
-    }
+    orc_splat_s16_2d (comp->data, comp->stride, 0, comp->width, comp->height);
 
     max_x_blocks = MIN(params->x_num_blocks - 1,
         (motion->width - motion->xoffset)/motion->xbsep);
@@ -593,10 +590,8 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
       }
     }
 
-
-    for(j=0;j<comp->height;j++){
-      orc_rrshift6_s16_ip (SCHRO_FRAME_DATA_GET_LINE(comp, j), motion->width);
-    }
+    orc_rrshift6_s16_ip_2d (comp->data, comp->stride,
+        motion->width, comp->height);
 
     schro_free (motion->alloc_block.data);
     schro_free (motion->obmc_weight.data);

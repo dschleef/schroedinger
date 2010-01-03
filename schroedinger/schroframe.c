@@ -613,22 +613,12 @@ void schro_frame_set_free_callback (SchroFrame *frame,
 static void
 schro_frame_component_clear (SchroFrameData *fd)
 {
-  int j;
+  //int j;
 
   if (SCHRO_FRAME_FORMAT_DEPTH(fd->format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-    uint8_t *line;
-
-    for(j=0;j<fd->height;j++){
-      line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
-      orc_splat_u8_ns (line, 128, fd->width);
-    }
+    orc_splat_u8_2d (fd->data, fd->stride, 0, fd->width, fd->height);
   } else {
-    int16_t *line;
-
-    for(j=0;j<fd->height;j++){
-      line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
-      orc_splat_s16_ns (line, 0, fd->width);
-    }
+    orc_splat_s16_2d (fd->data, fd->stride, 0, fd->width, fd->height);
   }
 }
 
@@ -839,10 +829,7 @@ schro_frame_add_s16_s16 (SchroFrame *dest, SchroFrame *src)
 {
   SchroFrameData *dcomp;
   SchroFrameData *scomp;
-  int16_t *ddata;
-  int16_t *sdata;
   int i;
-  int y;
   int width, height;
 
   for(i=0;i<3;i++){
@@ -852,11 +839,8 @@ schro_frame_add_s16_s16 (SchroFrame *dest, SchroFrame *src)
     width = MIN(dcomp->width, scomp->width);
     height = MIN(dcomp->height, scomp->height);
 
-    for(y=0;y<height;y++){
-      sdata = SCHRO_FRAME_DATA_GET_LINE (scomp, y);
-      ddata = SCHRO_FRAME_DATA_GET_LINE (dcomp, y);
-      orc_add_s16 (ddata, ddata, sdata, width);
-    }
+    orc_add_s16_2d (dcomp->data, dcomp->stride,
+        scomp->data, scomp->stride, width, height);
   }
 }
 
@@ -865,10 +849,10 @@ schro_frame_add_s16_u8 (SchroFrame *dest, SchroFrame *src)
 {
   SchroFrameData *dcomp;
   SchroFrameData *scomp;
-  int16_t *ddata;
-  uint8_t *sdata;
+  //int16_t *ddata;
+  //uint8_t *sdata;
   int i;
-  int y;
+  //int y;
   int width, height;
 
   for(i=0;i<3;i++){
@@ -878,11 +862,15 @@ schro_frame_add_s16_u8 (SchroFrame *dest, SchroFrame *src)
     width = MIN(dcomp->width, scomp->width);
     height = MIN(dcomp->height, scomp->height);
 
+    orc_add_s16_u8_2d (dcomp->data, dcomp->stride,
+        scomp->data, scomp->stride, width, height);
+#if 0
     for(y=0;y<height;y++){
       sdata = SCHRO_FRAME_DATA_GET_LINE (scomp, y);
       ddata = SCHRO_FRAME_DATA_GET_LINE (dcomp, y);
       orc_add_s16_u8 (ddata, ddata, sdata, width);
     }
+#endif
   }
 }
 

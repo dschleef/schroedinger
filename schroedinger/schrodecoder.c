@@ -3124,14 +3124,11 @@ static void
 schro_decoder_zero_block (SchroPictureSubbandContext *ctx,
     int x1, int y1, int x2, int y2)
 {
-  int j;
-  int16_t *line;
-
   //SCHRO_DEBUG("subband is zero");
-  for(j=y1;j<y2;j++){
-    line = SCHRO_FRAME_DATA_GET_LINE (ctx->frame_data, j);
-    orc_splat_s16_ns (line + x1, 0, x2 - x1);
-  }
+  orc_splat_s16_2d (
+      SCHRO_FRAME_DATA_GET_PIXEL_S16(ctx->frame_data, x1, y1),
+      ctx->frame_data->stride,
+      0, x2 - x1, y2 - y1);
 }
 
 static void

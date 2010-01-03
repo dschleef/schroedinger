@@ -118,6 +118,14 @@ shrsw d1, t1, p2
 addw d1, s1, s2
 
 
+.function orc_add_s16_2d
+.flags 2d
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+
+addw d1, d1, s1
+
+
 .function orc_addc_rshift_s16
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
@@ -340,6 +348,16 @@ convubw t1, s2
 addw d1, t1, s1
 
 
+.function orc_add_s16_u8_2d
+.flags 2d
+.dest 2 d1 int16_t
+.source 1 s1
+.temp 2 t1
+
+convubw t1, s1
+addw d1, d1, t1
+
+
 .function orc_convert_s16_u8
 .dest 2 d1
 .source 1 s1
@@ -400,7 +418,23 @@ addw d1, d1, t1
 copyw d1, p1
 
 
+.function orc_splat_s16_2d
+.flags 2d
+.dest 2 d1 int16_t
+.param 2 p1
+
+copyw d1, p1
+
+
 .function orc_splat_u8_ns
+.dest 1 d1
+.param 1 p1
+
+copyb d1, p1
+
+
+.function orc_splat_u8_2d
+.flags 2d
 .dest 1 d1
 .param 1 p1
 
@@ -413,6 +447,15 @@ copyb d1, p1
 .source 1 s2
 
 avgub d1, s1, s2
+
+
+.function orc_rrshift6_s16_ip_2d
+.flags 2d
+.dest 2 d1 int16_t
+.temp 2 t1
+
+subw t1, d1, 8160
+shrsw d1, t1, 6
 
 
 .function orc_rrshift6_s16_ip

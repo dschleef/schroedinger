@@ -247,10 +247,7 @@ schro_motion_render_fast (SchroMotion *motion, SchroFrame *dest)
     motion->alloc_block.width = motion->xblen;
     motion->alloc_block.height = motion->yblen;
 
-    for(j=0;j<comp->height;j++){
-      orc_splat_s16_ns (SCHRO_FRAME_DATA_GET_LINE(comp, j), 0,
-          comp->width);
-    }
+    orc_splat_s16_2d (comp->data, comp->stride, 0, comp->width, comp->height);
 
     max_x_blocks = MIN(params->x_num_blocks,
         (motion->width - motion->xoffset)/motion->xbsep);
