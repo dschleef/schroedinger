@@ -290,7 +290,13 @@ schro_motion_block_accumulate (SchroMotion *motion, SchroFrameData *comp,
 {
 
   switch (motion->xblen) {
-#if 0
+    case 4:
+      orc_multiply_and_acc_4xn_s16_u8 (
+          SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
+          motion->obmc_weight.data, motion->obmc_weight.stride,
+          motion->block.data, motion->block.stride,
+          motion->yblen);
+      break;
     case 6:
       orc_multiply_and_acc_6xn_s16_u8 (
           SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
@@ -326,7 +332,6 @@ schro_motion_block_accumulate (SchroMotion *motion, SchroFrameData *comp,
           motion->block.data, motion->block.stride,
           motion->yblen);
       break;
-#endif
     default:
       orc_multiply_and_acc_nxm_s16_u8 (
           SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
