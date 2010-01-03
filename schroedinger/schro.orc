@@ -1367,8 +1367,8 @@ convsuswb d1, t1
 .flags 2d
 .n 4
 .dest 2 d1 int16_t
-.source 2 s1 uint8_t
-.source 1 s2 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
 .temp 2 t1
 
 convubw t1, s2
@@ -1379,8 +1379,8 @@ addw d1, d1, t1
 .function orc_multiply_and_acc_nxm_s16_u8
 .flags 2d
 .dest 2 d1 int16_t
-.source 2 s1 uint8_t
-.source 1 s2 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
 .temp 2 t1
 
 convubw t1, s2
@@ -1392,8 +1392,8 @@ addw d1, d1, t1
 .flags 2d
 .n 6
 .dest 2 d1 int16_t
-.source 2 s1 uint8_t
-.source 1 s2 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
 .temp 2 t1
 
 convubw t1, s2
@@ -1405,8 +1405,8 @@ addw d1, d1, t1
 .flags 2d
 .n 8
 .dest 2 d1 int16_t
-.source 2 s1 uint8_t
-.source 1 s2 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
 .temp 2 t1
 
 convubw t1, s2
@@ -1418,8 +1418,8 @@ addw d1, d1, t1
 .flags 2d
 .n 12
 .dest 2 d1 int16_t
-.source 2 s1 uint8_t
-.source 1 s2 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
 .temp 2 t1
 
 convubw t1, s2
@@ -1431,8 +1431,8 @@ addw d1, d1, t1
 .flags 2d
 .n 16
 .dest 2 d1 int16_t
-.source 2 s1 uint8_t
-.source 1 s2 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
 .temp 2 t1
 
 convubw t1, s2
@@ -1444,8 +1444,8 @@ addw d1, d1, t1
 .flags 2d
 .n 24
 .dest 2 d1 int16_t
-.source 2 s1 uint8_t
-.source 1 s2 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
 .temp 2 t1
 
 convubw t1, s2
@@ -1457,14 +1457,13 @@ addw d1, d1, t1
 .flags 2d
 .n 32
 .dest 2 d1 int16_t
-.source 2 s1 uint8_t
-.source 1 s2 int16_t
+.source 2 s1 int16_t
+.source 1 s2 uint8_t
 .temp 2 t1
 
 convubw t1, s2
 mullw t1, t1, s1
 addw d1, d1, t1
-
 
 
 .function orc_sad_nxm_u8
