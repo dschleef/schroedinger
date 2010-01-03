@@ -7,14 +7,17 @@
 #include <schroedinger/schroutils.h>
 #include <schroedinger/schrotables.h>
 
+#ifdef unused
 static int16_t *quantise_table_intra;
 static int16_t *quantise_table_inter;
 static int16_t *dequantise_table_intra;
 static int16_t *dequantise_table_inter;
+#endif
 
 void
 schro_tables_init (void)
 {
+#ifdef unused
   int i,j;
   static int inited;
 
@@ -46,9 +49,11 @@ schro_tables_init (void)
         schro_dequantise (j - 32768, quant_factor, quant_offset_inter);
     }
   }
+#endif
 
 }
 
+#ifdef unused
 int16_t *
 schro_tables_get_quantise_table (int quant_index, schro_bool is_intra)
 {
@@ -68,3 +73,4 @@ schro_tables_get_dequantise_table (int quant_index, schro_bool is_intra)
     return dequantise_table_inter + quant_index * 65536;
   }
 }
+#endif
