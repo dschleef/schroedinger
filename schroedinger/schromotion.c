@@ -9,7 +9,6 @@
 
 extern int _schro_motion_ref;
 
-static void schro_motion_set_block_accumulate (SchroMotion *motion);
 
 
 SchroMotion *
@@ -263,6 +262,18 @@ get_dc_block (SchroMotion *motion, int i, int j, int k, int x, int y)
 }
 
 static void
+get_ref1_block_simple (SchroMotion *motion, int i, int j, int k, int x, int y)
+{
+  SchroParams *params = motion->params;
+  SchroMotionVector *mv;
+
+  mv = &motion->motion_vectors[j*params->x_num_blocks + i];
+  SCHRO_ASSERT (mv->using_global == FALSE);
+
+  get_block (motion, k, 0, i, j, mv->u.vec.dx[0], mv->u.vec.dy[0]);
+}
+
+static void
 get_ref1_block (SchroMotion *motion, int i, int j, int k, int x, int y)
 {
   SchroParams *params = motion->params;
@@ -279,7 +290,7 @@ get_ref1_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   weight = motion->ref1_weight + motion->ref2_weight;
   shift = motion->ref_weight_precision;
 
-  if (weight == (1<<shift)) {
+  if (motion->oneref_noscale) {
     memcpy (&motion->block, &motion->block_ref[0],
         sizeof(SchroFrameData));
   } else {
@@ -293,6 +304,18 @@ get_ref1_block (SchroMotion *motion, int i, int j, int k, int x, int y)
       }
     }
   }
+}
+
+static void
+get_ref2_block_simple (SchroMotion *motion, int i, int j, int k, int x, int y)
+{
+  SchroParams *params = motion->params;
+  SchroMotionVector *mv;
+
+  mv = &motion->motion_vectors[j*params->x_num_blocks + i];
+  SCHRO_ASSERT (mv->using_global == FALSE);
+
+  get_block (motion, k, 1, i, j, mv->u.vec.dx[1], mv->u.vec.dy[1]);
 }
 
 static void
@@ -312,7 +335,7 @@ get_ref2_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   weight = motion->ref1_weight + motion->ref2_weight;
   shift = motion->ref_weight_precision;
 
-  if (weight == (1<<shift)) {
+  if (motion->oneref_noscale) {
     memcpy (&motion->block, &motion->block_ref[1],
         sizeof(SchroFrameData));
   } else {
@@ -333,58 +356,14 @@ get_biref_block_simple (SchroMotion *motion, int i, int j, int k, int x, int y)
 {
   SchroParams *params = motion->params;
   SchroMotionVector *mv;
-#if 0
-  int weight0, weight1;
-  int shift;
-#endif
 
   mv = &motion->motion_vectors[j*params->x_num_blocks + i];
   SCHRO_ASSERT (mv->using_global == FALSE);
 
   get_block (motion, k, 0, i, j, mv->u.vec.dx[0], mv->u.vec.dy[0]);
   get_block (motion, k, 1, i, j, mv->u.vec.dx[1], mv->u.vec.dy[1]);
-
-#if 0
-  weight0 = motion->ref1_weight;
-  weight1 = motion->ref2_weight;
-  shift = motion->ref_weight_precision;
-
-  memcpy (&motion->block, &motion->alloc_block, sizeof(SchroFrameData));
-
-  switch (motion->xblen) {
-    case 8:
-      orc_avg2_8xn_u8(motion->block.data, motion->block.stride,
-          motion->block_ref[0].data, motion->block_ref[0].stride,
-          motion->block_ref[1].data, motion->block_ref[1].stride,
-          motion->yblen);
-      break;
-    case 12:
-      orc_avg2_12xn_u8(motion->block.data, motion->block.stride,
-          motion->block_ref[0].data, motion->block_ref[0].stride,
-          motion->block_ref[1].data, motion->block_ref[1].stride,
-          motion->yblen);
-      break;
-    case 16:
-      orc_avg2_16xn_u8(motion->block.data, motion->block.stride,
-          motion->block_ref[0].data, motion->block_ref[0].stride,
-          motion->block_ref[1].data, motion->block_ref[1].stride,
-          motion->yblen);
-      break;
-    case 32:
-      orc_avg2_32xn_u8(motion->block.data, motion->block.stride,
-          motion->block_ref[0].data, motion->block_ref[0].stride,
-          motion->block_ref[1].data, motion->block_ref[1].stride,
-          motion->yblen);
-      break;
-    default:
-      orc_avg2_nxm_u8(motion->block.data, motion->block.stride,
-          motion->block_ref[0].data, motion->block_ref[0].stride,
-          motion->block_ref[1].data, motion->block_ref[1].stride,
-          motion->xblen, motion->yblen);
-      break;
-  }
-#endif
 }
+
 static void
 get_biref_block (SchroMotion *motion, int i, int j, int k, int x, int y)
 {
@@ -404,7 +383,7 @@ get_biref_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   shift = motion->ref_weight_precision;
 
   memcpy (&motion->block, &motion->alloc_block, sizeof(SchroFrameData));
-  if (weight0 == 1 && weight1 == 1 && shift == 1) {
+  if (motion->simple_weight) {
     switch (motion->xblen) {
       case 8:
         orc_avg2_8xn_u8(motion->block.data, motion->block.stride,
@@ -507,40 +486,35 @@ schro_motion_block_predict_and_acc (SchroMotion *motion, int x, int y, int k,
 {
   SchroParams *params = motion->params;
   SchroMotionVector *mv;
-  int weight0, weight1, shift;
 
   mv = &motion->motion_vectors[j*params->x_num_blocks + i];
 
-  switch (mv->pred_mode) {
-    case 0:
-      orc_multiply_and_acc_dc_Xxn_s16_u8 (
-          SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
-          motion->obmc_weight.data, motion->obmc_weight.stride,
-          mv->u.dc.dc[k]+128,
-          motion->xblen, motion->yblen);
-      break;
-    case 1:
-      get_ref1_block (motion, i, j, k, x, y);
-      orc_multiply_and_acc_Xxn_s16_u8 (
-          SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
-          motion->obmc_weight.data, motion->obmc_weight.stride,
-          motion->block.data, motion->block.stride,
-          motion->xblen, motion->yblen);
-      break;
-    case 2:
-      get_ref2_block (motion, i, j, k, x, y);
-      orc_multiply_and_acc_Xxn_s16_u8 (
-          SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
-          motion->obmc_weight.data, motion->obmc_weight.stride,
-          motion->block.data, motion->block.stride,
-          motion->xblen, motion->yblen);
-      break;
-    case 3:
-      weight0 = motion->ref1_weight;
-      weight1 = motion->ref2_weight;
-      shift = motion->ref_weight_precision;
-
-      if (weight0 == 1 && weight1 == 1 && shift == 1) {
+  if (motion->simple_weight) {
+    switch (mv->pred_mode) {
+      case 0:
+        orc_multiply_and_acc_dc_Xxn_s16_u8 (
+            SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
+            motion->obmc_weight.data, motion->obmc_weight.stride,
+            mv->u.dc.dc[k]+128,
+            motion->xblen, motion->yblen);
+        break;
+      case 1:
+        get_ref1_block_simple (motion, i, j, k, x, y);
+        orc_multiply_and_acc_Xxn_s16_u8 (
+            SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
+            motion->obmc_weight.data, motion->obmc_weight.stride,
+            motion->block_ref[0].data, motion->block_ref[0].stride,
+            motion->xblen, motion->yblen);
+        break;
+      case 2:
+        get_ref2_block_simple (motion, i, j, k, x, y);
+        orc_multiply_and_acc_Xxn_s16_u8 (
+            SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
+            motion->obmc_weight.data, motion->obmc_weight.stride,
+            motion->block_ref[1].data, motion->block_ref[1].stride,
+            motion->xblen, motion->yblen);
+        break;
+      case 3:
         get_biref_block_simple (motion, i, j, k, x, y);
         orc_multiply_and_acc_avg_Xxn_s16_u8 (
             SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
@@ -548,125 +522,56 @@ schro_motion_block_predict_and_acc (SchroMotion *motion, int x, int y, int k,
             motion->block_ref[0].data, motion->block_ref[0].stride,
             motion->block_ref[1].data, motion->block_ref[1].stride,
             motion->xblen, motion->yblen);
-      } else {
+        break;
+      default:
+        SCHRO_ASSERT(0);
+        break;
+    }
+  } else {
+    int weight0, weight1, shift;
+
+    weight0 = motion->ref1_weight;
+    weight1 = motion->ref2_weight;
+    shift = motion->ref_weight_precision;
+
+    switch (mv->pred_mode) {
+      case 0:
+        orc_multiply_and_acc_dc_Xxn_s16_u8 (
+            SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
+            motion->obmc_weight.data, motion->obmc_weight.stride,
+            mv->u.dc.dc[k]+128,
+            motion->xblen, motion->yblen);
+        break;
+      case 1:
+        get_ref1_block (motion, i, j, k, x, y);
+        orc_multiply_and_acc_Xxn_s16_u8 (
+            SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
+            motion->obmc_weight.data, motion->obmc_weight.stride,
+            motion->block.data, motion->block.stride,
+            motion->xblen, motion->yblen);
+        break;
+      case 2:
+        get_ref2_block (motion, i, j, k, x, y);
+        orc_multiply_and_acc_Xxn_s16_u8 (
+            SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
+            motion->obmc_weight.data, motion->obmc_weight.stride,
+            motion->block.data, motion->block.stride,
+            motion->xblen, motion->yblen);
+        break;
+      case 3:
         get_biref_block (motion, i, j, k, x, y);
         orc_multiply_and_acc_Xxn_s16_u8 (
             SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
             motion->obmc_weight.data, motion->obmc_weight.stride,
             motion->block.data, motion->block.stride,
             motion->xblen, motion->yblen);
-      }
-      break;
-    default:
-      SCHRO_ASSERT(0);
-      break;
+        break;
+      default:
+        SCHRO_ASSERT(0);
+        break;
+    }
   }
 }
-
-static void
-schro_motion_set_block_accumulate (SchroMotion *motion)
-{
-  switch (motion->xblen) {
-    case 4:
-      motion->block_accumulate = orc_multiply_and_acc_4xn_s16_u8;
-      motion->block_accumulate_dc = orc_multiply_and_acc_dc_4xn_s16_u8;
-      motion->block_accumulate_avg = orc_multiply_and_acc_avg_4xn_s16_u8;
-      break;
-    case 6:
-      motion->block_accumulate = orc_multiply_and_acc_6xn_s16_u8;
-      motion->block_accumulate_dc = orc_multiply_and_acc_dc_6xn_s16_u8;
-      motion->block_accumulate_avg = orc_multiply_and_acc_avg_6xn_s16_u8;
-      break;
-    case 8:
-      motion->block_accumulate = orc_multiply_and_acc_8xn_s16_u8;
-      motion->block_accumulate_dc = orc_multiply_and_acc_dc_8xn_s16_u8;
-      motion->block_accumulate_avg = orc_multiply_and_acc_avg_8xn_s16_u8;
-      break;
-    case 12:
-      motion->block_accumulate = orc_multiply_and_acc_12xn_s16_u8;
-      motion->block_accumulate_dc = orc_multiply_and_acc_dc_12xn_s16_u8;
-      motion->block_accumulate_avg = orc_multiply_and_acc_avg_12xn_s16_u8;
-      break;
-    case 16:
-      motion->block_accumulate = orc_multiply_and_acc_16xn_s16_u8;
-      motion->block_accumulate_dc = orc_multiply_and_acc_dc_16xn_s16_u8;
-      motion->block_accumulate_avg = orc_multiply_and_acc_avg_16xn_s16_u8;
-      break;
-    case 24:
-      motion->block_accumulate = orc_multiply_and_acc_24xn_s16_u8;
-      motion->block_accumulate_dc = orc_multiply_and_acc_dc_24xn_s16_u8;
-      motion->block_accumulate_avg = orc_multiply_and_acc_avg_24xn_s16_u8;
-      break;
-    case 32:
-      motion->block_accumulate = orc_multiply_and_acc_32xn_s16_u8;
-      motion->block_accumulate_dc = orc_multiply_and_acc_dc_32xn_s16_u8;
-      motion->block_accumulate_avg = orc_multiply_and_acc_avg_32xn_s16_u8;
-      break;
-    default:
-      SCHRO_ERROR("xblen %d", motion->xblen);
-      SCHRO_ASSERT(0);
-      break;
-  }
-}
-
-#if 0
-void
-schro_motion_block_accumulate (SchroMotion *motion, SchroFrameData *comp,
-    int x, int y)
-{
-  switch (motion->xblen) {
-    case 4:
-      orc_multiply_and_acc_4xn_s16_u8 (
-          SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
-          motion->obmc_weight.data, motion->obmc_weight.stride,
-          motion->block.data, motion->block.stride,
-          motion->yblen);
-      break;
-    case 6:
-      orc_multiply_and_acc_6xn_s16_u8 (
-          SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
-          motion->obmc_weight.data, motion->obmc_weight.stride,
-          motion->block.data, motion->block.stride,
-          motion->yblen);
-      break;
-    case 8:
-      orc_multiply_and_acc_8xn_s16_u8 (
-          SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
-          motion->obmc_weight.data, motion->obmc_weight.stride,
-          motion->block.data, motion->block.stride,
-          motion->yblen);
-      break;
-    case 12:
-      orc_multiply_and_acc_12xn_s16_u8 (
-          SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
-          motion->obmc_weight.data, motion->obmc_weight.stride,
-          motion->block.data, motion->block.stride,
-          motion->yblen);
-      break;
-    case 16:
-      orc_multiply_and_acc_16xn_s16_u8 (
-          SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
-          motion->obmc_weight.data, motion->obmc_weight.stride,
-          motion->block.data, motion->block.stride,
-          motion->yblen);
-      break;
-    case 24:
-      orc_multiply_and_acc_24xn_s16_u8 (
-          SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
-          motion->obmc_weight.data, motion->obmc_weight.stride,
-          motion->block.data, motion->block.stride,
-          motion->yblen);
-      break;
-    default:
-      orc_multiply_and_acc_nxm_s16_u8 (
-          SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
-          motion->obmc_weight.data, motion->obmc_weight.stride,
-          motion->block.data, motion->block.stride,
-          motion->xblen, motion->yblen);
-      break;
-  }
-}
-#endif
 
 void
 schro_motion_block_accumulate_slow (SchroMotion *motion, SchroFrameData *comp,
@@ -864,9 +769,18 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
     motion->alloc_block_ref[1].width = motion->xblen;
     motion->alloc_block_ref[1].height = motion->yblen;
 
+    if (motion->ref1_weight == 1 && motion->ref2_weight == 1 &&
+        motion->ref_weight_precision == 1) {
+      motion->simple_weight = TRUE;
+    }
+    if (motion->ref1_weight + motion->ref2_weight ==
+        (1<<motion->ref_weight_precision)) {
+      motion->oneref_noscale = TRUE;
+    }
+
     schro_motion_init_obmc_weight (motion);
     schro_motion_init_functions (motion);
-    schro_motion_set_block_accumulate (motion);
+    //schro_motion_set_block_accumulate (motion);
 
     orc_splat_s16_2d (comp->data, comp->stride, 0, comp->width, comp->height);
 
