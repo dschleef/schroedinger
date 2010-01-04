@@ -782,14 +782,14 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
     schro_motion_init_functions (motion);
     //schro_motion_set_block_accumulate (motion);
 
-    orc_splat_s16_2d (comp->data, comp->stride, 0, comp->width, comp->height);
-
     max_x_blocks = MIN(params->x_num_blocks - 1,
         (motion->width - motion->xoffset)/motion->xbsep);
     max_y_blocks = MIN(params->y_num_blocks - 1,
         (motion->height - motion->yoffset)/motion->ybsep);
 
     j = 0;
+    orc_splat_s16_2d (SCHRO_FRAME_DATA_GET_LINE(comp, 0), comp->stride,
+        0, comp->width, motion->ybsep + motion->yoffset);
     for(i=0;i<params->x_num_blocks;i++){
       x = motion->xbsep * i - motion->xoffset;
       y = motion->ybsep * j - motion->yoffset;
@@ -797,8 +797,12 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
       schro_motion_block_predict_block (motion, x, y, k, i, j);
       schro_motion_block_accumulate_slow (motion, comp, x, y);
     }
+    orc_rrshift6_s16_ip_2d (SCHRO_FRAME_DATA_GET_LINE(comp, 0),
+        comp->stride, motion->width, motion->ybsep - motion->yoffset);
     for(j=1;j<max_y_blocks;j++){
       y = motion->ybsep * j - motion->yoffset;
+      orc_splat_s16_2d (SCHRO_FRAME_DATA_GET_LINE(comp, y + motion->yoffset*2),
+          comp->stride, 0, comp->width, motion->ybsep);
 
       i = 0;
       {
@@ -820,19 +824,29 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
         schro_motion_block_predict_block (motion, x, y, k, i, j);
         schro_motion_block_accumulate_slow (motion, comp, x, y);
       }
+      orc_rrshift6_s16_ip_2d (SCHRO_FRAME_DATA_GET_LINE(comp, y),
+          comp->stride, motion->width, motion->ybsep);
     }
     for(j=max_y_blocks;j<params->y_num_blocks;j++){
       y = motion->ybsep * j - motion->yoffset;
+      orc_splat_s16_2d (SCHRO_FRAME_DATA_GET_LINE(comp, y + motion->yoffset*2),
+          comp->stride, 0, comp->width,
+          CLAMP(comp->height - (y+motion->yoffset*2), 0, motion->ybsep));
       for(i=0;i<params->x_num_blocks;i++){
         x = motion->xbsep * i - motion->xoffset;
 
         schro_motion_block_predict_block (motion, x, y, k, i, j);
         schro_motion_block_accumulate_slow (motion, comp, x, y);
       }
+      orc_rrshift6_s16_ip_2d (SCHRO_FRAME_DATA_GET_LINE(comp, y),
+          comp->stride, comp->width,
+          CLAMP(comp->height - y, 0, motion->ybsep));
     }
 
-    orc_rrshift6_s16_ip_2d (comp->data, comp->stride,
-        motion->width, comp->height);
+    y = params->y_num_blocks * motion->ybsep - motion->yoffset;
+    orc_rrshift6_s16_ip_2d (SCHRO_FRAME_DATA_GET_LINE(comp, y),
+        comp->stride, comp->width,
+        CLAMP(comp->height - y, 0, motion->ybsep));
 
     schro_free (motion->alloc_block.data);
     schro_free (motion->obmc_weight.data);
