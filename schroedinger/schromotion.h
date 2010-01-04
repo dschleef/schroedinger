@@ -45,8 +45,10 @@ struct _SchroMotionField {
 
 struct _SchroMotionFuncs {
   OrcProgram *block_accumulate;
+  OrcProgram *block_accumulate_scaled;
   OrcProgram *block_accumulate_dc;
   OrcProgram *block_accumulate_avg;
+  OrcProgram *block_accumulate_biref;
 };
 
 struct _SchroMotion {

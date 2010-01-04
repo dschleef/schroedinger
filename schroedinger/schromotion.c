@@ -76,8 +76,43 @@ schro_motion_init_functions (SchroMotion *motion)
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL(result)) {
+      SCHRO_ERROR("compile failed");
+    }
 
     motion_funcs[motion->xblen/2].block_accumulate = p;
+  }
+
+  if (motion_funcs[motion->xblen>>1].block_accumulate_scaled == NULL) {
+    OrcProgram *p;
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_constant_n (p, motion->xblen);
+    orc_program_set_2d (p);
+    orc_program_set_name (p, "block_acc_scaled_Xxn");
+
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_source (p, 1, "s2");
+    orc_program_add_parameter (p, 2, "p1");
+    orc_program_add_constant (p, 2, 32, "c1");
+    orc_program_add_constant (p, 2, 6, "c2");
+    orc_program_add_temporary (p, 2, "t1");
+
+    orc_program_append (p, "convubw", ORC_VAR_T1, ORC_VAR_S2, ORC_VAR_D1);
+    orc_program_append (p, "mullw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_P1);
+    orc_program_append (p, "addw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1);
+    orc_program_append (p, "shrsw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C2);
+    orc_program_append (p, "mullw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_S1);
+    orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL(result)) {
+      SCHRO_ERROR("compile failed");
+    }
+
+    motion_funcs[motion->xblen/2].block_accumulate_scaled = p;
   }
 
   if (motion_funcs[motion->xblen>>1].block_accumulate_dc == NULL) {
@@ -98,6 +133,9 @@ schro_motion_init_functions (SchroMotion *motion)
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL(result)) {
+      SCHRO_ERROR("compile failed");
+    }
 
     motion_funcs[motion->xblen/2].block_accumulate_dc = p;
   }
@@ -124,10 +162,50 @@ schro_motion_init_functions (SchroMotion *motion)
     orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
 
     result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL(result)) {
+      SCHRO_ERROR("compile failed");
+    }
 
     motion_funcs[motion->xblen/2].block_accumulate_avg = p;
   }
 
+  if (motion_funcs[motion->xblen>>1].block_accumulate_biref == NULL) {
+    OrcProgram *p;
+    OrcCompileResult result;
+
+    p = orc_program_new ();
+    orc_program_set_constant_n (p, motion->xblen);
+    orc_program_set_2d (p);
+    orc_program_set_name (p, "block_acc_biref_Xxn");
+
+    orc_program_add_destination (p, 2, "d1");
+    orc_program_add_source (p, 2, "s1");
+    orc_program_add_source (p, 1, "s2");
+    orc_program_add_source (p, 1, "s3");
+    orc_program_add_parameter (p, 2, "p1");
+    orc_program_add_parameter (p, 2, "p2");
+    orc_program_add_constant (p, 2, 32, "c1");
+    orc_program_add_constant (p, 2, 6, "c2");
+    orc_program_add_temporary (p, 2, "t1");
+    orc_program_add_temporary (p, 2, "t2");
+
+    orc_program_append (p, "convubw", ORC_VAR_T1, ORC_VAR_S2, 0);
+    orc_program_append (p, "mullw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_P1);
+    orc_program_append (p, "convubw", ORC_VAR_T2, ORC_VAR_S3, 0);
+    orc_program_append (p, "mullw", ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_P2);
+    orc_program_append (p, "addw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_T2);
+    orc_program_append (p, "addw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1);
+    orc_program_append (p, "shrsw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C2);
+    orc_program_append (p, "mullw", ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_S1);
+    orc_program_append (p, "addw", ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1);
+
+    result = orc_program_compile (p);
+    if (!ORC_COMPILE_RESULT_IS_SUCCESSFUL(result)) {
+      SCHRO_ERROR("compile failed");
+    }
+
+    motion_funcs[motion->xblen/2].block_accumulate_biref = p;
+  }
 }
 
 void
@@ -150,6 +228,32 @@ orc_multiply_and_acc_Xxn_s16_u8 (int16_t * d1, int d1_stride,
   ex->params[ORC_VAR_S1] = s1_stride;
   ex->arrays[ORC_VAR_S2] = (void *)s2;
   ex->params[ORC_VAR_S2] = s2_stride;
+
+  func = p->code_exec;
+  func (ex);
+}
+
+void
+orc_multiply_and_acc_scaled_Xxn_s16_u8 (int16_t * d1, int d1_stride,
+    const int16_t * s1, int s1_stride, const uint8_t * s2, int s2_stride,
+    int p1, int n, int m)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcProgram *p = 0;
+  void (*func) (OrcExecutor *);
+
+  p = motion_funcs[n>>1].block_accumulate_scaled;
+  ex->program = p;
+
+  ex->n = n;
+  ORC_EXECUTOR_M(ex) = m;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->params[ORC_VAR_D1] = d1_stride;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->params[ORC_VAR_S1] = s1_stride;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+  ex->params[ORC_VAR_S2] = s2_stride;
+  ex->params[ORC_VAR_P1] = p1;
 
   func = p->code_exec;
   func (ex);
@@ -201,6 +305,36 @@ orc_multiply_and_acc_avg_Xxn_s16_u8 (int16_t * d1, int d1_stride,
   ex->params[ORC_VAR_S2] = s2_stride;
   ex->arrays[ORC_VAR_S3] = (void *)s3;
   ex->params[ORC_VAR_S3] = s3_stride;
+
+  func = p->code_exec;
+  func (ex);
+}
+
+void
+orc_multiply_and_acc_biref_Xxn_s16_u8 (int16_t * d1, int d1_stride,
+    const int16_t * s1, int s1_stride, const uint8_t * s2, int s2_stride,
+    const uint8_t * s3, int s3_stride, int p1, int p2, int n, int m)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcProgram *p;
+  void (*func) (OrcExecutor *);
+
+  p = motion_funcs[n>>1].block_accumulate_biref;
+  
+  ex->program = p;
+
+  ex->n = n;
+  ORC_EXECUTOR_M(ex) = m;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->params[ORC_VAR_D1] = d1_stride;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->params[ORC_VAR_S1] = s1_stride;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+  ex->params[ORC_VAR_S2] = s2_stride;
+  ex->arrays[ORC_VAR_S3] = (void *)s3;
+  ex->params[ORC_VAR_S3] = s3_stride;
+  ex->params[ORC_VAR_P1] = p1;
+  ex->params[ORC_VAR_P2] = p2;
 
   func = p->code_exec;
   func (ex);
@@ -543,27 +677,31 @@ schro_motion_block_predict_and_acc (SchroMotion *motion, int x, int y, int k,
             motion->xblen, motion->yblen);
         break;
       case 1:
-        get_ref1_block (motion, i, j, k, x, y);
-        orc_multiply_and_acc_Xxn_s16_u8 (
+        get_ref1_block_simple (motion, i, j, k, x, y);
+        orc_multiply_and_acc_scaled_Xxn_s16_u8 (
             SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
             motion->obmc_weight.data, motion->obmc_weight.stride,
-            motion->block.data, motion->block.stride,
+            motion->block_ref[0].data, motion->block_ref[0].stride,
+            (weight0 + weight1)<<(6-shift),
             motion->xblen, motion->yblen);
         break;
       case 2:
-        get_ref2_block (motion, i, j, k, x, y);
-        orc_multiply_and_acc_Xxn_s16_u8 (
+        get_ref2_block_simple (motion, i, j, k, x, y);
+        orc_multiply_and_acc_scaled_Xxn_s16_u8 (
             SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
             motion->obmc_weight.data, motion->obmc_weight.stride,
-            motion->block.data, motion->block.stride,
+            motion->block_ref[1].data, motion->block_ref[1].stride,
+            (weight0 + weight1)<<(6-shift),
             motion->xblen, motion->yblen);
         break;
       case 3:
-        get_biref_block (motion, i, j, k, x, y);
-        orc_multiply_and_acc_Xxn_s16_u8 (
+        get_biref_block_simple (motion, i, j, k, x, y);
+        orc_multiply_and_acc_biref_Xxn_s16_u8 (
             SCHRO_FRAME_DATA_GET_PIXEL_S16 (comp, x, y), comp->stride,
             motion->obmc_weight.data, motion->obmc_weight.stride,
-            motion->block.data, motion->block.stride,
+            motion->block_ref[0].data, motion->block_ref[0].stride,
+            motion->block_ref[1].data, motion->block_ref[1].stride,
+            weight0<<(6-shift), weight1<<(6-shift),
             motion->xblen, motion->yblen);
         break;
       default:
