@@ -60,6 +60,7 @@ decode (FILE *file)
   int go;
   int it;
   int eos = FALSE;
+  int eof = FALSE;
   void *packet;
   int size;
   int ret;
@@ -73,7 +74,9 @@ decode (FILE *file)
       exit(1);
     }
 
+    printf("packet size %d\n", size);
     if (size == 0) {
+      eof = TRUE;
       schro_decoder_push_end_of_stream (decoder);
     } else {
       buffer = schro_buffer_new_with_data (packet, size);
@@ -112,7 +115,9 @@ decode (FILE *file)
           break;
         case SCHRO_DECODER_EOS:
           printf("got eos\n");
-          eos = TRUE;
+          if (eof) {
+            eos = TRUE;
+          }
           go = 0;
           break;
         case SCHRO_DECODER_ERROR:
