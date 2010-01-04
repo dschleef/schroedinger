@@ -162,10 +162,8 @@ void
 dequantise_speed (int quant_index, int n)
 {
   OrcProfile prof1;
-  OrcProfile prof2;
   OrcProfile prof3;
   double ave1;
-  double ave2;
   double ave3;
   int i;
   int j;
@@ -177,7 +175,6 @@ dequantise_speed (int quant_index, int n)
   quant_offset = 10;
 
   orc_profile_init (&prof1);
-  orc_profile_init (&prof2);
   orc_profile_init (&prof3);
 
   for(i=0;i<10;i++) {
@@ -189,9 +186,6 @@ dequantise_speed (int quant_index, int n)
     orc_profile_start (&prof1);
     schro_dequantise_s16_ref (b, a, quant_index, FALSE, n);
     orc_profile_stop (&prof1);
-    orc_profile_start (&prof2);
-    schro_dequantise_s16_table (c, a, quant_index, FALSE, n);
-    orc_profile_stop (&prof2);
     memcpy (c, a, N*sizeof(int16_t));
     orc_profile_start (&prof3);
     orc_dequantise_s16_ip (c, quant_factor, quant_offset + 2, n);
@@ -209,9 +203,8 @@ dequantise_speed (int quant_index, int n)
   }
 
   ave1 = orc_profile_get_min (&prof1);
-  ave2 = orc_profile_get_min (&prof2);
   ave3 = orc_profile_get_min (&prof3);
-  printf("%d %d %g %g %g\n", quant_index, n, ave1, ave2, ave3);
+  printf("%d %d %g %g\n", quant_index, n, ave1, ave3);
 }
 
 

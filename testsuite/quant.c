@@ -126,13 +126,9 @@ test_dequant  (int quant_index)
     c[i] = b[i];
   }
 
-#if 0
   for(i=0;i<N;i++){
     b[i] = schro_dequantise(b[i],quant_factor,quant_offset);
   }
-#else
-  schro_dequantise_s16_table (b, b, quant_index, FALSE, N);
-#endif
 
   if (quant_index == 0) {
     /* do nothing */
