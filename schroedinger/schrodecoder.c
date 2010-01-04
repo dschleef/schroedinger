@@ -1575,6 +1575,17 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
     } else if (TODO(SCHRO_DECODER_STAGE_COMBINE) &&
         picture->stages[SCHRO_DECODER_STAGE_WAVELET_TRANSFORM].is_done &&
         picture->stages[SCHRO_DECODER_STAGE_MOTION_RENDER].is_done && render_ok) {
+      /* Eagerly unreference the ref picures.  Otherwise they are kept
+       * until the picture dependency chain terminates (worst case, Ponly
+       * coding = infinite dependency chain = -ENOMEM) */
+      if (picture->ref0) {
+        schro_picture_unref(picture->ref0);
+        picture->ref0 = NULL;
+      }
+      if (picture->ref1) {
+        schro_picture_unref(picture->ref1);
+        picture->ref1 = NULL;
+      }
       if (!picture->output_picture) {
         schro_decoder_assign_output_picture (picture, i);
       }
@@ -1664,17 +1675,6 @@ schro_decoder_x_render_motion (SchroAsyncStage *stage)
 #endif
     } else {
       schro_motion_render (picture->motion, picture->mc_tmp_frame);
-    }
-    /* Eagerly unreference the ref picures.  Otherwise they are kept
-     * until the picture dependency chain terminates (worst case, Ponly
-     * coding = infinite dependency chain = -ENOMEM) */
-    if (picture->ref0) {
-      schro_picture_unref(picture->ref0);
-      picture->ref0 = NULL;
-    }
-    if (picture->ref1) {
-      schro_picture_unref(picture->ref1);
-      picture->ref1 = NULL;
     }
   }
 }
