@@ -1708,8 +1708,10 @@ schro_decoder_x_render_motion (SchroAsyncStage *stage)
 #endif
     } else {
       schro_motion_render (picture->motion, picture->mc_tmp_frame,
-          picture->frame, TRUE);
+          picture->frame, TRUE, picture->ref_output_frame);
     }
+  } else {
+    schro_frame_convert (picture->ref_output_frame, picture->frame);
   }
 }
 
@@ -1767,14 +1769,16 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
   SchroPicture *picture = (SchroPicture *)stage->priv;
   SchroParams *params = &picture->params;
   SchroDecoder *decoder = picture->decoder_instance->decoder;
-  SchroFrame *planar_output_frame;
+#if defined(HAVE_CUDA) || defined(HAVE_OPENGL)
   SchroFrame *combined_frame;
   SchroFrame *output_frame;
+#endif
   /*> output_picture: a view of picture->output_picture, that is modified
    * when field coding.  Be very careful referencing this, no reference to
    * output_picture may leave this function */
   SchroFrame output_picture = *picture->output_picture;
 
+#if defined(HAVE_CUDA) || defined(HAVE_OPENGL)
   if (picture->zero_residual) {
     combined_frame = picture->mc_tmp_frame;
   } else {
@@ -1807,6 +1811,7 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
   } else {
     output_frame = combined_frame;
   }
+#endif
 
   if (picture->decoder_instance->video_format.interlaced_coding &&
       schro_decoder_frame_is_twofield (picture->decoder_instance, &output_picture))
@@ -1836,16 +1841,13 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
   }
 
   if (SCHRO_FRAME_IS_PACKED(picture->output_picture->format)) {
-    if (picture->has_md5 || decoder->use_cuda || decoder->use_opengl) {
-      planar_output_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
-          schro_params_get_frame_format (8, picture->decoder_instance->video_format.chroma_format),
-          picture->decoder_instance->video_format.width, picture->decoder_instance->video_format.height);
-    } else {
-      planar_output_frame = NULL;
-    }
     if (decoder->use_cuda) {
 #ifdef HAVE_CUDA
       SchroFrame *cuda_output_frame;
+      SchroFrame *planar_output_frame;
+      planar_output_frame = schro_frame_new_and_alloc (decoder->cpu_domain,
+          schro_params_get_frame_format (8, picture->decoder_instance->video_format.chroma_format),
+          picture->decoder_instance->video_format.width, picture->decoder_instance->video_format.height);
       cuda_output_frame = schro_frame_clone (decoder->cuda_domain,
           &output_picture);
       schro_gpuframe_convert (planar_output_frame, output_frame);
@@ -1853,6 +1855,7 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       schro_gpuframe_to_cpu (&output_picture, cuda_output_frame);
       schro_frame_unref (cuda_output_frame);
       cuda_output_frame = NULL;
+      schro_frame_unref (planar_output_frame);
 #else
       SCHRO_ASSERT(0);
 #endif
@@ -1874,14 +1877,9 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       SCHRO_ASSERT(0);
 #endif
     } else {
-      schro_frame_convert (&output_picture, output_frame);
+      schro_frame_convert (&output_picture, picture->ref_output_frame);
     }
   } else {
-    /* may look unsafe since this doesn't reference count the storage
-     * for output_picture.  However lifetime of planar_output_frame is
-     * only this function, during which, existance of output_picture is
-     * guaranteed => ok. */
-    planar_output_frame = schro_frame_ref(&output_picture);
     if (decoder->use_cuda) {
 #ifdef HAVE_CUDA
       SchroFrame *cuda_output_frame;
@@ -1910,7 +1908,7 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       SCHRO_ASSERT(0);
 #endif
     } else {
-      schro_frame_convert (&output_picture, output_frame);
+      schro_frame_convert (&output_picture, picture->ref_output_frame);
     }
   }
 
@@ -1935,7 +1933,6 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       SCHRO_ASSERT(0);
 #endif
     } else {
-      schro_frame_convert (ref, combined_frame);
       schro_frame_mc_edgeextend (ref);
     }
     picture->upsampled_frame = schro_upsampled_frame_new (ref);
@@ -1944,7 +1941,7 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
   if (picture->has_md5) {
     uint32_t state[4];
 
-    schro_frame_md5 (planar_output_frame, state);
+    schro_frame_md5 (picture->ref_output_frame, state);
     if (memcmp (state, picture->md5_checksum, 16) != 0) {
       char a[33];
       char b[33];
@@ -1958,10 +1955,6 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       b[32] = 0;
       SCHRO_ERROR("MD5 checksum mismatch (%s should be %s)", a, b);
     }
-  }
-  if (planar_output_frame) {
-    schro_frame_unref(planar_output_frame);
-    planar_output_frame = NULL;
   }
 
   /* eagerly unreference any storage that is nolonger required */

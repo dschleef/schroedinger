@@ -451,13 +451,27 @@ avgub d1, s1, s2
 
 .function orc_rrshift6_add_s16_2d
 .flags 2d
-.dest 2 d1 int16_t
+.dest 1 d1 uint8_t
 .source 2 s1 int16_t
+.source 2 s2 int16_t
 .temp 2 t1
 
-subw t1, s1, 8160
+addw t1, s2, 32
 shrsw t1, t1, 6
-addw d1, d1, t1
+addw t1, s1, t1
+convsuswb d1, t1
+
+
+.function orc_rrshift6_sub_s16_2d
+.flags 2d
+.dest 2 d1 int16_t
+.dest 2 d2 int16_t
+.temp 2 t1
+
+subw t1, d2, 8160
+shrsw t1, t1, 6
+copyw d2, t1
+subw d1, d1, t1
 
 
 .function orc_rrshift6_s16_ip_2d

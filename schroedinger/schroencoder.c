@@ -2218,9 +2218,7 @@ schro_encoder_render_picture (SchroEncoderFrame *frame)
     schro_frame_convert (frame->iwt_frame, frame->filtered_frame);
 
     schro_motion_render (frame->motion, frame->prediction_frame,
-        frame->iwt_frame, FALSE);
-
-    //schro_frame_subtract (frame->iwt_frame, frame->prediction_frame);
+        frame->iwt_frame, FALSE, NULL);
 
     schro_frame_zero_extend (frame->iwt_frame,
         frame->params.video_format->width,
