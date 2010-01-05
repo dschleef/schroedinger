@@ -198,7 +198,8 @@ schro_motion_render_fast_allowed (SchroMotion *motion)
 }
 
 void
-schro_motion_render_fast (SchroMotion *motion, SchroFrame *dest)
+schro_motion_render_fast (SchroMotion *motion, SchroFrame *dest,
+    SchroFrame *addframe, int add)
 {
   int i, j;
   int x, y;

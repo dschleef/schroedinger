@@ -416,6 +416,7 @@ schro_picture_unref (SchroPicture *picture)
     if (picture->upsampled_frame) schro_upsampled_frame_free (picture->upsampled_frame);
     if (picture->ref0) schro_picture_unref (picture->ref0);
     if (picture->ref1) schro_picture_unref (picture->ref1);
+    if (picture->ref_output_frame) schro_frame_unref (picture->ref_output_frame);
 
     if (picture->tag) schro_tag_free (picture->tag);
 
@@ -1557,21 +1558,23 @@ schro_decoder_async_schedule (SchroDecoder *decoder,
     }
 
 
-    if (TODO(SCHRO_DECODER_STAGE_MOTION_DECODE) &&
-        picture->stages[SCHRO_DECODER_STAGE_REFERENCES].is_done && decode_ok) {
-      func = schro_decoder_x_decode_motion;
-      stage = SCHRO_DECODER_STAGE_MOTION_DECODE;
-    } else if (TODO(SCHRO_DECODER_STAGE_MOTION_RENDER) &&
-        picture->stages[SCHRO_DECODER_STAGE_MOTION_DECODE].is_done && render_ok) {
-      func = schro_decoder_x_render_motion;
-      stage = SCHRO_DECODER_STAGE_MOTION_RENDER;
-    } else if (TODO(SCHRO_DECODER_STAGE_RESIDUAL_DECODE) && decode_ok) {
+    if (TODO(SCHRO_DECODER_STAGE_RESIDUAL_DECODE) && decode_ok) {
       func = schro_decoder_x_decode_residual;
       stage = SCHRO_DECODER_STAGE_RESIDUAL_DECODE;
     } else if (TODO(SCHRO_DECODER_STAGE_WAVELET_TRANSFORM) &&
         picture->stages[SCHRO_DECODER_STAGE_RESIDUAL_DECODE].is_done && render_ok) {
       func = schro_decoder_x_wavelet_transform;
       stage = SCHRO_DECODER_STAGE_WAVELET_TRANSFORM;
+    } else if (TODO(SCHRO_DECODER_STAGE_MOTION_DECODE) &&
+        picture->stages[SCHRO_DECODER_STAGE_REFERENCES].is_done && decode_ok) {
+      func = schro_decoder_x_decode_motion;
+      stage = SCHRO_DECODER_STAGE_MOTION_DECODE;
+    } else if (TODO(SCHRO_DECODER_STAGE_MOTION_RENDER) &&
+        picture->stages[SCHRO_DECODER_STAGE_MOTION_DECODE].is_done &&
+        picture->stages[SCHRO_DECODER_STAGE_WAVELET_TRANSFORM].is_done &&
+        render_ok) {
+      func = schro_decoder_x_render_motion;
+      stage = SCHRO_DECODER_STAGE_MOTION_RENDER;
     } else if (TODO(SCHRO_DECODER_STAGE_COMBINE) &&
         picture->stages[SCHRO_DECODER_STAGE_WAVELET_TRANSFORM].is_done &&
         picture->stages[SCHRO_DECODER_STAGE_MOTION_RENDER].is_done && render_ok) {
@@ -1631,6 +1634,36 @@ schro_decoder_x_render_motion (SchroAsyncStage *stage)
   SchroParams *params = &picture->params;
   SchroDecoder *decoder = picture->decoder_instance->decoder;
 
+  if (1) {
+    SchroFrameFormat frame_format;
+
+    frame_format = schro_params_get_frame_format (8,
+        params->video_format->chroma_format);
+
+    if (decoder->use_cuda) {
+#ifdef HAVE_CUDA
+      picture->ref_output_frame = schro_frame_new_and_alloc (decoder->cuda_domain, frame_format,
+          picture->decoder_instance->video_format.width,
+          schro_video_format_get_picture_height(&picture->decoder_instance->video_format));
+#else
+      SCHRO_ASSERT(0);
+#endif
+    } else if (decoder->use_opengl) {
+#ifdef HAVE_OPENGL
+      picture->ref_output_frame = schro_opengl_frame_new (decoder->opengl, decoder->opengl_domain,
+          frame_format, picture->decoder_instance->video_format.width,
+          schro_video_format_get_picture_height(&decoder->video_format));
+#else
+      SCHRO_ASSERT(0);
+#endif
+    } else {
+      picture->ref_output_frame = schro_frame_new_and_alloc_extended (decoder->cpu_domain,
+          frame_format, picture->decoder_instance->video_format.width,
+          schro_video_format_get_picture_height(&picture->decoder_instance->video_format),
+          32);
+    }
+  }
+
   if (params->num_refs > 0) {
     SCHRO_DEBUG("motion render with %p and %p", picture->ref0, picture->ref1);
     if (decoder->use_cuda) {
@@ -1674,7 +1707,8 @@ schro_decoder_x_render_motion (SchroAsyncStage *stage)
       SCHRO_ASSERT(0);
 #endif
     } else {
-      schro_motion_render (picture->motion, picture->mc_tmp_frame);
+      schro_motion_render (picture->motion, picture->mc_tmp_frame,
+          picture->frame, TRUE);
     }
   }
 }
@@ -1758,7 +1792,7 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
         SCHRO_ASSERT(0);
 #endif
       } else {
-        schro_frame_add (picture->frame, picture->mc_tmp_frame);
+        //schro_frame_add (picture->frame, picture->mc_tmp_frame);
       }
     }
     combined_frame = picture->frame;
@@ -1887,29 +1921,20 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
     frame_format = schro_params_get_frame_format (8,
         params->video_format->chroma_format);
 
+    ref = schro_frame_ref (picture->ref_output_frame);
     if (decoder->use_cuda) {
 #ifdef HAVE_CUDA
-      ref = schro_frame_new_and_alloc (decoder->cuda_domain, frame_format,
-          picture->decoder_instance->video_format.width,
-          schro_video_format_get_picture_height(&picture->decoder_instance->video_format));
       schro_gpuframe_convert (ref, combined_frame);
 #else
       SCHRO_ASSERT(0);
 #endif
     } else if (decoder->use_opengl) {
 #ifdef HAVE_OPENGL
-      ref = schro_opengl_frame_new (decoder->opengl, decoder->opengl_domain,
-          frame_format, picture->decoder_instance->video_format.width,
-          schro_video_format_get_picture_height(&decoder->video_format));
       schro_opengl_frame_convert (ref, combined_frame);
 #else
       SCHRO_ASSERT(0);
 #endif
     } else {
-      ref = schro_frame_new_and_alloc_extended (decoder->cpu_domain,
-          frame_format, picture->decoder_instance->video_format.width,
-          schro_video_format_get_picture_height(&picture->decoder_instance->video_format),
-          32);
       schro_frame_convert (ref, combined_frame);
       schro_frame_mc_edgeextend (ref);
     }

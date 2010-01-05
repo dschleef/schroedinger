@@ -795,7 +795,8 @@ schro_motion_init_obmc_weight (SchroMotion *motion)
 }
 
 void
-schro_motion_render (SchroMotion *motion, SchroFrame *dest)
+schro_motion_render (SchroMotion *motion, SchroFrame *dest,
+    SchroFrame *addframe, int add)
 {
   int i, j;
   int x, y;
@@ -806,20 +807,20 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
 
 #ifdef ENABLE_MOTION_REF
   if (_schro_motion_ref) {
-    schro_motion_render_ref (motion, dest);
+    schro_motion_render_ref (motion, dest, addframe, add);
     return;
   }
 #endif
 
-  if (schro_motion_render_fast_allowed (motion)) {
-    schro_motion_render_fast (motion, dest);
+  if (0 && schro_motion_render_fast_allowed (motion)) {
+    schro_motion_render_fast (motion, dest, addframe, add);
     return;
   }
 
   if (params->have_global_motion) {
 #ifdef ENABLE_MOTION_REF
     SCHRO_WARNING ("global motion enabled, using reference motion renderer");
-    schro_motion_render_ref (motion, dest);
+    schro_motion_render_ref (motion, dest, addframe, add);
     return;
 #else
     SCHRO_ERROR ("global motion enabled, probably will crash");
@@ -844,7 +845,7 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
 #ifdef ENABLE_MOTION_REF
       SCHRO_WARNING ("block size (%dx%d) larger than minimum frame extension %d, using reference motion renderer",
           params->xblen_luma, params->yblen_luma, min_extension);
-      schro_motion_render_ref (motion, dest);
+      schro_motion_render_ref (motion, dest, addframe, add);
       return;
 #else
       SCHRO_ERROR ("block size (%dx%d) larger than minimum frame extension %d, probably will crash",
@@ -865,6 +866,7 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
 
   for (k=0;k<3;k++){
     SchroFrameData *comp = dest->components + k;
+    SchroFrameData *acomp = addframe->components + k;
 
     if (k == 0) {
       motion->xbsep = params->xbsep_luma;
@@ -935,8 +937,10 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
       schro_motion_block_predict_block (motion, x, y, k, i, j);
       schro_motion_block_accumulate_slow (motion, comp, x, y);
     }
-    orc_rrshift6_s16_ip_2d (SCHRO_FRAME_DATA_GET_LINE(comp, 0),
-        comp->stride, motion->width, motion->ybsep - motion->yoffset);
+    orc_rrshift6_add_s16_2d (
+        SCHRO_FRAME_DATA_GET_LINE(acomp, 0), acomp->stride,
+        SCHRO_FRAME_DATA_GET_LINE(comp, 0), comp->stride,
+        motion->width, motion->ybsep - motion->yoffset);
     for(j=1;j<max_y_blocks;j++){
       y = motion->ybsep * j - motion->yoffset;
       orc_splat_s16_2d (SCHRO_FRAME_DATA_GET_LINE(comp, y + motion->yoffset*2),
@@ -962,7 +966,9 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
         schro_motion_block_predict_block (motion, x, y, k, i, j);
         schro_motion_block_accumulate_slow (motion, comp, x, y);
       }
-      orc_rrshift6_s16_ip_2d (SCHRO_FRAME_DATA_GET_LINE(comp, y),
+      orc_rrshift6_add_s16_2d (
+          SCHRO_FRAME_DATA_GET_LINE(acomp, y), acomp->stride,
+          SCHRO_FRAME_DATA_GET_LINE(comp, y),
           comp->stride, motion->width, motion->ybsep);
     }
     for(j=max_y_blocks;j<params->y_num_blocks;j++){
@@ -976,13 +982,17 @@ schro_motion_render (SchroMotion *motion, SchroFrame *dest)
         schro_motion_block_predict_block (motion, x, y, k, i, j);
         schro_motion_block_accumulate_slow (motion, comp, x, y);
       }
-      orc_rrshift6_s16_ip_2d (SCHRO_FRAME_DATA_GET_LINE(comp, y),
+      orc_rrshift6_add_s16_2d (
+          SCHRO_FRAME_DATA_GET_LINE(acomp, y), acomp->stride,
+          SCHRO_FRAME_DATA_GET_LINE(comp, y),
           comp->stride, comp->width,
           CLAMP(comp->height - y, 0, motion->ybsep));
     }
 
     y = params->y_num_blocks * motion->ybsep - motion->yoffset;
-    orc_rrshift6_s16_ip_2d (SCHRO_FRAME_DATA_GET_LINE(comp, y),
+    orc_rrshift6_add_s16_2d (
+        SCHRO_FRAME_DATA_GET_LINE(acomp, y), acomp->stride,
+        SCHRO_FRAME_DATA_GET_LINE(comp, y),
         comp->stride, comp->width,
         CLAMP(comp->height - y, 0, motion->ybsep));
 

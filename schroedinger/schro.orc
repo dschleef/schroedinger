@@ -449,6 +449,17 @@ copyb d1, p1
 avgub d1, s1, s2
 
 
+.function orc_rrshift6_add_s16_2d
+.flags 2d
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.temp 2 t1
+
+subw t1, s1, 8160
+shrsw t1, t1, 6
+addw d1, d1, t1
+
+
 .function orc_rrshift6_s16_ip_2d
 .flags 2d
 .dest 2 d1 int16_t

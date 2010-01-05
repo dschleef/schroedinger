@@ -96,11 +96,14 @@ SchroMotion * schro_motion_new (SchroParams *params,
 void schro_motion_free (SchroMotion *motion);
 
 int schro_motion_verify (SchroMotion *mf);
-void schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest);
-void schro_motion_render (SchroMotion *motion, SchroFrame *dest);
+void schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest,
+    SchroFrame *addframe, int add);
+void schro_motion_render (SchroMotion *motion, SchroFrame *dest,
+    SchroFrame *addframe, int add);
 void schro_motion_init_obmc_weight (SchroMotion *motion);
 
-void schro_motion_render_fast (SchroMotion *motion, SchroFrame *dest);
+void schro_motion_render_fast (SchroMotion *motion, SchroFrame *dest,
+    SchroFrame *addframe, int add);
 int schro_motion_render_fast_allowed (SchroMotion *motion);
 
 void schro_mf_vector_prediction (SchroMotionField* mf,

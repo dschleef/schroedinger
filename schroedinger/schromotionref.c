@@ -237,12 +237,14 @@ schro_motion_pixel_predict_block (SchroMotion *motion, int x, int y, int k,
 
 
 void
-schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest)
+schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest,
+    SchroFrame *addframe, int add)
 {
   SchroParams *params = motion->params;
   int k;
   int x,y;
   int16_t *line;
+  int16_t *addline;
 
   if (params->num_refs == 1) {
     SCHRO_ASSERT(params->picture_weight_2 == 1);
@@ -283,6 +285,21 @@ schro_motion_render_ref (SchroMotion *motion, SchroFrame *dest)
         /* Note: the 128 offset converts the 0-255 range of the reference
          * pictures into the bipolar range used for Dirac signal processing */
         line[x] -= 128;
+      }
+    }
+
+    for(y=0;y<comp->height;y++){
+      line = SCHRO_FRAME_DATA_GET_LINE(comp, y);
+      addline = SCHRO_FRAME_DATA_GET_LINE(addframe->components+k, y);
+
+      if (add) {
+        for(x=0;x<comp->width;x++){
+          addline[x] += line[x];
+        }
+      } else {
+        for(x=0;x<comp->width;x++){
+          addline[x] -= line[x];
+        }
       }
     }
   }

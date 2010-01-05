@@ -125,6 +125,7 @@ struct _SchroPicture {
   SchroPicture *ref0;
   SchroPicture *ref1;
   SchroFrame *planar_output_frame;
+  SchroFrame *ref_output_frame;
 
   SchroAsyncStage stages[9];
 
