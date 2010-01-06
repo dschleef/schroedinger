@@ -3211,10 +3211,17 @@ schro_decoder_decode_codeblock_noarith (SchroPicture *picture,
     schro_unpack_decode_sint_s16 (p + ctx->xmin, &ctx->unpack, n);
   }
 
-  orc_dequantise_s16_ip_2d (
-      SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data, ctx->xmin, ctx->ymin),
-      ctx->frame_data->stride,
-      ctx->quant_factor, ctx->quant_offset + 2, n, ctx->ymax - ctx->ymin);
+  if (n == 8) {
+    orc_dequantise_s16_ip_2d_8xn (
+        SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data, ctx->xmin, ctx->ymin),
+        ctx->frame_data->stride,
+        ctx->quant_factor, ctx->quant_offset + 2, ctx->ymax - ctx->ymin);
+  } else {
+    orc_dequantise_s16_ip_2d (
+        SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data, ctx->xmin, ctx->ymin),
+        ctx->frame_data->stride,
+        ctx->quant_factor, ctx->quant_offset + 2, n, ctx->ymax - ctx->ymin);
+  }
 }
 
 static void

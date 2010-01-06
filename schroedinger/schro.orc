@@ -847,6 +847,24 @@ convuwl t3, t1
 accl a1, t3
 
 
+.function orc_dequantise_s16_ip_2d_8xn
+.n 8
+.flags 2d
+.dest 2 d1 int16_t
+.param 2 p1
+.param 2 p2
+.temp 2 t1
+.temp 2 t2
+
+copyw t1, d1
+signw t2, t1
+absw t1, t1
+mullw t1, t1, p1
+addw t1, t1, p2
+shrsw t1, t1, 2
+mullw d1, t1, t2
+
+
 .function orc_dequantise_s16_ip_2d
 .flags 2d
 .dest 2 d1 int16_t
