@@ -476,21 +476,6 @@ init_params (SchroEncoderFrame *frame)
     params->vert_codeblocks[0] = 1;
   }
 
-  if (frame->params.is_noarith) {
-    int shift;
-
-    params->horiz_codeblocks[0] = 1;
-    params->vert_codeblocks[0] = 1;
-    for(i=1;i<params->transform_depth+1;i++){
-      shift = params->transform_depth + 1 - i;
-      /* These values are empirically derived from fewer than 2 test results */
-      params->horiz_codeblocks[i] = MAX(1,(params->iwt_luma_width >> shift) / 5);
-      params->vert_codeblocks[i] = MAX(1,(params->iwt_luma_height >> shift) / 5);
-      SCHRO_DEBUG("codeblocks %d %d %d", i, params->horiz_codeblocks[i],
-          params->vert_codeblocks[i]);
-    }
-  }
-
   params->mv_precision = encoder->mv_precision;
   if (encoder->enable_global_motion) {
     params->have_global_motion = TRUE;
