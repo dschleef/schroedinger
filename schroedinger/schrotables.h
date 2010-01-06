@@ -21,7 +21,8 @@ extern const double schro_table_zerobits_hist_shift3_1_2[60][104];
 extern const float schro_tables_wavelet_noise_curve[SCHRO_N_WAVELETS][8][128];
 extern const double schro_tables_wavelet_gain[SCHRO_N_WAVELETS][2];
 
-extern const int16_t schro_table_unpack_sint[256][16];
+#define SCHRO_UNPACK_TABLE_SHIFT 10
+extern const int16_t schro_table_unpack_sint[(1<<SCHRO_UNPACK_TABLE_SHIFT)][SCHRO_UNPACK_TABLE_SHIFT];
 
 void schro_tables_init (void);
 int16_t *schro_tables_get_quantise_table (int quant_index, schro_bool is_intra);

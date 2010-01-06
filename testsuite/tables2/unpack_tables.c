@@ -8,7 +8,7 @@
 #include <schroedinger/schrounpack.h>
 
 
-#define SHIFT 8
+#define SHIFT SCHRO_UNPACK_TABLE_SHIFT
 #define SIZE (1<<SHIFT)
 
 int generate_table (void)
@@ -23,7 +23,8 @@ int generate_table (void)
   printf("#include <schroedinger/schrotables.h>\n");
   printf("\n");
 
-  printf("const int schro_table_unpack_sint[%d][%d] = {\n", SIZE, 2*SHIFT);
+  printf("#define X(a,b) (((a)<<4)|(b))\n");
+  printf("const int16_t schro_table_unpack_sint[%d][%d] = {\n", SIZE, SHIFT);
   for(i=0;i<SIZE;i++){
     data[0] = (i<<(16-SHIFT))>>8;
     data[1] = (i<<(16-SHIFT))&0xff;
@@ -37,16 +38,22 @@ int generate_table (void)
     printf("  /* %3d */ { ", i);
 
     j = 0;
-    x = schro_unpack_decode_sint (&unpack);
+    x = schro_unpack_decode_sint_slow (&unpack);
     while (schro_unpack_get_bits_read (&unpack) <= SHIFT) {
       array[j*2] = x;
       array[j*2+1] = schro_unpack_get_bits_read (&unpack);
       j++;
-      x = schro_unpack_decode_sint (&unpack);
+      x = schro_unpack_decode_sint_slow (&unpack);
     }
     if (j == SHIFT) j--;
+    if (array[1] == 0) {
+      array[0] = 0xf + 
+          ((((i>>8)&1)<<3) | (((i>>6)&1)<<2) |
+           (((i>>4)&1)<<1) | (((i>>2)&1)<<0));
+      j = 1;
+    }
     for(k=0;k<j;k++){
-      printf("%d, %d, ", array[k*2], array[k*2+1]);
+      printf(" X(%d,%d), ", array[k*2], array[k*2+1]);
     }
     printf("},\n");
   }

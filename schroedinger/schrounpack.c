@@ -241,22 +241,24 @@ schro_unpack_decode_sint_slow (SchroUnpack *unpack)
   return value;
 }
 
-#define SHIFT 8
-
 int
 schro_unpack_decode_sint (SchroUnpack *unpack)
 {
   int value;
   int i;
+  const int16_t *table_entry;
+  int x;
 
-  if (unpack->n_bits_in_shift_register < SHIFT) {
+  if (unpack->n_bits_in_shift_register < SCHRO_UNPACK_TABLE_SHIFT) {
     _schro_unpack_shift_in (unpack);
   }
-  if (unpack->n_bits_in_shift_register >= SHIFT) {
-    i = unpack->shift_register >> (32-SHIFT);
-    if (schro_table_unpack_sint[i][1] > 0) {
-      value = schro_table_unpack_sint[i][0];
-      _schro_unpack_shift_out (unpack, schro_table_unpack_sint[i][1]);
+  if (unpack->n_bits_in_shift_register >= SCHRO_UNPACK_TABLE_SHIFT) {
+    i = unpack->shift_register >> (32-SCHRO_UNPACK_TABLE_SHIFT);
+    table_entry = schro_table_unpack_sint[i];
+    x = table_entry[0];
+    if (x&0xf) {
+      value = x>>4;
+      _schro_unpack_shift_out (unpack, x&0xf);
       return value;
     }
   }
@@ -270,25 +272,49 @@ schro_unpack_decode_sint_s16 (int16_t *dest, SchroUnpack *unpack, int n)
   int i;
   int j;
   const int16_t *table_entry;
+  int x;
+  int z;
 
   while (n > 0) {
-    while (unpack->n_bits_in_shift_register < SHIFT) {
+    while (unpack->n_bits_in_shift_register < 8+SCHRO_UNPACK_TABLE_SHIFT) {
       _schro_unpack_shift_in (unpack);
     }
-    i = unpack->shift_register >> (32-SHIFT);
+    i = unpack->shift_register >> (32-SCHRO_UNPACK_TABLE_SHIFT);
     table_entry = schro_table_unpack_sint[i];
-    if (table_entry[1] == 0) {
-      dest[0] = schro_unpack_decode_sint_slow (unpack);
-      dest++;
-      n--;
-    } else {
-      j = 0;
-      while (n>0 && table_entry[2*j+1] > 0) {
-        dest[j] = table_entry[2*j];
-        j++;
+    x = table_entry[0];
+    if ((x&0xf) == 0) {
+      int y = x>>4;
+
+      i = (unpack->shift_register&0xffffff) >> (24-SCHRO_UNPACK_TABLE_SHIFT);
+      table_entry = schro_table_unpack_sint[i];
+      x = table_entry[0];
+      if ((x&0xf) == 0) {
+        dest[0] = schro_unpack_decode_sint_slow (unpack);
+        dest++;
+        n--;
+      } else {
+        int bits = ((x&0xf)>>1) - 1;
+
+        z = x>>4;
+        if (z > 0) {
+          dest[0] = z + (y<<bits);
+        } else {
+          dest[0] = z - (y<<bits);
+        }
+        _schro_unpack_shift_out (unpack, (x&0xf) + 8);
+        dest++;
         n--;
       }
-      _schro_unpack_shift_out (unpack, table_entry[2*j-1]);
+    } else {
+      j = 0;
+      do {
+        dest[j] = x>>4;
+        j++;
+        n--;
+        x = table_entry[j];
+      } while (n>0 && x&0xf);
+      x = table_entry[j-1];
+      _schro_unpack_shift_out (unpack, x&0xf);
       dest += j;
     }
   }
