@@ -1657,10 +1657,12 @@ schro_decoder_x_render_motion (SchroAsyncStage *stage)
       SCHRO_ASSERT(0);
 #endif
     } else {
-      picture->ref_output_frame = schro_frame_new_and_alloc_extended (decoder->cpu_domain,
-          frame_format, picture->decoder_instance->video_format.width,
-          schro_video_format_get_picture_height(&picture->decoder_instance->video_format),
-          32);
+      if (params->num_refs > 0 || picture->is_ref || picture->has_md5) {
+        picture->ref_output_frame = schro_frame_new_and_alloc_extended (decoder->cpu_domain,
+            frame_format, picture->decoder_instance->video_format.width,
+            schro_video_format_get_picture_height(&picture->decoder_instance->video_format),
+            32);
+      }
     }
   }
 
@@ -1711,7 +1713,9 @@ schro_decoder_x_render_motion (SchroAsyncStage *stage)
           picture->frame, TRUE, picture->ref_output_frame);
     }
   } else {
-    schro_frame_convert (picture->ref_output_frame, picture->frame);
+    if (params->num_refs > 0 || picture->is_ref || picture->has_md5) {
+      schro_frame_convert (picture->ref_output_frame, picture->frame);
+    }
   }
 }
 
@@ -1877,7 +1881,11 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       SCHRO_ASSERT(0);
 #endif
     } else {
-      schro_frame_convert (&output_picture, picture->ref_output_frame);
+      if (params->num_refs > 0 || picture->is_ref) {
+        schro_frame_convert (&output_picture, picture->ref_output_frame);
+      } else {
+        schro_frame_convert (&output_picture, picture->frame);
+      }
     }
   } else {
     if (decoder->use_cuda) {
@@ -1908,7 +1916,11 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       SCHRO_ASSERT(0);
 #endif
     } else {
-      schro_frame_convert (&output_picture, picture->ref_output_frame);
+      if (params->num_refs > 0 || picture->is_ref) {
+        schro_frame_convert (&output_picture, picture->ref_output_frame);
+      } else {
+        schro_frame_convert (&output_picture, picture->frame);
+      }
     }
   }
 
