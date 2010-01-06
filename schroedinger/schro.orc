@@ -418,6 +418,24 @@ addw d1, d1, t1
 copyw d1, p1
 
 
+.function orc_splat_s16_2d_4xn
+.n 4
+.flags 2d
+.dest 2 d1 int16_t
+.param 2 p1
+
+copyw d1, p1
+
+
+.function orc_splat_s16_2d_8xn
+.n 8
+.flags 2d
+.dest 2 d1 int16_t
+.param 2 p1
+
+copyw d1, p1
+
+
 .function orc_splat_s16_2d
 .flags 2d
 .dest 2 d1 int16_t
@@ -845,6 +863,25 @@ subw t1, t1, t2
 mullw t1, t1, t1
 convuwl t3, t1
 accl a1, t3
+
+
+.function orc_dequantise_s16_2d_4xn
+.n 4
+.flags 2d
+.dest 2 d1 int16_t
+.source 2 s1 int16_t
+.param 2 p1
+.param 2 p2
+.temp 2 t1
+.temp 2 t2
+
+copyw t1, s1
+signw t2, t1
+absw t1, t1
+mullw t1, t1, p1
+addw t1, t1, p2
+shrsw t1, t1, 2
+mullw d1, t1, t2
 
 
 .function orc_dequantise_s16_2d_8xn

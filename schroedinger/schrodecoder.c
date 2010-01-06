@@ -3193,8 +3193,20 @@ schro_decoder_decode_codeblock_noarith (SchroPicture *picture,
     /* zero codeblock */
     bit = schro_unpack_decode_bit (&ctx->unpack);
     if (bit) {
-      schro_decoder_zero_block (ctx, ctx->xmin, ctx->ymin,
-          ctx->xmax, ctx->ymax);
+      if (ctx->xmax - ctx->xmin == 8) {
+        orc_splat_s16_2d_8xn (
+            SCHRO_FRAME_DATA_GET_PIXEL_S16(ctx->frame_data,
+              ctx->xmin, ctx->ymin),
+            ctx->frame_data->stride, 0, ctx->ymax - ctx->ymin);
+      } else if (ctx->xmax - ctx->xmin == 4) {
+        orc_splat_s16_2d_4xn (
+            SCHRO_FRAME_DATA_GET_PIXEL_S16(ctx->frame_data,
+              ctx->xmin, ctx->ymin),
+            ctx->frame_data->stride, 0, ctx->ymax - ctx->ymin);
+      } else {
+        schro_decoder_zero_block (ctx, ctx->xmin, ctx->ymin,
+            ctx->xmax, ctx->ymax);
+      }
       return;
     }
   }
@@ -3224,6 +3236,16 @@ schro_decoder_decode_codeblock_noarith (SchroPicture *picture,
     schro_unpack_decode_sint_s16 (tmp, &ctx->unpack,
         n * (ctx->ymax - ctx->ymin));
     orc_dequantise_s16_2d_8xn (
+        SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data, ctx->xmin, ctx->ymin),
+        ctx->frame_data->stride,
+        tmp, n * sizeof(int16_t),
+        ctx->quant_factor, ctx->quant_offset + 2, ctx->ymax - ctx->ymin);
+  } else if (n == 4 && (ctx->ymax - ctx->ymin) <= 9) {
+    int16_t tmp[36];
+
+    schro_unpack_decode_sint_s16 (tmp, &ctx->unpack,
+        n * (ctx->ymax - ctx->ymin));
+    orc_dequantise_s16_2d_4xn (
         SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data, ctx->xmin, ctx->ymin),
         ctx->frame_data->stride,
         tmp, n * sizeof(int16_t),
