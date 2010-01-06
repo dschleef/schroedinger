@@ -3172,6 +3172,7 @@ schro_decoder_decode_codeblock_noarith (SchroPicture *picture,
     SchroPictureSubbandContext *ctx)
 {
   SchroParams *params = &picture->params;
+  int n = ctx->xmax - ctx->xmin;
   int j;
 
   if (ctx->have_zero_flags) {
@@ -3206,12 +3207,14 @@ schro_decoder_decode_codeblock_noarith (SchroPicture *picture,
 
   for(j=ctx->ymin;j<ctx->ymax;j++){
     int16_t *p = SCHRO_FRAME_DATA_GET_LINE(ctx->frame_data,j);
-    int n = ctx->xmax - ctx->xmin;
 
     schro_unpack_decode_sint_s16 (p + ctx->xmin, &ctx->unpack, n);
-    orc_dequantise_s16_ip (p + ctx->xmin, ctx->quant_factor,
-        ctx->quant_offset + 2, n);
   }
+
+  orc_dequantise_s16_ip_2d (
+      SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data, ctx->xmin, ctx->ymin),
+      ctx->frame_data->stride,
+      ctx->quant_factor, ctx->quant_offset + 2, n, ctx->ymax - ctx->ymin);
 }
 
 static void
