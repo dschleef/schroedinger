@@ -363,7 +363,6 @@ init_params (SchroEncoderFrame *frame)
   SchroEncoder *encoder = frame->encoder;
   SchroVideoFormat *video_format = params->video_format;
   int shift;
-  int codeblock_size;
   int i;
 
   params->video_format = &encoder->video_format;
@@ -422,15 +421,7 @@ init_params (SchroEncoderFrame *frame)
   schro_params_calculate_mc_sizes (params);
   schro_params_calculate_iwt_sizes (params);
 
-  codeblock_size = encoder->codeblock_size;
-  if (codeblock_size == 0) {
-    if (params->is_noarith) {
-      codeblock_size = 1;
-    } else {
-      codeblock_size = 2;
-    }
-  }
-  switch (codeblock_size) {
+  switch (encoder->codeblock_size) {
     case 1: /* small (blocks of size 5x5) */
       shift = params->transform_depth;
       params->horiz_codeblocks[0] = MAX(1,(params->iwt_luma_width >> shift) / 5);
