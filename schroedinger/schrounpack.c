@@ -269,24 +269,26 @@ schro_unpack_decode_sint_s16 (int16_t *dest, SchroUnpack *unpack, int n)
 {
   int i;
   int j;
+  const int16_t *table_entry;
 
   while (n > 0) {
     while (unpack->n_bits_in_shift_register < SHIFT) {
       _schro_unpack_shift_in (unpack);
     }
     i = unpack->shift_register >> (32-SHIFT);
-    if (schro_table_unpack_sint[i][1] == 0) {
+    table_entry = schro_table_unpack_sint[i];
+    if (table_entry[1] == 0) {
       dest[0] = schro_unpack_decode_sint_slow (unpack);
       dest++;
       n--;
     } else {
       j = 0;
-      while (n>0 && schro_table_unpack_sint[i][2*j+1] > 0) {
-        dest[j] = schro_table_unpack_sint[i][2*j];
+      while (n>0 && table_entry[2*j+1] > 0) {
+        dest[j] = table_entry[2*j];
         j++;
         n--;
       }
-      _schro_unpack_shift_out (unpack, schro_table_unpack_sint[i][2*j-1]);
+      _schro_unpack_shift_out (unpack, table_entry[2*j-1]);
       dest += j;
     }
   }
