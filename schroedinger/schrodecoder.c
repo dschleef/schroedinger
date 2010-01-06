@@ -3292,10 +3292,27 @@ schro_decoder_decode_subband (SchroPicture *picture,
   schro_decoder_setup_codeblocks (picture, ctx);
 
   for(y=0;y<ctx->vert_codeblocks;y++){
+    int xmin;
+    int acc;
+    int codeblock_width;
+    int inc;
+
     ctx->ymin = (ctx->frame_data->height*y)/ctx->vert_codeblocks;
     ctx->ymax = (ctx->frame_data->height*(y+1))/ctx->vert_codeblocks;
 
+    xmin = 0;
+    codeblock_width = ctx->frame_data->width/ctx->horiz_codeblocks;
+    inc = ctx->frame_data->width - (ctx->horiz_codeblocks * codeblock_width);
+    acc = 0;
     for(x=0;x<ctx->horiz_codeblocks;x++){
+      ctx->xmin = xmin;
+      xmin += codeblock_width;
+      acc += inc;
+      if (acc >= ctx->horiz_codeblocks) {
+        acc -= ctx->horiz_codeblocks;
+        xmin++;
+      }
+      ctx->xmax = xmin;
 
       ctx->xmin = (ctx->frame_data->width*x)/ctx->horiz_codeblocks;
       ctx->xmax = (ctx->frame_data->width*(x+1))/ctx->horiz_codeblocks;
