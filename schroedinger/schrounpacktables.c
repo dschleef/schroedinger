@@ -1,7 +1,7 @@
 
 #include <schroedinger/schrotables.h>
 
-const int schro_table_unpack_sint[256][16] = {
+const int16_t schro_table_unpack_sint[256][16] = {
   /*   0 */ { },
   /*   1 */ { },
   /*   2 */ { 7, 8, },
