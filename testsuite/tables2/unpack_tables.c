@@ -23,7 +23,7 @@ int generate_table (void)
   printf("#include <schroedinger/schrotables.h>\n");
   printf("\n");
 
-  printf("const int schro_table_unpack_sint[%d][%d] = {\n", SIZE, 1+2*SHIFT);
+  printf("const int schro_table_unpack_sint[%d][%d] = {\n", SIZE, 2*SHIFT);
   for(i=0;i<SIZE;i++){
     data[0] = (i<<(16-SHIFT))>>8;
     data[1] = (i<<(16-SHIFT))&0xff;
@@ -44,7 +44,7 @@ int generate_table (void)
       j++;
       x = schro_unpack_decode_sint (&unpack);
     }
-    printf("%d, ", j);
+    if (j == SHIFT) j--;
     for(k=0;k<j;k++){
       printf("%d, %d, ", array[k*2], array[k*2+1]);
     }
