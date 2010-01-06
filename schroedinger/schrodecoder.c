@@ -3205,18 +3205,24 @@ schro_decoder_decode_codeblock_noarith (SchroPicture *picture,
     ctx->quant_offset = schro_table_offset_1_2[ctx->quant_index];
   }
 
-  for(j=ctx->ymin;j<ctx->ymax;j++){
-    int16_t *p = SCHRO_FRAME_DATA_GET_LINE(ctx->frame_data,j);
 
-    schro_unpack_decode_sint_s16 (p + ctx->xmin, &ctx->unpack, n);
-  }
+  if (n == 8 && (ctx->ymax - ctx->ymin) <= 9) {
+    int16_t tmp[72];
 
-  if (n == 8) {
-    orc_dequantise_s16_ip_2d_8xn (
+    schro_unpack_decode_sint_s16 (tmp, &ctx->unpack,
+        n * (ctx->ymax - ctx->ymin));
+    orc_dequantise_s16_2d_8xn (
         SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data, ctx->xmin, ctx->ymin),
         ctx->frame_data->stride,
+        tmp, n * sizeof(int16_t),
         ctx->quant_factor, ctx->quant_offset + 2, ctx->ymax - ctx->ymin);
   } else {
+    for(j=ctx->ymin;j<ctx->ymax;j++){
+      int16_t *p = SCHRO_FRAME_DATA_GET_LINE(ctx->frame_data,j);
+
+      schro_unpack_decode_sint_s16 (p + ctx->xmin, &ctx->unpack, n);
+    }
+
     orc_dequantise_s16_ip_2d (
         SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data, ctx->xmin, ctx->ymin),
         ctx->frame_data->stride,
