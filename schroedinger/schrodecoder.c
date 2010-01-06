@@ -2901,18 +2901,6 @@ codeblock_line_decode_generic (SchroPictureSubbandContext *ctx,
   }
 }
 
-static void
-codeblock_line_decode_noarith (SchroPictureSubbandContext *ctx,
-    int16_t *line)
-{
-  int n = ctx->xmax - ctx->xmin;
-
-  line += ctx->xmin;
-
-  schro_unpack_decode_sint_s16 (line, &ctx->unpack, n);
-  orc_dequantise_s16_ip (line, ctx->quant_factor, ctx->quant_offset + 2, n);
-}
-
 #if 0
 static void
 codeblock_line_decode_deep (SchroPictureSubbandContext *ctx,
@@ -3180,7 +3168,7 @@ schro_decoder_test_quant_offset_compat (SchroPicture *picture,
 }
 
 static void
-schro_decoder_decode_codeblock (SchroPicture *picture,
+schro_decoder_decode_codeblock_noarith (SchroPicture *picture,
     SchroPictureSubbandContext *ctx)
 {
   SchroParams *params = &picture->params;
@@ -3190,11 +3178,7 @@ schro_decoder_decode_codeblock (SchroPicture *picture,
     int bit;
 
     /* zero codeblock */
-    if (params->is_noarith) {
-      bit = schro_unpack_decode_bit (&ctx->unpack);
-    } else {
-      bit = _schro_arith_decode_bit (ctx->arith, SCHRO_CTX_ZERO_CODEBLOCK);
-    }
+    bit = schro_unpack_decode_bit (&ctx->unpack);
     if (bit) {
       schro_decoder_zero_block (ctx, ctx->xmin, ctx->ymin,
           ctx->xmax, ctx->ymax);
@@ -3205,13 +3189,56 @@ schro_decoder_decode_codeblock (SchroPicture *picture,
   schro_decoder_test_quant_offset_compat (picture, ctx);
 
   if (ctx->have_quant_offset) {
-    if (params->is_noarith) {
-      ctx->quant_index += schro_unpack_decode_sint (&ctx->unpack);
-    } else {
-      ctx->quant_index += _schro_arith_decode_sint (ctx->arith,
-          SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
-          SCHRO_CTX_QUANTISER_SIGN);
+    ctx->quant_index += schro_unpack_decode_sint (&ctx->unpack);
+
+    if (ctx->quant_index < 0 || ctx->quant_index > 60) {
+      /* FIXME decode error */
     }
+    ctx->quant_index = CLAMP(ctx->quant_index, 0, 60);
+  }
+
+  ctx->quant_factor = schro_table_quant[ctx->quant_index];
+  if (params->num_refs > 0) {
+    ctx->quant_offset = schro_table_offset_3_8[ctx->quant_index];
+  } else {
+    ctx->quant_offset = schro_table_offset_1_2[ctx->quant_index];
+  }
+
+  for(j=ctx->ymin;j<ctx->ymax;j++){
+    int16_t *p = SCHRO_FRAME_DATA_GET_LINE(ctx->frame_data,j);
+    int n = ctx->xmax - ctx->xmin;
+
+    schro_unpack_decode_sint_s16 (p + ctx->xmin, &ctx->unpack, n);
+    orc_dequantise_s16_ip (p + ctx->xmin, ctx->quant_factor,
+        ctx->quant_offset + 2, n);
+  }
+}
+
+static void
+schro_decoder_decode_codeblock (SchroPicture *picture,
+    SchroPictureSubbandContext *ctx)
+{
+  SchroParams *params = &picture->params;
+  int j;
+
+  if (ctx->have_zero_flags) {
+    int bit;
+
+    /* zero codeblock */
+    bit = _schro_arith_decode_bit (ctx->arith, SCHRO_CTX_ZERO_CODEBLOCK);
+    if (bit) {
+      schro_decoder_zero_block (ctx, ctx->xmin, ctx->ymin,
+          ctx->xmax, ctx->ymax);
+      return;
+    }
+  }
+
+  schro_decoder_test_quant_offset_compat (picture, ctx);
+
+  if (ctx->have_quant_offset) {
+    ctx->quant_index += _schro_arith_decode_sint (ctx->arith,
+        SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
+        SCHRO_CTX_QUANTISER_SIGN);
 
     if (ctx->quant_index < 0 || ctx->quant_index > 60) {
       /* FIXME decode error */
@@ -3241,9 +3268,7 @@ schro_decoder_decode_codeblock (SchroPicture *picture,
     } else {
       prev_line = SCHRO_FRAME_DATA_GET_LINE (ctx->frame_data, (j-1));
     }
-    if (params->is_noarith) {
-      codeblock_line_decode_noarith (ctx, p);
-    } else if (ctx->position >= 4 && j > 0) {
+    if (ctx->position >= 4 && j > 0) {
       if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(ctx->position)) {
         codeblock_line_decode_p_horiz (ctx, p, j, parent_line, prev_line);
       } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(ctx->position)) {
@@ -3314,10 +3339,11 @@ schro_decoder_decode_subband (SchroPicture *picture,
       }
       ctx->xmax = xmin;
 
-      ctx->xmin = (ctx->frame_data->width*x)/ctx->horiz_codeblocks;
-      ctx->xmax = (ctx->frame_data->width*(x+1))/ctx->horiz_codeblocks;
-
-      schro_decoder_decode_codeblock (picture, ctx);
+      if (params->is_noarith) {
+        schro_decoder_decode_codeblock_noarith (picture, ctx);
+      } else {
+        schro_decoder_decode_codeblock (picture, ctx);
+      }
     }
   }
   if (!params->is_noarith) {
