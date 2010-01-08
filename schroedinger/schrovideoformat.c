@@ -46,7 +46,7 @@ schro_video_format_validate (SchroVideoFormat *format)
   }
 
   if (schro_video_format_get_bit_depth (format) != 8) {
-    SCHRO_ERROR("video bit depth != 8");
+    SCHRO_WARNING("video bit depth != 8");
     return 0;
   }
 

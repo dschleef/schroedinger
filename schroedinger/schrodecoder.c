@@ -1884,6 +1884,13 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       if (params->num_refs > 0 || picture->is_ref) {
         schro_frame_convert (&output_picture, picture->ref_output_frame);
       } else {
+        int depth;
+        depth = schro_video_format_get_bit_depth (
+            &picture->decoder_instance->video_format);
+        if (depth > 8) {
+          /* hack to handle 10-bit to 8-bit output */
+          schro_frame_shift_right (picture->frame, depth - 8);
+        }
         schro_frame_convert (&output_picture, picture->frame);
       }
     }
@@ -1919,6 +1926,13 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
       if (params->num_refs > 0 || picture->is_ref) {
         schro_frame_convert (&output_picture, picture->ref_output_frame);
       } else {
+        int depth;
+        depth = schro_video_format_get_bit_depth (
+            &picture->decoder_instance->video_format);
+        if (depth > 8) {
+          /* hack to handle 10-bit to 8-bit output */
+          schro_frame_shift_right (picture->frame, depth - 8);
+        }
         schro_frame_convert (&output_picture, picture->frame);
       }
     }
