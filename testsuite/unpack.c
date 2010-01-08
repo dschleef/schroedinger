@@ -204,6 +204,37 @@ int test3 (void)
   return 1;
 }
 
+int test4 (void)
+{
+  SchroBuffer *buffer = schro_buffer_new_and_alloc (100);
+  SchroPack *pack;
+  SchroUnpack unpack;
+  int i;
+  int16_t x;
+  int ok = 1;
+
+
+  for(i=-1000;i<1000;i++){
+    pack = schro_pack_new ();
+    schro_pack_encode_init (pack, buffer);
+    schro_pack_encode_sint (pack, i);
+    schro_pack_flush(pack);
+    schro_pack_free (pack);
+
+    schro_unpack_init_with_data (&unpack, buffer->data, buffer->length, 1);
+    schro_unpack_decode_sint_s16 (&x, &unpack, 1);
+
+    if (i != x) {
+      printf("%d %d %c\n", i, x, (i==x)?' ':'x');
+      ok = 0;
+    }
+  }
+
+  schro_buffer_unref (buffer);
+
+  return ok;
+}
+
 
 int
 main (int argc, char *argv[])
@@ -224,6 +255,8 @@ main (int argc, char *argv[])
   for(i=0;i<100;i++){
     ok &= test3();
   }
+
+  ok &= test4();
 
   if (ok) exit(0);
   exit(1);
