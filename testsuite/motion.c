@@ -17,6 +17,7 @@ main (int argc, char *argv[])
 {
   SchroFrame *dest;
   SchroFrame *ref;
+  SchroFrame *addframe;
   SchroUpsampledFrame *uref;
   SchroParams params;
   SchroVideoFormat video_format;
@@ -54,6 +55,10 @@ main (int argc, char *argv[])
       video_format.width, video_format.height, 32);
   schro_frame_clear(ref);
 
+  addframe = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_420,
+      video_format.width, video_format.height);
+  schro_frame_clear(addframe);
+
   uref = schro_upsampled_frame_new (ref);
 
   schro_upsampled_frame_upsample (uref);
@@ -82,7 +87,7 @@ main (int argc, char *argv[])
       mv_save = motion->motion_vectors;
       motion->motion_vectors = motion_vectors;
       orc_profile_start(&prof);
-      schro_motion_render (motion, dest);
+      schro_motion_render (motion, dest, addframe, FALSE, NULL);
       orc_profile_stop(&prof);
       motion->motion_vectors = mv_save;
       schro_motion_free (motion);

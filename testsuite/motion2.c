@@ -85,6 +85,7 @@ main (int argc, char *argv[])
   SchroFrame *dest;
   SchroFrame *dest_u8;
   SchroFrame *ref;
+  SchroFrame *addframe;
   SchroUpsampledFrame *uref;
   SchroParams params;
   SchroVideoFormat video_format;
@@ -92,6 +93,9 @@ main (int argc, char *argv[])
   int i,j;
 
   schro_init();
+
+  memset (&video_format, 0, sizeof(video_format));
+  memset (&params, 0, sizeof(params));
 
   video_format.width = 720;
   video_format.height = 480;
@@ -108,9 +112,11 @@ main (int argc, char *argv[])
 
   dest = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_420,
       video_format.width, video_format.height);
-  ref = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420,
-      video_format.width, video_format.height);
+  ref = schro_frame_new_and_alloc_extended (NULL, SCHRO_FRAME_FORMAT_U8_420,
+      video_format.width, video_format.height, 32);
   dest_u8 = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_U8_420,
+      video_format.width, video_format.height);
+  addframe = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_420,
       video_format.width, video_format.height);
 
   schro_frame_clear(dest);
@@ -156,7 +162,7 @@ main (int argc, char *argv[])
     motion.src2 = NULL;
     motion.motion_vectors = motion_vectors;
     motion.params = &params;
-    schro_motion_render (&motion, dest);
+    schro_motion_render (&motion, dest, addframe, FALSE, NULL);
   }
 
   schro_frame_convert (dest_u8, dest);
