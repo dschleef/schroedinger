@@ -1799,7 +1799,7 @@ calculate_sc_score (SchroEncoder* encoder)
     int mad_max = 0, mad_min = BIG_INT;
     frame = encoder->frame_queue->elements[i].data;
     if (!frame->need_mad) continue;
-    if (frame->sc_mad_available) continue;
+    if (frame->have_scene_change_score) continue;
     if (0>frame->sc_threshold) {
       memset (mad_array, -1, sizeof(mad_array));
       mad_array[SC_THRESHOLD_RANGE] = frame->sc_mad;
@@ -1820,11 +1820,11 @@ calculate_sc_score (SchroEncoder* encoder)
   for (i=SC_THRESHOLD_RANGE+3; encoder->frame_queue->n - SC_THRESHOLD_RANGE - 3>i; ++i) {
     frame = encoder->frame_queue->elements[i].data;
     if (!frame->need_mad) continue;
-    if (frame->sc_mad_available) continue;
+    if (frame->have_scene_change_score) continue;
     f = encoder->frame_queue->elements[i-3].data;
     f2 = encoder->frame_queue->elements[i+3].data;
-    frame->sc_mad_score = frame->sc_mad - (f->sc_threshold + f2->sc_threshold) / 2;
-    frame->sc_mad_available = 1;
+    frame->scene_change_score = frame->sc_mad - (f->sc_threshold + f2->sc_threshold) / 2;
+    frame->have_scene_change_score = 1;
   }
   /* finally we update the state of the processed items */
   if (encoder->queue_depth > encoder->frame_queue->n
@@ -3834,7 +3834,7 @@ schro_encoder_frame_new (SchroEncoder *encoder)
 
   encoder_frame->sc_mad = -1;
   encoder_frame->sc_threshold = -1.;
-  encoder_frame->sc_mad_score = -1.;
+  encoder_frame->scene_change_score = -1.;
 
   frame_format = schro_params_get_frame_format (16,
       encoder->video_format.chroma_format);

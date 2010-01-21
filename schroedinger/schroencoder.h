@@ -128,8 +128,6 @@ struct _SchroEncoderFrame {
 
   int sc_mad; /* shot change mean absolute difference */
   double sc_threshold; /* shot change threshold */
-  double sc_mad_score;
-  int sc_mad_available;
 
   SchroBuffer *sequence_header_buffer;
   SchroList *inserted_buffers;

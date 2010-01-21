@@ -86,6 +86,23 @@ schro_engine_code_picture (SchroEncoderFrame *frame,
   }
 }
 
+static int
+subgroup_ready (SchroQueue* queue, int index, int subgroup_length
+    , SchroEncoderFrameStateEnum gop_state)
+{
+  SCHRO_ASSERT(queue && queue->n > index && !(0>index));
+  size_t i = index;
+  SchroEncoderFrame* f;
+  for (;index+subgroup_length>i; ++i) {
+    f = queue->elements[i].data;
+    SCHRO_ASSERT(!f->stages[gop_state].is_done);
+    if (!f->stages[gop_state-1].is_done) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
 /**
  * schro_engine_code_intra_bailout_picture:
  * @frame:
@@ -678,14 +695,19 @@ schro_encoder_handle_gop_tworef (SchroEncoder *encoder, int i)
       break;
     }
 
-    schro_engine_get_scene_change_score (encoder, i+j);
-
+    if (encoder->enable_scene_change_detection) {
+      if (!subgroup_ready(encoder->frame_queue, i, gop_length, SCHRO_ENCODER_FRAME_STAGE_HAVE_GOP))
+        return; /*not all frames in subgroup have scene change score calculated */
+    } else {
+      schro_engine_get_scene_change_score (encoder, i+j);
+    }
     schro_dump (SCHRO_DUMP_SCENE_CHANGE, "%d %g %g\n",
         f->frame_number, f->scene_change_score,
         f->average_luma);
     SCHRO_DEBUG("scene change score %g", f->scene_change_score);
 
     if (f->scene_change_score > encoder->magic_scene_change_threshold) {
+      SCHRO_DEBUG("Scene change detected: score %g for picture %d", f->scene_change_score, f->frame_number);
       if (j == 0) {
         /* If the first picture of the proposed subgroup is first
          * picture of a new shot, we want to encode a sequence header
