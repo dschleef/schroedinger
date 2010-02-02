@@ -726,11 +726,6 @@ schro_encoder_choose_quantisers_rdo_lambda (SchroEncoderFrame *frame)
 
   SCHRO_ASSERT(frame->have_estimate_tables);
 
-  frame->frame_lambda = frame->encoder->magic_lambda;
-  if (!frame->is_ref) {
-    frame->frame_lambda *= frame->encoder->magic_nonref_lambda_scale;
-  }
-
   schro_encoder_lambda_to_entropy (frame, frame->frame_lambda);
 }
 
