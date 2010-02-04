@@ -213,6 +213,7 @@ struct _SchroEncoderFrame {
   double mc_error;
   double mean_squared_error_luma;
   double mean_squared_error_chroma;
+  double mssim;
 
   double estimated_arith_context_ratio;
 
@@ -361,6 +362,8 @@ struct _SchroEncoder {
   double average_arith_context_ratios_intra[3][SCHRO_LIMIT_SUBBANDS];
   double average_arith_context_ratios_inter[3][SCHRO_LIMIT_SUBBANDS];
 
+  double frame_stats[21];
+
   /* engine specific stuff */
 
   int bits_per_picture;
@@ -458,6 +461,9 @@ const SchroEncoderSetting *schro_encoder_get_setting_info (int i);
 void schro_encoder_setting_set_double (SchroEncoder *encoder, const char *name,
     double d);
 double schro_encoder_setting_get_double (SchroEncoder *encoder, const char *name);
+
+int schro_encoder_get_frame_stats_size (SchroEncoder *encoder);
+void schro_encoder_get_frame_stats (SchroEncoder *encoder, double *dest, int n);
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 

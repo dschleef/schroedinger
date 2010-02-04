@@ -1110,6 +1110,18 @@ schro_encoder_frame_assemble_buffer (SchroEncoderFrame *frame,
   offset += buf->length;
 }
 
+int
+schro_encoder_get_frame_stats_size (SchroEncoder *encoder)
+{
+  return 21;
+}
+
+void
+schro_encoder_get_frame_stats (SchroEncoder *encoder, double *dest, int n)
+{
+  memcpy (dest, encoder->frame_stats, sizeof(double)*MIN(n,21));
+}
+
 /**
  * schro_encoder_pull_full:
  * @encoder: an encoder object
@@ -1212,6 +1224,27 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
             frame->dcblock_ratio,
             frame->hist_slope);
 
+        encoder->frame_stats[0] = frame->frame_number;
+        encoder->frame_stats[1] = frame->num_refs;
+        encoder->frame_stats[2] = frame->is_ref;
+        encoder->frame_stats[3] = frame->allocated_mc_bits;
+        encoder->frame_stats[4] = frame->allocated_residual_bits;
+        encoder->frame_stats[5] = frame->picture_weight;
+        encoder->frame_stats[6] = frame->estimated_mc_bits;
+        encoder->frame_stats[7] = frame->estimated_residual_bits;
+        encoder->frame_stats[8] = frame->actual_mc_bits;
+        encoder->frame_stats[8] = frame->actual_residual_bits;
+        encoder->frame_stats[10] = frame->scene_change_score;
+        encoder->frame_stats[11] = encoder->buffer_level;
+        encoder->frame_stats[12] = frame->frame_lambda;
+        encoder->frame_stats[13] = frame->mc_error;
+        encoder->frame_stats[14] = frame->mean_squared_error_luma;
+        encoder->frame_stats[15] = frame->mean_squared_error_chroma;
+        encoder->frame_stats[16] = elapsed_time;
+        encoder->frame_stats[17] = frame->badblock_ratio;
+        encoder->frame_stats[18] = frame->dcblock_ratio;
+        encoder->frame_stats[19] = frame->hist_slope;
+        encoder->frame_stats[20] = frame->mssim;
 
         schro_encoder_shift_frame_queue (encoder);
       }
@@ -2459,11 +2492,9 @@ schro_encoder_postanalyse_picture (SchroAsyncStage *stage)
   }
 
   if (frame->encoder->enable_ssim) {
-    double mssim;
-
-    mssim = schro_frame_ssim (frame->filtered_frame,
+    frame->mssim = schro_frame_ssim (frame->original_frame,
         frame->reconstructed_frame->frames[0]);
-    schro_dump(SCHRO_DUMP_SSIM, "%d %g\n", frame->frame_number, mssim);
+    schro_dump(SCHRO_DUMP_SSIM, "%d %g\n", frame->frame_number, frame->mssim);
   }
 }
 

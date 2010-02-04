@@ -59,7 +59,7 @@ schro_frame_multiply (SchroFrame *a, SchroFrame *b)
   schro_frame_multiply_s16 (a, b);
 }
 
-#define SSIM_SIGMA 5.0
+#define SSIM_SIGMA 1.5
 
 double
 schro_frame_ssim (SchroFrame *a, SchroFrame *b)
@@ -76,10 +76,10 @@ schro_frame_ssim (SchroFrame *a, SchroFrame *b)
   int i,j;
 
   a_lowpass = schro_frame_dup (a);
-  schro_frame_filter_lowpass2 (a_lowpass, SSIM_SIGMA);
+  schro_frame_filter_lowpass2 (a_lowpass, (a->width/256.0) * SSIM_SIGMA);
 
   b_lowpass = schro_frame_dup (b);
-  schro_frame_filter_lowpass2 (b_lowpass, SSIM_SIGMA);
+  schro_frame_filter_lowpass2 (b_lowpass, (b->width/256.0) * SSIM_SIGMA);
 
   a_hipass = schro_frame_dup16 (a);
   schro_frame_subtract (a_hipass, a_lowpass);
@@ -92,9 +92,9 @@ schro_frame_ssim (SchroFrame *a, SchroFrame *b)
   schro_frame_multiply (a_hipass, a_hipass);
   schro_frame_multiply (b_hipass, b_hipass);
 
-  schro_frame_filter_lowpass2 (a_hipass, SSIM_SIGMA);
-  schro_frame_filter_lowpass2 (b_hipass, SSIM_SIGMA);
-  schro_frame_filter_lowpass2 (ab, SSIM_SIGMA);
+  schro_frame_filter_lowpass2 (a_hipass, (a->width/256.0) * SSIM_SIGMA);
+  schro_frame_filter_lowpass2 (b_hipass, (a->width/256.0) * SSIM_SIGMA);
+  schro_frame_filter_lowpass2 (ab, (a->width/256.0) * SSIM_SIGMA);
 
   ssim_sum = 0;
   for(j=0;j<a->height;j++){
