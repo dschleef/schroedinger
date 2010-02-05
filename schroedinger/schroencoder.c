@@ -64,7 +64,17 @@ schro_encoder_set_frame_lambda (SchroEncoderFrame *frame)
       }
       break;
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_QUALITY:
-      frame->frame_lambda = exp(((frame->encoder->quality-5)/0.7 - 7.0)*M_LN10*0.5);
+      {
+        double q = frame->encoder->quality;
+
+        q += -3.5 * (frame->encoder->magic_error_power - 4);
+        q *= 1.0 + (frame->encoder->magic_error_power - 4)*0.2;
+        if (frame->encoder->magic_error_power < 2.5) {
+          q += 2;
+        }
+
+        frame->frame_lambda = exp(((q-5)/0.7 - 7.0)*M_LN10*0.5);
+      }
       frame->frame_me_lambda = frame->encoder->magic_mc_lambda;
       break;
     default:
