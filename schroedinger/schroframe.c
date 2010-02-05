@@ -17,6 +17,8 @@
 #include <string.h>
 
 
+static SchroMutex *frame_mutex;
+
 /**
  * schro_frame_new:
  *
@@ -30,6 +32,10 @@ SchroFrame *
 schro_frame_new (void)
 {
   SchroFrame *frame;
+
+  if (frame_mutex == NULL) {
+    frame_mutex = schro_mutex_new();
+  }
 
   frame = schro_malloc0 (sizeof(*frame));
   frame->refcount = 1;
@@ -537,7 +543,9 @@ SchroFrame *
 schro_frame_ref (SchroFrame *frame)
 {
   SCHRO_ASSERT(frame && frame->refcount > 0);
+  schro_mutex_lock (frame_mutex);
   frame->refcount++;
+  schro_mutex_unlock (frame_mutex);
   return frame;
 }
 
@@ -559,8 +567,10 @@ schro_frame_unref (SchroFrame *frame)
 
   SCHRO_ASSERT(frame->refcount > 0);
 
+  schro_mutex_lock (frame_mutex);
   frame->refcount--;
   if (frame->refcount == 0) {
+    schro_mutex_unlock (frame_mutex);
     if (frame->free) {
       frame->free (frame, frame->priv);
     }
@@ -591,6 +601,8 @@ schro_frame_unref (SchroFrame *frame)
     }
 
      schro_free(frame);
+  } else {
+    schro_mutex_unlock (frame_mutex);
   }
 }
 
