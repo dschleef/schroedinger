@@ -98,6 +98,8 @@ schro_encoder_set_frame_lambda (SchroEncoderFrame *frame)
       }
       frame->encoder->intra_cbr_lambda = frame->frame_lambda;
       SCHRO_DEBUG("Using filtered CBR value for intra lambda %g (picture %d)", frame->frame_lambda,frame->frame_number);
+    } else {
+      frame->frame_lambda *= frame->encoder->magic_I_lambda_scale;
     }
   }
 }
@@ -4117,6 +4119,7 @@ struct SchroEncoderSettings {
   DOUB(magic_chroma_lambda_scale, 0.0, 1000.0, 0.1),
   DOUB(magic_nonref_lambda_scale, 0.0, 1000.0, 0.01),
   DOUB(magic_me_lambda_scale, 0.0, 100.0, 32.0),
+  DOUB(magic_I_lambda_scale, 0.0, 100.0, 1.0),
   DOUB(magic_P_lambda_scale, 0.0, 10.0, 0.25),
   DOUB(magic_B_lambda_scale, 0.0, 10.0, 0.001),
   DOUB(magic_allocation_scale, 0.0, 1000.0, 1.1),

@@ -294,6 +294,7 @@ struct _SchroEncoder {
   double magic_subband0_lambda_scale;
   double magic_chroma_lambda_scale;
   double magic_nonref_lambda_scale;
+  double magic_I_lambda_scale;
   double magic_P_lambda_scale;
   double magic_B_lambda_scale;
   double magic_me_lambda_scale;
