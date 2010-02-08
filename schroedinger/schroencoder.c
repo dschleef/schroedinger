@@ -4138,6 +4138,7 @@ struct SchroEncoderSettings {
   DOUB(magic_badblock_multiplier_ref, 0.0, 1000.0, 8.0),
   DOUB(magic_block_search_threshold, 0.0, 1000.0, 15.0),
   DOUB(magic_scan_distance, 0.0, 1000.0, 4.0),
+  DOUB(magic_diagonal_lambda_scale, 0.0, 1000.0, 1.0),
 };
 
 int

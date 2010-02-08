@@ -863,6 +863,7 @@ schro_encoder_lambda_to_entropy (SchroEncoderFrame *frame, double frame_lambda)
       double lambda;
       double weight;
       int quant_index;
+      int position = schro_subband_get_position (i);
 
       lambda = frame_lambda;
 
@@ -871,6 +872,9 @@ schro_encoder_lambda_to_entropy (SchroEncoderFrame *frame, double frame_lambda)
       }
       if (component > 0) {
         lambda *= frame->encoder->magic_chroma_lambda_scale;
+      }
+      if (SCHRO_SUBBAND_IS_DIAGONALLY_ORIENTED(position)) {
+        lambda *= frame->encoder->magic_diagonal_lambda_scale;
       }
 
       weight = table[i];

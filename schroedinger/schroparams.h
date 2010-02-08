@@ -75,6 +75,7 @@ struct _SchroParams {
 
 #define SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED(position) (((position)&3) == 2)
 #define SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED(position) (((position)&3) == 1)
+#define SCHRO_SUBBAND_IS_DIAGONALLY_ORIENTED(position) (((position)&3) == 3)
 #define SCHRO_SUBBAND_SHIFT(position) ((position)>>2)
 
 extern const int schro_tables_lowdelay_quants[7][4][9];
