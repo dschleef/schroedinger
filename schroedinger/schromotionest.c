@@ -24,9 +24,7 @@ void schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame
 SchroMotionEst *
 schro_motionest_new (SchroEncoderFrame *frame)
 {
-  SchroParams *params = &frame->params;
   SchroMotionEst *me;
-  int n;
 
   me = schro_malloc0 (sizeof(SchroMotionEst));
 
@@ -47,9 +45,6 @@ schro_motionest_new (SchroEncoderFrame *frame)
     me->downsampled_src1[4] = frame->ref_frame[1]->downsampled_frames[3];
   }
 
-  n = params->x_num_blocks * params->y_num_blocks / 16;
-  me->sblocks = schro_malloc0(sizeof(SchroBlock)*n);
-
   me->scan_distance = frame->encoder->magic_scan_distance;
 
   return me;
@@ -58,21 +53,6 @@ schro_motionest_new (SchroEncoderFrame *frame)
 void
 schro_motionest_free (SchroMotionEst *me)
 {
-#if 0
-  int ref;
-  int i;
-
-  for(ref=0;ref<2;ref++){
-    for(i=0;i<5;i++){
-      if (me->downsampled_mf[ref][i]) {
-        schro_motion_field_free (me->downsampled_mf[ref][i]);
-      }
-    }
-  }
-#endif
-
-  schro_free (me->sblocks);
-
   schro_free (me);
 }
 

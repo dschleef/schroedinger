@@ -41,9 +41,6 @@ struct _SchroMotionEst {
 
   SchroMotion *motion;
 
-  SchroBlock *sblocks;
-
-  //SchroMotionField *downsampled_mf[2][8];
   int scan_distance;
 
   int badblocks;
