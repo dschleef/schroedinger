@@ -381,6 +381,8 @@ init_params (SchroEncoderFrame *frame)
   SchroVideoFormat *video_format = params->video_format;
   int shift;
   int i;
+  int size;
+  int overlap;
 
   params->video_format = &encoder->video_format;
 
@@ -393,19 +395,22 @@ init_params (SchroEncoderFrame *frame)
 
   params->transform_depth = encoder->transform_depth;
 
-  switch (encoder->motion_block_size) {
-    case 0:
+  size = encoder->motion_block_size;
+  if (size == 0) {
+    if (encoder->quality < 5) {
+      size = 3;
+    } else {
       if (video_format->width * video_format->height >= 1920*1080) {
-        params->xbsep_luma = 16;
-        params->ybsep_luma = 16;
+        size = 3;
       } else if (video_format->width * video_format->height >= 960 * 540) {
-        params->xbsep_luma = 12;
-        params->ybsep_luma = 12;
+        size = 2;
       } else {
-        params->xbsep_luma = 8;
-        params->ybsep_luma = 8;
+        size = 1;
       }
-      break;
+    }
+  }
+  switch (size) {
+    default:
     case 1:
       params->xbsep_luma = 8;
       params->ybsep_luma = 8;
@@ -419,12 +424,20 @@ init_params (SchroEncoderFrame *frame)
       params->ybsep_luma = 16;
       break;
   }
-  switch (encoder->motion_block_overlap) {
+  overlap = encoder->motion_block_overlap;
+  if (overlap == 0) {
+    if (encoder->quality > 5) {
+      overlap = 3;
+    } else {
+      overlap = 2;
+    }
+  }
+  switch (overlap) {
     case 1:
       params->xblen_luma = params->xbsep_luma;
       params->yblen_luma = params->ybsep_luma;
       break;
-    case 0:
+    default:
     case 2:
       params->xblen_luma = (params->xbsep_luma * 3 / 2) & (~3);
       params->yblen_luma = (params->ybsep_luma * 3 / 2) & (~3);
