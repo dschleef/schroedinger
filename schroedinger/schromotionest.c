@@ -17,10 +17,6 @@
   ((mf)->motion_vectors + (y)*(mf)->x_num_blocks + (x))
 
 void schro_encoder_bigblock_estimation (SchroMotionEst *me);
-void schro_motionest_rough_scan_nohint (SchroMotionEst *me,
-    int shift, int ref, int distance);
-void schro_motionest_rough_scan_hint (SchroMotionEst *me,
-    int shift, int ref, int distance);
 static SchroFrame * get_downsampled(SchroEncoderFrame *frame, int i);
 
 void schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame);
@@ -123,14 +119,6 @@ schro_encoder_motion_predict_rough (SchroEncoderFrame *frame)
   if (encoder->enable_bigblock_estimation) {
     frame->me->motion = frame->motion;
   }
-
-#if 0
-  for(ref=0;ref<params->num_refs;ref++){
-    schro_motionest_rough_scan_nohint (frame->me, 3, ref, 12);
-    schro_motionest_rough_scan_hint (frame->me, 2, ref, 2);
-    schro_motionest_rough_scan_hint (frame->me, 1, ref, 2);
-  }
-#endif
 
 }
 
