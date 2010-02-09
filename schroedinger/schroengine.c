@@ -397,16 +397,12 @@ init_params (SchroEncoderFrame *frame)
 
   size = encoder->motion_block_size;
   if (size == 0) {
-    if (encoder->quality < 5) {
+    if (video_format->width * video_format->height >= 1920*1080) {
       size = 3;
+    } else if (video_format->width * video_format->height >= 960 * 540) {
+      size = 2;
     } else {
-      if (video_format->width * video_format->height >= 1920*1080) {
-        size = 3;
-      } else if (video_format->width * video_format->height >= 960 * 540) {
-        size = 2;
-      } else {
-        size = 1;
-      }
+      size = 1;
     }
   }
   switch (size) {
