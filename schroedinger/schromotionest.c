@@ -1633,10 +1633,15 @@ schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
       if (   !(orig_frame->width > (i+ii) * xblen)
           || !(orig_frame->height > (j+jj) * yblen) ) {
         /* Note: blocks outside frame are encoded pred_mode 1, zero MVs */
+        int pred_x, pred_y;
         *mv = best_mv;
+        mv->pred_mode = schro_motion_get_mode_prediction (motion, i+ii, j+jj);
+        if (mv->pred_mode != 1 && mv->pred_mode != 2) mv->pred_mode = 1;
+        schro_motion_vector_prediction (motion, i+ii, j+jj, &pred_x, &pred_y, 1);
+        mv->u.vec.dx[mv->pred_mode-1] = pred_x;
+        mv->u.vec.dy[mv->pred_mode-1] = pred_y;
         block->mv[jj][ii] = best_mv;
-        total_entropy += schro_motion_block_estimate_entropy (motion
-            , i+ii, j+jj);
+        total_entropy += 2;
         continue;
       }
       mv->metric = INT_MAX;
@@ -2027,12 +2032,16 @@ schro_do_split1 (SchroMe me, int i, int j, SchroBlock* block
           || !(orig_frame->height > (j+jj) * params->ybsep_luma) ) {
         /* the block lies outside the frame, set both block and motion
          * to a zero mv, split 1, forward predicted */
+        int pred_x, pred_y;
         *mv = best_mv;
+        mv->pred_mode = schro_motion_get_mode_prediction (motion, i+ii, j+jj);
+        if (mv->pred_mode != 1 && mv->pred_mode != 2) mv->pred_mode = 1;
+        schro_motion_vector_prediction (motion, i+ii, j+jj, &pred_x, &pred_y, 1);
+        mv->u.vec.dx[mv->pred_mode-1] = pred_x;
+        mv->u.vec.dy[mv->pred_mode-1] = pred_y;
         block->mv[jj][ii] = *mv;
-        block->valid = FALSE;
         set_split1_motion (motion, i+ii, j+jj);
-        total_entropy += schro_motion_block_estimate_entropy (motion
-            , i+ii, j+jj);
+        total_entropy += 2;
         mf = schro_me_split1_mf (me, 0);
         SCHRO_ASSERT (mf);
         mv_split1 = mf->motion_vectors + (j+jj)*params->x_num_blocks + i + ii;
