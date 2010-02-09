@@ -3346,7 +3346,7 @@ schro_frame_data_quantise_dc_predict (SchroFrameData *quant_fd,
   }
 }
 
-static int
+int
 schro_encoder_frame_get_quant_index (SchroEncoderFrame *frame, int component,
     int index, int x, int y)
 {
@@ -3383,15 +3383,24 @@ schro_encoder_frame_set_quant_index (SchroEncoderFrame *frame, int component,
 
   SCHRO_ASSERT(horiz_codeblocks > 0);
   SCHRO_ASSERT(vert_codeblocks > 0);
+  SCHRO_ASSERT (x < horiz_codeblocks);
+  SCHRO_ASSERT (y < vert_codeblocks);
 
   if (frame->quant_indices[component][index] == NULL) {
     frame->quant_indices[component][index] =
       schro_malloc (horiz_codeblocks * vert_codeblocks * sizeof(int));
+    x = -1;
+    y = -1;
   }
 
   codeblock_quants = frame->quant_indices[component][index];
-  for(i=0;i<horiz_codeblocks*vert_codeblocks;i++){
-    codeblock_quants[i] = quant_index;
+
+  if (x < 0 || y < 0) {
+    for(i=0;i<horiz_codeblocks*vert_codeblocks;i++){
+      codeblock_quants[i] = quant_index;
+    }
+  } else {
+    codeblock_quants[x+y*horiz_codeblocks] = quant_index;
   }
 }
 

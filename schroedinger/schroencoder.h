@@ -516,6 +516,8 @@ void schro_encoder_calculate_test_info (SchroEncoderFrame *frame);
 
 void schro_encoder_init_error_tables (SchroEncoder *encoder);
 
+int schro_encoder_frame_get_quant_index (SchroEncoderFrame *frame, int component,
+    int index, int x, int y);
 void schro_encoder_frame_set_quant_index (SchroEncoderFrame *frame, int component,
     int index, int x, int y, int quant_index);
 
