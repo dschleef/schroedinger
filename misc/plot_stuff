@@ -451,7 +451,7 @@ def plot_scs_mse():
 def plot_scs():
 	plot = Plot(800,600);
 	data_x = Numeric.transpose(tpts[0]);
-	data_y = Numeric.transpose(tpts[14]);
+	data_y = Numeric.transpose(tpts[10]);
 	mx = max(data_x);
 	my = max(data_y);
 	plot.set_x_range(0, mx);
