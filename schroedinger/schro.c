@@ -9,6 +9,7 @@
 #include <schroedinger/opengl/schroopengl.h>
 
 extern int _schro_decode_prediction_only;
+extern int _schro_telemetry;
 extern int _schro_dump_enable;
 extern int _schro_motion_ref;
 
@@ -44,6 +45,11 @@ schro_init(void)
   s = getenv ("SCHRO_DECODE_PREDICTION_ONLY");
   if (s && s[0]) {
     _schro_decode_prediction_only = TRUE;
+  }
+
+  s = getenv ("SCHRO_TELEMETRY");
+  if (s && s[0]) {
+    _schro_telemetry = TRUE;
   }
 
   s = getenv ("SCHRO_MOTION_REF");

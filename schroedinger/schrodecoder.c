@@ -69,6 +69,7 @@ enum {
 
 
 int _schro_decode_prediction_only;
+int _schro_telemetry;
 
 static void schro_decoder_x_decode_motion (SchroAsyncStage *stage);
 static void schro_decoder_x_render_motion (SchroAsyncStage *stage);
@@ -96,6 +97,8 @@ static int schro_decoder_frame_is_twofield (SchroDecoderInstance *instance, Schr
 
 static void schro_picturequeue_rob_insert (SchroQueue *queue, SchroPicture *picture, unsigned windowsize);
 static int schro_picture_n_before_m (SchroPictureNumber n, SchroPictureNumber m);
+
+static void schro_decoder_telemetry (SchroPicture *picture, SchroFrame *output_picture);
 
 /* API */
 
@@ -1935,6 +1938,9 @@ schro_decoder_x_combine (SchroAsyncStage *stage)
         }
         schro_frame_convert (&output_picture, picture->frame);
       }
+      if (_schro_telemetry) {
+        schro_decoder_telemetry (picture, &output_picture);
+      }
     }
   }
 
@@ -2847,6 +2853,12 @@ schro_decoder_decode_transform_data (SchroPicture *picture)
   SchroPictureSubbandContext context = { 0 }, *ctx = &context;
   int skip_subbands;
 
+  if (_schro_decode_prediction_only &&
+      params->num_refs > 0 && !picture->is_ref) {
+    schro_frame_clear (picture->frame);
+    return;
+  }
+
   /* FIXME some day, hook this up into automatic degraded decoding */
   skip_subbands = 0;
 
@@ -3595,3 +3607,120 @@ schro_decoder_frame_is_twofield (SchroDecoderInstance *instance, SchroFrame *fra
 
   return TRUE;
 }
+
+static void
+schro_frame_data_draw_box (SchroFrameData *fd,
+    int x, int y, int size_x, int size_y, SchroMotionVector *mv);
+
+static void
+schro_decoder_telemetry (SchroPicture *picture, SchroFrame *output_picture)
+{
+  int i,j;
+  SchroFrameData *fd = output_picture->components + 0;
+  SchroParams *params = &picture->params;
+  SchroMotionVector *mv;
+  int skip;
+  int ii,jj;
+
+  for(j=0;j<params->y_num_blocks;j+=4) {
+    for(i=0;i<params->x_num_blocks;i+=4) {
+      mv = &picture->motion->motion_vectors[j*params->x_num_blocks + i];
+      skip = 4>>mv->split;
+
+      for(jj=0;jj<4;jj+=skip){
+        for(ii=0;ii<4;ii+=skip){
+          schro_frame_data_draw_box (fd,
+              (i+ii) * params->xbsep_luma,
+              (j+jj) * params->ybsep_luma,
+              skip * params->xbsep_luma,
+              skip * params->ybsep_luma,
+              &picture->motion->motion_vectors[(j+jj)*params->x_num_blocks + (i+ii)]);
+        }
+      }
+    }
+  }
+
+  if (picture->params.num_refs > 0) {
+    uint8_t *data;
+    int n1;
+    int n2;
+
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, 0);
+    n1 = picture->reference1 - picture->picture_number;
+    if (picture->params.num_refs > 1) {
+      n2 = picture->reference2 - picture->picture_number;
+    } else {
+      n2 = 0;
+    }
+    if (n2 < n1) { int x = n2; n2 = n1; n1 = x; }
+
+    for(j=-4;j<-2;j++){
+      if (fd->width/2 + j >= 0) data[fd->width/2 + j] = 255;
+    }
+    if (n2 < 0) {
+      for(i=n1;i<n2-1;i++) {
+        for(j=i*16;j<i*16+10;j++){
+          if (fd->width/2 + j >= 0) data[fd->width/2 + j] = 255;
+        }
+      }
+      for(i=n2;i<0;i++) {
+        for(j=i*16;j<i*16+10;j++){
+          if (fd->width/2 + j >= 0) data[fd->width/2 + j] = 255;
+        }
+      }
+    } else {
+      for(i=n1;i<0;i++) {
+        for(j=i*16;j<i*16+10;j++){
+          if (fd->width/2 + j >= 0) data[fd->width/2 + j] = 255;
+        }
+      }
+      for(i=0;i<n2;i++) {
+        for(j=i*16;j<i*16+10;j++){
+          if (fd->width/2 + j >= 0) data[fd->width/2 + j] = 255;
+        }
+      }
+    }
+
+  }
+}
+
+static void
+schro_frame_data_draw_box (SchroFrameData *fd,
+    int x, int y, int size_x, int size_y, SchroMotionVector *mv)
+{
+  int i;
+  uint8_t *data;
+
+  if (y < fd->height) {
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, y);
+    for(i=x;i<x+size_x;i++){
+      data[i] = 0;
+    }
+  }
+  for(i=y;i<y+size_y && i<fd->height;i++) {
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, i);
+    if (x < fd->width) data[x] = 0;
+  }
+  if (y+1 < fd->height) {
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, y+1);
+    if (mv->pred_mode & 1) {
+      if (x+size_x/2-1 < fd->width) data[x+size_x/2-1] = 0;
+    }
+    if (mv->pred_mode & 2) {
+      if (x+size_x/2+1 < fd->width) data[x+size_x/2+1] = 0;
+    }
+  }
+
+#if 0
+  if (mv->pred_mode & 1) {
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, y+size_y/2 + mv->u.vec.dy[0]);
+    data[x+size_x/2+mv->u.vec.dx[0]] = 0;
+  }
+  if (mv->pred_mode & 1) {
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, y+size_y/2 + mv->u.vec.dy[1]);
+    data[x+size_x/2+mv->u.vec.dx[1]] = 0;
+  }
+#endif
+
+}
+
