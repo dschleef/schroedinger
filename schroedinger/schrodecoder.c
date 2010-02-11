@@ -3685,6 +3685,9 @@ schro_decoder_telemetry (SchroPicture *picture, SchroFrame *output_picture)
 }
 
 static void
+schro_frame_data_draw_line (SchroFrameData *fd, int x1, int y1, int x2, int y2);
+
+static void
 schro_frame_data_draw_box (SchroFrameData *fd,
     int x, int y, int size_x, int size_y, SchroMotionVector *mv)
 {
@@ -3716,11 +3719,95 @@ schro_frame_data_draw_box (SchroFrameData *fd,
     data = SCHRO_FRAME_DATA_GET_LINE(fd, y+size_y/2 + mv->u.vec.dy[0]);
     data[x+size_x/2+mv->u.vec.dx[0]] = 0;
   }
-  if (mv->pred_mode & 1) {
+  if (mv->pred_mode & 2) {
     data = SCHRO_FRAME_DATA_GET_LINE(fd, y+size_y/2 + mv->u.vec.dy[1]);
     data[x+size_x/2+mv->u.vec.dx[1]] = 0;
   }
 #endif
+  if (mv->pred_mode & 1) {
+    schro_frame_data_draw_line (fd, x+size_x/2, y+size_y/2,
+        x+size_x/2+mv->u.vec.dx[0], y+size_y/2 + mv->u.vec.dy[0]);
+  }
+  if (mv->pred_mode & 2) {
+    schro_frame_data_draw_line (fd, x+size_x/2, y+size_y/2,
+        x+size_x/2+mv->u.vec.dx[1], y+size_y/2 + mv->u.vec.dy[1]);
+  }
 
+}
+
+static void
+schro_frame_data_draw_point (SchroFrameData *fd, int x, int y)
+{
+  uint8_t *data;
+
+  if (y >= 0 && y < fd->height && x >= 0 && x < fd->width) {
+    data = SCHRO_FRAME_DATA_GET_LINE(fd, y);
+    data[x] = 0;
+  }
+}
+
+static void
+schro_frame_data_draw_line (SchroFrameData *fd, int x1, int y1, int x2, int y2)
+{
+  int dx, dy;
+  int a = 0;
+  int i,j;
+  int b;
+
+  dx = abs(x1-x2);
+  dy = abs(y1-y2);
+  if (dx > dy) {
+    if (x1 < x2) {
+      j = y1;
+      b = (y1 < y2) ? 1 : -1;
+      a = dy / 2;
+      for(i=x1;i<=x2;i++){
+        schro_frame_data_draw_point (fd, i, j);
+        a += dy;
+        if (a >= dx) {
+          a -= dx;
+          j+=b;
+        }
+      }
+    } else {
+      j = y2;
+      b = (y2 < y1) ? 1 : -1;
+      a = dy / 2;
+      for(i=x2;i<=x1;i++){
+        schro_frame_data_draw_point (fd, i, j);
+        a += dy;
+        if (a > dx) {
+          a -= dx;
+          j+=b;
+        }
+      }
+    }
+  } else {
+    if (y1 < y2) {
+      i = x1;
+      b = (x1 < x2) ? 1 : -1;
+      a = dx / 2;
+      for(j=y1;j<=y2;j++){
+        schro_frame_data_draw_point (fd, i, j);
+        a += dx;
+        if (a >= dy) {
+          a -= dy;
+          i+=b;
+        }
+      }
+    } else {
+      i = x2;
+      b = (x2 < x1) ? 1 : -1;
+      a = dx / 2;
+      for(j=y2;j<=y1;j++){
+        schro_frame_data_draw_point (fd, i, j);
+        a += dx;
+        if (a > dy) {
+          a -= dy;
+          i+=b;
+        }
+      }
+    }
+  }
 }
 
