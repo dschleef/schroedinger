@@ -3500,6 +3500,7 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
   SchroFrameData parent_fd;
   int quant_index;
   int n_subbands_left;
+  int first_quant_index;
 
   position = schro_subband_get_position (index);
   schro_subband_get_frame_data (&fd, frame->iwt_frame, component,
@@ -3546,8 +3547,8 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
     have_quant_offset = FALSE;
   }
 
-  quant_index = schro_encoder_frame_get_quant_index (frame, component,
-      index, 0, 0);
+  first_quant_index = -1;
+  quant_index = 0;
   for(y=0;y<vert_codeblocks;y++){
     int ymin = (fd.height*y)/vert_codeblocks;
     int ymax = (fd.height*(y+1))/vert_codeblocks;
@@ -3578,6 +3579,10 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
 
         new_quant_index = schro_encoder_frame_get_quant_index (frame,
             component, index, x, y);
+        if (first_quant_index == -1) {
+          quant_index = new_quant_index;
+          first_quant_index = new_quant_index;
+        }
 
         _schro_arith_encode_sint (arith,
             SCHRO_CTX_QUANTISER_CONT, SCHRO_CTX_QUANTISER_VALUE,
@@ -3707,9 +3712,12 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
         schro_pack_get_offset (frame->pack) * 8, arith->offset*8,
         n_subbands_left * 8, frame->hard_limit_bits);
     schro_pack_encode_uint (frame->pack, arith->offset);
+    if (first_quant_index == -1) {
+      first_quant_index =
+        schro_encoder_frame_get_quant_index (frame, component, index, 0, 0);
+    }
     if (arith->offset > 0) {
-      schro_pack_encode_uint (frame->pack,
-          schro_encoder_frame_get_quant_index (frame, component, index, 0, 0));
+      schro_pack_encode_uint (frame->pack, first_quant_index);
 
       schro_pack_sync (frame->pack);
 
