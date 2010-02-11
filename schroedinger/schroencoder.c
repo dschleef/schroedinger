@@ -74,8 +74,13 @@ schro_encoder_set_frame_lambda (SchroEncoderFrame *frame)
         }
 
         frame->frame_lambda = exp(((q-5)/0.7 - 7.0)*M_LN10*0.5);
+
+        frame->frame_me_lambda = MIN(0.002 * exp(q*0.2*M_LN10), 1.0);
+        /* FIXME multiply by adjustment factor */
+        if (frame->frame_me_lambda > 1.0) {
+          frame->frame_me_lambda = 1.0;
+        }
       }
-      frame->frame_me_lambda = frame->encoder->magic_mc_lambda;
       break;
     default:
       /* others don't use lambda */

@@ -422,11 +422,7 @@ init_params (SchroEncoderFrame *frame)
   }
   overlap = encoder->motion_block_overlap;
   if (overlap == 0) {
-    if (encoder->quality > 5) {
-      overlap = 3;
-    } else {
-      overlap = 2;
-    }
+    overlap = 3;
   }
   switch (overlap) {
     case 1:
