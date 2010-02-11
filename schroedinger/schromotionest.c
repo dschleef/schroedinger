@@ -2540,15 +2540,15 @@ schro_mode_decision (SchroMe me)
     }
   }
 
-  schro_me_set_mc_error (me
-      , total_error / (240.0*240.0) /
+  schro_me_set_mc_error (me,
+      total_error / (240.0*240.0) /
            params->x_num_blocks * params->y_num_blocks / 16);
 
-  schro_me_set_badblock_ratio (me
-      , badblocks / (params->x_num_blocks*params->y_num_blocks / 16));
+  schro_me_set_badblock_ratio (me,
+      ((double)badblocks) / (params->x_num_blocks*params->y_num_blocks / 16));
 
-  schro_me_set_dcblock_ratio (me
-      , (double)(dcblocks) / (params->x_num_blocks*params->y_num_blocks));
+  schro_me_set_dcblock_ratio (me,
+      ((double)dcblocks) / (params->x_num_blocks*params->y_num_blocks));
 
   if (1 < params->mv_precision) {
     for (ref=0; params->num_refs > ref; ++ref) {

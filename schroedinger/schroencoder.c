@@ -2239,8 +2239,8 @@ schro_encoder_mode_decision (SchroAsyncStage *stage)
         }
         frame->params.num_refs = 0;
         frame->num_refs = 0;
-        SCHRO_DEBUG("DC block ratio too high for frame d, inserting an intra  picture"
-            , frame->frame_number);
+        SCHRO_ERROR("DC block ratio too high for frame %d, inserting an intra  picture",
+            frame->frame_number);
       }
     }
   }
