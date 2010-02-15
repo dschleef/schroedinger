@@ -56,9 +56,21 @@ schro_encoder_set_frame_lambda (SchroEncoderFrame *frame)
   switch (frame->encoder->rate_control) {
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE:
       if (frame->encoder->enable_rdo_cbr) {
-        frame->frame_lambda = pow( 10.0 , -(12.0-frame->encoder->qf )/2.5 )/16.0;
+        double q;
+
+        //frame->frame_lambda = pow( 10.0 , -(12.0-frame->encoder->qf )/2.5 )/16.0;
+        frame->frame_lambda = exp(0.921034*encoder->qf - 13.825);
+        
+        q = (log(frame->frame_lambda) + 16.2826)/1.6447;
+
         frame->frame_me_lambda = frame->encoder->magic_me_lambda_scale *
           sqrt(frame->frame_lambda);
+
+        frame->frame_me_lambda = MIN(0.002 * exp(q*0.2*M_LN10), 1.0);
+        if (frame->frame_me_lambda > 1.0) {
+          frame->frame_me_lambda = 1.0;
+        }
+        frame->frame_me_lambda *= encoder->magic_me_lambda_scale;
       } else {
         /* overwritten in schro_encoder_choose_quantisers_rdo_bit_allocation */
         frame->frame_lambda = 0;
@@ -67,7 +79,7 @@ schro_encoder_set_frame_lambda (SchroEncoderFrame *frame)
       break;
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_QUALITY:
       {
-        double q = frame->encoder->quality;
+        double q = encoder->quality;
 
         q += -3.5 * (frame->encoder->magic_error_power - 4);
         q *= 1.0 + (frame->encoder->magic_error_power - 4)*0.2;
@@ -75,7 +87,8 @@ schro_encoder_set_frame_lambda (SchroEncoderFrame *frame)
           q += 2;
         }
 
-        frame->frame_lambda = exp(((q-5)/0.7 - 7.0)*M_LN10*0.5);
+        //frame->frame_lambda = exp(((q-5)/0.7 - 7.0)*M_LN10*0.5);
+        frame->frame_lambda = exp(1.6447*q - 16.2826);
 
         frame->frame_me_lambda = MIN(0.002 * exp(q*0.2*M_LN10), 1.0);
         if (frame->frame_me_lambda > 1.0) {
@@ -4133,7 +4146,7 @@ struct SchroEncoderSettings {
   BOOL(enable_global_motion, FALSE),
   BOOL(enable_scene_change_detection, TRUE),
   BOOL(enable_deep_estimation, TRUE),
-  BOOL(enable_rdo_cbr, FALSE),
+  BOOL(enable_rdo_cbr, TRUE),
   BOOL(enable_chroma_me, FALSE),
   INT (horiz_slices, 1, INT_MAX, 8),
   INT (vert_slices, 1, INT_MAX, 6),
