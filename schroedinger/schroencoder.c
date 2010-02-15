@@ -1723,6 +1723,7 @@ schro_encoder_sc_detect_1 (SchroAsyncStage* stage)
 
   frame->sc_mad = schro_metric_absdiff_u8 (comp1->data, comp1->stride, comp2->data, comp2->stride,
       comp1->width, comp1->height);
+  frame->sc_mad /= (comp1->width * comp1->height);
   frame->have_mad = 1;
 }
 
@@ -4130,7 +4131,7 @@ struct SchroEncoderSettings {
   BOOL(enable_multiquant, TRUE),
   BOOL(enable_dc_multiquant, FALSE),
   BOOL(enable_global_motion, FALSE),
-  BOOL(enable_scene_change_detection, FALSE),
+  BOOL(enable_scene_change_detection, TRUE),
   BOOL(enable_deep_estimation, TRUE),
   BOOL(enable_rdo_cbr, FALSE),
   BOOL(enable_chroma_me, FALSE),
@@ -4149,7 +4150,7 @@ struct SchroEncoderSettings {
   DOUB(magic_allocation_scale, 0.0, 1000.0, 1.1),
   DOUB(magic_inter_cpd_scale, 0.0, 1.0, 1.0),
   DOUB(magic_keyframe_weight, 0.0, 1000.0, 7.5),
-  DOUB(magic_scene_change_threshold, 0.0, 1000.0, 0.2),
+  DOUB(magic_scene_change_threshold, 0.0, 1000.0, 3.0),
   DOUB(magic_inter_p_weight, 0.0, 1000.0, 1.5),
   DOUB(magic_inter_b_weight, 0.0, 1000.0, 0.2),
   DOUB(magic_me_bailout_limit, 0.0, 1000.0, 0.33),
