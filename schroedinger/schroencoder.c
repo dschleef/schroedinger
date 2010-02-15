@@ -49,6 +49,8 @@ static void schro_encoder_setting_set_defaults (SchroEncoder *encoder);
 void
 schro_encoder_set_frame_lambda (SchroEncoderFrame *frame)
 {
+  SchroEncoder *encoder = frame->encoder;
+
   SCHRO_ASSERT(frame);
   SCHRO_ASSERT(frame->encoder);
   switch (frame->encoder->rate_control) {
@@ -76,10 +78,11 @@ schro_encoder_set_frame_lambda (SchroEncoderFrame *frame)
         frame->frame_lambda = exp(((q-5)/0.7 - 7.0)*M_LN10*0.5);
 
         frame->frame_me_lambda = MIN(0.002 * exp(q*0.2*M_LN10), 1.0);
-        /* FIXME multiply by adjustment factor */
         if (frame->frame_me_lambda > 1.0) {
           frame->frame_me_lambda = 1.0;
         }
+        frame->frame_me_lambda *= encoder->magic_me_lambda_scale;
+
       }
       break;
     default:
@@ -4108,8 +4111,7 @@ struct SchroEncoderSettings {
   BOOL(enable_psnr, FALSE),
   BOOL(enable_ssim, FALSE),
 
-  INT (ref_distance, 2, 20, 4),
-  INT (transform_depth, 0, SCHRO_LIMIT_ENCODER_TRANSFORM_DEPTH, 4),
+  INT (transform_depth, 0, SCHRO_LIMIT_ENCODER_TRANSFORM_DEPTH, 3),
   ENUM(intra_wavelet, wavelet_list, SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7),
   ENUM(inter_wavelet, wavelet_list, SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7),
   INT (mv_precision, 0, 3, 0),
@@ -4140,7 +4142,7 @@ struct SchroEncoderSettings {
   DOUB(magic_subband0_lambda_scale, 0.0, 1000.0, 10.0),
   DOUB(magic_chroma_lambda_scale, 0.0, 1000.0, 0.1),
   DOUB(magic_nonref_lambda_scale, 0.0, 1000.0, 0.01),
-  DOUB(magic_me_lambda_scale, 0.0, 100.0, 32.0),
+  DOUB(magic_me_lambda_scale, 0.0, 100.0, 1.0),
   DOUB(magic_I_lambda_scale, 0.0, 100.0, 1.0),
   DOUB(magic_P_lambda_scale, 0.0, 10.0, 0.25),
   DOUB(magic_B_lambda_scale, 0.0, 10.0, 0.01),

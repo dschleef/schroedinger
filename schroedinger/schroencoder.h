@@ -264,7 +264,6 @@ struct _SchroEncoder {
   schro_bool enable_ssim;
   schro_bool enable_md5;
 
-  int ref_distance;
   int transform_depth;
   int intra_wavelet;
   int inter_wavelet;
