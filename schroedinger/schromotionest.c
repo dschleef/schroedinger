@@ -1146,7 +1146,7 @@ schro_encoder_bigblock_estimation (SchroMotionEst *me)
   int block_size;
   int block_threshold;
 
-  me->lambda = me->encoder_frame->encoder->magic_mc_lambda;
+  me->lambda = me->encoder_frame->frame_me_lambda;
 
   block_size = 16 * params->xbsep_luma * params->ybsep_luma;
   block_threshold = params->xbsep_luma * params->ybsep_luma *
@@ -2626,7 +2626,7 @@ schro_me_new (SchroEncoderFrame* frame)
    * are not reference-counted but they should if we use them like this */
   me->params = &frame->params;
   me->motion = frame->motion;
-  me->lambda = frame->encoder->magic_mc_lambda;
+  me->lambda = frame->frame_me_lambda;
   for (ref=0; me->params->num_refs > ref; ++ref) {
     me->meElement[ref] = schro_me_element_new (frame, ref);
   }

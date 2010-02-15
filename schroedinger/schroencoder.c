@@ -74,7 +74,7 @@ schro_encoder_set_frame_lambda (SchroEncoderFrame *frame)
       } else {
         /* overwritten in schro_encoder_choose_quantisers_rdo_bit_allocation */
         frame->frame_lambda = 0;
-        frame->frame_me_lambda = frame->encoder->magic_mc_lambda;
+        frame->frame_me_lambda = 0.1; /* used to be magic_mc_lambda */
       }
       break;
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_QUALITY:
@@ -100,8 +100,8 @@ schro_encoder_set_frame_lambda (SchroEncoderFrame *frame)
       break;
     default:
       /* others don't use lambda */
-      frame->frame_lambda = frame->encoder->magic_lambda;
-      frame->frame_me_lambda = frame->encoder->magic_mc_lambda;
+      frame->frame_lambda = 1.0;
+      frame->frame_me_lambda = 0.1;
       break;
   }
   if ((frame->num_refs != 0)){
@@ -579,12 +579,6 @@ handle_gop_enum (SchroEncoder *encoder)
 
 }
 
-static double
-schro_encoder_quality_get_lambda (double quality)
-{
-  return exp(((quality-5)/0.7 - 7.0)*M_LN10*0.5);
-}
-
 /**
  * schro_encoder_start:
  * @encoder: an encoder object
@@ -690,7 +684,6 @@ schro_encoder_start (SchroEncoder *encoder)
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_QUALITY:
       handle_gop_enum (encoder);
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RDO_LAMBDA;
-      encoder->magic_lambda = schro_encoder_quality_get_lambda (encoder->quality);
       break;
   }
 
@@ -4169,9 +4162,7 @@ struct SchroEncoderSettings {
   DOUB(magic_me_bailout_limit, 0.0, 1000.0, 0.33),
   DOUB(magic_bailout_weight, 0.0, 1000.0, 4.0),
   DOUB(magic_error_power, 0.0, 1000.0, 4.0),
-  DOUB(magic_mc_lambda, 0.0, 1000.0, 0.1),
   DOUB(magic_subgroup_length, 1.0, 10.0, 4.0),
-  DOUB(magic_lambda, 0.0, 1000.0, 1.0),
   DOUB(magic_badblock_multiplier_nonref, 0.0, 1000.0, 4.0),
   DOUB(magic_badblock_multiplier_ref, 0.0, 1000.0, 8.0),
   DOUB(magic_block_search_threshold, 0.0, 1000.0, 15.0),
