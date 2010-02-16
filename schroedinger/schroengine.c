@@ -513,6 +513,17 @@ schro_frame_set_wavelet_params (SchroEncoderFrame* frame)
   } else {
     params->wavelet_filter_index = encoder->intra_wavelet;
   }
+
+  /* overrides for near-lossless */
+  if (encoder->rate_control == 0) {
+    if (encoder->noise_threshold < 40.0) {
+      /* do nothing */
+    } else if (encoder->noise_threshold < 47.0) {
+      params->wavelet_filter_index = 1;
+    } else {
+      params->wavelet_filter_index = 3;
+    }
+  }
 }
 
 static double
