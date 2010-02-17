@@ -1038,6 +1038,38 @@ mullw d2, t1, t2
 
 
 # only works for values between -16384 and 16384
+.function orc_quantdequant3_s16
+.dest 2 d1 int16_t
+.dest 2 d2 int16_t
+.param 2 p1
+.param 2 p2
+.param 2 p3
+.param 2 p4
+.param 2 p5
+.param 4 p6
+.temp 2 t1
+.temp 2 t2
+.temp 4 t3
+
+copyw t1, d2
+signw t2, t1
+absw t1, t1
+shlw t1, t1, 2
+subw t1, t1, p2
+muluwl t3, t1, p1
+addl t3, t3, p6
+shrul t3, t3, p3
+convlw t1, t3
+mullw t2, t1, t2
+copyw d1, t2
+signw t2, t2
+mullw t1, t1, p4
+addw t1, t1, p5
+shrsw t1, t1, 2
+mullw d2, t1, t2
+
+
+# only works for values between -16384 and 16384
 .function orc_quantdequant2_s16
 .dest 2 d1 int16_t
 .dest 2 d2 int16_t

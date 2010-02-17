@@ -3273,7 +3273,17 @@ schro_frame_data_quantise (SchroFrameData *quant_fd,
       orc_quantdequant2_s16 (quant_line, line, quant_shift,
           quant_offset, quant_factor, real_quant_offset + 2, fd->width);
     }
+  } else if (quant_index == 3) {
+    for(j=0;j<fd->height;j++){
+      line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+      quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);
+
+      orc_quantdequant3_s16 (quant_line, line, inv_quant, quant_offset,
+          quant_shift + 16, quant_factor, real_quant_offset + 2, 32768,
+          fd->width);
+    }
   } else {
+    if (quant_index > 8) quant_offset--;
     for(j=0;j<fd->height;j++){
       line = SCHRO_FRAME_DATA_GET_LINE(fd, j);
       quant_line = SCHRO_FRAME_DATA_GET_LINE(quant_fd, j);

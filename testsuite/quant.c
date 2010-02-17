@@ -39,7 +39,7 @@ quantise (int value, int quant_factor, int quant_offset)
 }
 #endif
 
-void test_quant  (int quant_index);
+void test_quant  (int quant_index, int ack);
 void test_dequant  (int quant_index);
 
 #define N 2000
@@ -47,6 +47,7 @@ void test_dequant  (int quant_index);
 int16_t a[N];
 int16_t b[N];
 int16_t c[N];
+int16_t d[N];
 
 int
 main (int argc, char *argv[])
@@ -56,8 +57,14 @@ main (int argc, char *argv[])
   schro_init();
   schro_tables_init();
 
+#if 0
+  for(i=0;i<65536;i+=256) {
+    printf("%d\n", i);
+    test_quant (3, i);
+  }
+#endif
   for(i=0;i<61;i++) {
-    test_quant (i);
+    test_quant (i, 0);
   }
   for(i=0;i<61;i++) {
     test_dequant (i);
@@ -67,20 +74,22 @@ main (int argc, char *argv[])
 }
 
 void
-test_quant  (int quant_index)
+test_quant  (int quant_index, int ack)
 {
   int quant_factor = schro_table_quant[quant_index];
-  int quant_offset = schro_table_offset_3_8[quant_index];
+  int quant_offset = schro_table_offset_1_2[quant_index];
   int quant_shift = quant_index/4 + 2;
   int error = FALSE;
   int i;
+  int bad_count;
 
-  printf("index %d:\n", quant_index);
+  //printf("index %d:\n", quant_index);
 
   for(i=0;i<2000;i++){
     a[i] = i - 1000;
     b[i] = i - 1000;
     c[i] = i - 1000;
+    d[i] = i - 1000;
   }
 
   for(i=0;i<N;i++){
@@ -90,22 +99,42 @@ test_quant  (int quant_index)
   if (quant_index == 0) {
     /* do nothing */
   } else if ((quant_index & 3) == 0) {
-    orc_quantise2_s16 (b, b, quant_shift, quant_offset - quant_factor/2, N);
+    orc_quantdequant2_s16 (b, d, quant_shift,
+        quant_offset - quant_factor/2, quant_factor, quant_offset + 2, N);
+  } else if (quant_index != 3) {
+    int inv_quant;
+
+    inv_quant = schro_table_inverse_quant[quant_index];
+
+    orc_quantdequant1_s16 (b, d, inv_quant,
+        quant_offset - quant_factor/2 - (quant_index > 8),
+        quant_shift, quant_factor, quant_offset + 2, N);
   } else {
     int inv_quant;
 
     inv_quant = schro_table_inverse_quant[quant_index];
 
-    orc_quantise1_s16 (b, b, inv_quant, quant_offset - quant_factor/2, quant_shift, N);
+    orc_quantdequant3_s16 (b, d, inv_quant,
+        quant_offset - quant_factor/2,
+        quant_shift + 16, quant_factor,
+        quant_offset + 2,
+        32768, N);
   }
 
+  bad_count=0;
   for(i=0;i<N;i++){
-    if (a[i] < b[i] - 1 || a[i] > b[i] + 1) error = TRUE;
+    //if (a[i] < b[i] - 1 || a[i] > b[i] + 1) error = TRUE;
+    //if (a[i] != b[i]) error = TRUE;
+    if (a[i] != b[i]) bad_count++;
   }
+  printf("index %d: %d\n", quant_index, bad_count);
 
   if (error) {
     for(i=0;i<N;i++){
-      printf("%d %d %d %d %c\n", i, c[i], a[i], b[i], (a[i]!=b[i]) ? '*':' ');
+      printf("%d %d  %d %d  %d %d %c\n", i, c[i], a[i],
+          schro_dequantise (a[i], quant_factor, quant_offset),
+          b[i], d[i],
+          (a[i]!=b[i]) ? '*':' ');
     }
   }
 }
