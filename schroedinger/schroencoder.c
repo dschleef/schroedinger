@@ -4144,7 +4144,7 @@ struct SchroEncoderSettings {
   BOOL(enable_zero_estimation, FALSE),
   BOOL(enable_phasecorr_estimation, FALSE),
   BOOL(enable_bigblock_estimation, TRUE),
-  BOOL(enable_multiquant, TRUE),
+  BOOL(enable_multiquant, FALSE),
   BOOL(enable_dc_multiquant, FALSE),
   BOOL(enable_global_motion, FALSE),
   BOOL(enable_scene_change_detection, TRUE),
