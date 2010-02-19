@@ -2316,34 +2316,39 @@ schro_get_best_split0_mv (SchroMe me, int ref, int i, int j
   } else mv_ref->metric = INT_MAX;
 }
 
-
-/* performs mode decision for a superblock, split level 0 */
-static void
-schro_do_split0 (SchroMe me, int i, int j, SchroBlock* block
-    , SchroFrameData* fd)
-{
+static void schro_do_split0_biref (SchroMe me, int i, int j, SchroBlock* block , SchroFrameData* fd) {
   SCHRO_ASSERT(me && block && fd && !(i&0x3) && !(j&0x3));
-  block->valid = FALSE;
 
+  block->valid = FALSE;
   SchroParams* params = schro_me_params (me);
+  SCHRO_ASSERT(1 < params->num_refs);
+  int entropy = 0;
+  SchroMotion* motion = schro_me_motion (me);
+  SchroMotionVector *mv_motion;
+
+  mv_motion = motion->motion_vectors + j * params->x_num_blocks + i;
+
+  SchroMotionVector *mv;
+  mv = &block->mv[0][0];
+  mv->split = 0;
+  mv->pred_mode = 3;
+  mv->using_global = 0;
+
+  *mv_motion = *mv;
+  entropy = schro_motion_block_estimate_entropy (motion, i, j);
+
   SchroFrame* orig_frame = schro_me_src (me);
   SchroFrameData ref_data[3][2], orig[3];
   SchroUpsampledFrame* upframe[2];
-  SchroMotionField* mf;
-  SchroMotionVector mv_ref[2], best_mv={0}, *mv_split0;
-  double lambda = schro_me_lambda (me);
+  double score, lambda = schro_me_lambda (me);
 
   int mv_prec = params->mv_precision;
   int width[3], height[3], dx[2], dy[2], tmp_x, tmp_y;
-  int ref, error=INT_MAX, entropy[2];
-  int best_error = INT_MAX
-    , best_entropy = INT_MAX;
-  double score, min_score = HUGE_VAL;
+  int ref, error=INT_MAX;
   int xmin = -orig_frame->extension, ymin = -orig_frame->extension
     , xmax = (orig_frame->width << mv_prec) + orig_frame->extension
     , ymax = (orig_frame->height << mv_prec) + orig_frame->extension;
   int biref, fd_width, fd_height;
-  best_mv.metric = INT_MAX;
   int k;
   /* split2 block sizes for all components */
   int block_x[3], block_y[3];
@@ -2361,6 +2366,108 @@ schro_do_split0 (SchroMe me, int i, int j, SchroBlock* block
     comp_w[0] >> SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format);
   comp_h[1] = comp_h[2] =
     comp_h[0] >> SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
+
+  /* do biref, if available */
+  biref = TRUE;
+  /* fetch source data */
+  for (k=0; 3>k; ++k) {
+    if (schro_frame_get_data (orig_frame, &orig[k], k
+          , i*block_x[k], j*block_y[k])) {
+      width[k] = MIN(orig[k].width, comp_w[k]);
+      height[k] = MIN(orig[k].height, comp_h[k]);
+    } else {
+      biref = FALSE;
+      break;
+    }
+  }
+  if (biref) {
+    /* fetch reference data, if possible */
+    for (ref=0; params->num_refs > ref; ++ref) {
+      for (k=0; 3>k && biref; ++k) {
+        tmp_x = (i*block_x[k]) << mv_prec;
+        tmp_y = (j*block_y[k]) << mv_prec;
+        dx[ref] = mv->u.vec.dx[ref];
+        dx[ref] >>= 0 == k ? 0
+            : SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format);
+        dx[ref] += tmp_x;
+        dy[ref] = mv->u.vec.dy[ref];
+        dy[ref] >>= 0 == k ? 0
+            : SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
+        dy[ref] += tmp_y;
+        /* check whether we can extract reference blocks */
+        if ( 0 == k && (xmin > dx[ref] || ymin > dy[ref]
+            || !(xmax > dx[ref] + width[k] - 1)
+            || !(ymax > dy[ref] + height[k] - 1)  )) {
+          biref = FALSE;
+          break;
+        } else {
+          fd_width = fd[ref].width;
+          fd_height = fd[ref].height;
+          fd[ref].width = width[k];
+          fd[ref].height = height[k];
+          upframe[ref] = schro_me_ref (me, ref);
+          schro_upsampled_frame_get_block_fast_precN (upframe[ref], k
+              , dx[ref], dy[ref], mv_prec, &ref_data[k][ref], &fd[ref]);
+          fd[ref].width = fd_width;
+          fd[ref].height = fd_height;
+        }
+      }
+    }
+    if (biref) {
+      int chroma_error = 0;
+      error = schro_metric_get_biref (&orig[0], &ref_data[0][0], 1
+          , &ref_data[0][1], 1, 1, width[0], height[0]);
+      for (k=1; 3>k; ++k) {
+        chroma_error += schro_metric_get_biref (&orig[k], &ref_data[k][0], 1
+            , &ref_data[k][1], 1, 1, width[k], height[k]);
+      }
+      score = entropy + lambda * (error+chroma_error);
+      mv->metric = error>>4;
+      mv->chroma_metric = chroma_error>>4;
+      block->entropy = entropy;
+      block->error = error + chroma_error;
+      block->score = block->entropy + lambda * block->error;
+      block->valid = TRUE;
+    }
+  }
+}
+
+static void schro_do_split0_biref_zero (SchroMe me, int i, int j, SchroBlock* block , SchroFrameData* fd) {
+  SCHRO_ASSERT(me && block && fd && !(i&0x3) && !(j&0x3));
+  SchroParams* params = schro_me_params (me);
+  SCHRO_ASSERT(1 < params->num_refs);
+
+  SchroMotionVector *mv;
+  mv = &block->mv[0][0];
+  mv->split = 0;
+  mv->pred_mode = 3;
+  mv->using_global = 0;
+  mv->u.vec.dx[0] = 0;
+  mv->u.vec.dy[0] = 0;
+  mv->u.vec.dx[1] = 0;
+  mv->u.vec.dy[1] = 0;
+
+ schro_do_split0_biref (me, i, j, block, fd);
+}
+
+/* performs mode decision for a superblock, split level 0 */
+static void
+schro_do_split0 (SchroMe me, int i, int j, SchroBlock* block
+    , SchroFrameData* fd)
+{
+  SCHRO_ASSERT(me && block && fd && !(i&0x3) && !(j&0x3));
+  block->valid = FALSE;
+
+  SchroParams* params = schro_me_params (me);
+  SchroMotionField* mf;
+  SchroMotionVector mv_ref[2], best_mv={0}, *mv_split0;
+  double lambda = schro_me_lambda (me);
+
+  int ref, error=INT_MAX, entropy[2];
+  int best_error = INT_MAX
+    , best_entropy = INT_MAX;
+  double score, min_score = HUGE_VAL;
+  best_mv.metric = INT_MAX;
 
   /* do the 2 references, if available */
   for (ref = 0; params->num_refs > ref; ++ref) {
@@ -2383,74 +2490,29 @@ schro_do_split0 (SchroMe me, int i, int j, SchroBlock* block
   if (1 < params->num_refs
       && INT_MAX != mv_ref[0].metric
       && INT_MAX != mv_ref[1].metric ) {
-    mv_ref[0].u.vec.dx[1] = mv_ref[1].u.vec.dx[1];
-    mv_ref[0].u.vec.dy[1] = mv_ref[1].u.vec.dy[1];
-    mv_ref[0].pred_mode = 3;
-    biref = TRUE;
-    /* fetch source data */
-    for (k=0; 3>k; ++k) {
-      if (schro_frame_get_data (orig_frame, &orig[k], k
-            , i*block_x[k], j*block_y[k])) {
-        width[k] = MIN(orig[k].width, comp_w[k]);
-        height[k] = MIN(orig[k].height, comp_h[k]);
-      } else {
-        biref = FALSE;
-        break;
-      }
-    }
-    if (biref) {
-      /* fetch reference data, if possible */
-      for (ref=0; params->num_refs > ref; ++ref) {
-        for (k=0; 3>k && biref; ++k) {
-          tmp_x = (i*block_x[k]) << mv_prec;
-          tmp_y = (j*block_y[k]) << mv_prec;
-          dx[ref] = mv_ref[0].u.vec.dx[ref];
-          dx[ref] >>= 0 == k ? 0
-            : SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format);
-          dx[ref] += tmp_x;
-          dy[ref] = mv_ref[0].u.vec.dy[ref];
-          dy[ref] >>= 0 == k ? 0
-            : SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
-          dy[ref] += tmp_y;
-          /* check whether we can extract reference blocks */
-          if ( 0 == k && (xmin > dx[ref] || ymin > dy[ref]
-              || !(xmax > dx[ref] + width[k] - 1)
-              || !(ymax > dy[ref] + height[k] - 1)  )) {
-            biref = FALSE;
-            break;
-          } else {
-            fd_width = fd[ref].width;
-            fd_height = fd[ref].height;
-            fd[ref].width = width[k];
-            fd[ref].height = height[k];
-            upframe[ref] = schro_me_ref (me, ref);
-            schro_upsampled_frame_get_block_fast_precN (upframe[ref], k
-                , dx[ref], dy[ref], mv_prec, &ref_data[k][ref], &fd[ref]);
-            fd[ref].width = fd_width;
-            fd[ref].height = fd_height;
-          }
-        }
-      }
-      if (biref) {
-        int chroma_error = 0;
-        error = schro_metric_get_biref (&orig[0], &ref_data[0][0], 1
-            , &ref_data[0][1], 1, 1, width[0], height[0]);
-        for (k=1; 3>k; ++k) {
-          chroma_error += schro_metric_get_biref (&orig[k], &ref_data[k][0], 1
-              , &ref_data[k][1], 1, 1, width[k], height[k]);
-        }
-        score = entropy[0] + entropy[1] + lambda * (error+chroma_error);
-        mv_ref[0].metric = error>>4;
-        mv_ref[0].chroma_metric = chroma_error>>4;
-        if (min_score > score) {
-          min_score = score;
-          best_mv = mv_ref[0];
-          best_error = error+chroma_error;
-          best_entropy = entropy[0] + entropy[1];
-        }
-      }
+    SchroBlock biref_block = { 0 };
+
+    SchroMotionVector *mv;
+    mv = &biref_block.mv[0][0];
+    mv->split = 0;
+    mv->pred_mode = 3;
+    mv->using_global = 0;
+    mv->u.vec.dx[0] = mv_ref[0].u.vec.dx[0];
+    mv->u.vec.dy[0] = mv_ref[0].u.vec.dy[0];
+    mv->u.vec.dx[1] = mv_ref[1].u.vec.dx[1];
+    mv->u.vec.dy[1] = mv_ref[1].u.vec.dy[1];
+    mv->metric = INT_MAX;
+
+    schro_do_split0_biref (me, i, j, &biref_block, fd);
+
+    if (biref_block.valid &&  min_score > biref_block.score) {
+      min_score = biref_block.score;
+      best_mv = biref_block.mv[0][0];
+      best_error = biref_block.error;
+      best_entropy = biref_block.entropy;
     }
   }
+
   if (INT_MAX == best_mv.metric) {
     block->valid = FALSE;
   } else {
@@ -2519,6 +2581,15 @@ schro_mode_decision (SchroMe me)
               memcpy (&block, &tryblock, sizeof(block));
               schro_block_fixup (&block);
             }
+          }
+        }
+      }
+      if (1 < params->num_refs) {
+        schro_do_split0_biref_zero (me, i, j, &tryblock, fd);
+        if (tryblock.valid) {
+          if (min_score > tryblock.score) {
+            memcpy (&block, &tryblock, sizeof(block));
+            schro_block_fixup (&block);
           }
         }
       }
