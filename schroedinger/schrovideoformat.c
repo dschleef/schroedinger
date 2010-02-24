@@ -295,33 +295,74 @@ schro_video_format_get_video_format_metric (SchroVideoFormat *format, int i)
     metric |= 0x8000;
   }
 
-  /* things that contribute to MP_DL */
-  if (format->width <= std_format->width &&
-      format->height <= std_format->height) {
-    metric |= 0x800;
-  }
-  if (format->frame_rate_numerator == std_format->frame_rate_numerator &&
-      format->frame_rate_denominator == std_format->frame_rate_denominator) {
-    metric |= 0x400;
-  }
-  if (format->aspect_ratio_numerator == std_format->aspect_ratio_numerator &&
-      format->aspect_ratio_denominator == std_format->aspect_ratio_denominator) {
-    metric |= 0x200;
-  }
-  if (format->colour_matrix == std_format->colour_matrix &&
-      format->colour_primaries == std_format->colour_primaries &&
-      format->transfer_function == std_format->transfer_function) {
-    metric |= 0x100;
+  metric += schro_pack_estimate_uint (i);
+
+  if (std_format->width == format->width &&
+      std_format->height == format->height) {
+    metric++;
+  } else {
+    metric++;
+    metric += schro_pack_estimate_uint (format->width);
+    metric += schro_pack_estimate_uint (format->height);
   }
 
-  /* things that contribute to VC2_DL */
-  if (format->width == std_format->width &&
-      format->height == std_format->height) {
-    metric |= 0x80;
+  if (std_format->chroma_format == format->chroma_format) {
+    metric++;
+  } else {
+    metric++;
+    metric += schro_pack_estimate_uint (format->chroma_format);
   }
-  if (format->interlaced == std_format->interlaced) {
-    metric |= 0x40;
+
+  /* scan format */
+  if (std_format->interlaced == format->interlaced) {
+    metric++;
+  } else {
+    metric++;
+    metric += schro_pack_estimate_uint (format->interlaced);
   }
+
+  /* frame rate */
+  if (std_format->frame_rate_numerator == format->frame_rate_numerator &&
+      std_format->frame_rate_denominator == format->frame_rate_denominator) {
+    metric++;
+  } else {
+    metric++;
+    i = schro_video_format_get_std_frame_rate (format);
+    metric += schro_pack_estimate_uint (i);
+    if (i==0) {
+      metric += schro_pack_estimate_uint (format->frame_rate_numerator);
+      metric += schro_pack_estimate_uint (format->frame_rate_denominator);
+    }
+  }
+
+  /* pixel aspect ratio */
+  if (std_format->aspect_ratio_numerator == format->aspect_ratio_numerator &&
+      std_format->aspect_ratio_denominator == format->aspect_ratio_denominator) {
+    metric++;
+  } else {
+    metric++;
+    i = schro_video_format_get_std_aspect_ratio (format);
+    metric += schro_pack_estimate_uint (i);
+    if (i==0) {
+      metric += schro_pack_estimate_uint (format->aspect_ratio_numerator);
+      metric += schro_pack_estimate_uint (format->aspect_ratio_denominator);
+    }
+  }
+
+  /* clean area */
+  if (std_format->clean_width == format->clean_width &&
+      std_format->clean_height == format->clean_height &&
+      std_format->left_offset == format->left_offset &&
+      std_format->top_offset == format->top_offset) {
+    metric++;
+  } else {
+    metric++;
+    metric += schro_pack_estimate_uint (format->clean_width);
+    metric += schro_pack_estimate_uint (format->clean_height);
+    metric += schro_pack_estimate_uint (format->left_offset);
+    metric += schro_pack_estimate_uint (format->top_offset);
+  }
+
 
 #if 0
   if (format->left_offset == std_format->left_offset &&
