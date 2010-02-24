@@ -547,7 +547,6 @@ handle_gop_enum (SchroEncoder *encoder)
     case SCHRO_ENCODER_GOP_BACKREF:
     case SCHRO_ENCODER_GOP_CHAINED_BACKREF:
       SCHRO_DEBUG("Setting backref\n");
-      encoder->profile = 8;
       encoder->init_frame = schro_encoder_init_frame;
       encoder->handle_gop = schro_encoder_handle_gop_backref;
       encoder->handle_quants = schro_encoder_handle_quants;
@@ -555,11 +554,6 @@ handle_gop_enum (SchroEncoder *encoder)
       break;
     case SCHRO_ENCODER_GOP_INTRA_ONLY:
       SCHRO_DEBUG("Setting intra only\n");
-      if (encoder->enable_noarith) {
-        encoder->profile = 1;
-      } else {
-        encoder->profile = 2;
-      }
       encoder->init_frame = schro_encoder_init_frame;
       encoder->handle_gop = schro_encoder_handle_gop_intra_only;
       encoder->handle_quants = schro_encoder_handle_quants;
@@ -569,7 +563,6 @@ handle_gop_enum (SchroEncoder *encoder)
     case SCHRO_ENCODER_GOP_BIREF:
     case SCHRO_ENCODER_GOP_CHAINED_BIREF:
       SCHRO_DEBUG("Setting tworef engine\n");
-      encoder->profile = 8;
       encoder->init_frame = schro_encoder_init_frame;
       encoder->handle_gop = schro_encoder_handle_gop_tworef;
       encoder->handle_quants = schro_encoder_handle_quants;
@@ -638,6 +631,46 @@ schro_encoder_start (SchroEncoder *encoder)
       (SchroAsyncCompleteFunc)schro_encoder_frame_complete,
       encoder);
 
+  if (encoder->force_profile == SCHRO_ENCODER_PROFILE_AUTO) {
+    if (encoder->rate_control == SCHRO_ENCODER_RATE_CONTROL_LOW_DELAY) {
+      encoder->force_profile = SCHRO_ENCODER_PROFILE_VC2_LOW_DELAY;
+    } else if (encoder->enable_noarith) {
+      encoder->force_profile = SCHRO_ENCODER_PROFILE_VC2_SIMPLE;
+    } else if (encoder->gop_structure == SCHRO_ENCODER_GOP_INTRA_ONLY) {
+      encoder->force_profile = SCHRO_ENCODER_PROFILE_VC2_MAIN;
+    } else {
+      encoder->force_profile = SCHRO_ENCODER_PROFILE_MAIN;
+    }
+  }
+
+  switch (encoder->force_profile) {
+    case SCHRO_ENCODER_PROFILE_VC2_LOW_DELAY:
+      encoder->profile = SCHRO_PROFILE_LOW_DELAY;
+      encoder->rate_control = SCHRO_ENCODER_RATE_CONTROL_LOW_DELAY;
+      encoder->gop_structure = SCHRO_ENCODER_GOP_INTRA_ONLY;
+      encoder->au_distance = 1;
+      break;
+    case SCHRO_ENCODER_PROFILE_VC2_SIMPLE:
+      encoder->profile = SCHRO_PROFILE_SIMPLE;
+      encoder->enable_noarith = TRUE;
+      encoder->gop_structure = SCHRO_ENCODER_GOP_INTRA_ONLY;
+      encoder->au_distance = 1;
+      break;
+    case SCHRO_ENCODER_PROFILE_VC2_MAIN:
+      encoder->profile = SCHRO_PROFILE_MAIN_INTRA;
+      encoder->enable_noarith = FALSE;
+      encoder->gop_structure = SCHRO_ENCODER_GOP_INTRA_ONLY;
+      encoder->au_distance = 1;
+      break;
+    case SCHRO_ENCODER_PROFILE_MAIN:
+      encoder->profile = SCHRO_PROFILE_MAIN;
+      encoder->enable_noarith = FALSE;
+      break;
+    case SCHRO_ENCODER_PROFILE_AUTO:
+    default:
+      SCHRO_ASSERT(0);
+  }
+
   switch (encoder->rate_control) {
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_NOISE_THRESHOLD:
       handle_gop_enum (encoder);
@@ -656,7 +689,6 @@ schro_encoder_start (SchroEncoder *encoder)
       break;
     case SCHRO_ENCODER_RATE_CONTROL_LOW_DELAY:
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOWDELAY;
-      encoder->profile = 0;
 
       encoder->init_frame = schro_encoder_init_frame;
       encoder->handle_gop = schro_encoder_handle_gop_lowdelay;
@@ -666,12 +698,15 @@ schro_encoder_start (SchroEncoder *encoder)
       schro_encoder_encode_bitrate_comment (encoder, encoder->bitrate);
       break;
     case SCHRO_ENCODER_RATE_CONTROL_LOSSLESS:
+      if (encoder->force_profile == SCHRO_ENCODER_PROFILE_MAIN) {
+        encoder->handle_gop = schro_encoder_handle_gop_lossless;
+      } else {
+        encoder->handle_gop = schro_encoder_handle_gop_intra_only;
+      }
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_LOSSLESS;
-      encoder->profile = 8;
       encoder->init_frame = schro_encoder_init_frame;
-      encoder->handle_gop = schro_encoder_handle_gop_lossless;
       encoder->handle_quants = schro_encoder_handle_quants;
-      encoder->setup_frame = schro_encoder_setup_frame_lossless;
+      encoder->setup_frame = schro_encoder_setup_frame_tworef;
       break;
     case SCHRO_ENCODER_RATE_CONTROL_CONSTANT_LAMBDA:
       handle_gop_enum (encoder);
@@ -4048,6 +4083,13 @@ static char *rate_control_list[] = {
   "constant_error",
   "constant_quality"
 };
+static char *profile_list[] = {
+  "auto",
+  "vc2_low_delay",
+  "vc2_simple",
+  "vc2_main",
+  "main"
+};
 static char *gop_structure_list[] = {
   "adaptive",
   "intra_only",
@@ -4121,6 +4163,7 @@ struct SchroEncoderSettings {
   ENUM(filtering, filtering_list, 0),
   DOUB(filter_value, 0, 100.0, 5.0),
   INT (profile, 0, 0, 0),
+  ENUM(force_profile, profile_list, 0),
   INT (level, 0, 0, 0),
   INT (max_refs, 1, 4, 3),
   BOOL(open_gop, TRUE),

@@ -75,6 +75,14 @@ typedef enum {
   SCHRO_ENCODER_GOP_CHAINED_BIREF,
 } SchroEncoderGOPEnum;
 
+typedef enum {
+  SCHRO_ENCODER_PROFILE_AUTO,
+  SCHRO_ENCODER_PROFILE_VC2_LOW_DELAY,
+  SCHRO_ENCODER_PROFILE_VC2_SIMPLE,
+  SCHRO_ENCODER_PROFILE_VC2_MAIN,
+  SCHRO_ENCODER_PROFILE_MAIN
+} SchroEncoderProfile;
+
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 typedef int (*SchroEngineIterateFunc) (SchroEncoder *encoder);
 
@@ -255,6 +263,7 @@ struct _SchroEncoder {
   double perceptual_distance;
   int filtering;
   double filter_value;
+  SchroEncoderProfile force_profile;
   int profile;
   int level;
   int open_gop;
