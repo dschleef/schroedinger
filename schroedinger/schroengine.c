@@ -523,6 +523,8 @@ schro_frame_set_wavelet_params (SchroEncoderFrame* frame)
     } else {
       params->wavelet_filter_index = 3;
     }
+  } else if (encoder->rate_control == SCHRO_ENCODER_RATE_CONTROL_LOSSLESS) {
+    params->wavelet_filter_index = 3;
   }
 }
 

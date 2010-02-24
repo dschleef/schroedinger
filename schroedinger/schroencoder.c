@@ -98,6 +98,9 @@ schro_encoder_set_frame_lambda (SchroEncoderFrame *frame)
 
       }
       break;
+    case SCHRO_ENCODER_RATE_CONTROL_LOSSLESS:
+      frame->frame_me_lambda = 10;
+      break;
     default:
       /* others don't use lambda */
       frame->frame_lambda = 1.0;
