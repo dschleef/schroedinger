@@ -34,6 +34,8 @@ encode
 #exit 0
 
 
+
+
 # gop structure
 
 testname="intra-only"
@@ -252,4 +254,34 @@ testname="rdo-cbr"
 schroopts="rate-control=1 bitrate=2000000 enable-rdo-cbr=true"
 encode
 
+
+# profiles
+
+testname="profile-vc2-low-delay"
+schroopts="force-profile=vc2_low_delay"
+encode
+
+testname="profile-vc2-simple"
+schroopts="force-profile=vc2_simple"
+encode
+
+testname="profile-vc2-main"
+schroopts="force-profile=vc2_main"
+encode
+
+testname="profile-main"
+schroopts="force-profile=main"
+encode
+
+testname="profile-vc2-simple-lossless"
+schroopts="force-profile=vc2_simple rate-control=lossless"
+encode
+
+testname="profile-vc2-main-lossless"
+schroopts="force-profile=vc2_main rate-control=lossless"
+encode
+
+testname="profile-main-lossless"
+schroopts="force-profile=main rate-control=lossless"
+encode
 
