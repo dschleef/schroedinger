@@ -4208,8 +4208,8 @@ struct SchroEncoderSettings {
   BOOL(enable_deep_estimation, TRUE),
   BOOL(enable_rdo_cbr, TRUE),
   BOOL(enable_chroma_me, FALSE),
-  INT (horiz_slices, 1, INT_MAX, 8),
-  INT (vert_slices, 1, INT_MAX, 6),
+  INT (horiz_slices, 0, INT_MAX, 0),
+  INT (vert_slices, 0, INT_MAX, 0),
   ENUM(codeblock_size, codeblock_size_list, 0),
 
   DOUB(magic_dc_metric_offset, 0.0, 1000.0, 1.0),

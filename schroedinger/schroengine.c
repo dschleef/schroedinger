@@ -1006,9 +1006,14 @@ schro_encoder_setup_frame_lowdelay (SchroEncoderFrame *frame)
   params->num_refs = frame->num_refs;
   params->is_lowdelay = TRUE;
 
-  params->n_horiz_slices = encoder->horiz_slices;
-  params->n_vert_slices = encoder->vert_slices;
-  //schro_params_init_lowdelay_quantisers(params);
+  if (encoder->horiz_slices != 0 && encoder->vert_slices != 0) {
+    params->n_horiz_slices = encoder->horiz_slices;
+    params->n_vert_slices = encoder->vert_slices;
+  } else {
+    params->n_horiz_slices = params->iwt_chroma_width >> params->transform_depth;
+    params->n_vert_slices = params->iwt_chroma_height >> params->transform_depth;
+  }
+  schro_params_set_default_quant_matrix (params);
 
   num = muldiv64(encoder->bitrate,
       encoder->video_format.frame_rate_denominator,
