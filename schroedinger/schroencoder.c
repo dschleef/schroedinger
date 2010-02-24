@@ -646,6 +646,18 @@ schro_encoder_start (SchroEncoder *encoder)
     }
   }
 
+  if (encoder->bitrate == 0) {
+    encoder->bitrate = encoder->video_format.width *
+      encoder->video_format.height *
+      encoder->video_format.frame_rate_numerator /
+      encoder->video_format.frame_rate_denominator;
+    if (encoder->force_profile == SCHRO_ENCODER_PROFILE_MAIN) {
+      encoder->bitrate /= 10;
+    } else {
+      encoder->bitrate *= 2;
+    }
+  }
+
   switch (encoder->force_profile) {
     case SCHRO_ENCODER_PROFILE_VC2_LOW_DELAY:
       encoder->profile = SCHRO_PROFILE_LOW_DELAY;
@@ -757,7 +769,6 @@ schro_encoder_start (SchroEncoder *encoder)
           max_transform_depths[encoder->inter_wavelet]);
     }
   }
-
 
   encoder->start_time = schro_utils_get_time ();
 }
@@ -4152,7 +4163,7 @@ struct SchroEncoderSettings {
   int offset;
 } static const encoder_settings[] = {
   ENUM(rate_control, rate_control_list, 6),
-  INT (bitrate, 0, INT_MAX, 13824000),
+  INT (bitrate, 0, INT_MAX, 0),
   INT (max_bitrate, 0, INT_MAX, 13824000),
   INT (min_bitrate, 0, INT_MAX, 13824000),
   INT (buffer_size, 0, INT_MAX, 0),
