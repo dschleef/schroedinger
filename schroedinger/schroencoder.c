@@ -2995,7 +2995,7 @@ schro_encoder_encode_sequence_header_header (SchroEncoder *encoder,
     schro_pack_encode_bit (pack, FALSE);
   } else {
     schro_pack_encode_bit (pack, TRUE);
-    schro_pack_encode_uint (pack, 1);
+    schro_pack_encode_uint (pack, format->interlaced);
   }
 
   MARKER(pack);
