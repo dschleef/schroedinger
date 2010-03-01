@@ -447,7 +447,7 @@ schro_encoder_cbr_update(SchroEncoderFrame* frame, int num_bits)
       new_qf = MIN(new_qf, 15);
 
       encoder->qf = new_qf;
-      SCHRO_ERROR("Setting qf for next subgroup to %g",encoder->qf);
+      SCHRO_INFO("Setting qf for next subgroup to %g",encoder->qf);
 
       // Reset the frame counter
       if (encoder->subgroup_position==0){
@@ -1332,7 +1332,7 @@ schro_encoder_pull_full (SchroEncoder *encoder, int *presentation_frame,
         encoder->buffer_level -= buffer->length * 8;
         if (is_picture) {
           if (encoder->buffer_level < 0) {
-            SCHRO_ERROR("buffer underrun by %d bits", -encoder->buffer_level);
+            SCHRO_WARNING("buffer underrun by %d bits", -encoder->buffer_level);
             encoder->buffer_level = 0;
           }
           encoder->buffer_level += encoder->bits_per_picture;
@@ -2487,7 +2487,6 @@ schro_encoder_encode_picture (SchroAsyncStage *stage)
     schro_encoder_cbr_update(frame, total_frame_bits);
   }
 
-  SCHRO_ERROR("%d", frame->hard_limit_bits);
   if (schro_pack_get_offset (frame->pack)*8 > frame->hard_limit_bits) {
     SCHRO_ERROR("over hard_limit_bits after residual (%d>%d)",
         schro_pack_get_offset (frame->pack)*8, frame->hard_limit_bits);
