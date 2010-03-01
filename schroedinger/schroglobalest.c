@@ -19,6 +19,8 @@ schro_encoder_global_estimation (SchroEncoderFrame *frame)
   SchroMotionField *mf, *mf_orig;
   int i;
 
+  SCHRO_ERROR("global motion is broken");
+
   for(i=0;i<params->num_refs;i++) {
     mf_orig = frame->rme[i]->motion_fields[1];
     mf = schro_motion_field_new (mf_orig->x_num_blocks, mf_orig->y_num_blocks);

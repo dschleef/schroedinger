@@ -612,6 +612,8 @@ schro_encoder_start (SchroEncoder *encoder)
       && encoder->enable_chroma_me) {
      encoder->enable_chroma_me = FALSE;
   }
+  /* Global motion is broken */
+  encoder->enable_global_motion = FALSE;
 
   if (encoder->video_format.luma_excursion >= 256 ||
       encoder->video_format.chroma_excursion >= 256) {

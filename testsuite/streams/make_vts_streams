@@ -225,9 +225,9 @@ testname="phasecorr"
 schroopts="enable-phasecorr-estimation=true"
 encode
 
-testname="global-motion"
-schroopts="enable-global-motion=true"
-encode
+#testname="global-motion"
+#schroopts="enable-global-motion=true"
+#encode
 
 # Broken
 #testname="interlaced-coding"
