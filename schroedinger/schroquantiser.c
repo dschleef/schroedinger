@@ -759,31 +759,7 @@ schro_encoder_choose_quantisers_rdo_cbr(SchroEncoderFrame *frame)
   else{
     alloc_bits = encoder->P_frame_alloc;
   }
-  // FIXME: maybe want to subtract motion data bits for Inter pictures first
-  // for a more accurate result
- 
-  int enforce;
 
-  if (encoder->buffer_level > (encoder->buffer_size/10) &&
-      encoder->buffer_level < (19*encoder->buffer_size)/20 ) {
-    enforce = 0;
-  }
-  else{
-    enforce = 1;
-    /*
-    SCHRO_ERROR("Setting max bits for frame %d at extrema :  %d %g", frame>frame_number,
-                                                          alloc_bits,
-                                                          (double)(encoder>buffer_level)/
-                                                          (double)(encoder>buffer_size)); */
-  }
-
-  if (est_bits > alloc_bits && enforce == 1){
-
-    frame->frame_lambda = schro_encoder_entropy_to_lambda (frame, alloc_bits);
-    SCHRO_DEBUG("Setting revised lambda based on allocation: %d %g %d", frame->frame_number, frame->frame_lambda, alloc_bits);
-
-    schro_encoder_lambda_to_entropy (frame, frame->frame_lambda);
-  }
 }
 
 void

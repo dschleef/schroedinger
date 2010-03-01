@@ -444,9 +444,10 @@ schro_encoder_cbr_update(SchroEncoderFrame* frame, int num_bits)
           new_qf = MAX(new_qf, encoder->qf-2.0);
         }
       }
+      new_qf = MIN(new_qf, 15);
 
       encoder->qf = new_qf;
-      SCHRO_DEBUG("Setting qf for next subgroup to %g",encoder->qf);
+      SCHRO_ERROR("Setting qf for next subgroup to %g",encoder->qf);
 
       // Reset the frame counter
       if (encoder->subgroup_position==0){
@@ -524,6 +525,7 @@ schro_encoder_new (void)
   encoder->au_frame = -1;
 
   encoder->last_ref = -1;
+  encoder->qf = 7.0;
 
   schro_encoder_setting_set_defaults(encoder);
 
@@ -2396,22 +2398,18 @@ schro_encoder_encode_picture (SchroAsyncStage *stage)
     frame->actual_mc_bits += schro_pack_get_offset(frame->pack) * 8;
   }
 
-/***
   if (schro_pack_get_offset (frame->pack)*8 > frame->hard_limit_bits) {
     SCHRO_ERROR("over hard_limit_bits after MC (%d>%d)",
         schro_pack_get_offset (frame->pack)*8, frame->hard_limit_bits);
   }
-***/
 
   schro_pack_sync(frame->pack);
   schro_encoder_encode_transform_parameters (frame);
 
-/***
   if (schro_pack_get_offset (frame->pack)*8 > frame->hard_limit_bits) {
     SCHRO_ERROR("over hard_limit_bits after transform params (%d>%d)",
         schro_pack_get_offset (frame->pack)*8, frame->hard_limit_bits);
   }
-***/
 
   frame->actual_residual_bits = -schro_pack_get_offset (frame->pack)*8;
 
@@ -2489,12 +2487,11 @@ schro_encoder_encode_picture (SchroAsyncStage *stage)
     schro_encoder_cbr_update(frame, total_frame_bits);
   }
 
-/***
+  SCHRO_ERROR("%d", frame->hard_limit_bits);
   if (schro_pack_get_offset (frame->pack)*8 > frame->hard_limit_bits) {
     SCHRO_ERROR("over hard_limit_bits after residual (%d>%d)",
         schro_pack_get_offset (frame->pack)*8, frame->hard_limit_bits);
   }
-***/
 
   subbuffer = schro_buffer_new_subbuffer (frame->output_buffer, 0,
       schro_pack_get_offset (frame->pack));
@@ -3541,7 +3538,6 @@ schro_encoder_quantise_subband (SchroEncoderFrame *frame, int component,
   return schro_frame_data_is_zero (&qd);
 }
 
-#if 0
 static void
 schro_frame_data_clear (SchroFrameData *fd)
 {
@@ -3551,7 +3547,6 @@ schro_frame_data_clear (SchroFrameData *fd)
     orc_splat_s16_ns (SCHRO_FRAME_DATA_GET_LINE(fd, i), 0, fd->width);
   }
 }
-#endif
 
 void
 schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index)
@@ -3765,10 +3760,9 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
       arith->offset*8);
 
   n_subbands_left = (3-component) * (1 + 3*params->transform_depth) - index;
-  /***
   if ((schro_pack_get_offset (frame->pack) + arith->offset +
         n_subbands_left + 4)*8 > frame->hard_limit_bits) {
-    SCHRO_DEBUG("skipping comp=%d subband=%d, too big (%d+%d+%d+32 > %d)",
+    SCHRO_ERROR("skipping comp=%d subband=%d, too big (%d+%d+%d+32 > %d)",
         component, index,
         schro_pack_get_offset (frame->pack) * 8, arith->offset*8,
         n_subbands_left * 8, frame->hard_limit_bits);
@@ -3776,8 +3770,7 @@ schro_encoder_encode_subband (SchroEncoderFrame *frame, int component, int index
     schro_pack_encode_uint (frame->pack, 0);
 
     schro_frame_data_clear (&fd);
-  } else
-  ***/{
+  } else {
     SCHRO_DEBUG("appending comp=%d subband=%d, (%d+%d+%d+32 <= %d)",
         component, index,
         schro_pack_get_offset (frame->pack) * 8, arith->offset*8,

@@ -565,8 +565,7 @@ schro_encoder_calculate_allocation (SchroEncoderFrame *frame)
 {
   SchroEncoder *encoder = frame->encoder;
 
-  if (encoder->rate_control != SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE ||
-      encoder->enable_rdo_cbr == TRUE) {
+  if (encoder->rate_control != SCHRO_ENCODER_RATE_CONTROL_CONSTANT_BITRATE) {
     /* FIXME this function shouldn't be called for CBR */
 
     frame->hard_limit_bits = frame->output_buffer_size * 8;
