@@ -104,6 +104,8 @@ SchroFrame * schro_frame_new (void);
 SchroFrame * schro_frame_new_and_alloc (SchroMemoryDomain *domain,
     SchroFrameFormat format, int width, int height);
 SchroFrame * schro_frame_new_from_data_I420 (void *data, int width, int height);
+SchroFrame * schro_frame_new_from_data_Y42B (void *data, int width, int height);
+SchroFrame * schro_frame_new_from_data_Y444 (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_YV12 (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_YUY2 (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_UYVY (void *data, int width, int height);
