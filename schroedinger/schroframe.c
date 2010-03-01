@@ -211,7 +211,7 @@ schro_frame_new_from_data_YUY2 (void *data, int width, int height)
 }
 
 /**
- * schro_frame_new_from_data_YUY2:
+ * schro_frame_new_from_data_UYVY:
  *
  * Creates a new SchroFrame object with the requested size using
  * the data pointed to by @data.  The data must be in UYVY format.
@@ -244,7 +244,7 @@ schro_frame_new_from_data_UYVY (void *data, int width, int height)
 }
 
 /**
- * schro_frame_new_from_data_YUY2:
+ * schro_frame_new_from_data_UYVY_full:
  *
  * Creates a new SchroFrame object with the requested size using
  * the data pointed to by @data.  The data must be in UYVY format,
@@ -436,7 +436,7 @@ schro_frame_new_from_data_I420 (void *data, int width, int height)
  * schro_frame_new_from_data_Y42B:
  *
  * Creates a new SchroFrame object with the requested size using
- * the data pointed to by @data.  The data must be in I420 format.
+ * the data pointed to by @data.  The data must be in Y42B format.
  * The data must remain for the lifetime of the SchroFrame object.
  * It is recommended to use schro_frame_set_free_callback() for
  * notification when the data is no longer needed.
