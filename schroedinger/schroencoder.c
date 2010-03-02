@@ -1759,12 +1759,14 @@ schro_encoder_frame_complete (SchroAsyncStage *stage)
     }
 
     if (frame->deep_me) {
-      schro_me_free (&frame->deep_me);
+      schro_me_free (frame->deep_me);
+      frame->deep_me = NULL;
     }
 
     for (i=0; 2>i; ++i) {
       if (frame->hier_bm[i]) {
-        schro_hbm_unref (&frame->hier_bm[i]);
+        schro_hbm_unref (frame->hier_bm[i]);
+        frame->hier_bm[i] = NULL;
       }
     }
 
@@ -2316,7 +2318,8 @@ schro_encoder_mode_decision (SchroAsyncStage *stage)
       if (frame->dcblock_ratio > frame->encoder->magic_me_bailout_limit) {
         if (frame->deep_me) {
           /* Free the motion estimation info if we are inserting an I frame */
-          schro_me_free (&frame->deep_me);
+          schro_me_free (frame->deep_me);
+          frame->deep_me = NULL;
         }
         frame->params.num_refs = 0;
         frame->num_refs = 0;
@@ -4041,9 +4044,12 @@ schro_encoder_frame_unref (SchroEncoderFrame *frame)
     }
     if (frame->rme[0]) schro_rough_me_free (frame->rme[0]);
     if (frame->rme[1]) schro_rough_me_free (frame->rme[1]);
-    if (frame->hier_bm[0]) schro_hbm_unref (&frame->hier_bm[0]);
-    if (frame->hier_bm[1]) schro_hbm_unref (&frame->hier_bm[1]);
-    if (frame->deep_me) schro_me_free (&frame->deep_me);
+    if (frame->hier_bm[0]) schro_hbm_unref (frame->hier_bm[0]);
+    frame->hier_bm[0] = NULL;
+    if (frame->hier_bm[1]) schro_hbm_unref (frame->hier_bm[1]);
+    frame->hier_bm[1] = NULL;
+    if (frame->deep_me) schro_me_free (frame->deep_me);
+    frame->deep_me = NULL;
     if (frame->phasecorr[0]) schro_phasecorr_free (frame->phasecorr[0]);
     if (frame->phasecorr[1]) schro_phasecorr_free (frame->phasecorr[1]);
 

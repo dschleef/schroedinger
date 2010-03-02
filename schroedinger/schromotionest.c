@@ -241,7 +241,7 @@ typedef struct {
 
 
 void
-schro_encoder_motion_predict_subpel_deep (SchroMe me)
+schro_encoder_motion_predict_subpel_deep (SchroMe *me)
 {
   SchroParams* params = schro_me_params (me);
   double lambda = schro_me_lambda (me);
@@ -1503,7 +1503,7 @@ schro_motion_copy_to (SchroMotion *motion, int i, int j, SchroBlock *block)
 /* performs single position block matching for split2 
  * to calculate SAD */
 static void
-schro_get_split2_metric (SchroMe me, int ref, int i, int j
+schro_get_split2_metric (SchroMe *me, int ref, int i, int j
     , SchroMotionVector* mv, int* metric, SchroFrameData* fd)
 {
   SchroParams* params = schro_me_params (me);
@@ -1577,7 +1577,7 @@ schro_get_split2_metric (SchroMe me, int ref, int i, int j
  * Note that a SchroMotion object is required to estimate
  * the cost of the different prediction modes. */
 static void
-schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
+schro_do_split2 (SchroMe *me, int i, int j, SchroBlock* block
     , SchroFrameData* fd)
 {
   int total_entropy = 0, total_error = 0, ii, jj, ref;
@@ -1807,7 +1807,7 @@ mv_already_in_list (SchroMotionVector* hint_list[], int len,
    the four split 2 MVs and the MV from rough ME, level 1.
    The selection of the MV is based on actual cost, not just SAD */
 static void
-schro_get_best_mv_split1 (SchroMe me, int ref, int i, int j
+schro_get_best_mv_split1 (SchroMe *me, int ref, int i, int j
     , SchroMotionVector* mv_ref, int* error, int* entropy, SchroFrameData* fd)
 {
   SchroMotionVector *hint_mv[6], *mv_motion;
@@ -1829,7 +1829,7 @@ schro_get_best_mv_split1 (SchroMe me, int ref, int i, int j
   int best_error=INT_MAX, best_entropy=INT_MAX;
   int best_chroma_error = INT_MAX;
   int block_x[3], block_y[3];
-  SchroHierBm hbm;
+  SchroHierBm *hbm;
 
   xblen = params->xbsep_luma << 1;
   yblen = params->ybsep_luma << 1;
@@ -1969,7 +1969,7 @@ schro_get_best_mv_split1 (SchroMe me, int ref, int i, int j
 
 /* performs mode decision for a superblock, split level 1 */
 static void
-schro_do_split1 (SchroMe me, int i, int j, SchroBlock* block
+schro_do_split1 (SchroMe *me, int i, int j, SchroBlock* block
     , SchroFrameData* fd)
 {
   SchroParams* params = schro_me_params (me);
@@ -2158,7 +2158,7 @@ schro_do_split1 (SchroMe me, int i, int j, SchroBlock* block
 }
 
 static void
-schro_get_best_split0_mv (SchroMe me, int ref, int i, int j,
+schro_get_best_split0_mv (SchroMe *me, int ref, int i, int j,
     SchroMotionVector* mv_ref, int* error, int* entropy,
     SchroFrameData* fd)
 {
@@ -2169,7 +2169,7 @@ schro_get_best_split0_mv (SchroMe me, int ref, int i, int j,
   SchroFrameData orig[3], ref_data[3];
   SchroFrame* frame = schro_me_src (me);
   SchroUpsampledFrame* upframe;
-  SchroHierBm hbm;
+  SchroHierBm *hbm;
   SchroMotion* motion = schro_me_motion (me);
   int n=0, m=0, min_m = -1, metric = 0, ent;
   int mv_prec = params->mv_precision;
@@ -2311,7 +2311,7 @@ schro_get_best_split0_mv (SchroMe me, int ref, int i, int j,
 }
 
 static void
-schro_do_split0_biref (SchroMe me, int i, int j, SchroBlock* block,
+schro_do_split0_biref (SchroMe *me, int i, int j, SchroBlock* block,
     SchroFrameData* fd)
 {
   SchroParams* params = schro_me_params (me);
@@ -2429,7 +2429,7 @@ schro_do_split0_biref (SchroMe me, int i, int j, SchroBlock* block,
 }
 
 static void
-schro_do_split0_biref_zero (SchroMe me, int i, int j, SchroBlock* block,
+schro_do_split0_biref_zero (SchroMe *me, int i, int j, SchroBlock* block,
     SchroFrameData* fd)
 {
   SchroParams* params = schro_me_params (me);
@@ -2451,7 +2451,7 @@ schro_do_split0_biref_zero (SchroMe me, int i, int j, SchroBlock* block,
 
 /* performs mode decision for a superblock, split level 0 */
 static void
-schro_do_split0 (SchroMe me, int i, int j, SchroBlock* block
+schro_do_split0 (SchroMe *me, int i, int j, SchroBlock* block
     , SchroFrameData* fd)
 {
   SchroParams* params = schro_me_params (me);
@@ -2527,7 +2527,7 @@ schro_do_split0 (SchroMe me, int i, int j, SchroBlock* block
 
 /* performs mode decision and block/superblock splitting */
 void
-schro_mode_decision (SchroMe me)
+schro_mode_decision (SchroMe *me)
 {
   SchroParams* params = schro_me_params (me);
   SchroFrameData fd[2];
@@ -2635,7 +2635,7 @@ struct SchroMeElement {
   SchroMotionField*      split1_mf;
   SchroMotionField*      split0_mf;
 
-  SchroHierBm            hbm;
+  SchroHierBm *hbm;
 };
 
 
@@ -2677,7 +2677,7 @@ schro_me_element_free (SchroMeElement* pme)
   SchroMeElement me = *pme;
 
   if (me) {
-    if (me->hbm) schro_hbm_unref (&me->hbm);
+    if (me->hbm) schro_hbm_unref (me->hbm);
     if (me->subpel_mf) schro_motion_field_free (me->subpel_mf);
     if (me->split2_mf) schro_motion_field_free (me->split2_mf);
     if (me->split1_mf) schro_motion_field_free (me->split1_mf);
@@ -2688,17 +2688,15 @@ schro_me_element_free (SchroMeElement* pme)
 }
 
 
-SchroMe
+SchroMe *
 schro_me_new (SchroEncoderFrame* frame)
 {
   int ref;
-  SchroMe me = schro_malloc0 (sizeof(struct _SchroMe));
+  SchroMe *me = schro_malloc0 (sizeof(struct _SchroMe));
 
   SCHRO_ASSERT (me);
 
-  me->src = schro_frame_ref (frame->filtered_frame);
-  /* FIXME: SchroUpsampledFrame, SchroMotion and SchroParams
-   * are not reference-counted but they should if we use them like this */
+  me->src = frame->filtered_frame;
   me->params = &frame->params;
   me->motion = frame->motion;
   me->lambda = frame->frame_me_lambda;
@@ -2709,170 +2707,167 @@ schro_me_new (SchroEncoderFrame* frame)
 }
 
 void
-schro_me_free (SchroMe* pme)
+schro_me_free (SchroMe* me)
 {
   int ref;
-  SchroMe me = *pme;
 
   if (me) {
-    schro_frame_unref (me->src);
     for (ref=0; me->params->num_refs > ref; ++ref) {
       schro_me_element_free (&me->meElement[ref]);
     }
   }
   schro_free (me);
-  *pme = NULL;
 }
 
 SchroFrame*
-schro_me_src (SchroMe me)
+schro_me_src (SchroMe *me)
 {
   SCHRO_ASSERT (me);
   return me->src;
 }
 
 SchroUpsampledFrame*
-schro_me_ref (SchroMe me, int ref_number)
+schro_me_ref (SchroMe *me, int ref_number)
 {
   SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
   return me->meElement[ref_number]->ref;
 }
 
 SchroMotionField*
-schro_me_subpel_mf (SchroMe me, int ref_number)
+schro_me_subpel_mf (SchroMe *me, int ref_number)
 {
   SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
   return me->meElement[ref_number]->subpel_mf;
 }
 
 void
-schro_me_set_subpel_mf (SchroMe me, SchroMotionField* mf, int ref_number)
+schro_me_set_subpel_mf (SchroMe *me, SchroMotionField* mf, int ref_number)
 {
   SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
   me->meElement[ref_number]->subpel_mf = mf;
 }
 
 SchroMotionField*
-schro_me_split2_mf (SchroMe me, int ref_number)
+schro_me_split2_mf (SchroMe *me, int ref_number)
 {
   SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
   return me->meElement[ref_number]->split2_mf;
 }
 
 void
-schro_me_set_split2_mf (SchroMe me, SchroMotionField* mf, int ref_number)
+schro_me_set_split2_mf (SchroMe *me, SchroMotionField* mf, int ref_number)
 {
   SCHRO_ASSERT (me &&(0 == ref_number || 1 == ref_number));
   me->meElement[ref_number]->split2_mf = mf;
 }
 
 SchroMotionField*
-schro_me_split1_mf (SchroMe me, int ref_number)
+schro_me_split1_mf (SchroMe *me, int ref_number)
 {
   SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
   return me->meElement[ref_number]->split1_mf;
 }
 
 void
-schro_me_set_split1_mf (SchroMe me, SchroMotionField* mf, int ref_number)
+schro_me_set_split1_mf (SchroMe *me, SchroMotionField* mf, int ref_number)
 {
   SCHRO_ASSERT (me &&(0 == ref_number || 1 == ref_number));
   me->meElement[ref_number]->split1_mf = mf;
 }
 
 SchroMotionField*
-schro_me_split0_mf (SchroMe me, int ref_number)
+schro_me_split0_mf (SchroMe *me, int ref_number)
 {
   SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
   return me->meElement[ref_number]->split0_mf;
 }
 
 void
-schro_me_set_split0_mf (SchroMe me, SchroMotionField* mf, int ref_number)
+schro_me_set_split0_mf (SchroMe *me, SchroMotionField* mf, int ref_number)
 {
   SCHRO_ASSERT (me &&(0 == ref_number || 1 == ref_number));
   me->meElement[ref_number]->split0_mf = mf;
 }
 
-SchroHierBm
-schro_me_hbm (SchroMe me, int ref_number)
+SchroHierBm *
+schro_me_hbm (SchroMe *me, int ref_number)
 {
   SCHRO_ASSERT (me && (0 == ref_number || 1 == ref_number));
   return me->meElement[ref_number]->hbm;
 }
 
 void
-schro_me_set_lambda (SchroMe me, double lambda)
+schro_me_set_lambda (SchroMe *me, double lambda)
 {
   SCHRO_ASSERT (me);
   me->lambda = lambda;
 }
 
 double
-schro_me_lambda (SchroMe me)
+schro_me_lambda (SchroMe *me)
 {
   SCHRO_ASSERT (me);
   return me->lambda;
 }
 
 SchroParams*
-schro_me_params (SchroMe me)
+schro_me_params (SchroMe *me)
 {
   SCHRO_ASSERT (me);
   return me->params;
 }
 
 SchroMotion*
-schro_me_motion (SchroMe me)
+schro_me_motion (SchroMe *me)
 {
   SCHRO_ASSERT (me);
   return me->motion;
 }
 
 void
-schro_me_set_motion (SchroMe me, SchroMotion* motion)
+schro_me_set_motion (SchroMe *me, SchroMotion* motion)
 {
   SCHRO_ASSERT (me);
   me->motion = motion;
 }
 
 void
-schro_me_set_mc_error (SchroMe me, double mc_error)
+schro_me_set_mc_error (SchroMe *me, double mc_error)
 {
   SCHRO_ASSERT (me);
   me->mc_error = mc_error;
 }
 
 double
-schro_me_mc_error (SchroMe me)
+schro_me_mc_error (SchroMe *me)
 {
   SCHRO_ASSERT (me);
   return me->mc_error;
 }
 
 void
-schro_me_set_badblock_ratio (SchroMe me, double badblocks_ratio)
+schro_me_set_badblock_ratio (SchroMe *me, double badblocks_ratio)
 {
   SCHRO_ASSERT (me);
   me->badblocks_ratio = badblocks_ratio;
 }
 
 double
-schro_me_badblocks_ratio (SchroMe me)
+schro_me_badblocks_ratio (SchroMe *me)
 {
   SCHRO_ASSERT (me);
   return me->badblocks_ratio;
 }
 
 void
-schro_me_set_dcblock_ratio (SchroMe me, double dcblock_ratio)
+schro_me_set_dcblock_ratio (SchroMe *me, double dcblock_ratio)
 {
   SCHRO_ASSERT (me);
   me->dcblock_ratio = dcblock_ratio;
 }
 
 double
-schro_me_dcblock_ratio (SchroMe me)
+schro_me_dcblock_ratio (SchroMe *me)
 {
   SCHRO_ASSERT (me);
   return me->dcblock_ratio;
