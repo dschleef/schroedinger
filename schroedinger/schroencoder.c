@@ -444,10 +444,11 @@ schro_encoder_cbr_update(SchroEncoderFrame* frame, int num_bits)
           new_qf = MAX(new_qf, encoder->qf-2.0);
         }
       }
-      new_qf = MIN(new_qf, 15);
+      new_qf = MIN(new_qf, 5 + 10*((double)encoder->buffer_level)/encoder->buffer_size);
 
       encoder->qf = new_qf;
-      SCHRO_INFO("Setting qf for next subgroup to %g",encoder->qf);
+      SCHRO_DEBUG("Setting qf for next subgroup to %g, bits %d",encoder->qf,
+          encoder->buffer_level);
 
       // Reset the frame counter
       if (encoder->subgroup_position==0){
