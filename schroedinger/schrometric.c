@@ -31,6 +31,10 @@ schro_metric_absdiff_u8 (uint8_t *a, int a_stride, uint8_t *b, int b_stride,
 void
 schro_metric_scan_do_scan (SchroMetricScan *scan)
 {
+  SchroFrameData* fd;
+  SchroFrameData* fd_ref;
+  int i, j;
+
   SCHRO_ASSERT (scan->ref_x + scan->block_width + scan->scan_width - 1 <=
       scan->frame->width + scan->frame->extension);
   SCHRO_ASSERT (scan->ref_y + scan->block_height + scan->scan_height - 1 <=
@@ -41,9 +45,9 @@ schro_metric_scan_do_scan (SchroMetricScan *scan)
   SCHRO_ASSERT (scan->scan_height > 0);
 
   /* do luma first */
-  SchroFrameData* fd = scan->frame->components + 0;
-  SchroFrameData* fd_ref = scan->ref_frame->components + 0;
-  int i, j;
+  fd = scan->frame->components + 0;
+  fd_ref = scan->ref_frame->components + 0;
+
   if (scan->block_width == 8 && scan->block_height == 8) {
     for(j=0;j<scan->scan_height;j++){
     for(i=0;i<scan->scan_width;i++){

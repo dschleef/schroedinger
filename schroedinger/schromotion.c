@@ -1146,11 +1146,17 @@ void
 schro_mf_vector_prediction (SchroMotionField* mf,
     int x, int y, int* pred_x, int* pred_y, int mode)
 {
+  int x_num_blocks;
+  SchroMotionVector* mv;
+  int vx[3], vy[3];
+  int n = 0;
+  int ref = mode - 1;
+
   SCHRO_ASSERT(mf && pred_x && pred_y);
   SCHRO_ASSERT (1 == mode || 2 == mode);
-  int x_num_blocks = mf->x_num_blocks;
-  SchroMotionVector* mv;
-  int vx[3], vy[3], n = 0, ref = mode - 1;
+
+  x_num_blocks = mf->x_num_blocks;
+
   if (0<x) {
     mv = &mf->motion_vectors[y * x_num_blocks + x - 1];
     vx[n] = mv->u.vec.dx[ref];

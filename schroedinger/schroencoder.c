@@ -177,8 +177,11 @@ schro_encoder_last_subgroup_coded(SchroEncoder* encoder, int picnum)
  */
 void schro_encoder_init_rc_buffer(SchroEncoder* encoder)
 {
+  int gop_length;
+
   SCHRO_ASSERT (encoder);
-  int gop_length = encoder->au_distance;
+
+  gop_length = encoder->au_distance;
   if (encoder->buffer_size == 0) {
     encoder->buffer_size = 3 * encoder->bitrate;
   }
@@ -268,22 +271,32 @@ schro_encoder_target_subgroup_bits(SchroEncoder* encoder)
 void
 schro_encoder_cbr_allocate(SchroEncoder* encoder, int fnum )
 {
+  int gop_length;
+  int Icty;
+  int Pcty;
+  int Bcty;
+  int num_I_frames;
+  int num_P_frames;
+  int num_B_frames;
+  int total_gop_bits;
+  int sg_len;
+  double buffer_occ;
+  int min_bits;
+
   SCHRO_ASSERT(encoder);
-  int gop_length = encoder->au_distance;
-  int Icty = encoder->I_complexity;
-  int Pcty = encoder->P_complexity;
-  int Bcty = encoder->B_complexity;
 
-  int num_I_frames = 1;
-  int num_P_frames = encoder->au_distance / encoder->magic_subgroup_length - 1;
-  int num_B_frames = gop_length - num_I_frames - num_P_frames;
-
-  int total_gop_bits = muldiv64 (encoder->bitrate * gop_length,
-                       encoder->video_format.frame_rate_denominator,
-                       encoder->video_format.frame_rate_numerator);
-  int sg_len = encoder->magic_subgroup_length;
-
-  double buffer_occ = ( (double)encoder->buffer_level)/((double)encoder->buffer_size);
+  gop_length = encoder->au_distance;
+  Icty = encoder->I_complexity;
+  Pcty = encoder->P_complexity;
+  Bcty = encoder->B_complexity;
+  num_I_frames = 1;
+  num_P_frames = encoder->au_distance / encoder->magic_subgroup_length - 1;
+  num_B_frames = gop_length - num_I_frames - num_P_frames;
+  total_gop_bits = muldiv64 (encoder->bitrate * gop_length,
+      encoder->video_format.frame_rate_denominator,
+      encoder->video_format.frame_rate_numerator);
+  sg_len = encoder->magic_subgroup_length;
+  buffer_occ = ( (double)encoder->buffer_level)/((double)encoder->buffer_size);
 
   if ( encoder->gop_structure != SCHRO_ENCODER_GOP_INTRA_ONLY){
     double correction;
@@ -299,7 +312,7 @@ schro_encoder_cbr_allocate(SchroEncoder* encoder, int fnum )
     }
   }
 
-  const long int min_bits = total_gop_bits/(100*gop_length);
+  min_bits = total_gop_bits/(100*gop_length);
 
   encoder->I_frame_alloc = (long int) (encoder->gop_target
                          / (num_I_frames
@@ -333,25 +346,27 @@ schro_encoder_cbr_allocate(SchroEncoder* encoder, int fnum )
 void
 schro_encoder_cbr_update(SchroEncoderFrame* frame, int num_bits)
 {
-  SCHRO_ASSERT(frame);
   SchroEncoder* encoder = frame->encoder;
-
-
-  // The target buffer occupancy
-  double target_ratio = 0.9;
-  double actual_ratio = (double)(encoder->buffer_level)/
-                        (double)(encoder->buffer_size);
+  double target_ratio;
+  double actual_ratio;
   double filter_tap;
-  int P_separation=encoder->magic_subgroup_length;
-
-  // 1 is coding frames, 2 if coding fields
-  int field_factor = 1;
-  if (encoder->video_format.interlaced_coding)
-    field_factor = 2;
-
-  int emergency_realloc = 0;
+  int P_separation;
+  int field_factor;
+  int emergency_realloc;
   int target;
   double tbits, pbits;
+
+  // The target buffer occupancy
+  target_ratio = 0.9;
+  actual_ratio = (double)(encoder->buffer_level)/
+    (double)(encoder->buffer_size);
+  P_separation=encoder->magic_subgroup_length;
+
+  // 1 is coding frames, 2 if coding fields
+  field_factor = 1;
+  if (encoder->video_format.interlaced_coding) field_factor = 2;
+
+  emergency_realloc = 0;
 
   // Decrement the subgroup frame counter. This is zero just after the last
   // B frame before the next P frame i.e. before the start of a subgroup
@@ -411,6 +426,9 @@ schro_encoder_cbr_update(SchroEncoderFrame* frame, int num_bits)
     }
 
     if ( encoder->subgroup_position==0 || emergency_realloc==1){
+      double K;
+      double new_qf;
+
       if (emergency_realloc==1 )
         SCHRO_DEBUG("Major undershoot of frame bit rate: Reallocating");
 
@@ -428,10 +446,10 @@ schro_encoder_cbr_update(SchroEncoderFrame* frame, int num_bits)
       SCHRO_DEBUG("Reallocating: target bits = %g, projected bits = %g",tbits,pbits);
 
       // Determine K value in model
-      double K = pow(pbits, 2)*pow(10.0, ((double)2/5*(12-encoder->qf)))/16;
+      K = pow(pbits, 2)*pow(10.0, ((double)2/5*(12-encoder->qf)))/16;
 
       // Determine a new qf from K
-      double new_qf= 12 - (double)5/2*log10(16*K/pow(tbits, 2));
+      new_qf= 12 - (double)5/2*log10(16*K/pow(tbits, 2));
 
       if ( ( abs(encoder->qf-new_qf)>=0.25 || new_qf <= 4.0 ) && new_qf<=8.0)
         new_qf = filter_tap*new_qf+(1.0-filter_tap)*encoder->qf;
@@ -1771,15 +1789,16 @@ schro_encoder_frame_complete (SchroAsyncStage *stage)
 static void
 schro_encoder_sc_detect_1 (SchroAsyncStage* stage)
 {
-  SCHRO_ASSERT(stage && stage->priv);
-
   SchroEncoderFrame* frame = stage->priv;
+  SchroFrameData *comp1;
+  SchroFrameData *comp2;
+
   SCHRO_ASSERT(frame->stages[SCHRO_ENCODER_FRAME_STAGE_ANALYSE].is_done
       && frame->previous_frame
       && frame->previous_frame->stages[SCHRO_ENCODER_FRAME_STAGE_ANALYSE].is_done);
 
-  SchroFrameData *comp1 = &frame->downsampled_frames[0]->components[0]
-    , *comp2 = &frame->previous_frame->downsampled_frames[0]->components[0];
+  comp1 = &frame->downsampled_frames[0]->components[0];
+  comp2 = &frame->previous_frame->downsampled_frames[0]->components[0];
 
   frame->sc_mad = schro_metric_absdiff_u8 (comp1->data, comp1->stride, comp2->data, comp2->stride,
       comp1->width, comp1->height);
@@ -1868,16 +1887,17 @@ check_refs (SchroEncoderFrame *frame)
 static void
 calculate_sc_score (SchroEncoder* encoder)
 {
-  SCHRO_ASSERT(encoder && encoder->enable_scene_change_detection);
 #define SC_THRESHOLD_RANGE 2
 #define MAD_ARRAY_LEN SC_THRESHOLD_RANGE * 2 + 1
 #define BIG_INT 0xffffffff
   int i,j,end;
   int mad_array[MAD_ARRAY_LEN];
   SchroEncoderFrame *frame, *f, *f2;
+
   /* calculate threshold first */
   for (i=SC_THRESHOLD_RANGE; encoder->frame_queue->n - SC_THRESHOLD_RANGE > i; ++i) {
     int mad_max = 0, mad_min = BIG_INT;
+
     frame = encoder->frame_queue->elements[i].data;
     if (!frame->need_mad) continue;
     if (frame->have_scene_change_score) continue;
@@ -1954,6 +1974,8 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
   if (encoder->enable_scene_change_detection) {
     /* calculate MAD for entire queue of frames */
     for (i=0; encoder->frame_queue->n > i; ++i) {
+      SchroEncoderFrame* prev_frame;
+
       frame = encoder->frame_queue->elements[i].data;
       SCHRO_DEBUG("phase I of shot change detection for i=%d picture=%d state=%d"
           , i, frame->frame_number, 0 /* frame->state */ );
@@ -1965,7 +1987,7 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
         frame->stages[SCHRO_ENCODER_FRAME_STAGE_SC_DETECT_1].is_done = TRUE;
         continue;
       }
-      SchroEncoderFrame* prev_frame = frame->previous_frame;
+      prev_frame = frame->previous_frame;
 
       if (!frame->stages[SCHRO_ENCODER_FRAME_STAGE_SC_DETECT_1].is_done
           && prev_frame
@@ -2129,7 +2151,6 @@ schro_encoder_async_schedule (SchroEncoder *encoder, SchroExecDomain exec_domain
 void
 schro_encoder_analyse_picture (SchroAsyncStage *stage)
 {
-  SCHRO_ASSERT(stage && stage->priv);
   SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
 
   if (frame->encoder->filtering != 0 || frame->need_extension) {
@@ -2189,7 +2210,6 @@ schro_encoder_analyse_picture (SchroAsyncStage *stage)
 void
 schro_encoder_predict_rough_picture (SchroAsyncStage *stage)
 {
-  SCHRO_ASSERT(stage && stage->priv);
   SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
 
   SCHRO_INFO("predict picture %d", frame->frame_number);
@@ -2217,7 +2237,6 @@ schro_encoder_predict_pel_picture (SchroAsyncStage *stage)
 void
 schro_encoder_predict_subpel_picture (SchroAsyncStage *stage)
 {
-  SCHRO_ASSERT(stage && stage->priv);
   SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
 
   if (frame->encoder->enable_bigblock_estimation) {
@@ -2225,10 +2244,9 @@ schro_encoder_predict_subpel_picture (SchroAsyncStage *stage)
       schro_encoder_motion_predict_subpel (frame);
     }
   } else if (frame->encoder->enable_deep_estimation) {
-    SCHRO_ASSERT( ( !(frame->params.num_refs > 0) || frame->hier_bm[0])
-        && ( !(frame->params.num_refs > 1) || frame->hier_bm[1]) );
     int ref, xnum_blocks, ynum_blocks;
     SchroMotionField *mf_dest, *mf_src;
+
     if (frame->params.num_refs > 0) {
       xnum_blocks = frame->params.x_num_blocks;
       ynum_blocks = frame->params.y_num_blocks;
@@ -2252,7 +2270,6 @@ schro_encoder_predict_subpel_picture (SchroAsyncStage *stage)
 void
 schro_encoder_mode_decision (SchroAsyncStage *stage)
 {
-  SCHRO_ASSERT(stage && stage->priv);
   SchroEncoderFrame *frame = (SchroEncoderFrame *)stage->priv;
 
   SCHRO_ASSERT(frame->stages[SCHRO_ENCODER_FRAME_STAGE_PREDICT_PEL].is_done);
@@ -2353,6 +2370,9 @@ schro_encoder_encode_picture (SchroAsyncStage *stage)
   SchroBuffer *subbuffer;
   int picture_chroma_width, picture_chroma_height;
   int width, height;
+  int total_frame_bits;
+  double factor;
+  double est_subband_bits;
 
   SCHRO_INFO("encode picture %d", frame->frame_number);
 
@@ -2372,7 +2392,7 @@ schro_encoder_encode_picture (SchroAsyncStage *stage)
   frame->pack = schro_pack_new ();
   schro_pack_encode_init (frame->pack, frame->output_buffer);
 
-  int total_frame_bits = -schro_pack_get_offset (frame->pack)*8;
+  total_frame_bits = -schro_pack_get_offset (frame->pack)*8;
 
   /* encode header */
   schro_encoder_encode_parse_info (frame->pack,
@@ -2427,8 +2447,6 @@ schro_encoder_encode_picture (SchroAsyncStage *stage)
 
   SCHRO_DEBUG("Actual frame %d residual bits : %d", frame->frame_number,frame->actual_residual_bits);
   // Update the fiddle factors for estimating entropy
-  double factor;
-  double est_subband_bits;
   if (frame->num_refs == 0) {
     int component, b;
     for (component=0; component<3; ++component){
@@ -3967,7 +3985,6 @@ schro_encoder_frame_ref (SchroEncoderFrame *frame)
 void
 schro_encoder_frame_unref (SchroEncoderFrame *frame)
 {
-  SCHRO_ASSERT(frame && frame->refcount > 0);
   int i;
 
   frame->refcount--;

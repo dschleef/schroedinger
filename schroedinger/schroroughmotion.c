@@ -99,6 +99,7 @@ schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
   for(j=0;j<params->y_num_blocks;j+=skip){
     for(i=0;i<params->x_num_blocks;i+=skip){
       int dx, dy;
+      uint32_t dummy;
 
       scan.x = (i>>shift) * params->xbsep_luma;
       scan.y = (j>>shift) * params->ybsep_luma;
@@ -130,7 +131,6 @@ schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
 #endif
 
       schro_metric_scan_do_scan (&scan);
-      uint32_t dummy;
       mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy, &dummy);
       dx <<= shift;
       dy <<= shift;
@@ -194,6 +194,7 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
       int dx, dy;
       int min_m;
       int min_metric;
+      uint32_t dummy;
 
       schro_frame_get_subdata (scan.frame, &orig,
           0, i*params->xbsep_luma >> shift,
@@ -288,7 +289,6 @@ schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
       }
 
       schro_metric_scan_do_scan (&scan);
-      uint32_t dummy;
       mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy, &dummy);
       dx <<= shift;
       dy <<= shift;

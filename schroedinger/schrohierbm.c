@@ -25,11 +25,13 @@ static int schro_hbm_ref_number   ( SchroHierBm schro_hbm );
 SchroHierBm
 schro_hbm_new (SchroEncoderFrame* frame, int ref)
 {
-  SCHRO_ASSERT (frame && (0 == ref || 1 == ref));
   int i;
   SchroEncoderFrame* ref_frame = frame->ref_frame[ref];
+  SchroHierBm schro_hbm;
+
   SCHRO_ASSERT (ref_frame);
-  SchroHierBm schro_hbm = schro_malloc0 (sizeof (struct _SchroHierBm));
+
+  schro_hbm = schro_malloc0 (sizeof (struct _SchroHierBm));
   schro_hbm->ref_count = 1;
   schro_hbm->hierarchy_levels = frame->encoder->downsample_levels;
   if (frame->encoder->enable_chroma_me)
@@ -71,8 +73,8 @@ schro_hbm_ref (SchroHierBm src)
 void
 schro_hbm_free (SchroHierBm hbm)
 {
-  SCHRO_ASSERT(hbm && 0 == hbm->ref_count);
   int i;
+
   for (i=0; hbm->hierarchy_levels+1 > i; ++i) {
     if (hbm->downsampled_src[i]) {
       schro_frame_unref (hbm->downsampled_src[i]);
@@ -96,8 +98,8 @@ schro_hbm_free (SchroHierBm hbm)
 void
 schro_hbm_unref (SchroHierBm* schro_hbm)
 {
-  SCHRO_ASSERT(schro_hbm && *schro_hbm && (*schro_hbm)->ref_count > 0);
   SchroHierBm hbm = *schro_hbm;
+
   *schro_hbm = NULL;
   if (0 < --hbm->ref_count) return;
   schro_hbm_free (hbm);
@@ -157,10 +159,10 @@ get_hier_levels (SchroHierBm schro_hbm)
 void
 schro_hbm_scan (SchroHierBm schro_hbm)
 {
-  SCHRO_ASSERT (schro_hbm && schro_hbm->ref_count > 0);
   int i;
   int half_scan_range = 20;
   int n_levels = get_hier_levels (schro_hbm);
+
   SCHRO_ASSERT (n_levels > 0);
 
   schro_hierarchical_bm_scan_hint (schro_hbm, n_levels, half_scan_range);
@@ -173,8 +175,6 @@ schro_hbm_scan (SchroHierBm schro_hbm)
 void
 schro_hierarchical_bm_scan_hint (SchroHierBm schro_hbm, int shift, int h_range)
 {
-  SCHRO_ASSERT (schro_hbm && !(shift > get_hier_levels (schro_hbm)));
-
   SchroMetricScan scan;
   SchroMotionVector *mv;
   SchroMotionField *mf, *hint_mf = NULL;

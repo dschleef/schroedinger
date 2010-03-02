@@ -243,8 +243,6 @@ typedef struct {
 void
 schro_encoder_motion_predict_subpel_deep (SchroMe me)
 {
-  SCHRO_ASSERT(me);
-
   SchroParams* params = schro_me_params (me);
   double lambda = schro_me_lambda (me);
   int mvprec = 0, ref;
@@ -255,6 +253,12 @@ schro_encoder_motion_predict_subpel_deep (SchroMe me)
   SchroMotionVector* mv;
   SchroFrameData fd;
   SchroFrame* orig_frame = schro_me_src (me);
+  const MatchPos sp_matches[] =
+  {   {-1, -1}, {0, -1}, {1, -1}
+    , {-1,  0},          {1,  0}
+    , {-1,  1}, {0,  1}, {1,  1}   };
+
+
   x_min = y_min = -orig_frame->extension;
 
   if (1 < params->mv_precision) {
@@ -265,11 +269,6 @@ schro_encoder_motion_predict_subpel_deep (SchroMe me)
     fd.format = SCHRO_FRAME_FORMAT_U8_420;
 
   }
-
-  MatchPos sp_matches[] =
-  {   {-1, -1}, {0, -1}, {1, -1}
-    , {-1,  0},          {1,  0}
-    , {-1,  1}, {0,  1}, {1,  1}   };
 
   while (!(params->mv_precision < ++mvprec)) {
     x_max = (orig_frame->width << mvprec) + orig_frame->extension;
@@ -520,6 +519,7 @@ schro_motionest_superblock_scan_one (SchroMotionEst *me, int ref, int distance,
   SchroMotionField *hint_mf;
   SchroMotionVector *hint_mv;
   int dx, dy;
+  uint32_t dummy;
 
   scan.frame = get_downsampled (me->encoder_frame, 0);
   scan.ref_frame = get_downsampled (me->encoder_frame->ref_frame[ref], 0);
@@ -553,7 +553,6 @@ schro_motionest_superblock_scan_one (SchroMotionEst *me, int ref, int distance,
   }
 
   schro_metric_scan_do_scan (&scan);
-  uint32_t dummy;
   block->error = schro_metric_scan_get_min (&scan, &dx, &dy, &dummy);
   mv->metric = block->error/16;
 
@@ -801,6 +800,7 @@ schro_motionest_block_scan (SchroMotionEst *me, int ref, int distance,
   SchroMotionField *hint_mf;
   SchroMotionVector *hint_mv;
   int dx, dy;
+  uint32_t dummy;
 
   scan.frame = get_downsampled (me->encoder_frame, 0);
   scan.ref_frame = get_downsampled (me->encoder_frame->ref_frame[ref], 0);
@@ -845,7 +845,6 @@ schro_motionest_block_scan (SchroMotionEst *me, int ref, int distance,
   }
 
   schro_metric_scan_do_scan (&scan);
-  uint32_t dummy;
   mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy, &dummy);
   block->error = mv->metric;
   block->valid = (mv->metric != SCHRO_METRIC_INVALID);
@@ -969,6 +968,7 @@ schro_motionest_subsuperblock_scan (SchroMotionEst *me, int ref, int distance,
   SchroMotionField *hint_mf;
   SchroMotionVector *hint_mv;
   int dx, dy;
+  uint32_t dummy;
 
   scan.frame = get_downsampled (me->encoder_frame, 0);
   scan.ref_frame = get_downsampled (me->encoder_frame->ref_frame[ref], 0);
@@ -1012,7 +1012,6 @@ schro_motionest_subsuperblock_scan (SchroMotionEst *me, int ref, int distance,
   }
 
   schro_metric_scan_do_scan (&scan);
-  uint32_t dummy;
   mv->metric = schro_metric_scan_get_min (&scan, &dx, &dy, &dummy);
   block->error = mv->metric;
   block->valid = (mv->metric != SCHRO_METRIC_INVALID);
@@ -1507,8 +1506,6 @@ static void
 schro_get_split2_metric (SchroMe me, int ref, int i, int j
     , SchroMotionVector* mv, int* metric, SchroFrameData* fd)
 {
-  SCHRO_ASSERT(me && mv && metric && fd && (0 == ref || 1 == ref));
-
   SchroParams* params = schro_me_params (me);
   SchroFrameData orig[2], ref_data[2];
   SchroFrame* frame = schro_me_src (me);
@@ -1518,12 +1515,12 @@ schro_get_split2_metric (SchroMe me, int ref, int i, int j
   int width[3], height[3], dx, dy;
   int k;
   int xmin, xmax, ymin, ymax, tmp_x, tmp_y;
+  int block_x[3], block_y[3];
 
   xmin = ymin = -frame->extension;
   xmax = (frame->width << mv_prec) + frame->extension;
   ymax = (frame->height << mv_prec) + frame->extension;
   /* calculates split2 block sizes for all components */
-  int block_x[3], block_y[3];
   block_x[0] = params->xbsep_luma;
   block_y[0] = params->ybsep_luma;
   block_x[1] = block_x[2] =
@@ -1583,14 +1580,11 @@ static void
 schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
     , SchroFrameData* fd)
 {
-  SCHRO_ASSERT(me && block && fd);
-
   int total_entropy = 0, total_error = 0, ii, jj, ref;
   double lambda = schro_me_lambda (me); /* frame->frame_me_lambda; */
   int comp_w[3], comp_h[3];
   SchroParams* params = schro_me_params (me);
   SchroMotion* motion = schro_me_motion (me);
-  SCHRO_ASSERT (motion);
   int mvprec = params->mv_precision;
   int xnum_blocks = params->x_num_blocks;
   int fd_width, fd_height, biref;
@@ -1600,6 +1594,7 @@ schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
   SchroUpsampledFrame* upframe[2];
   SchroMotionField* mf;
   int xmin, ymin, xmax, ymax;
+
   xmin = ymin = -orig_frame->extension;
   xmax = (orig_frame->width << mvprec) + orig_frame->extension;
   ymax = (orig_frame->height << mvprec) + orig_frame->extension;
@@ -1677,13 +1672,16 @@ schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
         mv->pred_mode = 3;
         mv->using_global = 0;
         for (k=0; 3>k; ++k) {
+          int tmp_x;
+          int tmp_y;
+
           /* fetch dource data for all components */
           schro_frame_get_data (orig_frame, &orig[k], k
               , (i+ii) * comp_w[k], (j+jj) * comp_h[k]);
           width[k] = MIN(comp_w[k], orig[k].width);
           height[k] = MIN(comp_h[k], orig[k].height);
-          int tmp_x = (i+ii) * (comp_w[k] << mvprec)
-            , tmp_y = (j+jj) * (comp_h[k] << mvprec);
+          tmp_x = (i+ii) * (comp_w[k] << mvprec);
+          tmp_y = (j+jj) * (comp_h[k] << mvprec);
           for (ref=0; params->num_refs > ref; ++ref) {
             dx[ref] = mv->u.vec.dx[ref];
             dx[ref] >>= 0 == k ? 0
@@ -1735,12 +1733,13 @@ schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
         /* let's consider DC prediction */
         SchroMotionVector* mvdc;
         int k;
+        int ok=TRUE;
+
         mvdc = (SchroMotionVector*)mv;
         mvdc->pred_mode = 0;
         mvdc->split = 2;
         mvdc->using_global = 0;
         error = 0;
-        int ok=TRUE;
         for (k=0; 3>k; ++k) {
           int tmp = schro_block_average (&mvdc->u.dc.dc[k], orig_frame->components+k
             , (i+ii)*comp_w[k], (j+jj)*comp_h[k], comp_w[k], comp_h[k]);
@@ -1780,20 +1779,21 @@ schro_do_split2 (SchroMe me, int i, int j, SchroBlock* block
 static void
 set_split1_motion (SchroMotion* motion, int i, int j)
 {
-  SCHRO_ASSERT(motion && !(i & 0x1) && !(j & 0x1));
   SchroParams* params = motion->params;
   int xnum_blocks = params->x_num_blocks;
   SchroMotionVector* mv = motion->motion_vectors + j*xnum_blocks + i;
+
   *(mv+1) = *mv;
   *(mv+xnum_blocks) = *mv;
   *(mv+xnum_blocks+1) = *mv;
 }
 
 static int
-mv_already_in_list (SchroMotionVector* hint_list[], int len
-    , SchroMotionVector* candidate_mv, int ref, int shift) {
-  SCHRO_ASSERT (hint_list && candidate_mv && len >0);
+mv_already_in_list (SchroMotionVector* hint_list[], int len,
+    SchroMotionVector* candidate_mv, int ref, int shift)
+{
   int i;
+
   for (i=0; len > i; ++i) {
     if ((candidate_mv->u.vec.dx[ref] << shift) == hint_list[i]->u.vec.dx[ref]
         && (candidate_mv->u.vec.dy[ref] << shift) == hint_list[i]->u.vec.dy[ref]) {
@@ -1810,9 +1810,6 @@ static void
 schro_get_best_mv_split1 (SchroMe me, int ref, int i, int j
     , SchroMotionVector* mv_ref, int* error, int* entropy, SchroFrameData* fd)
 {
-  SCHRO_ASSERT(me && mv_ref && error && entropy
-      && !(i&0x1) && !(j&0x1) && fd && (0 == ref || 1 == ref));
-
   SchroMotionVector *hint_mv[6], *mv_motion;
   SchroMotionVector *mv, temp_mv={0};
   SchroMotionField *mf;
@@ -1831,6 +1828,8 @@ schro_get_best_mv_split1 (SchroMe me, int ref, int i, int j
   int xmin, xmax, ymin, ymax, tmp_x, tmp_y;
   int best_error=INT_MAX, best_entropy=INT_MAX;
   int best_chroma_error = INT_MAX;
+  int block_x[3], block_y[3];
+  SchroHierBm hbm;
 
   xblen = params->xbsep_luma << 1;
   yblen = params->ybsep_luma << 1;
@@ -1845,7 +1844,6 @@ schro_get_best_mv_split1 (SchroMe me, int ref, int i, int j
   comp_h[1] = comp_h[2] = yblen
     >> SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
   /* calculates split2 block sizes for all components */
-  int block_x[3], block_y[3];
   block_x[0] = params->xbsep_luma;
   block_y[0] = params->ybsep_luma;
   block_x[1] = block_x[2] =
@@ -1885,7 +1883,7 @@ schro_get_best_mv_split1 (SchroMe me, int ref, int i, int j
     }
   }
   /* inherit from stage 1 of hier. BM */
-  SchroHierBm hbm = schro_me_hbm (me, ref);
+  hbm = schro_me_hbm (me, ref);
   SCHRO_ASSERT (hbm);
   mf = schro_hbm_motion_field (hbm, 1);
   SCHRO_ASSERT (mf);
@@ -1904,9 +1902,10 @@ schro_get_best_mv_split1 (SchroMe me, int ref, int i, int j
   min_score = HUGE_VAL;
   upframe = schro_me_ref (me, ref);
   for (m=0; n > m; ++m) {
-    metric = 0;
     int chroma_metric = 0;
     int ok = TRUE;
+
+    metric = 0;
     for (k=0; 3>k; ++k) {
       tmp_x = (i * block_x[k]) << mv_prec;
       tmp_y = (j * block_y[k]) << mv_prec;
@@ -1973,37 +1972,33 @@ static void
 schro_do_split1 (SchroMe me, int i, int j, SchroBlock* block
     , SchroFrameData* fd)
 {
-  SCHRO_ASSERT(me && block && fd);
-
   SchroParams* params = schro_me_params (me);
   SchroMotion* motion = schro_me_motion (me);
-  SCHRO_ASSERT (motion);
   SchroFrame* orig_frame = schro_me_src (me);
   SchroFrameData ref_data[3][2], orig[3];
   SchroUpsampledFrame* upframe[2];
   SchroMotionField* mf;
   double lambda = schro_me_lambda (me);
-
   int ii, jj, ref, biref, k;
   int total_entropy = 0, total_error = 0;
   int mvprec = params->mv_precision;
   int xblen = params->xbsep_luma * 2, yblen = params->ybsep_luma * 2;
   int width[3], height[3], dx[2], dy[2], tmp_x, tmp_y;
-
   int fd_width, fd_height;
   int xmin, xmax, ymin, ymax;
+  int comp_h[3], comp_w[3];
+  int block_x[3], block_y[3];
+
   xmin = ymin = -orig_frame->extension;
   xmax = (orig_frame->width << mvprec) + orig_frame->extension;
   ymax = (orig_frame->height << mvprec) + orig_frame->extension;
 
-  int comp_h[3], comp_w[3];
   comp_w[0] = xblen;
   comp_h[0] = yblen;
   comp_w[1] = comp_w[2] = xblen
     >> SCHRO_CHROMA_FORMAT_H_SHIFT(params->video_format->chroma_format);
   comp_h[1] = comp_h[2] = yblen
     >> SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
-  int block_x[3], block_y[3];
   block_x[0] = params->xbsep_luma;
   block_y[0] = params->ybsep_luma;
   block_x[1] = block_x[2] =
@@ -2125,8 +2120,9 @@ schro_do_split1 (SchroMe me, int i, int j, SchroBlock* block
           }
         }
         if (biref) {
-          error = 0;
           int chroma_error = 0;
+
+          error = 0;
           error = schro_metric_get_biref (&orig[0], &ref_data[0][0], 1
               , &ref_data[0][1], 1, 1, width[0], height[0]);
           for (k=1; 3>k; ++k) {
@@ -2162,12 +2158,10 @@ schro_do_split1 (SchroMe me, int i, int j, SchroBlock* block
 }
 
 static void
-schro_get_best_split0_mv (SchroMe me, int ref, int i, int j
-    , SchroMotionVector* mv_ref, int* error, int* entropy
-    , SchroFrameData* fd) {
-  SCHRO_ASSERT(me && (0 == ref || 1 == ref)
-      && !(i&0x3) && !(j&0x3) && fd && error && entropy);
-
+schro_get_best_split0_mv (SchroMe me, int ref, int i, int j,
+    SchroMotionVector* mv_ref, int* error, int* entropy,
+    SchroFrameData* fd)
+{
   SchroMotionVector* hint_mv[6], *mv_motion;
   SchroMotionVector *mv, temp_mv = {0};
   SchroMotionField* mf;
@@ -2186,9 +2180,10 @@ schro_get_best_split0_mv (SchroMe me, int ref, int i, int j
   int width[3], height[3], dx, dy, xmin, xmax, ymin, ymax, tmp_x, tmp_y;
   int best_error = INT_MAX, best_chroma_error = INT_MAX
     , best_entropy = INT_MAX;
-
+  int comp_w[3], comp_h[3];
   /* split2 block sizes for all components */
   int block_x[3], block_y[3];
+
   block_x[0] = params->xbsep_luma;
   block_y[0] = params->ybsep_luma;
   block_x[1] = block_x[2] =
@@ -2196,7 +2191,6 @@ schro_get_best_split0_mv (SchroMe me, int ref, int i, int j
   block_y[1] = block_y[2] =
     block_y[0] >> SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
   /* split0 block sizes for all components */
-  int comp_w[3], comp_h[3];
   comp_w[0] = block_x[0] << 2;
   comp_h[0] = block_y[0] << 2;
   comp_w[1] = comp_w[2] =
@@ -2316,19 +2310,37 @@ schro_get_best_split0_mv (SchroMe me, int ref, int i, int j
   } else mv_ref->metric = INT_MAX;
 }
 
-static void schro_do_split0_biref (SchroMe me, int i, int j, SchroBlock* block , SchroFrameData* fd) {
-  SCHRO_ASSERT(me && block && fd && !(i&0x3) && !(j&0x3));
-
-  block->valid = FALSE;
+static void
+schro_do_split0_biref (SchroMe me, int i, int j, SchroBlock* block,
+    SchroFrameData* fd)
+{
   SchroParams* params = schro_me_params (me);
-  SCHRO_ASSERT(1 < params->num_refs);
   int entropy = 0;
   SchroMotion* motion = schro_me_motion (me);
   SchroMotionVector *mv_motion;
+  SchroFrame* orig_frame = schro_me_src (me);
+  SchroFrameData ref_data[3][2], orig[3];
+  SchroUpsampledFrame* upframe[2];
+  double score, lambda = schro_me_lambda (me);
+  int mv_prec = params->mv_precision;
+  int width[3], height[3], dx[2], dy[2], tmp_x, tmp_y;
+  int ref, error=INT_MAX;
+  int xmin = -orig_frame->extension;
+  int ymin = -orig_frame->extension;
+  int xmax = (orig_frame->width << mv_prec) + orig_frame->extension;
+  int ymax = (orig_frame->height << mv_prec) + orig_frame->extension;
+  int biref, fd_width, fd_height;
+  int k;
+  /* split2 block sizes for all components */
+  int block_x[3], block_y[3];
+  int comp_w[3], comp_h[3];
+  SchroMotionVector *mv;
+
+
+  block->valid = FALSE;
 
   mv_motion = motion->motion_vectors + j * params->x_num_blocks + i;
 
-  SchroMotionVector *mv;
   mv = &block->mv[0][0];
   mv->split = 0;
   mv->pred_mode = 3;
@@ -2337,21 +2349,6 @@ static void schro_do_split0_biref (SchroMe me, int i, int j, SchroBlock* block ,
   *mv_motion = *mv;
   entropy = schro_motion_block_estimate_entropy (motion, i, j);
 
-  SchroFrame* orig_frame = schro_me_src (me);
-  SchroFrameData ref_data[3][2], orig[3];
-  SchroUpsampledFrame* upframe[2];
-  double score, lambda = schro_me_lambda (me);
-
-  int mv_prec = params->mv_precision;
-  int width[3], height[3], dx[2], dy[2], tmp_x, tmp_y;
-  int ref, error=INT_MAX;
-  int xmin = -orig_frame->extension, ymin = -orig_frame->extension
-    , xmax = (orig_frame->width << mv_prec) + orig_frame->extension
-    , ymax = (orig_frame->height << mv_prec) + orig_frame->extension;
-  int biref, fd_width, fd_height;
-  int k;
-  /* split2 block sizes for all components */
-  int block_x[3], block_y[3];
   block_x[0] = params->xbsep_luma;
   block_y[0] = params->ybsep_luma;
   block_x[1] = block_x[2] =
@@ -2359,7 +2356,6 @@ static void schro_do_split0_biref (SchroMe me, int i, int j, SchroBlock* block ,
   block_y[1] = block_y[2] =
     block_y[0] >> SCHRO_CHROMA_FORMAT_V_SHIFT(params->video_format->chroma_format);
   /* split0 block sizes for all components */
-  int comp_w[3], comp_h[3];
   comp_w[0] = block_x[0] << 2;
   comp_h[0] = block_y[0] << 2;
   comp_w[1] = comp_w[2] =
@@ -2432,12 +2428,15 @@ static void schro_do_split0_biref (SchroMe me, int i, int j, SchroBlock* block ,
   }
 }
 
-static void schro_do_split0_biref_zero (SchroMe me, int i, int j, SchroBlock* block , SchroFrameData* fd) {
-  SCHRO_ASSERT(me && block && fd && !(i&0x3) && !(j&0x3));
+static void
+schro_do_split0_biref_zero (SchroMe me, int i, int j, SchroBlock* block,
+    SchroFrameData* fd)
+{
   SchroParams* params = schro_me_params (me);
+  SchroMotionVector *mv;
+
   SCHRO_ASSERT(1 < params->num_refs);
 
-  SchroMotionVector *mv;
   mv = &block->mv[0][0];
   mv->split = 0;
   mv->pred_mode = 3;
@@ -2447,7 +2446,7 @@ static void schro_do_split0_biref_zero (SchroMe me, int i, int j, SchroBlock* bl
   mv->u.vec.dx[1] = 0;
   mv->u.vec.dy[1] = 0;
 
- schro_do_split0_biref (me, i, j, block, fd);
+  schro_do_split0_biref (me, i, j, block, fd);
 }
 
 /* performs mode decision for a superblock, split level 0 */
@@ -2455,19 +2454,20 @@ static void
 schro_do_split0 (SchroMe me, int i, int j, SchroBlock* block
     , SchroFrameData* fd)
 {
-  SCHRO_ASSERT(me && block && fd && !(i&0x3) && !(j&0x3));
-  block->valid = FALSE;
-
   SchroParams* params = schro_me_params (me);
   SchroMotionField* mf;
   SchroMotionVector mv_ref[2], best_mv={0}, *mv_split0;
   double lambda = schro_me_lambda (me);
-
-  int ref, error=INT_MAX, entropy[2];
-  int best_error = INT_MAX
-    , best_entropy = INT_MAX;
+  int ref;
+  int error=INT_MAX;
+  int entropy[2];
+  int best_error = INT_MAX;
+  int best_entropy = INT_MAX;
   double score, min_score = HUGE_VAL;
+
   best_mv.metric = INT_MAX;
+
+  block->valid = FALSE;
 
   /* do the 2 references, if available */
   for (ref = 0; params->num_refs > ref; ++ref) {
@@ -2529,7 +2529,6 @@ schro_do_split0 (SchroMe me, int i, int j, SchroBlock* block
 void
 schro_mode_decision (SchroMe me)
 {
-  SCHRO_ASSERT (me);
   SchroParams* params = schro_me_params (me);
   SchroFrameData fd[2];
   SchroMotion* motion = schro_me_motion (me);
@@ -2660,9 +2659,13 @@ struct _SchroMe {
 SchroMeElement
 schro_me_element_new (SchroEncoderFrame* frame, int ref_number)
 {
+  SchroMeElement me;
+
+  me = schro_malloc0 (sizeof (struct SchroMeElement));
+
   SCHRO_ASSERT (frame && (0 == ref_number || 1 == ref_number));
-  SchroMeElement me = schro_malloc0 (sizeof (struct SchroMeElement));
   SCHRO_ASSERT (me);
+
   me->ref = frame->ref_frame[ref_number]->upsampled_original_frame;
   me->hbm = schro_hbm_ref (frame->hier_bm[ref_number]);
   return me;
@@ -2671,8 +2674,8 @@ schro_me_element_new (SchroEncoderFrame* frame, int ref_number)
 void
 schro_me_element_free (SchroMeElement* pme)
 {
-  SCHRO_ASSERT (pme);
   SchroMeElement me = *pme;
+
   if (me) {
     if (me->hbm) schro_hbm_unref (&me->hbm);
     if (me->subpel_mf) schro_motion_field_free (me->subpel_mf);
@@ -2688,10 +2691,11 @@ schro_me_element_free (SchroMeElement* pme)
 SchroMe
 schro_me_new (SchroEncoderFrame* frame)
 {
-  SCHRO_ASSERT (frame );
   int ref;
   SchroMe me = schro_malloc0 (sizeof(struct _SchroMe));
+
   SCHRO_ASSERT (me);
+
   me->src = schro_frame_ref (frame->filtered_frame);
   /* FIXME: SchroUpsampledFrame, SchroMotion and SchroParams
    * are not reference-counted but they should if we use them like this */
@@ -2707,9 +2711,9 @@ schro_me_new (SchroEncoderFrame* frame)
 void
 schro_me_free (SchroMe* pme)
 {
-  SCHRO_ASSERT (pme);
   int ref;
   SchroMe me = *pme;
+
   if (me) {
     schro_frame_unref (me->src);
     for (ref=0; me->params->num_refs > ref; ++ref) {

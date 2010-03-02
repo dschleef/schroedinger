@@ -90,9 +90,9 @@ static int
 subgroup_ready (SchroQueue* queue, int index, int subgroup_length
     , SchroEncoderFrameStateEnum gop_state)
 {
-  SCHRO_ASSERT(queue && queue->n > index && !(0>index));
   size_t i = index;
   SchroEncoderFrame* f;
+
   for (;index+subgroup_length>i; ++i) {
     f = queue->elements[i].data;
     SCHRO_ASSERT(!f->stages[gop_state].is_done);
@@ -504,10 +504,9 @@ init_params (SchroEncoderFrame *frame)
 void
 schro_frame_set_wavelet_params (SchroEncoderFrame* frame)
 {
-  SCHRO_ASSERT (frame && frame->encoder);
-
   SchroParams* params = &frame->params;
   SchroEncoder* encoder = frame->encoder;
+
   if (params->num_refs > 0) {
     params->wavelet_filter_index = encoder->inter_wavelet;
   } else {

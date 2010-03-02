@@ -651,14 +651,13 @@ schro_encoder_calc_estimates (SchroEncoderFrame *frame)
   int i;
   int j;
   int component;
+  double *arith_context_ratios;
 
   SCHRO_ASSERT(frame->have_histograms);
 
 #ifdef DUMP_SUBBAND_CURVES
   schro_encoder_dump_subband_curves (frame);
 #endif
-
-  double *arith_context_ratios;
 
   for(component=0;component<3;component++){
     if (frame->num_refs==0){
@@ -733,10 +732,8 @@ schro_encoder_choose_quantisers_rdo_lambda (SchroEncoderFrame *frame)
 void
 schro_encoder_choose_quantisers_rdo_cbr(SchroEncoderFrame *frame)
 {
-  // SCHRO_ERROR("Using rdo_cbr quant selection on frame %d with lambda %g",frame>frame_number,frame>frame_lambda);
-  /* SCHRO_ASSERT(frame>state & SCHRO_ENCODER_FRAME_STATE_HAVE_LAMBDA ); */
-
   int est_bits, alloc_bits;
+  SchroEncoder* encoder = frame->encoder;
 
   schro_encoder_generate_subband_histograms (frame);
   schro_encoder_calc_estimates (frame);
@@ -748,7 +745,6 @@ schro_encoder_choose_quantisers_rdo_cbr(SchroEncoderFrame *frame)
   // SCHRO_ERROR("Estimated bits for frame %d residual : %d", frame>frame_number, est_bits);
 
   // Check that we're within reasonable bounds of the allocation
-  SchroEncoder* encoder = frame->encoder;
 
   if (frame->num_refs==0 ){
     alloc_bits = encoder->I_frame_alloc;
