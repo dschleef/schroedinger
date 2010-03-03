@@ -26,7 +26,8 @@ EXTRA_DIST = schroarith-i386.c \
 	schroasync-none.c \
 	schroasync-pthread.c \
 	schroasync-gthread.c \
-	schroasync-win32.c
+	schroasync-win32.c \
+	schro.orc
 
 pkginclude_HEADERS = \
 	schro.h \
