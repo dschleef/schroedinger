@@ -13,7 +13,7 @@
 int parse_packet (FILE *file, unsigned char **p_data, int *p_size);
 int write_packet (FILE *outfile, unsigned char *packet, int size);
 
-char *fn = "output.drc";
+const char *fn = "output.drc";
 
 int
 main (int argc, char *argv[])

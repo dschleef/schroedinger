@@ -187,7 +187,7 @@ typedef struct parse_info {
  *
  * Returns 0 if decoding is unsuccessful; 1 on success
  */
-int
+static int
 schro_parse_decode_parseinfo (uint8_t *data, unsigned length, parse_info_t *pi)
 {
   if (length < 13) {
@@ -342,6 +342,8 @@ try_sync_fail:
       sps->sync_state = SYNCED;
       /* assume that the DU is complete this time */
       break;
+    default:
+      SCHRO_ASSERT(0);
     }
     }
   } while (NOT_SYNCED == sps->sync_state);

@@ -102,7 +102,7 @@ static void schro_decoder_telemetry (SchroPicture *picture, SchroFrame *output_p
 
 /* API */
 
-SchroDecoderInstance *
+static SchroDecoderInstance *
 schro_decoder_instance_new (SchroDecoder *decoder)
 {
   SchroDecoderInstance *instance;
@@ -124,7 +124,7 @@ schro_decoder_instance_new (SchroDecoder *decoder)
   return instance;
 }
 
-void
+static void
 schro_decoder_instance_free (SchroDecoderInstance *instance)
 {
   schro_queue_free (instance->output_queue);

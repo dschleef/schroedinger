@@ -255,7 +255,7 @@ schro_phasecorr_free (SchroPhaseCorr *pc)
   schro_free(pc);
 }
 
-void
+static void
 schro_phasecorr_cleanup (SchroPhaseCorr *pc)
 {
   schro_free(pc->s);
@@ -277,7 +277,8 @@ schro_phasecorr_cleanup (SchroPhaseCorr *pc)
 }
 
 
-void schro_phasecorr_setup (SchroPhaseCorr *pc,
+static void
+schro_phasecorr_setup (SchroPhaseCorr *pc,
     int level,
     int picture_shift,
     int hshift, int vshift)

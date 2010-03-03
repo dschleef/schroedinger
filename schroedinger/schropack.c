@@ -90,7 +90,7 @@ schro_pack_sync (SchroPack *pack)
 }
 
 void
-schro_pack_append (SchroPack *pack, uint8_t *data, int len)
+schro_pack_append (SchroPack *pack, const uint8_t *data, int len)
 {
   if (pack->shift != 7) {
     SCHRO_ERROR ("appending to unsyncronized pack");

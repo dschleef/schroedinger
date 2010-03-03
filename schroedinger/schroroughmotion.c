@@ -16,10 +16,6 @@
 #define motion_field_get(mf,x,y) \
   ((mf)->motion_vectors + (y)*(mf)->x_num_blocks + (x))
 
-void schro_rough_me_heirarchical_scan_nohint (SchroRoughME *rme, int shift,
-    int distance);
-void schro_rough_me_heirarchical_scan_hint (SchroRoughME *rme, int shift,
-    int distance);
 static SchroFrame * get_downsampled(SchroEncoderFrame *frame, int i);
 
 

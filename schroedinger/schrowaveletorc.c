@@ -269,6 +269,8 @@ schro_wavelet_transform_2d (SchroFrameData *fd, int filter, int16_t *tmp)
     case SCHRO_WAVELET_DAUBECHIES_9_7:
       schro_iwt_daub_9_7(fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
+    default:
+      SCHRO_ASSERT(0);
   }
 }
 
@@ -303,6 +305,8 @@ schro_wavelet_inverse_transform_2d (SchroFrameData *fd, int filter,
     case SCHRO_WAVELET_DAUBECHIES_9_7:
       schro_iiwt_daub_9_7(fd->data, fd->stride, fd->width, fd->height, tmp);
       break;
+    default:
+      SCHRO_ASSERT(0);
   }
 }
 

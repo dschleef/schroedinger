@@ -1655,7 +1655,7 @@ schro_frame_convert_to_444 (SchroFrame *frame)
 #define MD5STEP(f,w,x,y,z,in,offset,s) \
   (w += f(x,y,z) + uint32_to_host(in) + offset, w = (w<<s | w>>(32-s)) + x)
 
-void
+static void
 schro_md5 (uint32_t *state, uint32_t *src)
 {
   uint32_t a,b,c,d;
@@ -1856,7 +1856,7 @@ schro_upsampled_frame_free (SchroUpsampledFrame *df)
   schro_free(df);
 }
 
-void
+static void
 schro_frame_mc_edgeextend_horiz (SchroFrame *frame, SchroFrame *src)
 {
   int k;
@@ -1878,7 +1878,7 @@ schro_frame_mc_edgeextend_horiz (SchroFrame *frame, SchroFrame *src)
   }
 }
 
-void
+static void
 schro_frame_mc_edgeextend_vert (SchroFrame *frame, SchroFrame *src)
 {
   int k;
@@ -2079,7 +2079,7 @@ schro_upsampled_frame_get_block_prec1 (SchroUpsampledFrame *upframe, int k,
 #endif
 #endif
 
-void
+static void
 schro_upsampled_frame_get_block_fast_prec1 (SchroUpsampledFrame *upframe, int k,
     int x, int y, SchroFrameData *fd)
 {
@@ -2195,7 +2195,7 @@ schro_upsampled_frame_get_block_prec3 (SchroUpsampledFrame *upframe, int k,
 #endif
 #endif
 
-void
+static void
 schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame *upframe, int k,
     int x, int y, SchroFrameData *fd)
 {
@@ -2353,9 +2353,9 @@ schro_upsampled_frame_get_pixel_precN (SchroUpsampledFrame *upframe, int k,
       return schro_upsampled_frame_get_pixel_prec3 (upframe, k, x<<1, y<<1);
     case 3:
       return schro_upsampled_frame_get_pixel_prec3 (upframe, k, x, y);
+    default:
+      SCHRO_ASSERT(0);
   }
-
-  SCHRO_ASSERT(0);
 }
 
 #ifdef unused
@@ -2376,9 +2376,9 @@ schro_upsampled_frame_get_block_precN (SchroUpsampledFrame *upframe, int k,
     case 3:
       schro_upsampled_frame_get_block_prec3 (upframe, k, x, y, fd);
       return;
+    default:
+      SCHRO_ASSERT(0);
   }
-
-  SCHRO_ASSERT(0);
 }
 #endif
 #endif
@@ -2402,9 +2402,9 @@ schro_upsampled_frame_get_block_fast_precN (SchroUpsampledFrame *upframe, int k,
       memcpy (dest, fd, sizeof(SchroFrameData));
       schro_upsampled_frame_get_block_fast_prec3 (upframe, k, x, y, dest);
       return;
+    default:
+      SCHRO_ASSERT(0);
   }
-
-  SCHRO_ASSERT(0);
 }
 
 void

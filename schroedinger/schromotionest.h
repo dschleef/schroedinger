@@ -152,6 +152,11 @@ void schro_mode_decision (SchroMe *me);
 
 void schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame);
 
+void schro_motionest_superblock_phasecorr1 (SchroMotionEst *me, int ref,
+    SchroBlock *block, int i, int j);
+void schro_motionest_superblock_global (SchroMotionEst *me, int ref,
+    SchroBlock *block, int i, int j);
+
 #endif
 
 SCHRO_END_DECLS

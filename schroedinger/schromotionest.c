@@ -19,7 +19,6 @@
 void schro_encoder_bigblock_estimation (SchroMotionEst *me);
 static SchroFrame * get_downsampled(SchroEncoderFrame *frame, int i);
 
-void schro_motion_calculate_stats (SchroMotion *motion, SchroEncoderFrame *frame);
 
 SchroMotionEst *
 schro_motionest_new (SchroEncoderFrame *frame)
@@ -127,7 +126,7 @@ schro_encoder_motion_predict_pel (SchroEncoderFrame *frame)
   } else SCHRO_ASSERT(0);
 }
 
-void
+static void
 schro_encoder_motion_refine_block_subpel (SchroEncoderFrame *frame,
     SchroBlock *block, int i, int j)
 {
@@ -903,7 +902,7 @@ schro_motionest_block_dc (SchroMotionEst *me,
   block->valid = TRUE;
 }
 
-void
+static void
 schro_motionest_superblock_block (SchroMotionEst *me,
     SchroBlock *p_block, int i, int j)
 {
@@ -1070,7 +1069,7 @@ schro_motionest_subsuperblock_dc (SchroMotionEst *me,
   block->valid = TRUE;
 }
 
-void
+static void
 schro_motionest_superblock_subsuperblock (SchroMotionEst *me,
     SchroBlock *p_block, int i, int j)
 {
@@ -1131,10 +1130,6 @@ schro_motionest_superblock_subsuperblock (SchroMotionEst *me,
   memcpy (p_block, &block, sizeof(block));
 }
 
-void schro_motionest_superblock_phasecorr1 (SchroMotionEst *me, int ref,
-    SchroBlock *block, int i, int j);
-void schro_motionest_superblock_global (SchroMotionEst *me, int ref,
-    SchroBlock *block, int i, int j);
 
 void
 schro_encoder_bigblock_estimation (SchroMotionEst *me)
@@ -2656,7 +2651,7 @@ struct _SchroMe {
   SchroMeElement         meElement[2];
 };
 
-SchroMeElement
+static SchroMeElement
 schro_me_element_new (SchroEncoderFrame* frame, int ref_number)
 {
   SchroMeElement me;
@@ -2671,7 +2666,7 @@ schro_me_element_new (SchroEncoderFrame* frame, int ref_number)
   return me;
 }
 
-void
+static void
 schro_me_element_free (SchroMeElement* pme)
 {
   SchroMeElement me = *pme;

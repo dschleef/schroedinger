@@ -34,7 +34,7 @@ void schro_pack_flush (SchroPack *pack);
 int schro_pack_get_offset (SchroPack *pack);
 int schro_pack_get_bit_offset (SchroPack *pack);
 
-void schro_pack_append (SchroPack *pack, uint8_t *data, int len);
+void schro_pack_append (SchroPack *pack, const uint8_t *data, int len);
 void schro_pack_append_zero (SchroPack *pack, int len);
 
 void schro_pack_encode_bit (SchroPack *pack, int value);

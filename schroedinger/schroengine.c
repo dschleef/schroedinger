@@ -121,7 +121,7 @@ schro_engine_code_intra (SchroEncoderFrame *frame, double weight)
 }
 #endif
 
-void
+static void
 schro_encoder_pick_refs (SchroEncoderFrame *frame,
     SchroPictureNumber *ptr_ref0, SchroPictureNumber *ptr_ref1)
 {
@@ -171,7 +171,7 @@ schro_encoder_pick_refs (SchroEncoderFrame *frame,
   *ptr_ref1 = ref1;
 }
 
-void
+static void
 schro_encoder_pick_retire (SchroEncoderFrame *frame,
     SchroPictureNumber *ptr_retire)
 {
@@ -207,7 +207,7 @@ schro_encoder_pick_retire (SchroEncoderFrame *frame,
   *ptr_retire = retire;
 }
 
-void
+static void
 schro_encoder_expire_reference (SchroEncoder *encoder, SchroPictureNumber ref)
 {
   int i;
@@ -220,7 +220,7 @@ schro_encoder_expire_reference (SchroEncoder *encoder, SchroPictureNumber ref)
   }
 }
 
-void
+static void
 schro_encoder_expire_refs_before (SchroEncoder *encoder, SchroPictureNumber ref)
 {
   int i;
@@ -233,7 +233,7 @@ schro_encoder_expire_refs_before (SchroEncoder *encoder, SchroPictureNumber ref)
   }
 }
 
-void
+static void
 schro_engine_code_BBBP (SchroEncoder *encoder, int i, int gop_length)
 {
   SchroEncoderFrame *frame;
@@ -358,6 +358,8 @@ schro_engine_pick_output_buffer_size (SchroEncoder *encoder,
     case SCHRO_CHROMA_420:
       size += size/2;
       break;
+    default:
+      SCHRO_ASSERT(0);
   }
 
   /* random scale factor of 2 in order to be safe */
@@ -644,6 +646,8 @@ schro_encoder_init_frame (SchroEncoderFrame *frame)
       frame->need_extension = TRUE;
       frame->need_mad = encoder->enable_scene_change_detection;
       break;
+    default:
+      SCHRO_ASSERT(0);
   }
 }
 

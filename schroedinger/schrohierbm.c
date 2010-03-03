@@ -70,7 +70,7 @@ schro_hbm_ref (SchroHierBm *src)
   return src;
 }
 
-void
+static void
 schro_hbm_free (SchroHierBm *hbm)
 {
   int i;
@@ -102,14 +102,14 @@ schro_hbm_unref (SchroHierBm* schro_hbm)
   schro_hbm_free (schro_hbm);
 }
 
-SchroFrame*
+static SchroFrame*
 schro_hbm_src_frame (SchroHierBm *hbm, int level)
 {
   SCHRO_ASSERT (hbm && 0 < hbm->ref_count && !(get_hier_levels (hbm) < level));
   return hbm->downsampled_src[level];
 }
 
-SchroFrame*
+static SchroFrame*
 schro_hbm_ref_frame (SchroHierBm *hbm, int level)
 {
   SCHRO_ASSERT (hbm && 0 < hbm->ref_count && !(get_hier_levels (hbm) < level));
@@ -125,14 +125,14 @@ schro_hbm_motion_field (SchroHierBm *schro_hbm, int level)
   return schro_hbm->downsampled_mf[level];
 }
 
-void
+static void
 schro_hbm_set_motion_field (SchroHierBm *hbm, SchroMotionField* mf, int level)
 {
   SCHRO_ASSERT (hbm && 0 < hbm->ref_count && !(get_hier_levels (hbm) < level));
   hbm->downsampled_mf[level] = mf;
 }
 
-SchroParams*
+static SchroParams*
 schro_hbm_params (SchroHierBm *schro_hbm)
 {
   SCHRO_ASSERT (schro_hbm && 0 < schro_hbm->ref_count);

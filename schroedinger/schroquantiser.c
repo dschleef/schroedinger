@@ -285,6 +285,8 @@ schro_encoder_choose_quantisers (SchroEncoderFrame *frame)
     case SCHRO_QUANTISER_ENGINE_CONSTANT_ERROR:
       schro_encoder_choose_quantisers_constant_error (frame);
       break;
+    default:
+      SCHRO_ASSERT(0);
   }
 }
 
@@ -990,7 +992,7 @@ schro_encoder_lambda_to_error (SchroEncoderFrame *frame, double frame_lambda)
   return error;
 }
 
-double
+static double
 schro_encoder_error_to_lambda (SchroEncoderFrame *frame, double error)
 {
   int j;

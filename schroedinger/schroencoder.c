@@ -175,7 +175,8 @@ schro_encoder_last_subgroup_coded(SchroEncoder* encoder, int picnum)
  * Initialises the buffer model for rate control
  *
  */
-void schro_encoder_init_rc_buffer(SchroEncoder* encoder)
+static void
+schro_encoder_init_rc_buffer(SchroEncoder* encoder)
 {
   int gop_length;
 
@@ -238,7 +239,7 @@ void schro_encoder_init_rc_buffer(SchroEncoder* encoder)
  * Returns the total number of bits expected for the next subgroup
  *
  */
-int
+static int
 schro_encoder_projected_subgroup_bits(SchroEncoder* encoder)
 {
     // FIXME: take account of subgroups with an I instead of a P??
@@ -253,7 +254,7 @@ schro_encoder_projected_subgroup_bits(SchroEncoder* encoder)
  * Returns the target for the next subgroup
  *
  */
-int
+static int
 schro_encoder_target_subgroup_bits(SchroEncoder* encoder)
 {
     // FIXME: take account of subgroups with an I instead of a P??
@@ -268,7 +269,7 @@ schro_encoder_target_subgroup_bits(SchroEncoder* encoder)
  * TM5-style bit allocation routine
  *
  */
-void
+static void
 schro_encoder_cbr_allocate(SchroEncoder* encoder, int fnum )
 {
   int gop_length;
@@ -343,7 +344,7 @@ schro_encoder_cbr_allocate(SchroEncoder* encoder, int fnum )
  * Sets the qf (and hence lambdas) for the next subgroup to be coded
  *
  */
-void
+static void
 schro_encoder_cbr_update(SchroEncoderFrame* frame, int num_bits)
 {
   SchroEncoder* encoder = frame->encoder;
@@ -592,6 +593,8 @@ handle_gop_enum (SchroEncoder *encoder)
       encoder->handle_quants = schro_encoder_handle_quants;
       encoder->setup_frame = schro_encoder_setup_frame_tworef;
       break;
+    default:
+      SCHRO_ASSERT(0);
   }
 
 }
@@ -758,6 +761,8 @@ schro_encoder_start (SchroEncoder *encoder)
       handle_gop_enum (encoder);
       encoder->quantiser_engine = SCHRO_QUANTISER_ENGINE_RDO_LAMBDA;
       break;
+    default:
+      SCHRO_ASSERT(0);
   }
 
   encoder->level = 0;
@@ -1470,7 +1475,7 @@ schro_encoder_encode_padding (SchroEncoder *encoder, int n)
 static void
 schro_encoder_encode_codec_comment (SchroEncoder *encoder)
 {
-  char *s = "Schroedinger " VERSION;
+  const char *s = "Schroedinger " VERSION;
   SchroBuffer *buffer;
 
   buffer = schro_encoder_encode_auxiliary_data (encoder,
@@ -1550,7 +1555,7 @@ schro_encoder_frame_insert_buffer (SchroEncoderFrame *frame,
  */
 SchroBuffer *
 schro_encoder_encode_auxiliary_data (SchroEncoder *encoder,
-    SchroAuxiliaryDataID id, void *data, int size)
+    SchroAuxiliaryDataID id, const void *data, int size)
 {
   SchroPack *pack;
   SchroBuffer *buffer;
@@ -2178,6 +2183,9 @@ schro_encoder_analyse_picture (SchroAsyncStage *stage)
         break;
       case 4:
         schro_frame_filter_adaptive_lowpass (frame->filtered_frame);
+        break;
+      default:
+        /* do nothing */
         break;
     }
     schro_frame_mc_edgeextend (frame->filtered_frame);
@@ -4106,7 +4114,7 @@ schro_encoder_reference_get (SchroEncoder *encoder,
 #define DOUB(name,min,max,def) \
   {{#name, SCHRO_ENCODER_SETTING_TYPE_DOUBLE, min, max, def}, offsetof(SchroEncoder, name)}
 
-static char *rate_control_list[] = {
+static const char *rate_control_list[] = {
   "constant_noise_threshold",
   "constant_bitrate",
   "low_delay",
@@ -4115,14 +4123,14 @@ static char *rate_control_list[] = {
   "constant_error",
   "constant_quality"
 };
-static char *profile_list[] = {
+static const char *profile_list[] = {
   "auto",
   "vc2_low_delay",
   "vc2_simple",
   "vc2_main",
   "main"
 };
-static char *gop_structure_list[] = {
+static const char *gop_structure_list[] = {
   "adaptive",
   "intra_only",
   "backref",
@@ -4130,20 +4138,20 @@ static char *gop_structure_list[] = {
   "biref",
   "chained_biref"
 };
-static char *perceptual_weighting_list[] = {
+static const char *perceptual_weighting_list[] = {
   "none",
   "ccir959",
   "moo",
   "manos_sakrison"
 };
-static char *filtering_list[] = {
+static const char *filtering_list[] = {
   "none",
   "center_weighted_median",
   "gaussian",
   "add_noise",
   "adaptive_gaussian"
 };
-static char *wavelet_list[] = {
+static const char *wavelet_list[] = {
   "desl_dubuc_9_7",
   "le_gall_5_3",
   "desl_dubuc_13_7",
@@ -4152,20 +4160,20 @@ static char *wavelet_list[] = {
   "fidelity",
   "daub_9_7"
 };
-static char *block_size_list[] = {
+static const char *block_size_list[] = {
   "automatic",
   "small",
   "medium",
   "large"
 };
-static char *codeblock_size_list[] = {
+static const char *codeblock_size_list[] = {
   "automatic",
   "small",
   "medium",
   "large",
   "full"
 };
-static char *block_overlap_list[] = {
+static const char *block_overlap_list[] = {
   "automatic",
   "none",
   "partial",

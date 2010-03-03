@@ -22,7 +22,7 @@ do { \
 
 static void handle_packet(unsigned char *data, int size);
 
-char *fn = "output.drc";
+const char *fn = "output.drc";
 
 int
 main (int argc, char *argv[])
@@ -90,7 +90,7 @@ main (int argc, char *argv[])
 }
 
 static void
-dump_hex (unsigned char *data, int length, char *prefix)
+dump_hex (const unsigned char *data, int length, const char *prefix)
 {
   int i;
   for(i=0;i<length;i++){

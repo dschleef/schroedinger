@@ -359,6 +359,8 @@ schro_params_get_frame_format (int depth, SchroChromaFormat chroma_format)
         return SCHRO_FRAME_FORMAT_U8_422;
       case SCHRO_CHROMA_420:
         return SCHRO_FRAME_FORMAT_U8_420;
+      default:
+        SCHRO_ASSERT(0);
     }
   } else if (depth == 16) {
     switch (chroma_format) {
@@ -368,6 +370,8 @@ schro_params_get_frame_format (int depth, SchroChromaFormat chroma_format)
         return SCHRO_FRAME_FORMAT_S16_422;
       case SCHRO_CHROMA_420:
         return SCHRO_FRAME_FORMAT_S16_420;
+      default:
+        SCHRO_ASSERT(0);
     }
   }
 

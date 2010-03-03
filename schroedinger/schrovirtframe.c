@@ -624,6 +624,9 @@ unpack_yuyv (SchroFrame *frame, void *_dest, int component, int i)
       break;
     case 2:
       orc_unpack_yuyv_v (dest, (void *)src, frame->width/2);
+      break;
+    default:
+      SCHRO_ASSERT(0);
   }
 }
 
@@ -644,6 +647,9 @@ unpack_uyvy (SchroFrame *frame, void *_dest, int component, int i)
       break;
     case 2:
       orc_unpack_uyvy_v (dest, (void *)src, frame->width/2);
+      break;
+    default:
+      SCHRO_ASSERT(0);
   }
 }
 
@@ -671,6 +677,9 @@ unpack_ayuv (SchroFrame *frame, void *_dest, int component, int i)
       for(j=0;j<frame->width;j++){
         dest[j] = src[j*4 + 3];
       }
+      break;
+    default:
+      SCHRO_ASSERT(0);
   }
 }
 
@@ -746,6 +755,8 @@ unpack_v210 (SchroFrame *frame, void *_dest, int component, int i)
         dest[j*3 + 2] = ((READ_UINT32_LE (src + j*16 + 12) >> 10)&0x3ff) >> 2;
       }
       break;
+    default:
+      SCHRO_ASSERT(0);
   }
 }
 
@@ -773,6 +784,9 @@ unpack_v216 (SchroFrame *frame, void *_dest, int component, int i)
       for(j=0;j<frame->width/2;j++){
         dest[j] = src[j*8 + 4 + 1];
       }
+      break;
+    default:
+      SCHRO_ASSERT(0);
   }
 }
 

@@ -54,7 +54,7 @@ get_ramp (int x, int offset)
 
 static SchroMotionFuncs motion_funcs[32];
 
-void
+static void
 schro_motion_init_functions (SchroMotion *motion)
 {
   if (motion_funcs[motion->xblen>>1].block_accumulate == NULL) {
@@ -208,7 +208,7 @@ schro_motion_init_functions (SchroMotion *motion)
   }
 }
 
-void
+static void
 orc_multiply_and_acc_Xxn_s16_u8 (int16_t * d1, int d1_stride,
     const int16_t * s1, int s1_stride, const uint8_t * s2, int s2_stride,
     int n, int m)
@@ -233,7 +233,7 @@ orc_multiply_and_acc_Xxn_s16_u8 (int16_t * d1, int d1_stride,
   func (ex);
 }
 
-void
+static void
 orc_multiply_and_acc_scaled_Xxn_s16_u8 (int16_t * d1, int d1_stride,
     const int16_t * s1, int s1_stride, const uint8_t * s2, int s2_stride,
     int p1, int n, int m)
@@ -259,7 +259,7 @@ orc_multiply_and_acc_scaled_Xxn_s16_u8 (int16_t * d1, int d1_stride,
   func (ex);
 }
 
-void
+static void
 orc_multiply_and_acc_dc_Xxn_s16_u8 (int16_t * d1, int d1_stride,
     const int16_t * s1, int s1_stride, int p1, int n, int m)
 {
@@ -282,7 +282,7 @@ orc_multiply_and_acc_dc_Xxn_s16_u8 (int16_t * d1, int d1_stride,
   func (ex);
 }
 
-void
+static void
 orc_multiply_and_acc_avg_Xxn_s16_u8 (int16_t * d1, int d1_stride,
     const int16_t * s1, int s1_stride, const uint8_t * s2, int s2_stride,
     const uint8_t * s3, int s3_stride, int n, int m)
@@ -310,7 +310,7 @@ orc_multiply_and_acc_avg_Xxn_s16_u8 (int16_t * d1, int d1_stride,
   func (ex);
 }
 
-void
+static void
 orc_multiply_and_acc_biref_Xxn_s16_u8 (int16_t * d1, int d1_stride,
     const int16_t * s1, int s1_stride, const uint8_t * s2, int s2_stride,
     const uint8_t * s3, int s3_stride, int p1, int p2, int n, int m)
@@ -342,7 +342,7 @@ orc_multiply_and_acc_biref_Xxn_s16_u8 (int16_t * d1, int d1_stride,
 
 /* motion render (faster) */
 
-void
+static void
 get_block (SchroMotion *motion, int k, int ref, int i, int j, int dx, int dy)
 {
   int px, py;
@@ -586,7 +586,7 @@ get_biref_block (SchroMotion *motion, int i, int j, int k, int x, int y)
   }
 }
 
-void
+static void
 schro_motion_block_predict_block (SchroMotion *motion, int x, int y, int k,
     int i, int j)
 {
@@ -614,7 +614,7 @@ schro_motion_block_predict_block (SchroMotion *motion, int x, int y, int k,
   }
 }
 
-void
+static void
 schro_motion_block_predict_and_acc (SchroMotion *motion, int x, int y, int k,
     int i, int j, SchroFrameData *comp)
 {
@@ -711,7 +711,7 @@ schro_motion_block_predict_and_acc (SchroMotion *motion, int x, int y, int k,
   }
 }
 
-void
+static void
 schro_motion_block_accumulate_slow (SchroMotion *motion, SchroFrameData *comp,
     int x, int y)
 {
@@ -1388,6 +1388,9 @@ schro_motion_verify (SchroMotion *motion)
             SCHRO_ERROR("mv(%d,%d) uses non-existent src2", x, y);
             return 0;
           }
+          break;
+        default:
+          SCHRO_ASSERT(0);
           break;
       }
 
