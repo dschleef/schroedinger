@@ -1,4 +1,20 @@
 
+1.0.9
+=====
+
+ - Orc: Complete conversion to Orc and removal of liboil dependency.
+ - Added a lot of orc code to make things faster.  A lot faster.
+ - New motion vector generation, enabled by default.
+ - New CBR rate control, enabled by default.
+ - New scene change detection, enabled by default.
+ - Encoder went through several rounds of tuning, improving quality
+   greatly.
+ - New encoder setting "force-profile".  Allows easy access to one of
+   three VC-2 profiles (vc2_low_delay, vc2_simple, vc2_main) for
+   intermediate coding.  Default is same as before: long-GOP Dirac.
+ - Improved lossless encoding.  Works in concert with force-profile.
+
+
 1.0.8
 =====
 
