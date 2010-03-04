@@ -991,7 +991,10 @@ schro_decoder_autoparse_wait (SchroDecoder *decoder)
        *  - no pictures left to retrieve
        * Therefore there are no threads running in this instance.
        */
-      schro_decoder_end_sequence (decoder);
+      ret = schro_decoder_end_sequence (decoder);
+      if (ret == SCHRO_DECODER_ERROR) {
+        return SCHRO_DECODER_EOS;
+      }
       /* try again to discover the next state: EOS never gets passed
        * to the user */
       continue;
