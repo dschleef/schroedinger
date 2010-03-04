@@ -235,7 +235,7 @@ schro_arith_decode_init (SchroArith *arith, SchroBuffer *buffer)
     arith->probabilities[i] = 0x8000;
   }
 
-  orc_memcpy (arith->lut, lut_interleaved, 512*sizeof(int16_t));
+  orc_memcpy (arith->lut, (void *)lut_interleaved, 512*sizeof(int16_t));
 }
 
 void

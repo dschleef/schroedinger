@@ -98,7 +98,7 @@ schro_pack_append (SchroPack *pack, const uint8_t *data, int len)
 
   SCHRO_ASSERT(pack->n + len <= pack->buffer->length);
 
-  orc_memcpy (pack->buffer->data + pack->n, data, len);
+  orc_memcpy (pack->buffer->data + pack->n, (void *)data, len);
   pack->n += len;
 }
 
