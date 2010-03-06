@@ -234,7 +234,7 @@ handle_packet(unsigned char *data, int size)
       if (index == 0) {
         printf("      frame rate numerator: %d\n",
             schro_unpack_decode_uint(&unpack));
-        printf("      frame rate demoninator: %d\n",
+        printf("      frame rate denominator: %d\n",
             schro_unpack_decode_uint(&unpack));
       }
     }
@@ -249,7 +249,7 @@ handle_packet(unsigned char *data, int size)
       if (index == 0) {
         printf("      aspect ratio numerator: %d\n",
             schro_unpack_decode_uint(&unpack));
-        printf("      aspect ratio demoninator: %d\n",
+        printf("      aspect ratio denominator: %d\n",
             schro_unpack_decode_uint(&unpack));
       }
     }
