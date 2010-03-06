@@ -18,7 +18,7 @@ schro_buffer_new (void)
 {
   SchroBuffer *buffer;
 
-  buffer = schro_malloc0 (sizeof(SchroBuffer));
+  buffer = schro_malloc0 (sizeof (SchroBuffer));
   buffer->ref_count = 1;
   return buffer;
 }
@@ -32,7 +32,7 @@ schro_buffer_new_and_alloc (int size)
   buffer->length = size;
   buffer->free = schro_buffer_free_mem;
 
-  SCHRO_DEBUG("%p %i", buffer, size);
+  SCHRO_DEBUG ("%p %i", buffer, size);
 
   return buffer;
 }
@@ -77,10 +77,10 @@ schro_buffer_ref (SchroBuffer * buffer)
 void
 schro_buffer_unref (SchroBuffer * buffer)
 {
-  SCHRO_ASSERT(buffer->ref_count > 0);
+  SCHRO_ASSERT (buffer->ref_count > 0);
   buffer->ref_count--;
   if (buffer->ref_count == 0) {
-    SCHRO_DEBUG("free %p", buffer);
+    SCHRO_DEBUG ("free %p", buffer);
     if (buffer->free)
       buffer->free (buffer, buffer->priv);
     if (buffer->tag)
@@ -123,9 +123,9 @@ schro_buffer_dup (SchroBuffer * buffer)
  * Returns: An a decoder tag structure, with an initial value
  */
 SchroTag *
-schro_tag_new (void *value, void (*free_func)(void *))
+schro_tag_new (void *value, void (*free_func) (void *))
 {
-  SchroTag *tag = schro_malloc0 (sizeof(*tag));
+  SchroTag *tag = schro_malloc0 (sizeof (*tag));
 
   if (!tag) {
     if (free_func) {
@@ -145,11 +145,10 @@ schro_tag_new (void *value, void (*free_func)(void *))
  * private data if free_func is non zero.
  */
 void
-schro_tag_free (SchroTag *tag)
+schro_tag_free (SchroTag * tag)
 {
   if (tag->free) {
     tag->free (tag->value);
   }
   schro_free (tag);
 }
-

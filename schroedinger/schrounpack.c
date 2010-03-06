@@ -10,35 +10,35 @@
 #include <string.h>
 #include <schroedinger/schroorc.h>
 
-static void _schro_unpack_shift_in (SchroUnpack *unpack);
-static unsigned int _schro_unpack_shift_out (SchroUnpack *unpack, int n);
+static void _schro_unpack_shift_in (SchroUnpack * unpack);
+static unsigned int _schro_unpack_shift_out (SchroUnpack * unpack, int n);
 
 void
-schro_unpack_init_with_data (SchroUnpack *unpack, uint8_t *data,
+schro_unpack_init_with_data (SchroUnpack * unpack, uint8_t * data,
     int n_bytes, unsigned int guard_bit)
 {
-  memset (unpack, 0, sizeof(SchroUnpack));
+  memset (unpack, 0, sizeof (SchroUnpack));
 
   unpack->data = data;
-  unpack->n_bits_left = 8*n_bytes;
+  unpack->n_bits_left = 8 * n_bytes;
   unpack->guard_bit = guard_bit;
 }
 
 void
-schro_unpack_copy (SchroUnpack *dest, SchroUnpack *src)
+schro_unpack_copy (SchroUnpack * dest, SchroUnpack * src)
 {
-  memcpy (dest, src, sizeof(SchroUnpack));
+  memcpy (dest, src, sizeof (SchroUnpack));
 }
 
 int
-schro_unpack_get_bits_read (SchroUnpack *unpack)
+schro_unpack_get_bits_read (SchroUnpack * unpack)
 {
   return unpack->n_bits_read;
 }
 
 #ifdef unused
 int
-schro_unpack_get_bits_remaining (SchroUnpack *unpack)
+schro_unpack_get_bits_remaining (SchroUnpack * unpack)
 {
   if (unpack->overrun) {
     return 0;
@@ -48,7 +48,7 @@ schro_unpack_get_bits_remaining (SchroUnpack *unpack)
 #endif
 
 void
-schro_unpack_limit_bits_remaining (SchroUnpack *unpack, int n_bits)
+schro_unpack_limit_bits_remaining (SchroUnpack * unpack, int n_bits)
 {
   if (n_bits <= unpack->n_bits_in_shift_register) {
     unpack->n_bits_in_shift_register = n_bits;
@@ -62,27 +62,28 @@ schro_unpack_limit_bits_remaining (SchroUnpack *unpack, int n_bits)
 
 #if 0
 void
-schro_unpack_dumpbits (SchroUnpack *unpack)
+schro_unpack_dumpbits (SchroUnpack * unpack)
 {
 
 }
 #endif
 
 static void
-_schro_unpack_shift_in (SchroUnpack *unpack)
+_schro_unpack_shift_in (SchroUnpack * unpack)
 {
   if (unpack->n_bits_left >= 32) {
     /* the fast path */
     if (unpack->n_bits_in_shift_register == 0) {
-      unpack->shift_register = (unpack->data[0]<<24) | (unpack->data[1]<<16) |
-        (unpack->data[2]<<8) | (unpack->data[3]);
+      unpack->shift_register =
+          (unpack->data[0] << 24) | (unpack->
+          data[1] << 16) | (unpack->data[2] << 8) | (unpack->data[3]);
       unpack->data += 4;
       unpack->n_bits_left -= 32;
       unpack->n_bits_in_shift_register = 32;
     } else {
       while (unpack->n_bits_in_shift_register <= 24) {
         unpack->shift_register |=
-          unpack->data[0]<<(24 - unpack->n_bits_in_shift_register);
+            unpack->data[0] << (24 - unpack->n_bits_in_shift_register);
         unpack->data++;
         unpack->n_bits_left -= 8;
         unpack->n_bits_in_shift_register += 8;
@@ -92,7 +93,7 @@ _schro_unpack_shift_in (SchroUnpack *unpack)
   }
 
   if (unpack->n_bits_left == 0) {
-    unsigned int value = (unpack->guard_bit)?0xffffffff:0;
+    unsigned int value = (unpack->guard_bit) ? 0xffffffff : 0;
 
     unpack->overrun += 32 - unpack->n_bits_in_shift_register;
     unpack->shift_register |= (value >> unpack->n_bits_in_shift_register);
@@ -102,7 +103,7 @@ _schro_unpack_shift_in (SchroUnpack *unpack)
 
   while (unpack->n_bits_left >= 8 && unpack->n_bits_in_shift_register <= 24) {
     unpack->shift_register |=
-      unpack->data[0]<<(24 - unpack->n_bits_in_shift_register);
+        unpack->data[0] << (24 - unpack->n_bits_in_shift_register);
     unpack->data++;
     unpack->n_bits_left -= 8;
     unpack->n_bits_in_shift_register += 8;
@@ -112,9 +113,9 @@ _schro_unpack_shift_in (SchroUnpack *unpack)
       unpack->n_bits_in_shift_register + unpack->n_bits_left <= 32) {
     unsigned int value;
 
-    value = unpack->data[0]>>(8-unpack->n_bits_left);
+    value = unpack->data[0] >> (8 - unpack->n_bits_left);
     unpack->shift_register |=
-      value<<(32 - unpack->n_bits_in_shift_register - unpack->n_bits_left);
+        value << (32 - unpack->n_bits_in_shift_register - unpack->n_bits_left);
     unpack->data++;
     unpack->n_bits_in_shift_register += unpack->n_bits_left;
     unpack->n_bits_left = 0;
@@ -122,11 +123,12 @@ _schro_unpack_shift_in (SchroUnpack *unpack)
 }
 
 static unsigned int
-_schro_unpack_shift_out (SchroUnpack *unpack, int n)
+_schro_unpack_shift_out (SchroUnpack * unpack, int n)
 {
   unsigned int value;
 
-  if (n == 0) return 0;
+  if (n == 0)
+    return 0;
 
   value = unpack->shift_register >> (32 - n);
   unpack->shift_register <<= n;
@@ -138,7 +140,7 @@ _schro_unpack_shift_out (SchroUnpack *unpack, int n)
 
 
 void
-schro_unpack_skip_bits (SchroUnpack *unpack, int n_bits)
+schro_unpack_skip_bits (SchroUnpack * unpack, int n_bits)
 {
   int n_bytes;
 
@@ -150,13 +152,14 @@ schro_unpack_skip_bits (SchroUnpack *unpack, int n_bits)
   n_bits -= unpack->n_bits_in_shift_register;
   _schro_unpack_shift_out (unpack, unpack->n_bits_in_shift_register);
 
-  n_bytes = MIN(n_bits>>3, unpack->n_bits_left>>3);
+  n_bytes = MIN (n_bits >> 3, unpack->n_bits_left >> 3);
   unpack->data += n_bytes;
-  unpack->n_bits_read += n_bytes*8;
-  unpack->n_bits_left -= n_bytes*8;
-  n_bits -= n_bytes*8;
+  unpack->n_bits_read += n_bytes * 8;
+  unpack->n_bits_left -= n_bytes * 8;
+  n_bits -= n_bytes * 8;
 
-  if (n_bits == 0) return;
+  if (n_bits == 0)
+    return;
 
   _schro_unpack_shift_in (unpack);
 
@@ -172,7 +175,7 @@ schro_unpack_skip_bits (SchroUnpack *unpack, int n_bits)
 }
 
 void
-schro_unpack_byte_sync (SchroUnpack *unpack)
+schro_unpack_byte_sync (SchroUnpack * unpack)
 {
   if (unpack->n_bits_read & 7) {
     schro_unpack_skip_bits (unpack, 8 - (unpack->n_bits_read & 7));
@@ -180,7 +183,7 @@ schro_unpack_byte_sync (SchroUnpack *unpack)
 }
 
 unsigned int
-schro_unpack_decode_bit (SchroUnpack *unpack)
+schro_unpack_decode_bit (SchroUnpack * unpack)
 {
   if (unpack->n_bits_in_shift_register < 1) {
     _schro_unpack_shift_in (unpack);
@@ -190,19 +193,19 @@ schro_unpack_decode_bit (SchroUnpack *unpack)
 }
 
 unsigned int
-schro_unpack_decode_bits (SchroUnpack *unpack, int n)
+schro_unpack_decode_bits (SchroUnpack * unpack, int n)
 {
   unsigned int value;
   int m;
 
-  m = MIN(n,unpack->n_bits_in_shift_register);
-  value = _schro_unpack_shift_out (unpack, m) << (n-m);
+  m = MIN (n, unpack->n_bits_in_shift_register);
+  value = _schro_unpack_shift_out (unpack, m) << (n - m);
   n -= m;
 
-  while(n>0) {
+  while (n > 0) {
     _schro_unpack_shift_in (unpack);
-    m = MIN(n,unpack->n_bits_in_shift_register);
-    value |= _schro_unpack_shift_out (unpack, m) << (n-m);
+    m = MIN (n, unpack->n_bits_in_shift_register);
+    value |= _schro_unpack_shift_out (unpack, m) << (n - m);
     n -= m;
   }
 
@@ -210,24 +213,24 @@ schro_unpack_decode_bits (SchroUnpack *unpack, int n)
 }
 
 unsigned int
-schro_unpack_decode_uint (SchroUnpack *unpack)
+schro_unpack_decode_uint (SchroUnpack * unpack)
 {
   int count;
   int value;
 
   count = 0;
   value = 0;
-  while(!schro_unpack_decode_bit (unpack)) {
+  while (!schro_unpack_decode_bit (unpack)) {
     count++;
     value <<= 1;
     value |= schro_unpack_decode_bit (unpack);
   }
 
-  return (1<<count) - 1 + value;
+  return (1 << count) - 1 + value;
 }
 
 int
-schro_unpack_decode_sint_slow (SchroUnpack *unpack)
+schro_unpack_decode_sint_slow (SchroUnpack * unpack)
 {
   int value;
 
@@ -242,7 +245,7 @@ schro_unpack_decode_sint_slow (SchroUnpack *unpack)
 }
 
 int
-schro_unpack_decode_sint (SchroUnpack *unpack)
+schro_unpack_decode_sint (SchroUnpack * unpack)
 {
   int value;
   int i;
@@ -253,12 +256,12 @@ schro_unpack_decode_sint (SchroUnpack *unpack)
     _schro_unpack_shift_in (unpack);
   }
   if (unpack->n_bits_in_shift_register >= SCHRO_UNPACK_TABLE_SHIFT) {
-    i = unpack->shift_register >> (32-SCHRO_UNPACK_TABLE_SHIFT);
+    i = unpack->shift_register >> (32 - SCHRO_UNPACK_TABLE_SHIFT);
     table_entry = schro_table_unpack_sint[i];
     x = table_entry[0];
-    if (x&0xf) {
-      value = x>>4;
-      _schro_unpack_shift_out (unpack, x&0xf);
+    if (x & 0xf) {
+      value = x >> 4;
+      _schro_unpack_shift_out (unpack, x & 0xf);
       return value;
     }
   }
@@ -267,7 +270,7 @@ schro_unpack_decode_sint (SchroUnpack *unpack)
 }
 
 void
-schro_unpack_decode_sint_s16 (int16_t *dest, SchroUnpack *unpack, int n)
+schro_unpack_decode_sint_s16 (int16_t * dest, SchroUnpack * unpack, int n)
 {
   int i;
   int j;
@@ -276,47 +279,47 @@ schro_unpack_decode_sint_s16 (int16_t *dest, SchroUnpack *unpack, int n)
   int z;
 
   while (n > 0) {
-    while (unpack->n_bits_in_shift_register < 8+SCHRO_UNPACK_TABLE_SHIFT) {
+    while (unpack->n_bits_in_shift_register < 8 + SCHRO_UNPACK_TABLE_SHIFT) {
       _schro_unpack_shift_in (unpack);
     }
-    i = unpack->shift_register >> (32-SCHRO_UNPACK_TABLE_SHIFT);
+    i = unpack->shift_register >> (32 - SCHRO_UNPACK_TABLE_SHIFT);
     table_entry = schro_table_unpack_sint[i];
     x = table_entry[0];
-    if ((x&0xf) == 0) {
-      int y = x>>4;
+    if ((x & 0xf) == 0) {
+      int y = x >> 4;
 
-      i = (unpack->shift_register&0xffffff) >> (24-SCHRO_UNPACK_TABLE_SHIFT);
+      i = (unpack->shift_register & 0xffffff) >> (24 -
+          SCHRO_UNPACK_TABLE_SHIFT);
       table_entry = schro_table_unpack_sint[i];
       x = table_entry[0];
-      if ((x&0xf) == 0) {
+      if ((x & 0xf) == 0) {
         dest[0] = schro_unpack_decode_sint_slow (unpack);
         dest++;
         n--;
       } else {
-        int bits = ((x&0xf)>>1) - 1;
+        int bits = ((x & 0xf) >> 1) - 1;
 
-        z = x>>4;
+        z = x >> 4;
         if (z > 0) {
-          dest[0] = z + (y<<bits);
+          dest[0] = z + (y << bits);
         } else {
-          dest[0] = z - (y<<bits);
+          dest[0] = z - (y << bits);
         }
-        _schro_unpack_shift_out (unpack, (x&0xf) + 8);
+        _schro_unpack_shift_out (unpack, (x & 0xf) + 8);
         dest++;
         n--;
       }
     } else {
       j = 0;
       do {
-        dest[j] = x>>4;
+        dest[j] = x >> 4;
         j++;
         n--;
         x = table_entry[j];
-      } while (n>0 && x&0xf);
-      x = table_entry[j-1];
-      _schro_unpack_shift_out (unpack, x&0xf);
+      } while (n > 0 && x & 0xf);
+      x = table_entry[j - 1];
+      _schro_unpack_shift_out (unpack, x & 0xf);
       dest += j;
     }
   }
 }
-

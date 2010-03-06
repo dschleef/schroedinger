@@ -20,16 +20,17 @@ extern int _schro_motion_ref;
  * before any other function in the library.
  */
 void
-schro_init(void)
+schro_init (void)
 {
   const char *s;
   static int inited = FALSE;
 
-  if (inited) return;
+  if (inited)
+    return;
 
   inited = TRUE;
 
-  orc_init();
+  orc_init ();
 
   s = getenv ("SCHRO_DEBUG");
   if (s && s[0]) {
@@ -71,4 +72,3 @@ schro_init(void)
   schro_opengl_init ();
 #endif
 }
-

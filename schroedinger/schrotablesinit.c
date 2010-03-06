@@ -18,18 +18,19 @@ void
 schro_tables_init (void)
 {
 #ifdef unused
-  int i,j;
+  int i, j;
   static int inited;
 
-  if (inited) return;
+  if (inited)
+    return;
   inited = TRUE;
 
-  quantise_table_intra = schro_malloc (61 * 65536 * sizeof(int16_t));
-  quantise_table_inter = schro_malloc (61 * 65536 * sizeof(int16_t));
-  dequantise_table_intra = schro_malloc (61 * 65536 * sizeof(int16_t));
-  dequantise_table_inter = schro_malloc (61 * 65536 * sizeof(int16_t));
+  quantise_table_intra = schro_malloc (61 * 65536 * sizeof (int16_t));
+  quantise_table_inter = schro_malloc (61 * 65536 * sizeof (int16_t));
+  dequantise_table_intra = schro_malloc (61 * 65536 * sizeof (int16_t));
+  dequantise_table_inter = schro_malloc (61 * 65536 * sizeof (int16_t));
 
-  for(i=0;i<61;i++){
+  for (i = 0; i < 61; i++) {
     int quant_factor;
     int quant_offset_intra;
     int quant_offset_inter;
@@ -38,15 +39,15 @@ schro_tables_init (void)
     quant_offset_intra = schro_table_offset_1_2[i];
     quant_offset_inter = schro_table_offset_3_8[i];
 
-    for(j=0;j<65536;j++){
-      quantise_table_intra[i*65536 + j] =
-        schro_quantise (j - 32768, quant_factor, quant_offset_intra);
-      quantise_table_inter[i*65536 + j] =
-        schro_quantise (j - 32768, quant_factor, quant_offset_inter);
-      dequantise_table_intra[i*65536 + j] =
-        schro_dequantise (j - 32768, quant_factor, quant_offset_intra);
-      dequantise_table_inter[i*65536 + j] =
-        schro_dequantise (j - 32768, quant_factor, quant_offset_inter);
+    for (j = 0; j < 65536; j++) {
+      quantise_table_intra[i * 65536 + j] =
+          schro_quantise (j - 32768, quant_factor, quant_offset_intra);
+      quantise_table_inter[i * 65536 + j] =
+          schro_quantise (j - 32768, quant_factor, quant_offset_inter);
+      dequantise_table_intra[i * 65536 + j] =
+          schro_dequantise (j - 32768, quant_factor, quant_offset_intra);
+      dequantise_table_inter[i * 65536 + j] =
+          schro_dequantise (j - 32768, quant_factor, quant_offset_inter);
     }
   }
 #endif

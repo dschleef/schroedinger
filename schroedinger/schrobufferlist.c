@@ -24,8 +24,9 @@
 SchroBufferList *
 schro_buflist_new (void)
 {
-  SchroBufferList *buflist = schro_malloc0 (sizeof(*buflist));
-  buflist->list = schro_list_new_full ((SchroListFreeFunc)schro_buffer_unref, NULL);
+  SchroBufferList *buflist = schro_malloc0 (sizeof (*buflist));
+  buflist->list =
+      schro_list_new_full ((SchroListFreeFunc) schro_buffer_unref, NULL);
   buflist->offset = 0;
 
   return buflist;
@@ -37,13 +38,14 @@ schro_buflist_new (void)
  * Frees resources associated with @buflist@.
  */
 void
-schro_buflist_free (SchroBufferList *buflist)
+schro_buflist_free (SchroBufferList * buflist)
 {
   if (!buflist) {
     return;
   }
   schro_list_free (buflist->list);
-  if (buflist->tag) schro_tag_free (buflist->tag);
+  if (buflist->tag)
+    schro_tag_free (buflist->tag);
   schro_free (buflist);
 }
 
@@ -53,7 +55,7 @@ schro_buflist_free (SchroBufferList *buflist)
  * Append @buf@ to the end of the buffer list.
  */
 void
-schro_buflist_append (SchroBufferList *buflist, SchroBuffer *buf)
+schro_buflist_append (SchroBufferList * buflist, SchroBuffer * buf)
 {
   schro_list_append (buflist->list, buf);
 }
@@ -64,7 +66,7 @@ schro_buflist_append (SchroBufferList *buflist, SchroBuffer *buf)
  * xxx
  */
 static int
-schro_buflist_internal_seek(SchroBufferList *buflist, unsigned *offset)
+schro_buflist_internal_seek (SchroBufferList * buflist, unsigned *offset)
 {
   int bufidx;
   /* skip over any discarded (consumed) data at start of buflist */
@@ -94,7 +96,8 @@ schro_buflist_internal_seek(SchroBufferList *buflist, unsigned *offset)
  * Returns: Number of bytes copied
  */
 int
-schro_buflist_peekbytes (uint8_t *dst, unsigned len, SchroBufferList *buflist, unsigned offset)
+schro_buflist_peekbytes (uint8_t * dst, unsigned len, SchroBufferList * buflist,
+    unsigned offset)
 {
   int bufidx;
   int coppied = 0;
@@ -103,14 +106,14 @@ schro_buflist_peekbytes (uint8_t *dst, unsigned len, SchroBufferList *buflist, u
     return 0;
   }
 
-  bufidx = schro_buflist_internal_seek(buflist, &offset);
+  bufidx = schro_buflist_internal_seek (buflist, &offset);
 
   /* copy out upto len worth of bytes. NB, this may cross
    * buffer boundries */
   for (; bufidx < buflist->list->n; bufidx++) {
     SchroBuffer *buf = buflist->list->members[bufidx];
-    unsigned size = MIN(len, buf->length - offset);
-    memcpy(dst + coppied, buf->data + offset, size);
+    unsigned size = MIN (len, buf->length - offset);
+    memcpy (dst + coppied, buf->data + offset, size);
     offset = 0;
     coppied += size;
     len -= size;
@@ -134,7 +137,8 @@ schro_buflist_peekbytes (uint8_t *dst, unsigned len, SchroBufferList *buflist, u
  * Returns: non-zero if found
  */
 int
-schro_buflist_findbytes (SchroBufferList *buflist, unsigned *start, const uint8_t *needle, unsigned needle_len)
+schro_buflist_findbytes (SchroBufferList * buflist, unsigned *start,
+    const uint8_t * needle, unsigned needle_len)
 {
   SchroBuffer *buf;
   unsigned bufidx = 0;
@@ -147,7 +151,7 @@ schro_buflist_findbytes (SchroBufferList *buflist, unsigned *start, const uint8_
     return 0;
   }
 
-  bufidx = schro_buflist_internal_seek(buflist, &offset);
+  bufidx = schro_buflist_internal_seek (buflist, &offset);
 
   /* search for what[], NB this may span multiple buffers */
   /* NB, if a search fails, it must be backtracked */
@@ -168,8 +172,7 @@ schro_buflist_findbytes (SchroBufferList *buflist, unsigned *start, const uint8_
           *start = backtrack_where;
           return 1;
         }
-      }
-      else if (n) {
+      } else if (n) {
         n = 0;
         /* restore backtracking point */
         i = backtrack_i;
@@ -186,7 +189,7 @@ schro_buflist_findbytes (SchroBufferList *buflist, unsigned *start, const uint8_
    * must move where back by (needle_len-1), but don't go past start */
   /* but avoid unsigned wraparound */
   if (needle_len <= where)
-    *start = MAX(where - needle_len + 1, *start);
+    *start = MAX (where - needle_len + 1, *start);
   return 0;
 }
 
@@ -196,7 +199,7 @@ schro_buflist_findbytes (SchroBufferList *buflist, unsigned *start, const uint8_
  * flushes (consumes) @ammount@ bytes.
  */
 void
-schro_buflist_flush (SchroBufferList *buflist, unsigned amount)
+schro_buflist_flush (SchroBufferList * buflist, unsigned amount)
 {
   SchroBuffer *buf;
   int bufidx = 0;
@@ -231,7 +234,7 @@ schro_buflist_flush (SchroBufferList *buflist, unsigned amount)
  * Returns: SchroBuffer* or NULL on failure.
  */
 SchroBuffer *
-schro_buflist_extract (SchroBufferList *buflist, unsigned start, unsigned len)
+schro_buflist_extract (SchroBufferList * buflist, unsigned start, unsigned len)
 {
   SchroBuffer *buf, *dst;
   SchroTag *tag = NULL;
@@ -239,20 +242,20 @@ schro_buflist_extract (SchroBufferList *buflist, unsigned start, unsigned len)
   int bufidx;
   uint8_t tmp;
 
-  SCHRO_ASSERT(buflist);
+  SCHRO_ASSERT (buflist);
 
   if (!len) {
     return NULL;
   }
 
   /* first check that the (start + len)th byte is avaliable */
-  if (!schro_buflist_peekbytes (&tmp, 1, buflist, start + len -1)) {
+  if (!schro_buflist_peekbytes (&tmp, 1, buflist, start + len - 1)) {
     return NULL;
   }
   /* guaranteed that the range is wholly contained within buflist */
 
-  bufidx = schro_buflist_internal_seek(buflist, &pos);
-  SCHRO_ASSERT(bufidx < buflist->list->n);
+  bufidx = schro_buflist_internal_seek (buflist, &pos);
+  SCHRO_ASSERT (bufidx < buflist->list->n);
 
   buf = buflist->list->members[bufidx];
 
@@ -290,8 +293,7 @@ schro_buflist_extract (SchroBufferList *buflist, unsigned start, unsigned len)
   /* sort out rescuing the first tag that was in the extracted
    * region and saving it ready for extraction at start+len. */
   len += pos;
-  for (pos = 0; pos < len;)
-  {
+  for (pos = 0; pos < len;) {
     buf = buflist->list->members[bufidx];
     if (!tag) {
       /* find the first non null tag we come across, take it,

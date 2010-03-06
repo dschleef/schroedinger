@@ -1,6 +1,6 @@
 
 static int
-__schro_arith_context_decode_bit (SchroArith *arith, int i)
+__schro_arith_context_decode_bit (SchroArith * arith, int i)
 {
   SchroArithContext *context = arith->contexts + i;
 

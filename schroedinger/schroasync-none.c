@@ -10,7 +10,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-struct _SchroAsync {
+struct _SchroAsync
+{
   int n_idle;
 
   volatile int n_completed;
@@ -23,13 +24,15 @@ struct _SchroAsync {
   SchroAsyncCompleteFunc complete;
 };
 
-struct _SchroThread {
+struct _SchroThread
+{
   SchroAsync *async;
   int busy;
   int index;
 };
 
-struct _SchroMutex {
+struct _SchroMutex
+{
   int ignore;
 };
 
@@ -40,14 +43,13 @@ schro_async_init (void)
 }
 
 SchroAsync *
-schro_async_new(int n_threads,
+schro_async_new (int n_threads,
     SchroAsyncScheduleFunc schedule,
-    SchroAsyncCompleteFunc complete,
-    void *closure)
+    SchroAsyncCompleteFunc complete, void *closure)
 {
   SchroAsync *async;
 
-  async = schro_malloc0 (sizeof(SchroAsync));
+  async = schro_malloc0 (sizeof (SchroAsync));
 
   async->schedule = schedule;
   async->schedule_closure = closure;
@@ -57,26 +59,26 @@ schro_async_new(int n_threads,
 }
 
 void
-schro_async_free (SchroAsync *async)
+schro_async_free (SchroAsync * async)
 {
-  schro_free(async);
+  schro_free (async);
 }
 
 void
-schro_async_start (SchroAsync *async)
+schro_async_start (SchroAsync * async)
 {
 }
 
 void
-schro_async_stop (SchroAsync *async)
+schro_async_stop (SchroAsync * async)
 {
 
 }
 
 void
-schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
+schro_async_run_stage_locked (SchroAsync * async, SchroAsyncStage * stage)
 {
-  SCHRO_ASSERT(async->task.task_func == NULL);
+  SCHRO_ASSERT (async->task.task_func == NULL);
 
   async->task.task_func = stage->task_func;
   async->task.priv = stage;
@@ -84,7 +86,7 @@ schro_async_run_stage_locked (SchroAsync *async, SchroAsyncStage *stage)
 }
 
 int
-schro_async_wait_locked (SchroAsync *async)
+schro_async_wait_locked (SchroAsync * async)
 {
   async->schedule (async->schedule_closure, SCHRO_EXEC_DOMAIN_CPU);
   if (async->task.task_func) {
@@ -96,20 +98,23 @@ schro_async_wait_locked (SchroAsync *async)
   return TRUE;
 }
 
-void schro_async_lock (SchroAsync *async)
-{
-}
-
-void schro_async_unlock (SchroAsync *async)
-{
-}
-
-void schro_async_signal_scheduler (SchroAsync *async)
+void
+schro_async_lock (SchroAsync * async)
 {
 }
 
 void
-schro_async_add_exec_domain (SchroAsync *async, SchroExecDomain exec_domain)
+schro_async_unlock (SchroAsync * async)
+{
+}
+
+void
+schro_async_signal_scheduler (SchroAsync * async)
+{
+}
+
+void
+schro_async_add_exec_domain (SchroAsync * async, SchroExecDomain exec_domain)
 {
 }
 
@@ -124,24 +129,23 @@ schro_mutex_new (void)
 {
   SchroMutex *mutex;
 
-  mutex = schro_malloc(sizeof(SchroMutex));
+  mutex = schro_malloc (sizeof (SchroMutex));
 
   return mutex;
 }
 
 void
-schro_mutex_lock (SchroMutex *mutex)
+schro_mutex_lock (SchroMutex * mutex)
 {
 }
 
 void
-schro_mutex_unlock (SchroMutex *mutex)
+schro_mutex_unlock (SchroMutex * mutex)
 {
 }
 
 void
-schro_mutex_free (SchroMutex *mutex)
+schro_mutex_free (SchroMutex * mutex)
 {
   schro_free (mutex);
 }
-

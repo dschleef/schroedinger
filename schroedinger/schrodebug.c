@@ -53,7 +53,7 @@ schro_debug_log_valist (int level, const char *file, const char *func,
 
 void
 schro_debug_log (int level, const char *file, const char *func,
-        int line, const char *format, ...)
+    int line, const char *format, ...)
 {
   va_list var_args;
 
@@ -95,7 +95,8 @@ schro_dump (int type, const char *format, ...)
 {
   va_list varargs;
 
-  if (!_schro_dump_enable) return;
+  if (!_schro_dump_enable)
+    return;
 
   if (dump_files[type] == NULL) {
     dump_files[type] = fopen (dump_file_names[type], "w");
@@ -117,4 +118,3 @@ schro_debug_set_log_function (SchroDebugLogFunc func)
     _schro_debug_log_func = schro_debug_log_valist;
   }
 }
-

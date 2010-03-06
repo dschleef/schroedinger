@@ -125,8 +125,9 @@ schro_gpumotion_copy (SchroGPUMotion * self, SchroMotion * motion)
       vectors[i].x1 = MOTION_NONE;
       vectors[i].x2 = MOTION_NONE;
       // YUV color code is encoded in these
-      vectors[i].y1 = ((mvdc->dc[0]+128) & 0xFF) | (((mvdc->dc[1]+128) & 0xFF) << 8);
-      vectors[i].y2 = (mvdc->dc[2]+128) & 0xFF;
+      vectors[i].y1 =
+          ((mvdc->dc[0] + 128) & 0xFF) | (((mvdc->dc[1] + 128) & 0xFF) << 8);
+      vectors[i].y2 = (mvdc->dc[2] + 128) & 0xFF;
     } else {
       // Reference 1
       if (motion->motion_vectors[i].pred_mode & 1) {
@@ -174,12 +175,14 @@ schro_gpumotion_render (SchroGPUMotion * self, SchroMotion * motion,
 
   fwidth = motion->params->video_format->width;
   fheight = motion->params->video_format->height;
-  hshift = SCHRO_CHROMA_FORMAT_H_SHIFT(motion->params->video_format->chroma_format);
-  vshift = SCHRO_CHROMA_FORMAT_V_SHIFT(motion->params->video_format->chroma_format);
+  hshift =
+      SCHRO_CHROMA_FORMAT_H_SHIFT (motion->params->video_format->chroma_format);
+  vshift =
+      SCHRO_CHROMA_FORMAT_V_SHIFT (motion->params->video_format->chroma_format);
 
-  SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
+  SCHRO_ASSERT (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
 
-  SCHRO_ASSERT(gdest->domain->flags == SCHRO_MEMORY_DOMAIN_CUDA);
+  SCHRO_ASSERT (gdest->domain->flags == SCHRO_MEMORY_DOMAIN_CUDA);
 
   if (ref2) {
     cuda_motion_copy (cm, &md, (int16_t *) gdest->components[0].data,

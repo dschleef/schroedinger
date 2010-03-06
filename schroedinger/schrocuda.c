@@ -17,17 +17,16 @@ schro_cuda_init (void)
   cudaError_t ret;
 
   ret = cudaGetDeviceCount (&n);
-  SCHRO_DEBUG("cudaGetDeviceCount returned %d", ret);
+  SCHRO_DEBUG ("cudaGetDeviceCount returned %d", ret);
 
-  SCHRO_DEBUG("CUDA devices %d", n);
+  SCHRO_DEBUG ("CUDA devices %d", n);
 
-  for(i=0;i<n;i++){
+  for (i = 0; i < n; i++) {
     struct cudaDeviceProp prop;
 
     cudaGetDeviceProperties (&prop, i);
     SCHRO_DEBUG ("CUDA props: %d: %d.%d mem=%d %s", i,
-        prop.major, prop.minor,
-        prop.totalGlobalMem, prop.name);
+        prop.major, prop.minor, prop.totalGlobalMem, prop.name);
   }
 }
 
@@ -38,7 +37,7 @@ schro_cuda_alloc (int size)
   void *ptr;
   int ret;
 
-  SCHRO_DEBUG("domain is %d", schro_async_get_exec_domain ());
+  SCHRO_DEBUG ("domain is %d", schro_async_get_exec_domain ());
   //SCHRO_ASSERT(schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA);
 
   ret = cudaMalloc (&ptr, size);
@@ -54,7 +53,7 @@ schro_cuda_free (void *ptr, int size)
   if (schro_async_get_exec_domain () == SCHRO_EXEC_DOMAIN_CUDA) {
     cudaFree (ptr);
   } else {
-    SCHRO_ERROR("Freeing CUDA memory outside CUDA thread.");
+    SCHRO_ERROR ("Freeing CUDA memory outside CUDA thread.");
   }
 }
 
@@ -63,7 +62,7 @@ schro_memory_domain_new_cuda (void)
 {
   SchroMemoryDomain *domain;
 
-  domain = schro_memory_domain_new();
+  domain = schro_memory_domain_new ();
   domain->flags = SCHRO_MEMORY_DOMAIN_CUDA;
   domain->alloc = schro_cuda_alloc;
   domain->free = schro_cuda_free;
@@ -73,7 +72,7 @@ schro_memory_domain_new_cuda (void)
 
 
 void
-schro_motion_render_cuda (SchroMotion *motion, SchroFrame *dest)
+schro_motion_render_cuda (SchroMotion * motion, SchroFrame * dest)
 {
   SchroGPUMotion *gpumotion;
 
@@ -88,11 +87,10 @@ schro_motion_render_cuda (SchroMotion *motion, SchroFrame *dest)
 }
 
 void
-schro_frame_inverse_iwt_transform_cuda (SchroFrame *frame,
-    SchroFrame *transform_frame, SchroParams *params)
+schro_frame_inverse_iwt_transform_cuda (SchroFrame * frame,
+    SchroFrame * transform_frame, SchroParams * params)
 {
   schro_frame_to_gpu (frame, transform_frame);
 
   schro_gpuframe_inverse_iwt_transform (frame, params);
 }
-

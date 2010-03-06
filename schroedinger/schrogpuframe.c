@@ -742,7 +742,7 @@ schro_upsampled_gpuframe_upsample (SchroUpsampledFrame * uf)
       src->width * 2, src->height * 2);
 
   /** Make an 8 bit texture for each component */
-  for(k=0;k<3;k++) {
+  for (k = 0; k < 3; k++) {
     cudaMallocArray (&ca, &channelDesc,
         src->components[k].width * 2, src->components[k].height * 2);
     uf->components[k] = ca;
@@ -752,7 +752,7 @@ schro_upsampled_gpuframe_upsample (SchroUpsampledFrame * uf)
   schro_gpuframe_upsample (tmp_frame, src);
 
   /** Copy data to texture */
-  for(k=0;k<3;k++) {
+  for (k = 0; k < 3; k++) {
     cudaMemcpy2DToArray (uf->components[k], 0, 0, tmp_frame->components[k].data,
         tmp_frame->components[k].stride, tmp_frame->components[k].width,
         tmp_frame->components[k].height, cudaMemcpyDeviceToDevice);
