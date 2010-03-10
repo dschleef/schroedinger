@@ -8,7 +8,7 @@ SCHRO_BEGIN_DECLS
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
-void schro_frame_filter_lowpass (SchroFrame *frame);
+void schro_frame_filter_lowpass (SchroFrame * frame, int tap);
 void schro_frame_filter_lowpass2 (SchroFrame *frame, double sigma);
 void schro_frame_filter_lowpass_16 (SchroFrame *frame);
 void schro_frame_filter_cwm7 (SchroFrame *frame);

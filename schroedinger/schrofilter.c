@@ -10,6 +10,7 @@
 #include <schroedinger/schrobitstream.h>
 #include <schroedinger/schrohistogram.h>
 #include <schroedinger/schroparams.h>
+#include <schroedinger/schrovirtframe.h>
 
 #include <string.h>
 #include <math.h>
@@ -336,97 +337,88 @@ schro_frame_filter_cwm7 (SchroFrame * frame)
 #endif
 
 
-
-#ifdef unused
 static void
-lowpass_u8 (uint8_t * d, uint8_t * s, int n)
+lowpass3_h_u8 (SchroFrame *frame, void *_dest, int component, int i)
 {
-  int i;
-  int j;
-  int x;
-  const int16_t taps[] = { 2, 9, 28, 55, 68, 55, 28, 9, 2, 0 };
-  const int16_t offsetshift[] = { 128, 8 };
+  uint8_t *dest = _dest;
+  uint8_t *src;
+  int tap1, tap2;
 
-  for (i = 0; i < 4; i++) {
-    x = 0;
-    for (j = 0; j < 9; j++) {
-      x += s[CLAMP (i + j - 4, 0, n - 1)] * taps[j];
-    }
-    d[i] = (x + 128) >> 8;
+  tap1 = (int)frame->virt_priv2;
+  tap2 = 256 - 2*tap1;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+
+  if (component > 0) {
+    memcpy (dest, src, frame->components[component].width);
+    return;
   }
-  schro_mas10_u8 (d + 4, s, taps, offsetshift, n - 9);
-  for (i = n - 6; i < n; i++) {
-    x = 0;
-    for (j = 0; j < 9; j++) {
-      x += s[CLAMP (i + j - 4, 0, n - 1)] * taps[j];
-    }
-    d[i] = (x + 128) >> 8;
+
+  i = 0;
+  dest[i] = (src[i] * tap1 + src[i] * tap2 + src[i+1] * tap1 + 128)>>8;
+
+  for(i=1;i<frame->width-1;i++) {
+    dest[i] = (src[i-1] * tap1 + src[i] * tap2 + src[i+1] * tap1 + 128)>>8;
   }
+
+  i = frame->width - 1;
+  dest[i] = (src[i-1] * tap1 + src[i] * tap2 + src[i] * tap1 + 128)>>8;
+
 }
-#endif
 
-#ifdef unused
-/* FIXME move to schrooil */
 static void
-lowpass_vert_u8 (uint8_t * d, uint8_t * s, int n)
+lowpass3_v_u8 (SchroFrame *frame, void *_dest, int component, int i)
 {
-  int i;
-  int j;
-  int x;
-  static int taps[] = { 2, 9, 28, 55, 68, 55, 28, 9, 2, 0 };
+  uint8_t *dest = _dest;
+  uint8_t *src1, *src2, *src3;
+  int tap1, tap2;
 
-  for (i = 0; i < n; i++) {
-    x = 0;
-    for (j = 0; j < 9; j++) {
-      x += s[j * n + i] * taps[j];
-    }
-    d[i] = (x + 128) >> 8;
-  }
-}
-#endif
-
-#ifdef unused
-static void
-schro_frame_component_filter_lowpass (SchroFrameData * comp)
-{
-  int i;
-  uint8_t *tmp;
-
-  tmp = schro_malloc (comp->width * 9);
-
-  lowpass_u8 (tmp + 0 * comp->width,
-      OFFSET (comp->data, comp->stride * 0), comp->width);
-  memcpy (tmp + 1 * comp->width, tmp + 0 * comp->width, comp->width);
-  memcpy (tmp + 2 * comp->width, tmp + 0 * comp->width, comp->width);
-  memcpy (tmp + 3 * comp->width, tmp + 0 * comp->width, comp->width);
-  memcpy (tmp + 4 * comp->width, tmp + 0 * comp->width, comp->width);
-  lowpass_u8 (tmp + 5 * comp->width,
-      OFFSET (comp->data, comp->stride * 1), comp->width);
-  lowpass_u8 (tmp + 6 * comp->width,
-      OFFSET (comp->data, comp->stride * 2), comp->width);
-  lowpass_u8 (tmp + 7 * comp->width,
-      OFFSET (comp->data, comp->stride * 2), comp->width);
-  for (i = 0; i < comp->height; i++) {
-    lowpass_u8 (tmp + 8 * comp->width,
-        OFFSET (comp->data, comp->stride * CLAMP (i + 4, 0, comp->height - 1)),
-        comp->width);
-    lowpass_vert_u8 (OFFSET (comp->data, comp->stride * i), tmp, comp->width);
-    memmove (tmp, tmp + comp->width * 1, comp->width * 8);
+  if (component > 0) {
+    src2 = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+    memcpy (dest, src2, frame->components[component].width);
+    return;
   }
 
-  schro_free (tmp);
-}
-#endif
+  tap1 = (int)frame->virt_priv2;
+  tap2 = 256 - 2*tap1;
 
-#ifdef unused
+  src1 = schro_virt_frame_get_line (frame->virt_frame1, component,
+      CLAMP(i-1,0,frame->height));
+  src2 = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  src3 = schro_virt_frame_get_line (frame->virt_frame1, component,
+      CLAMP(i+1,0,frame->height));
+
+  for(i=0;i<frame->width;i++) {
+    dest[i] = (src1[i] * tap1 + src2[i] * tap2 + src3[i] * tap1 + 128)>>8;
+  }
+
+}
+
 void
-schro_frame_filter_lowpass (SchroFrame * frame)
+schro_frame_filter_lowpass (SchroFrame * frame, int tap)
 {
-  schro_frame_component_filter_lowpass (&frame->components[0]);
-  schro_frame_component_filter_lowpass (&frame->components[1]);
-  schro_frame_component_filter_lowpass (&frame->components[2]);
+  SchroFrame *vf;
+  SchroFrame *vf2;
+  SchroFrame *dup;
+
+  dup = schro_frame_dup (frame);
+
+  vf = schro_frame_new_virtual (NULL, frame->format, frame->width, frame->height);
+  vf->virt_frame1 = schro_frame_ref(frame);
+  vf->render_line = lowpass3_h_u8;
+  vf->virt_priv2 = (void *)tap;
+
+  vf2 = schro_frame_new_virtual (NULL, frame->format, frame->width, frame->height);
+  vf2->virt_frame1 = vf;
+  vf2->render_line = lowpass3_v_u8;
+  vf2->virt_priv2 =(void *) tap;
+
+  schro_virt_frame_render (vf2, dup);
+  schro_frame_convert (frame, dup);
+
+  schro_frame_unref (vf2);
+  schro_frame_unref (dup);
 }
-#endif
 
 
 #ifdef unused

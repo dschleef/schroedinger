@@ -2215,6 +2215,10 @@ schro_encoder_analyse_picture (SchroAsyncStage * stage)
       case 4:
         schro_frame_filter_adaptive_lowpass (frame->filtered_frame);
         break;
+      case 5:
+        schro_frame_filter_lowpass (frame->filtered_frame,
+            frame->encoder->filter_value);
+        break;
       default:
         /* do nothing */
         break;
@@ -4224,7 +4228,8 @@ static const char *filtering_list[] = {
   "center_weighted_median",
   "gaussian",
   "add_noise",
-  "adaptive_gaussian"
+  "adaptive_gaussian",
+  "lowpass"
 };
 
 static const char *wavelet_list[] = {
