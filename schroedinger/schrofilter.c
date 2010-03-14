@@ -344,7 +344,7 @@ lowpass3_h_u8 (SchroFrame *frame, void *_dest, int component, int i)
   uint8_t *src;
   int tap1, tap2;
 
-  tap1 = (int)frame->virt_priv2;
+  tap1 = *(int *)frame->virt_priv2;
   tap2 = 256 - 2*tap1;
 
   src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
@@ -379,7 +379,7 @@ lowpass3_v_u8 (SchroFrame *frame, void *_dest, int component, int i)
     return;
   }
 
-  tap1 = (int)frame->virt_priv2;
+  tap1 = *(int *)frame->virt_priv2;
   tap2 = 256 - 2*tap1;
 
   src1 = schro_virt_frame_get_line (frame->virt_frame1, component,
@@ -406,12 +406,12 @@ schro_frame_filter_lowpass (SchroFrame * frame, int tap)
   vf = schro_frame_new_virtual (NULL, frame->format, frame->width, frame->height);
   vf->virt_frame1 = schro_frame_ref(frame);
   vf->render_line = lowpass3_h_u8;
-  vf->virt_priv2 = (void *)tap;
+  vf->virt_priv2 = (void *) &tap;
 
   vf2 = schro_frame_new_virtual (NULL, frame->format, frame->width, frame->height);
   vf2->virt_frame1 = vf;
   vf2->render_line = lowpass3_v_u8;
-  vf2->virt_priv2 =(void *) tap;
+  vf2->virt_priv2 = (void *) &tap;
 
   schro_virt_frame_render (vf2, dup);
   schro_frame_convert (frame, dup);
