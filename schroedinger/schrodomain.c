@@ -8,7 +8,7 @@
 #include <schroedinger/schrodebug.h>
 #include <stdlib.h>
 
-#define MEM_DOMAIN_ALWAYS_FREE 1
+//#define MEM_DOMAIN_ALWAYS_FREE 1
 
 /* SchroMemoryDomain */
 
