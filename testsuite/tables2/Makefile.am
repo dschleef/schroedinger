@@ -11,7 +11,7 @@ endif
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(ORC_CFLAGS) -I$(srcdir)/.. \
 	    -DSCHRO_ENABLE_UNSTABLE_API
-LDADD = ../libschrotest.la
+LDADD = ../libschrotest.la $(SCHRO_LIBS)
 
 lowdelay_tables_SOURCES = lowdelay_tables.c
 
