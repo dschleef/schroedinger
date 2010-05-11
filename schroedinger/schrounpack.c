@@ -269,6 +269,8 @@ schro_unpack_decode_sint (SchroUnpack * unpack)
   return schro_unpack_decode_sint_slow (unpack);
 }
 
+typedef const int16_t SchroUnpackTableEntry[10];
+
 void
 schro_unpack_decode_sint_s16 (int16_t * dest, SchroUnpack * unpack, int n)
 {
@@ -277,20 +279,21 @@ schro_unpack_decode_sint_s16 (int16_t * dest, SchroUnpack * unpack, int n)
   const int16_t *table_entry;
   int x;
   int z;
+  SchroUnpackTableEntry *table = schro_table_unpack_sint;
 
   while (n > 0) {
     while (unpack->n_bits_in_shift_register < 8 + SCHRO_UNPACK_TABLE_SHIFT) {
       _schro_unpack_shift_in (unpack);
     }
     i = unpack->shift_register >> (32 - SCHRO_UNPACK_TABLE_SHIFT);
-    table_entry = schro_table_unpack_sint[i];
+    table_entry = table[i];
     x = table_entry[0];
     if ((x & 0xf) == 0) {
       int y = x >> 4;
 
       i = (unpack->shift_register & 0xffffff) >> (24 -
           SCHRO_UNPACK_TABLE_SHIFT);
-      table_entry = schro_table_unpack_sint[i];
+      table_entry = table[i];
       x = table_entry[0];
       if ((x & 0xf) == 0) {
         dest[0] = schro_unpack_decode_sint_slow (unpack);
@@ -323,3 +326,4 @@ schro_unpack_decode_sint_s16 (int16_t * dest, SchroUnpack * unpack, int n)
     }
   }
 }
+
