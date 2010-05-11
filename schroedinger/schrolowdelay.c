@@ -349,6 +349,10 @@ schro_lowdelay_init (SchroLowDelay * lowdelay, SchroFrame * frame,
   lowdelay->params = params;
   lowdelay->frame = frame;
   lowdelay->n_subbands = 1 + 3 * params->transform_depth;
+
+  lowdelay->n_horiz_slices = params->n_horiz_slices;
+  lowdelay->n_vert_slices = params->n_vert_slices;
+
   for (i = 0; i < 1 + 3 * params->transform_depth; i++) {
     int position = schro_subband_get_position (i);
     SchroFrameData fd;
