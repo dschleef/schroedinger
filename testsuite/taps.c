@@ -43,7 +43,7 @@ create_filter (int n)
   }
 
   for(i=0;i<n;i++){
-    filter[i] = rint(256.0*filter[i]/sum);
+    filter[i] = floor(0.5 + 256.0*filter[i]/sum);
   }
  
   printf("%d: ",n);

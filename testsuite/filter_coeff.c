@@ -170,7 +170,7 @@ filter2d_quantise (Filter2D *filter, double adjust)
   for(j=0;j<filter->n_taps;j++){
     for(k=0;k<filter->n_taps;k++){
       FILTER2D_I_TAP (filter,j,k) =
-        rint(target*FILTER2D_D_TAP(filter,j,k)/sum + adjust);
+        floor(0.5 + target*FILTER2D_D_TAP(filter,j,k)/sum + adjust);
     }
   }
 

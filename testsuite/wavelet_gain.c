@@ -61,46 +61,46 @@ random_test(int filter, int level)
     }
     if (level == 0) {
       for(i=0;i<(N>>4);i++){
-        a[i]=rint(amplitude*random_std());
+        a[i]=floor(0.5 + amplitude*random_std());
       }
     } else if (level<5) {
       for(i=((N>>5)<<level);i<((N>>4)<<level);i++){
-        a[i]=rint(amplitude*random_std());
+        a[i]=floor(0.5 + amplitude*random_std());
       }
     } else if (level==5) {
       for(i=0;i<(N>>4);i++){
-        a[i]=rint(amplitude*random_std()/3.608);
+        a[i]=floor(0.5 + amplitude*random_std()/3.608);
       }
       for(i=(N>>4);i<(N>>3);i++){
-        a[i]=rint(amplitude*random_std()/1.972);
+        a[i]=floor(0.5 + amplitude*random_std()/1.972);
       }
       for(i=(N>>3);i<(N>>2);i++){
-        a[i]=rint(amplitude*random_std()/1.382);
+        a[i]=floor(0.5 + amplitude*random_std()/1.382);
       }
       for(i=(N>>2);i<(N>>1);i++){
-        a[i]=rint(amplitude*random_std()/0.991);
+        a[i]=floor(0.5 + amplitude*random_std()/0.991);
       }
       for(i=(N>>1);i<(N>>0);i++){
-        a[i]=rint(amplitude*random_std()/0.821);
+        a[i]=floor(0.5 + amplitude*random_std()/0.821);
       }
     } else if (level==6) {
       double alpha = 1.282;
       double beta = 0.821;
 
       for(i=0;i<(N>>4);i++){
-        a[i]=rint(amplitude*random_std()/(alpha*alpha*alpha*alpha));
+        a[i]=floor(0.5 + amplitude*random_std()/(alpha*alpha*alpha*alpha));
       }
       for(i=(N>>4);i<(N>>3);i++){
-        a[i]=rint(amplitude*random_std()/(alpha*alpha*alpha*beta));
+        a[i]=floor(0.5 + amplitude*random_std()/(alpha*alpha*alpha*beta));
       }
       for(i=(N>>3);i<(N>>2);i++){
-        a[i]=rint(amplitude*random_std()/(alpha*alpha*beta));
+        a[i]=floor(0.5 + amplitude*random_std()/(alpha*alpha*beta));
       }
       for(i=(N>>2);i<(N>>1);i++){
-        a[i]=rint(amplitude*random_std()/(alpha*beta));
+        a[i]=floor(0.5 + amplitude*random_std()/(alpha*beta));
       }
       for(i=(N>>1);i<(N>>0);i++){
-        a[i]=rint(amplitude*random_std()/(beta));
+        a[i]=floor(0.5 + amplitude*random_std()/(beta));
       }
     }
 

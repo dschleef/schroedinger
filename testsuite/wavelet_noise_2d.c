@@ -69,8 +69,8 @@ generate_noise (SchroFrame *frame, int n_transforms, double *weights)
             (j*y_skip + y_offset)*comp->stride);
         data += x_offset;
         for(i=0;i<w;i++){
-          data[i] = rint(random_std()*AMPLITUDE*weights[l]);
-          //data[i] = rint(random_std()*AMPLITUDE);
+          data[i] = floor(0.5 + random_std()*AMPLITUDE*weights[l]);
+          //data[i] = floor(0.5 + random_std()*AMPLITUDE);
         }
       }
     }

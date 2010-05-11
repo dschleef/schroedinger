@@ -45,11 +45,11 @@ gain_test(int filter, int level, int n_levels)
     }
     if (level == 0) {
       for(i=0;i<N>>n_levels;i++){
-        a[i]=rint(100 * random_std());
+        a[i]=floor(0.5 + 100 * random_std());
       }
     } else {
       for(i=N>>(n_levels-level+1);i<N>>(n_levels-level);i++){
-        a[i]=rint(100 * random_std());
+        a[i]=floor(0.5 + 100 * random_std());
       }
     }
     for(i=0;i<N;i++){

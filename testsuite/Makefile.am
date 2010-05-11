@@ -34,7 +34,7 @@ TESTS = arith encode wavelet_2d unpack downsample
 
 AM_CFLAGS = $(SCHRO_CFLAGS) $(ERROR_CFLAGS) $(ORC_CFLAGS) \
 	    -DSCHRO_ENABLE_UNSTABLE_API
-LDADD = $(LIBM) libschrotest.la $(SCHRO_LIBS)
+LDADD = libschrotest.la $(SCHRO_LIBS) -lorc-test-0.4 $(ORC_LIBS) $(LIBM)
 
 libschrotest_la_SOURCES = common.c
 libschrotest_la_LIBADD = $(SCHRO_LIBS) $(ORC_LIBS) -lorc-test-0.4 $(LIBM)

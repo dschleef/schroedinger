@@ -56,11 +56,11 @@ random_test(double *dest, int filter, int n_levels, int hl)
     }
     if (hl) {
       for(i=0;i<(N>>n_levels);i++){
-        a[i]=rint(amplitude*random_std());
+        a[i]=floor(0.5 + amplitude*random_std());
       }
     } else {
       for(i=(N>>n_levels);i<(N>>(n_levels-1));i++){
-        a[i]=rint(amplitude*random_std());
+        a[i]=floor(0.5 + amplitude*random_std());
       }
     }
 

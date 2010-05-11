@@ -48,7 +48,7 @@ get_inv_quant (int i)
 {
   int quant_factor = get_quant(i);
   int quant_shift = i/4 + 2;
-  return rint(65536.0 / quant_factor * (1<<quant_shift));
+  return floor(0.5 + 65536.0 / quant_factor * (1<<quant_shift));
 }
 
 int

@@ -54,19 +54,19 @@ random_test(double *dest, int filter, double *weights)
       a[i] = 0;
     }
     for(i=0;i<(N>>4);i++){
-      a[i]=rint(amplitude*random_std()*weights[0]);
+      a[i]=floor(0.5 + amplitude*random_std()*weights[0]);
     }
     for(i=(N>>4);i<(N>>3);i++){
-      a[i]=rint(amplitude*random_std()*weights[1]);
+      a[i]=floor(0.5 + amplitude*random_std()*weights[1]);
     }
     for(i=(N>>3);i<(N>>2);i++){
-      a[i]=rint(amplitude*random_std()*weights[2]);
+      a[i]=floor(0.5 + amplitude*random_std()*weights[2]);
     }
     for(i=(N>>2);i<(N>>1);i++){
-      a[i]=rint(amplitude*random_std()*weights[3]);
+      a[i]=floor(0.5 + amplitude*random_std()*weights[3]);
     }
     for(i=(N>>1);i<(N>>0);i++){
-      a[i]=rint(amplitude*random_std()*weights[4]);
+      a[i]=floor(0.5 + amplitude*random_std()*weights[4]);
     }
 
     synth(a,N>>3,filter);
