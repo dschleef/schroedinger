@@ -7,9 +7,10 @@ toolsdir=${exec_prefix}/bin
 
 Name: schroedinger-@SCHRO_MAJORMINOR@
 Description: Dirac codec library
-Requires: @SCHRO_PKG_DEPS@
+Requires.private: @SCHRO_PKG_DEPS@
 Version: @VERSION@
-Libs: -L${libdir} -lschroedinger-@SCHRO_MAJORMINOR@ @PTHREAD_LIBS@ @LIBM@
+Libs: -L${libdir} -lschroedinger-@SCHRO_MAJORMINOR@
+Libs.private: @PTHREAD_LIBS@ @LIBM@
 Cflags: -I${includedir}
 
 

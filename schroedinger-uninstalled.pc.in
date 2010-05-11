@@ -6,5 +6,9 @@ includedir=${pcfiledir}/
 Name: schro-@SCHRO_MAJORMINOR@ uninstalled
 Description: Dirac codec library
 Version: @VERSION@
-Libs: -L${libdir} -lschroedinger-@SCHRO_MAJORMINOR@ @PTHREAD_LIBS@ @LIBM@
+Requires.private: @SCHRO_PKG_DEPS@
+Libs: -L${libdir} -lschroedinger-@SCHRO_MAJORMINOR@
+Libs.private: @PTHREAD_LIBS@ @LIBM@
 Cflags: -I${includedir} -I@srcdir@
+
+
