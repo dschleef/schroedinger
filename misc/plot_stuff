@@ -455,7 +455,7 @@ def plot_scs():
 	mx = max(data_x);
 	my = max(data_y);
 	plot.set_x_range(0, mx);
-	plot.set_y_range(0, my);
+	plot.set_y_range(0, max(0,my));
 
 	plot.set_sane_ticks();
 
