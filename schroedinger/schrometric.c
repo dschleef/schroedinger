@@ -338,7 +338,7 @@ schro_frame_block_is_valid (SchroFrame *frame, int x, int y, int sx, int sy)
 }
 
 static int
-schro_metric_fast_block_sad_slow (SchroMetricInfo *info, int x, int y,
+schro_metric_block_sad_slow (SchroMetricInfo *info, int x, int y,
     int dx, int dy)
 {
   int i,j;
@@ -385,7 +385,7 @@ schro_metric_fast_block_sad_slow (SchroMetricInfo *info, int x, int y,
 }
 
 static int
-schro_metric_fast_subsuperblock_sad_slow (SchroMetricInfo *info, int x, int y,
+schro_metric_subsuperblock_sad_slow (SchroMetricInfo *info, int x, int y,
     int dx, int dy)
 {
   int i,j;
@@ -414,7 +414,7 @@ schro_metric_fast_subsuperblock_sad_slow (SchroMetricInfo *info, int x, int y,
 }
 
 static int
-schro_metric_fast_superblock_sad_slow (SchroMetricInfo *info, int x, int y,
+schro_metric_superblock_sad_slow (SchroMetricInfo *info, int x, int y,
     int dx, int dy)
 {
   int i,j;
@@ -456,9 +456,9 @@ schro_metric_info_init (SchroMetricInfo *info, SchroFrame *frame,
   info->block_width = block_width;
   info->block_height = block_height;
 
-  info->metric_fast_block = schro_metric_fast_block_sad_slow;
-  info->metric_fast_subsuperblock = schro_metric_fast_subsuperblock_sad_slow;
-  info->metric_fast_superblock = schro_metric_fast_superblock_sad_slow;
+  info->metric_fast_block = schro_metric_block_sad_slow;
+  info->metric_fast_subsuperblock = schro_metric_subsuperblock_sad_slow;
+  info->metric_fast_superblock = schro_metric_superblock_sad_slow;
 }
 
 int schro_metric_fast_block (SchroMetricInfo *info, int x, int y,
