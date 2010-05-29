@@ -180,11 +180,11 @@ schro_hierarchical_bm_scan_hint (SchroHierBm * schro_hbm, int shift,
   SchroMotionField *mf, *hint_mf = NULL;
   SchroParams *params = schro_hbm_params (schro_hbm);
   SchroMotionVector zero_mv;
+  SchroMetricInfo info;
 
   int xblen = params->xbsep_luma, yblen = params->ybsep_luma;
   int i;
   int j;
-  int tmp_x, tmp_y;
   int skip;
   int shift_w[3], shift_h[3];
   int split = 1 < shift ? 0 : (1 == shift ? 1 : 2);
@@ -195,8 +195,13 @@ schro_hierarchical_bm_scan_hint (SchroHierBm * schro_hbm, int shift,
   int comp_w[3], comp_h[3];
 
   /* sets up for block matching */
-  scan.frame = schro_hbm_src_frame (schro_hbm, shift);;
+  scan.frame = schro_hbm_src_frame (schro_hbm, shift);
   scan.ref_frame = schro_hbm_ref_frame (schro_hbm, shift);
+
+  schro_metric_info_init (&info,
+      schro_hbm_src_frame (schro_hbm, shift),
+      schro_hbm_ref_frame (schro_hbm, shift),
+      xblen, yblen);
 
   mf = schro_motion_field_new (params->x_num_blocks, params->y_num_blocks);
   schro_motion_field_set (mf, split, ref + 1);
@@ -226,7 +231,7 @@ schro_hierarchical_bm_scan_hint (SchroHierBm * schro_hbm, int shift,
 
   for (j = 0; j < params->y_num_blocks; j += skip) {
     for (i = 0; i < params->x_num_blocks; i += skip) {
-      SchroFrameData orig[3], ref_data[3];
+      SchroFrameData orig[3];
       int m = 0;
       int n = 0;
       int dx, dy;
@@ -320,32 +325,19 @@ schro_hierarchical_bm_scan_hint (SchroHierBm * schro_hbm, int shift,
       /* choose best candidate for refinement based on SAD only. */
       for (m = 0; m < n; m++) {
         int metric = 0;
-        for (k = 0; 3 > k; ++k) {
-          tmp_x = (i * xblen) >> shift_w[k];
-          tmp_y = (j * yblen) >> shift_h[k];
-          dx = hint_mv[m]->u.vec.dx[ref];
-          dx >>= shift_w[k];
-          dx += tmp_x;
-          dx = MAX (-width[k], MIN ((scan.ref_frame->components + k)->width,
-                  dx));
-          dy = hint_mv[m]->u.vec.dy[ref];
-          dy >>= shift_h[k];
-          dy += tmp_y;
-          dy = MAX (-height[k], MIN ((scan.ref_frame->components + k)->height,
-                  dy));
-          if (k > 2)
-            SCHRO_ASSERT (0);
-          schro_frame_get_reference_subdata (scan.ref_frame, &ref_data[k], k,
-              dx, dy);
-          if (width[k] > ref_data[k].width || height[k] > ref_data[k].height) {
-            metric = INT_MAX;
-            break;
-          }
-          /* block matching for a single position */
-          metric +=
-              schro_metric_absdiff_u8 (orig[k].data, orig[k].stride,
-              ref_data[k].data, ref_data[k].stride, width[k], height[k]);
-        }
+
+        dx = hint_mv[m]->u.vec.dx[ref];
+        dx >>= shift;
+        dx = CLAMP (dx + ((i*xblen) >> shift), -width[0],
+            (scan.ref_frame->components + 0)->width);
+        dx -= ((i*xblen) >> shift);
+        dy = hint_mv[m]->u.vec.dy[ref];
+        dy >>= shift;
+        dy = CLAMP (dy + ((j*yblen) >> shift), -height[0],
+            (scan.ref_frame->components + 0)->height);
+        dy -= ((j*yblen) >> shift);
+        metric = schro_metric_fast_block (&info, (i*xblen)>>shift,
+            (j*yblen)>>shift, dx, dy);
 
         if (metric < min_metric) {
           min_metric = metric;
