@@ -9,10 +9,27 @@
 SCHRO_BEGIN_DECLS
 
 typedef struct _SchroMetricScan SchroMetricScan;
+typedef struct _SchroMetricInfo SchroMetricInfo;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
 #define SCHRO_LIMIT_METRIC_SCAN 42
+
+struct _SchroMetricInfo {
+  SchroFrame *frame;
+  SchroFrame *ref_frame;
+
+  int block_width;
+  int block_height;
+
+  int (*metric_fast_block) (SchroMetricInfo *info, int ref_x, int ref_y,
+      int dx, int dy);
+  int (*metric_fast_subsuperblock) (SchroMetricInfo *info, int ref_x, int ref_y,
+      int dx, int dy);
+  int (*metric_fast_superblock) (SchroMetricInfo *info, int ref_x, int ref_y,
+      int dx, int dy);
+
+};
 
 struct _SchroMetricScan {
   SchroFrame *frame;
@@ -53,6 +70,17 @@ int schro_metric_get_biref (SchroFrameData *fd, SchroFrameData *src1,
     int weight1, SchroFrameData *src2, int weight2, int shift, int width,
     int height);
 int schro_metric_get_dc (SchroFrameData *src, int value, int width, int height);
+
+void schro_metric_info_init (SchroMetricInfo *info, SchroFrame *frame,
+    SchroFrame *ref_frame, int block_width, int block_height);
+
+int schro_metric_fast_block (SchroMetricInfo *info, int x, int y,
+    int dx, int dy);
+int schro_metric_fast_subsuperblock (SchroMetricInfo *info, int x, int y,
+    int dx, int dy);
+int schro_metric_fast_superblock (SchroMetricInfo *info, int x, int y,
+    int dx, int dy);
+
 
 #endif
 
