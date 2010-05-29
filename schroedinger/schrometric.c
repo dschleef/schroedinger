@@ -346,7 +346,6 @@ schro_metric_block_sad_slow (SchroMetricInfo *info, int x, int y,
   SchroFrameData fd;
   SchroFrameData fd_ref;
   int metric = 0;
-  int chroma_shift;
 
 #if 0
   SCHRO_ASSERT (schro_frame_block_is_valid (info->frame, x, y,
@@ -355,21 +354,20 @@ schro_metric_block_sad_slow (SchroMetricInfo *info, int x, int y,
         info->block_width, info->block_height));
 #endif
   if (!schro_frame_block_is_valid (info->frame, x, y,
-        info->block_width, info->block_height)) return INT_MAX;
+        info->block_width[0], info->block_height[0])) return INT_MAX;
   if (!schro_frame_block_is_valid (info->ref_frame, x + dx, y + dy,
-        info->block_width, info->block_height)) return INT_MAX;
+        info->block_width[0], info->block_height[0])) return INT_MAX;
 
   for(k=0;k<3;k++){
     int width, height;
 
-    chroma_shift = (k == 0) ? 0 : 1;
     schro_frame_get_subdata (info->frame, &fd, k,
-        x>>chroma_shift, y>>chroma_shift);
+        x>>info->h_shift[k], y>>info->v_shift[k]);
     schro_frame_get_subdata (info->ref_frame, &fd_ref, k,
-        (x + dx)>>chroma_shift, (y + dy)>>chroma_shift);
+        (x + dx)>>info->h_shift[k], (y + dy)>>info->v_shift[k]);
 
-    width = MIN(fd.width, info->block_width>>chroma_shift);
-    height = MIN(fd.height, info->block_height>>chroma_shift);
+    width = MIN(fd.width, info->block_width[k]);
+    height = MIN(fd.height, info->block_height[k]);
 
     for(j=0;j<height;j++){
       uint8_t *line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
@@ -378,64 +376,6 @@ schro_metric_block_sad_slow (SchroMetricInfo *info, int x, int y,
       for(i=0;i<width;i++){
         metric += abs (line[i] - line_ref[i]);
       }
-    }
-  }
-
-  return metric;
-}
-
-static int
-schro_metric_subsuperblock_sad_slow (SchroMetricInfo *info, int x, int y,
-    int dx, int dy)
-{
-  int i,j;
-  SchroFrameData fd;
-  SchroFrameData fd_ref;
-  int metric = 0;
-
-  SCHRO_ASSERT (schro_frame_block_is_valid (info->frame, x, y,
-        2*info->block_width, 2*info->block_height));
-  SCHRO_ASSERT (schro_frame_block_is_valid (info->ref_frame, x + dx, y + dy,
-        2*info->block_width, 2*info->block_height));
-
-  schro_frame_get_subdata (info->frame, &fd, 0, x, y);
-  schro_frame_get_subdata (info->ref_frame, &fd_ref, 0, x + dx, y + dy);
-
-  for(j=0;j<2*info->block_height;j++){
-    uint8_t *line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
-    uint8_t *line_ref = SCHRO_FRAME_DATA_GET_LINE (&fd_ref, j);
-
-    for(i=0;i<2*info->block_width;i++){
-      metric += abs (line[i] - line_ref[i]);
-    }
-  }
-
-  return metric;
-}
-
-static int
-schro_metric_superblock_sad_slow (SchroMetricInfo *info, int x, int y,
-    int dx, int dy)
-{
-  int i,j;
-  SchroFrameData fd;
-  SchroFrameData fd_ref;
-  int metric = 0;
-
-  SCHRO_ASSERT (schro_frame_block_is_valid (info->frame, x, y,
-        4*info->block_width, 4*info->block_height));
-  SCHRO_ASSERT (schro_frame_block_is_valid (info->ref_frame, x + dx, y + dy,
-        4*info->block_width, 4*info->block_height));
-
-  schro_frame_get_subdata (info->frame, &fd, 0, x, y);
-  schro_frame_get_subdata (info->ref_frame, &fd_ref, 0, x + dx, y + dy);
-
-  for(j=0;j<4*info->block_height;j++){
-    uint8_t *line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
-    uint8_t *line_ref = SCHRO_FRAME_DATA_GET_LINE (&fd_ref, j);
-
-    for(i=0;i<4*info->block_width;i++){
-      metric += abs (line[i] - line_ref[i]);
     }
   }
 
@@ -453,29 +393,31 @@ schro_metric_info_init (SchroMetricInfo *info, SchroFrame *frame,
 
   info->frame = frame;
   info->ref_frame = ref_frame;
-  info->block_width = block_width;
-  info->block_height = block_height;
 
-  info->metric_fast_block = schro_metric_block_sad_slow;
-  info->metric_fast_subsuperblock = schro_metric_subsuperblock_sad_slow;
-  info->metric_fast_superblock = schro_metric_superblock_sad_slow;
+  info->block_width[0] = block_width;
+  info->block_height[0] = block_height;
+  info->h_shift[0] = 0;
+  info->v_shift[0] = 0;
+  info->h_shift[1] = SCHRO_FRAME_FORMAT_H_SHIFT (frame->format);
+  info->v_shift[1] = SCHRO_FRAME_FORMAT_V_SHIFT (frame->format);
+  info->block_width[1] = block_width >>
+    SCHRO_FRAME_FORMAT_H_SHIFT (frame->format);
+  info->block_height[1] = block_height >>
+    SCHRO_FRAME_FORMAT_V_SHIFT (frame->format);
+  info->h_shift[2] = SCHRO_FRAME_FORMAT_H_SHIFT (frame->format);
+  info->v_shift[2] = SCHRO_FRAME_FORMAT_V_SHIFT (frame->format);
+  info->block_width[2] = info->block_width[1];
+  info->block_height[2] = info->block_height[1];
+
+  info->metric = schro_metric_block_sad_slow;
+  info->metric_right = schro_metric_block_sad_slow;
+  info->metric_bottom = schro_metric_block_sad_slow;
+  info->metric_corner = schro_metric_block_sad_slow;
 }
 
 int schro_metric_fast_block (SchroMetricInfo *info, int x, int y,
         int dx, int dy)
 {
-  return info->metric_fast_block (info, x, y, dx, dy);
-}
-
-int schro_metric_fast_subsuperblock (SchroMetricInfo *info, int x, int y,
-    int dx, int dy)
-{
-  return info->metric_fast_subsuperblock (info, x, y, dx, dy);
-}
-
-int schro_metric_fast_superblock (SchroMetricInfo *info, int x, int y,
-    int dx, int dy)
-{
-  return info->metric_fast_superblock (info, x, y, dx, dy);
+  return info->metric (info, x, y, dx, dy);
 }
 

@@ -19,14 +19,18 @@ struct _SchroMetricInfo {
   SchroFrame *frame;
   SchroFrame *ref_frame;
 
-  int block_width;
-  int block_height;
+  int block_width[3];
+  int block_height[3];
+  int h_shift[3];
+  int v_shift[3];
 
-  int (*metric_fast_block) (SchroMetricInfo *info, int ref_x, int ref_y,
+  int (*metric) (SchroMetricInfo *info, int ref_x, int ref_y,
       int dx, int dy);
-  int (*metric_fast_subsuperblock) (SchroMetricInfo *info, int ref_x, int ref_y,
+  int (*metric_right) (SchroMetricInfo *info, int ref_x, int ref_y,
       int dx, int dy);
-  int (*metric_fast_superblock) (SchroMetricInfo *info, int ref_x, int ref_y,
+  int (*metric_bottom) (SchroMetricInfo *info, int ref_x, int ref_y,
+      int dx, int dy);
+  int (*metric_corner) (SchroMetricInfo *info, int ref_x, int ref_y,
       int dx, int dy);
 
 };
