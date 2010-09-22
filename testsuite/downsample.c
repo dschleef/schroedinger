@@ -41,6 +41,8 @@ test (int width, int height)
 
   for(i=0;i<test_pattern_get_n_generators();i++){
     test_pattern_generate (frame->components + 0, name, i);
+    test_pattern_generate (frame->components + 1, name, i);
+    test_pattern_generate (frame->components + 2, name, i);
 
     ref_frame_downsample (frame_ref, frame);
     schro_frame_downsample (frame_test, frame);
