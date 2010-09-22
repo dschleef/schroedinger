@@ -28,7 +28,6 @@ BUILT_SOURCES = tmp-orc.c $(ORC_SOURCE).h
 
 
 orc-update: tmp-orc.c $(ORC_SOURCE).h
-	$(top_srcdir)/common/gst-indent tmp-orc.c
 	cp tmp-orc.c $(srcdir)/$(ORC_SOURCE)-dist.c
 	cp $(ORC_SOURCE).h $(srcdir)/$(ORC_SOURCE)-dist.h
 
@@ -57,7 +56,6 @@ clean-orc:
 dist-hook: dist-hook-orc
 .PHONY: dist-hook-orc
 dist-hook-orc: tmp-orc.c $(ORC_SOURCE).h
-	$(top_srcdir)/common/gst-indent tmp-orc.c
 	rm -f tmp-orc.c~
 	cmp -s tmp-orc.c $(srcdir)/$(ORC_SOURCE)-dist.c || \
 	  cp tmp-orc.c $(srcdir)/$(ORC_SOURCE)-dist.c
