@@ -262,9 +262,6 @@ addw d1, s0, t1
 .function orc_mas4_across_add_s16_1991_ip
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
-.source 2 s2 int16_t
-.source 2 s3 int16_t
-.source 2 s4 int16_t
 .param 4 p1
 .param 4 p2
 .temp 2 t1
@@ -272,9 +269,13 @@ addw d1, s0, t1
 .temp 4 t3
 .temp 4 t4
 
-addw t1, s2, s3
+loadoffw t1, s1, 1
+loadoffw t2, s1, 2
+addw t1, t1, t2
 mulswl t3, t1, 9
-addw t2, s1, s4
+loadw t1, s1
+loadoffw t2, s1, 3
+addw t2, t1, t2
 convswl t4, t2
 subl t3, t3, t4
 addl t3, t3, p1
@@ -311,9 +312,6 @@ subw d1, s0, t1
 .function orc_mas4_across_sub_s16_1991_ip
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
-.source 2 s2 int16_t
-.source 2 s3 int16_t
-.source 2 s4 int16_t
 .param 4 p1
 .param 4 p2
 .temp 2 t1
@@ -321,9 +319,13 @@ subw d1, s0, t1
 .temp 4 t3
 .temp 4 t4
 
-addw t1, s2, s3
+loadoffw t1, s1, 1
+loadoffw t2, s1, 2
+addw t1, t1, t2
 mulswl t3, t1, 9
-addw t2, s1, s4
+loadw t1, s1
+loadoffw t2, s1, 3
+addw t2, t1, t2
 convswl t4, t2
 subl t3, t3, t4
 addl t3, t3, p1

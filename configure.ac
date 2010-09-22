@@ -48,7 +48,7 @@ AC_CHECK_LIBM
 AC_SUBST(LIBM)
 
 dnl Orc is required
-ORC_VER="0.4.3"
+ORC_VER="0.4.9"
 PKG_CHECK_MODULES(ORC, orc-0.4 >= $ORC_VER, HAVE_ORC=yes, HAVE_ORC=no)
 if test "x${HAVE_ORC}" != xyes ; then
   AC_ERROR([orc-0.4 >= $ORC_VER is required])

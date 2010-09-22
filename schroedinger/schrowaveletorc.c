@@ -18,7 +18,7 @@ schro_split_ext_desl93 (int16_t * hi, int16_t * lo, int n)
   hi[n] = hi[n - 1];
   hi[n + 1] = hi[n - 1];
 
-  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, hi, hi + 1, hi + 2, 1 << 3, 4,
+  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
       n);
 
   lo[-1] = lo[0];
@@ -47,14 +47,14 @@ schro_split_ext_135 (int16_t * hi, int16_t * lo, int n)
   hi[n] = hi[n - 1];
   hi[n + 1] = hi[n - 1];
 
-  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, hi, hi + 1, hi + 2, 1 << 3, 4,
+  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
       n);
 
   lo[-1] = lo[0];
   lo[-2] = lo[0];
   lo[n] = lo[n - 1];
 
-  orc_mas4_across_add_s16_1991_ip (hi, lo - 2, lo - 1, lo, lo + 1, 1 << 4, 5,
+  orc_mas4_across_add_s16_1991_ip (hi, lo - 2, 1 << 4, 5,
       n);
 }
 
@@ -153,7 +153,7 @@ schro_synth_ext_desl93 (int16_t * hi, int16_t * lo, int n)
   hi[n] = hi[n - 1];
   hi[n + 1] = hi[n - 1];
 
-  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, hi, hi + 1, hi + 2, 1 << 3, 4,
+  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
       n);
 }
 
@@ -177,13 +177,13 @@ schro_synth_ext_135 (int16_t * hi, int16_t * lo, int n)
   lo[-1] = lo[0];
   lo[-2] = lo[0];
   lo[n] = lo[n - 1];
-  orc_mas4_across_sub_s16_1991_ip (hi, lo - 2, lo - 1, lo, lo + 1, 1 << 4, 5,
+  orc_mas4_across_sub_s16_1991_ip (hi, lo - 2, 1 << 4, 5,
       n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n - 1];
   hi[n + 1] = hi[n - 1];
-  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, hi, hi + 1, hi + 2, 1 << 3, 4,
+  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
       n);
 }
 
