@@ -137,8 +137,8 @@ orc_test_LDADD = $(ORC_LIBS) -lorc-test-0.4
 BUILT_SOURCES = orc_test.c
 CLEANFILES = orc_test.c
 
-orc_test.c: $(top_srcdir)/schroedinger/schro.orc
-	$(ORCC) --test -o orc_test.c $(top_srcdir)/schroedinger/schro.orc
+orc_test.c: $(top_srcdir)/schroedinger/schroorc.orc
+	$(ORCC) --test -o orc_test.c $(top_srcdir)/schroedinger/schroorc.orc
 
 zzuf_test:
 	zzuf -A -s0:10000 -r0.00001 -c -v ./decode test_stream.drc

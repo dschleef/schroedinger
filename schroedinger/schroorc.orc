@@ -1,4 +1,6 @@
 
+.init schro_orc_init
+
 .function orc_add2_rshift_add_s16_22_op
 .dest 2 d1 int16_t
 .source 2 s1 int16_t

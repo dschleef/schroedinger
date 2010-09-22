@@ -14,7 +14,7 @@ wavelet_speed_SOURCES = wavelet_speed.c
 
 dequantise_speed_SOURCES = \
 	dequantise_speed.c \
-	$(top_builddir)/schroedinger/schroorc.c
+	$(top_builddir)/schroedinger/tmp-orc.c
 
 report_SOURCES = report.c
 

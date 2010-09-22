@@ -7,6 +7,7 @@
 #include <schroedinger/schrocuda.h>
 #include <orc/orc.h>
 #include <schroedinger/opengl/schroopengl.h>
+#include <schroedinger/schroorc.h>
 
 extern int _schro_decode_prediction_only;
 extern int _schro_telemetry;
@@ -31,6 +32,7 @@ schro_init (void)
   inited = TRUE;
 
   orc_init ();
+  schro_orc_init ();
 
   s = getenv ("SCHRO_DEBUG");
   if (s && s[0]) {

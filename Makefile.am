@@ -7,7 +7,7 @@ DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc
 DIST_SUBDIRS = schroedinger doc tools testsuite
 
 EXTRA_DIST = COPYING COPYING.GPL COPYING.LGPL COPYING.MIT COPYING.MPL \
-	     autogen.sh schroedinger.spec TODO NEWS
+	     autogen.sh schroedinger.spec TODO NEWS orc.mak
 
 pkgconfig_DATA = schroedinger-$(SCHRO_MAJORMINOR).pc
 

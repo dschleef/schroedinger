@@ -7,27 +7,23 @@ if HAVE_OPENGL
 SUBDIRS = opengl
 endif
 
+ORC_SOURCE=schroorc
+include $(top_srcdir)/orc.mak
+
 pkgincludedir = $(includedir)/schroedinger-@SCHRO_MAJORMINOR@/schroedinger
 
 lib_LTLIBRARIES = libschroedinger-@SCHRO_MAJORMINOR@.la
 
-BUILT_SOURCES = \
-	schroversion.h \
-	schroorc.c \
-	schroorc.h
-
-CLEANFILES = \
-	schroorc.c \
-	schroorc.h
+BUILT_SOURCES += \
+	schroversion.h
 
 DISTCLEANFILES = schroversion.h
 
-EXTRA_DIST = schroarith-i386.c \
+EXTRA_DIST += schroarith-i386.c \
 	schroasync-none.c \
 	schroasync-pthread.c \
 	schroasync-gthread.c \
-	schroasync-win32.c \
-	schro.orc
+	schroasync-win32.c
 
 pkginclude_HEADERS = \
 	schro.h \
@@ -113,9 +109,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	$(cuda_sources) \
 	schroasync-@THREAD_IMPL@.c
 
-nodist_libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
-	schroorc.c \
-	schroorc.h
+nodist_libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = $(ORC_NODIST_SOURCES)
 
 if ENABLE_MOTION_REF
 libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES += \
@@ -164,13 +158,6 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_LDFLAGS = \
 	-no-undefined \
 	-version-info $(SCHRO_LIBVERSION) \
 	-export-symbols-regex '^(schro|orc)_'
-
-schroorc.c: schro.orc
-	$(ORCC) --implementation -o schroorc.c $(srcdir)/schro.orc
-
-schroorc.h: schro.orc
-	$(ORCC) --header -o schroorc.h $(srcdir)/schro.orc
-
 
 %.c.gcov: .libs/libschroedinger_@SCHRO_MAJORMINOR@_la-%.gcda %.c
 	$(GCOV) -b -f -o $^ > $@.out
