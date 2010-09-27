@@ -1394,7 +1394,7 @@ downsample_horiz_u8 (uint8_t * dest, int n_dest, uint8_t * src, int n_src)
       x += 6 * src[CLAMP (i * 2 + 2, 0, n_src - 1)];
       dest[i] = CLAMP ((x + 32) >> 6, 0, 255);
     }
-    orc_downsample_horiz_u8 (dest + 1, src + 1, src + 3, n_src / 2 - 2);
+    orc_downsample_horiz_u8 (dest + 1, src, n_src / 2 - 2);
     for (i = n_src / 2 - 2; i < n_dest; i++) {
       int x = 0;
       x += 6 * src[CLAMP (i * 2 - 1, 0, n_src - 1)];

@@ -1143,32 +1143,32 @@ convwb d1, t2
 .function orc_downsample_horiz_u8
 .dest 1 d1
 .source 2 s1 uint8_t
-.source 2 s2 uint8_t
+.temp 2 a
+.temp 2 b
 .temp 2 t1
-.temp 2 t2
+.temp 1 t2
 .temp 1 t3
-.temp 2 t4
-.temp 2 t5
-.temp 2 t6
+.temp 2 c
 
-copyw t1, s1
-copyw t2, s2
-select0wb t3, t1
-convubw t4, t3
-select1wb t3, t2
-convubw t5, t3
-addw t4, t4, t5
-mullw t4, t4, 6
-select1wb t3, t1
-convubw t5, t3
-select0wb t3, t2
-convubw t6, t3
-addw t5, t5, t6
-mullw t5, t5, 26
-addw t4, t4, t5
-addw t4, t4, 32
-shruw t4, t4, 6
-convwb d1, t4
+loadw t1, s1
+select1wb t2, t1
+convubw a, t2
+loadoffw t1, s1, 2
+select0wb t2, t1
+convubw b, t2
+addw c, a, b
+mullw c, c, 6
+
+loadoffw t1, s1, 1
+splitwb t2, t3, t1
+convubw a, t2
+convubw b, t3
+addw a, a, b
+mullw a, a, 26
+addw c, c, a
+addw c, c, 32
+shruw c, c, 6
+convwb d1, c
 
 
 .function orc_stats_moment_s16
