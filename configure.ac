@@ -56,7 +56,7 @@ fi
 SCHRO_PKG_DEPS="$SCHRO_PKG_DEPS orc-0.4 >= $ORC_VER"
 ORCC=`$PKG_CONFIG --variable=orcc orc-0.4`
 AC_SUBST(ORCC)
-AM_CONDITIONAL(HAVE_ORC, true)
+AM_CONDITIONAL(HAVE_ORCC, test "x$cross_compiling" != xyes)
 
 AC_ARG_WITH([thread],
     AS_HELP_STRING([--with-thread=IMPL],[use threading library {auto,pthread,gthread,win32,none} [[default=auto]]]),

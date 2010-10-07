@@ -34,7 +34,7 @@ orc-update: tmp-orc.c $(ORC_SOURCE).h
 orcc_v_gen = 
 cp_v_gen = 
 
-if HAVE_ORC
+if HAVE_ORCC
 tmp-orc.c: $(srcdir)/$(ORC_SOURCE).orc
 	$(orcc_v_gen)$(ORCC) $(ORCC_FLAGS) --inline --implementation -o tmp-orc.c $(srcdir)/$(ORC_SOURCE).orc
 
