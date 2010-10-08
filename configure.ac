@@ -1,6 +1,6 @@
 AC_PREREQ([2.58])
 dnl PLEASE remove the nano when doing a release
-AC_INIT(schroedinger,1.0.9.1)
+AC_INIT(schroedinger,1.0.10)
 
 AS_VERSION
 
@@ -19,7 +19,7 @@ dnl - library source changed -> increment REVISION
 dnl - interfaces added/removed/changed -> increment CURRENT, REVISION = 0
 dnl - interfaces added -> increment AGE
 dnl - interfaces removed -> AGE = 0
-SCHRO_LIBVERSION="3:0:3"
+SCHRO_LIBVERSION="10:0:10"
 AC_SUBST(SCHRO_LIBVERSION)
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
@@ -48,7 +48,7 @@ AC_CHECK_LIBM
 AC_SUBST(LIBM)
 
 dnl Orc is required
-ORC_VER="0.4.9"
+ORC_VER="0.4.10"
 PKG_CHECK_MODULES(ORC, orc-0.4 >= $ORC_VER, HAVE_ORC=yes, HAVE_ORC=no)
 if test "x${HAVE_ORC}" != xyes ; then
   AC_ERROR([orc-0.4 >= $ORC_VER is required])

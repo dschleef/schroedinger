@@ -1,4 +1,14 @@
 
+1.0.10
+======
+
+ - Build fixes on various platforms
+ - Speed increases for low-delay syntax
+ - Fix unaligned access in orc code, which was uncovered by a recent
+   Orc bug fix.  Bump orc requirement to 0.4.10, which makes sure
+   everyone works right.
+ - No encoder changes
+
 1.0.9
 =====
 

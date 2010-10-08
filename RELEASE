@@ -1,6 +1,6 @@
 
-Schroedinger 1.0.9
-==================
+Schroedinger 1.0.10
+===================
 
 A new release of Schrödinger is available. Schrödinger (or “schro”
 for short) is a cross-platform implementation of the Dirac video
@@ -10,47 +10,19 @@ to encode and decode Dirac video.
 
 Information: http://diracvideo.org/
 Download:
-http://diracvideo.org/download/schroedinger/schroedinger-1.0.9.tar.gz
+http://diracvideo.org/download/schroedinger/schroedinger-1.0.10.tar.gz
 
 The Dirac project maintains two encoder implementations: dirac-research,
 a research encoder, and Schrödinger, which is meant for user applications.
-As of this release, Schrödinger outperforms dirac-research in most
-encoding situations, both in terms of encoding speed and visual
-quality.
-
-It's been a long time since the last release, and there have been a
-*lot* of changes.  This is an exciting release: most of the encoding
-tools in dirac-research have been ported over to Schrödinger, so now
-schro has the same or better compression efficiency as dirac-research.
-Second, we've switched over to using Orc instead of liboil for signal
-processing code.  Dirac is a very configurable format, and normally
-would require thousands of lines of assembly code -- Orc generates
-this at runtime from simple rules.  (Hey, it was easier to write Orc
-than write all that assembly!)
-
-Third, we now have an encoder quality testing system in place to check
-how well new encoding tools work and to make sure bugs that affect
-quality are quickly fixed.
-
+Schrödinger outperforms dirac-research in most encoding situations, both
+in terms of encoding speed and visual quality.
 
 Roadmap:  Only a few people are working on schro, and only part time,
-so new features will happen only slowly.  However, now that merging
-is done and the release is out, there are several new features that
-are easy to add that will improve encoder quality.  We'd like to get
-back to more frequent releases, perhaps one a month, introducing a
-new encoder feature each time.
-
-
-Other News: Portions of the Dirac specification are now standardized
-as SMPTE VC-2.  VC-2 is mostly used in high bit rate applications,
-such as intermediate formats for editing and storage and a low delay
-format for studio application.
+so new features will happen only slowly.
 
 
 Contributors to this release:
 
-  Andrea Gabriellini (BBC)
-  Anuradha Suraparaju (BBC)
   David Schleef (Entropy Wave)
 
 
@@ -59,20 +31,13 @@ Information about Orc:
   http://code.entropywave.com/projects/orc/
 
 
-New in 1.0.9
-============
+New in 1.0.10
+=============
 
- - Orc: Complete conversion to Orc and removal of liboil dependency.
- - Added a lot of orc code to make things faster.  A lot faster.
- - New motion vector generation, enabled by default.
- - New CBR rate control, enabled by default.
- - New scene change detection, enabled by default.
- - Encoder went through several rounds of tuning, improving quality
-   greatly.
- - New encoder setting "force-profile".  Allows easy access to one of
-   three VC-2 profiles (vc2_low_delay, vc2_simple, vc2_main) for
-   intermediate coding.  Default is same as before: long-GOP Dirac.
- - Improved lossless encoding.  Works in concert with force-profile.
-
-
+ - Build fixes on various platforms
+ - Speed increases for low-delay syntax
+ - Fix unaligned access in orc code, which was uncovered by a recent
+   Orc bug fix.  Bump orc requirement to 0.4.10, which makes sure
+   everyone works right.
+ - No encoder changes
 
