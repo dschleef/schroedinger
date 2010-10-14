@@ -17,10 +17,10 @@ addw d1, s1, t1
 .function orc_add2_rshift_add_s16_22
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
-.source 2 s2 int16_t
 .temp 2 t1
 
-addw t1, s1, s2
+loadoffw t1, s1, 1
+addw t1, s1, t1
 addw t1, t1, 2
 shrsw t1, t1, 2
 addw d1, d1, t1
@@ -42,10 +42,10 @@ subw d1, s1, t1
 .function orc_add2_rshift_sub_s16_22
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
-.source 2 s2 int16_t
 .temp 2 t1
 
-addw t1, s1, s2
+loadoffw t1, s1, 1
+addw t1, s1, t1
 addw t1, t1, 2
 shrsw t1, t1, 2
 subw d1, d1, t1
@@ -65,10 +65,10 @@ addw d1, s1, t1
 .function orc_add2_rshift_add_s16_11
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
-.source 2 s2 int16_t
 .temp 2 t1
 
-avgsw t1, s1, s2
+loadoffw t1, s1, 1
+avgsw t1, s1, t1
 addw d1, d1, t1
 
 
@@ -86,10 +86,10 @@ subw d1, s1, t1
 .function orc_add2_rshift_sub_s16_11
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
-.source 2 s2 int16_t
 .temp 2 t1
 
-avgsw t1, s1, s2
+loadoffw t1, s1, 1
+avgsw t1, s1, t1
 subw d1, d1, t1
 
 
@@ -182,14 +182,14 @@ addw d1, s0, t1
 .function orc_mas2_add_s16_ip
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
-.source 2 s2 int16_t
 .temp 2 t1
 .temp 4 t2
 .param 2 p1
 .param 4 p2
 .param 4 p3
 
-addw t1, s1, s2
+loadoffw t1, s1, 1
+addw t1, s1, t1
 mulswl t2, t1, p1
 addl t2, t2, p2
 shrsl t2, t2, p3
@@ -219,14 +219,14 @@ subw d1, s0, t1
 .function orc_mas2_sub_s16_ip
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
-.source 2 s2 int16_t
 .temp 2 t1
 .temp 4 t2
 .param 2 p1
 .param 4 p2
 .param 4 p3
 
-addw t1, s1, s2
+loadoffw t1, s1, 1
+addw t1, s1, t1
 mulswl t2, t1, p1
 addl t2, t2, p2
 shrsl t2, t2, p3

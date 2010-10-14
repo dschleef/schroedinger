@@ -23,7 +23,7 @@ schro_split_ext_desl93 (int16_t * hi, int16_t * lo, int n)
 
   lo[-1] = lo[0];
 
-  orc_add2_rshift_add_s16_22 (hi, lo - 1, lo, n);
+  orc_add2_rshift_add_s16_22 (hi, lo - 1, n);
 }
 
 static void
@@ -32,12 +32,12 @@ schro_split_ext_53 (int16_t * hi, int16_t * lo, int n)
   hi[-1] = hi[0];
   hi[n] = hi[n - 1];
 
-  orc_add2_rshift_sub_s16_11 (lo, hi, hi + 1, n);
+  orc_add2_rshift_sub_s16_11 (lo, hi, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n - 1];
 
-  orc_add2_rshift_add_s16_22 (hi, lo - 1, lo, n);
+  orc_add2_rshift_add_s16_22 (hi, lo - 1, n);
 }
 
 static void
@@ -119,22 +119,22 @@ schro_split_ext_daub97 (int16_t * hi, int16_t * lo, int n)
   hi[-1] = hi[0];
   hi[n] = hi[n - 1];
 
-  orc_mas2_sub_s16_ip (lo, hi, hi + 1, 6497, 2048, 12, n);
+  orc_mas2_sub_s16_ip (lo, hi, 6497, 2048, 12, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n - 1];
 
-  orc_mas2_sub_s16_ip (hi, lo - 1, lo, 217, 2048, 12, n);
+  orc_mas2_sub_s16_ip (hi, lo - 1, 217, 2048, 12, n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n - 1];
 
-  orc_mas2_add_s16_ip (lo, hi, hi + 1, 3616, 2048, 12, n);
+  orc_mas2_add_s16_ip (lo, hi, 3616, 2048, 12, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n - 1];
 
-  orc_mas2_add_s16_ip (hi, lo - 1, lo, 1817, 2048, 12, n);
+  orc_mas2_add_s16_ip (hi, lo - 1, 1817, 2048, 12, n);
 
 }
 
@@ -146,7 +146,7 @@ schro_synth_ext_desl93 (int16_t * hi, int16_t * lo, int n)
   lo[n] = lo[n - 1];
   lo[n + 1] = lo[n - 1];
 
-  orc_add2_rshift_sub_s16_22 (hi, lo - 1, lo, n);
+  orc_add2_rshift_sub_s16_22 (hi, lo - 1, n);
 
   hi[-2] = hi[0];
   hi[-1] = hi[0];
@@ -163,12 +163,12 @@ schro_synth_ext_53 (int16_t * hi, int16_t * lo, int n)
   lo[-1] = lo[0];
   lo[n] = lo[n - 1];
 
-  orc_add2_rshift_sub_s16_22 (hi, lo - 1, lo, n);
+  orc_add2_rshift_sub_s16_22 (hi, lo - 1, n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n - 1];
 
-  orc_add2_rshift_add_s16_11 (lo, hi, hi + 1, n);
+  orc_add2_rshift_add_s16_11 (lo, hi, n);
 }
 
 static void
@@ -229,22 +229,22 @@ schro_synth_ext_daub97 (int16_t * hi, int16_t * lo, int n)
   lo[-1] = lo[0];
   lo[n] = lo[n - 1];
 
-  orc_mas2_sub_s16_ip (hi, lo - 1, lo, 1817, 2048, 12, n);
+  orc_mas2_sub_s16_ip (hi, lo - 1, 1817, 2048, 12, n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n - 1];
 
-  orc_mas2_sub_s16_ip (lo, hi, hi + 1, 3616, 2048, 12, n);
+  orc_mas2_sub_s16_ip (lo, hi, 3616, 2048, 12, n);
 
   lo[-1] = lo[0];
   lo[n] = lo[n - 1];
 
-  orc_mas2_add_s16_ip (hi, lo - 1, lo, 217, 2048, 12, n);
+  orc_mas2_add_s16_ip (hi, lo - 1, 217, 2048, 12, n);
 
   hi[-1] = hi[0];
   hi[n] = hi[n - 1];
 
-  orc_mas2_add_s16_ip (lo, hi, hi + 1, 6497, 2048, 12, n);
+  orc_mas2_add_s16_ip (lo, hi, 6497, 2048, 12, n);
 }
 
 /* Forward transform splitter function */
