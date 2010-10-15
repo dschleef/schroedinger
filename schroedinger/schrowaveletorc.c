@@ -88,8 +88,7 @@ mas8_add_s16 (int16_t * dest, const int16_t * src, const int16_t * weights,
 static void
 schro_split_ext_fidelity (int16_t * hi, int16_t * lo, int n)
 {
-  static const int16_t stage1_weights[] =
-      { -8, 21, -46, 161, 161, -46, 21, -8 };
+  static const int16_t stage1_weights[] = { -8, 21, -46, 161, 161, -46, 21, -8 };
   static const int16_t stage2_weights[] = { 2, -10, 25, -81, -81, 25, -10, 2 };
 
   lo[-4] = lo[0];
@@ -100,6 +99,7 @@ schro_split_ext_fidelity (int16_t * hi, int16_t * lo, int n)
   lo[n + 1] = lo[n - 1];
   lo[n + 2] = lo[n - 1];
 
+  //schro_orc_split_add_fidelity_161 (hi, lo - 4, n);
   mas8_add_s16 (hi, lo - 4, stage1_weights, 128, 8, n);
 
   hi[-3] = hi[0];

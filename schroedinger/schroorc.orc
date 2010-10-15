@@ -334,6 +334,40 @@ convlw t1, t3
 subw d1, d1, t1
 
 
+#.function schro_orc_split_add_fidelity_161
+#.dest 2 d1 int16_t
+#.source 2 s1 int16_t
+#.temp 2 t1
+#.temp 2 t2
+#.temp 4 t3
+#.temp 4 t4
+#
+#loadw t1, s1
+#loadoffw t2, s1, 7
+#addw t1, t1, t2
+#mulswl t3, t1, -8
+#loadoffw t1, s1, 1
+#loadoffw t2, s1, 6
+#addw t1, t1, t2
+#mulswl t4, t1, 21
+#addl t3, t3, t4
+#loadoffw t1, s1, 2
+#loadoffw t2, s1, 5
+#addw t1, t1, t2
+#mulswl t4, t1, -46
+#addl t3, t3, t4
+#loadoffw t1, s1, 3
+#loadoffw t2, s1, 4
+#addw t1, t1, t2
+#mulswl t4, t1, 161
+#addl t3, t3, t4
+#addl t3, t3, 128
+#shrsl t3, t3, 8
+#convlw t1, t3
+#addw d1, d1, t1
+
+
+
 .function orc_subtract_s16
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
