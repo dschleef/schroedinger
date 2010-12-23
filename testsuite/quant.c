@@ -6,6 +6,8 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schroorc.h>
 
+#include "schroedinger/schrotables.c"
+
 #if 0
 static int
 dequantise (int q, int quant_factor, int quant_offset)

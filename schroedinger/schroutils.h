@@ -32,6 +32,10 @@ typedef int SchroCUDAStream;
 
 #ifdef SCHRO_ENABLE_UNSTABLE_API
 
+#if defined(_MSC_VER)
+#define inline __inline
+#endif
+
 #define SCHRO_PICTURE_NUMBER_INVALID (-1)
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
@@ -97,6 +101,17 @@ typedef int SchroCUDAStream;
 #else
 #define SCHRO_LIKELY(expr) (expr)
 #define SCHRO_UNLIKELY(expr) (expr)
+#endif
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+#ifndef M_LN10
+#define M_LN10 2.30258509299404568402
+#endif
+
+#if defined(_MSC_VER)
+#define rint(x) (floor((x) + 0.5))
 #endif
 
 SCHRO_BEGIN_DECLS

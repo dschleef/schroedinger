@@ -13,6 +13,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <schroedinger/schrounpacktables.c>
+
 #define N 10000
 
 uint8_t packed_data[N*16];

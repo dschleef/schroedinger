@@ -4,6 +4,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 #define COMPLEX_MULT_R(a,b,c,d) ((a)*(c) - (b)*(d))
 #define COMPLEX_MULT_I(a,b,c,d) ((a)*(d) + (b)*(c))

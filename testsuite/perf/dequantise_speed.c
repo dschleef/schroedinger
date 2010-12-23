@@ -14,6 +14,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <schroedinger/schrotables.c>
+
 #define N 100
 
 int16_t a[N];

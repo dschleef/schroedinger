@@ -13,6 +13,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <schroedinger/schrotables.c>
+
 #define N 10000
 
 int16_t a[N];

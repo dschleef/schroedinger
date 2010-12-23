@@ -4,7 +4,6 @@
 #endif
 #define SCHRO_ARITH_DEFINE_INLINE
 #include <schroedinger/schro.h>
-#include <unistd.h>
 #include <string.h>
 #include <math.h>
 #include <stddef.h>

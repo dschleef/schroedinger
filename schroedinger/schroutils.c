@@ -9,8 +9,11 @@
 #include <schroedinger/schro-stdint.h>
 #include <string.h>
 #include <math.h>
+#ifndef _WIN32
 #include <time.h>
 #include <sys/time.h>
+#endif
+#include <orc/orc.h>
 
 #ifndef SCHRO_MALLOC_USE_MMAP
 /* enable this for mmap based buffer overrun checks */
@@ -157,7 +160,7 @@ schro_free (void *ptr)
 int
 muldiv64 (int a, int b, int c)
 {
-  int64_t x;
+  orc_int64 x;
 
   x = a;
   x *= b;

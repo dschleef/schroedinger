@@ -7,6 +7,8 @@
 #include <schroedinger/schro.h>
 #include <schroedinger/schrounpack.h>
 
+#include <schroedinger/schrotables.c>
+
 int
 main (int argc, char *argv[])
 {
