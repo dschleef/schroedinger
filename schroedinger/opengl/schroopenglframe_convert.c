@@ -7,7 +7,7 @@
 #include <schroedinger/opengl/schroopenglcanvas.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <schroedinger/opengl/schroopenglshader.h>
-#include <liboil/liboil.h>
+/*#include <liboil/liboil.h>*/
 
 #define CONVERT_PROTOTYPE(_func) \
     static void schro_opengl_frame_convert_##_func (SchroFrame *dest, \

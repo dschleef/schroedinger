@@ -430,7 +430,7 @@ opengl_test_motion (int width, int height,
   SchroFrame *opengl_dest_frame;
   SchroUpsampledFrame *upsampled_cpu_frame;
   SchroUpsampledFrame *upsampled_opengl_frame;
-  SchroMotionVectorDC *motion_vectors_dc;
+  SchroMotionVector *motion_vectors_dc;
   SchroMotion motion_cpu;
   SchroMotion motion_opengl;
   char pattern_name[TEST_PATTERN_NAME_SIZE];
@@ -487,7 +487,7 @@ opengl_test_motion (int width, int height,
     schro_opengl_upsampled_frame_upsample (upsampled_opengl_frame);
 
 
-    motion_vectors_dc = schro_malloc0 (sizeof (SchroMotionVectorDC) *
+    motion_vectors_dc = schro_malloc0 (sizeof (SchroMotionVector) *
         params.x_num_blocks * params.y_num_blocks);
 
     for (v = 0; v < params.y_num_blocks; ++v) {
@@ -495,15 +495,15 @@ opengl_test_motion (int width, int height,
         if (u == 1 && (v == 1/* || v == 2*/)) {
           motion_vectors_dc[v * params.x_num_blocks + u].pred_mode = 0;
           motion_vectors_dc[v * params.x_num_blocks + u].using_global = FALSE;
-          motion_vectors_dc[v * params.x_num_blocks + u].dc[0] = 64;
-          motion_vectors_dc[v * params.x_num_blocks + u].dc[1] = 0;
-          motion_vectors_dc[v * params.x_num_blocks + u].dc[2] = 0;
+          motion_vectors_dc[v * params.x_num_blocks + u].u.dc.dc[0] = 64;
+          motion_vectors_dc[v * params.x_num_blocks + u].u.dc.dc[1] = 0;
+          motion_vectors_dc[v * params.x_num_blocks + u].u.dc.dc[2] = 0;
         } else {
           motion_vectors_dc[v * params.x_num_blocks + u].pred_mode = 0;
           motion_vectors_dc[v * params.x_num_blocks + u].using_global = FALSE;
-          motion_vectors_dc[v * params.x_num_blocks + u].dc[0] = 0;
-          motion_vectors_dc[v * params.x_num_blocks + u].dc[1] = 0;
-          motion_vectors_dc[v * params.x_num_blocks + u].dc[2] = 0;
+          motion_vectors_dc[v * params.x_num_blocks + u].u.dc.dc[0] = 0;
+          motion_vectors_dc[v * params.x_num_blocks + u].u.dc.dc[1] = 0;
+          motion_vectors_dc[v * params.x_num_blocks + u].u.dc.dc[2] = 0;
         }
       }
     }
@@ -522,7 +522,6 @@ opengl_test_motion (int width, int height,
     motion_opengl.motion_vectors = (SchroMotionVector *) motion_vectors_dc;
     motion_opengl.params = &params;
     motion_opengl.mv_precision = 0;
-
 
 
     schro_motion_render (&motion_cpu, cpu_dest_ref_frame);

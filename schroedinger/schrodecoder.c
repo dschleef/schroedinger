@@ -1715,7 +1715,7 @@ schro_decoder_x_render_motion (SchroAsyncStage * stage)
       picture->ref_output_frame =
           schro_opengl_frame_new (decoder->opengl, decoder->opengl_domain,
           frame_format, picture->decoder_instance->video_format.width,
-          schro_video_format_get_picture_height (&decoder->video_format));
+          schro_video_format_get_picture_height (&picture->decoder_instance->video_format));
 #else
       SCHRO_ASSERT (0);
 #endif

@@ -11,7 +11,6 @@
 SCHRO_BEGIN_DECLS
 
 typedef struct _SchroMotionVector SchroMotionVector;
-typedef struct _SchroMotionVectorDC SchroMotionVectorDC;
 typedef struct _SchroMotionField SchroMotionField;
 typedef struct _SchroMotion SchroMotion;
 typedef struct _SchroMotionScan SchroMotionScan;

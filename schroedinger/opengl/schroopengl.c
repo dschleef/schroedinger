@@ -3,6 +3,7 @@
 #include "config.h"
 #endif
 #include <schroedinger/schro.h>
+#include <schroedinger/schroasync.h>
 #include <schroedinger/opengl/schroopengl.h>
 #include <schroedinger/opengl/schroopenglcanvas.h>
 #include <schroedinger/opengl/schroopenglshader.h>
@@ -268,7 +269,7 @@ schro_opengl_new (void)
   opengl->canvas_pool = NULL;
   opengl->obmc_weight_canvas = NULL;
 
-  opengl->mutex = schro_mutex_new_recursive ();
+  opengl->mutex = schro_mutex_new ();
 
   if (!schro_opengl_open_display (opengl, NULL)) {
     opengl->is_usable = FALSE;

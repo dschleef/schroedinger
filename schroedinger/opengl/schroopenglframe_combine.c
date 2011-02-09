@@ -7,7 +7,7 @@
 #include <schroedinger/opengl/schroopenglcanvas.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <schroedinger/opengl/schroopenglshader.h>
-#include <liboil/liboil.h>
+/*#include <liboil/liboil.h>*/
 
 typedef void (*SchroOpenGLFrameBinaryFunc) (SchroFrame *dest, SchroFrame *src);
 

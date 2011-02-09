@@ -7,7 +7,7 @@
 #include <schroedinger/opengl/schroopenglcanvas.h>
 #include <schroedinger/opengl/schroopenglframe.h>
 #include <schroedinger/opengl/schroopenglshader.h>
-#include <liboil/liboil.h>
+#include <orc/orc.h>
 
 static void
 schro_opengl_canvas_push_convert (SchroOpenGLCanvas *dest, SchroFrameData *src,
@@ -66,7 +66,7 @@ schro_opengl_canvas_push_convert (SchroOpenGLCanvas *dest, SchroFrameData *src,
           }
         } else {
           for (y = 0; y < height; ++y) {
-            oil_memcpy (texture_data_u8, frame_data_u8, width);
+            orc_memcpy (texture_data_u8, frame_data_u8, width);
 
             texture_data_u8 = OFFSET (texture_data_u8, texture_stride);
             frame_data_u8 = OFFSET (frame_data_u8, frame_stride);
@@ -116,7 +116,7 @@ schro_opengl_canvas_push_convert (SchroOpenGLCanvas *dest, SchroFrameData *src,
           }
         } else {
           for (y = 0; y < height; ++y) {
-            oil_memcpy (texture_data_s16, frame_data_s16,
+            orc_memcpy (texture_data_s16, frame_data_s16,
                 width * sizeof (int16_t));
 
             texture_data_s16 = OFFSET (texture_data_s16, texture_stride);

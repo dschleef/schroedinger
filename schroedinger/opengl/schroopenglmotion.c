@@ -27,13 +27,13 @@ schro_opengl_motion_render_dc_block (SchroOpenGLMotion *opengl_motion, int i,
 {
   int xblen, yblen;
   SchroMotion *motion;
-  SchroMotionVectorDC *motion_vector_dc;
+  SchroMotionVector *motion_vector_dc;
   uint8_t dc;
 
   motion = opengl_motion->motion;
-  motion_vector_dc = (SchroMotionVectorDC *)
+  motion_vector_dc = (SchroMotionVector *)
       &motion->motion_vectors[v * motion->params->x_num_blocks + u];
-  dc = (int) motion_vector_dc->dc[i] + 128;
+  dc = (int) motion_vector_dc->u.dc.dc[i] + 128;
 
   glUseProgramObjectARB (opengl_motion->shader_dc->program);
 
@@ -75,8 +75,8 @@ schro_opengl_motion_render_ref_block (SchroOpenGLMotion *opengl_motion,
 
   SCHRO_ASSERT (motion_vector->using_global == FALSE);
 
-  dx = motion_vector->dx[ref];
-  dy = motion_vector->dy[ref];
+  dx = motion_vector->u.vec.dx[ref];
+  dy = motion_vector->u.vec.dy[ref];
 
   if (i > 0) {
     dx >>= SCHRO_CHROMA_FORMAT_H_SHIFT (chroma_format);
@@ -170,15 +170,15 @@ schro_opengl_motion_render_ref_block (SchroOpenGLMotion *opengl_motion,
 
       switch (fd->width) {
         case 8:
-          oil_avg2_8xn_u8 (fd->data, fd->stride,
+          orc_avg2_8xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
           break;
         case 12:
-          oil_avg2_12xn_u8 (fd->data, fd->stride,
+          orc_avg2_12xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
           break;
         case 16:
-          oil_avg2_16xn_u8 (fd->data, fd->stride,
+          orc_avg2_16xn_u8 (fd->data, fd->stride,
               fd00.data, fd00.stride, fd10.data, fd10.stride, fd->height);
           break;
         default:
