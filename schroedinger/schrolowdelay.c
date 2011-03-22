@@ -626,7 +626,7 @@ schro_decoder_decode_lowdelay_transform_data (SchroPicture * picture)
 {
   SchroParams *params = &picture->params;
 
-  if ((params->iwt_chroma_width >> params->transform_depth) %
+  if (0 && (params->iwt_chroma_width >> params->transform_depth) %
       params->n_horiz_slices == 0 &&
       (params->iwt_chroma_height >> params->transform_depth) %
       params->n_vert_slices == 0) {
