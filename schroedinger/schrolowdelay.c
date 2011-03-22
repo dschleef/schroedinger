@@ -330,12 +330,12 @@ schro_lowdelay_restride_slices (SchroPicture * picture,
       for (k = 0; k < lowdelay->n_horiz_slices; k++) {
         for (x = 0; x < lowdelay->subbands[i][1].slice_width; x++) {
           line1[k * lowdelay->subbands[i][1].slice_width + x] =
-              quant_data[k * lowdelay->slice_y_size + j + x * 2 + 0];
+              quant_data[k * lowdelay->slice_uv_size + j + x * 2 + 0];
           line2[k * lowdelay->subbands[i][1].slice_width + x] =
-              quant_data[k * lowdelay->slice_y_size + j + x * 2 + 1];
+              quant_data[k * lowdelay->slice_uv_size + j + x * 2 + 1];
         }
       }
-      j += lowdelay->subbands[i][0].slice_width;
+      j += lowdelay->subbands[i][1].slice_width * 2;
     }
   }
 
