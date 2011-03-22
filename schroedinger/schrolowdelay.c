@@ -41,6 +41,8 @@ struct _SchroLowDelay
   SchroFrameData chroma1_subbands[SCHRO_LIMIT_SUBBANDS];
   SchroFrameData chroma2_subbands[SCHRO_LIMIT_SUBBANDS];
 
+  SchroFrame *reconstructed_frame;
+
   int16_t *quant_y_data;
   int16_t *quant_uv_data;
 
@@ -748,7 +750,8 @@ quantise_block (SchroFrameData * block, int16_t * quant_data, int quant_index)
 
 static void
 quantise_dc_block (SchroFrameData * block, int16_t * quant_data,
-    int quant_index, int slice_x, int slice_y)
+    int quant_index, int slice_x, int slice_y,
+    SchroFrameData *reconstructed_block)
 {
   int quant_factor;
   int quant_offset;
@@ -756,18 +759,21 @@ quantise_dc_block (SchroFrameData * block, int16_t * quant_data,
   int n = 0;
   int pred_value;
   int16_t *line;
+  int16_t *rline;
 
   quant_factor = schro_table_quant[quant_index];
   quant_offset = schro_table_offset_1_2[quant_index];
 
   for (y = 0; y < block->height; y++) {
     line = SCHRO_FRAME_DATA_GET_LINE (block, y);
+    rline = SCHRO_FRAME_DATA_GET_LINE (reconstructed_block, y);
     for (x = 0; x < block->width; x++) {
-      pred_value = schro_dc_predict (line + x, block->stride,
+      rline[x] = line[x];
+      pred_value = schro_dc_predict (rline + x, reconstructed_block->stride,
           slice_x + x, slice_y + y);
       quant_data[n] = schro_quantise (line[x] - pred_value,
           quant_factor, quant_offset);
-      line[x] = pred_value + schro_dequantise (quant_data[n],
+      rline[x] = pred_value + schro_dequantise (quant_data[n],
           quant_factor, quant_offset);
       n++;
     }
@@ -791,40 +797,6 @@ dequantise_block (SchroFrameData * block, int16_t * quant_data, int quant_index)
     for (x = 0; x < block->width; x++) {
       line[x] = schro_dequantise (quant_data[n], quant_factor, quant_offset);
       n++;
-    }
-  }
-}
-
-static void
-copy_block_out (int16_t * dest, SchroFrameData * block)
-{
-  int i;
-  int x, y;
-  int16_t *line;
-
-  i = 0;
-  for (y = 0; y < block->height; y++) {
-    line = SCHRO_FRAME_DATA_GET_LINE (block, y);
-    for (x = 0; x < block->width; x++) {
-      dest[i] = line[x];
-      i++;
-    }
-  }
-}
-
-static void
-copy_block_in (SchroFrameData * block, int16_t * src)
-{
-  int i;
-  int x, y;
-  int16_t *line;
-
-  i = 0;
-  for (y = 0; y < block->height; y++) {
-    line = SCHRO_FRAME_DATA_GET_LINE (block, y);
-    for (x = 0; x < block->width; x++) {
-      line[x] = src[i];
-      i++;
     }
   }
 }
@@ -870,11 +842,16 @@ schro_encoder_estimate_slice (SchroEncoderFrame * frame,
     quant_index = CLAMP (base_index - params->quant_matrix[i], 0, 60);
 
     if (i == 0) {
+      SchroFrameData reconstructed_block;
+
+      schro_frame_data_get_codeblock (&reconstructed_block,
+          lowdelay->reconstructed_frame->components + 0,
+          slice_x, slice_y, lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
       quantise_dc_block (&block, quant_data + n, quant_index,
           (lowdelay->luma_subbands[i].width * slice_x) /
           lowdelay->n_horiz_slices,
           (lowdelay->luma_subbands[i].height * slice_y) /
-          lowdelay->n_vert_slices);
+          lowdelay->n_vert_slices, &reconstructed_block);
     } else {
       quantise_block (&block, quant_data + n, quant_index);
     }
@@ -910,17 +887,26 @@ schro_encoder_estimate_slice (SchroEncoderFrame * frame,
     quant_index = CLAMP (base_index - params->quant_matrix[i], 0, 60);
 
     if (i == 0) {
+      SchroFrameData reconstructed_block;
+
+      schro_frame_data_get_codeblock (&reconstructed_block,
+          lowdelay->reconstructed_frame->components + 1,
+          slice_x, slice_y, lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
       quantise_dc_block (&block1, quant_data + n, quant_index,
           (lowdelay->chroma1_subbands[i].width * slice_x) /
           lowdelay->n_horiz_slices,
           (lowdelay->chroma1_subbands[i].height * slice_y) /
-          lowdelay->n_vert_slices);
+          lowdelay->n_vert_slices, &reconstructed_block);
+
+      schro_frame_data_get_codeblock (&reconstructed_block,
+          lowdelay->reconstructed_frame->components + 2,
+          slice_x, slice_y, lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
       quantise_dc_block (&block2, quant_data + n + lowdelay->slice_uv_size,
           quant_index,
           (lowdelay->chroma1_subbands[i].width * slice_x) /
           lowdelay->n_horiz_slices,
           (lowdelay->chroma1_subbands[i].height * slice_y) /
-          lowdelay->n_vert_slices);
+          lowdelay->n_vert_slices, &reconstructed_block);
     } else {
       quantise_block (&block1, quant_data + n, quant_index);
       quantise_block (&block2, quant_data + n + lowdelay->slice_uv_size,
@@ -1004,48 +990,6 @@ schro_encoder_dequantise_slice (SchroEncoderFrame * frame,
   }
 }
 
-static void
-save_dc_values (SchroEncoderFrame * frame, int16_t * dc_values,
-    SchroLowDelay * lowdelay, int slice_x, int slice_y)
-{
-  SchroFrameData block;
-
-  schro_frame_data_get_codeblock (&block, lowdelay->luma_subbands + 0,
-      slice_x, slice_y, lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
-  copy_block_out (dc_values, &block);
-  dc_values += block.width * block.height;
-
-  schro_frame_data_get_codeblock (&block, lowdelay->chroma1_subbands + 0,
-      slice_x, slice_y, lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
-  copy_block_out (dc_values, &block);
-  dc_values += block.width * block.height;
-
-  schro_frame_data_get_codeblock (&block, lowdelay->chroma2_subbands + 0,
-      slice_x, slice_y, lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
-  copy_block_out (dc_values, &block);
-}
-
-static void
-restore_dc_values (SchroEncoderFrame * frame, int16_t * dc_values,
-    SchroLowDelay * lowdelay, int slice_x, int slice_y)
-{
-  SchroFrameData block;
-
-  schro_frame_data_get_codeblock (&block, lowdelay->luma_subbands + 0,
-      slice_x, slice_y, lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
-  copy_block_in (&block, dc_values);
-  dc_values += block.width * block.height;
-
-  schro_frame_data_get_codeblock (&block, lowdelay->chroma1_subbands + 0,
-      slice_x, slice_y, lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
-  copy_block_in (&block, dc_values);
-  dc_values += block.width * block.height;
-
-  schro_frame_data_get_codeblock (&block, lowdelay->chroma2_subbands + 0,
-      slice_x, slice_y, lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
-  copy_block_in (&block, dc_values);
-}
-
 static int
 schro_encoder_pick_slice_index (SchroEncoderFrame * frame,
     SchroLowDelay * lowdelay, int slice_x, int slice_y, int slice_bytes)
@@ -1053,8 +997,6 @@ schro_encoder_pick_slice_index (SchroEncoderFrame * frame,
   int i;
   int n;
   int size;
-
-  save_dc_values (frame, lowdelay->saved_dc_values, lowdelay, slice_x, slice_y);
 
   i = 0;
   n = schro_encoder_estimate_slice (frame, lowdelay,
@@ -1064,15 +1006,11 @@ schro_encoder_pick_slice_index (SchroEncoderFrame * frame,
         slice_x, slice_y, slice_bytes, i);
     return i;
   }
-  restore_dc_values (frame, lowdelay->saved_dc_values, lowdelay,
-      slice_x, slice_y);
 
   size = 32;
   while (size >= 1) {
     n = schro_encoder_estimate_slice (frame, lowdelay,
         slice_x, slice_y, slice_bytes, i + size);
-    restore_dc_values (frame, lowdelay->saved_dc_values, lowdelay,
-        slice_x, slice_y);
     if (n >= slice_bytes * 8) {
       i += size;
     }
@@ -1100,6 +1038,9 @@ schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame * frame)
   int total_bits;
 
   schro_lowdelay_init (&lowdelay, frame->iwt_frame, params);
+  lowdelay.reconstructed_frame = schro_frame_new_and_alloc (NULL,
+      frame->iwt_frame->format,
+      lowdelay.luma_subbands[0].width, lowdelay.luma_subbands[0].height);
 
   lowdelay.n_horiz_slices = params->n_horiz_slices;
   lowdelay.n_vert_slices = params->n_vert_slices;
@@ -1131,6 +1072,7 @@ schro_encoder_encode_lowdelay_transform_data (SchroEncoderFrame * frame)
       lowdelay.n_horiz_slices * lowdelay.n_vert_slices *
       params->slice_bytes_num * 8 / params->slice_bytes_denom);
 
+  schro_frame_unref (lowdelay.reconstructed_frame);
   schro_lowdelay_cleanup (&lowdelay);
 }
 #endif
