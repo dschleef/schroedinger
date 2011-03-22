@@ -263,23 +263,23 @@ schro_lowdelay_restride_slices (SchroPicture * picture,
       switch (lowdelay->subbands[i][0].slice_width) {
         case 1:
           for (k = 0; k < lowdelay->n_horiz_slices; k++) {
-            line[k * lowdelay->subbands[i][0].slice_width] =
+            line[k] =
                 quant_data[k * lowdelay->slice_y_size + j];
           }
           j++;
           break;
         case 2:
           for (k = 0; k < lowdelay->n_horiz_slices; k++) {
-            line[k * lowdelay->subbands[i][0].slice_width + 0] =
+            line[k * 2 + 0] =
                 quant_data[k * lowdelay->slice_y_size + j + 0];
-            line[k * lowdelay->subbands[i][0].slice_width + 1] =
+            line[k * 2 + 1] =
                 quant_data[k * lowdelay->slice_y_size + j + 1];
           }
           j += 2;
           break;
         case 4:
           for (k = 0; k < lowdelay->n_horiz_slices; k++) {
-            memcpy (line + k * lowdelay->subbands[i][0].slice_width,
+            memcpy (line + k * 4,
                 quant_data + k * lowdelay->slice_y_size + j,
                 sizeof (int16_t) * 4);
           }
@@ -287,7 +287,7 @@ schro_lowdelay_restride_slices (SchroPicture * picture,
           break;
         case 8:
           for (k = 0; k < lowdelay->n_horiz_slices; k++) {
-            memcpy (line + k * lowdelay->subbands[i][0].slice_width,
+            memcpy (line + k * 8,
                 quant_data + k * lowdelay->slice_y_size + j,
                 sizeof (int16_t) * 8);
           }
@@ -420,7 +420,7 @@ schro_lowdelay_init_quant_arrays (SchroLowDelay * lowdelay)
       for (y = 0; y < lowdelay->subbands[i][0].slice_height; y++) {
         for (x = 0; x < lowdelay->subbands[i][0].slice_width; x++) {
           lowdelay->y_quants[j] = quant_factor;
-          lowdelay->y_offsets[j] = quant_offset;
+          lowdelay->y_offsets[j] = quant_offset + 2;
           j++;
         }
       }
@@ -446,10 +446,10 @@ schro_lowdelay_init_quant_arrays (SchroLowDelay * lowdelay)
       for (y = 0; y < block1.height; y++) {
         for (x = 0; x < block1.width; x++) {
           lowdelay->uv_quants[j] = quant_factor;
-          lowdelay->uv_offsets[j] = quant_offset;
+          lowdelay->uv_offsets[j] = quant_offset + 2;
           j++;
           lowdelay->uv_quants[j] = quant_factor;
-          lowdelay->uv_offsets[j] = quant_offset;
+          lowdelay->uv_offsets[j] = quant_offset + 2;
           j++;
         }
       }
