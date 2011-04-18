@@ -2191,11 +2191,12 @@ schro_encoder_analyse_picture (SchroAsyncStage * stage)
   if (frame->encoder->filtering != 0 || frame->need_extension) {
     if (frame->encoder->enable_deep_estimation) {
       frame->filtered_frame =
-          schro_frame_dup_extended (frame->original_frame,
-          MAX (frame->params.xbsep_luma * 4, frame->params.ybsep_luma * 4));
+          schro_frame_dup_full (frame->original_frame,
+          MAX (frame->params.xbsep_luma * 4, frame->params.ybsep_luma * 4),
+          TRUE);
     } else if (frame->encoder->enable_bigblock_estimation) {
-      frame->filtered_frame = schro_frame_dup_extended (frame->original_frame,
-          32);
+      frame->filtered_frame = schro_frame_dup_full (frame->original_frame,
+          32, TRUE);
     } else
       SCHRO_ASSERT (0);
     switch (frame->encoder->filtering) {
@@ -2224,7 +2225,8 @@ schro_encoder_analyse_picture (SchroAsyncStage * stage)
     }
     schro_frame_mc_edgeextend (frame->filtered_frame);
   } else {
-    frame->filtered_frame = schro_frame_ref (frame->original_frame);
+    frame->filtered_frame = schro_frame_dup_full (frame->original_frame,
+        32, TRUE);
   }
 
   if (frame->need_downsampling) {
@@ -2611,10 +2613,10 @@ schro_encoder_reconstruct_picture (SchroAsyncStage * stage)
 
   frame_format = schro_params_get_frame_format (8,
       encoder_frame->encoder->video_format.chroma_format);
-  frame = schro_frame_new_and_alloc_extended (NULL, frame_format,
+  frame = schro_frame_new_and_alloc_full (NULL, frame_format,
       encoder_frame->encoder->video_format.width,
       schro_video_format_get_picture_height (&encoder_frame->
-          encoder->video_format), 32);
+          encoder->video_format), 32, TRUE);
   schro_frame_convert (frame, encoder_frame->iwt_frame);
   schro_frame_mc_edgeextend (frame);
   encoder_frame->reconstructed_frame = schro_upsampled_frame_new (frame);

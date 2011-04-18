@@ -1355,9 +1355,10 @@ schro_decoder_iterate_picture (SchroDecoderInstance * instance,
       frame_format = schro_params_get_frame_format (8,
           params->video_format->chroma_format);
       ref =
-          schro_frame_new_and_alloc_extended (decoder->cpu_domain, frame_format,
+          schro_frame_new_and_alloc_full (decoder->cpu_domain, frame_format,
           instance->video_format.width,
-          schro_video_format_get_picture_height (&instance->video_format), 32);
+          schro_video_format_get_picture_height (&instance->video_format), 32,
+          TRUE);
       schro_frame_clear (ref);
       picture->upsampled_frame = schro_upsampled_frame_new (ref);
     }
@@ -1722,10 +1723,10 @@ schro_decoder_x_render_motion (SchroAsyncStage * stage)
     } else {
       if (params->num_refs > 0 || picture->is_ref || picture->has_md5) {
         picture->ref_output_frame =
-            schro_frame_new_and_alloc_extended (decoder->cpu_domain,
+            schro_frame_new_and_alloc_full (decoder->cpu_domain,
             frame_format, picture->decoder_instance->video_format.width,
             schro_video_format_get_picture_height (&picture->
-                decoder_instance->video_format), 32);
+                decoder_instance->video_format), 32, TRUE);
       }
     }
   }

@@ -54,12 +54,13 @@ SchroFrame *
 schro_frame_new_and_alloc (SchroMemoryDomain * domain, SchroFrameFormat format,
     int width, int height)
 {
-  return schro_frame_new_and_alloc_extended (domain, format, width, height, 0);
+  return schro_frame_new_and_alloc_full (domain, format, width, height, 0, FALSE);
 }
 
 SchroFrame *
-schro_frame_new_and_alloc_extended (SchroMemoryDomain * domain,
-    SchroFrameFormat format, int width, int height, int extension)
+schro_frame_new_and_alloc_full (SchroMemoryDomain * domain,
+    SchroFrameFormat format, int width, int height, int extension,
+    int upsampled)
 {
   SchroFrame *frame = schro_frame_new ();
   int bytes_pp;
@@ -77,6 +78,7 @@ schro_frame_new_and_alloc_extended (SchroMemoryDomain * domain,
   frame->height = height;
   frame->domain = domain;
   frame->extension = extension;
+  frame->is_upsampled = upsampled;
 
   ext_width = width + extension * 2;
   ext_height = height + extension * 2;
@@ -134,6 +136,9 @@ schro_frame_new_and_alloc_extended (SchroMemoryDomain * domain,
   frame->components[0].height = height;
   frame->components[0].stride =
       ROUND_UP_16 ((width + extension * 2) * bytes_pp);
+  if (upsampled) {
+    frame->components[0].stride *= 4;
+  }
   frame->components[0].length =
       frame->components[0].stride * (frame->components[0].height +
       extension * 2);
@@ -145,6 +150,9 @@ schro_frame_new_and_alloc_extended (SchroMemoryDomain * domain,
   frame->components[1].height = chroma_height;
   frame->components[1].stride =
       ROUND_UP_16 ((chroma_width + extension * 2) * bytes_pp);
+  if (upsampled) {
+    frame->components[1].stride *= 4;
+  }
   frame->components[1].length =
       frame->components[1].stride * (frame->components[1].height +
       extension * 2);
@@ -156,6 +164,9 @@ schro_frame_new_and_alloc_extended (SchroMemoryDomain * domain,
   frame->components[2].height = chroma_height;
   frame->components[2].stride =
       ROUND_UP_16 ((chroma_width + extension * 2) * bytes_pp);
+  if (upsampled) {
+    frame->components[2].stride *= 4;
+  }
   frame->components[2].length =
       frame->components[2].stride * (frame->components[2].height +
       extension * 2);
@@ -181,6 +192,14 @@ schro_frame_new_and_alloc_extended (SchroMemoryDomain * domain,
       frame->components[2].stride * extension + bytes_pp * extension);
 
   return frame;
+}
+
+SchroFrame *
+schro_frame_new_and_alloc_extended (SchroMemoryDomain * domain,
+    SchroFrameFormat format, int width, int height, int extension)
+{
+  return schro_frame_new_and_alloc_full (domain, format, width,
+      height, extension, FALSE);
 }
 
 /**
@@ -624,10 +643,16 @@ schro_frame_dup (SchroFrame * frame)
 SchroFrame *
 schro_frame_dup_extended (SchroFrame * frame, int extension)
 {
+  return schro_frame_dup_full (frame, extension, FALSE);
+}
+
+SchroFrame *
+schro_frame_dup_full (SchroFrame * frame, int extension, int is_upsampled)
+{
   SchroFrame *dup_frame;
 
-  dup_frame = schro_frame_new_and_alloc_extended (frame->domain,
-      frame->format, frame->width, frame->height, extension);
+  dup_frame = schro_frame_new_and_alloc_full (frame->domain,
+      frame->format, frame->width, frame->height, extension, is_upsampled);
   schro_frame_convert (dup_frame, frame);
 
   return dup_frame;
@@ -1852,6 +1877,7 @@ schro_upsampled_frame_new (SchroFrame * frame)
 
   df = schro_malloc0 (sizeof (SchroUpsampledFrame));
 
+  SCHRO_ASSERT (frame->is_upsampled);
   df->frames[0] = frame;
 
   return df;
@@ -1934,18 +1960,26 @@ schro_frame_mc_edgeextend (SchroFrame * frame)
 void
 schro_upsampled_frame_upsample (SchroUpsampledFrame * df)
 {
+  int i;
+
   if (df->frames[1])
     return;
 
-  df->frames[1] = schro_frame_new_and_alloc_extended (df->frames[0]->domain,
-      df->frames[0]->format, df->frames[0]->width, df->frames[0]->height,
-      df->frames[0]->extension);
-  df->frames[2] = schro_frame_new_and_alloc_extended (df->frames[0]->domain,
-      df->frames[0]->format, df->frames[0]->width, df->frames[0]->height,
-      df->frames[0]->extension);
-  df->frames[3] = schro_frame_new_and_alloc_extended (df->frames[0]->domain,
-      df->frames[0]->format, df->frames[0]->width, df->frames[0]->height,
-      df->frames[0]->extension);
+  for (i=1;i<4;i++){
+    df->frames[i] = schro_frame_new();
+    df->frames[i]->format = df->frames[0]->format;
+    df->frames[i]->width = df->frames[0]->width;
+    df->frames[i]->height = df->frames[0]->height;
+    df->frames[i]->extension = df->frames[0]->extension;
+    memcpy (df->frames[i]->components, df->frames[0]->components,
+        sizeof (SchroFrameData) * 3);
+    df->frames[i]->components[0].data +=
+      (df->frames[i]->components[0].stride >> 2) * i;
+    df->frames[i]->components[1].data +=
+      (df->frames[i]->components[1].stride >> 2) * i;
+    df->frames[i]->components[2].data +=
+      (df->frames[i]->components[2].stride >> 2) * i;
+  }
 
   schro_frame_upsample_vert (df->frames[2], df->frames[0]);
   schro_frame_mc_edgeextend_horiz (df->frames[2], df->frames[2]);

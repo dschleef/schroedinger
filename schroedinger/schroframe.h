@@ -89,11 +89,11 @@ struct _SchroFrame {
 
   int extension;
   int cache_offset[3];
+  int is_upsampled;
 };
 
 struct _SchroUpsampledFrame {
   SchroFrame *frames[4];
-  void *components[3];
 };
 
 #define SCHRO_FRAME_DATA_GET_LINE(fd,i) (SCHRO_OFFSET((fd)->data,(fd)->stride*(i)))
@@ -139,7 +139,12 @@ void schro_frame_md5 (SchroFrame *frame, uint32_t *state);
 
 SchroFrame * schro_frame_new_and_alloc_extended (SchroMemoryDomain *domain,
     SchroFrameFormat format, int width, int height, int extension);
+SchroFrame * schro_frame_new_and_alloc_full (SchroMemoryDomain * domain,
+    SchroFrameFormat format, int width, int height, int extension,
+    int upsampled);
 SchroFrame *schro_frame_dup_extended (SchroFrame *frame, int extension);
+SchroFrame *schro_frame_dup_full (SchroFrame *frame, int extension,
+    int is_upsampled);
 void schro_frame_edge_extend (SchroFrame *frame, int width, int height);
 void schro_frame_zero_extend (SchroFrame *frame, int width, int height);
 void schro_frame_mark (SchroFrame *frame, int value);
