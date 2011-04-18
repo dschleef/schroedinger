@@ -93,6 +93,7 @@ libschroedinger_@SCHRO_MAJORMINOR@_la_SOURCES = \
 	schrobufferlist.c \
 	schrolowdelay.c \
 	schromotion.c \
+	schromotion8.c \
 	schromotionfast.c \
 	schroparams.c \
 	schroroughmotion.c \
