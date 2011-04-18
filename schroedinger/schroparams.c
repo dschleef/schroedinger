@@ -35,6 +35,7 @@ schro_params_init (SchroParams * params, int video_format)
       params->ybsep_luma = 4;
       break;
 
+    default:
     case SCHRO_VIDEO_FORMAT_CUSTOM:
     case SCHRO_VIDEO_FORMAT_SIF:
     case SCHRO_VIDEO_FORMAT_CIF:
@@ -62,16 +63,15 @@ schro_params_init (SchroParams * params, int video_format)
     case SCHRO_VIDEO_FORMAT_HD1080P_50:
     case SCHRO_VIDEO_FORMAT_DC2K_24:
     case SCHRO_VIDEO_FORMAT_DC4K_24:
+    case SCHRO_VIDEO_FORMAT_UHDTV_4K_60:
+    case SCHRO_VIDEO_FORMAT_UHDTV_4K_50:
+    case SCHRO_VIDEO_FORMAT_UHDTV_8K_60:
+    case SCHRO_VIDEO_FORMAT_UHDTV_8K_50:
       params->xblen_luma = 24;
       params->yblen_luma = 24;
       params->xbsep_luma = 16;
       params->ybsep_luma = 16;
       break;
-
-    default:
-      SCHRO_ERROR ("schro_params_init called with video_format_index %d",
-          video_format);
-      SCHRO_ASSERT (0);
   }
   SCHRO_DEBUG ("schro_params_init %i %i %i %i", params->xblen_luma,
       params->yblen_luma, params->xbsep_luma, params->ybsep_luma);
