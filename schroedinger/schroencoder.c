@@ -2598,13 +2598,59 @@ schro_encoder_encode_picture (SchroAsyncStage * stage)
 }
 
 void
+schro_encoder_inverse_iwt_transform (SchroFrame * frame, SchroParams * params)
+{
+  int width;
+  int height;
+  int level;
+  int component;
+  int16_t *tmp;
+
+  tmp = schro_malloc (sizeof (int16_t) * (params->iwt_luma_width + 16));
+
+  for (component = 0; component < 3; component++) {
+    SchroFrameData *comp = &frame->components[component];
+
+    if (component == 0) {
+      width = params->iwt_luma_width;
+      height = params->iwt_luma_height;
+    } else {
+      width = params->iwt_chroma_width;
+      height = params->iwt_chroma_height;
+    }
+
+    for (level = params->transform_depth - 1; level >= 0; level--) {
+      SchroFrameData fd_dest;
+      SchroFrameData fd_src;
+
+      fd_src.format = frame->format;
+      fd_src.data = comp->data;
+      fd_src.width = width >> level;
+      fd_src.height = height >> level;
+      fd_src.stride = comp->stride << level;
+
+      fd_dest.format = frame->format;
+      fd_dest.data = comp->data;
+      fd_dest.width = width >> level;
+      fd_dest.height = height >> level;
+      fd_dest.stride = comp->stride << level;
+
+      schro_wavelet_inverse_transform_2d (&fd_dest, &fd_src,
+          params->wavelet_filter_index, tmp);
+    }
+  }
+
+  schro_free (tmp);
+}
+
+void
 schro_encoder_reconstruct_picture (SchroAsyncStage * stage)
 {
   SchroEncoderFrame *encoder_frame = (SchroEncoderFrame *) stage->priv;
   SchroFrameFormat frame_format;
   SchroFrame *frame;
 
-  schro_frame_inverse_iwt_transform (encoder_frame->iwt_frame,
+  schro_encoder_inverse_iwt_transform (encoder_frame->iwt_frame,
       &encoder_frame->params);
 
   if (encoder_frame->params.num_refs > 0) {

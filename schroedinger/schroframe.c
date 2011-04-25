@@ -1144,53 +1144,6 @@ schro_frame_iwt_transform (SchroFrame * frame, SchroParams * params)
 }
 
 /**
- * schro_frame_inverse_iwt_transform:
- * @frame: frame
- * @params: transform parameters
- *
- * Performs an in-place inverse integer wavelet transform on @frame.  The
- * frame must have a bit depth of 16.
- */
-void
-schro_frame_inverse_iwt_transform (SchroFrame * frame, SchroParams * params)
-{
-  int width;
-  int height;
-  int level;
-  int component;
-  int16_t *tmp;
-
-  tmp = schro_malloc (sizeof (int16_t) * (params->iwt_luma_width + 16));
-
-  for (component = 0; component < 3; component++) {
-    SchroFrameData *comp = &frame->components[component];
-
-    if (component == 0) {
-      width = params->iwt_luma_width;
-      height = params->iwt_luma_height;
-    } else {
-      width = params->iwt_chroma_width;
-      height = params->iwt_chroma_height;
-    }
-
-    for (level = params->transform_depth - 1; level >= 0; level--) {
-      SchroFrameData fd;
-
-      fd.format = frame->format;
-      fd.data = comp->data;
-      fd.width = width >> level;
-      fd.height = height >> level;
-      fd.stride = comp->stride << level;
-
-      schro_wavelet_inverse_transform_2d (&fd, params->wavelet_filter_index,
-          tmp);
-    }
-  }
-
-  schro_free (tmp);
-}
-
-/**
  * schro_frame_shift_left:
  * @frame: frame
  * @shift: number of bits to shift

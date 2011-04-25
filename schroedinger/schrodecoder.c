@@ -1801,6 +1801,52 @@ schro_decoder_x_decode_residual (SchroAsyncStage * stage)
 }
 
 void
+schro_decoder_inverse_iwt_transform (SchroFrame * frame, SchroParams * params)
+{
+  int width;
+  int height;
+  int level;
+  int component;
+  int16_t *tmp;
+
+  tmp = schro_malloc (sizeof (int16_t) * (params->iwt_luma_width + 16));
+
+  for (component = 0; component < 3; component++) {
+    SchroFrameData *comp = &frame->components[component];
+
+    if (component == 0) {
+      width = params->iwt_luma_width;
+      height = params->iwt_luma_height;
+    } else {
+      width = params->iwt_chroma_width;
+      height = params->iwt_chroma_height;
+    }
+
+    for (level = params->transform_depth - 1; level >= 0; level--) {
+      SchroFrameData fd_dest;
+      SchroFrameData fd_src;
+
+      fd_src.format = frame->format;
+      fd_src.data = comp->data;
+      fd_src.width = width >> level;
+      fd_src.height = height >> level;
+      fd_src.stride = comp->stride << level;
+
+      fd_dest.format = frame->format;
+      fd_dest.data = comp->data;
+      fd_dest.width = width >> level;
+      fd_dest.height = height >> level;
+      fd_dest.stride = comp->stride << level;
+
+      schro_wavelet_inverse_transform_2d (&fd_dest, &fd_src,
+          params->wavelet_filter_index, tmp);
+    }
+  }
+
+  schro_free (tmp);
+}
+
+void
 schro_decoder_x_wavelet_transform (SchroAsyncStage * stage)
 {
   SchroPicture *picture = (SchroPicture *) stage->priv;
@@ -1828,7 +1874,7 @@ schro_decoder_x_wavelet_transform (SchroAsyncStage * stage)
       SCHRO_ASSERT (0);
 #endif
     } else {
-      schro_frame_inverse_iwt_transform (picture->frame, &picture->params);
+      schro_decoder_inverse_iwt_transform (picture->frame, &picture->params);
     }
   }
 }

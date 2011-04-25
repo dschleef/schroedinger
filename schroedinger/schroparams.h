@@ -104,7 +104,6 @@ int schro_params_get_frame_format (int depth,
 
 /* FIXME should be moved */
 void schro_frame_iwt_transform (SchroFrame *frame, SchroParams *params);
-void schro_frame_inverse_iwt_transform (SchroFrame *frame, SchroParams *params);
 
 #endif
 
