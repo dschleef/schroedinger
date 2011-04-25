@@ -1620,3 +1620,306 @@ accsadubl a1, s1, s2
 
 
 
+# 32-bit IIWT
+
+.function orc_add2_rshift_add_s32_22_op
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.source 4 s3 int32_t
+.temp 4 t1
+
+addl t1, s2, s3
+addl t1, t1, 2
+shrsl t1, t1, 2
+addl d1, s1, t1
+
+
+.function orc_mas4_across_add_s32_1991_op
+.dest 4 d1 int32_t
+.source 4 s0 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.source 4 s3 int32_t
+.source 4 s4 int32_t
+.param 4 p1
+.param 4 p2
+.temp 4 t1
+.temp 4 t2
+.temp 4 t3
+.temp 4 t4
+
+addl t1, s2, s3
+mulll t3, t1, 9
+addl t2, s1, s4
+subl t3, t3, t2
+addl t3, t3, p1
+shrsl t3, t3, p2
+addl d1, s0, t3
+
+
+.function orc_add2_rshift_sub_s32_22_op
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.source 4 s3 int32_t
+.temp 4 t1
+
+addl t1, s2, s3
+addl t1, t1, 2
+shrsl t1, t1, 2
+subl d1, s1, t1
+
+
+.function orc_interleave2_rrshift1_s32
+.dest 8 d1 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.temp 4 t1
+.temp 4 t2
+
+addl t1, s1, 1
+shrsl t1, t1, 1
+addl t2, s2, 1
+shrsl t2, t2, 1
+mergelq d1, t1, t2
+
+
+.function orc_mas4_across_sub_s32_1991_op
+.dest 4 d1 int32_t
+.source 4 s0 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.source 4 s3 int32_t
+.source 4 s4 int32_t
+.param 4 p1
+.param 4 p2
+.temp 4 t1
+.temp 4 t2
+.temp 4 t3
+.temp 4 t4
+
+addl t1, s2, s3
+mulll t3, t1, 9
+addl t2, s1, s4
+subl t3, t3, t2
+addl t3, t3, p1
+shrsl t3, t3, p2
+subl d1, s0, t3
+
+
+.function orc_mas4_across_add_s32_1991_ip
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.param 4 p1
+.param 4 p2
+.temp 4 t1
+.temp 4 t2
+.temp 4 t3
+.temp 4 t4
+
+loadoffl t1, s1, 1
+loadoffl t2, s1, 2
+addl t1, t1, t2
+mulll t3, t1, 9
+loadl t1, s1
+loadoffl t2, s1, 3
+addl t2, t1, t2
+subl t3, t3, t2
+addl t3, t3, p1
+shrsl t3, t3, p2
+addl d1, d1, t3
+
+
+.function orc_add2_rshift_add_s32_11_op
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.source 4 s3 int32_t
+.temp 4 t1
+
+avgsl t1, s2, s3
+addl d1, s1, t1
+
+
+.function orc_mas4_across_sub_s32_1991_ip
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.param 4 p1
+.param 4 p2
+.temp 4 t1
+.temp 4 t2
+.temp 4 t3
+.temp 4 t4
+
+loadoffl t1, s1, 1
+loadoffl t2, s1, 2
+addl t1, t1, t2
+mulll t3, t1, 9
+loadl t1, s1
+loadoffl t2, s1, 3
+addl t2, t1, t2
+subl t3, t3, t2
+addl t3, t3, p1
+shrsl t3, t3, p2
+subl d1, d1, t3
+
+
+.function orc_haar_synth_s32_lo
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.temp 4 t1
+
+avgsl t1, s2, 0
+subl d1, s1, t1
+
+
+.function orc_haar_synth_int_s32
+.dest 8 d1 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.temp 4 t1
+.temp 4 t2
+
+copyl t2, s2
+avgsl t1, t2, 0
+subl t1, s1, t1
+addl t2, t2, t1
+mergelq d1, t1, t2
+
+
+
+.function orc_haar_synth_rrshift1_int_s32
+.dest 8 d1 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.temp 4 t1
+.temp 4 t2
+
+copyl t2, s2
+avgsl t1, t2, 0
+subl t1, s1, t1
+addl t2, t2, t1
+avgsl t1, t1, 0
+avgsl t2, t2, 0
+mergelq d1, t1, t2
+
+
+.function orc_interleave2_s32
+.dest 8 d1 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+
+mergelq d1, s1, s2
+
+
+.function orc_mas2_sub_s32_ip
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.temp 4 t1
+.temp 4 t2
+.param 4 p1
+.param 4 p2
+.param 4 p3
+
+loadoffl t1, s1, 1
+addl t1, s1, t1
+mulll t2, t1, p1
+addl t2, t2, p2
+shrsl t2, t2, p3
+subl d1, d1, t2
+
+
+.function orc_mas2_add_s32_ip
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.temp 4 t1
+.temp 4 t2
+.param 4 p1
+.param 4 p2
+.param 4 p3
+
+loadoffl t1, s1, 1
+addl t1, s1, t1
+mulll t2, t1, p1
+addl t2, t2, p2
+shrsl t2, t2, p3
+addl d1, d1, t2
+
+
+
+.function orc_mas2_add_s32_op
+.dest 4 d1 int32_t
+.source 4 s0 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.temp 4 t1
+.temp 4 t2
+.param 4 p1
+.param 4 p2
+.param 4 p3
+
+addl t1, s1, s2
+mulll t2, t1, p1
+addl t2, t2, p2
+shrsl t2, t2, p3
+addl d1, s0, t2
+
+
+
+.function orc_mas2_sub_s32_op
+.dest 4 d1 int32_t
+.source 4 s0 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.temp 4 t1
+.temp 4 t2
+.param 4 p1
+.param 4 p2
+.param 4 p3
+
+addl t1, s1, s2
+mulll t2, t1, p1
+addl t2, t2, p2
+shrsl t2, t2, p3
+subl d1, s0, t2
+
+
+.function orc_add2_rshift_sub_s32_22
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.temp 4 t1
+
+loadoffl t1, s1, 1
+addl t1, s1, t1
+addl t1, t1, 2
+shrsl t1, t1, 2
+subl d1, d1, t1
+
+
+.function orc_add2_rshift_add_s32_11
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.temp 4 t1
+
+loadoffl t1, s1, 1
+avgsl t1, s1, t1
+addl d1, d1, t1
+
+
+.function orc_haar_synth_s32
+.dest 4 d1 int32_t
+.dest 4 d2 int32_t
+.temp 4 t1
+.temp 4 t2
+.temp 4 t3
+
+copyl t1, d1
+copyl t2, d2
+avgsl t3, t2, 0
+subl t1, t1, t3
+copyl d1, t1
+addl d2, t2, t1
+
+
