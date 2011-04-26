@@ -838,12 +838,21 @@ schro_frame_convert (SchroFrame * dest, SchroFrame * src)
   if (SCHRO_FRAME_FORMAT_DEPTH (dest_format) !=
       SCHRO_FRAME_FORMAT_DEPTH (frame->format)) {
     if (SCHRO_FRAME_FORMAT_DEPTH (dest_format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-      frame = schro_virt_frame_new_convert_u8 (frame);
-      SCHRO_DEBUG ("convert_u8 %p", frame);
+      if (SCHRO_FRAME_FORMAT_DEPTH (src->format) == SCHRO_FRAME_FORMAT_DEPTH_S16) {
+        frame = schro_virt_frame_new_convert_u8 (frame);
+        SCHRO_DEBUG ("convert_u8 %p", frame);
+      } else {
+        frame = schro_virt_frame_new_convert_u8_s32 (frame);
+        SCHRO_DEBUG("convert u8 s32");
+      }
     } else if (SCHRO_FRAME_FORMAT_DEPTH (dest_format) ==
         SCHRO_FRAME_FORMAT_DEPTH_S16) {
-      frame = schro_virt_frame_new_convert_s16 (frame);
-      SCHRO_DEBUG ("convert_s16 %p", frame);
+      if (SCHRO_FRAME_FORMAT_DEPTH (frame->format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
+        frame = schro_virt_frame_new_convert_s16 (frame);
+        SCHRO_DEBUG ("convert_s16 %p", frame);
+      } else {
+        SCHRO_ASSERT(0);
+      }
     }
   }
 

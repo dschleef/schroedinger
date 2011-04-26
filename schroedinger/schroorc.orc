@@ -419,6 +419,17 @@ addw t1, s1, 128
 convsuswb d1, t1
 
 
+.function orc_offsetconvert_u8_s32
+.dest 1 d1
+.source 4 s1 int32_t
+.temp 4 t1
+.temp 2 t2
+
+addl t1, s1, 128
+convsuslw t2, t1
+convsuswb d1, t2
+
+
 .function orc_offsetconvert_s16_u8
 .dest 2 d1 int16_t
 .source 1 s1
@@ -1921,5 +1932,30 @@ avgsl t3, t2, 0
 subl t1, t1, t3
 copyl d1, t1
 addl d2, t2, t1
+
+
+.function orc_splat_s32_2d
+.flags 2d
+.dest 4 d1 int32_t
+.param 4 p1
+
+copyl d1, p1
+
+
+.function orc_dequantise_s32_ip_2d
+.flags 2d
+.dest 4 d1 int32_t
+.param 4 p1
+.param 4 p2
+.temp 4 t1
+.temp 4 t2
+
+copyl t1, d1
+signl t2, t1
+absl t1, t1
+mulll t1, t1, p1
+addl t1, t1, p2
+shrsl t1, t1, 2
+mulll d1, t1, t2
 
 

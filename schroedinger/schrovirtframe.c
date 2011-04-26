@@ -1558,6 +1558,32 @@ schro_virt_frame_new_convert_u8 (SchroFrame * vf)
 }
 
 static void
+convert_u8_s32 (SchroFrame * frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  int32_t *src;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  orc_offsetconvert_u8_s32 (dest, src, frame->components[component].width);
+}
+
+SchroFrame *
+schro_virt_frame_new_convert_u8_s32 (SchroFrame * vf)
+{
+  SchroFrame *virt_frame;
+  SchroFrameFormat format;
+
+  format = (vf->format & 3) | SCHRO_FRAME_FORMAT_U8_444;
+
+  virt_frame = schro_frame_new_virtual (NULL, format, vf->width, vf->height);
+  virt_frame->virt_frame1 = vf;
+  virt_frame->render_line = convert_u8_s32;
+  virt_frame->virt_priv = schro_malloc (sizeof (int32_t) * vf->width);
+
+  return virt_frame;
+}
+
+static void
 convert_s16_u8 (SchroFrame * frame, void *_dest, int component, int i)
 {
   int16_t *dest = _dest;

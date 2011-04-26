@@ -342,7 +342,12 @@ schro_subband_get_frame_data (SchroFrameData * fd,
     fd->data = OFFSET (fd->data, fd->stride >> 1);
   }
   if (position & 1) {
-    fd->data = OFFSET (fd->data, fd->width * sizeof (int16_t));
+    if (SCHRO_FRAME_FORMAT_DEPTH(fd->format) ==
+        SCHRO_FRAME_FORMAT_DEPTH_S32) {
+      fd->data = OFFSET (fd->data, fd->width * sizeof (int32_t));
+    } else {
+      fd->data = OFFSET (fd->data, fd->width * sizeof (int16_t));
+    }
   }
 }
 
@@ -384,6 +389,17 @@ schro_params_get_frame_format (int depth, SchroChromaFormat chroma_format)
         return SCHRO_FRAME_FORMAT_S16_422;
       case SCHRO_CHROMA_420:
         return SCHRO_FRAME_FORMAT_S16_420;
+      default:
+        SCHRO_ASSERT (0);
+    }
+  } else if (depth == 32) {
+    switch (chroma_format) {
+      case SCHRO_CHROMA_444:
+        return SCHRO_FRAME_FORMAT_S32_444;
+      case SCHRO_CHROMA_422:
+        return SCHRO_FRAME_FORMAT_S32_422;
+      case SCHRO_CHROMA_420:
+        return SCHRO_FRAME_FORMAT_S32_420;
       default:
         SCHRO_ASSERT (0);
     }

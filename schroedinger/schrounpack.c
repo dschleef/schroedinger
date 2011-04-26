@@ -327,3 +327,59 @@ schro_unpack_decode_sint_s16 (int16_t * dest, SchroUnpack * unpack, int n)
   }
 }
 
+void
+schro_unpack_decode_sint_s32 (int32_t * dest, SchroUnpack * unpack, int n)
+{
+  int i;
+  int j;
+  const int16_t *table_entry;
+  int x;
+  int z;
+  SchroUnpackTableEntry *table = schro_table_unpack_sint;
+
+  while (n > 0) {
+    while (unpack->n_bits_in_shift_register < 8 + SCHRO_UNPACK_TABLE_SHIFT) {
+      _schro_unpack_shift_in (unpack);
+    }
+    i = unpack->shift_register >> (32 - SCHRO_UNPACK_TABLE_SHIFT);
+    table_entry = table[i];
+    x = table_entry[0];
+    if ((x & 0xf) == 0) {
+      int y = x >> 4;
+
+      i = (unpack->shift_register & 0xffffff) >> (24 -
+          SCHRO_UNPACK_TABLE_SHIFT);
+      table_entry = table[i];
+      x = table_entry[0];
+      if ((x & 0xf) == 0) {
+        dest[0] = schro_unpack_decode_sint_slow (unpack);
+        dest++;
+        n--;
+      } else {
+        int bits = ((x & 0xf) >> 1) - 1;
+
+        z = x >> 4;
+        if (z > 0) {
+          dest[0] = z + (y << bits);
+        } else {
+          dest[0] = z - (y << bits);
+        }
+        _schro_unpack_shift_out (unpack, (x & 0xf) + 8);
+        dest++;
+        n--;
+      }
+    } else {
+      j = 0;
+      do {
+        dest[j] = x >> 4;
+        j++;
+        n--;
+        x = table_entry[j];
+      } while (n > 0 && x & 0xf);
+      x = table_entry[j - 1];
+      _schro_unpack_shift_out (unpack, x & 0xf);
+      dest += j;
+    }
+  }
+}
+

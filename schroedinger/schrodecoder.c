@@ -13,6 +13,8 @@
 #include <string.h>
 #include <stdio.h>
 
+//#define DEEP_DECODE
+
 #if 0
 /* Used for testing bitstream */
 #define MARKER() do{ \
@@ -53,7 +55,6 @@ struct _SchroPictureSubbandContext
 
   int quant_factor;
   int quant_offset;
-  int16_t *line;
 };
 
 enum
@@ -347,8 +348,13 @@ schro_picture_new (SchroDecoderInstance * instance)
 
   picture->params.video_format = video_format;
 
+#ifdef DEEP_DECODE
+  frame_format = schro_params_get_frame_format (32,
+      video_format->chroma_format);
+#else
   frame_format = schro_params_get_frame_format (16,
       video_format->chroma_format);
+#endif
   schro_video_format_get_picture_chroma_size (video_format,
       &picture_chroma_width, &picture_chroma_height);
 
@@ -1809,7 +1815,11 @@ schro_decoder_inverse_iwt_transform (SchroFrame * frame, SchroParams * params)
   int component;
   int16_t *tmp;
 
+#ifdef DEEP_DECODE
+  tmp = schro_malloc (sizeof (int32_t) * (params->iwt_luma_width + 16));
+#else
   tmp = schro_malloc (sizeof (int16_t) * (params->iwt_luma_width + 16));
+#endif
 
   for (component = 0; component < 3; component++) {
     SchroFrameData *comp = &frame->components[component];
@@ -3088,9 +3098,8 @@ codeblock_line_decode_generic (SchroPictureSubbandContext * ctx,
   }
 }
 
-#if 0
 static void
-codeblock_line_decode_deep (SchroPictureSubbandContext * ctx,
+codeblock_line_decode_generic_s32 (SchroPictureSubbandContext * ctx,
     int32_t * line, int j, const int32_t * parent_data, const int32_t * prev)
 {
   int i;
@@ -3127,47 +3136,6 @@ codeblock_line_decode_deep (SchroPictureSubbandContext * ctx,
     STUFF;
   }
 }
-
-static void
-codeblock_line_decode_deep_parent (SchroPictureSubbandContext * ctx,
-    int16_t * line, int j, const int32_t * parent_data, const int16_t * prev)
-{
-  int i;
-
-  for (i = ctx->xmin; i < ctx->xmax; i++) {
-    int v;
-    int parent;
-    int nhood_or;
-    int previous_value;
-
-    if (parent_data) {
-      parent = parent_data[(i >> 1)];
-    } else {
-      parent = 0;
-    }
-
-    nhood_or = 0;
-    if (j > 0)
-      nhood_or |= prev[i];
-    if (i > 0)
-      nhood_or |= line[i - 1];
-    if (i > 0 && j > 0)
-      nhood_or |= prev[i - 1];
-
-    previous_value = 0;
-    if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED (ctx->position)) {
-      if (i > 0)
-        previous_value = line[i - 1];
-    } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED (ctx->position)) {
-      if (j > 0)
-        previous_value = prev[i];
-    }
-
-    STUFF;
-  }
-}
-#endif
-
 
 static void
 codeblock_line_decode_p_horiz (SchroPictureSubbandContext * ctx,
@@ -3292,6 +3260,36 @@ schro_decoder_subband_dc_predict (SchroFrameData * fd)
 
 }
 
+void
+schro_decoder_subband_dc_predict_s32 (SchroFrameData * fd)
+{
+  int32_t *prev_line;
+  int32_t *line;
+  int i, j;
+  int pred_value;
+
+  line = SCHRO_FRAME_DATA_GET_LINE (fd, 0);
+  for (i = 1; i < fd->width; i++) {
+    pred_value = line[i - 1];
+    line[i] += pred_value;
+  }
+
+  for (j = 1; j < fd->height; j++) {
+    line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+    prev_line = SCHRO_FRAME_DATA_GET_LINE (fd, j - 1);
+
+    pred_value = prev_line[0];
+    line[0] += pred_value;
+
+    for (i = 1; i < fd->width; i++) {
+      pred_value = schro_divide3 (line[i - 1] + prev_line[i] +
+          prev_line[i - 1] + 1);
+      line[i] += pred_value;
+    }
+  }
+
+}
+
 static void
 schro_decoder_setup_codeblocks (SchroPicture * picture,
     SchroPictureSubbandContext * ctx)
@@ -3327,9 +3325,14 @@ static void
 schro_decoder_zero_block (SchroPictureSubbandContext * ctx,
     int x1, int y1, int x2, int y2)
 {
-  //SCHRO_DEBUG("subband is zero");
-  orc_splat_s16_2d (SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data, x1, y1),
-      ctx->frame_data->stride, 0, x2 - x1, y2 - y1);
+  if (SCHRO_FRAME_FORMAT_DEPTH (ctx->frame_data->format) ==
+      SCHRO_FRAME_FORMAT_DEPTH_S16) {
+    orc_splat_s16_2d (SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data, x1, y1),
+        ctx->frame_data->stride, 0, x2 - x1, y2 - y1);
+  } else {
+    orc_splat_s32_2d (SCHRO_FRAME_DATA_GET_PIXEL_S32 (ctx->frame_data, x1, y1),
+        ctx->frame_data->stride, 0, x2 - x1, y2 - y1);
+  }
 }
 
 static void
@@ -3376,6 +3379,7 @@ schro_decoder_decode_codeblock_noarith (SchroPicture * picture,
     /* zero codeblock */
     bit = schro_unpack_decode_bit (&ctx->unpack);
     if (bit) {
+#if 0
       if (ctx->xmax - ctx->xmin == 8) {
         orc_splat_s16_2d_8xn (SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data,
                 ctx->xmin, ctx->ymin),
@@ -3388,6 +3392,10 @@ schro_decoder_decode_codeblock_noarith (SchroPicture * picture,
         schro_decoder_zero_block (ctx, ctx->xmin, ctx->ymin,
             ctx->xmax, ctx->ymax);
       }
+#else
+      schro_decoder_zero_block (ctx, ctx->xmin, ctx->ymin,
+          ctx->xmax, ctx->ymax);
+#endif
       return;
     }
   }
@@ -3410,33 +3418,45 @@ schro_decoder_decode_codeblock_noarith (SchroPicture * picture,
     ctx->quant_offset = schro_table_offset_1_2[ctx->quant_index];
   }
 
+  if (SCHRO_FRAME_FORMAT_DEPTH (ctx->frame_data->format) ==
+      SCHRO_FRAME_FORMAT_DEPTH_S16) {
+    if (n == 8 && (ctx->ymax - ctx->ymin) <= 9) {
+      int16_t tmp[72];
 
-  if (n == 8 && (ctx->ymax - ctx->ymin) <= 9) {
-    int16_t tmp[72];
+      schro_unpack_decode_sint_s16 (tmp, &ctx->unpack,
+          n * (ctx->ymax - ctx->ymin));
+      orc_dequantise_s16_2d_8xn (SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data,
+              ctx->xmin, ctx->ymin), ctx->frame_data->stride, tmp,
+          n * sizeof (int16_t), ctx->quant_factor, ctx->quant_offset + 2,
+          ctx->ymax - ctx->ymin);
+    } else if (n == 4 && (ctx->ymax - ctx->ymin) <= 9) {
+      int16_t tmp[36];
 
-    schro_unpack_decode_sint_s16 (tmp, &ctx->unpack,
-        n * (ctx->ymax - ctx->ymin));
-    orc_dequantise_s16_2d_8xn (SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data,
-            ctx->xmin, ctx->ymin), ctx->frame_data->stride, tmp,
-        n * sizeof (int16_t), ctx->quant_factor, ctx->quant_offset + 2,
-        ctx->ymax - ctx->ymin);
-  } else if (n == 4 && (ctx->ymax - ctx->ymin) <= 9) {
-    int16_t tmp[36];
+      schro_unpack_decode_sint_s16 (tmp, &ctx->unpack,
+          n * (ctx->ymax - ctx->ymin));
+      orc_dequantise_s16_2d_4xn (SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data,
+              ctx->xmin, ctx->ymin), ctx->frame_data->stride, tmp,
+          n * sizeof (int16_t), ctx->quant_factor, ctx->quant_offset + 2,
+          ctx->ymax - ctx->ymin);
+    } else {
+      for (j = ctx->ymin; j < ctx->ymax; j++) {
+        int16_t *p = SCHRO_FRAME_DATA_GET_LINE (ctx->frame_data, j);
 
-    schro_unpack_decode_sint_s16 (tmp, &ctx->unpack,
-        n * (ctx->ymax - ctx->ymin));
-    orc_dequantise_s16_2d_4xn (SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data,
-            ctx->xmin, ctx->ymin), ctx->frame_data->stride, tmp,
-        n * sizeof (int16_t), ctx->quant_factor, ctx->quant_offset + 2,
-        ctx->ymax - ctx->ymin);
+        schro_unpack_decode_sint_s16 (p + ctx->xmin, &ctx->unpack, n);
+      }
+
+      orc_dequantise_s16_ip_2d (SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data,
+              ctx->xmin, ctx->ymin), ctx->frame_data->stride, ctx->quant_factor,
+          ctx->quant_offset + 2, n, ctx->ymax - ctx->ymin);
+    }
   } else {
     for (j = ctx->ymin; j < ctx->ymax; j++) {
-      int16_t *p = SCHRO_FRAME_DATA_GET_LINE (ctx->frame_data, j);
+      int32_t *p = SCHRO_FRAME_DATA_GET_LINE (ctx->frame_data, j);
 
-      schro_unpack_decode_sint_s16 (p + ctx->xmin, &ctx->unpack, n);
+      schro_unpack_decode_sint_s32 (p + ctx->xmin, &ctx->unpack, n);
     }
 
-    orc_dequantise_s16_ip_2d (SCHRO_FRAME_DATA_GET_PIXEL_S16 (ctx->frame_data,
+    orc_dequantise_s32_ip_2d (SCHRO_FRAME_DATA_GET_PIXEL_S32 (ctx->frame_data,
             ctx->xmin, ctx->ymin), ctx->frame_data->stride, ctx->quant_factor,
         ctx->quant_offset + 2, n, ctx->ymax - ctx->ymin);
   }
@@ -3497,7 +3517,11 @@ schro_decoder_decode_codeblock (SchroPicture * picture,
     } else {
       prev_line = SCHRO_FRAME_DATA_GET_LINE (ctx->frame_data, (j - 1));
     }
-    if (ctx->position >= 4 && j > 0) {
+    if (SCHRO_FRAME_FORMAT_DEPTH (ctx->frame_data->format) ==
+        SCHRO_FRAME_FORMAT_DEPTH_S32) {
+      codeblock_line_decode_generic_s32 (ctx, (int32_t *)p, j,
+          (int32_t *)parent_line, (int32_t *)prev_line);
+    } else if (ctx->position >= 4 && j > 0) {
       if (SCHRO_SUBBAND_IS_HORIZONTALLY_ORIENTED (ctx->position)) {
         codeblock_line_decode_p_horiz (ctx, p, j, parent_line, prev_line);
       } else if (SCHRO_SUBBAND_IS_VERTICALLY_ORIENTED (ctx->position)) {
@@ -3618,7 +3642,12 @@ schro_decoder_decode_subband (SchroPicture * picture,
   }
 
   if (ctx->position == 0 && picture->params.num_refs == 0) {
-    schro_decoder_subband_dc_predict (ctx->frame_data);
+    if (SCHRO_FRAME_FORMAT_DEPTH (ctx->frame_data->format) ==
+        SCHRO_FRAME_FORMAT_DEPTH_S16) {
+      schro_decoder_subband_dc_predict (ctx->frame_data);
+    } else {
+      schro_decoder_subband_dc_predict_s32 (ctx->frame_data);
+    }
   }
 }
 
