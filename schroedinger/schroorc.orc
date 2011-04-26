@@ -529,6 +529,21 @@ addw t1, s1, t1
 convsuswb d1, t1
 
 
+.function orc_rrshift6_add_s32_2d
+.flags 2d
+.dest 1 d1 uint8_t
+.source 4 s1 int32_t
+.source 2 s2 int16_t
+.temp 2 t1
+.temp 2 t2
+
+addw t1, s2, 32
+shrsw t1, t1, 6
+convlw t2, s1
+addw t1, t2, t1
+convsuswb d1, t1
+
+
 .function orc_rrshift6_sub_s16_2d
 .flags 2d
 .dest 2 d1 int16_t

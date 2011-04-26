@@ -807,10 +807,18 @@ schro_motion_render_u8 (SchroMotion * motion, SchroFrame * dest,
       schro_motion_block_accumulate_slow (motion, comp, x, y);
     }
     if (add) {
-      orc_rrshift6_add_s16_2d (SCHRO_FRAME_DATA_GET_LINE (ocomp, 0),
-          ocomp->stride, SCHRO_FRAME_DATA_GET_LINE (acomp, 0), acomp->stride,
-          SCHRO_FRAME_DATA_GET_LINE (comp, 0), comp->stride, motion->width,
-          motion->ybsep - motion->yoffset);
+      if (SCHRO_FRAME_FORMAT_DEPTH (addframe->format) ==
+          SCHRO_FRAME_FORMAT_DEPTH_S16) {
+        orc_rrshift6_add_s16_2d (SCHRO_FRAME_DATA_GET_LINE (ocomp, 0),
+            ocomp->stride, SCHRO_FRAME_DATA_GET_LINE (acomp, 0), acomp->stride,
+            SCHRO_FRAME_DATA_GET_LINE (comp, 0), comp->stride, motion->width,
+            motion->ybsep - motion->yoffset);
+      } else {
+        orc_rrshift6_add_s32_2d (SCHRO_FRAME_DATA_GET_LINE (ocomp, 0),
+            ocomp->stride, SCHRO_FRAME_DATA_GET_LINE (acomp, 0), acomp->stride,
+            SCHRO_FRAME_DATA_GET_LINE (comp, 0), comp->stride, motion->width,
+            motion->ybsep - motion->yoffset);
+      }
     } else {
       orc_rrshift6_sub_s16_2d (SCHRO_FRAME_DATA_GET_LINE (acomp, 0),
           acomp->stride, SCHRO_FRAME_DATA_GET_LINE (comp, 0), comp->stride,
@@ -843,10 +851,18 @@ schro_motion_render_u8 (SchroMotion * motion, SchroFrame * dest,
         schro_motion_block_accumulate_slow (motion, comp, x, y);
       }
       if (add) {
-        orc_rrshift6_add_s16_2d (SCHRO_FRAME_DATA_GET_LINE (ocomp, y),
-            ocomp->stride, SCHRO_FRAME_DATA_GET_LINE (acomp, y), acomp->stride,
-            SCHRO_FRAME_DATA_GET_LINE (comp, y), comp->stride, motion->width,
-            motion->ybsep);
+        if (SCHRO_FRAME_FORMAT_DEPTH (addframe->format) ==
+            SCHRO_FRAME_FORMAT_DEPTH_S16) {
+          orc_rrshift6_add_s16_2d (SCHRO_FRAME_DATA_GET_LINE (ocomp, y),
+              ocomp->stride, SCHRO_FRAME_DATA_GET_LINE (acomp, y), acomp->stride,
+              SCHRO_FRAME_DATA_GET_LINE (comp, y), comp->stride, motion->width,
+              motion->ybsep);
+        } else {
+          orc_rrshift6_add_s32_2d (SCHRO_FRAME_DATA_GET_LINE (ocomp, y),
+              ocomp->stride, SCHRO_FRAME_DATA_GET_LINE (acomp, y), acomp->stride,
+              SCHRO_FRAME_DATA_GET_LINE (comp, y), comp->stride, motion->width,
+              motion->ybsep);
+        }
       } else {
         orc_rrshift6_sub_s16_2d (SCHRO_FRAME_DATA_GET_LINE (acomp, y),
             acomp->stride, SCHRO_FRAME_DATA_GET_LINE (comp, y), comp->stride,
@@ -865,10 +881,18 @@ schro_motion_render_u8 (SchroMotion * motion, SchroFrame * dest,
         schro_motion_block_accumulate_slow (motion, comp, x, y);
       }
       if (add) {
-        orc_rrshift6_add_s16_2d (SCHRO_FRAME_DATA_GET_LINE (ocomp, y),
-            ocomp->stride, SCHRO_FRAME_DATA_GET_LINE (acomp, y), acomp->stride,
-            SCHRO_FRAME_DATA_GET_LINE (comp, y), comp->stride, comp->width,
-            CLAMP (comp->height - y, 0, motion->ybsep));
+        if (SCHRO_FRAME_FORMAT_DEPTH (addframe->format) ==
+            SCHRO_FRAME_FORMAT_DEPTH_S16) {
+          orc_rrshift6_add_s16_2d (SCHRO_FRAME_DATA_GET_LINE (ocomp, y),
+              ocomp->stride, SCHRO_FRAME_DATA_GET_LINE (acomp, y), acomp->stride,
+              SCHRO_FRAME_DATA_GET_LINE (comp, y), comp->stride, comp->width,
+              CLAMP (comp->height - y, 0, motion->ybsep));
+        } else {
+          orc_rrshift6_add_s32_2d (SCHRO_FRAME_DATA_GET_LINE (ocomp, y),
+              ocomp->stride, SCHRO_FRAME_DATA_GET_LINE (acomp, y), acomp->stride,
+              SCHRO_FRAME_DATA_GET_LINE (comp, y), comp->stride, comp->width,
+              CLAMP (comp->height - y, 0, motion->ybsep));
+        }
       } else {
         orc_rrshift6_sub_s16_2d (SCHRO_FRAME_DATA_GET_LINE (acomp, y),
             acomp->stride, SCHRO_FRAME_DATA_GET_LINE (comp, y), comp->stride,
@@ -878,10 +902,18 @@ schro_motion_render_u8 (SchroMotion * motion, SchroFrame * dest,
 
     y = params->y_num_blocks * motion->ybsep - motion->yoffset;
     if (add) {
-      orc_rrshift6_add_s16_2d (SCHRO_FRAME_DATA_GET_LINE (ocomp, y),
-          ocomp->stride, SCHRO_FRAME_DATA_GET_LINE (acomp, y), acomp->stride,
-          SCHRO_FRAME_DATA_GET_LINE (comp, y), comp->stride, comp->width,
-          CLAMP (comp->height - y, 0, motion->ybsep));
+      if (SCHRO_FRAME_FORMAT_DEPTH (addframe->format) ==
+          SCHRO_FRAME_FORMAT_DEPTH_S16) {
+        orc_rrshift6_add_s16_2d (SCHRO_FRAME_DATA_GET_LINE (ocomp, y),
+            ocomp->stride, SCHRO_FRAME_DATA_GET_LINE (acomp, y), acomp->stride,
+            SCHRO_FRAME_DATA_GET_LINE (comp, y), comp->stride, comp->width,
+            CLAMP (comp->height - y, 0, motion->ybsep));
+      } else {
+        orc_rrshift6_add_s32_2d (SCHRO_FRAME_DATA_GET_LINE (ocomp, y),
+            ocomp->stride, SCHRO_FRAME_DATA_GET_LINE (acomp, y), acomp->stride,
+            SCHRO_FRAME_DATA_GET_LINE (comp, y), comp->stride, comp->width,
+            CLAMP (comp->height - y, 0, motion->ybsep));
+      }
     } else {
       orc_rrshift6_sub_s16_2d (SCHRO_FRAME_DATA_GET_LINE (acomp, y),
           acomp->stride, SCHRO_FRAME_DATA_GET_LINE (comp, y), comp->stride,
