@@ -668,11 +668,8 @@ mergewl d1, t1, t2
 .dest 2 d1 int16_t
 .dest 2 d2 int16_t
 .source 4 s1 int16_t
-.temp 4 t1
 
-copyl t1, s1
-select0lw d1, t1
-select1lw d2, t1
+splitlw d2, d1, s1
 
 
 .function orc_deinterleave2_lshift1_s16
@@ -680,14 +677,9 @@ select1lw d2, t1
 .dest 2 d2 int16_t
 .source 4 s1 int16_t
 .temp 4 t1
-.temp 2 t2
-.temp 2 t3
 
-copyl t1, s1
-select0lw t2, t1
-shlw d1, t2, 1
-select1lw t3, t1
-shlw d2, t3, 1
+x2 shlw t1, s1, 1
+splitlw d2, d1, t1
 
 
 .function orc_haar_deint_lshift1_split_s16
@@ -698,11 +690,8 @@ shlw d2, t3, 1
 .temp 2 t2
 .temp 4 t3
 
-copyl t3, s1
-select0lw t1, t3
-select1lw t2, t3
-shlw t1, t1, 1
-shlw t2, t2, 1
+x2 shlw t3, s1, 1
+splitlw t2, t1, t3
 subw t2, t2, t1
 copyw d2, t2
 avgsw t2, t2, 0
@@ -715,11 +704,8 @@ addw d1, t1, t2
 .source 4 s1 int16_t
 .temp 2 t1
 .temp 2 t2
-.temp 4 t3
 
-copyl t3, s1
-select0lw t1, t3
-select1lw t2, t3
+splitlw t2, t1, s1
 subw t2, t2, t1
 copyw d2, t2
 avgsw t2, t2, 0
