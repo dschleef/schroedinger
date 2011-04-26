@@ -9,7 +9,7 @@
 
 #define BUFFER_SIZE 10000
 
-int debug=1;
+int debug=0;
 int verbose = 0;
 
 static void

@@ -16,6 +16,7 @@
 int filtershift[] = { 1, 1, 1, 0, 1, 0, 1 };
 
 int fail = 0;
+int verbose = 0;
 
 void iwt_ref(SchroFrameData *p, int filter);
 void iiwt_ref(SchroFrameData *p, int filter);
@@ -55,7 +56,8 @@ fwd_test (int filter, int width, int height)
     iwt_ref(fd_ref,filter);
     iwt_test(fd_test,filter);
     if (!frame_data_compare(fd_test, fd_ref)) { 
-      frame_data_dump_full (fd_test, fd_ref, fd_orig);
+      printf("  failed\n");
+      if (verbose) frame_data_dump_full (fd_test, fd_ref, fd_orig);
       fail = TRUE;
     }
   }
@@ -97,7 +99,8 @@ inv_test (int filter, int width, int height)
     iiwt_ref(fd_ref,filter);
     iiwt_test(fd_test,filter);
     if (!frame_data_compare(fd_test, fd_ref)) { 
-      frame_data_dump_full (fd_test, fd_ref, fd_orig);
+      printf("  failed\n");
+      if (verbose) frame_data_dump_full (fd_test, fd_ref, fd_orig);
       fail = TRUE;
     }
   }
@@ -136,7 +139,8 @@ fwd_random_test (int filter, int width, int height)
   iwt_ref(fd_ref,filter);
   iwt_test(fd_test,filter);
   if (!frame_data_compare(fd_test, fd_ref)) { 
-    frame_data_dump_full (fd_test, fd_ref, fd_orig);
+    printf("  failed\n");
+    if (verbose) frame_data_dump_full (fd_test, fd_ref, fd_orig);
     fail = TRUE;
   }
   
@@ -176,7 +180,8 @@ inv_random_test (int filter, int width, int height)
   iiwt_ref(fd_ref,filter);
   iiwt_test(fd_test,filter);
   if (!frame_data_compare(fd_test, fd_ref)) { 
-    frame_data_dump_full (fd_test, fd_ref, fd_orig);
+    printf("  failed\n");
+    if (verbose) frame_data_dump_full (fd_test, fd_ref, fd_orig);
     fail = TRUE;
   }
   schro_frame_unref (orig);
