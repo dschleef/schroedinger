@@ -88,12 +88,14 @@ main (int argc, char *argv[])
   int transform_depth;
   int i,j;
   int k;
+  int16_t *tmp;
 
   schro_init();
 
   encoder = schro_encoder_new ();
 
   frame = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444, SIZE, SIZE);
+  tmp = schro_malloc (sizeof(int16_t) * SIZE * 2);
 
   schro_fft_generate_tables_f32 (costable, sintable, 2*SHIFT);
 
@@ -117,7 +119,8 @@ main (int argc, char *argv[])
     generate_noise (frame, transform_depth,
         encoder->intra_subband_weights[filter][transform_depth-1]);
 
-    schro_frame_inverse_iwt_transform (frame, &params);
+    schro_wavelet_inverse_transform_2d (frame->components + 0,
+        frame->components + 1, filter, tmp);
 
     for(j=0;j<SIZE;j++){
       int16_t *line;

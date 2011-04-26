@@ -56,7 +56,7 @@ wavelet_speed (int filter, int width, int height)
     orc_profile_stop (&prof1);
 
     orc_profile_start (&prof2);
-    schro_wavelet_inverse_transform_2d (&fd, filter, tmp);
+    schro_wavelet_inverse_transform_2d (&fd, &fd, filter, tmp);
     orc_profile_stop (&prof2);
   }
 

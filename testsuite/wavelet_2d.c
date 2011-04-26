@@ -346,7 +346,7 @@ void iiwt_test(SchroFrameData *p, int filter)
 
   tmp = malloc((p->width + 32)*sizeof(int16_t));
 
-  schro_wavelet_inverse_transform_2d (p, filter, tmp);
+  schro_wavelet_inverse_transform_2d (p, p, filter, tmp);
 
   free(tmp);
 }
