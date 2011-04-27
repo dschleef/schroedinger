@@ -191,6 +191,91 @@ schro_decoder_decode_slice_slow (SchroPicture * picture,
 }
 
 static void
+schro_decoder_decode_slice_slow_s32 (SchroPicture * picture,
+    SchroLowDelay * lowdelay,
+    int slice_x, int slice_y, int offset, int slice_bytes)
+{
+  SchroParams *params = &picture->params;
+  SchroUnpack y_unpack;
+  SchroUnpack uv_unpack;
+  int quant_index;
+  int base_index;
+  int length_bits;
+  int slice_y_length;
+  int i;
+  int j;
+  int x, y;
+  int value;
+
+  schro_unpack_init_with_data (&y_unpack,
+      OFFSET (picture->lowdelay_buffer->data, offset), slice_bytes, 1);
+
+  base_index = schro_unpack_decode_bits (&y_unpack, 7);
+  length_bits = ilog2up (8 * slice_bytes);
+
+  slice_y_length = schro_unpack_decode_bits (&y_unpack, length_bits);
+
+  schro_unpack_copy (&uv_unpack, &y_unpack);
+  schro_unpack_limit_bits_remaining (&y_unpack, slice_y_length);
+  schro_unpack_skip_bits (&uv_unpack, slice_y_length);
+
+  j = 0;
+  for (i = 0; i < 1 + 3 * params->transform_depth; i++) {
+    int quant_factor;
+    int quant_offset;
+    int32_t *line;
+    SchroFrameData block;
+
+    schro_frame_data_get_codeblock (&block, lowdelay->luma_subbands + i,
+        slice_x, slice_y, lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
+
+    quant_index = CLAMP (base_index - params->quant_matrix[i], 0, 60);
+
+    quant_factor = schro_table_quant[quant_index];
+    quant_offset = schro_table_offset_1_2[quant_index];
+
+    for (y = 0; y < block.height; y++) {
+      line = SCHRO_FRAME_DATA_GET_LINE (&block, y);
+      for (x = 0; x < block.width; x++) {
+        value = schro_unpack_decode_sint (&y_unpack);
+        line[x] = schro_dequantise (value, quant_factor, quant_offset);
+      }
+    }
+  }
+
+  j = 0;
+  for (i = 0; i < 1 + 3 * params->transform_depth; i++) {
+    int quant_factor;
+    int quant_offset;
+    int32_t *line1;
+    int32_t *line2;
+    SchroFrameData block1;
+    SchroFrameData block2;
+
+    schro_frame_data_get_codeblock (&block1, lowdelay->chroma1_subbands + i,
+        slice_x, slice_y, lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
+    schro_frame_data_get_codeblock (&block2, lowdelay->chroma2_subbands + i,
+        slice_x, slice_y, lowdelay->n_horiz_slices, lowdelay->n_vert_slices);
+
+    quant_index = CLAMP (base_index - params->quant_matrix[i], 0, 60);
+    quant_factor = schro_table_quant[quant_index];
+    quant_offset = schro_table_offset_1_2[quant_index];
+
+    for (y = 0; y < block1.height; y++) {
+      line1 = SCHRO_FRAME_DATA_GET_LINE (&block1, y);
+      line2 = SCHRO_FRAME_DATA_GET_LINE (&block2, y);
+      for (x = 0; x < block1.width; x++) {
+        value = schro_unpack_decode_sint (&uv_unpack);
+        line1[x] = schro_dequantise (value, quant_factor, quant_offset);
+        value = schro_unpack_decode_sint (&uv_unpack);
+        line2[x] = schro_dequantise (value, quant_factor, quant_offset);
+      }
+    }
+  }
+}
+
+
+static void
 schro_decoder_decode_slice_fast (SchroPicture * picture,
     SchroLowDelay * lowdelay,
     int slice_x, int slice_y, int offset, int slice_bytes)
@@ -624,11 +709,62 @@ schro_decoder_decode_lowdelay_transform_data_slow (SchroPicture * picture)
 }
 
 void
+schro_decoder_decode_lowdelay_transform_data_slow_s32 (SchroPicture * picture)
+{
+  SchroParams *params = &picture->params;
+  SchroLowDelay lowdelay;
+  int x, y;
+  int n_bytes;
+  int remainder;
+  int accumulator;
+  int extra;
+  int offset;
+
+  memset (&lowdelay, 0, sizeof (SchroLowDelay));
+  schro_lowdelay_init (&lowdelay, picture->transform_frame, params);
+
+  lowdelay.n_horiz_slices = params->n_horiz_slices;
+  lowdelay.n_vert_slices = params->n_vert_slices;
+
+  n_bytes = params->slice_bytes_num / params->slice_bytes_denom;
+  remainder = params->slice_bytes_num % params->slice_bytes_denom;
+
+  offset = 0;
+  accumulator = 0;
+  for (y = 0; y < lowdelay.n_vert_slices; y++) {
+
+    for (x = 0; x < lowdelay.n_horiz_slices; x++) {
+      accumulator += remainder;
+      if (accumulator >= params->slice_bytes_denom) {
+        extra = 1;
+        accumulator -= params->slice_bytes_denom;
+      } else {
+        extra = 0;
+      }
+
+      schro_decoder_decode_slice_slow_s32 (picture, &lowdelay,
+          x, y, offset, n_bytes + extra);
+      offset += n_bytes + extra;
+    }
+  }
+
+  schro_decoder_subband_dc_predict_s32 (lowdelay.luma_subbands + 0);
+  schro_decoder_subband_dc_predict_s32 (lowdelay.chroma1_subbands + 0);
+  schro_decoder_subband_dc_predict_s32 (lowdelay.chroma2_subbands + 0);
+
+  schro_lowdelay_cleanup (&lowdelay);
+}
+
+
+void
 schro_decoder_decode_lowdelay_transform_data (SchroPicture * picture)
 {
   SchroParams *params = &picture->params;
 
-  if ((params->iwt_chroma_width >> params->transform_depth) %
+  if (SCHRO_FRAME_FORMAT_DEPTH (picture->transform_frame->format) ==
+      SCHRO_FRAME_FORMAT_DEPTH_S32) {
+    return schro_decoder_decode_lowdelay_transform_data_slow_s32 (picture);
+  } else if ((params->iwt_chroma_width >> params->transform_depth) %
       params->n_horiz_slices == 0 &&
       (params->iwt_chroma_height >> params->transform_depth) %
       params->n_vert_slices == 0) {

@@ -210,6 +210,7 @@ void schro_decoder_parse_sequence_header (SchroDecoderInstance *instance, SchroU
 int schro_decoder_compare_sequence_header_buffer (SchroBuffer *a, SchroBuffer *b);
 
 void schro_decoder_subband_dc_predict (SchroFrameData *fd);
+void schro_decoder_subband_dc_predict_s32 (SchroFrameData *fd);
 
 /* SchroPicture */
 

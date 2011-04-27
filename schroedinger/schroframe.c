@@ -1794,7 +1794,12 @@ schro_frame_data_get_codeblock (SchroFrameData * dest, SchroFrameData * src,
   int ymax = (src->height * (y + 1)) / vert_codeblocks;
 
   dest->format = src->format;
-  dest->data = SCHRO_FRAME_DATA_GET_PIXEL_S16 (src, xmin, ymin);
+  if (SCHRO_FRAME_FORMAT_DEPTH (src->format) ==
+      SCHRO_FRAME_FORMAT_DEPTH_S32) {
+    dest->data = SCHRO_FRAME_DATA_GET_PIXEL_S32 (src, xmin, ymin);
+  } else {
+    dest->data = SCHRO_FRAME_DATA_GET_PIXEL_S16 (src, xmin, ymin);
+  }
   dest->stride = src->stride;
   dest->width = xmax - xmin;
   dest->height = ymax - ymin;
