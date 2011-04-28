@@ -1774,6 +1774,11 @@ schro_frame_md5 (SchroFrame * frame, uint32_t * state)
     }
   }
 
+  state[0] = uint32_to_host(state[0]);
+  state[1] = uint32_to_host(state[1]);
+  state[2] = uint32_to_host(state[2]);
+  state[3] = uint32_to_host(state[3]);
+
   SCHRO_DEBUG
       ("md5 %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
       state[0] & 0xff, (state[0] >> 8) & 0xff, (state[0] >> 16) & 0xff,
