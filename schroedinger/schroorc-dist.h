@@ -17,7 +17,7 @@ void schro_orc_init (void);
 
 extern OrcCode *_orc_code_orc_add2_rshift_add_s16_22_op;
 static inline void
-orc_add2_rshift_add_s16_22_op (int16_t * d1, const int16_t * s1, const int16_t * s2, const int16_t * s3, int n)
+orc_add2_rshift_add_s16_22_op (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, const orc_int16 * ORC_RESTRICT s3, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add2_rshift_add_s16_22_op;
@@ -37,7 +37,7 @@ orc_add2_rshift_add_s16_22_op (int16_t * d1, const int16_t * s1, const int16_t *
 }
 extern OrcCode *_orc_code_orc_add2_rshift_add_s16_22;
 static inline void
-orc_add2_rshift_add_s16_22 (int16_t * d1, const int16_t * s1, int n)
+orc_add2_rshift_add_s16_22 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add2_rshift_add_s16_22;
@@ -55,7 +55,7 @@ orc_add2_rshift_add_s16_22 (int16_t * d1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_add2_rshift_sub_s16_22_op;
 static inline void
-orc_add2_rshift_sub_s16_22_op (int16_t * d1, const int16_t * s1, const int16_t * s2, const int16_t * s3, int n)
+orc_add2_rshift_sub_s16_22_op (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, const orc_int16 * ORC_RESTRICT s3, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add2_rshift_sub_s16_22_op;
@@ -75,7 +75,7 @@ orc_add2_rshift_sub_s16_22_op (int16_t * d1, const int16_t * s1, const int16_t *
 }
 extern OrcCode *_orc_code_orc_add2_rshift_sub_s16_22;
 static inline void
-orc_add2_rshift_sub_s16_22 (int16_t * d1, const int16_t * s1, int n)
+orc_add2_rshift_sub_s16_22 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add2_rshift_sub_s16_22;
@@ -93,7 +93,7 @@ orc_add2_rshift_sub_s16_22 (int16_t * d1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_add2_rshift_add_s16_11_op;
 static inline void
-orc_add2_rshift_add_s16_11_op (int16_t * d1, const int16_t * s1, const int16_t * s2, const int16_t * s3, int n)
+orc_add2_rshift_add_s16_11_op (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, const orc_int16 * ORC_RESTRICT s3, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add2_rshift_add_s16_11_op;
@@ -113,7 +113,7 @@ orc_add2_rshift_add_s16_11_op (int16_t * d1, const int16_t * s1, const int16_t *
 }
 extern OrcCode *_orc_code_orc_add2_rshift_add_s16_11;
 static inline void
-orc_add2_rshift_add_s16_11 (int16_t * d1, const int16_t * s1, int n)
+orc_add2_rshift_add_s16_11 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add2_rshift_add_s16_11;
@@ -131,7 +131,7 @@ orc_add2_rshift_add_s16_11 (int16_t * d1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_add2_rshift_sub_s16_11_op;
 static inline void
-orc_add2_rshift_sub_s16_11_op (int16_t * d1, const int16_t * s1, const int16_t * s2, const int16_t * s3, int n)
+orc_add2_rshift_sub_s16_11_op (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, const orc_int16 * ORC_RESTRICT s3, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add2_rshift_sub_s16_11_op;
@@ -151,7 +151,7 @@ orc_add2_rshift_sub_s16_11_op (int16_t * d1, const int16_t * s1, const int16_t *
 }
 extern OrcCode *_orc_code_orc_add2_rshift_sub_s16_11;
 static inline void
-orc_add2_rshift_sub_s16_11 (int16_t * d1, const int16_t * s1, int n)
+orc_add2_rshift_sub_s16_11 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add2_rshift_sub_s16_11;
@@ -169,7 +169,7 @@ orc_add2_rshift_sub_s16_11 (int16_t * d1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_add_const_rshift_s16_11;
 static inline void
-orc_add_const_rshift_s16_11 (int16_t * d1, const int16_t * s1, int n)
+orc_add_const_rshift_s16_11 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add_const_rshift_s16_11;
@@ -187,7 +187,7 @@ orc_add_const_rshift_s16_11 (int16_t * d1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_add_const_rshift_s16;
 static inline void
-orc_add_const_rshift_s16 (int16_t * d1, int p1, int p2, int n)
+orc_add_const_rshift_s16 (orc_int16 * ORC_RESTRICT d1, int p1, int p2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add_const_rshift_s16;
@@ -206,7 +206,7 @@ orc_add_const_rshift_s16 (int16_t * d1, int p1, int p2, int n)
 }
 extern OrcCode *_orc_code_orc_add_s16;
 static inline void
-orc_add_s16 (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
+orc_add_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add_s16;
@@ -225,7 +225,7 @@ orc_add_s16 (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
 }
 extern OrcCode *_orc_code_orc_add_s16_2d;
 static inline void
-orc_add_s16_2d (int16_t * d1, int d1_stride, const int16_t * s1, int s1_stride, int n, int m)
+orc_add_s16_2d (orc_int16 * ORC_RESTRICT d1, int d1_stride, const orc_int16 * ORC_RESTRICT s1, int s1_stride, int n, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add_s16_2d;
@@ -246,7 +246,7 @@ orc_add_s16_2d (int16_t * d1, int d1_stride, const int16_t * s1, int s1_stride, 
 }
 extern OrcCode *_orc_code_orc_addc_rshift_s16;
 static inline void
-orc_addc_rshift_s16 (int16_t * d1, const int16_t * s1, const int16_t * s2, int p1, int n)
+orc_addc_rshift_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int p1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_addc_rshift_s16;
@@ -266,7 +266,7 @@ orc_addc_rshift_s16 (int16_t * d1, const int16_t * s1, const int16_t * s2, int p
 }
 extern OrcCode *_orc_code_orc_lshift1_s16;
 static inline void
-orc_lshift1_s16 (int16_t * d1, const int16_t * s1, int n)
+orc_lshift1_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_lshift1_s16;
@@ -284,7 +284,7 @@ orc_lshift1_s16 (int16_t * d1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_lshift2_s16;
 static inline void
-orc_lshift2_s16 (int16_t * d1, const int16_t * s1, int n)
+orc_lshift2_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_lshift2_s16;
@@ -302,7 +302,7 @@ orc_lshift2_s16 (int16_t * d1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_lshift_s16_ip;
 static inline void
-orc_lshift_s16_ip (int16_t * d1, int p1, int n)
+orc_lshift_s16_ip (orc_int16 * ORC_RESTRICT d1, int p1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_lshift_s16_ip;
@@ -320,7 +320,7 @@ orc_lshift_s16_ip (int16_t * d1, int p1, int n)
 }
 extern OrcCode *_orc_code_orc_mas2_add_s16_op;
 static inline void
-orc_mas2_add_s16_op (int16_t * d1, const int16_t * s1, const int16_t * s2, const int16_t * s3, int p1, int p2, int p3, int n)
+orc_mas2_add_s16_op (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, const orc_int16 * ORC_RESTRICT s3, int p1, int p2, int p3, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_mas2_add_s16_op;
@@ -343,7 +343,7 @@ orc_mas2_add_s16_op (int16_t * d1, const int16_t * s1, const int16_t * s2, const
 }
 extern OrcCode *_orc_code_orc_mas2_add_s16_ip;
 static inline void
-orc_mas2_add_s16_ip (int16_t * d1, const int16_t * s1, int p1, int p2, int p3, int n)
+orc_mas2_add_s16_ip (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int p1, int p2, int p3, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_mas2_add_s16_ip;
@@ -364,7 +364,7 @@ orc_mas2_add_s16_ip (int16_t * d1, const int16_t * s1, int p1, int p2, int p3, i
 }
 extern OrcCode *_orc_code_orc_mas2_sub_s16_op;
 static inline void
-orc_mas2_sub_s16_op (int16_t * d1, const int16_t * s1, const int16_t * s2, const int16_t * s3, int p1, int p2, int p3, int n)
+orc_mas2_sub_s16_op (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, const orc_int16 * ORC_RESTRICT s3, int p1, int p2, int p3, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_mas2_sub_s16_op;
@@ -387,7 +387,7 @@ orc_mas2_sub_s16_op (int16_t * d1, const int16_t * s1, const int16_t * s2, const
 }
 extern OrcCode *_orc_code_orc_mas2_sub_s16_ip;
 static inline void
-orc_mas2_sub_s16_ip (int16_t * d1, const int16_t * s1, int p1, int p2, int p3, int n)
+orc_mas2_sub_s16_ip (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int p1, int p2, int p3, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_mas2_sub_s16_ip;
@@ -408,7 +408,7 @@ orc_mas2_sub_s16_ip (int16_t * d1, const int16_t * s1, int p1, int p2, int p3, i
 }
 extern OrcCode *_orc_code_orc_mas4_across_add_s16_1991_op;
 static inline void
-orc_mas4_across_add_s16_1991_op (int16_t * d1, const int16_t * s1, const int16_t * s2, const int16_t * s3, const int16_t * s4, const int16_t * s5, int p1, int p2, int n)
+orc_mas4_across_add_s16_1991_op (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, const orc_int16 * ORC_RESTRICT s3, const orc_int16 * ORC_RESTRICT s4, const orc_int16 * ORC_RESTRICT s5, int p1, int p2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_mas4_across_add_s16_1991_op;
@@ -432,7 +432,7 @@ orc_mas4_across_add_s16_1991_op (int16_t * d1, const int16_t * s1, const int16_t
 }
 extern OrcCode *_orc_code_orc_mas4_across_add_s16_1991_ip;
 static inline void
-orc_mas4_across_add_s16_1991_ip (int16_t * d1, const int16_t * s1, int p1, int p2, int n)
+orc_mas4_across_add_s16_1991_ip (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int p1, int p2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_mas4_across_add_s16_1991_ip;
@@ -452,7 +452,7 @@ orc_mas4_across_add_s16_1991_ip (int16_t * d1, const int16_t * s1, int p1, int p
 }
 extern OrcCode *_orc_code_orc_mas4_across_sub_s16_1991_op;
 static inline void
-orc_mas4_across_sub_s16_1991_op (int16_t * d1, const int16_t * s1, const int16_t * s2, const int16_t * s3, const int16_t * s4, const int16_t * s5, int p1, int p2, int n)
+orc_mas4_across_sub_s16_1991_op (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, const orc_int16 * ORC_RESTRICT s3, const orc_int16 * ORC_RESTRICT s4, const orc_int16 * ORC_RESTRICT s5, int p1, int p2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_mas4_across_sub_s16_1991_op;
@@ -476,7 +476,7 @@ orc_mas4_across_sub_s16_1991_op (int16_t * d1, const int16_t * s1, const int16_t
 }
 extern OrcCode *_orc_code_orc_mas4_across_sub_s16_1991_ip;
 static inline void
-orc_mas4_across_sub_s16_1991_ip (int16_t * d1, const int16_t * s1, int p1, int p2, int n)
+orc_mas4_across_sub_s16_1991_ip (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int p1, int p2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_mas4_across_sub_s16_1991_ip;
@@ -496,7 +496,7 @@ orc_mas4_across_sub_s16_1991_ip (int16_t * d1, const int16_t * s1, int p1, int p
 }
 extern OrcCode *_orc_code_orc_subtract_s16;
 static inline void
-orc_subtract_s16 (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
+orc_subtract_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_subtract_s16;
@@ -515,7 +515,7 @@ orc_subtract_s16 (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
 }
 extern OrcCode *_orc_code_orc_add_s16_u8;
 static inline void
-orc_add_s16_u8 (int16_t * d1, const int16_t * s1, const orc_uint8 * s2, int n)
+orc_add_s16_u8 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_uint8 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add_s16_u8;
@@ -534,7 +534,7 @@ orc_add_s16_u8 (int16_t * d1, const int16_t * s1, const orc_uint8 * s2, int n)
 }
 extern OrcCode *_orc_code_orc_add_s16_u8_2d;
 static inline void
-orc_add_s16_u8_2d (int16_t * d1, int d1_stride, const orc_uint8 * s1, int s1_stride, int n, int m)
+orc_add_s16_u8_2d (orc_int16 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, int n, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_add_s16_u8_2d;
@@ -555,7 +555,7 @@ orc_add_s16_u8_2d (int16_t * d1, int d1_stride, const orc_uint8 * s1, int s1_str
 }
 extern OrcCode *_orc_code_orc_convert_s16_u8;
 static inline void
-orc_convert_s16_u8 (orc_uint16 * d1, const orc_uint8 * s1, int n)
+orc_convert_s16_u8 (orc_uint16 * ORC_RESTRICT d1, const orc_uint8 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_convert_s16_u8;
@@ -573,7 +573,7 @@ orc_convert_s16_u8 (orc_uint16 * d1, const orc_uint8 * s1, int n)
 }
 extern OrcCode *_orc_code_orc_convert_u8_s16;
 static inline void
-orc_convert_u8_s16 (orc_uint8 * d1, const int16_t * s1, int n)
+orc_convert_u8_s16 (orc_uint8 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_convert_u8_s16;
@@ -591,7 +591,7 @@ orc_convert_u8_s16 (orc_uint8 * d1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_offsetconvert_u8_s16;
 static inline void
-orc_offsetconvert_u8_s16 (orc_uint8 * d1, const int16_t * s1, int n)
+orc_offsetconvert_u8_s16 (orc_uint8 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_offsetconvert_u8_s16;
@@ -607,9 +607,27 @@ orc_offsetconvert_u8_s16 (orc_uint8 * d1, const int16_t * s1, int n)
   func = c->exec;
   func (ex);
 }
+extern OrcCode *_orc_code_orc_offsetconvert_u8_s32;
+static inline void
+orc_offsetconvert_u8_s32 (orc_uint8 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_offsetconvert_u8_s32;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+
+  func = c->exec;
+  func (ex);
+}
 extern OrcCode *_orc_code_orc_offsetconvert_s16_u8;
 static inline void
-orc_offsetconvert_s16_u8 (int16_t * d1, const orc_uint8 * s1, int n)
+orc_offsetconvert_s16_u8 (orc_int16 * ORC_RESTRICT d1, const orc_uint8 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_offsetconvert_s16_u8;
@@ -627,7 +645,7 @@ orc_offsetconvert_s16_u8 (int16_t * d1, const orc_uint8 * s1, int n)
 }
 extern OrcCode *_orc_code_orc_subtract_s16_u8;
 static inline void
-orc_subtract_s16_u8 (int16_t * d1, const int16_t * s1, const orc_uint8 * s2, int n)
+orc_subtract_s16_u8 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_uint8 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_subtract_s16_u8;
@@ -646,7 +664,7 @@ orc_subtract_s16_u8 (int16_t * d1, const int16_t * s1, const orc_uint8 * s2, int
 }
 extern OrcCode *_orc_code_orc_multiply_and_add_s16_u8;
 static inline void
-orc_multiply_and_add_s16_u8 (int16_t * d1, const int16_t * s1, const orc_uint8 * s2, int n)
+orc_multiply_and_add_s16_u8 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_uint8 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_multiply_and_add_s16_u8;
@@ -665,7 +683,7 @@ orc_multiply_and_add_s16_u8 (int16_t * d1, const int16_t * s1, const orc_uint8 *
 }
 extern OrcCode *_orc_code_orc_splat_s16_ns;
 static inline void
-orc_splat_s16_ns (int16_t * d1, int p1, int n)
+orc_splat_s16_ns (orc_int16 * ORC_RESTRICT d1, int p1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_splat_s16_ns;
@@ -683,7 +701,7 @@ orc_splat_s16_ns (int16_t * d1, int p1, int n)
 }
 extern OrcCode *_orc_code_orc_splat_s16_2d_4xn;
 static inline void
-orc_splat_s16_2d_4xn (int16_t * d1, int d1_stride, int p1, int m)
+orc_splat_s16_2d_4xn (orc_int16 * ORC_RESTRICT d1, int d1_stride, int p1, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_splat_s16_2d_4xn;
@@ -703,7 +721,7 @@ orc_splat_s16_2d_4xn (int16_t * d1, int d1_stride, int p1, int m)
 }
 extern OrcCode *_orc_code_orc_splat_s16_2d_8xn;
 static inline void
-orc_splat_s16_2d_8xn (int16_t * d1, int d1_stride, int p1, int m)
+orc_splat_s16_2d_8xn (orc_int16 * ORC_RESTRICT d1, int d1_stride, int p1, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_splat_s16_2d_8xn;
@@ -723,7 +741,7 @@ orc_splat_s16_2d_8xn (int16_t * d1, int d1_stride, int p1, int m)
 }
 extern OrcCode *_orc_code_orc_splat_s16_2d;
 static inline void
-orc_splat_s16_2d (int16_t * d1, int d1_stride, int p1, int n, int m)
+orc_splat_s16_2d (orc_int16 * ORC_RESTRICT d1, int d1_stride, int p1, int n, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_splat_s16_2d;
@@ -743,7 +761,7 @@ orc_splat_s16_2d (int16_t * d1, int d1_stride, int p1, int n, int m)
 }
 extern OrcCode *_orc_code_orc_splat_u8_ns;
 static inline void
-orc_splat_u8_ns (orc_uint8 * d1, int p1, int n)
+orc_splat_u8_ns (orc_uint8 * ORC_RESTRICT d1, int p1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_splat_u8_ns;
@@ -761,7 +779,7 @@ orc_splat_u8_ns (orc_uint8 * d1, int p1, int n)
 }
 extern OrcCode *_orc_code_orc_splat_u8_2d;
 static inline void
-orc_splat_u8_2d (orc_uint8 * d1, int d1_stride, int p1, int n, int m)
+orc_splat_u8_2d (orc_uint8 * ORC_RESTRICT d1, int d1_stride, int p1, int n, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_splat_u8_2d;
@@ -781,7 +799,7 @@ orc_splat_u8_2d (orc_uint8 * d1, int d1_stride, int p1, int n, int m)
 }
 extern OrcCode *_orc_code_orc_average_u8;
 static inline void
-orc_average_u8 (orc_uint8 * d1, const orc_uint8 * s1, const orc_uint8 * s2, int n)
+orc_average_u8 (orc_uint8 * ORC_RESTRICT d1, const orc_uint8 * ORC_RESTRICT s1, const orc_uint8 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_average_u8;
@@ -800,7 +818,7 @@ orc_average_u8 (orc_uint8 * d1, const orc_uint8 * s1, const orc_uint8 * s2, int 
 }
 extern OrcCode *_orc_code_orc_rrshift6_add_s16_2d;
 static inline void
-orc_rrshift6_add_s16_2d (uint8_t * d1, int d1_stride, const int16_t * s1, int s1_stride, const int16_t * s2, int s2_stride, int n, int m)
+orc_rrshift6_add_s16_2d (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_int16 * ORC_RESTRICT s1, int s1_stride, const orc_int16 * ORC_RESTRICT s2, int s2_stride, int n, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_rrshift6_add_s16_2d;
@@ -821,9 +839,32 @@ orc_rrshift6_add_s16_2d (uint8_t * d1, int d1_stride, const int16_t * s1, int s1
   func = c->exec;
   func (ex);
 }
+extern OrcCode *_orc_code_orc_rrshift6_add_s32_2d;
+static inline void
+orc_rrshift6_add_s32_2d (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_int32 * ORC_RESTRICT s1, int s1_stride, const orc_int16 * ORC_RESTRICT s2, int s2_stride, int n, int m)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_rrshift6_add_s32_2d;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ORC_EXECUTOR_M(ex) = m;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->params[ORC_VAR_D1] = d1_stride;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->params[ORC_VAR_S1] = s1_stride;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+  ex->params[ORC_VAR_S2] = s2_stride;
+
+  func = c->exec;
+  func (ex);
+}
 extern OrcCode *_orc_code_orc_rrshift6_sub_s16_2d;
 static inline void
-orc_rrshift6_sub_s16_2d (int16_t * d1, int d1_stride, int16_t * d2, int d2_stride, int n, int m)
+orc_rrshift6_sub_s16_2d (orc_int16 * ORC_RESTRICT d1, int d1_stride, orc_int16 * ORC_RESTRICT d2, int d2_stride, int n, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_rrshift6_sub_s16_2d;
@@ -844,7 +885,7 @@ orc_rrshift6_sub_s16_2d (int16_t * d1, int d1_stride, int16_t * d2, int d2_strid
 }
 extern OrcCode *_orc_code_orc_rrshift6_s16_ip_2d;
 static inline void
-orc_rrshift6_s16_ip_2d (int16_t * d1, int d1_stride, int n, int m)
+orc_rrshift6_s16_ip_2d (orc_int16 * ORC_RESTRICT d1, int d1_stride, int n, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_rrshift6_s16_ip_2d;
@@ -863,7 +904,7 @@ orc_rrshift6_s16_ip_2d (int16_t * d1, int d1_stride, int n, int m)
 }
 extern OrcCode *_orc_code_orc_rrshift6_s16_ip;
 static inline void
-orc_rrshift6_s16_ip (int16_t * d1, int n)
+orc_rrshift6_s16_ip (orc_int16 * ORC_RESTRICT d1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_rrshift6_s16_ip;
@@ -880,7 +921,7 @@ orc_rrshift6_s16_ip (int16_t * d1, int n)
 }
 extern OrcCode *_orc_code_orc_unpack_yuyv_y;
 static inline void
-orc_unpack_yuyv_y (orc_uint8 * d1, const orc_uint16 * s1, int n)
+orc_unpack_yuyv_y (orc_uint8 * ORC_RESTRICT d1, const orc_uint16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_unpack_yuyv_y;
@@ -898,7 +939,7 @@ orc_unpack_yuyv_y (orc_uint8 * d1, const orc_uint16 * s1, int n)
 }
 extern OrcCode *_orc_code_orc_unpack_yuyv_u;
 static inline void
-orc_unpack_yuyv_u (orc_uint8 * d1, const orc_uint32 * s1, int n)
+orc_unpack_yuyv_u (orc_uint8 * ORC_RESTRICT d1, const orc_uint32 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_unpack_yuyv_u;
@@ -916,7 +957,7 @@ orc_unpack_yuyv_u (orc_uint8 * d1, const orc_uint32 * s1, int n)
 }
 extern OrcCode *_orc_code_orc_unpack_yuyv_v;
 static inline void
-orc_unpack_yuyv_v (orc_uint8 * d1, const orc_uint32 * s1, int n)
+orc_unpack_yuyv_v (orc_uint8 * ORC_RESTRICT d1, const orc_uint32 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_unpack_yuyv_v;
@@ -934,7 +975,7 @@ orc_unpack_yuyv_v (orc_uint8 * d1, const orc_uint32 * s1, int n)
 }
 extern OrcCode *_orc_code_orc_packyuyv;
 static inline void
-orc_packyuyv (orc_uint32 * d1, const uint8_t * s1, const orc_uint8 * s2, const orc_uint8 * s3, int n)
+orc_packyuyv (orc_uint32 * ORC_RESTRICT d1, const orc_uint8 * ORC_RESTRICT s1, const orc_uint8 * ORC_RESTRICT s2, const orc_uint8 * ORC_RESTRICT s3, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_packyuyv;
@@ -954,7 +995,7 @@ orc_packyuyv (orc_uint32 * d1, const uint8_t * s1, const orc_uint8 * s2, const o
 }
 extern OrcCode *_orc_code_orc_unpack_uyvy_y;
 static inline void
-orc_unpack_uyvy_y (orc_uint8 * d1, const orc_uint16 * s1, int n)
+orc_unpack_uyvy_y (orc_uint8 * ORC_RESTRICT d1, const orc_uint16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_unpack_uyvy_y;
@@ -972,7 +1013,7 @@ orc_unpack_uyvy_y (orc_uint8 * d1, const orc_uint16 * s1, int n)
 }
 extern OrcCode *_orc_code_orc_unpack_uyvy_u;
 static inline void
-orc_unpack_uyvy_u (orc_uint8 * d1, const orc_uint32 * s1, int n)
+orc_unpack_uyvy_u (orc_uint8 * ORC_RESTRICT d1, const orc_uint32 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_unpack_uyvy_u;
@@ -990,7 +1031,7 @@ orc_unpack_uyvy_u (orc_uint8 * d1, const orc_uint32 * s1, int n)
 }
 extern OrcCode *_orc_code_orc_unpack_uyvy_v;
 static inline void
-orc_unpack_uyvy_v (orc_uint8 * d1, const orc_uint32 * s1, int n)
+orc_unpack_uyvy_v (orc_uint8 * ORC_RESTRICT d1, const orc_uint32 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_unpack_uyvy_v;
@@ -1008,7 +1049,7 @@ orc_unpack_uyvy_v (orc_uint8 * d1, const orc_uint32 * s1, int n)
 }
 extern OrcCode *_orc_code_orc_interleave2_s16;
 static inline void
-orc_interleave2_s16 (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
+orc_interleave2_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_interleave2_s16;
@@ -1027,7 +1068,7 @@ orc_interleave2_s16 (int16_t * d1, const int16_t * s1, const int16_t * s2, int n
 }
 extern OrcCode *_orc_code_orc_interleave2_rrshift1_s16;
 static inline void
-orc_interleave2_rrshift1_s16 (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
+orc_interleave2_rrshift1_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_interleave2_rrshift1_s16;
@@ -1046,7 +1087,7 @@ orc_interleave2_rrshift1_s16 (int16_t * d1, const int16_t * s1, const int16_t * 
 }
 extern OrcCode *_orc_code_orc_deinterleave2_s16;
 static inline void
-orc_deinterleave2_s16 (int16_t * d1, int16_t * d2, const int16_t * s1, int n)
+orc_deinterleave2_s16 (orc_int16 * ORC_RESTRICT d1, orc_int16 * ORC_RESTRICT d2, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_deinterleave2_s16;
@@ -1065,7 +1106,7 @@ orc_deinterleave2_s16 (int16_t * d1, int16_t * d2, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_deinterleave2_lshift1_s16;
 static inline void
-orc_deinterleave2_lshift1_s16 (int16_t * d1, int16_t * d2, const int16_t * s1, int n)
+orc_deinterleave2_lshift1_s16 (orc_int16 * ORC_RESTRICT d1, orc_int16 * ORC_RESTRICT d2, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_deinterleave2_lshift1_s16;
@@ -1084,7 +1125,7 @@ orc_deinterleave2_lshift1_s16 (int16_t * d1, int16_t * d2, const int16_t * s1, i
 }
 extern OrcCode *_orc_code_orc_haar_deint_lshift1_split_s16;
 static inline void
-orc_haar_deint_lshift1_split_s16 (int16_t * d1, int16_t * d2, const int16_t * s1, int n)
+orc_haar_deint_lshift1_split_s16 (orc_int16 * ORC_RESTRICT d1, orc_int16 * ORC_RESTRICT d2, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_deint_lshift1_split_s16;
@@ -1103,7 +1144,7 @@ orc_haar_deint_lshift1_split_s16 (int16_t * d1, int16_t * d2, const int16_t * s1
 }
 extern OrcCode *_orc_code_orc_haar_deint_split_s16;
 static inline void
-orc_haar_deint_split_s16 (int16_t * d1, int16_t * d2, const int16_t * s1, int n)
+orc_haar_deint_split_s16 (orc_int16 * ORC_RESTRICT d1, orc_int16 * ORC_RESTRICT d2, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_deint_split_s16;
@@ -1122,7 +1163,7 @@ orc_haar_deint_split_s16 (int16_t * d1, int16_t * d2, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_haar_split_s16_lo;
 static inline void
-orc_haar_split_s16_lo (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
+orc_haar_split_s16_lo (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_split_s16_lo;
@@ -1141,7 +1182,7 @@ orc_haar_split_s16_lo (int16_t * d1, const int16_t * s1, const int16_t * s2, int
 }
 extern OrcCode *_orc_code_orc_haar_split_s16_hi;
 static inline void
-orc_haar_split_s16_hi (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
+orc_haar_split_s16_hi (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_split_s16_hi;
@@ -1160,7 +1201,7 @@ orc_haar_split_s16_hi (int16_t * d1, const int16_t * s1, const int16_t * s2, int
 }
 extern OrcCode *_orc_code_orc_haar_split_s16_op;
 static inline void
-orc_haar_split_s16_op (int16_t * d1, int16_t * d2, const int16_t * s1, const int16_t * s2, int n)
+orc_haar_split_s16_op (orc_int16 * ORC_RESTRICT d1, orc_int16 * ORC_RESTRICT d2, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_split_s16_op;
@@ -1180,7 +1221,7 @@ orc_haar_split_s16_op (int16_t * d1, int16_t * d2, const int16_t * s1, const int
 }
 extern OrcCode *_orc_code_orc_haar_split_s16;
 static inline void
-orc_haar_split_s16 (int16_t * d1, int16_t * d2, int n)
+orc_haar_split_s16 (orc_int16 * ORC_RESTRICT d1, orc_int16 * ORC_RESTRICT d2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_split_s16;
@@ -1198,7 +1239,7 @@ orc_haar_split_s16 (int16_t * d1, int16_t * d2, int n)
 }
 extern OrcCode *_orc_code_orc_haar_synth_s16_lo;
 static inline void
-orc_haar_synth_s16_lo (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
+orc_haar_synth_s16_lo (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_synth_s16_lo;
@@ -1217,7 +1258,7 @@ orc_haar_synth_s16_lo (int16_t * d1, const int16_t * s1, const int16_t * s2, int
 }
 extern OrcCode *_orc_code_orc_haar_synth_s16_hi;
 static inline void
-orc_haar_synth_s16_hi (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
+orc_haar_synth_s16_hi (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_synth_s16_hi;
@@ -1236,7 +1277,7 @@ orc_haar_synth_s16_hi (int16_t * d1, const int16_t * s1, const int16_t * s2, int
 }
 extern OrcCode *_orc_code_orc_haar_synth_s16_op;
 static inline void
-orc_haar_synth_s16_op (int16_t * d1, int16_t * d2, const int16_t * s1, const int16_t * s2, int n)
+orc_haar_synth_s16_op (orc_int16 * ORC_RESTRICT d1, orc_int16 * ORC_RESTRICT d2, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_synth_s16_op;
@@ -1256,7 +1297,7 @@ orc_haar_synth_s16_op (int16_t * d1, int16_t * d2, const int16_t * s1, const int
 }
 extern OrcCode *_orc_code_orc_haar_synth_s16;
 static inline void
-orc_haar_synth_s16 (int16_t * d1, int16_t * d2, int n)
+orc_haar_synth_s16 (orc_int16 * ORC_RESTRICT d1, orc_int16 * ORC_RESTRICT d2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_synth_s16;
@@ -1274,7 +1315,7 @@ orc_haar_synth_s16 (int16_t * d1, int16_t * d2, int n)
 }
 extern OrcCode *_orc_code_orc_haar_synth_rrshift1_int_s16;
 static inline void
-orc_haar_synth_rrshift1_int_s16 (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
+orc_haar_synth_rrshift1_int_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_synth_rrshift1_int_s16;
@@ -1293,7 +1334,7 @@ orc_haar_synth_rrshift1_int_s16 (int16_t * d1, const int16_t * s1, const int16_t
 }
 extern OrcCode *_orc_code_orc_haar_synth_int_s16;
 static inline void
-orc_haar_synth_int_s16 (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
+orc_haar_synth_int_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_synth_int_s16;
@@ -1312,7 +1353,7 @@ orc_haar_synth_int_s16 (int16_t * d1, const int16_t * s1, const int16_t * s2, in
 }
 extern OrcCode *_orc_code_orc_haar_sub_s16;
 static inline void
-orc_haar_sub_s16 (int16_t * d1, const int16_t * s1, int n)
+orc_haar_sub_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_sub_s16;
@@ -1330,7 +1371,7 @@ orc_haar_sub_s16 (int16_t * d1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_haar_add_half_s16;
 static inline void
-orc_haar_add_half_s16 (int16_t * d1, const int16_t * s1, int n)
+orc_haar_add_half_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_add_half_s16;
@@ -1348,7 +1389,7 @@ orc_haar_add_half_s16 (int16_t * d1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_haar_add_s16;
 static inline void
-orc_haar_add_s16 (int16_t * d1, const int16_t * s1, int n)
+orc_haar_add_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_add_s16;
@@ -1366,7 +1407,7 @@ orc_haar_add_s16 (int16_t * d1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_haar_sub_half_s16;
 static inline void
-orc_haar_sub_half_s16 (int16_t * d1, const int16_t * s1, int n)
+orc_haar_sub_half_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_haar_sub_half_s16;
@@ -1384,7 +1425,7 @@ orc_haar_sub_half_s16 (int16_t * d1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_sum_u8;
 static inline void
-orc_sum_u8 (int32_t * a1, const orc_uint8 * s1, int n)
+orc_sum_u8 (orc_int32 * ORC_RESTRICT a1, const orc_uint8 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_sum_u8;
@@ -1402,7 +1443,7 @@ orc_sum_u8 (int32_t * a1, const orc_uint8 * s1, int n)
 }
 extern OrcCode *_orc_code_orc_sum_s16;
 static inline void
-orc_sum_s16 (int32_t * a1, const int16_t * s1, int n)
+orc_sum_s16 (orc_int32 * ORC_RESTRICT a1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_sum_s16;
@@ -1420,7 +1461,7 @@ orc_sum_s16 (int32_t * a1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_sum_square_diff_u8;
 static inline void
-orc_sum_square_diff_u8 (int32_t * a1, const orc_uint8 * s1, const orc_uint8 * s2, int n)
+orc_sum_square_diff_u8 (orc_int32 * ORC_RESTRICT a1, const orc_uint8 * ORC_RESTRICT s1, const orc_uint8 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_sum_square_diff_u8;
@@ -1439,7 +1480,7 @@ orc_sum_square_diff_u8 (int32_t * a1, const orc_uint8 * s1, const orc_uint8 * s2
 }
 extern OrcCode *_orc_code_orc_dequantise_s16_2d_4xn;
 static inline void
-orc_dequantise_s16_2d_4xn (int16_t * d1, int d1_stride, const int16_t * s1, int s1_stride, int p1, int p2, int m)
+orc_dequantise_s16_2d_4xn (orc_int16 * ORC_RESTRICT d1, int d1_stride, const orc_int16 * ORC_RESTRICT s1, int s1_stride, int p1, int p2, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_dequantise_s16_2d_4xn;
@@ -1462,7 +1503,7 @@ orc_dequantise_s16_2d_4xn (int16_t * d1, int d1_stride, const int16_t * s1, int 
 }
 extern OrcCode *_orc_code_orc_dequantise_s16_2d_8xn;
 static inline void
-orc_dequantise_s16_2d_8xn (int16_t * d1, int d1_stride, const int16_t * s1, int s1_stride, int p1, int p2, int m)
+orc_dequantise_s16_2d_8xn (orc_int16 * ORC_RESTRICT d1, int d1_stride, const orc_int16 * ORC_RESTRICT s1, int s1_stride, int p1, int p2, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_dequantise_s16_2d_8xn;
@@ -1485,7 +1526,7 @@ orc_dequantise_s16_2d_8xn (int16_t * d1, int d1_stride, const int16_t * s1, int 
 }
 extern OrcCode *_orc_code_orc_dequantise_s16_ip_2d_8xn;
 static inline void
-orc_dequantise_s16_ip_2d_8xn (int16_t * d1, int d1_stride, int p1, int p2, int m)
+orc_dequantise_s16_ip_2d_8xn (orc_int16 * ORC_RESTRICT d1, int d1_stride, int p1, int p2, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_dequantise_s16_ip_2d_8xn;
@@ -1506,7 +1547,7 @@ orc_dequantise_s16_ip_2d_8xn (int16_t * d1, int d1_stride, int p1, int p2, int m
 }
 extern OrcCode *_orc_code_orc_dequantise_s16_ip_2d;
 static inline void
-orc_dequantise_s16_ip_2d (int16_t * d1, int d1_stride, int p1, int p2, int n, int m)
+orc_dequantise_s16_ip_2d (orc_int16 * ORC_RESTRICT d1, int d1_stride, int p1, int p2, int n, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_dequantise_s16_ip_2d;
@@ -1527,7 +1568,7 @@ orc_dequantise_s16_ip_2d (int16_t * d1, int d1_stride, int p1, int p2, int n, in
 }
 extern OrcCode *_orc_code_orc_dequantise_s16_ip;
 static inline void
-orc_dequantise_s16_ip (int16_t * d1, int p1, int p2, int n)
+orc_dequantise_s16_ip (orc_int16 * ORC_RESTRICT d1, int p1, int p2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_dequantise_s16_ip;
@@ -1546,7 +1587,7 @@ orc_dequantise_s16_ip (int16_t * d1, int p1, int p2, int n)
 }
 extern OrcCode *_orc_code_orc_dequantise_s16;
 static inline void
-orc_dequantise_s16 (int16_t * d1, const int16_t * s1, int p1, int p2, int n)
+orc_dequantise_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int p1, int p2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_dequantise_s16;
@@ -1566,7 +1607,7 @@ orc_dequantise_s16 (int16_t * d1, const int16_t * s1, int p1, int p2, int n)
 }
 extern OrcCode *_orc_code_orc_dequantise_var_s16_ip;
 static inline void
-orc_dequantise_var_s16_ip (int16_t * d1, const int16_t * s1, const int16_t * s2, int n)
+orc_dequantise_var_s16_ip (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, const orc_int16 * ORC_RESTRICT s2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_dequantise_var_s16_ip;
@@ -1585,7 +1626,7 @@ orc_dequantise_var_s16_ip (int16_t * d1, const int16_t * s1, const int16_t * s2,
 }
 extern OrcCode *_orc_code_orc_quantise1_s16;
 static inline void
-orc_quantise1_s16 (int16_t * d1, const int16_t * s1, int p1, int p2, int p3, int n)
+orc_quantise1_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int p1, int p2, int p3, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_quantise1_s16;
@@ -1606,7 +1647,7 @@ orc_quantise1_s16 (int16_t * d1, const int16_t * s1, int p1, int p2, int p3, int
 }
 extern OrcCode *_orc_code_orc_quantise2_s16;
 static inline void
-orc_quantise2_s16 (int16_t * d1, const int16_t * s1, int p1, int p2, int n)
+orc_quantise2_s16 (orc_int16 * ORC_RESTRICT d1, const orc_int16 * ORC_RESTRICT s1, int p1, int p2, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_quantise2_s16;
@@ -1626,7 +1667,7 @@ orc_quantise2_s16 (int16_t * d1, const int16_t * s1, int p1, int p2, int n)
 }
 extern OrcCode *_orc_code_orc_quantdequant1_s16;
 static inline void
-orc_quantdequant1_s16 (int16_t * d1, int16_t * d2, int p1, int p2, int p3, int p4, int p5, int n)
+orc_quantdequant1_s16 (orc_int16 * ORC_RESTRICT d1, orc_int16 * ORC_RESTRICT d2, int p1, int p2, int p3, int p4, int p5, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_quantdequant1_s16;
@@ -1649,7 +1690,7 @@ orc_quantdequant1_s16 (int16_t * d1, int16_t * d2, int p1, int p2, int p3, int p
 }
 extern OrcCode *_orc_code_orc_quantdequant3_s16;
 static inline void
-orc_quantdequant3_s16 (int16_t * d1, int16_t * d2, int p1, int p2, int p3, int p4, int p5, int p6, int n)
+orc_quantdequant3_s16 (orc_int16 * ORC_RESTRICT d1, orc_int16 * ORC_RESTRICT d2, int p1, int p2, int p3, int p4, int p5, int p6, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_quantdequant3_s16;
@@ -1673,7 +1714,7 @@ orc_quantdequant3_s16 (int16_t * d1, int16_t * d2, int p1, int p2, int p3, int p
 }
 extern OrcCode *_orc_code_orc_quantdequant2_s16;
 static inline void
-orc_quantdequant2_s16 (int16_t * d1, int16_t * d2, int p1, int p2, int p3, int p4, int n)
+orc_quantdequant2_s16 (orc_int16 * ORC_RESTRICT d1, orc_int16 * ORC_RESTRICT d2, int p1, int p2, int p3, int p4, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_quantdequant2_s16;
@@ -1695,7 +1736,7 @@ orc_quantdequant2_s16 (int16_t * d1, int16_t * d2, int p1, int p2, int p3, int p
 }
 extern OrcCode *_orc_code_orc_downsample_vert_u8;
 static inline void
-orc_downsample_vert_u8 (orc_uint8 * d1, const orc_uint8 * s1, const orc_uint8 * s2, const orc_uint8 * s3, const orc_uint8 * s4, int n)
+orc_downsample_vert_u8 (orc_uint8 * ORC_RESTRICT d1, const orc_uint8 * ORC_RESTRICT s1, const orc_uint8 * ORC_RESTRICT s2, const orc_uint8 * ORC_RESTRICT s3, const orc_uint8 * ORC_RESTRICT s4, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_downsample_vert_u8;
@@ -1716,7 +1757,7 @@ orc_downsample_vert_u8 (orc_uint8 * d1, const orc_uint8 * s1, const orc_uint8 * 
 }
 extern OrcCode *_orc_code_orc_downsample_horiz_u8;
 static inline void
-orc_downsample_horiz_u8 (orc_uint8 * d1, const uint8_t * s1, int n)
+orc_downsample_horiz_u8 (orc_uint8 * ORC_RESTRICT d1, const orc_uint8 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_downsample_horiz_u8;
@@ -1734,7 +1775,7 @@ orc_downsample_horiz_u8 (orc_uint8 * d1, const uint8_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_stats_moment_s16;
 static inline void
-orc_stats_moment_s16 (int32_t * a1, const int16_t * s1, int n)
+orc_stats_moment_s16 (orc_int32 * ORC_RESTRICT a1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_stats_moment_s16;
@@ -1752,7 +1793,7 @@ orc_stats_moment_s16 (int32_t * a1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_stats_above_s16;
 static inline void
-orc_stats_above_s16 (int32_t * a1, const int16_t * s1, int n)
+orc_stats_above_s16 (orc_int32 * ORC_RESTRICT a1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_stats_above_s16;
@@ -1770,7 +1811,7 @@ orc_stats_above_s16 (int32_t * a1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_accw;
 static inline void
-orc_accw (int * a1, const int16_t * s1, int n)
+orc_accw (int * ORC_RESTRICT a1, const orc_int16 * ORC_RESTRICT s1, int n)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_accw;
@@ -1788,7 +1829,7 @@ orc_accw (int * a1, const int16_t * s1, int n)
 }
 extern OrcCode *_orc_code_orc_avg2_8xn_u8;
 static inline void
-orc_avg2_8xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, int m)
+orc_avg2_8xn_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_avg2_8xn_u8;
@@ -1811,7 +1852,7 @@ orc_avg2_8xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride,
 }
 extern OrcCode *_orc_code_orc_avg2_12xn_u8;
 static inline void
-orc_avg2_12xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, int m)
+orc_avg2_12xn_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_avg2_12xn_u8;
@@ -1834,7 +1875,7 @@ orc_avg2_12xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride
 }
 extern OrcCode *_orc_code_orc_avg2_16xn_u8;
 static inline void
-orc_avg2_16xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, int m)
+orc_avg2_16xn_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_avg2_16xn_u8;
@@ -1857,7 +1898,7 @@ orc_avg2_16xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride
 }
 extern OrcCode *_orc_code_orc_avg2_32xn_u8;
 static inline void
-orc_avg2_32xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, int m)
+orc_avg2_32xn_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_avg2_32xn_u8;
@@ -1880,7 +1921,7 @@ orc_avg2_32xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride
 }
 extern OrcCode *_orc_code_orc_avg2_nxm_u8;
 static inline void
-orc_avg2_nxm_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, int n, int m)
+orc_avg2_nxm_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, int n, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_avg2_nxm_u8;
@@ -1903,7 +1944,7 @@ orc_avg2_nxm_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride,
 }
 extern OrcCode *_orc_code_orc_combine4_8xn_u8;
 static inline void
-orc_combine4_8xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, const uint8_t * s3, int s3_stride, const uint8_t * s4, int s4_stride, int p1, int p2, int p3, int p4, int m)
+orc_combine4_8xn_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, const orc_uint8 * ORC_RESTRICT s3, int s3_stride, const orc_uint8 * ORC_RESTRICT s4, int s4_stride, int p1, int p2, int p3, int p4, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_combine4_8xn_u8;
@@ -1934,7 +1975,7 @@ orc_combine4_8xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_str
 }
 extern OrcCode *_orc_code_orc_combine4_12xn_u8;
 static inline void
-orc_combine4_12xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, const uint8_t * s3, int s3_stride, const uint8_t * s4, int s4_stride, int p1, int p2, int p3, int p4, int m)
+orc_combine4_12xn_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, const orc_uint8 * ORC_RESTRICT s3, int s3_stride, const orc_uint8 * ORC_RESTRICT s4, int s4_stride, int p1, int p2, int p3, int p4, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_combine4_12xn_u8;
@@ -1965,7 +2006,7 @@ orc_combine4_12xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_st
 }
 extern OrcCode *_orc_code_orc_combine4_16xn_u8;
 static inline void
-orc_combine4_16xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, const uint8_t * s3, int s3_stride, const uint8_t * s4, int s4_stride, int p1, int p2, int p3, int p4, int m)
+orc_combine4_16xn_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, const orc_uint8 * ORC_RESTRICT s3, int s3_stride, const orc_uint8 * ORC_RESTRICT s4, int s4_stride, int p1, int p2, int p3, int p4, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_combine4_16xn_u8;
@@ -1996,7 +2037,7 @@ orc_combine4_16xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_st
 }
 extern OrcCode *_orc_code_orc_combine4_24xn_u8;
 static inline void
-orc_combine4_24xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, const uint8_t * s3, int s3_stride, const uint8_t * s4, int s4_stride, int p1, int p2, int p3, int p4, int m)
+orc_combine4_24xn_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, const orc_uint8 * ORC_RESTRICT s3, int s3_stride, const orc_uint8 * ORC_RESTRICT s4, int s4_stride, int p1, int p2, int p3, int p4, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_combine4_24xn_u8;
@@ -2027,7 +2068,7 @@ orc_combine4_24xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_st
 }
 extern OrcCode *_orc_code_orc_combine4_32xn_u8;
 static inline void
-orc_combine4_32xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, const uint8_t * s3, int s3_stride, const uint8_t * s4, int s4_stride, int p1, int p2, int p3, int p4, int m)
+orc_combine4_32xn_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, const orc_uint8 * ORC_RESTRICT s3, int s3_stride, const orc_uint8 * ORC_RESTRICT s4, int s4_stride, int p1, int p2, int p3, int p4, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_combine4_32xn_u8;
@@ -2058,7 +2099,7 @@ orc_combine4_32xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_st
 }
 extern OrcCode *_orc_code_orc_combine4_nxm_u8;
 static inline void
-orc_combine4_nxm_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, const uint8_t * s3, int s3_stride, const uint8_t * s4, int s4_stride, int p1, int p2, int p3, int p4, int n, int m)
+orc_combine4_nxm_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, const orc_uint8 * ORC_RESTRICT s3, int s3_stride, const orc_uint8 * ORC_RESTRICT s4, int s4_stride, int p1, int p2, int p3, int p4, int n, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_combine4_nxm_u8;
@@ -2089,7 +2130,7 @@ orc_combine4_nxm_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_str
 }
 extern OrcCode *_orc_code_orc_combine2_8xn_u8;
 static inline void
-orc_combine2_8xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, int p1, int p2, int p3, int p4, int m)
+orc_combine2_8xn_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, int p1, int p2, int p3, int p4, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_combine2_8xn_u8;
@@ -2116,7 +2157,7 @@ orc_combine2_8xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_str
 }
 extern OrcCode *_orc_code_orc_combine2_12xn_u8;
 static inline void
-orc_combine2_12xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, int p1, int p2, int p3, int p4, int m)
+orc_combine2_12xn_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, int p1, int p2, int p3, int p4, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_combine2_12xn_u8;
@@ -2143,7 +2184,7 @@ orc_combine2_12xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_st
 }
 extern OrcCode *_orc_code_orc_combine2_16xn_u8;
 static inline void
-orc_combine2_16xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, int p1, int p2, int p3, int p4, int m)
+orc_combine2_16xn_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, int p1, int p2, int p3, int p4, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_combine2_16xn_u8;
@@ -2170,7 +2211,7 @@ orc_combine2_16xn_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_st
 }
 extern OrcCode *_orc_code_orc_combine2_nxm_u8;
 static inline void
-orc_combine2_nxm_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, int p1, int p2, int p3, int p4, int n, int m)
+orc_combine2_nxm_u8 (orc_uint8 * ORC_RESTRICT d1, int d1_stride, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, int p1, int p2, int p3, int p4, int n, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_combine2_nxm_u8;
@@ -2197,7 +2238,7 @@ orc_combine2_nxm_u8 (uint8_t * d1, int d1_stride, const uint8_t * s1, int s1_str
 }
 extern OrcCode *_orc_code_orc_sad_nxm_u8;
 static inline void
-orc_sad_nxm_u8 (uint32_t * a1, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, int n, int m)
+orc_sad_nxm_u8 (orc_uint32 * ORC_RESTRICT a1, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, int n, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_sad_nxm_u8;
@@ -2219,7 +2260,7 @@ orc_sad_nxm_u8 (uint32_t * a1, const uint8_t * s1, int s1_stride, const uint8_t 
 }
 extern OrcCode *_orc_code_orc_sad_8x8_u8;
 static inline void
-orc_sad_8x8_u8 (uint32_t * a1, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride)
+orc_sad_8x8_u8 (orc_uint32 * ORC_RESTRICT a1, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_sad_8x8_u8;
@@ -2241,7 +2282,7 @@ orc_sad_8x8_u8 (uint32_t * a1, const uint8_t * s1, int s1_stride, const uint8_t 
 }
 extern OrcCode *_orc_code_orc_sad_12x12_u8;
 static inline void
-orc_sad_12x12_u8 (uint32_t * a1, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride)
+orc_sad_12x12_u8 (orc_uint32 * ORC_RESTRICT a1, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_sad_12x12_u8;
@@ -2263,7 +2304,7 @@ orc_sad_12x12_u8 (uint32_t * a1, const uint8_t * s1, int s1_stride, const uint8_
 }
 extern OrcCode *_orc_code_orc_sad_16xn_u8;
 static inline void
-orc_sad_16xn_u8 (uint32_t * a1, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, int m)
+orc_sad_16xn_u8 (orc_uint32 * ORC_RESTRICT a1, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_sad_16xn_u8;
@@ -2285,7 +2326,7 @@ orc_sad_16xn_u8 (uint32_t * a1, const uint8_t * s1, int s1_stride, const uint8_t
 }
 extern OrcCode *_orc_code_orc_sad_32xn_u8;
 static inline void
-orc_sad_32xn_u8 (uint32_t * a1, const uint8_t * s1, int s1_stride, const uint8_t * s2, int s2_stride, int m)
+orc_sad_32xn_u8 (orc_uint32 * ORC_RESTRICT a1, const orc_uint8 * ORC_RESTRICT s1, int s1_stride, const orc_uint8 * ORC_RESTRICT s2, int s2_stride, int m)
 {
   OrcExecutor _ex, *ex = &_ex;
   OrcCode *c = _orc_code_orc_sad_32xn_u8;
@@ -2304,6 +2345,432 @@ orc_sad_32xn_u8 (uint32_t * a1, const uint8_t * s1, int s1_stride, const uint8_t
   func = c->exec;
   func (ex);
   *a1 = orc_executor_get_accumulator (ex, ORC_VAR_A1);
+}
+extern OrcCode *_orc_code_orc_add2_rshift_add_s32_22_op;
+static inline void
+orc_add2_rshift_add_s32_22_op (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, const orc_int32 * ORC_RESTRICT s2, const orc_int32 * ORC_RESTRICT s3, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_add2_rshift_add_s32_22_op;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+  ex->arrays[ORC_VAR_S3] = (void *)s3;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_mas4_across_add_s32_1991_op;
+static inline void
+orc_mas4_across_add_s32_1991_op (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, const orc_int32 * ORC_RESTRICT s2, const orc_int32 * ORC_RESTRICT s3, const orc_int32 * ORC_RESTRICT s4, const orc_int32 * ORC_RESTRICT s5, int p1, int p2, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_mas4_across_add_s32_1991_op;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+  ex->arrays[ORC_VAR_S3] = (void *)s3;
+  ex->arrays[ORC_VAR_S4] = (void *)s4;
+  ex->arrays[ORC_VAR_S5] = (void *)s5;
+  ex->params[ORC_VAR_P1] = p1;
+  ex->params[ORC_VAR_P2] = p2;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_add2_rshift_sub_s32_22_op;
+static inline void
+orc_add2_rshift_sub_s32_22_op (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, const orc_int32 * ORC_RESTRICT s2, const orc_int32 * ORC_RESTRICT s3, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_add2_rshift_sub_s32_22_op;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+  ex->arrays[ORC_VAR_S3] = (void *)s3;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_interleave2_rrshift1_s32;
+static inline void
+orc_interleave2_rrshift1_s32 (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, const orc_int32 * ORC_RESTRICT s2, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_interleave2_rrshift1_s32;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_mas4_across_sub_s32_1991_op;
+static inline void
+orc_mas4_across_sub_s32_1991_op (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, const orc_int32 * ORC_RESTRICT s2, const orc_int32 * ORC_RESTRICT s3, const orc_int32 * ORC_RESTRICT s4, const orc_int32 * ORC_RESTRICT s5, int p1, int p2, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_mas4_across_sub_s32_1991_op;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+  ex->arrays[ORC_VAR_S3] = (void *)s3;
+  ex->arrays[ORC_VAR_S4] = (void *)s4;
+  ex->arrays[ORC_VAR_S5] = (void *)s5;
+  ex->params[ORC_VAR_P1] = p1;
+  ex->params[ORC_VAR_P2] = p2;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_mas4_across_add_s32_1991_ip;
+static inline void
+orc_mas4_across_add_s32_1991_ip (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, int p1, int p2, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_mas4_across_add_s32_1991_ip;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->params[ORC_VAR_P1] = p1;
+  ex->params[ORC_VAR_P2] = p2;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_add2_rshift_add_s32_11_op;
+static inline void
+orc_add2_rshift_add_s32_11_op (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, const orc_int32 * ORC_RESTRICT s2, const orc_int32 * ORC_RESTRICT s3, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_add2_rshift_add_s32_11_op;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+  ex->arrays[ORC_VAR_S3] = (void *)s3;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_mas4_across_sub_s32_1991_ip;
+static inline void
+orc_mas4_across_sub_s32_1991_ip (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, int p1, int p2, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_mas4_across_sub_s32_1991_ip;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->params[ORC_VAR_P1] = p1;
+  ex->params[ORC_VAR_P2] = p2;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_haar_synth_s32_lo;
+static inline void
+orc_haar_synth_s32_lo (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, const orc_int32 * ORC_RESTRICT s2, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_haar_synth_s32_lo;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_haar_synth_int_s32;
+static inline void
+orc_haar_synth_int_s32 (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, const orc_int32 * ORC_RESTRICT s2, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_haar_synth_int_s32;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_haar_synth_rrshift1_int_s32;
+static inline void
+orc_haar_synth_rrshift1_int_s32 (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, const orc_int32 * ORC_RESTRICT s2, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_haar_synth_rrshift1_int_s32;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_interleave2_s32;
+static inline void
+orc_interleave2_s32 (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, const orc_int32 * ORC_RESTRICT s2, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_interleave2_s32;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_mas2_sub_s32_ip;
+static inline void
+orc_mas2_sub_s32_ip (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, int p1, int p2, int p3, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_mas2_sub_s32_ip;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->params[ORC_VAR_P1] = p1;
+  ex->params[ORC_VAR_P2] = p2;
+  ex->params[ORC_VAR_P3] = p3;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_mas2_add_s32_ip;
+static inline void
+orc_mas2_add_s32_ip (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, int p1, int p2, int p3, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_mas2_add_s32_ip;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->params[ORC_VAR_P1] = p1;
+  ex->params[ORC_VAR_P2] = p2;
+  ex->params[ORC_VAR_P3] = p3;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_mas2_add_s32_op;
+static inline void
+orc_mas2_add_s32_op (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, const orc_int32 * ORC_RESTRICT s2, const orc_int32 * ORC_RESTRICT s3, int p1, int p2, int p3, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_mas2_add_s32_op;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+  ex->arrays[ORC_VAR_S3] = (void *)s3;
+  ex->params[ORC_VAR_P1] = p1;
+  ex->params[ORC_VAR_P2] = p2;
+  ex->params[ORC_VAR_P3] = p3;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_mas2_sub_s32_op;
+static inline void
+orc_mas2_sub_s32_op (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, const orc_int32 * ORC_RESTRICT s2, const orc_int32 * ORC_RESTRICT s3, int p1, int p2, int p3, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_mas2_sub_s32_op;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+  ex->arrays[ORC_VAR_S2] = (void *)s2;
+  ex->arrays[ORC_VAR_S3] = (void *)s3;
+  ex->params[ORC_VAR_P1] = p1;
+  ex->params[ORC_VAR_P2] = p2;
+  ex->params[ORC_VAR_P3] = p3;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_add2_rshift_sub_s32_22;
+static inline void
+orc_add2_rshift_sub_s32_22 (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_add2_rshift_sub_s32_22;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_add2_rshift_add_s32_11;
+static inline void
+orc_add2_rshift_add_s32_11 (orc_int32 * ORC_RESTRICT d1, const orc_int32 * ORC_RESTRICT s1, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_add2_rshift_add_s32_11;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_S1] = (void *)s1;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_haar_synth_s32;
+static inline void
+orc_haar_synth_s32 (orc_int32 * ORC_RESTRICT d1, orc_int32 * ORC_RESTRICT d2, int n)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_haar_synth_s32;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->arrays[ORC_VAR_D2] = d2;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_splat_s32_2d;
+static inline void
+orc_splat_s32_2d (orc_int32 * ORC_RESTRICT d1, int d1_stride, int p1, int n, int m)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_splat_s32_2d;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ORC_EXECUTOR_M(ex) = m;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->params[ORC_VAR_D1] = d1_stride;
+  ex->params[ORC_VAR_P1] = p1;
+
+  func = c->exec;
+  func (ex);
+}
+extern OrcCode *_orc_code_orc_dequantise_s32_ip_2d;
+static inline void
+orc_dequantise_s32_ip_2d (orc_int32 * ORC_RESTRICT d1, int d1_stride, int p1, int p2, int n, int m)
+{
+  OrcExecutor _ex, *ex = &_ex;
+  OrcCode *c = _orc_code_orc_dequantise_s32_ip_2d;
+  void (*func) (OrcExecutor *);
+
+  ex->arrays[ORC_VAR_A2] = c;
+  ex->program = 0;
+
+  ex->n = n;
+  ORC_EXECUTOR_M(ex) = m;
+  ex->arrays[ORC_VAR_D1] = d1;
+  ex->params[ORC_VAR_D1] = d1_stride;
+  ex->params[ORC_VAR_P1] = p1;
+  ex->params[ORC_VAR_P2] = p2;
+
+  func = c->exec;
+  func (ex);
 }
 
 #ifdef __cplusplus
