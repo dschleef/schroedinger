@@ -81,6 +81,10 @@ AC_SUBST(THREAD_IMPL)
 
 if test "x${with_thread}" = "xpthread" ; then
   case "$host_os" in 
+    openbsd*)
+      PTHREAD_CFLAGS=
+      PTHREAD_LIBS=-pthread
+      ;;
     *)
       PTHREAD_CFLAGS=
       PTHREAD_LIBS=-lpthread
