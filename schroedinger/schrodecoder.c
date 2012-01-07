@@ -2075,10 +2075,6 @@ schro_decoder_x_combine (SchroAsyncStage * stage)
 
   if (picture->is_ref) {
     SchroFrame *ref;
-    SchroFrameFormat frame_format;
-
-    frame_format = schro_params_get_frame_format (8,
-        params->video_format->chroma_format);
 
     ref = schro_frame_ref (picture->ref_output_frame);
     if (decoder->use_cuda) {
@@ -2889,7 +2885,6 @@ schro_decoder_init_subband_frame_data_interleaved (SchroPicture * picture)
 {
   int i;
   int component;
-  SchroFrameData *comp;
   SchroFrameData *fd;
   SchroParams *params = &picture->params;
   int position;
@@ -2898,7 +2893,6 @@ schro_decoder_init_subband_frame_data_interleaved (SchroPicture * picture)
     return;
 
   for (component = 0; component < 3; component++) {
-    comp = &picture->transform_frame->components[component];
     for (i = 0; i < 1 + 3 * params->transform_depth; i++) {
       position = schro_subband_get_position (i);
 
