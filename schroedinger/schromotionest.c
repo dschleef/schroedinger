@@ -1535,12 +1535,9 @@ schro_get_split2_metric (SchroMe * me, int ref, int i, int j,
   int fd_width, fd_height;
   int width[3], height[3], dx, dy;
   int k;
-  int xmin, xmax, ymin, ymax, tmp_x, tmp_y;
+  int tmp_x, tmp_y;
   int block_x[3], block_y[3];
 
-  xmin = ymin = -frame->extension;
-  xmax = (frame->width << mv_prec) + frame->extension;
-  ymax = (frame->height << mv_prec) + frame->extension;
   /* calculates split2 block sizes for all components */
   block_x[0] = params->xbsep_luma;
   block_y[0] = params->ybsep_luma;
@@ -2376,7 +2373,7 @@ schro_do_split0_biref (SchroMe * me, int i, int j, SchroBlock * block,
   SchroFrame *orig_frame = schro_me_src (me);
   SchroFrameData ref_data[3][2], orig[3];
   SchroUpsampledFrame *upframe[2];
-  double score, lambda = schro_me_lambda (me);
+  double lambda = schro_me_lambda (me);
   int mv_prec = params->mv_precision;
   int width[3], height[3], dx[2], dy[2], tmp_x, tmp_y;
   int ref, error = INT_MAX;
@@ -2478,7 +2475,6 @@ schro_do_split0_biref (SchroMe * me, int i, int j, SchroBlock * block,
             schro_metric_get_biref (&orig[k], &ref_data[k][0], 1,
             &ref_data[k][1], 1, 1, width[k], height[k]);
       }
-      score = entropy + lambda * (error + chroma_error);
       mv->metric = error >> 4;
       mv->chroma_metric = chroma_error >> 4;
       block->entropy = entropy;

@@ -164,10 +164,6 @@ test_dequant  (int quant_index)
   if (quant_index == 0) {
     /* do nothing */
   } else {
-    int inv_quant;
-
-    inv_quant = schro_table_inverse_quant[quant_index];
-
     orc_dequantise_s16 (c, c, quant_factor, quant_offset, N);
   }
 

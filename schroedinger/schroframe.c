@@ -67,8 +67,6 @@ schro_frame_new_and_alloc_full (SchroMemoryDomain * domain,
   int h_shift, v_shift;
   int chroma_width;
   int chroma_height;
-  int ext_width;
-  int ext_height;
 
   SCHRO_ASSERT (width > 0);
   SCHRO_ASSERT (height > 0);
@@ -79,9 +77,6 @@ schro_frame_new_and_alloc_full (SchroMemoryDomain * domain,
   frame->domain = domain;
   frame->extension = extension;
   frame->is_upsampled = upsampled;
-
-  ext_width = width + extension * 2;
-  ext_height = height + extension * 2;
 
   if (SCHRO_FRAME_IS_PACKED (format)) {
     SCHRO_ASSERT (extension == 0);
@@ -2228,7 +2223,6 @@ schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame * upframe,
   SchroFrameData fd01;
   SchroFrameData fd10;
   SchroFrameData fd11;
-  int16_t p[6];
 
   hx = x >> 2;
   hy = y >> 2;
@@ -2293,13 +2287,6 @@ schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame * upframe,
       __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx, hy + 1, &fd10);
       __schro_upsampled_frame_get_subdata_prec1 (upframe, k, hx + 1, hy + 1,
           &fd11);
-
-      p[0] = w00;
-      p[1] = w01;
-      p[2] = w10;
-      p[3] = w11;
-      p[4] = 8;
-      p[5] = 4;
 
       switch (fd->width) {
 #if 0

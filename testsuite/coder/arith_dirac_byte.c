@@ -127,7 +127,6 @@ arith_dirac_byte_flush (Arith *arith)
 static void
 arith_dirac_byte_encode (Arith *arith, int i, int value)
 {
-  unsigned int count;
   unsigned int range;
   unsigned int scaler;
   unsigned int weight;
@@ -138,7 +137,6 @@ arith_dirac_byte_encode (Arith *arith, int i, int value)
   weight = arith->contexts[i].count[0] + arith->contexts[i].count[1];
   scaler = division_factor[weight];
   probability0 = arith->contexts[i].count[0] * scaler;
-  count = arith->code - arith->range0 + 1;
   range = arith->range1 - arith->range0 + 1;
   range_x_prob = (range * probability0) >> 16;
   

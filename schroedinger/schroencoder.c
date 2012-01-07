@@ -3358,7 +3358,6 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame * frame,
   SchroFrameData fd;
   int w;
   int h;
-  int shift;
   int16_t *line;
   int i, j;
   int position;
@@ -3367,7 +3366,6 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame * frame,
   schro_subband_get_frame_data (&fd, frame->iwt_frame, component,
       position, params);
 
-  shift = params->transform_depth - SCHRO_SUBBAND_SHIFT (position);
   if (component == 0) {
     schro_video_format_get_picture_luma_size (params->video_format, &w, &h);
   } else {

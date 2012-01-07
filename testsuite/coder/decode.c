@@ -52,7 +52,6 @@ main (int argc, char *argv[])
 {
   int x;
   int i;
-  int n;
 
   schro_init();
 
@@ -66,7 +65,7 @@ main (int argc, char *argv[])
   //n = encode_arith_dirac (out_data, in_data, N);
   //dumpbits(out_data, n);
 
-  n = encode_arith_exp (out_data, in_data, N);
+  encode_arith_exp (out_data, in_data, N);
   //dumpbits(out_data, n);
 
   decode_arith_exp (c_data, out_data, N);

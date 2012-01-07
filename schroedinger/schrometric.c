@@ -124,13 +124,11 @@ schro_metric_scan_get_min (SchroMetricScan * scan, int *dx, int *dy,
 {
   int i, j;
   uint32_t min_metric;
-  int min_gravity;
   uint32_t metric;
   uint32_t chroma_metric;
   uint32_t min_chroma_metric = 0;
   uint32_t min_total_metric = 0;
   uint32_t tmp;
-  int gravity;
   int x, y;
 
   SCHRO_ASSERT (scan->scan_width > 0);
@@ -143,8 +141,6 @@ schro_metric_scan_get_min (SchroMetricScan * scan, int *dx, int *dy,
     min_chroma_metric = scan->chroma_metrics[j + i * scan->scan_height];
     min_total_metric = min_metric + min_chroma_metric;
   }
-  min_gravity = scan->gravity_scale *
-      (abs (*dx - scan->gravity_x) + abs (*dy - scan->gravity_y));
 
   for (i = 0; i < scan->scan_width; i++) {
     for (j = 0; j < scan->scan_height; j++) {
@@ -152,22 +148,18 @@ schro_metric_scan_get_min (SchroMetricScan * scan, int *dx, int *dy,
       chroma_metric = scan->chroma_metrics[i * scan->scan_height + j];
       x = scan->ref_x + i - scan->x;
       y = scan->ref_y + j - scan->y;
-      gravity = scan->gravity_scale *
-          (abs (x - scan->gravity_x) + abs (y - scan->gravity_y));
       if (scan->use_chroma) {
         tmp = metric + chroma_metric;
         if (tmp < min_total_metric) {
           min_total_metric = tmp;
           min_metric = metric;
           min_chroma_metric = chroma_metric;
-          min_gravity = gravity;
           *dx = x;
           *dy = y;
         }
       } else {
         if (metric < min_metric) {
           min_metric = metric;
-          min_gravity = gravity;
           *dx = x;
           *dy = y;
         }

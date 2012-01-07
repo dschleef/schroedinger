@@ -119,7 +119,6 @@ schro_decoder_decode_slice_slow (SchroPicture * picture,
   int length_bits;
   int slice_y_length;
   int i;
-  int j;
   int x, y;
   int value;
 
@@ -135,7 +134,6 @@ schro_decoder_decode_slice_slow (SchroPicture * picture,
   schro_unpack_limit_bits_remaining (&y_unpack, slice_y_length);
   schro_unpack_skip_bits (&uv_unpack, slice_y_length);
 
-  j = 0;
   for (i = 0; i < 1 + 3 * params->transform_depth; i++) {
     int quant_factor;
     int quant_offset;
@@ -159,7 +157,6 @@ schro_decoder_decode_slice_slow (SchroPicture * picture,
     }
   }
 
-  j = 0;
   for (i = 0; i < 1 + 3 * params->transform_depth; i++) {
     int quant_factor;
     int quant_offset;
@@ -203,7 +200,6 @@ schro_decoder_decode_slice_slow_s32 (SchroPicture * picture,
   int length_bits;
   int slice_y_length;
   int i;
-  int j;
   int x, y;
   int value;
 
@@ -219,7 +215,6 @@ schro_decoder_decode_slice_slow_s32 (SchroPicture * picture,
   schro_unpack_limit_bits_remaining (&y_unpack, slice_y_length);
   schro_unpack_skip_bits (&uv_unpack, slice_y_length);
 
-  j = 0;
   for (i = 0; i < 1 + 3 * params->transform_depth; i++) {
     int quant_factor;
     int quant_offset;
@@ -243,7 +238,6 @@ schro_decoder_decode_slice_slow_s32 (SchroPicture * picture,
     }
   }
 
-  j = 0;
   for (i = 0; i < 1 + 3 * params->transform_depth; i++) {
     int quant_factor;
     int quant_offset;
@@ -285,13 +279,6 @@ schro_decoder_decode_slice_fast (SchroPicture * picture,
   int base_index;
   int slice_y_length;
   int16_t *quant_data;
-  int16_t *baseptr;
-  int16_t *baseptr_u;
-  int16_t *baseptr_v;
-
-  baseptr = lowdelay->frame->components[0].data;
-  baseptr_u = lowdelay->frame->components[1].data;
-  baseptr_v = lowdelay->frame->components[2].data;
 
   schro_unpack_init_with_data (&y_unpack,
       OFFSET (picture->lowdelay_buffer->data, offset), slice_bytes, 1);

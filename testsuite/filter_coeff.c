@@ -255,10 +255,8 @@ int main (int argc, char *argv[])
   Filter2D *filter;
   int i;
   double cutoff;
-  double sum = 0;
   double offset = 0.25;
   double w;
-  double center;
   int isum;
   int asum;
 
@@ -273,10 +271,9 @@ int main (int argc, char *argv[])
     offset = i/50.0;
     w = 1 + i*0.1;
 
-    center = offset;
     filter2d_generate_sinc (filter, cutoff, w);
 
-    sum = filter2d_calc_sum (filter);
+    filter2d_calc_sum (filter);
 
     printf("w %g  offset %g:\n", w, offset);
 

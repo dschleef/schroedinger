@@ -687,7 +687,7 @@ schro_encoder_handle_gop_tworef (SchroEncoder * encoder, int i)
   SchroEncoderFrame *f;
   int j;
   int gop_length;
-  double scs_sum;
+  //double scs_sum;
 
   frame = encoder->frame_queue->elements[i].data;
 
@@ -707,7 +707,7 @@ schro_encoder_handle_gop_tworef (SchroEncoder * encoder, int i)
     gop_length = MIN (gop_length, encoder->frame_queue->n - i);
   }
   //intra_start = frame->start_sequence_header;
-  scs_sum = 0;
+  //scs_sum = 0;
   for (j = 0; j < gop_length; j++) {
     if (i + j >= encoder->frame_queue->n) {
       SCHRO_DEBUG ("not enough pictures in queue");

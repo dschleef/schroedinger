@@ -111,9 +111,9 @@ static void
 handle_packet (unsigned char *data, int size)
 {
   SchroUnpack unpack;
-  const char *parse_code;
+  const char *parse_code SCHRO_UNUSED;
   int next;
-  int prev;
+  int prev SCHRO_UNUSED;
 
   if (memcmp (data, "BBCD", 4) != 0) {
     printf("non-Dirac packet\n");

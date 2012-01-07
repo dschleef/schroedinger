@@ -42,15 +42,14 @@ schro_motion_global_metric (SchroMotionField * field, SchroFrame * frame,
   SchroMotionVector *mv;
   int i;
   int j;
-  int x, y;
 
   for (j = 0; j < field->y_num_blocks; j++) {
     for (i = 0; i < field->x_num_blocks; i++) {
       mv = field->motion_vectors + j * field->x_num_blocks + i;
 
+#if 0
       x = i * 8 + mv->u.vec.dx[ref];
       y = j * 8 + mv->u.vec.dy[ref];
-#if 0
       mv->metric =
           schro_metric_absdiff_u8 (frame->components[0].data + x +
           y * frame->components[0].stride, frame->components[0].stride,

@@ -265,7 +265,6 @@ schro_thread_main (void *ptr)
   void *priv;
   SchroThread *thread = ptr;
   SchroAsync *async = thread->async;
-  int ret;
 
   /* thread starts with async->mutex locked */
 
@@ -303,7 +302,7 @@ schro_thread_main (void *ptr)
       continue;
     }
     if (1) {                    /* avoiding indent change */
-      ret = async->schedule (async->schedule_closure, thread->exec_domain);
+      async->schedule (async->schedule_closure, thread->exec_domain);
       /* FIXME ignoring ret */
       if (!async->task.task_func) {
         thread->busy = FALSE;

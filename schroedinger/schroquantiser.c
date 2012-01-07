@@ -707,7 +707,6 @@ schro_encoder_calc_estimates (SchroEncoderFrame * frame)
 
     for (i = 0; i < 1 + 3 * params->transform_depth; i++) {
       for (j = 0; j < 60; j++) {
-        int vol;
         int position;
         SchroHistogram *hist;
         SchroFrameData fd;
@@ -715,7 +714,6 @@ schro_encoder_calc_estimates (SchroEncoderFrame * frame)
         position = schro_subband_get_position (i);
         schro_subband_get_frame_data (&fd, frame->iwt_frame, component,
             position, &frame->params);
-        vol = fd.width * fd.height;
 
         hist = &frame->subband_hists[component][i];
         frame->est_entropy[component][i][j] =
@@ -771,14 +769,14 @@ schro_encoder_choose_quantisers_rdo_lambda (SchroEncoderFrame * frame)
 void
 schro_encoder_choose_quantisers_rdo_cbr (SchroEncoderFrame * frame)
 {
-  int est_bits, alloc_bits;
-  SchroEncoder *encoder = frame->encoder;
+  //SchroEncoder *encoder = frame->encoder;
 
   schro_encoder_generate_subband_histograms (frame);
   schro_encoder_calc_estimates (frame);
 
   SCHRO_ASSERT (frame->have_estimate_tables);
 
+#if 0
   est_bits =
       (int) (schro_encoder_lambda_to_entropy (frame, frame->frame_lambda));
 
@@ -793,6 +791,7 @@ schro_encoder_choose_quantisers_rdo_cbr (SchroEncoderFrame * frame)
   } else {
     alloc_bits = encoder->P_frame_alloc;
   }
+#endif
 
 }
 
