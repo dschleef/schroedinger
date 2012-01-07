@@ -388,7 +388,7 @@ schro_frame_new_from_data_v210 (void *data, int width, int height)
   frame->components[0].format = frame->format;
   frame->components[0].width = width;
   frame->components[0].height = height;
-  frame->components[0].stride = ((width + 5) / 6) * 16;
+  frame->components[0].stride = ((width + 47) / 48) * 128;
   frame->components[0].data = data;
   frame->components[0].length = frame->components[0].stride * height;
   frame->components[0].v_shift = 0;
