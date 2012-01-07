@@ -525,7 +525,7 @@ schro_frame_new_from_data_Y444 (void *data, int width, int height)
 {
   SchroFrame *frame = schro_frame_new ();
 
-  frame->format = SCHRO_FRAME_FORMAT_U8_420;
+  frame->format = SCHRO_FRAME_FORMAT_U8_444;
 
   frame->width = width;
   frame->height = height;
