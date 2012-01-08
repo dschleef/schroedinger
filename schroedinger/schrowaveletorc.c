@@ -257,25 +257,25 @@ schro_wavelet_transform_2d (SchroFrameData * fd, int filter, int16_t * tmp)
 
   switch (filter) {
     case SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7:
-      schro_iwt_desl_9_3 (fd->data, fd->stride, fd->width, fd->height, tmp);
+      schro_iwt_desl_9_3 (fd, tmp);
       break;
     case SCHRO_WAVELET_LE_GALL_5_3:
-      schro_iwt_5_3 (fd->data, fd->stride, fd->width, fd->height, tmp);
+      schro_iwt_5_3 (fd, tmp);
       break;
     case SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7:
-      schro_iwt_13_5 (fd->data, fd->stride, fd->width, fd->height, tmp);
+      schro_iwt_13_5 (fd, tmp);
       break;
     case SCHRO_WAVELET_HAAR_0:
-      schro_iwt_haar0 (fd->data, fd->stride, fd->width, fd->height, tmp);
+      schro_iwt_haar0 (fd, tmp);
       break;
     case SCHRO_WAVELET_HAAR_1:
-      schro_iwt_haar1 (fd->data, fd->stride, fd->width, fd->height, tmp);
+      schro_iwt_haar1 (fd, tmp);
       break;
     case SCHRO_WAVELET_FIDELITY:
-      schro_iwt_fidelity (fd->data, fd->stride, fd->width, fd->height, tmp);
+      schro_iwt_fidelity (fd, tmp);
       break;
     case SCHRO_WAVELET_DAUBECHIES_9_7:
-      schro_iwt_daub_9_7 (fd->data, fd->stride, fd->width, fd->height, tmp);
+      schro_iwt_daub_9_7 (fd, tmp);
       break;
     default:
       SCHRO_ASSERT (0);
@@ -429,8 +429,7 @@ wavelet_iwt_desl_9_3_vert (SchroFrame * frame, void *_dest, int component,
 }
 
 void
-schro_iwt_desl_9_3 (int16_t * data, int stride, int width, int height,
-    int16_t * tmp)
+schro_iwt_desl_9_3 (SchroFrameData *fd, int16_t * tmp)
 {
   SchroFrame *frame;
   SchroFrame *vf1;
@@ -439,21 +438,21 @@ schro_iwt_desl_9_3 (int16_t * data, int stride, int width, int height,
   frame = schro_frame_new ();
 
   frame->format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->width = width;
-  frame->height = height;
+  frame->width = fd->width;
+  frame->height = fd->height;
 
   frame->components[0].format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->components[0].width = width;
-  frame->components[0].height = height;
-  frame->components[0].stride = stride;
-  frame->components[0].data = data;
+  frame->components[0].width = fd->width;
+  frame->components[0].height = fd->height;
+  frame->components[0].stride = fd->stride;
+  frame->components[0].data = fd->data;
 
-  vf1 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf1 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf1->virt_frame1 = frame;
   vf1->virt_priv2 = tmp;
   vf1->render_line = wavelet_iwt_desl_9_3_horiz;
 
-  vf2 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf2 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf2->virt_frame1 = vf1;
   vf2->virt_priv2 = tmp;
   vf2->render_line = wavelet_iwt_desl_9_3_vert;
@@ -517,7 +516,7 @@ wavelet_iwt_5_3_vert (SchroFrame * frame, void *_dest, int component, int i)
 }
 
 void
-schro_iwt_5_3 (int16_t * data, int stride, int width, int height, int16_t * tmp)
+schro_iwt_5_3 (SchroFrameData *fd, int16_t * tmp)
 {
   SchroFrame *frame;
   SchroFrame *vf1;
@@ -526,21 +525,21 @@ schro_iwt_5_3 (int16_t * data, int stride, int width, int height, int16_t * tmp)
   frame = schro_frame_new ();
 
   frame->format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->width = width;
-  frame->height = height;
+  frame->width = fd->width;
+  frame->height = fd->height;
 
   frame->components[0].format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->components[0].width = width;
-  frame->components[0].height = height;
-  frame->components[0].stride = stride;
-  frame->components[0].data = data;
+  frame->components[0].width = fd->width;
+  frame->components[0].height = fd->height;
+  frame->components[0].stride = fd->stride;
+  frame->components[0].data = fd->data;
 
-  vf1 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf1 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf1->virt_frame1 = frame;
   vf1->virt_priv2 = tmp;
   vf1->render_line = wavelet_iwt_5_3_horiz;
 
-  vf2 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf2 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf2->virt_frame1 = vf1;
   vf2->virt_priv2 = tmp;
   vf2->render_line = wavelet_iwt_5_3_vert;
@@ -630,8 +629,7 @@ wavelet_iwt_13_5_vert (SchroFrame * frame, void *_dest, int component, int i)
 }
 
 void
-schro_iwt_13_5 (int16_t * data, int stride, int width, int height,
-    int16_t * tmp)
+schro_iwt_13_5 (SchroFrameData *fd, int16_t * tmp)
 {
   SchroFrame *frame;
   SchroFrame *vf1;
@@ -640,21 +638,21 @@ schro_iwt_13_5 (int16_t * data, int stride, int width, int height,
   frame = schro_frame_new ();
 
   frame->format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->width = width;
-  frame->height = height;
+  frame->width = fd->width;
+  frame->height = fd->height;
 
   frame->components[0].format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->components[0].width = width;
-  frame->components[0].height = height;
-  frame->components[0].stride = stride;
-  frame->components[0].data = data;
+  frame->components[0].width = fd->width;
+  frame->components[0].height = fd->height;
+  frame->components[0].stride = fd->stride;
+  frame->components[0].data = fd->data;
 
-  vf1 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf1 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf1->virt_frame1 = frame;
   vf1->virt_priv2 = tmp;
   vf1->render_line = wavelet_iwt_13_5_horiz;
 
-  vf2 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf2 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf2->virt_frame1 = vf1;
   vf2->render_line = wavelet_iwt_13_5_vert;
 
@@ -750,8 +748,7 @@ wavelet_iwt_haar_vert (SchroFrame * frame, void *_dest, int component, int i)
 #endif
 
 static void
-schro_iwt_haar (int16_t * data, int stride, int width, int height,
-    int16_t * tmp, int16_t shift)
+schro_iwt_haar (SchroFrameData *fd, int16_t * tmp, int16_t shift)
 {
   SchroFrame *frame;
   SchroFrame *vf1;
@@ -760,16 +757,16 @@ schro_iwt_haar (int16_t * data, int stride, int width, int height,
   frame = schro_frame_new ();
 
   frame->format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->width = width;
-  frame->height = height;
+  frame->width = fd->width;
+  frame->height = fd->height;
 
   frame->components[0].format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->components[0].width = width;
-  frame->components[0].height = height;
-  frame->components[0].stride = stride;
-  frame->components[0].data = data;
+  frame->components[0].width = fd->width;
+  frame->components[0].height = fd->height;
+  frame->components[0].stride = fd->stride;
+  frame->components[0].data = fd->data;
 
-  vf1 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf1 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf1->virt_frame1 = frame;
   vf1->virt_priv2 = tmp;
   if (shift) {
@@ -778,7 +775,7 @@ schro_iwt_haar (int16_t * data, int stride, int width, int height,
     vf1->render_line = wavelet_iwt_haar_horiz;
   }
 
-  vf2 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf2 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf2->virt_frame1 = vf1;
   vf2->virt_priv2 = tmp;
   vf2->render_line = wavelet_iwt_haar_vert;
@@ -789,17 +786,15 @@ schro_iwt_haar (int16_t * data, int stride, int width, int height,
 }
 
 void
-schro_iwt_haar0 (int16_t * data, int stride, int width, int height,
-    int16_t * tmp)
+schro_iwt_haar0 (SchroFrameData *fd, int16_t * tmp)
 {
-  schro_iwt_haar (data, stride, width, height, tmp, 0);
+  schro_iwt_haar (fd, tmp, 0);
 }
 
 void
-schro_iwt_haar1 (int16_t * data, int stride, int width, int height,
-    int16_t * tmp)
+schro_iwt_haar1 (SchroFrameData *fd, int16_t * tmp)
 {
-  schro_iwt_haar (data, stride, width, height, tmp, 1);
+  schro_iwt_haar (fd, tmp, 1);
 }
 
 /* Fidelity */
@@ -868,8 +863,7 @@ wavelet_iwt_fidelity_vert (SchroFrame * frame, void *_dest, int component,
 }
 
 void
-schro_iwt_fidelity (int16_t * data, int stride, int width, int height,
-    int16_t * tmp)
+schro_iwt_fidelity (SchroFrameData *fd, int16_t * tmp)
 {
   SchroFrame *frame;
   SchroFrame *vf1;
@@ -878,21 +872,21 @@ schro_iwt_fidelity (int16_t * data, int stride, int width, int height,
   frame = schro_frame_new ();
 
   frame->format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->width = width;
-  frame->height = height;
+  frame->width = fd->width;
+  frame->height = fd->height;
 
   frame->components[0].format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->components[0].width = width;
-  frame->components[0].height = height;
-  frame->components[0].stride = stride;
-  frame->components[0].data = data;
+  frame->components[0].width = fd->width;
+  frame->components[0].height = fd->height;
+  frame->components[0].stride = fd->stride;
+  frame->components[0].data = fd->data;
 
-  vf1 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf1 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf1->virt_frame1 = frame;
   vf1->virt_priv2 = tmp;
   vf1->render_line = wavelet_iwt_fidelity_horiz;
 
-  vf2 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf2 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf2->virt_frame1 = vf1;
   vf2->render_line = wavelet_iwt_fidelity_vert;
 
@@ -990,8 +984,7 @@ wavelet_iwt_daub97_vert2 (SchroFrame * frame, void *_dest, int component, int i)
 }
 
 void
-schro_iwt_daub_9_7 (int16_t * data, int stride, int width, int height,
-    int16_t * tmp)
+schro_iwt_daub_9_7 (SchroFrameData *fd, int16_t * tmp)
 {
   SchroFrame *frame;
   SchroFrame *vf1;
@@ -1001,26 +994,26 @@ schro_iwt_daub_9_7 (int16_t * data, int stride, int width, int height,
   frame = schro_frame_new ();
 
   frame->format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->width = width;
-  frame->height = height;
+  frame->width = fd->width;
+  frame->height = fd->height;
 
   frame->components[0].format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->components[0].width = width;
-  frame->components[0].height = height;
-  frame->components[0].stride = stride;
-  frame->components[0].data = data;
+  frame->components[0].width = fd->width;
+  frame->components[0].height = fd->height;
+  frame->components[0].stride = fd->stride;
+  frame->components[0].data = fd->data;
 
-  vf1 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf1 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf1->virt_frame1 = frame;
   vf1->virt_priv2 = tmp;
   vf1->render_line = wavelet_iwt_daub97_horiz;
 
-  vf2 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf2 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf2->virt_frame1 = vf1;
   vf2->virt_priv2 = tmp;
   vf2->render_line = wavelet_iwt_daub97_vert1;
 
-  vf3 = schro_frame_new_virtual (NULL, frame->format, width, height);
+  vf3 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
   vf3->virt_frame1 = vf2;
   vf3->virt_priv2 = tmp;
   vf3->render_line = wavelet_iwt_daub97_vert2;
