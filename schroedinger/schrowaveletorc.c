@@ -8,244 +8,44 @@
 #include <schroedinger/schrovirtframe.h>
 #include <orc/orc.h>
 
+static void schro_iwt_desl_9_3 (SchroFrameData *fd, int16_t *tmp);
+static void schro_iwt_5_3 (SchroFrameData *fd, int16_t *tmp);
+static void schro_iwt_13_5 (SchroFrameData *fd, int16_t *tmp);
+static void schro_iwt_haar0 (SchroFrameData *fd, int16_t *tmp);
+static void schro_iwt_haar1 (SchroFrameData *fd, int16_t *tmp);
+static void schro_iwt_fidelity (SchroFrameData *fd, int16_t *tmp);
+static void schro_iwt_daub_9_7 (SchroFrameData *fd, int16_t *tmp);
 
-/* horizontal in-place wavelet transforms */
+static void schro_iiwt_desl_9_3 (SchroFrameData *dest, SchroFrameData *src,
+        int16_t *tmp);
+static void schro_iiwt_5_3 (SchroFrameData *dest, SchroFrameData *src,
+        int16_t *tmp);
+static void schro_iiwt_13_5 (SchroFrameData *dest, SchroFrameData *src,
+        int16_t *tmp);
+static void schro_iiwt_haar0 (SchroFrameData *dest, SchroFrameData *src,
+        int16_t *tmp);
+static void schro_iiwt_haar1 (SchroFrameData *dest, SchroFrameData *src,
+        int16_t *tmp);
+static void schro_iiwt_fidelity (SchroFrameData *dest, SchroFrameData *src,
+        int16_t *tmp);
+static void schro_iiwt_daub_9_7 (SchroFrameData *dest, SchroFrameData *src,
+        int16_t *tmp);
 
-static void
-schro_split_ext_desl93 (int16_t * hi, int16_t * lo, int n)
-{
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
+static void schro_iiwt_desl_9_3_s32 (SchroFrameData *dest, SchroFrameData *src,
+    int32_t *tmp);
+static void schro_iiwt_5_3_s32 (SchroFrameData *dest, SchroFrameData *src,
+    int32_t *tmp);
+static void schro_iiwt_13_5_s32 (SchroFrameData *dest, SchroFrameData *src,
+    int32_t *tmp);
+static void schro_iiwt_haar0_s32 (SchroFrameData *dest, SchroFrameData *src,
+    int32_t *tmp);
+static void schro_iiwt_haar1_s32 (SchroFrameData *dest, SchroFrameData *src,
+    int32_t *tmp);
+static void schro_iiwt_fidelity_s32 (SchroFrameData *dest, SchroFrameData *src,
+    int32_t *tmp);
+static void schro_iiwt_daub_9_7_s32 (SchroFrameData *dest, SchroFrameData *src,
+    int32_t *tmp);
 
-  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
-      n);
-
-  lo[-1] = lo[0];
-
-  orc_add2_rshift_add_s16_22 (hi, lo - 1, n);
-}
-
-static void
-schro_split_ext_53 (int16_t * hi, int16_t * lo, int n)
-{
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
-  orc_add2_rshift_sub_s16_11 (lo, hi, n);
-
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
-  orc_add2_rshift_add_s16_22 (hi, lo - 1, n);
-}
-
-static void
-schro_split_ext_135 (int16_t * hi, int16_t * lo, int n)
-{
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-
-  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
-      n);
-
-  lo[-1] = lo[0];
-  lo[-2] = lo[0];
-  lo[n] = lo[n - 1];
-
-  orc_mas4_across_add_s16_1991_ip (hi, lo - 2, 1 << 4, 5,
-      n);
-}
-
-#if 0
-static void
-schro_split_ext_haar (int16_t * hi, int16_t * lo, int n)
-{
-  orc_haar_split_s16 (hi, lo, n);
-}
-#endif
-
-static void
-mas8_add_s16 (int16_t * dest, const int16_t * src, const int16_t * weights,
-    int offset, int shift, int n)
-{
-  int i;
-  for (i = 0; i < n; i++) {
-    int x = offset;
-    x += src[i + 0] * weights[0];
-    x += src[i + 1] * weights[1];
-    x += src[i + 2] * weights[2];
-    x += src[i + 3] * weights[3];
-    x += src[i + 4] * weights[4];
-    x += src[i + 5] * weights[5];
-    x += src[i + 6] * weights[6];
-    x += src[i + 7] * weights[7];
-    dest[i] += x >> shift;
-  }
-}
-
-static void
-schro_split_ext_fidelity (int16_t * hi, int16_t * lo, int n)
-{
-  static const int16_t stage1_weights[] = { -8, 21, -46, 161, 161, -46, 21, -8 };
-  static const int16_t stage2_weights[] = { 2, -10, 25, -81, -81, 25, -10, 2 };
-
-  lo[-4] = lo[0];
-  lo[-3] = lo[0];
-  lo[-2] = lo[0];
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-  lo[n + 1] = lo[n - 1];
-  lo[n + 2] = lo[n - 1];
-
-  //schro_orc_split_add_fidelity_161 (hi, lo - 4, n);
-  mas8_add_s16 (hi, lo - 4, stage1_weights, 128, 8, n);
-
-  hi[-3] = hi[0];
-  hi[-2] = hi[0];
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-  hi[n + 2] = hi[n - 1];
-  hi[n + 3] = hi[n - 1];
-
-  mas8_add_s16 (lo, hi - 3, stage2_weights, 127, 8, n);
-}
-
-static void
-schro_split_ext_daub97 (int16_t * hi, int16_t * lo, int n)
-{
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
-  orc_mas2_sub_s16_ip (lo, hi, 6497, 2048, 12, n);
-
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
-  orc_mas2_sub_s16_ip (hi, lo - 1, 217, 2048, 12, n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
-  orc_mas2_add_s16_ip (lo, hi, 3616, 2048, 12, n);
-
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
-  orc_mas2_add_s16_ip (hi, lo - 1, 1817, 2048, 12, n);
-
-}
-
-static void
-schro_synth_ext_desl93 (int16_t * hi, int16_t * lo, int n)
-{
-  lo[-2] = lo[0];
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-  lo[n + 1] = lo[n - 1];
-
-  orc_add2_rshift_sub_s16_22 (hi, lo - 1, n);
-
-  hi[-2] = hi[0];
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-
-  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
-      n);
-}
-
-static void
-schro_synth_ext_53 (int16_t * hi, int16_t * lo, int n)
-{
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
-  orc_add2_rshift_sub_s16_22 (hi, lo - 1, n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
-  orc_add2_rshift_add_s16_11 (lo, hi, n);
-}
-
-static void
-schro_synth_ext_135 (int16_t * hi, int16_t * lo, int n)
-{
-  lo[-1] = lo[0];
-  lo[-2] = lo[0];
-  lo[n] = lo[n - 1];
-  orc_mas4_across_sub_s16_1991_ip (hi, lo - 2, 1 << 4, 5,
-      n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
-      n);
-}
-
-#if 0
-static void
-schro_synth_ext_haar (int16_t * hi, int16_t * lo, int n)
-{
-  orc_haar_synth_s16 (hi, lo, n);
-}
-#endif
-
-static void
-schro_synth_ext_fidelity (int16_t * hi, int16_t * lo, int n)
-{
-  static const int16_t stage1_weights[] = { -2, 10, -25, 81, 81, -25, 10, -2 };
-  static const int16_t stage2_weights[] =
-      { 8, -21, 46, -161, -161, 46, -21, 8 };
-
-  hi[-3] = hi[0];
-  hi[-2] = hi[0];
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-  hi[n + 2] = hi[n - 1];
-  hi[n + 3] = hi[n - 1];
-
-  mas8_add_s16 (lo, hi - 3, stage1_weights, 128, 8, n);
-
-  lo[-4] = lo[0];
-  lo[-3] = lo[0];
-  lo[-2] = lo[0];
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-  lo[n + 1] = lo[n - 1];
-  lo[n + 2] = lo[n - 1];
-
-  mas8_add_s16 (hi, lo - 4, stage2_weights, 127, 8, n);
-}
-
-static void
-schro_synth_ext_daub97 (int16_t * hi, int16_t * lo, int n)
-{
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
-  orc_mas2_sub_s16_ip (hi, lo - 1, 1817, 2048, 12, n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
-  orc_mas2_sub_s16_ip (lo, hi, 3616, 2048, 12, n);
-
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
-  orc_mas2_add_s16_ip (hi, lo - 1, 217, 2048, 12, n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
-  orc_mas2_add_s16_ip (lo, hi, 6497, 2048, 12, n);
-}
 
 /* Forward transform splitter function */
 
@@ -283,22 +83,6 @@ schro_wavelet_transform_2d (SchroFrameData * fd, int filter, int16_t * tmp)
 }
 
 /* Inverse transform splitter function */
-
-static void schro_iiwt_desl_9_3_s32 (SchroFrameData *dest, SchroFrameData *src,
-    int32_t *tmp);
-static void schro_iiwt_5_3_s32 (SchroFrameData *dest, SchroFrameData *src,
-    int32_t *tmp);
-static void schro_iiwt_13_5_s32 (SchroFrameData *dest, SchroFrameData *src,
-    int32_t *tmp);
-static void schro_iiwt_haar0_s32 (SchroFrameData *dest, SchroFrameData *src,
-    int32_t *tmp);
-static void schro_iiwt_haar1_s32 (SchroFrameData *dest, SchroFrameData *src,
-    int32_t *tmp);
-static void schro_iiwt_fidelity_s32 (SchroFrameData *dest, SchroFrameData *src,
-    int32_t *tmp);
-static void schro_iiwt_daub_9_7_s32 (SchroFrameData *dest, SchroFrameData *src,
-    int32_t *tmp);
-
 
 void
 schro_wavelet_inverse_transform_2d (SchroFrameData * fd_dest,
@@ -369,7 +153,22 @@ schro_wavelet_inverse_transform_2d (SchroFrameData * fd_dest,
 
 }
 
-/* Deslauriers-Dubuc 9,7 */
+/* Forward, 16-bit, Wavelet #0: Deslauriers-Dubuc 9,7 */
+
+static void
+schro_split_ext_desl93 (int16_t * hi, int16_t * lo, int n)
+{
+  hi[-1] = hi[0];
+  hi[n] = hi[n - 1];
+  hi[n + 1] = hi[n - 1];
+
+  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
+      n);
+
+  lo[-1] = lo[0];
+
+  orc_add2_rshift_add_s16_22 (hi, lo - 1, n);
+}
 
 static void
 wavelet_iwt_desl_9_3_horiz (SchroFrame * frame, void *_dest, int component,
@@ -462,7 +261,21 @@ schro_iwt_desl_9_3 (SchroFrameData *fd, int16_t * tmp)
   schro_frame_unref (vf2);
 }
 
-/* LeGall 5,3 */
+/* Forward, 16-bit, Wavelet #1: LeGall 5,3 */
+
+static void
+schro_split_ext_53 (int16_t * hi, int16_t * lo, int n)
+{
+  hi[-1] = hi[0];
+  hi[n] = hi[n - 1];
+
+  orc_add2_rshift_sub_s16_11 (lo, hi, n);
+
+  lo[-1] = lo[0];
+  lo[n] = lo[n - 1];
+
+  orc_add2_rshift_add_s16_22 (hi, lo - 1, n);
+}
 
 static void
 wavelet_iwt_5_3_horiz (SchroFrame * frame, void *_dest, int component, int i)
@@ -561,7 +374,25 @@ copy_s16 (SchroFrame * frame, void *_dest, int component, int i)
 }
 #endif
 
-/* Deslauriers-Dubuc 13,7 */
+/* Forward, 16-bit, Wavelet #2: Deslauriers-Dubuc 13,7 */
+
+static void
+schro_split_ext_135 (int16_t * hi, int16_t * lo, int n)
+{
+  hi[-1] = hi[0];
+  hi[n] = hi[n - 1];
+  hi[n + 1] = hi[n - 1];
+
+  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
+      n);
+
+  lo[-1] = lo[0];
+  lo[-2] = lo[0];
+  lo[n] = lo[n - 1];
+
+  orc_mas4_across_add_s16_1991_ip (hi, lo - 2, 1 << 4, 5,
+      n);
+}
 
 static void
 wavelet_iwt_13_5_horiz (SchroFrame * frame, void *_dest, int component, int i)
@@ -661,7 +492,7 @@ schro_iwt_13_5 (SchroFrameData *fd, int16_t * tmp)
   schro_frame_unref (vf2);
 }
 
-/* Haar 0 and Haar 1 */
+/* Forward, 16-bit, Wavelet #3,4: Haar 0 and Haar 1 */
 
 static void
 wavelet_iwt_haar_horiz (SchroFrame * frame, void *_dest, int component, int i)
@@ -797,7 +628,54 @@ schro_iwt_haar1 (SchroFrameData *fd, int16_t * tmp)
   schro_iwt_haar (fd, tmp, 1);
 }
 
-/* Fidelity */
+/* Forward, 16-bit, Wavelet #5: Fidelity */
+
+static void
+mas8_add_s16 (int16_t * dest, const int16_t * src, const int16_t * weights,
+    int offset, int shift, int n)
+{
+  int i;
+  for (i = 0; i < n; i++) {
+    int x = offset;
+    x += src[i + 0] * weights[0];
+    x += src[i + 1] * weights[1];
+    x += src[i + 2] * weights[2];
+    x += src[i + 3] * weights[3];
+    x += src[i + 4] * weights[4];
+    x += src[i + 5] * weights[5];
+    x += src[i + 6] * weights[6];
+    x += src[i + 7] * weights[7];
+    dest[i] += x >> shift;
+  }
+}
+
+static void
+schro_split_ext_fidelity (int16_t * hi, int16_t * lo, int n)
+{
+  static const int16_t stage1_weights[] = { -8, 21, -46, 161, 161, -46, 21, -8 };
+  static const int16_t stage2_weights[] = { 2, -10, 25, -81, -81, 25, -10, 2 };
+
+  lo[-4] = lo[0];
+  lo[-3] = lo[0];
+  lo[-2] = lo[0];
+  lo[-1] = lo[0];
+  lo[n] = lo[n - 1];
+  lo[n + 1] = lo[n - 1];
+  lo[n + 2] = lo[n - 1];
+
+  //schro_orc_split_add_fidelity_161 (hi, lo - 4, n);
+  mas8_add_s16 (hi, lo - 4, stage1_weights, 128, 8, n);
+
+  hi[-3] = hi[0];
+  hi[-2] = hi[0];
+  hi[-1] = hi[0];
+  hi[n] = hi[n - 1];
+  hi[n + 1] = hi[n - 1];
+  hi[n + 2] = hi[n - 1];
+  hi[n + 3] = hi[n - 1];
+
+  mas8_add_s16 (lo, hi - 3, stage2_weights, 127, 8, n);
+}
 
 static void
 wavelet_iwt_fidelity_horiz (SchroFrame * frame, void *_dest, int component,
@@ -895,7 +773,32 @@ schro_iwt_fidelity (SchroFrameData *fd, int16_t * tmp)
   schro_frame_unref (vf2);
 }
 
-/* Daubechies 9,7 */
+/* Forward, 16-bit, Wavelet #6: Daubechies 9,7 */
+
+static void
+schro_split_ext_daub97 (int16_t * hi, int16_t * lo, int n)
+{
+  hi[-1] = hi[0];
+  hi[n] = hi[n - 1];
+
+  orc_mas2_sub_s16_ip (lo, hi, 6497, 2048, 12, n);
+
+  lo[-1] = lo[0];
+  lo[n] = lo[n - 1];
+
+  orc_mas2_sub_s16_ip (hi, lo - 1, 217, 2048, 12, n);
+
+  hi[-1] = hi[0];
+  hi[n] = hi[n - 1];
+
+  orc_mas2_add_s16_ip (lo, hi, 3616, 2048, 12, n);
+
+  lo[-1] = lo[0];
+  lo[n] = lo[n - 1];
+
+  orc_mas2_add_s16_ip (hi, lo - 1, 1817, 2048, 12, n);
+
+}
 
 static void
 wavelet_iwt_daub97_horiz (SchroFrame * frame, void *_dest, int component, int i)
@@ -1026,7 +929,26 @@ schro_iwt_daub_9_7 (SchroFrameData *fd, int16_t * tmp)
 
 /* Reverse transforms */
 
-/* Deslauriers-Dubuc 9,7 */
+/* Reverse, 16-bit, Wavelet #0: Deslauriers-Dubuc 9,7 */
+
+static void
+schro_synth_ext_desl93 (int16_t * hi, int16_t * lo, int n)
+{
+  lo[-2] = lo[0];
+  lo[-1] = lo[0];
+  lo[n] = lo[n - 1];
+  lo[n + 1] = lo[n - 1];
+
+  orc_add2_rshift_sub_s16_22 (hi, lo - 1, n);
+
+  hi[-2] = hi[0];
+  hi[-1] = hi[0];
+  hi[n] = hi[n - 1];
+  hi[n + 1] = hi[n - 1];
+
+  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
+      n);
+}
 
 void
 schro_iiwt_desl_9_3 (SchroFrameData *dest, SchroFrameData *src, int16_t * tmp)
@@ -1096,7 +1018,21 @@ schro_iiwt_desl_9_3 (SchroFrameData *dest, SchroFrameData *src, int16_t * tmp)
   }
 }
 
-/* LeGall 5,3 */
+/* Reverse, 16-bit, Wavelet #1: LeGall 5,3 */
+
+static void
+schro_synth_ext_53 (int16_t * hi, int16_t * lo, int n)
+{
+  lo[-1] = lo[0];
+  lo[n] = lo[n - 1];
+
+  orc_add2_rshift_sub_s16_22 (hi, lo - 1, n);
+
+  hi[-1] = hi[0];
+  hi[n] = hi[n - 1];
+
+  orc_add2_rshift_add_s16_11 (lo, hi, n);
+}
 
 void
 schro_iiwt_5_3 (SchroFrameData *dest, SchroFrameData *src, int16_t * tmp)
@@ -1160,6 +1096,24 @@ schro_iiwt_5_3 (SchroFrameData *dest, SchroFrameData *src, int16_t * tmp)
           SCHRO_FRAME_DATA_GET_PIXEL_S16 (dest, 0, j), hi, lo, src->width / 2);
     }
   }
+}
+
+/* Reverse, 16-bit, Wavelet #2: */
+
+static void
+schro_synth_ext_135 (int16_t * hi, int16_t * lo, int n)
+{
+  lo[-1] = lo[0];
+  lo[-2] = lo[0];
+  lo[n] = lo[n - 1];
+  orc_mas4_across_sub_s16_1991_ip (hi, lo - 2, 1 << 4, 5,
+      n);
+
+  hi[-1] = hi[0];
+  hi[n] = hi[n - 1];
+  hi[n + 1] = hi[n - 1];
+  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
+      n);
 }
 
 void
@@ -1234,7 +1188,7 @@ schro_iiwt_13_5 (SchroFrameData *dest, SchroFrameData *src,
 
 }
 
-/* Haar 0 and Haar 1 */
+/* Reverse, 16-bit, Wavelet #3,4: Haar 0 and Haar 1 */
 
 void
 schro_iiwt_haar0 (SchroFrameData *dest, SchroFrameData *src,
@@ -1306,7 +1260,35 @@ schro_iiwt_haar1 (SchroFrameData *dest, SchroFrameData *src,
   }
 }
 
-/* Fidelity */
+/* Reverse, 16-bit, Wavelet #5: Fidelity */
+
+static void
+schro_synth_ext_fidelity (int16_t * hi, int16_t * lo, int n)
+{
+  static const int16_t stage1_weights[] = { -2, 10, -25, 81, 81, -25, 10, -2 };
+  static const int16_t stage2_weights[] =
+      { 8, -21, 46, -161, -161, 46, -21, 8 };
+
+  hi[-3] = hi[0];
+  hi[-2] = hi[0];
+  hi[-1] = hi[0];
+  hi[n] = hi[n - 1];
+  hi[n + 1] = hi[n - 1];
+  hi[n + 2] = hi[n - 1];
+  hi[n + 3] = hi[n - 1];
+
+  mas8_add_s16 (lo, hi - 3, stage1_weights, 128, 8, n);
+
+  lo[-4] = lo[0];
+  lo[-3] = lo[0];
+  lo[-2] = lo[0];
+  lo[-1] = lo[0];
+  lo[n] = lo[n - 1];
+  lo[n + 1] = lo[n - 1];
+  lo[n + 2] = lo[n - 1];
+
+  mas8_add_s16 (hi, lo - 4, stage2_weights, 127, 8, n);
+}
 
 static void
 wavelet_iiwt_fidelity_horiz (SchroFrame * frame, void *_dest, int component,
@@ -1419,7 +1401,31 @@ schro_iiwt_fidelity (SchroFrameData *dest, SchroFrameData *src,
   schro_frame_unref (frame2);
 }
 
-/* Daubechies 9,7 */
+/* Reverse, 16-bit, Wavelet #6: Daubechies 9,7 */
+
+static void
+schro_synth_ext_daub97 (int16_t * hi, int16_t * lo, int n)
+{
+  lo[-1] = lo[0];
+  lo[n] = lo[n - 1];
+
+  orc_mas2_sub_s16_ip (hi, lo - 1, 1817, 2048, 12, n);
+
+  hi[-1] = hi[0];
+  hi[n] = hi[n - 1];
+
+  orc_mas2_sub_s16_ip (lo, hi, 3616, 2048, 12, n);
+
+  lo[-1] = lo[0];
+  lo[n] = lo[n - 1];
+
+  orc_mas2_add_s16_ip (hi, lo - 1, 217, 2048, 12, n);
+
+  hi[-1] = hi[0];
+  hi[n] = hi[n - 1];
+
+  orc_mas2_add_s16_ip (lo, hi, 6497, 2048, 12, n);
+}
 
 static void
 wavelet_iiwt_daub97_horiz (SchroFrame * frame, void *_dest, int component,
@@ -1567,7 +1573,7 @@ schro_iiwt_daub_9_7 (SchroFrameData *dest, SchroFrameData *src,
 
 /* 32 bit versions */
 
-/* Deslauriers-Dubuc 9,7 */
+/* Reverse, 32-bit, Wavelet #0: Deslauriers-Dubuc 9,7 */
 
 static void
 schro_synth_ext_desl93_s32 (int32_t * hi, int32_t * lo, int n)
@@ -1656,7 +1662,7 @@ schro_iiwt_desl_9_3_s32 (SchroFrameData *dest, SchroFrameData *src, int32_t * tm
   }
 }
 
-/* LeGall 5,3 */
+/* Reverse, 32-bit, Wavelet #1: LeGall 5,3 */
 
 static void
 schro_synth_ext_53_s32 (int32_t * hi, int32_t * lo, int n)
@@ -1735,6 +1741,8 @@ schro_iiwt_5_3_s32 (SchroFrameData *dest, SchroFrameData *src, int32_t * tmp)
     }
   }
 }
+
+/* Reverse, 32-bit, Wavelet #2: */
 
 static void
 schro_synth_ext_135_s32 (int32_t * hi, int32_t * lo, int n)
@@ -1824,7 +1832,7 @@ schro_iiwt_13_5_s32 (SchroFrameData *dest, SchroFrameData *src,
 
 }
 
-/* Haar 0 and Haar 1 */
+/* Reverse, 32-bit, Wavelet #3,4: Haar 0 and Haar 1 */
 
 void
 schro_iiwt_haar0_s32 (SchroFrameData *dest, SchroFrameData *src,
@@ -1896,7 +1904,7 @@ schro_iiwt_haar1_s32 (SchroFrameData *dest, SchroFrameData *src,
   }
 }
 
-/* Fidelity */
+/* Reverse, 32-bit, Wavelet #5: Fidelity */
 
 static void
 mas8_add_s32 (int32_t * dest, const int32_t * src, const int32_t * weights,
@@ -2056,7 +2064,7 @@ schro_iiwt_fidelity_s32 (SchroFrameData *dest, SchroFrameData *src,
   schro_frame_unref (frame2);
 }
 
-/* Daubechies 9,7 */
+/* Reverse, 32-bit, Wavelet #6: Daubechies 9,7 */
 
 static void
 schro_synth_ext_daub97_s32 (int32_t * hi, int32_t * lo, int n)
@@ -2225,3 +2233,4 @@ schro_iiwt_daub_9_7_s32 (SchroFrameData *dest, SchroFrameData *src,
   schro_frame_unref (vf3);
   schro_frame_unref (frame2);
 }
+
