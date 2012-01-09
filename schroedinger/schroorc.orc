@@ -1,9 +1,8 @@
 
 .init schro_orc_init
 
-.function orc_add2_rshift_add_s16_22_op
+.function orc_add2_rshift_add_s16_22_vert
 .dest 2 d1 int16_t
-.source 2 s1 int16_t
 .source 2 s2 int16_t
 .source 2 s3 int16_t
 .temp 2 t1
@@ -11,7 +10,19 @@
 addw t1, s2, s3
 addw t1, t1, 2
 shrsw t1, t1, 2
-addw d1, s1, t1
+addw d1, d1, t1
+
+
+.function orc_add2_rshift_add_s32_22_vert
+.dest 4 d1 int32_t
+.source 4 s2 int32_t
+.source 4 s3 int32_t
+.temp 4 t1
+
+addl t1, s2, s3
+addl t1, t1, 2
+shrsl t1, t1, 2
+addl d1, d1, t1
 
 
 .function orc_add2_rshift_add_s16_22
@@ -26,9 +37,20 @@ shrsw t1, t1, 2
 addw d1, d1, t1
 
 
-.function orc_add2_rshift_sub_s16_22_op
+.function orc_add2_rshift_add_s32_22
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.temp 4 t1
+
+loadoffl t1, s1, 1
+addl t1, s1, t1
+addl t1, t1, 2
+shrsl t1, t1, 2
+addl d1, d1, t1
+
+
+.function orc_add2_rshift_sub_s16_22_vert
 .dest 2 d1 int16_t
-.source 2 s1 int16_t
 .source 2 s2 int16_t
 .source 2 s3 int16_t
 .temp 2 t1
@@ -36,7 +58,7 @@ addw d1, d1, t1
 addw t1, s2, s3
 addw t1, t1, 2
 shrsw t1, t1, 2
-subw d1, s1, t1
+subw d1, d1, t1
 
 
 .function orc_add2_rshift_sub_s16_22
@@ -72,15 +94,24 @@ avgsw t1, s1, t1
 addw d1, d1, t1
 
 
-.function orc_add2_rshift_sub_s16_11_op
+.function orc_add2_rshift_sub_s16_11_vert
 .dest 2 d1 int16_t
-.source 2 s1 int16_t
 .source 2 s2 int16_t
 .source 2 s3 int16_t
 .temp 2 t1
 
 avgsw t1, s2, s3
-subw d1, s1, t1
+subw d1, d1, t1
+
+
+.function orc_add2_rshift_sub_s32_11_vert
+.dest 4 d1 int32_t
+.source 4 s2 int32_t
+.source 4 s3 int32_t
+.temp 4 t1
+
+avgsl t1, s2, s3
+subl d1, d1, t1
 
 
 .function orc_add2_rshift_sub_s16_11
@@ -91,6 +122,16 @@ subw d1, s1, t1
 loadoffw t1, s1, 1
 avgsw t1, s1, t1
 subw d1, d1, t1
+
+
+.function orc_add2_rshift_sub_s32_11
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.temp 4 t1
+
+loadoffl t1, s1, 1
+avgsl t1, s1, t1
+subl d1, d1, t1
 
 
 .function orc_add_const_rshift_s16_11
@@ -234,9 +275,8 @@ convlw t1, t2
 subw d1, d1, t1
 
 
-.function orc_mas4_across_add_s16_1991_op
+.function orc_mas4_vert_add_s16_1991
 .dest 2 d1 int16_t
-.source 2 s0 int16_t
 .source 2 s1 int16_t
 .source 2 s2 int16_t
 .source 2 s3 int16_t
@@ -256,10 +296,31 @@ subl t3, t3, t4
 addl t3, t3, p1
 shrsl t3, t3, p2
 convlw t1, t3
-addw d1, s0, t1
+addw d1, d1, t1
 
 
-.function orc_mas4_across_add_s16_1991_ip
+.function orc_mas4_vert_add_s32_1991
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.source 4 s3 int32_t
+.source 4 s4 int32_t
+.param 4 p1
+.param 4 p2
+.temp 4 t1
+.temp 4 t2
+.temp 4 t3
+
+addl t1, s2, s3
+mulll t3, t1, 9
+addl t2, s1, s4
+subl t3, t3, t2
+addl t3, t3, p1
+shrsl t3, t3, p2
+addl d1, d1, t3
+
+
+.function orc_mas4_horiz_add_s16_1991_ip
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
 .param 4 p1
@@ -284,9 +345,8 @@ convlw t1, t3
 addw d1, d1, t1
 
 
-.function orc_mas4_across_sub_s16_1991_op
+.function orc_mas4_vert_sub_s16_1991
 .dest 2 d1 int16_t
-.source 2 s0 int16_t
 .source 2 s1 int16_t
 .source 2 s2 int16_t
 .source 2 s3 int16_t
@@ -306,10 +366,10 @@ subl t3, t3, t4
 addl t3, t3, p1
 shrsl t3, t3, p2
 convlw t1, t3
-subw d1, s0, t1
+subw d1, d1, t1
 
 
-.function orc_mas4_across_sub_s16_1991_ip
+.function orc_mas4_horiz_sub_s16_1991_ip
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
 .param 4 p1
@@ -699,6 +759,16 @@ x2 shlw t1, s1, 1
 splitlw d2, d1, t1
 
 
+.function orc_deinterleave2_lshift1_s32
+.dest 4 d1 int32_t
+.dest 4 d2 int32_t
+.source 8 s1 int32_t
+.temp 8 t1
+
+x2 shll t1, s1, 1
+splitql d2, d1, t1
+
+
 .function orc_haar_deint_lshift1_split_s16
 .dest 2 d1 int16_t
 .dest 2 d2 int16_t
@@ -715,6 +785,22 @@ avgsw t2, t2, 0
 addw d1, t1, t2
 
 
+.function orc_haar_deint_lshift1_split_s32
+.dest 4 d1 int32_t
+.dest 4 d2 int32_t
+.source 8 s1 int32_t
+.temp 4 t1
+.temp 4 t2
+.temp 8 t3
+
+x2 shll t3, s1, 1
+splitql t2, t1, t3
+subl t2, t2, t1
+copyl d2, t2
+avgsl t2, t2, 0
+addl d1, t1, t2
+
+
 .function orc_haar_deint_split_s16
 .dest 2 d1 int16_t
 .dest 2 d2 int16_t
@@ -727,6 +813,20 @@ subw t2, t2, t1
 copyw d2, t2
 avgsw t2, t2, 0
 addw d1, t1, t2
+
+
+.function orc_haar_deint_split_s32
+.dest 4 d1 int32_t
+.dest 4 d2 int32_t
+.source 8 s1 int32_t
+.temp 4 t1
+.temp 4 t2
+
+splitql t2, t1, s1
+subl t2, t2, t1
+copyl d2, t2
+avgsl t2, t2, 0
+addl d1, t1, t2
 
 
 .function orc_haar_split_s16_lo
@@ -763,6 +863,21 @@ subw t2, s2, t1
 copyw d2, t2
 avgsw t2, t2, 0
 addw d1, t1, t2
+
+
+.function orc_haar_split_s32_op
+.dest 4 d1 int32_t
+.dest 4 d2 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.temp 4 t1
+.temp 4 t2
+
+copyl t1, s1
+subl t2, s2, t1
+copyl d2, t2
+avgsl t2, t2, 0
+addl d1, t1, t2
 
 
 .function orc_haar_split_s16
@@ -1664,7 +1779,7 @@ shrsl t1, t1, 2
 addl d1, s1, t1
 
 
-.function orc_mas4_across_add_s32_1991_op
+.function orc_mas4_vert_add_s32_1991_op
 .dest 4 d1 int32_t
 .source 4 s0 int32_t
 .source 4 s1 int32_t
@@ -1714,7 +1829,7 @@ shrsl t2, t2, 1
 mergelq d1, t1, t2
 
 
-.function orc_mas4_across_sub_s32_1991_op
+.function orc_mas4_vert_sub_s32_1991_op
 .dest 4 d1 int32_t
 .source 4 s0 int32_t
 .source 4 s1 int32_t
@@ -1737,7 +1852,29 @@ shrsl t3, t3, p2
 subl d1, s0, t3
 
 
-.function orc_mas4_across_add_s32_1991_ip
+.function orc_mas4_vert_sub_s32_1991
+.dest 4 d1 int32_t
+.source 4 s1 int32_t
+.source 4 s2 int32_t
+.source 4 s3 int32_t
+.source 4 s4 int32_t
+.param 4 p1
+.param 4 p2
+.temp 4 t1
+.temp 4 t2
+.temp 4 t3
+.temp 4 t4
+
+addl t1, s2, s3
+mulll t3, t1, 9
+addl t2, s1, s4
+subl t3, t3, t2
+addl t3, t3, p1
+shrsl t3, t3, p2
+subl d1, d1, t3
+
+
+.function orc_mas4_horiz_add_s32_1991_ip
 .dest 4 d1 int32_t
 .source 4 s1 int32_t
 .param 4 p1
@@ -1771,7 +1908,7 @@ avgsl t1, s2, s3
 addl d1, s1, t1
 
 
-.function orc_mas4_across_sub_s32_1991_ip
+.function orc_mas4_horiz_sub_s32_1991_ip
 .dest 4 d1 int32_t
 .source 4 s1 int32_t
 .param 4 p1
