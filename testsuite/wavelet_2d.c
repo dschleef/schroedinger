@@ -292,7 +292,7 @@ main (int argc, char *argv[])
         printf("  filter %d:\n", filter);
         fwd_random_test(filter, width, height);
         inv_random_test(filter, width, height);
-        if(filter<5)fwd_random_test_s32(filter, width, height);
+        fwd_random_test_s32(filter, width, height);
         inv_random_test_s32(filter, width, height);
       }
     }

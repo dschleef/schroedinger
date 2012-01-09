@@ -749,6 +749,14 @@ mergewl d1, t1, t2
 splitlw d2, d1, s1
 
 
+.function orc_deinterleave2_s32
+.dest 4 d1 int32_t
+.dest 4 d2 int32_t
+.source 8 s1 int32_t
+
+splitql d2, d1, s1
+
+
 .function orc_deinterleave2_lshift1_s16
 .dest 2 d1 int16_t
 .dest 2 d2 int16_t

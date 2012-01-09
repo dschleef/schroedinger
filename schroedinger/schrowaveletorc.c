@@ -21,8 +21,8 @@ static void schro_iwt_5_3_s32 (SchroFrameData *fd, int32_t *tmp);
 static void schro_iwt_13_5_s32 (SchroFrameData *fd, int32_t *tmp);
 static void schro_iwt_haar0_s32 (SchroFrameData *fd, int32_t *tmp);
 static void schro_iwt_haar1_s32 (SchroFrameData *fd, int32_t *tmp);
-//static void schro_iwt_fidelity_s32 (SchroFrameData *fd, int32_t *tmp);
-//static void schro_iwt_daub_9_7_s32 (SchroFrameData *fd, int32_t *tmp);
+static void schro_iwt_fidelity_s32 (SchroFrameData *fd, int32_t *tmp);
+static void schro_iwt_daub_9_7_s32 (SchroFrameData *fd, int32_t *tmp);
 
 static void schro_iiwt_desl_9_3 (SchroFrameData *dest, SchroFrameData *src,
         int16_t *tmp);
@@ -105,12 +105,10 @@ schro_wavelet_transform_2d (SchroFrameData * fd, int filter, int16_t * tmp)
         schro_iwt_haar1_s32 (fd, (orc_int32 *)tmp);
         break;
       case SCHRO_WAVELET_FIDELITY:
-        SCHRO_ASSERT (0);
-        //schro_iwt_fidelity_s32 (fd, (orc_int32 *)tmp);
+        schro_iwt_fidelity_s32 (fd, (orc_int32 *)tmp);
         break;
       case SCHRO_WAVELET_DAUBECHIES_9_7:
-        SCHRO_ASSERT (0);
-        //schro_iwt_daub_9_7_s32 (fd, (orc_int32 *)tmp);
+        schro_iwt_daub_9_7_s32 (fd, (orc_int32 *)tmp);
         break;
       default:
         SCHRO_ASSERT (0);
@@ -637,19 +635,16 @@ schro_split_ext_fidelity (int16_t * hi, int16_t * lo, int n)
 }
 
 static void
-wavelet_iwt_fidelity_horiz (SchroFrame * frame, void *_dest, int component,
-    int i)
+wavelet_iwt_fidelity_horiz (SchroFrameData *fd, int i, orc_int16 *tmp)
 {
-  int16_t *dest = _dest;
-  int width = frame->components[component].width;
-  int16_t *tmp = frame->virt_priv2;
-  int16_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  int width = fd->width;
+  int16_t *line = SCHRO_FRAME_DATA_GET_LINE (fd, i);
   int16_t *hi = tmp + 4;
   int16_t *lo = tmp + width/2 + 12;
 
-  orc_deinterleave2_s16 (hi, lo, src, width / 2);
+  orc_deinterleave2_s16 (hi, lo, line, width / 2);
   schro_split_ext_fidelity (hi, lo, width / 2);
-  join (dest, hi, lo, width);
+  join (line, hi, lo, width);
 }
 
 static void
@@ -668,67 +663,65 @@ mas8_vert_add_s16_2 (int16_t * dest, const int16_t * src,
 }
 
 static void
-wavelet_iwt_fidelity_vert (SchroFrame * frame, void *_dest, int component,
-    int i)
+wavelet_iwt_fidelity_vert_odd (SchroFrameData *fd, int i)
 {
-  int16_t *dest = _dest;
-  int width = frame->components[component].width;
-  int height = frame->components[component].height;
+  int width = fd->width;
+  int height = fd->height;
   int16_t *s[8];
   int j;
 
   if (i & 1) {
     static const int weights[] = { 2, -10, 25, -81, -81, 25, -10, 2 };
-#define ROW(x) \
-  schro_virt_frame_get_line (frame->virt_frame1, component, (x))
-#define ROW2(x) \
-  schro_virt_frame_get_line (frame, component, (x))
     for (j = 0; j < 8; j++) {
-      s[j] = ROW2 (CLAMP (i - 7 + j * 2, 0, height - 2));
+      s[j] = SCHRO_FRAME_DATA_GET_LINE (fd, CLAMP (i - 7 + j * 2, 0, height - 2));
     }
-    mas8_vert_add_s16_2 (dest, ROW (i), s, weights, 127, 8, width);
-  } else {
+    mas8_vert_add_s16_2 (SCHRO_FRAME_DATA_GET_LINE (fd, i),
+        SCHRO_FRAME_DATA_GET_LINE (fd, i), s,
+        weights, 127, 8, width);
+  }
+}
+
+static void
+wavelet_iwt_fidelity_vert_even (SchroFrameData *fd, int i)
+{
+  int width = fd->width;
+  int height = fd->height;
+  int16_t *s[8];
+  int j;
+
+  if ((i & 1) == 0) {
     static const int weights[] = { -8, 21, -46, 161, 161, -46, 21, -8 };
     for (j = 0; j < 8; j++) {
-      s[j] = ROW (CLAMP (i - 7 + j * 2, 1, height - 1));
+      s[j] = SCHRO_FRAME_DATA_GET_LINE (fd, CLAMP (i - 7 + j * 2, 1, height - 1));
     }
-    mas8_vert_add_s16_2 (dest, ROW (i), s, weights, 128, 8, width);
+    mas8_vert_add_s16_2 (SCHRO_FRAME_DATA_GET_LINE (fd, i),
+        SCHRO_FRAME_DATA_GET_LINE (fd, i), s,
+        weights, 128, 8, width);
   }
-#undef ROW
-#undef ROW2
 }
 
 void
 schro_iwt_fidelity (SchroFrameData *fd, int16_t * tmp)
 {
-  SchroFrame *frame;
-  SchroFrame *vf1;
-  SchroFrame *vf2;
+  int i;
+  int j;
 
-  frame = schro_frame_new ();
+  for(i=-14;i<fd->height;i++) {
+    j = i+14;
+    if (j >= 0 && j < fd->height) {
+      wavelet_iwt_fidelity_horiz (fd, j, tmp);
+    }
 
-  frame->format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->width = fd->width;
-  frame->height = fd->height;
+    j = i+7;
+    if (j >= 0 && j < fd->height && (j&1) == 0) {
+      wavelet_iwt_fidelity_vert_even (fd, j);
+    }
 
-  frame->components[0].format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->components[0].width = fd->width;
-  frame->components[0].height = fd->height;
-  frame->components[0].stride = fd->stride;
-  frame->components[0].data = fd->data;
-
-  vf1 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
-  vf1->virt_frame1 = frame;
-  vf1->virt_priv2 = tmp;
-  vf1->render_line = wavelet_iwt_fidelity_horiz;
-
-  vf2 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
-  vf2->virt_frame1 = vf1;
-  vf2->render_line = wavelet_iwt_fidelity_vert;
-
-  schro_virt_frame_render (vf2, frame);
-
-  schro_frame_unref (vf2);
+    j = i;
+    if (j >= 0 && j < fd->height && (j&1) == 1) {
+      wavelet_iwt_fidelity_vert_odd (fd, j);
+    }
+  }
 }
 
 /* Forward, 16-bit, Wavelet #6: Daubechies 9,7 */
@@ -747,128 +740,134 @@ schro_split_ext_daub97 (int16_t * hi, int16_t * lo, int n)
 }
 
 static void
-wavelet_iwt_daub97_horiz (SchroFrame * frame, void *_dest, int component, int i)
+wavelet_iwt_daub97_horiz (SchroFrameData *fd, int i, orc_int16 *tmp)
 {
-  int16_t *dest = _dest;
-  int width = frame->components[component].width;
-  int16_t *tmp = frame->virt_priv2;
-  int16_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  int width = fd->width;
+  int16_t *line = SCHRO_FRAME_DATA_GET_LINE (fd, i);
   int16_t *hi = tmp + 4;
   int16_t *lo = tmp + width/2 + 12;
 
-  orc_deinterleave2_lshift1_s16 (hi, lo, src, width / 2);
+  orc_deinterleave2_lshift1_s16 (hi, lo, line, width / 2);
   schro_split_ext_daub97 (hi, lo, width / 2);
-  join (dest, hi, lo, width);
+  join (line, hi, lo, width);
 }
 
 static void
-wavelet_iwt_daub97_vert1 (SchroFrame * frame, void *_dest, int component, int i)
+wavelet_iwt_daub97_vert1_odd (SchroFrameData *fd, int i)
 {
-  int16_t *dest = _dest;
-  int width = frame->components[component].width;
+  int width = fd->width;
 
   if (i & 1) {
     int16_t *hi;
     int16_t *lo1, *lo2;
 
-    hi = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-    lo1 = schro_virt_frame_get_line (frame->virt_frame1, component, i - 1);
-    if (i + 1 < frame->height) {
-      lo2 = schro_virt_frame_get_line (frame->virt_frame1, component, i + 1);
+    hi = SCHRO_FRAME_DATA_GET_LINE(fd, i);
+    lo1 = SCHRO_FRAME_DATA_GET_LINE(fd, i - 1);
+    if (i + 1 < fd->height) {
+      lo2 = SCHRO_FRAME_DATA_GET_LINE(fd, i + 1);
     } else {
       lo2 = lo1;
     }
 
-    orc_mas2_sub_s16_op (dest, hi, lo1, lo2, 6497, 2048, 12, width);
-  } else {
-    int16_t *lo;
-    int16_t *hi1, *hi2;
-
-    lo = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-    if (i == 0) {
-      hi1 = schro_virt_frame_get_line (frame, component, 1);
-    } else {
-      hi1 = schro_virt_frame_get_line (frame, component, i - 1);
-    }
-    hi2 = schro_virt_frame_get_line (frame, component, i + 1);
-
-    orc_mas2_sub_s16_op (dest, lo, hi1, hi2, 217, 2048, 12, width);
+    orc_mas2_sub_s16_op (hi, hi, lo1, lo2, 6497, 2048, 12, width);
   }
 }
 
 static void
-wavelet_iwt_daub97_vert2 (SchroFrame * frame, void *_dest, int component, int i)
+wavelet_iwt_daub97_vert1_even (SchroFrameData *fd, int i)
 {
-  int16_t *dest = _dest;
-  int width = frame->components[component].width;
+  int width = fd->width;
+
+  if ((i & 1) == 0) {
+    int16_t *lo;
+    int16_t *hi1, *hi2;
+
+    lo = SCHRO_FRAME_DATA_GET_LINE(fd, i);
+    if (i == 0) {
+      hi1 = SCHRO_FRAME_DATA_GET_LINE (fd, 1);
+    } else {
+      hi1 = SCHRO_FRAME_DATA_GET_LINE (fd, i-1);
+    }
+    hi2 = SCHRO_FRAME_DATA_GET_LINE (fd, i + 1);
+
+    orc_mas2_sub_s16_op (lo, lo, hi1, hi2, 217, 2048, 12, width);
+  }
+}
+
+static void
+wavelet_iwt_daub97_vert2_odd (SchroFrameData *fd, int i)
+{
+  int width = fd->width;
 
   if (i & 1) {
     int16_t *hi;
     int16_t *lo1, *lo2;
 
-    hi = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-    lo1 = schro_virt_frame_get_line (frame->virt_frame1, component, i - 1);
-    if (i + 1 < frame->height) {
-      lo2 = schro_virt_frame_get_line (frame->virt_frame1, component, i + 1);
+    hi = SCHRO_FRAME_DATA_GET_LINE(fd, i);
+    lo1 = SCHRO_FRAME_DATA_GET_LINE(fd, i - 1);
+    if (i + 1 < fd->height) {
+      lo2 = SCHRO_FRAME_DATA_GET_LINE(fd, i + 1);
     } else {
       lo2 = lo1;
     }
 
-    orc_mas2_add_s16_op (dest, hi, lo1, lo2, 3616, 2048, 12, width);
-  } else {
+    orc_mas2_add_s16_op (hi, hi, lo1, lo2, 3616, 2048, 12, width);
+  }
+}
+
+static void
+wavelet_iwt_daub97_vert2_even (SchroFrameData *fd, int i)
+{
+  int width = fd->width;
+
+  if ((i & 1) == 0) {
     int16_t *lo;
     int16_t *hi1, *hi2;
 
-    lo = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+    lo = SCHRO_FRAME_DATA_GET_LINE(fd, i);
     if (i == 0) {
-      hi1 = schro_virt_frame_get_line (frame, component, 1);
+      hi1 = SCHRO_FRAME_DATA_GET_LINE (fd, 1);
     } else {
-      hi1 = schro_virt_frame_get_line (frame, component, i - 1);
+      hi1 = SCHRO_FRAME_DATA_GET_LINE (fd, i-1);
     }
-    hi2 = schro_virt_frame_get_line (frame, component, i + 1);
+    hi2 = SCHRO_FRAME_DATA_GET_LINE (fd, i + 1);
 
-    orc_mas2_add_s16_op (dest, lo, hi1, hi2, 1817, 2048, 12, width);
+    orc_mas2_add_s16_op (lo, lo, hi1, hi2, 1817, 2048, 12, width);
   }
 }
 
 void
 schro_iwt_daub_9_7 (SchroFrameData *fd, int16_t * tmp)
 {
-  SchroFrame *frame;
-  SchroFrame *vf1;
-  SchroFrame *vf2;
-  SchroFrame *vf3;
+  int i;
+  int j;
 
-  frame = schro_frame_new ();
+  for(i=-4;i<fd->height;i++) {
+    j = i+4;
+    if (j >= 0 && j < fd->height) {
+      wavelet_iwt_daub97_horiz (fd, j, tmp);
+    }
 
-  frame->format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->width = fd->width;
-  frame->height = fd->height;
+    j = i+3;
+    if (j >= 0 && j < fd->height && (j&1) == 1) {
+      wavelet_iwt_daub97_vert1_odd (fd, j);
+    }
 
-  frame->components[0].format = SCHRO_FRAME_FORMAT_S16_444;
-  frame->components[0].width = fd->width;
-  frame->components[0].height = fd->height;
-  frame->components[0].stride = fd->stride;
-  frame->components[0].data = fd->data;
+    j = i+2;
+    if (j >= 0 && j < fd->height && (j&1) == 0) {
+      wavelet_iwt_daub97_vert1_even (fd, j);
+    }
 
-  vf1 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
-  vf1->virt_frame1 = frame;
-  vf1->virt_priv2 = tmp;
-  vf1->render_line = wavelet_iwt_daub97_horiz;
+    j = i+1;
+    if (j >= 0 && j < fd->height && (j&1) == 1) {
+      wavelet_iwt_daub97_vert2_odd (fd, j);
+    }
 
-  vf2 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
-  vf2->virt_frame1 = vf1;
-  vf2->virt_priv2 = tmp;
-  vf2->render_line = wavelet_iwt_daub97_vert1;
-
-  vf3 = schro_frame_new_virtual (NULL, frame->format, fd->width, fd->height);
-  vf3->virt_frame1 = vf2;
-  vf3->virt_priv2 = tmp;
-  vf3->render_line = wavelet_iwt_daub97_vert2;
-
-  schro_virt_frame_render (vf3, frame);
-
-  schro_frame_unref (vf3);
+    j = i;
+    if (j >= 0 && j < fd->height && (j&1) == 0) {
+      wavelet_iwt_daub97_vert2_even (fd, j);
+    }
+  }
 }
 
 /* Forward, 32-bit, Wavelet #0: Deslauriers-Dubuc 9,7 */
@@ -1187,6 +1186,275 @@ schro_iwt_haar1_s32 (SchroFrameData *fd, int32_t * tmp)
     wavelet_iwt_haar_shift1_horiz_s32 (fd, i+1, tmp + fd->width);
 
     wavelet_iwt_haar_vert_s32 (fd, i, tmp);
+  }
+}
+
+/* Forward, 32-bit, Wavelet #5: Fidelity */
+
+static void
+mas8_add_s32 (int32_t * dest, const int32_t * src, const int32_t * weights,
+    int offset, int shift, int n)
+{
+  int i;
+  for (i = 0; i < n; i++) {
+    int x = offset;
+    x += src[i + 0] * weights[0];
+    x += src[i + 1] * weights[1];
+    x += src[i + 2] * weights[2];
+    x += src[i + 3] * weights[3];
+    x += src[i + 4] * weights[4];
+    x += src[i + 5] * weights[5];
+    x += src[i + 6] * weights[6];
+    x += src[i + 7] * weights[7];
+    dest[i] += x >> shift;
+  }
+}
+
+static void
+schro_split_ext_fidelity_s32 (int32_t * hi, int32_t * lo, int n)
+{
+  static const int32_t stage1_weights[] = { -8, 21, -46, 161, 161, -46, 21, -8 };
+  static const int32_t stage2_weights[] = { 2, -10, 25, -81, -81, 25, -10, 2 };
+
+  extend_4_3_s32 (lo, n);
+  mas8_add_s32 (hi, lo - 4, stage1_weights, 128, 8, n);
+  extend_3_4_s32 (hi, n);
+  mas8_add_s32 (lo, hi - 3, stage2_weights, 127, 8, n);
+}
+
+static void
+wavelet_iwt_fidelity_horiz_s32 (SchroFrameData *fd, int i, orc_int32 *tmp)
+{
+  int width = fd->width;
+  int32_t *line = SCHRO_FRAME_DATA_GET_LINE (fd, i);
+  int32_t *hi = tmp + 4;
+  int32_t *lo = tmp + width/2 + 12;
+
+  orc_deinterleave2_s32 (hi, lo, line, width / 2);
+  schro_split_ext_fidelity_s32 (hi, lo, width / 2);
+  join_s32 (line, hi, lo, width);
+}
+
+static void
+mas8_vert_add_s32_2 (int32_t * dest, const int32_t * src,
+    int32_t ** s, const int32_t *weights, int offset, int shift, int n)
+{
+  int i;
+  int j;
+  for (i = 0; i < n; i++) {
+    int x = offset;
+    for (j = 0; j < 8; j++) {
+      x += s[j][i] * weights[j];
+    }
+    dest[i] = src[i] + (x >> shift);
+  }
+}
+
+static void
+wavelet_iwt_fidelity_vert_odd_s32 (SchroFrameData *fd, int i)
+{
+  int width = fd->width;
+  int height = fd->height;
+  int32_t *s[8];
+  int j;
+
+  if (i & 1) {
+    static const int32_t weights[] = { 2, -10, 25, -81, -81, 25, -10, 2 };
+    for (j = 0; j < 8; j++) {
+      s[j] = SCHRO_FRAME_DATA_GET_LINE (fd, CLAMP (i - 7 + j * 2, 0, height - 2));
+    }
+    mas8_vert_add_s32_2 (SCHRO_FRAME_DATA_GET_LINE (fd, i),
+        SCHRO_FRAME_DATA_GET_LINE (fd, i), s,
+        weights, 127, 8, width);
+  }
+}
+
+static void
+wavelet_iwt_fidelity_vert_even_s32 (SchroFrameData *fd, int i)
+{
+  int width = fd->width;
+  int height = fd->height;
+  int32_t *s[8];
+  int j;
+
+  if ((i & 1) == 0) {
+    static const int32_t weights[] = { -8, 21, -46, 161, 161, -46, 21, -8 };
+    for (j = 0; j < 8; j++) {
+      s[j] = SCHRO_FRAME_DATA_GET_LINE (fd, CLAMP (i - 7 + j * 2, 1, height - 1));
+    }
+    mas8_vert_add_s32_2 (SCHRO_FRAME_DATA_GET_LINE (fd, i),
+        SCHRO_FRAME_DATA_GET_LINE (fd, i), s,
+        weights, 128, 8, width);
+  }
+}
+
+void
+schro_iwt_fidelity_s32 (SchroFrameData *fd, int32_t * tmp)
+{
+  int i;
+  int j;
+
+  for(i=-14;i<fd->height;i++) {
+    j = i+14;
+    if (j >= 0 && j < fd->height) {
+      wavelet_iwt_fidelity_horiz_s32 (fd, j, tmp);
+    }
+
+    j = i+7;
+    if (j >= 0 && j < fd->height && (j&1) == 0) {
+      wavelet_iwt_fidelity_vert_even_s32 (fd, j);
+    }
+
+    j = i;
+    if (j >= 0 && j < fd->height && (j&1) == 1) {
+      wavelet_iwt_fidelity_vert_odd_s32 (fd, j);
+    }
+  }
+}
+
+/* Forward, 32-bit, Wavelet #6: Daubechies 9,7 */
+
+static void
+schro_split_ext_daub97_s32 (int32_t * hi, int32_t * lo, int n)
+{
+  extend_1_1_s32 (hi, n);
+  orc_mas2_sub_s32_ip (lo, hi, 6497, 2048, 12, n);
+  extend_1_1_s32 (lo, n);
+  orc_mas2_sub_s32_ip (hi, lo - 1, 217, 2048, 12, n);
+  extend_1_1_s32 (hi, n);
+  orc_mas2_add_s32_ip (lo, hi, 3616, 2048, 12, n);
+  extend_1_1_s32 (lo, n);
+  orc_mas2_add_s32_ip (hi, lo - 1, 1817, 2048, 12, n);
+}
+
+static void
+wavelet_iwt_daub97_horiz_s32 (SchroFrameData *fd, int i, orc_int32 *tmp)
+{
+  int width = fd->width;
+  int32_t *line = SCHRO_FRAME_DATA_GET_LINE (fd, i);
+  int32_t *hi = tmp + 4;
+  int32_t *lo = tmp + width/2 + 12;
+
+  orc_deinterleave2_lshift1_s32 (hi, lo, line, width / 2);
+  schro_split_ext_daub97_s32 (hi, lo, width / 2);
+  join_s32 (line, hi, lo, width);
+}
+
+static void
+wavelet_iwt_daub97_vert1_odd_s32 (SchroFrameData *fd, int i)
+{
+  int width = fd->width;
+
+  if (i & 1) {
+    int32_t *hi;
+    int32_t *lo1, *lo2;
+
+    hi = SCHRO_FRAME_DATA_GET_LINE(fd, i);
+    lo1 = SCHRO_FRAME_DATA_GET_LINE(fd, i - 1);
+    if (i + 1 < fd->height) {
+      lo2 = SCHRO_FRAME_DATA_GET_LINE(fd, i + 1);
+    } else {
+      lo2 = lo1;
+    }
+
+    orc_mas2_sub_s32_op (hi, hi, lo1, lo2, 6497, 2048, 12, width);
+  }
+}
+
+static void
+wavelet_iwt_daub97_vert1_even_s32 (SchroFrameData *fd, int i)
+{
+  int width = fd->width;
+
+  if ((i & 1) == 0) {
+    int32_t *lo;
+    int32_t *hi1, *hi2;
+
+    lo = SCHRO_FRAME_DATA_GET_LINE(fd, i);
+    if (i == 0) {
+      hi1 = SCHRO_FRAME_DATA_GET_LINE (fd, 1);
+    } else {
+      hi1 = SCHRO_FRAME_DATA_GET_LINE (fd, i-1);
+    }
+    hi2 = SCHRO_FRAME_DATA_GET_LINE (fd, i + 1);
+
+    orc_mas2_sub_s32_op (lo, lo, hi1, hi2, 217, 2048, 12, width);
+  }
+}
+
+static void
+wavelet_iwt_daub97_vert2_odd_s32 (SchroFrameData *fd, int i)
+{
+  int width = fd->width;
+
+  if (i & 1) {
+    int32_t *hi;
+    int32_t *lo1, *lo2;
+
+    hi = SCHRO_FRAME_DATA_GET_LINE(fd, i);
+    lo1 = SCHRO_FRAME_DATA_GET_LINE(fd, i - 1);
+    if (i + 1 < fd->height) {
+      lo2 = SCHRO_FRAME_DATA_GET_LINE(fd, i + 1);
+    } else {
+      lo2 = lo1;
+    }
+
+    orc_mas2_add_s32_op (hi, hi, lo1, lo2, 3616, 2048, 12, width);
+  }
+}
+
+static void
+wavelet_iwt_daub97_vert2_even_s32 (SchroFrameData *fd, int i)
+{
+  int width = fd->width;
+
+  if ((i & 1) == 0) {
+    int32_t *lo;
+    int32_t *hi1, *hi2;
+
+    lo = SCHRO_FRAME_DATA_GET_LINE(fd, i);
+    if (i == 0) {
+      hi1 = SCHRO_FRAME_DATA_GET_LINE (fd, 1);
+    } else {
+      hi1 = SCHRO_FRAME_DATA_GET_LINE (fd, i-1);
+    }
+    hi2 = SCHRO_FRAME_DATA_GET_LINE (fd, i + 1);
+
+    orc_mas2_add_s32_op (lo, lo, hi1, hi2, 1817, 2048, 12, width);
+  }
+}
+
+void
+schro_iwt_daub_9_7_s32 (SchroFrameData *fd, int32_t * tmp)
+{
+  int i;
+  int j;
+
+  for(i=-4;i<fd->height;i++) {
+    j = i+4;
+    if (j >= 0 && j < fd->height) {
+      wavelet_iwt_daub97_horiz_s32 (fd, j, tmp);
+    }
+
+    j = i+3;
+    if (j >= 0 && j < fd->height && (j&1) == 1) {
+      wavelet_iwt_daub97_vert1_odd_s32 (fd, j);
+    }
+
+    j = i+2;
+    if (j >= 0 && j < fd->height && (j&1) == 0) {
+      wavelet_iwt_daub97_vert1_even_s32 (fd, j);
+    }
+
+    j = i+1;
+    if (j >= 0 && j < fd->height && (j&1) == 1) {
+      wavelet_iwt_daub97_vert2_odd_s32 (fd, j);
+    }
+
+    j = i;
+    if (j >= 0 && j < fd->height && (j&1) == 0) {
+      wavelet_iwt_daub97_vert2_even_s32 (fd, j);
+    }
   }
 }
 
@@ -2093,6 +2361,8 @@ schro_iiwt_haar1_s32 (SchroFrameData *dest, SchroFrameData *src,
 
 /* Reverse, 32-bit, Wavelet #5: Fidelity */
 
+#if 0
+/* already defined as part of forward transform */
 static void
 mas8_add_s32 (int32_t * dest, const int32_t * src, const int32_t * weights,
     int offset, int shift, int n)
@@ -2111,6 +2381,7 @@ mas8_add_s32 (int32_t * dest, const int32_t * src, const int32_t * weights,
     dest[i] += x >> shift;
   }
 }
+#endif
 
 static void
 schro_synth_ext_fidelity_s32 (int32_t * hi, int32_t * lo, int n)
