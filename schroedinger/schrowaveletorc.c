@@ -153,20 +153,101 @@ schro_wavelet_inverse_transform_2d (SchroFrameData * fd_dest,
 
 }
 
+/* some utility functions */
+
+static void
+extend_1_2 (orc_int16 *data, int n)
+{
+  data[-1] = data[0];
+
+  data[n] = data[n - 1];
+  data[n + 1] = data[n - 1];
+}
+
+static void
+extend_2_1 (orc_int16 *data, int n)
+{
+  data[-2] = data[0];
+  data[-1] = data[0];
+
+  data[n] = data[n - 1];
+}
+
+static void
+extend_1_1 (orc_int16 *data, int n)
+{
+  data[-1] = data[0];
+
+  data[n] = data[n - 1];
+}
+
+static void
+extend_1_0 (orc_int16 *data, int n)
+{
+  data[-1] = data[0];
+}
+
+static void
+extend_2_2 (orc_int16 *data, int n)
+{
+  data[-2] = data[0];
+  data[-1] = data[0];
+
+  data[n] = data[n - 1];
+  data[n+1] = data[n - 1];
+}
+
+#define extend_4_3 extend_4_4
+#define extend_3_4 extend_4_4
+static void
+extend_4_4 (orc_int16 *data, int n)
+{
+  data[-4] = data[0];
+  data[-3] = data[0];
+  data[-2] = data[0];
+  data[-1] = data[0];
+
+  data[n] = data[n - 1];
+  data[n+1] = data[n - 1];
+  data[n+2] = data[n - 1];
+  data[n+3] = data[n - 1];
+}
+
+#define extend_1_1_s32 extend_4_4_s32
+#define extend_2_2_s32 extend_4_4_s32
+#define extend_1_2_s32 extend_4_4_s32
+#define extend_2_1_s32 extend_4_4_s32
+#define extend_4_3_s32 extend_4_4_s32
+#define extend_3_4_s32 extend_4_4_s32
+static void
+extend_4_4_s32 (orc_int32 *data, int n)
+{
+  data[-4] = data[0];
+  data[-3] = data[0];
+  data[-2] = data[0];
+  data[-1] = data[0];
+
+  data[n] = data[n - 1];
+  data[n+1] = data[n - 1];
+  data[n+2] = data[n - 1];
+  data[n+3] = data[n - 1];
+}
+
+static void
+join (orc_int16 *dest, orc_int16 *src1, orc_int16 *src2, int width)
+{
+  orc_memcpy (dest, src1, width / 2 * sizeof (int16_t));
+  orc_memcpy (dest + width / 2, src2, width / 2 * sizeof (int16_t));
+}
+
 /* Forward, 16-bit, Wavelet #0: Deslauriers-Dubuc 9,7 */
 
 static void
 schro_split_ext_desl93 (int16_t * hi, int16_t * lo, int n)
 {
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-
-  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
-      n);
-
-  lo[-1] = lo[0];
-
+  extend_1_2 (hi, n);
+  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, 1 << 3, 4, n);
+  extend_1_0 (lo, n);
   orc_add2_rshift_add_s16_22 (hi, lo - 1, n);
 }
 
@@ -178,13 +259,12 @@ wavelet_iwt_desl_9_3_horiz (SchroFrame * frame, void *_dest, int component,
   int width = frame->components[component].width;
   int16_t *tmp = frame->virt_priv2;
   int16_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-  int16_t *hi = tmp + 2;
-  int16_t *lo = tmp + 6 + width / 2;
+  int16_t *hi = tmp + 4;
+  int16_t *lo = tmp + width/2 + 12;
 
   orc_deinterleave2_lshift1_s16 (hi, lo, src, width / 2);
   schro_split_ext_desl93 (hi, lo, width / 2);
-  orc_memcpy (dest, hi, width / 2 * sizeof (int16_t));
-  orc_memcpy (dest + width / 2, lo, width / 2 * sizeof (int16_t));
+  join (dest, hi, lo, width);
 }
 
 static void
@@ -266,14 +346,9 @@ schro_iwt_desl_9_3 (SchroFrameData *fd, int16_t * tmp)
 static void
 schro_split_ext_53 (int16_t * hi, int16_t * lo, int n)
 {
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
+  extend_1_1 (hi, n);
   orc_add2_rshift_sub_s16_11 (lo, hi, n);
-
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
+  extend_1_1 (lo, n);
   orc_add2_rshift_add_s16_22 (hi, lo - 1, n);
 }
 
@@ -284,13 +359,12 @@ wavelet_iwt_5_3_horiz (SchroFrame * frame, void *_dest, int component, int i)
   int width = frame->components[component].width;
   int16_t *tmp = frame->virt_priv2;
   int16_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-  int16_t *hi = tmp + 2;
-  int16_t *lo = tmp + 6 + width / 2;
+  int16_t *hi = tmp + 4;
+  int16_t *lo = tmp + width/2 + 12;
 
   orc_deinterleave2_lshift1_s16 (hi, lo, src, width / 2);
   schro_split_ext_53 (hi, lo, width / 2);
-  orc_memcpy (dest, hi, width / 2 * sizeof (int16_t));
-  orc_memcpy (dest + width / 2, lo, width / 2 * sizeof (int16_t));
+  join (dest, hi, lo, width);
 }
 
 static void
@@ -379,19 +453,10 @@ copy_s16 (SchroFrame * frame, void *_dest, int component, int i)
 static void
 schro_split_ext_135 (int16_t * hi, int16_t * lo, int n)
 {
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-
-  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
-      n);
-
-  lo[-1] = lo[0];
-  lo[-2] = lo[0];
-  lo[n] = lo[n - 1];
-
-  orc_mas4_across_add_s16_1991_ip (hi, lo - 2, 1 << 4, 5,
-      n);
+  extend_1_2 (hi, n);
+  orc_mas4_across_sub_s16_1991_ip (lo, hi - 1, 1 << 3, 4, n);
+  extend_2_1 (lo, n);
+  orc_mas4_across_add_s16_1991_ip (hi, lo - 2, 1 << 4, 5, n);
 }
 
 static void
@@ -401,13 +466,12 @@ wavelet_iwt_13_5_horiz (SchroFrame * frame, void *_dest, int component, int i)
   int width = frame->components[component].width;
   int16_t *tmp = frame->virt_priv2;
   int16_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-  int16_t *hi = tmp + 2;
-  int16_t *lo = tmp + 6 + width / 2;
+  int16_t *hi = tmp + 4;
+  int16_t *lo = tmp + width/2 + 12;
 
   orc_deinterleave2_lshift1_s16 (hi, lo, src, width / 2);
   schro_split_ext_135 (hi, lo, width / 2);
-  orc_memcpy (dest, hi, width / 2 * sizeof (int16_t));
-  orc_memcpy (dest + width / 2, lo, width / 2 * sizeof (int16_t));
+  join (dest, hi, lo, width);
 }
 
 static void
@@ -655,25 +719,9 @@ schro_split_ext_fidelity (int16_t * hi, int16_t * lo, int n)
   static const int16_t stage1_weights[] = { -8, 21, -46, 161, 161, -46, 21, -8 };
   static const int16_t stage2_weights[] = { 2, -10, 25, -81, -81, 25, -10, 2 };
 
-  lo[-4] = lo[0];
-  lo[-3] = lo[0];
-  lo[-2] = lo[0];
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-  lo[n + 1] = lo[n - 1];
-  lo[n + 2] = lo[n - 1];
-
-  //schro_orc_split_add_fidelity_161 (hi, lo - 4, n);
+  extend_4_3 (lo, n);
   mas8_add_s16 (hi, lo - 4, stage1_weights, 128, 8, n);
-
-  hi[-3] = hi[0];
-  hi[-2] = hi[0];
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-  hi[n + 2] = hi[n - 1];
-  hi[n + 3] = hi[n - 1];
-
+  extend_3_4 (hi, n);
   mas8_add_s16 (lo, hi - 3, stage2_weights, 127, 8, n);
 }
 
@@ -686,12 +734,11 @@ wavelet_iwt_fidelity_horiz (SchroFrame * frame, void *_dest, int component,
   int16_t *tmp = frame->virt_priv2;
   int16_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
   int16_t *hi = tmp + 4;
-  int16_t *lo = tmp + 12 + width / 2;
+  int16_t *lo = tmp + width/2 + 12;
 
   orc_deinterleave2_s16 (hi, lo, src, width / 2);
   schro_split_ext_fidelity (hi, lo, width / 2);
-  orc_memcpy (dest, hi, width / 2 * sizeof (int16_t));
-  orc_memcpy (dest + width / 2, lo, width / 2 * sizeof (int16_t));
+  join (dest, hi, lo, width);
 }
 
 static void
@@ -778,26 +825,14 @@ schro_iwt_fidelity (SchroFrameData *fd, int16_t * tmp)
 static void
 schro_split_ext_daub97 (int16_t * hi, int16_t * lo, int n)
 {
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
+  extend_1_1 (hi, n);
   orc_mas2_sub_s16_ip (lo, hi, 6497, 2048, 12, n);
-
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
+  extend_1_1 (lo, n);
   orc_mas2_sub_s16_ip (hi, lo - 1, 217, 2048, 12, n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
+  extend_1_1 (hi, n);
   orc_mas2_add_s16_ip (lo, hi, 3616, 2048, 12, n);
-
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
+  extend_1_1 (lo, n);
   orc_mas2_add_s16_ip (hi, lo - 1, 1817, 2048, 12, n);
-
 }
 
 static void
@@ -807,13 +842,12 @@ wavelet_iwt_daub97_horiz (SchroFrame * frame, void *_dest, int component, int i)
   int width = frame->components[component].width;
   int16_t *tmp = frame->virt_priv2;
   int16_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-  int16_t *hi = tmp + 2;
-  int16_t *lo = tmp + 6 + width / 2;
+  int16_t *hi = tmp + 4;
+  int16_t *lo = tmp + width/2 + 12;
 
   orc_deinterleave2_lshift1_s16 (hi, lo, src, width / 2);
   schro_split_ext_daub97 (hi, lo, width / 2);
-  orc_memcpy (dest, hi, width / 2 * sizeof (int16_t));
-  orc_memcpy (dest + width / 2, lo, width / 2 * sizeof (int16_t));
+  join (dest, hi, lo, width);
 }
 
 static void
@@ -934,20 +968,10 @@ schro_iwt_daub_9_7 (SchroFrameData *fd, int16_t * tmp)
 static void
 schro_synth_ext_desl93 (int16_t * hi, int16_t * lo, int n)
 {
-  lo[-2] = lo[0];
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-  lo[n + 1] = lo[n - 1];
-
+  extend_2_2 (lo, n);
   orc_add2_rshift_sub_s16_22 (hi, lo - 1, n);
-
-  hi[-2] = hi[0];
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-
-  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
-      n);
+  extend_2_2 (hi, n);
+  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, 1 << 3, 4, n);
 }
 
 void
@@ -1004,8 +1028,8 @@ schro_iiwt_desl_9_3 (SchroFrameData *dest, SchroFrameData *src, int16_t * tmp)
     j = i;
     /* horizontal wavelet */
     if (j == CLAMP(j,0,src->height-1)) {
-      int16_t *hi = tmp + 2;
-      int16_t *lo = tmp + 6 + src->width / 2;
+      int16_t *hi = tmp + 4;
+      int16_t *lo = tmp + src->width/2 + 12;
 
       orc_memcpy (hi, SCHRO_FRAME_DATA_GET_PIXEL_S16(src, 0, j),
           src->width / 2 * sizeof (int16_t));
@@ -1023,14 +1047,9 @@ schro_iiwt_desl_9_3 (SchroFrameData *dest, SchroFrameData *src, int16_t * tmp)
 static void
 schro_synth_ext_53 (int16_t * hi, int16_t * lo, int n)
 {
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
+  extend_1_1 (lo, n);
   orc_add2_rshift_sub_s16_22 (hi, lo - 1, n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
+  extend_1_1 (hi, n);
   orc_add2_rshift_add_s16_11 (lo, hi, n);
 }
 
@@ -1082,8 +1101,8 @@ schro_iiwt_5_3 (SchroFrameData *dest, SchroFrameData *src, int16_t * tmp)
     j = i;
     /* horizontal wavelet */
     if (j == CLAMP(j,0,src->height-1)) {
-      int16_t *hi = tmp + 2;
-      int16_t *lo = tmp + 6 + src->width / 2;
+      int16_t *hi = tmp + 4;
+      int16_t *lo = tmp + src->width/2 + 12;
 
       orc_memcpy (hi,
           SCHRO_FRAME_DATA_GET_PIXEL_S16(src, 0, j),
@@ -1103,17 +1122,10 @@ schro_iiwt_5_3 (SchroFrameData *dest, SchroFrameData *src, int16_t * tmp)
 static void
 schro_synth_ext_135 (int16_t * hi, int16_t * lo, int n)
 {
-  lo[-1] = lo[0];
-  lo[-2] = lo[0];
-  lo[n] = lo[n - 1];
-  orc_mas4_across_sub_s16_1991_ip (hi, lo - 2, 1 << 4, 5,
-      n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, 1 << 3, 4,
-      n);
+  extend_2_1 (lo, n);
+  orc_mas4_across_sub_s16_1991_ip (hi, lo - 2, 1 << 4, 5, n);
+  extend_1_2 (hi, n);
+  orc_mas4_across_add_s16_1991_ip (lo, hi - 1, 1 << 3, 4, n);
 }
 
 void
@@ -1173,8 +1185,8 @@ schro_iiwt_13_5 (SchroFrameData *dest, SchroFrameData *src,
 
     j = i;
     if (j == CLAMP(j,0,src->height-1)) {
-      int16_t *hi = tmp + 2;
-      int16_t *lo = tmp + 6 + width / 2;
+      int16_t *hi = tmp + 4;
+      int16_t *lo = tmp + width/2 + 12;
 
       srcline = SCHRO_FRAME_DATA_GET_LINE(dest, j);
 
@@ -1191,8 +1203,7 @@ schro_iiwt_13_5 (SchroFrameData *dest, SchroFrameData *src,
 /* Reverse, 16-bit, Wavelet #3,4: Haar 0 and Haar 1 */
 
 void
-schro_iiwt_haar0 (SchroFrameData *dest, SchroFrameData *src,
-    int16_t * tmp)
+schro_iiwt_haar0 (SchroFrameData *dest, SchroFrameData *src, int16_t * tmp)
 {
   int i;
   int j;
@@ -1211,8 +1222,8 @@ schro_iiwt_haar0 (SchroFrameData *dest, SchroFrameData *src,
       
     j = i;
     if (j == CLAMP(j,0,src->height-1)) {
-      int16_t *hi = tmp + 2;
-      int16_t *lo = tmp + 6 + width / 2;
+      int16_t *hi = tmp + 4;
+      int16_t *lo = tmp + width/2 + 12;
 
       orc_memcpy (lo, SCHRO_FRAME_DATA_GET_LINE(dest,j),
           width / 2 * sizeof (int16_t));
@@ -1246,8 +1257,8 @@ schro_iiwt_haar1 (SchroFrameData *dest, SchroFrameData *src,
       
     j = i;
     if (j == CLAMP(j,0,src->height-1)) {
-      int16_t *hi = tmp + 2;
-      int16_t *lo = tmp + 6 + width / 2;
+      int16_t *hi = tmp + 4;
+      int16_t *lo = tmp + width/2 + 12;
 
       orc_memcpy (lo, SCHRO_FRAME_DATA_GET_LINE(dest,j),
           width / 2 * sizeof (int16_t));
@@ -1269,24 +1280,9 @@ schro_synth_ext_fidelity (int16_t * hi, int16_t * lo, int n)
   static const int16_t stage2_weights[] =
       { 8, -21, 46, -161, -161, 46, -21, 8 };
 
-  hi[-3] = hi[0];
-  hi[-2] = hi[0];
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-  hi[n + 2] = hi[n - 1];
-  hi[n + 3] = hi[n - 1];
-
+  extend_3_4 (hi, n);
   mas8_add_s16 (lo, hi - 3, stage1_weights, 128, 8, n);
-
-  lo[-4] = lo[0];
-  lo[-3] = lo[0];
-  lo[-2] = lo[0];
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-  lo[n + 1] = lo[n - 1];
-  lo[n + 2] = lo[n - 1];
-
+  extend_4_3 (lo, n);
   mas8_add_s16 (hi, lo - 4, stage2_weights, 127, 8, n);
 }
 
@@ -1299,7 +1295,7 @@ wavelet_iiwt_fidelity_horiz (SchroFrame * frame, void *_dest, int component,
   int16_t *tmp = frame->virt_priv2;
   int16_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
   int16_t *hi = tmp + 4;
-  int16_t *lo = tmp + 12 + width / 2;
+  int16_t *lo = tmp + width/2 + 12;
 
   orc_memcpy (hi, src, width / 2 * sizeof (int16_t));
   orc_memcpy (lo, src + width / 2, width / 2 * sizeof (int16_t));
@@ -1406,24 +1402,13 @@ schro_iiwt_fidelity (SchroFrameData *dest, SchroFrameData *src,
 static void
 schro_synth_ext_daub97 (int16_t * hi, int16_t * lo, int n)
 {
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
+  extend_1_1 (lo, n);
   orc_mas2_sub_s16_ip (hi, lo - 1, 1817, 2048, 12, n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
+  extend_1_1 (hi, n);
   orc_mas2_sub_s16_ip (lo, hi, 3616, 2048, 12, n);
-
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
+  extend_1_1 (lo, n);
   orc_mas2_add_s16_ip (hi, lo - 1, 217, 2048, 12, n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
+  extend_1_1 (hi, n);
   orc_mas2_add_s16_ip (lo, hi, 6497, 2048, 12, n);
 }
 
@@ -1435,8 +1420,8 @@ wavelet_iiwt_daub97_horiz (SchroFrame * frame, void *_dest, int component,
   int width = frame->components[component].width;
   int16_t *tmp = frame->virt_priv2;
   int16_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-  int16_t *hi = tmp + 2;
-  int16_t *lo = tmp + 6 + width / 2;
+  int16_t *hi = tmp + 4;
+  int16_t *lo = tmp + width/2 + 12;
 
   orc_memcpy (hi, src, width / 2 * sizeof (int16_t));
   orc_memcpy (lo, src + width / 2, width / 2 * sizeof (int16_t));
@@ -1578,20 +1563,10 @@ schro_iiwt_daub_9_7 (SchroFrameData *dest, SchroFrameData *src,
 static void
 schro_synth_ext_desl93_s32 (int32_t * hi, int32_t * lo, int n)
 {
-  lo[-2] = lo[0];
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-  lo[n + 1] = lo[n - 1];
-
+  extend_2_2_s32 (lo, n);
   orc_add2_rshift_sub_s32_22 (hi, lo - 1, n);
-
-  hi[-2] = hi[0];
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-
-  orc_mas4_across_add_s32_1991_ip (lo, hi - 1, 1 << 3, 4,
-      n);
+  extend_2_2_s32 (hi, n);
+  orc_mas4_across_add_s32_1991_ip (lo, hi - 1, 1 << 3, 4, n);
 }
 
 void
@@ -1648,8 +1623,8 @@ schro_iiwt_desl_9_3_s32 (SchroFrameData *dest, SchroFrameData *src, int32_t * tm
     j = i;
     /* horizontal wavelet */
     if (j == CLAMP(j,0,src->height-1)) {
-      int32_t *hi = tmp + 2;
-      int32_t *lo = tmp + 6 + src->width / 2;
+      int32_t *hi = tmp + 4;
+      int32_t *lo = tmp + src->width/2 + 12;
 
       orc_memcpy (hi, SCHRO_FRAME_DATA_GET_PIXEL_S32(src, 0, j),
           src->width / 2 * sizeof (int32_t));
@@ -1667,14 +1642,9 @@ schro_iiwt_desl_9_3_s32 (SchroFrameData *dest, SchroFrameData *src, int32_t * tm
 static void
 schro_synth_ext_53_s32 (int32_t * hi, int32_t * lo, int n)
 {
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
+  extend_1_1_s32 (lo, n);
   orc_add2_rshift_sub_s32_22 (hi, lo - 1, n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
+  extend_1_1_s32 (hi, n);
   orc_add2_rshift_add_s32_11 (lo, hi, n);
 }
 
@@ -1726,8 +1696,8 @@ schro_iiwt_5_3_s32 (SchroFrameData *dest, SchroFrameData *src, int32_t * tmp)
     j = i;
     /* horizontal wavelet */
     if (j == CLAMP(j,0,src->height-1)) {
-      int32_t *hi = tmp + 2;
-      int32_t *lo = tmp + 6 + src->width / 2;
+      int32_t *hi = tmp + 4;
+      int32_t *lo = tmp + src->width/2 + 12;
 
       orc_memcpy (hi,
           SCHRO_FRAME_DATA_GET_PIXEL_S32(src, 0, j),
@@ -1747,17 +1717,10 @@ schro_iiwt_5_3_s32 (SchroFrameData *dest, SchroFrameData *src, int32_t * tmp)
 static void
 schro_synth_ext_135_s32 (int32_t * hi, int32_t * lo, int n)
 {
-  lo[-1] = lo[0];
-  lo[-2] = lo[0];
-  lo[n] = lo[n - 1];
-  orc_mas4_across_sub_s32_1991_ip (hi, lo - 2, 1 << 4, 5,
-      n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-  orc_mas4_across_add_s32_1991_ip (lo, hi - 1, 1 << 3, 4,
-      n);
+  extend_2_1_s32 (lo, n);
+  orc_mas4_across_sub_s32_1991_ip (hi, lo - 2, 1 << 4, 5, n);
+  extend_1_2_s32 (hi, n);
+  orc_mas4_across_add_s32_1991_ip (lo, hi - 1, 1 << 3, 4, n);
 }
 
 void
@@ -1817,8 +1780,8 @@ schro_iiwt_13_5_s32 (SchroFrameData *dest, SchroFrameData *src,
 
     j = i;
     if (j == CLAMP(j,0,src->height-1)) {
-      int32_t *hi = tmp + 2;
-      int32_t *lo = tmp + 6 + width / 2;
+      int32_t *hi = tmp + 4;
+      int32_t *lo = tmp + width/2 + 12;
 
       srcline = SCHRO_FRAME_DATA_GET_LINE(dest, j);
 
@@ -1855,8 +1818,8 @@ schro_iiwt_haar0_s32 (SchroFrameData *dest, SchroFrameData *src,
       
     j = i;
     if (j == CLAMP(j,0,src->height-1)) {
-      int32_t *hi = tmp + 2;
-      int32_t *lo = tmp + 6 + width / 2;
+      int32_t *hi = tmp + 4;
+      int32_t *lo = tmp + width/2 + 12;
 
       orc_memcpy (lo, SCHRO_FRAME_DATA_GET_LINE(dest,j),
           width / 2 * sizeof (int32_t));
@@ -1890,8 +1853,8 @@ schro_iiwt_haar1_s32 (SchroFrameData *dest, SchroFrameData *src,
       
     j = i;
     if (j == CLAMP(j,0,src->height-1)) {
-      int32_t *hi = tmp + 2;
-      int32_t *lo = tmp + 6 + width / 2;
+      int32_t *hi = tmp + 4;
+      int32_t *lo = tmp + width/2 + 12;
 
       orc_memcpy (lo, SCHRO_FRAME_DATA_GET_LINE(dest,j),
           width / 2 * sizeof (int32_t));
@@ -1932,24 +1895,9 @@ schro_synth_ext_fidelity_s32 (int32_t * hi, int32_t * lo, int n)
   static const int32_t stage2_weights[] =
       { 8, -21, 46, -161, -161, 46, -21, 8 };
 
-  hi[-3] = hi[0];
-  hi[-2] = hi[0];
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-  hi[n + 1] = hi[n - 1];
-  hi[n + 2] = hi[n - 1];
-  hi[n + 3] = hi[n - 1];
-
+  extend_3_4_s32 (hi, n);
   mas8_add_s32 (lo, hi - 3, stage1_weights, 128, 8, n);
-
-  lo[-4] = lo[0];
-  lo[-3] = lo[0];
-  lo[-2] = lo[0];
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-  lo[n + 1] = lo[n - 1];
-  lo[n + 2] = lo[n - 1];
-
+  extend_4_3_s32 (lo, n);
   mas8_add_s32 (hi, lo - 4, stage2_weights, 127, 8, n);
 }
 
@@ -1962,7 +1910,7 @@ wavelet_iiwt_fidelity_horiz_s32 (SchroFrame * frame, void *_dest, int component,
   int32_t *tmp = frame->virt_priv2;
   int32_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
   int32_t *hi = tmp + 4;
-  int32_t *lo = tmp + 12 + width / 2;
+  int32_t *lo = tmp + width/2 + 12;
 
   orc_memcpy (hi, src, width / 2 * sizeof (int32_t));
   orc_memcpy (lo, src + width / 2, width / 2 * sizeof (int32_t));
@@ -2069,24 +2017,13 @@ schro_iiwt_fidelity_s32 (SchroFrameData *dest, SchroFrameData *src,
 static void
 schro_synth_ext_daub97_s32 (int32_t * hi, int32_t * lo, int n)
 {
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
+  extend_1_1_s32 (lo, n);
   orc_mas2_sub_s32_ip (hi, lo - 1, 1817, 2048, 12, n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
+  extend_1_1_s32 (hi, n);
   orc_mas2_sub_s32_ip (lo, hi, 3616, 2048, 12, n);
-
-  lo[-1] = lo[0];
-  lo[n] = lo[n - 1];
-
+  extend_1_1_s32 (lo, n);
   orc_mas2_add_s32_ip (hi, lo - 1, 217, 2048, 12, n);
-
-  hi[-1] = hi[0];
-  hi[n] = hi[n - 1];
-
+  extend_1_1_s32 (hi, n);
   orc_mas2_add_s32_ip (lo, hi, 6497, 2048, 12, n);
 }
 
@@ -2098,8 +2035,8 @@ wavelet_iiwt_daub97_horiz_s32 (SchroFrame * frame, void *_dest, int component,
   int width = frame->components[component].width;
   int32_t *tmp = frame->virt_priv2;
   int32_t *src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
-  int32_t *hi = tmp + 2;
-  int32_t *lo = tmp + 6 + width / 2;
+  int32_t *hi = tmp + 4;
+  int32_t *lo = tmp + width/2 + 12;
 
   orc_memcpy (hi, src, width / 2 * sizeof (int32_t));
   orc_memcpy (lo, src + width / 2, width / 2 * sizeof (int32_t));
