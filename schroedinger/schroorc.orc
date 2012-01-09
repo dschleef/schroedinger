@@ -410,6 +410,13 @@ convubw d1, s1
 convsuswb d1, s1
 
 
+.function orc_convert_s32_s16
+.dest 4 d1 orc_int32
+.source 2 s1 orc_int16
+
+convswl d1, s1
+
+
 .function orc_offsetconvert_u8_s16
 .dest 1 d1
 .source 2 s1 int16_t
@@ -437,6 +444,16 @@ convsuswb d1, t2
 
 convubw t1, s1
 subw d1, t1, 128
+
+
+.function orc_offsetconvert_s32_u8
+.dest 4 d1 int32_t
+.source 1 s1
+.temp 2 t1
+
+convubw t1, s1
+subw t1, t1, 128
+convswl d1, t1
 
 
 .function orc_subtract_s16_u8

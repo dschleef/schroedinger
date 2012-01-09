@@ -848,6 +848,10 @@ schro_frame_convert (SchroFrame * dest, SchroFrame * src)
       } else {
         SCHRO_ASSERT(0);
       }
+    } else if (SCHRO_FRAME_FORMAT_DEPTH (dest_format) ==
+        SCHRO_FRAME_FORMAT_DEPTH_S32) {
+      frame = schro_virt_frame_new_convert_s32 (frame);
+      SCHRO_DEBUG ("convert_s32 %p", frame);
     }
   }
 

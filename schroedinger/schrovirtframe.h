@@ -37,6 +37,7 @@ SchroFrame *schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat for
 SchroFrame * schro_virt_frame_new_convert_u8 (SchroFrame *vf);
 SchroFrame * schro_virt_frame_new_convert_u8_s32 (SchroFrame *vf);
 SchroFrame * schro_virt_frame_new_convert_s16 (SchroFrame *vf);
+SchroFrame * schro_virt_frame_new_convert_s32 (SchroFrame * vf);
 SchroFrame * schro_virt_frame_new_crop (SchroFrame *vf, int width, int height);
 SchroFrame * schro_virt_frame_new_edgeextend (SchroFrame *vf, int width, int height);
 SchroFrame * schro_virt_frame_new_interlace (SchroFrame *vf_top, SchroFrame *vf_bottom);

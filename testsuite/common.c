@@ -391,8 +391,11 @@ int
 frame_data_compare (SchroFrameData *dest, SchroFrameData *src)
 {
   int i,j;
+  int src_depth = SCHRO_FRAME_FORMAT_DEPTH(src->format);
+  int dest_depth = SCHRO_FRAME_FORMAT_DEPTH(dest->format);
 
-  if (SCHRO_FRAME_FORMAT_DEPTH(dest->format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
+  if (src_depth == SCHRO_FRAME_FORMAT_DEPTH_U8 &&
+      dest_depth == SCHRO_FRAME_FORMAT_DEPTH_U8) {
     uint8_t *d;
     uint8_t *s;
 
@@ -403,8 +406,21 @@ frame_data_compare (SchroFrameData *dest, SchroFrameData *src)
         if (d[i] != s[i]) return FALSE;
       }
     }
-  } else {
+  } else if (dest_depth == SCHRO_FRAME_FORMAT_DEPTH_S16 &&
+      src_depth == SCHRO_FRAME_FORMAT_DEPTH_S16) {
     int16_t *d;
+    int16_t *s;
+
+    for(j=0;j<dest->height;j++){
+      d = SCHRO_FRAME_DATA_GET_LINE(dest, j);
+      s = SCHRO_FRAME_DATA_GET_LINE(src, j);
+      for(i=0;i<dest->width;i++){
+        if (d[i] != s[i]) return FALSE;
+      }
+    }
+  } else if (dest_depth == SCHRO_FRAME_FORMAT_DEPTH_S32 &&
+      src_depth == SCHRO_FRAME_FORMAT_DEPTH_S16) {
+    int32_t *d;
     int16_t *s;
 
     for(j=0;j<dest->height;j++){
@@ -469,13 +485,41 @@ frame_data_dump_s16 (SchroFrameData *test, SchroFrameData *ref)
 }
 
 void
-frame_data_dump_full (SchroFrameData *test, SchroFrameData *ref, SchroFrameData *orig)
+frame_data_dump_s32_s16 (SchroFrameData *test, SchroFrameData *ref)
 {
   int i;
   int j;
 
   printf("=====\n");
-  if (SCHRO_FRAME_FORMAT_DEPTH(test->format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
+  for(j=0;j<test->height;j++){
+    int32_t *tline;
+    int16_t *rline;
+
+    tline = SCHRO_FRAME_DATA_GET_LINE(test, j);
+    rline = SCHRO_FRAME_DATA_GET_LINE(ref, j);
+    for(i=0;i<test->width;i++){
+      if (tline[i] == rline[i]) {
+        printf("%4d ", tline[i]);
+      } else {
+        printf("\033[00;01;37;41m%4d\033[00m ", tline[i]);
+      }
+    }
+    printf("\n");
+  }
+  printf("=====\n");
+}
+
+void
+frame_data_dump_full (SchroFrameData *test, SchroFrameData *ref, SchroFrameData *orig)
+{
+  int i;
+  int j;
+  int test_depth = SCHRO_FRAME_FORMAT_DEPTH(test->format);
+  int ref_depth = SCHRO_FRAME_FORMAT_DEPTH(ref->format);
+
+  printf("=====\n");
+  if (test_depth == SCHRO_FRAME_FORMAT_DEPTH_U8 &&
+      ref_depth == SCHRO_FRAME_FORMAT_DEPTH_U8) {
     for(j=0;j<test->height;j++){
       uint8_t *tline;
       uint8_t *rline;
@@ -501,7 +545,8 @@ frame_data_dump_full (SchroFrameData *test, SchroFrameData *ref, SchroFrameData 
       }
       printf("\n");
     }
-  } else {
+  } else if (ref_depth == SCHRO_FRAME_FORMAT_DEPTH_S16 &&
+      test_depth == SCHRO_FRAME_FORMAT_DEPTH_S16) {
     for(j=0;j<test->height;j++){
       int16_t *tline;
       int16_t *rline;
@@ -527,6 +572,34 @@ frame_data_dump_full (SchroFrameData *test, SchroFrameData *ref, SchroFrameData 
       }
       printf("\n");
     }
+  } else if (test_depth == SCHRO_FRAME_FORMAT_DEPTH_S32 &&
+      ref_depth == SCHRO_FRAME_FORMAT_DEPTH_S16) {
+    for(j=0;j<test->height;j++){
+      int32_t *tline;
+      int16_t *rline;
+      int16_t *oline;
+
+      tline = SCHRO_FRAME_DATA_GET_LINE(test, j);
+      rline = SCHRO_FRAME_DATA_GET_LINE(ref, j);
+      oline = SCHRO_FRAME_DATA_GET_LINE(orig, j);
+      for(i=0;i<test->width;i++){
+        printf("\033[00;35m%4d\033[00m ", oline[i]);
+      }
+      printf("\n");
+      for(i=0;i<test->width;i++){
+        printf("\033[00;32m%4d\033[00m ", rline[i]);
+      }
+      printf("\n");
+      for(i=0;i<test->width;i++){
+        if (tline[i] == rline[i]) {
+          printf("%4d ", tline[i]);
+        } else {
+          printf("\033[00;01;37;41m%4d\033[00m ", tline[i]);
+        }
+      }
+      printf("\n");
+    }
+
   }
   printf("=====\n");
 }

@@ -1610,6 +1610,47 @@ schro_virt_frame_new_convert_s16 (SchroFrame * vf)
 }
 
 static void
+convert_s32_u8 (SchroFrame * frame, void *_dest, int component, int i)
+{
+  int32_t *dest = _dest;
+  uint8_t *src;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+
+  orc_offsetconvert_s32_u8 (dest, src, frame->components[component].width);
+}
+
+static void
+convert_s32_s16 (SchroFrame * frame, void *_dest, int component, int i)
+{
+  int32_t *dest = _dest;
+  int16_t *src;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+
+  orc_convert_s32_s16 (dest, src, frame->components[component].width);
+}
+
+SchroFrame *
+schro_virt_frame_new_convert_s32 (SchroFrame * vf)
+{
+  SchroFrame *virt_frame;
+  SchroFrameFormat format;
+
+  format = (vf->format & 3) | SCHRO_FRAME_FORMAT_S32_444;
+
+  virt_frame = schro_frame_new_virtual (NULL, format, vf->width, vf->height);
+  virt_frame->virt_frame1 = vf;
+  if (SCHRO_FRAME_FORMAT_DEPTH (vf->format) == SCHRO_FRAME_FORMAT_DEPTH_S16) {
+    virt_frame->render_line = convert_s32_s16;
+  } else {
+    virt_frame->render_line = convert_s32_u8;
+  }
+
+  return virt_frame;
+}
+
+static void
 crop_u8 (SchroFrame * frame, void *_dest, int component, int i)
 {
   uint8_t *dest = _dest;

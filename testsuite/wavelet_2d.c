@@ -16,7 +16,7 @@
 int filtershift[] = { 1, 1, 1, 0, 1, 0, 1 };
 
 int fail = 0;
-int verbose = 0;
+int verbose = 1;
 
 void iwt_ref(SchroFrameData *p, int filter);
 void iiwt_ref(SchroFrameData *p, int filter);
@@ -189,6 +189,87 @@ inv_random_test (int filter, int width, int height)
   schro_frame_unref (ref);
 }
 
+void
+fwd_random_test_s32 (int filter, int width, int height)
+{
+  SchroFrame *test;
+  SchroFrame *orig;
+  SchroFrame *ref;
+  SchroFrameData *fd_orig;
+  SchroFrameData *fd_test;
+  SchroFrameData *fd_ref;
+  char name[TEST_PATTERN_NAME_SIZE] = { 0 };
+
+  orig = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_orig = orig->components + 0;
+  test = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S32_444,
+      width, height);
+  fd_test = test->components + 0;
+  ref = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_ref = ref->components + 0;
+
+  test_pattern_generate (fd_orig, name, 0);
+  printf("  forward test 32-bit \"%s\":\n", name);
+  fflush(stdout);
+
+  schro_frame_convert (ref, orig);
+  schro_frame_convert (test, orig);
+  iwt_ref(fd_ref,filter);
+  iwt_test(fd_test,filter);
+  if (!frame_data_compare(fd_test, fd_ref)) { 
+    printf("  failed\n");
+    if (verbose) frame_data_dump_full (fd_test, fd_ref, fd_orig);
+    fail = TRUE;
+  }
+  
+  schro_frame_unref (orig);
+  schro_frame_unref (test);
+  schro_frame_unref (ref);
+}
+
+void
+inv_random_test_s32 (int filter, int width, int height)
+{
+  SchroFrame *test;
+  SchroFrame *orig;
+  SchroFrame *ref;
+  SchroFrameData *fd_test;
+  SchroFrameData *fd_orig;
+  SchroFrameData *fd_ref;
+  char name[TEST_PATTERN_NAME_SIZE] = { 0 };
+
+  orig = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_orig = orig->components + 0;
+  test = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S32_444,
+      width, height);
+  fd_test = test->components + 0;
+  ref = schro_frame_new_and_alloc (NULL, SCHRO_FRAME_FORMAT_S16_444,
+      width, height);
+  fd_ref = ref->components + 0;
+
+  test_pattern_generate (fd_orig, name, 0);
+  printf("  reverse test 32-bit \"%s\":\n", name);
+  fflush(stdout);
+
+  iwt_ref(fd_orig,filter);
+  schro_frame_convert (test, orig);
+  schro_frame_convert (ref, orig);
+  iiwt_ref(fd_ref,filter);
+  iiwt_test(fd_test,filter);
+  if (!frame_data_compare(fd_test, fd_ref)) { 
+    printf("  failed\n");
+    if (verbose) frame_data_dump_full (fd_test, fd_ref, fd_orig);
+    fail = TRUE;
+  }
+  schro_frame_unref (orig);
+  schro_frame_unref (test);
+  schro_frame_unref (ref);
+}
+
+
 int
 main (int argc, char *argv[])
 {
@@ -204,22 +285,15 @@ main (int argc, char *argv[])
     inv_test(filter, 20, 20);
   }
 
-  for(width = 4; width <= 40; width+=2) {
-    for(height = 4; height <= 40; height+=2) {
+  for(width = 2; width <= 40; width+=2) {
+    for(height = 2; height <= 40; height+=2) {
       printf("Size %dx%d:\n", width, height);
       for(filter=0;filter<=SCHRO_WAVELET_DAUBECHIES_9_7;filter++){
         printf("  filter %d:\n", filter);
-        if (filter == SCHRO_WAVELET_DESLAURIERS_DUBUC_9_7 && (width < 0 || height <= 6)) {
-          continue;
-        }
-        if (filter == SCHRO_WAVELET_DESLAURIERS_DUBUC_13_7 && (width < 0 || height <= 6)) {
-          continue;
-        }
-        if (filter == SCHRO_WAVELET_FIDELITY && (width < 16 || height < 16)) {
-          continue;
-        }
         fwd_random_test(filter, width, height);
         inv_random_test(filter, width, height);
+        //fwd_random_test_s32(filter, width, height);
+        inv_random_test_s32(filter, width, height);
       }
     }
   }
@@ -338,7 +412,7 @@ void iwt_test(SchroFrameData *p, int filter)
 {
   int16_t *tmp;
 
-  tmp = malloc((p->width + 32)*sizeof(int16_t));
+  tmp = malloc((p->width + 32)*sizeof(int32_t));
 
   schro_wavelet_transform_2d (p, filter, tmp);
 
@@ -349,7 +423,7 @@ void iiwt_test(SchroFrameData *p, int filter)
 {
   int16_t *tmp;
 
-  tmp = malloc((p->width + 32)*sizeof(int16_t));
+  tmp = malloc((p->width + 32)*sizeof(int32_t));
 
   schro_wavelet_inverse_transform_2d (p, p, filter, tmp);
 
