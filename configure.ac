@@ -132,6 +132,7 @@ AS_COMPILER_FLAG(-Wall, SCHRO_CFLAGS="$SCHRO_CFLAGS -Wall")
 if test "x$SCHRO_CVS" = "xyes"
 then
   AS_COMPILER_FLAG(-Werror, SCHRO_CFLAGS="$SCHRO_CFLAGS -Werror")
+  AS_COMPILER_FLAG(-Wno-strict-overflow, SCHRO_CFLAGS="$SCHRO_CFLAGS -Wno-strict-overflow")
 fi
 
 AS_COMPILER_FLAG(-O3, CFLAGS=`echo $CFLAGS | sed s/O2/O3/`)
