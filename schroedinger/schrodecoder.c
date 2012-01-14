@@ -13,7 +13,6 @@
 #include <string.h>
 #include <stdio.h>
 
-//#define DEEP_DECODE
 
 #if 0
 /* Used for testing bitstream */
@@ -348,13 +347,15 @@ schro_picture_new (SchroDecoderInstance * instance)
 
   picture->params.video_format = video_format;
 
-#ifdef DEEP_DECODE
-  frame_format = schro_params_get_frame_format (32,
-      video_format->chroma_format);
-#else
-  frame_format = schro_params_get_frame_format (16,
-      video_format->chroma_format);
-#endif
+  picture->bit_depth = schro_video_format_get_bit_depth (video_format);
+
+  if (picture->bit_depth > 8) {
+    frame_format = schro_params_get_frame_format (32,
+        video_format->chroma_format);
+  } else {
+    frame_format = schro_params_get_frame_format (16,
+        video_format->chroma_format);
+  }
   schro_video_format_get_picture_chroma_size (video_format,
       &picture_chroma_width, &picture_chroma_height);
 
@@ -1815,11 +1816,7 @@ schro_decoder_inverse_iwt_transform (SchroFrame * frame, SchroParams * params)
   int component;
   int16_t *tmp;
 
-#ifdef DEEP_DECODE
   tmp = schro_malloc (sizeof (int32_t) * (params->iwt_luma_width + 16));
-#else
-  tmp = schro_malloc (sizeof (int16_t) * (params->iwt_luma_width + 16));
-#endif
 
   for (component = 0; component < 3; component++) {
     SchroFrameData *comp = &frame->components[component];

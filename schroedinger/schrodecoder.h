@@ -152,6 +152,8 @@ struct _SchroPicture {
   int has_md5;
   uint8_t md5_checksum[32];
 
+  int bit_depth;
+
   /* private data that is associated with this picture */
   SchroTag *tag;
 };
