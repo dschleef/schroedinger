@@ -40,7 +40,8 @@ typedef enum _SchroFrameFormat {
   SCHRO_FRAME_FORMAT_ARGB = 0x103,
   SCHRO_FRAME_FORMAT_RGB = 0x104,
   SCHRO_FRAME_FORMAT_v216 = 0x105,
-  SCHRO_FRAME_FORMAT_v210 = 0x106
+  SCHRO_FRAME_FORMAT_v210 = 0x106,
+  SCHRO_FRAME_FORMAT_AY64 = 0x107
 } SchroFrameFormat;
 
 #define SCHRO_FRAME_FORMAT_DEPTH(format) ((format) & 0xc)
@@ -114,6 +115,7 @@ SchroFrame * schro_frame_new_from_data_UYVY_full (void *data, int width, int hei
 SchroFrame * schro_frame_new_from_data_AYUV (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_v216 (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_v210 (void *data, int width, int height);
+SchroFrame * schro_frame_new_from_data_AY64 (void *data, int width, int height);
 void schro_frame_set_free_callback (SchroFrame *frame,
     SchroFrameFreeFunc free_func, void *priv);
 void schro_frame_unref (SchroFrame *frame);

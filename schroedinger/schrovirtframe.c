@@ -690,6 +690,36 @@ unpack_ayuv (SchroFrame * frame, void *_dest, int component, int i)
 }
 
 static void
+unpack_AY64 (SchroFrame * frame, void *_dest, int component, int i)
+{
+  int16_t *dest = _dest;
+  int16_t *src;
+  int j;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+
+  switch (component) {
+    case 0:
+      for (j = 0; j < frame->width; j++) {
+        dest[j] = src[j * 4 + 1];
+      }
+      break;
+    case 1:
+      for (j = 0; j < frame->width; j++) {
+        dest[j] = src[j * 4 + 2];
+      }
+      break;
+    case 2:
+      for (j = 0; j < frame->width; j++) {
+        dest[j] = src[j * 4 + 3];
+      }
+      break;
+    default:
+      SCHRO_ASSERT (0);
+  }
+}
+
+static void
 unpack_v210 (SchroFrame * frame, void *_dest, int component, int i)
 {
   int16_t *dest = _dest;
@@ -1181,6 +1211,40 @@ schro_virt_frame_new_pack_AYUV (SchroFrame * vf)
       vf->width, vf->height);
   virt_frame->virt_frame1 = vf;
   virt_frame->render_line = pack_ayuv;
+
+  return virt_frame;
+}
+
+static void
+pack_ayuv64 (SchroFrame * frame, void *_dest, int component, int i)
+{
+  uint16_t *dest = _dest;
+  int16_t *src_y;
+  int16_t *src_u;
+  int16_t *src_v;
+  int j;
+
+  src_y = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+  src_u = schro_virt_frame_get_line (frame->virt_frame1, 1, i);
+  src_v = schro_virt_frame_get_line (frame->virt_frame1, 2, i);
+
+  for (j = 0; j < frame->width; j++) {
+    dest[j * 4 + 0] = 0xffff;
+    dest[j * 4 + 1] = CLAMP(src_y[j] + 0x8000, 0, 0xffff);
+    dest[j * 4 + 2] = CLAMP(src_u[j] + 0x8000, 0, 0xffff);
+    dest[j * 4 + 3] = CLAMP(src_v[j] + 0x8000, 0, 0xffff);
+  }
+}
+
+SchroFrame *
+schro_virt_frame_new_pack_AY64 (SchroFrame * vf)
+{
+  SchroFrame *virt_frame;
+
+  virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_AY64,
+      vf->width, vf->height);
+  virt_frame->virt_frame1 = vf;
+  virt_frame->render_line = pack_ayuv64;
 
   return virt_frame;
 }

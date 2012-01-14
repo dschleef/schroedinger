@@ -31,6 +31,7 @@ SchroFrame *schro_virt_frame_new_pack_AYUV (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_v216 (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_v210 (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_pack_RGB (SchroFrame *vf);
+SchroFrame *schro_virt_frame_new_pack_AY64 (SchroFrame * vf);
 SchroFrame *schro_virt_frame_new_color_matrix (SchroFrame *vf);
 SchroFrame *schro_virt_frame_new_subsample (SchroFrame *vf, SchroFrameFormat format);
 

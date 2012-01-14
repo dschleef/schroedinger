@@ -332,6 +332,39 @@ schro_frame_new_from_data_AYUV (void *data, int width, int height)
 }
 
 /**
+ * schro_frame_new_from_data_AY64:
+ *
+ * Creates a new SchroFrame object with the requested size using
+ * the data pointed to by @data.  The data must be in AY64 format.
+ * The data must remain for the lifetime of the SchroFrame object.
+ * It is recommended to use schro_frame_set_free_callback() for
+ * notification when the data is no longer needed.
+ *
+ * Returns: a new SchroFrame object
+ */
+SchroFrame *
+schro_frame_new_from_data_AY64 (void *data, int width, int height)
+{
+  SchroFrame *frame = schro_frame_new ();
+
+  frame->format = SCHRO_FRAME_FORMAT_AY64;
+
+  frame->width = width;
+  frame->height = height;
+
+  frame->components[0].format = frame->format;
+  frame->components[0].width = width;
+  frame->components[0].height = height;
+  frame->components[0].stride = width * 8;
+  frame->components[0].data = data;
+  frame->components[0].length = frame->components[0].stride * height;
+  frame->components[0].v_shift = 0;
+  frame->components[0].h_shift = 0;
+
+  return frame;
+}
+
+/**
  * schro_frame_new_from_data_v216:
  *
  * Creates a new SchroFrame object with the requested size using
@@ -821,6 +854,9 @@ schro_frame_convert (SchroFrame * dest, SchroFrame * src)
     case SCHRO_FRAME_FORMAT_v216:
       dest_format = SCHRO_FRAME_FORMAT_S16_422;
       break;
+    case SCHRO_FRAME_FORMAT_AY64:
+      dest_format = SCHRO_FRAME_FORMAT_S16_444;
+      break;
     default:
       dest_format = dest->format;
       break;
@@ -888,6 +924,10 @@ schro_frame_convert (SchroFrame * dest, SchroFrame * src)
     case SCHRO_FRAME_FORMAT_v216:
       frame = schro_virt_frame_new_pack_v216 (frame);
       SCHRO_DEBUG ("pack_v216 %p", frame);
+      break;
+    case SCHRO_FRAME_FORMAT_AY64:
+      frame = schro_virt_frame_new_pack_AY64 (frame);
+      SCHRO_DEBUG ("pack_AY64 %p", frame);
       break;
     default:
       break;
