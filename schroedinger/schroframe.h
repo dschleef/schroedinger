@@ -189,6 +189,8 @@ void schro_frame_get_reference_subdata (SchroFrame* frame, SchroFrameData* fd
 
 void schro_frame_split_fields (SchroFrame *dest1, SchroFrame *dest2, SchroFrame *src);
 
+int schro_frame_get_bit_depth (SchroFrame *frame);
+
 #endif
 
 SCHRO_END_DECLS

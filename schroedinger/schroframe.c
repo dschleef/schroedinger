@@ -2492,3 +2492,17 @@ schro_frame_get_reference_subdata (SchroFrame * frame, SchroFrameData * fd,
   fd->width = MAX (0, comp->width + extension - x);
   fd->height = MAX (0, comp->height + extension - y);
 }
+
+int schro_frame_get_bit_depth (SchroFrame *frame)
+{
+  switch (SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
+    case SCHRO_FRAME_FORMAT_DEPTH_U8:
+      return 8;
+    case SCHRO_FRAME_FORMAT_DEPTH_S16:
+      return 16;
+    case SCHRO_FRAME_FORMAT_DEPTH_S32:
+      return 32;
+  }
+  return 0;
+}
+

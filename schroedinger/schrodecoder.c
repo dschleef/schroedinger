@@ -347,9 +347,7 @@ schro_picture_new (SchroDecoderInstance * instance)
 
   picture->params.video_format = video_format;
 
-  picture->bit_depth = schro_video_format_get_bit_depth (video_format);
-
-  if (picture->bit_depth > 8) {
+  if (instance->bit_depth > 8) {
     frame_format = schro_params_get_frame_format (32,
         video_format->chroma_format);
   } else {
@@ -1146,6 +1144,7 @@ schro_decoder_push (SchroDecoder * decoder, SchroBuffer * buffer)
       instance->have_sequence_header = TRUE;
       instance->first_sequence_header = TRUE;
       instance->sequence_header_buffer = schro_buffer_dup (buffer);
+      instance->bit_depth = schro_video_format_get_bit_depth (&instance->video_format);
 
       ret = SCHRO_DECODER_FIRST_ACCESS_UNIT;
     } else {
@@ -2011,13 +2010,11 @@ schro_decoder_x_combine (SchroAsyncStage * stage)
       if (params->num_refs > 0 || picture->is_ref) {
         schro_frame_convert (&output_picture, picture->ref_output_frame);
       } else {
-        int depth;
-        depth =
-            schro_video_format_get_bit_depth (&picture->
-            decoder_instance->video_format);
-        if (depth > 8) {
-          /* hack to handle 10-bit to 8-bit output */
-          schro_frame_shift_right (picture->frame, depth - 8);
+        int shift;
+        shift = picture->decoder_instance->bit_depth -
+          schro_frame_get_bit_depth (&output_picture);
+        if (shift != 0) {
+          schro_frame_shift_right (picture->frame, shift);
         }
         schro_frame_convert (&output_picture, picture->frame);
       }
@@ -2054,13 +2051,11 @@ schro_decoder_x_combine (SchroAsyncStage * stage)
       if (params->num_refs > 0 || picture->is_ref) {
         schro_frame_convert (&output_picture, picture->ref_output_frame);
       } else {
-        int depth;
-        depth =
-            schro_video_format_get_bit_depth (&picture->
-            decoder_instance->video_format);
-        if (depth > 8) {
-          /* hack to handle 10-bit to 8-bit output */
-          schro_frame_shift_right (picture->frame, depth - 8);
+        int shift;
+        shift = picture->decoder_instance->bit_depth -
+          schro_frame_get_bit_depth (&output_picture);
+        if (shift != 0) {
+          schro_frame_shift_right (picture->frame, shift);
         }
         schro_frame_convert (&output_picture, picture->frame);
       }
