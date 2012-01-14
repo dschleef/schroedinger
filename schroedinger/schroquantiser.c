@@ -342,7 +342,6 @@ schro_encoder_choose_quantisers_simple (SchroEncoderFrame * frame)
 
   /* FIXME this should really be based directly on excursion */
   range = (1<<frame->encoder->bit_depth) - 1.0;
-  SCHRO_ERROR("range %g", range);
 
   noise_amplitude = range * pow (0.1, frame->encoder->noise_threshold * 0.05);
   SCHRO_DEBUG ("noise %g", noise_amplitude);
