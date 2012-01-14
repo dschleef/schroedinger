@@ -245,6 +245,17 @@ schro_quantise_s16 (int16_t * dest, int16_t * src, int quant_factor,
   }
 }
 
+void
+schro_quantise_s32 (int32_t * dest, int32_t * src, int quant_factor,
+    int quant_offset, int n)
+{
+  int i;
+  for (i = 0; i < n; i++) {
+    dest[i] = __schro_quantise (src[i], quant_factor, quant_offset);
+    src[i] = __schro_dequantise (dest[i], quant_factor, quant_offset);
+  }
+}
+
 #ifdef unused
 void
 schro_quantise_s16_table (int16_t * dest, int16_t * src, int quant_index,

@@ -246,6 +246,10 @@ struct _SchroEncoder {
   int version_major;
   int version_minor;
 
+  int bit_depth;
+  int input_frame_depth;
+  int intermediate_frame_depth;
+
   /* configuration */
   int rate_control;
   int bitrate;

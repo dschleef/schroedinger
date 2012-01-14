@@ -135,6 +135,8 @@ int schro_dequantise (int q, int quant_factor, int quant_offset);
 int schro_quantise (int value, int quant_factor, int quant_offset);
 void schro_quantise_s16 (int16_t *dest, int16_t *src, int quant_factor,
     int quant_offset, int n);
+void schro_quantise_s32 (int32_t *dest, int32_t *src, int quant_factor,
+    int quant_offset, int n);
 void schro_quantise_s16_table (int16_t *dest, int16_t *src, int quant_index,
     schro_bool is_intra, int n);
 void schro_dequantise_s16 (int16_t *dest, int16_t *src, int quant_factor,

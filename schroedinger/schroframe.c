@@ -842,12 +842,8 @@ schro_frame_convert (SchroFrame * dest, SchroFrame * src)
       }
     } else if (SCHRO_FRAME_FORMAT_DEPTH (dest_format) ==
         SCHRO_FRAME_FORMAT_DEPTH_S16) {
-      if (SCHRO_FRAME_FORMAT_DEPTH (frame->format) == SCHRO_FRAME_FORMAT_DEPTH_U8) {
-        frame = schro_virt_frame_new_convert_s16 (frame);
-        SCHRO_DEBUG ("convert_s16 %p", frame);
-      } else {
-        SCHRO_ASSERT(0);
-      }
+      frame = schro_virt_frame_new_convert_s16 (frame);
+      SCHRO_DEBUG ("convert_s16 %p", frame);
     } else if (SCHRO_FRAME_FORMAT_DEPTH (dest_format) ==
         SCHRO_FRAME_FORMAT_DEPTH_S32) {
       frame = schro_virt_frame_new_convert_s32 (frame);
@@ -1189,16 +1185,29 @@ void
 schro_frame_shift_right (SchroFrame * frame, int shift)
 {
   SchroFrameData *comp;
-  int16_t *data;
   int i;
   int y;
 
-  for (i = 0; i < 3; i++) {
-    comp = &frame->components[i];
+  if (SCHRO_FRAME_FORMAT_DEPTH (frame->format) ==
+      SCHRO_FRAME_FORMAT_DEPTH_S16) {
+    int16_t *data;
+    for (i = 0; i < 3; i++) {
+      comp = &frame->components[i];
 
-    for (y = 0; y < comp->height; y++) {
-      data = SCHRO_FRAME_DATA_GET_LINE (comp, y);
-      orc_add_const_rshift_s16 (data, (1 << shift) >> 1, shift, comp->width);
+      for (y = 0; y < comp->height; y++) {
+        data = SCHRO_FRAME_DATA_GET_LINE (comp, y);
+        orc_add_const_rshift_s16 (data, (1 << shift) >> 1, shift, comp->width);
+      }
+    }
+  } else {
+    int32_t *data;
+    for (i = 0; i < 3; i++) {
+      comp = &frame->components[i];
+
+      for (y = 0; y < comp->height; y++) {
+        data = SCHRO_FRAME_DATA_GET_LINE (comp, y);
+        orc_add_const_rshift_s32 (data, (1 << shift) >> 1, shift, comp->width);
+      }
     }
   }
 }

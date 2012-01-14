@@ -649,9 +649,15 @@ schro_encoder_start (SchroEncoder * encoder)
   /* Global motion is broken */
   encoder->enable_global_motion = FALSE;
 
+  encoder->bit_depth = schro_video_format_get_bit_depth (&encoder->video_format);
   if (encoder->video_format.luma_excursion >= 256 ||
       encoder->video_format.chroma_excursion >= 256) {
-    SCHRO_ERROR ("luma or chroma excursion is too large for 8 bit");
+    encoder->input_frame_depth = 16;
+    encoder->intermediate_frame_depth = 32;
+  } else {
+    encoder->input_frame_depth = 8;
+    //encoder->intermediate_frame_depth = 32;
+    encoder->intermediate_frame_depth = 16;
   }
 
   encoder->video_format.interlaced_coding = encoder->interlaced_coding;
@@ -1040,7 +1046,7 @@ schro_encoder_push_frame_full (SchroEncoder * encoder, SchroFrame * frame,
     encoder->last_frame = encoder_frame;
 
     format =
-        schro_params_get_frame_format (8, encoder->video_format.chroma_format);
+        schro_params_get_frame_format (encoder->input_frame_depth, encoder->video_format.chroma_format);
     if (format == frame->format) {
       encoder_frame->original_frame = frame;
     } else {
@@ -1081,7 +1087,7 @@ schro_encoder_push_frame_full (SchroEncoder * encoder, SchroFrame * frame,
 
     schro_video_format_get_picture_luma_size (&encoder->video_format,
         &width, &height);
-    format = schro_params_get_frame_format (8,
+    format = schro_params_get_frame_format (encoder->input_frame_depth,
         encoder->video_format.chroma_format);
 
     encoder_frame1->original_frame = schro_frame_new_and_alloc (NULL, format,
@@ -2380,6 +2386,43 @@ schro_encoder_mode_decision (SchroAsyncStage * stage)
   schro_encoder_render_picture (frame);
 }
 
+static void
+schro_encoder_iwt_transform (SchroFrame * frame, SchroParams * params)
+{
+  int component;
+  int width;
+  int height;
+  int level;
+  int16_t *tmp;
+
+  tmp = schro_malloc (sizeof (int32_t) * (params->iwt_luma_width + 8) * 2);
+
+  for (component = 0; component < 3; component++) {
+    SchroFrameData *comp = &frame->components[component];
+
+    if (component == 0) {
+      width = params->iwt_luma_width;
+      height = params->iwt_luma_height;
+    } else {
+      width = params->iwt_chroma_width;
+      height = params->iwt_chroma_height;
+    }
+
+    for (level = 0; level < params->transform_depth; level++) {
+      SchroFrameData fd;
+
+      fd.format = frame->format;
+      fd.data = comp->data;
+      fd.width = width >> level;
+      fd.height = height >> level;
+      fd.stride = comp->stride << level;
+
+      schro_wavelet_transform_2d (&fd, params->wavelet_filter_index, tmp);
+    }
+  }
+
+  schro_free (tmp);
+}
 
 void
 schro_encoder_render_picture (SchroEncoderFrame * frame)
@@ -2409,7 +2452,7 @@ schro_encoder_render_picture (SchroEncoderFrame * frame)
     schro_frame_convert (frame->iwt_frame, frame->filtered_frame);
   }
 
-  schro_frame_iwt_transform (frame->iwt_frame, &frame->params);
+  schro_encoder_iwt_transform (frame->iwt_frame, &frame->params);
 
   schro_encoder_clean_up_transform (frame);
 }
@@ -2606,7 +2649,7 @@ schro_encoder_inverse_iwt_transform (SchroFrame * frame, SchroParams * params)
   int component;
   int16_t *tmp;
 
-  tmp = schro_malloc (sizeof (int16_t) * (params->iwt_luma_width + 16));
+  tmp = schro_malloc (sizeof (int32_t) * (params->iwt_luma_width + 16));
 
   for (component = 0; component < 3; component++) {
     SchroFrameData *comp = &frame->components[component];
@@ -3358,7 +3401,6 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame * frame,
   SchroFrameData fd;
   int w;
   int h;
-  int16_t *line;
   int i, j;
   int position;
 
@@ -3375,18 +3417,38 @@ schro_encoder_clean_up_transform_subband (SchroEncoderFrame * frame,
   h = MIN (h + wavelet_extent[params->wavelet_filter_index], fd.height);
   w = MIN (w + wavelet_extent[params->wavelet_filter_index], fd.width);
 
-  if (w < fd.width) {
-    for (j = 0; j < h; j++) {
+  if ((SCHRO_FRAME_FORMAT_DEPTH (fd.format) ==
+        SCHRO_FRAME_FORMAT_DEPTH_S16)) {
+    int16_t *line;
+    if (w < fd.width) {
+      for (j = 0; j < h; j++) {
+        line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
+        for (i = w; i < fd.width; i++) {
+          line[i] = 0;
+        }
+      }
+    }
+    for (j = h; j < fd.height; j++) {
       line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
-      for (i = w; i < fd.width; i++) {
+      for (i = 0; i < fd.width; i++) {
         line[i] = 0;
       }
     }
-  }
-  for (j = h; j < fd.height; j++) {
-    line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
-    for (i = 0; i < fd.width; i++) {
-      line[i] = 0;
+  } else {
+    int32_t *line;
+    if (w < fd.width) {
+      for (j = 0; j < h; j++) {
+        line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
+        for (i = w; i < fd.width; i++) {
+          line[i] = 0;
+        }
+      }
+    }
+    for (j = h; j < fd.height; j++) {
+      line = SCHRO_FRAME_DATA_GET_LINE (&fd, j);
+      for (i = 0; i < fd.width; i++) {
+        line[i] = 0;
+      }
     }
   }
 }
@@ -3434,6 +3496,18 @@ schro_frame_data_quantise (SchroFrameData * quant_fd,
   }
   real_quant_offset = quant_offset;
   quant_offset -= quant_factor >> 1;
+
+  if (SCHRO_FRAME_FORMAT_DEPTH (fd->format) ==
+        SCHRO_FRAME_FORMAT_DEPTH_S32) {
+    for (j = 0; j < fd->height; j++) {
+      int32_t *line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+      int32_t *quant_line = SCHRO_FRAME_DATA_GET_LINE (quant_fd, j);
+
+      schro_quantise_s32 (quant_line, line, quant_factor, real_quant_offset,
+          fd->width);
+    }
+    return;
+  }
 
   if (quant_index == 0) {
     for (j = 0; j < fd->height; j++) {
@@ -3512,38 +3586,76 @@ static void
 schro_frame_data_quantise_dc_predict (SchroFrameData * quant_fd,
     SchroFrameData * fd, int quant_factor, int quant_offset, int x, int y)
 {
-  int i, j;
-  int16_t *line;
-  int16_t *prev_line;
-  int16_t *quant_line;
+  if (SCHRO_FRAME_FORMAT_DEPTH (fd->format) ==
+            SCHRO_FRAME_FORMAT_DEPTH_S16) {
+    int i, j;
+    int16_t *line;
+    int16_t *prev_line;
+    int16_t *quant_line;
 
-  for (j = 0; j < fd->height; j++) {
-    line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
-    prev_line = SCHRO_FRAME_DATA_GET_LINE (fd, j - 1);
-    quant_line = SCHRO_FRAME_DATA_GET_LINE (quant_fd, j);
+    for (j = 0; j < fd->height; j++) {
+      line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+      prev_line = SCHRO_FRAME_DATA_GET_LINE (fd, j - 1);
+      quant_line = SCHRO_FRAME_DATA_GET_LINE (quant_fd, j);
 
-    for (i = 0; i < fd->width; i++) {
-      int q;
-      int pred_value;
+      for (i = 0; i < fd->width; i++) {
+        int q;
+        int pred_value;
 
-      if (y + j > 0) {
-        if (x + i > 0) {
-          pred_value = schro_divide3 (line[i - 1] +
-              prev_line[i] + prev_line[i - 1] + 1);
+        if (y + j > 0) {
+          if (x + i > 0) {
+            pred_value = schro_divide3 (line[i - 1] +
+                prev_line[i] + prev_line[i - 1] + 1);
+          } else {
+            pred_value = prev_line[i];
+          }
         } else {
-          pred_value = prev_line[i];
+          if (x + i > 0) {
+            pred_value = line[i - 1];
+          } else {
+            pred_value = 0;
+          }
         }
-      } else {
-        if (x + i > 0) {
-          pred_value = line[i - 1];
-        } else {
-          pred_value = 0;
-        }
+
+        q = schro_quantise (line[i] - pred_value, quant_factor, quant_offset);
+        line[i] = schro_dequantise (q, quant_factor, quant_offset) + pred_value;
+        quant_line[i] = q;
       }
+    }
+  } else {
+    int i, j;
+    int32_t *line;
+    int32_t *prev_line;
+    int32_t *quant_line;
 
-      q = schro_quantise (line[i] - pred_value, quant_factor, quant_offset);
-      line[i] = schro_dequantise (q, quant_factor, quant_offset) + pred_value;
-      quant_line[i] = q;
+    for (j = 0; j < fd->height; j++) {
+      line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+      prev_line = SCHRO_FRAME_DATA_GET_LINE (fd, j - 1);
+      quant_line = SCHRO_FRAME_DATA_GET_LINE (quant_fd, j);
+
+      for (i = 0; i < fd->width; i++) {
+        int q;
+        int pred_value;
+
+        if (y + j > 0) {
+          if (x + i > 0) {
+            pred_value = schro_divide (line[i - 1] +
+                prev_line[i] + prev_line[i - 1] + 1, 3);
+          } else {
+            pred_value = prev_line[i];
+          }
+        } else {
+          if (x + i > 0) {
+            pred_value = line[i - 1];
+          } else {
+            pred_value = 0;
+          }
+        }
+
+        q = schro_quantise (line[i] - pred_value, quant_factor, quant_offset);
+        line[i] = schro_dequantise (q, quant_factor, quant_offset) + pred_value;
+        quant_line[i] = q;
+      }
     }
   }
 }
@@ -3659,10 +3771,6 @@ schro_encoder_quantise_subband (SchroEncoderFrame * frame, int component,
       } else {
         schro_frame_data_quantise (&quant_cb, &cb, quant_index,
             (params->num_refs == 0));
-#if 0
-        schro_frame_data_dequantise (&cb, &quant_cb, quant_index,
-            (params->num_refs == 0));
-#endif
       }
     }
   }
@@ -3930,16 +4038,26 @@ static schro_bool
 schro_frame_data_is_zero (SchroFrameData * fd)
 {
   int j;
-  int16_t *line;
   int acc;
 
-  for (j = 0; j < fd->height; j++) {
-    line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
-    /* FIXME this could theoretically cause false positives.  Fix when
-     * Orc gets an accorw opcode. */
-    orc_accw (&acc, line, fd->width);
-    if (acc != 0)
-      return FALSE;
+  if (SCHRO_FRAME_FORMAT_DEPTH (fd->format) ==
+      SCHRO_FRAME_FORMAT_DEPTH_S32) {
+    for (j = 0; j < fd->height; j++) {
+      int32_t *line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+      int i;
+      for (i=0; i < fd->width; i++) {
+        if (line[i] != 0) return FALSE;
+      }
+    }
+  } else {
+    for (j = 0; j < fd->height; j++) {
+      int16_t *line = SCHRO_FRAME_DATA_GET_LINE (fd, j);
+      /* FIXME this could theoretically cause false positives.  Fix when
+       * Orc gets an accorw opcode. */
+      orc_accw (&acc, line, fd->width);
+      if (acc != 0)
+        return FALSE;
+    }
   }
 
   return TRUE;
@@ -3962,6 +4080,7 @@ schro_encoder_encode_subband_noarith (SchroEncoderFrame * frame,
   int position;
   SchroFrameData fd;
   SchroFrameData qd;
+  schro_bool deep;
 
   position = schro_subband_get_position (index);
   schro_subband_get_frame_data (&fd, frame->iwt_frame, component,
@@ -3969,7 +4088,14 @@ schro_encoder_encode_subband_noarith (SchroEncoderFrame * frame,
   schro_subband_get_frame_data (&qd, frame->quant_frame, component,
       position, params);
 
-  subband_zero_flag = schro_encoder_quantise_subband (frame, component, index);
+  deep = (SCHRO_FRAME_FORMAT_DEPTH (fd.format) ==
+      SCHRO_FRAME_FORMAT_DEPTH_S32);
+
+  if (deep) {
+    subband_zero_flag = schro_encoder_quantise_subband (frame, component, index);
+  } else {
+    subband_zero_flag = schro_encoder_quantise_subband (frame, component, index);
+  }
 
   if (subband_zero_flag) {
     SCHRO_DEBUG ("subband is zero");
@@ -4022,10 +4148,19 @@ schro_encoder_encode_subband_noarith (SchroEncoderFrame * frame,
         schro_pack_encode_sint (pack, 0);
       }
 
-      for (j = 0; j < cb.height; j++) {
-        int16_t *quant_line = SCHRO_FRAME_DATA_GET_LINE (&cb, j);
-        for (i = 0; i < cb.width; i++) {
-          schro_pack_encode_sint (pack, quant_line[i]);
+      if (deep) {
+        for (j = 0; j < cb.height; j++) {
+          int32_t *quant_line = SCHRO_FRAME_DATA_GET_LINE (&cb, j);
+          for (i = 0; i < cb.width; i++) {
+            schro_pack_encode_sint (pack, quant_line[i]);
+          }
+        }
+      } else {
+        for (j = 0; j < cb.height; j++) {
+          int16_t *quant_line = SCHRO_FRAME_DATA_GET_LINE (&cb, j);
+          for (i = 0; i < cb.width; i++) {
+            schro_pack_encode_sint (pack, quant_line[i]);
+          }
         }
       }
     }
@@ -4072,7 +4207,7 @@ schro_encoder_frame_new (SchroEncoder * encoder)
   encoder_frame->sc_threshold = -1.;
   encoder_frame->scene_change_score = -1.;
 
-  frame_format = schro_params_get_frame_format (16,
+  frame_format = schro_params_get_frame_format (encoder->intermediate_frame_depth,
       encoder->video_format.chroma_format);
 
   schro_video_format_get_iwt_alloc_size (&encoder->video_format,

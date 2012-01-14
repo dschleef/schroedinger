@@ -153,6 +153,16 @@ addw t1, d1, p1
 shrsw d1, t1, p2
 
 
+.function orc_add_const_rshift_s32
+.dest 4 d1 int32_t
+.param 4 p1
+.param 4 p2
+.temp 4 t1
+
+addl t1, d1, p1
+shrsl d1, t1, p2
+
+
 .function orc_add_s16
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
@@ -199,6 +209,13 @@ shlw d1, s1, 2
 .param 2 p1
 
 shlw d1, d1, p1
+
+
+.function orc_lshift_s32_ip
+.dest 4 d1 int32_t
+.param 4 p1
+
+shll d1, d1, p1
 
 
 .function orc_mas2_add_s16_op
@@ -457,10 +474,17 @@ addw d1, d1, t1
 
 
 .function orc_convert_s16_u8
-.dest 2 d1
+.dest 2 d1 orc_int16
 .source 1 s1
 
 convubw d1, s1
+
+
+.function orc_convert_s16_s32
+.dest 2 d1 orc_int16
+.source 4 s1 orc_int32
+
+convlw d1, s1
 
 
 .function orc_convert_u8_s16
@@ -516,6 +540,15 @@ subw t1, t1, 128
 convswl d1, t1
 
 
+.function orc_offsetconvert_s32_s16
+.dest 4 d1 int32_t
+.source 2 s1 int16_t
+.temp 2 t1
+
+subw t1, s1, 128
+convswl d1, t1
+
+
 .function orc_subtract_s16_u8
 .dest 2 d1 int16_t
 .source 2 s1 int16_t
@@ -542,6 +575,13 @@ addw d1, d1, t1
 .param 2 p1
 
 copyw d1, p1
+
+
+.function orc_splat_s32_ns
+.dest 4 d1 int32_t
+.param 4 p1
+
+copyl d1, p1
 
 
 .function orc_splat_s16_2d_4xn

@@ -41,6 +41,8 @@ void schro_pack_encode_bit (SchroPack *pack, int value);
 void schro_pack_encode_bits (SchroPack *pack, int n, unsigned int value);
 void schro_pack_encode_uint (SchroPack *pack, int value);
 void schro_pack_encode_sint (SchroPack *pack, int value);
+void schro_pack_encode_sint_s16 (SchroPack *pack, int16_t *values, int n);
+void schro_pack_encode_sint_s32 (SchroPack *pack, int32_t *values, int n);
 
 int schro_pack_estimate_uint (int value);
 int schro_pack_estimate_sint (int value);

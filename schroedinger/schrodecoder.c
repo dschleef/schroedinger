@@ -3276,8 +3276,8 @@ schro_decoder_subband_dc_predict_s32 (SchroFrameData * fd)
     line[0] += pred_value;
 
     for (i = 1; i < fd->width; i++) {
-      pred_value = schro_divide3 (line[i - 1] + prev_line[i] +
-          prev_line[i - 1] + 1);
+      pred_value = schro_divide (line[i - 1] + prev_line[i] +
+          prev_line[i - 1] + 1, 3);
       line[i] += pred_value;
     }
   }

@@ -160,8 +160,8 @@ schro_pack_encode_uint (SchroPack * pack, int value)
   schro_pack_encode_bit (pack, 1);
 }
 
-void
-schro_pack_encode_sint (SchroPack * pack, int value)
+static void
+__schro_pack_encode_sint (SchroPack * pack, int value)
 {
   int sign;
 
@@ -174,6 +174,30 @@ schro_pack_encode_sint (SchroPack * pack, int value)
   schro_pack_encode_uint (pack, value);
   if (value) {
     schro_pack_encode_bit (pack, sign);
+  }
+}
+
+void
+schro_pack_encode_sint (SchroPack * pack, int value)
+{
+  __schro_pack_encode_sint (pack, value);
+}
+
+void
+schro_pack_encode_sint_s16 (SchroPack * pack, orc_int16 *values, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    __schro_pack_encode_sint (pack, values[i]);
+  }
+}
+
+void
+schro_pack_encode_sint_s32 (SchroPack * pack, orc_int32 *values, int n)
+{
+  int i;
+  for(i=0;i<n;i++){
+    __schro_pack_encode_sint (pack, values[i]);
   }
 }
 

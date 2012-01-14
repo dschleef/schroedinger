@@ -223,7 +223,10 @@ copy (SchroFrame * frame, void *_dest, int component, int i)
       orc_memcpy (dest, src, frame->components[component].width);
       break;
     case SCHRO_FRAME_FORMAT_DEPTH_S16:
-      orc_memcpy (dest, src, frame->components[component].width * 2);
+      orc_memcpy (dest, src, frame->components[component].width * sizeof(int16_t));
+      break;
+    case SCHRO_FRAME_FORMAT_DEPTH_S32:
+      orc_memcpy (dest, src, frame->components[component].width * sizeof(int32_t));
       break;
     default:
       SCHRO_ASSERT (0);
@@ -689,7 +692,7 @@ unpack_ayuv (SchroFrame * frame, void *_dest, int component, int i)
 static void
 unpack_v210 (SchroFrame * frame, void *_dest, int component, int i)
 {
-  uint8_t *dest = _dest;
+  int16_t *dest = _dest;
   uint8_t *src;
   int j;
 
@@ -701,85 +704,85 @@ unpack_v210 (SchroFrame * frame, void *_dest, int component, int i)
     case 0:
       for (j = 0; j < frame->width / 6; j++) {
         dest[j * 6 + 0] =
-            ((READ_UINT32_LE (src + j * 16 + 0) >> 10) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 0) >> 10) & 0x3ff) - 512;
         dest[j * 6 + 1] =
-            ((READ_UINT32_LE (src + j * 16 + 4) >> 0) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 4) >> 0) & 0x3ff) - 512;
         dest[j * 6 + 2] =
-            ((READ_UINT32_LE (src + j * 16 + 4) >> 20) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 4) >> 20) & 0x3ff) - 512;
         dest[j * 6 + 3] =
-            ((READ_UINT32_LE (src + j * 16 + 8) >> 10) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 8) >> 10) & 0x3ff) - 512;
         dest[j * 6 + 4] =
-            ((READ_UINT32_LE (src + j * 16 + 12) >> 0) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 12) >> 0) & 0x3ff) - 512;
         dest[j * 6 + 5] =
-            ((READ_UINT32_LE (src + j * 16 + 12) >> 20) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 12) >> 20) & 0x3ff) - 512;
       }
       if (j * 6 + 0 < frame->width) {
         dest[j * 6 + 0] =
-            ((READ_UINT32_LE (src + j * 16 + 0) >> 10) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 0) >> 10) & 0x3ff) - 512;
       }
       if (j * 6 + 1 < frame->width) {
         dest[j * 6 + 1] =
-            ((READ_UINT32_LE (src + j * 16 + 4) >> 0) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 4) >> 0) & 0x3ff) - 512;
       }
       if (j * 6 + 2 < frame->width) {
         dest[j * 6 + 2] =
-            ((READ_UINT32_LE (src + j * 16 + 4) >> 20) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 4) >> 20) & 0x3ff) - 512;
       }
       if (j * 6 + 3 < frame->width) {
         dest[j * 6 + 3] =
-            ((READ_UINT32_LE (src + j * 16 + 8) >> 10) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 8) >> 10) & 0x3ff) - 512;
       }
       if (j * 6 + 4 < frame->width) {
         dest[j * 6 + 4] =
-            ((READ_UINT32_LE (src + j * 16 + 12) >> 0) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 12) >> 0) & 0x3ff) - 512;
       }
       if (j * 6 + 5 < frame->width) {
         dest[j * 6 + 5] =
-            ((READ_UINT32_LE (src + j * 16 + 12) >> 20) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 12) >> 20) & 0x3ff) - 512;
       }
       break;
     case 1:
       for (j = 0; j < frame->width / 6; j++) {
         dest[j * 3 + 0] =
-            ((READ_UINT32_LE (src + j * 16 + 0) >> 0) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 0) >> 0) & 0x3ff) - 512;
         dest[j * 3 + 1] =
-            ((READ_UINT32_LE (src + j * 16 + 4) >> 10) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 4) >> 10) & 0x3ff) - 512;
         dest[j * 3 + 2] =
-            ((READ_UINT32_LE (src + j * 16 + 8) >> 20) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 8) >> 20) & 0x3ff) - 512;
       }
       if (j * 6 + 0 < frame->width) {
         dest[j * 3 + 0] =
-            ((READ_UINT32_LE (src + j * 16 + 0) >> 0) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 0) >> 0) & 0x3ff) - 512;
       }
       if (j * 6 + 2 < frame->width) {
         dest[j * 3 + 1] =
-            ((READ_UINT32_LE (src + j * 16 + 4) >> 10) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 4) >> 10) & 0x3ff) - 512;
       }
       if (j * 6 + 4 < frame->width) {
         dest[j * 3 + 2] =
-            ((READ_UINT32_LE (src + j * 16 + 8) >> 20) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 8) >> 20) & 0x3ff) - 512;
       }
       break;
     case 2:
       for (j = 0; j < frame->width / 6; j++) {
         dest[j * 3 + 0] =
-            ((READ_UINT32_LE (src + j * 16 + 0) >> 20) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 0) >> 20) & 0x3ff) - 512;
         dest[j * 3 + 1] =
-            ((READ_UINT32_LE (src + j * 16 + 8) >> 0) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 8) >> 0) & 0x3ff) - 512;
         dest[j * 3 + 2] =
-            ((READ_UINT32_LE (src + j * 16 + 12) >> 10) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 12) >> 10) & 0x3ff) - 512;
       }
       if (j * 6 + 0 < frame->width) {
         dest[j * 3 + 0] =
-            ((READ_UINT32_LE (src + j * 16 + 0) >> 20) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 0) >> 20) & 0x3ff) - 512;
       }
       if (j * 6 + 2 < frame->width) {
         dest[j * 3 + 1] =
-            ((READ_UINT32_LE (src + j * 16 + 8) >> 0) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 8) >> 0) & 0x3ff) - 512;
       }
       if (j * 6 + 4 < frame->width) {
         dest[j * 3 + 2] =
-            ((READ_UINT32_LE (src + j * 16 + 12) >> 10) & 0x3ff) >> 2;
+            ((READ_UINT32_LE (src + j * 16 + 12) >> 10) & 0x3ff) - 512;
       }
       break;
     default:
@@ -790,7 +793,7 @@ unpack_v210 (SchroFrame * frame, void *_dest, int component, int i)
 static void
 unpack_v216 (SchroFrame * frame, void *_dest, int component, int i)
 {
-  uint8_t *dest = _dest;
+  int16_t *dest = _dest;
   uint8_t *src;
   int j;
 
@@ -838,12 +841,16 @@ schro_virt_frame_new_unpack (SchroFrame * vf)
       render_line = unpack_ayuv;
       break;
     case SCHRO_FRAME_FORMAT_v210:
-      format = SCHRO_FRAME_FORMAT_U8_422;
+      format = SCHRO_FRAME_FORMAT_S16_422;
       render_line = unpack_v210;
       break;
     case SCHRO_FRAME_FORMAT_v216:
-      format = SCHRO_FRAME_FORMAT_U8_422;
+      format = SCHRO_FRAME_FORMAT_S16_422;
       render_line = unpack_v216;
+      break;
+    case SCHRO_FRAME_FORMAT_AY64:
+      format = SCHRO_FRAME_FORMAT_S16_444;
+      render_line = unpack_AY64;
       break;
     default:
       return vf;
@@ -972,7 +979,7 @@ pack_v210_s16 (SchroFrame * frame, void *_dest, int component, int i)
   src_u = schro_virt_frame_get_line (frame->virt_frame1, 1, i);
   src_v = schro_virt_frame_get_line (frame->virt_frame1, 2, i);
 
-#define TO_10(x) (((x) + 512)&0x3ff)
+#define TO_10(x) (CLAMP(((x) + 512), 0, 1023))
 #define WRITE_UINT32_LE(a,b) do { \
   ((uint8_t *)(a))[0] = (b)&0xff; \
   ((uint8_t *)(a))[1] = ((b)>>8)&0xff; \
@@ -1594,6 +1601,17 @@ convert_s16_u8 (SchroFrame * frame, void *_dest, int component, int i)
   orc_offsetconvert_s16_u8 (dest, src, frame->components[component].width);
 }
 
+static void
+convert_s16_s32 (SchroFrame * frame, void *_dest, int component, int i)
+{
+  int16_t *dest = _dest;
+  int32_t *src;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+
+  orc_convert_s16_s32 (dest, src, frame->components[component].width);
+}
+
 SchroFrame *
 schro_virt_frame_new_convert_s16 (SchroFrame * vf)
 {
@@ -1604,7 +1622,11 @@ schro_virt_frame_new_convert_s16 (SchroFrame * vf)
 
   virt_frame = schro_frame_new_virtual (NULL, format, vf->width, vf->height);
   virt_frame->virt_frame1 = vf;
-  virt_frame->render_line = convert_s16_u8;
+  if (SCHRO_FRAME_FORMAT_DEPTH (vf->format) == SCHRO_FRAME_FORMAT_DEPTH_S32) {
+    virt_frame->render_line = convert_s16_s32;
+  } else {
+    virt_frame->render_line = convert_s16_u8;
+  }
 
   return virt_frame;
 }
@@ -1731,6 +1753,23 @@ edge_extend_s16 (SchroFrame * frame, void *_dest, int component, int i)
       srcframe->components[component].width);
 }
 
+static void
+edge_extend_s32 (SchroFrame * frame, void *_dest, int component, int i)
+{
+  int32_t *dest = _dest;
+  int32_t *src;
+  SchroFrame *srcframe = frame->virt_frame1;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component,
+      MIN (i, srcframe->components[component].height - 1));
+  orc_memcpy (dest, src,
+      srcframe->components[component].width * sizeof (int32_t));
+  orc_splat_s32_ns (dest + srcframe->components[component].width,
+      dest[srcframe->components[component].width - 1],
+      frame->components[component].width -
+      srcframe->components[component].width);
+}
+
 SchroFrame *
 schro_virt_frame_new_edgeextend (SchroFrame * vf, int width, int height)
 {
@@ -1750,6 +1789,9 @@ schro_virt_frame_new_edgeextend (SchroFrame * vf, int width, int height)
       break;
     case SCHRO_FRAME_FORMAT_DEPTH_S16:
       virt_frame->render_line = edge_extend_s16;
+      break;
+    case SCHRO_FRAME_FORMAT_DEPTH_S32:
+      virt_frame->render_line = edge_extend_s32;
       break;
     default:
       SCHRO_ASSERT (0);
