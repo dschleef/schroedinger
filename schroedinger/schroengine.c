@@ -536,9 +536,10 @@ schro_frame_set_wavelet_params (SchroEncoderFrame * frame)
 
   /* overrides for near-lossless */
   if (encoder->rate_control == 0) {
-    if (encoder->noise_threshold < 40.0) {
+    double offset = 6.0 * (encoder->bit_depth - 8);
+    if (encoder->noise_threshold < 40.0 + offset) {
       /* do nothing */
-    } else if (encoder->noise_threshold < 47.0) {
+    } else if (encoder->noise_threshold < 47.0 + offset) {
       params->wavelet_filter_index = 1;
     } else {
       params->wavelet_filter_index = 3;

@@ -692,8 +692,8 @@ unpack_ayuv (SchroFrame * frame, void *_dest, int component, int i)
 static void
 unpack_AY64 (SchroFrame * frame, void *_dest, int component, int i)
 {
-  int16_t *dest = _dest;
-  int16_t *src;
+  int32_t *dest = _dest;
+  uint16_t *src;
   int j;
 
   src = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
@@ -701,17 +701,17 @@ unpack_AY64 (SchroFrame * frame, void *_dest, int component, int i)
   switch (component) {
     case 0:
       for (j = 0; j < frame->width; j++) {
-        dest[j] = src[j * 4 + 1];
+        dest[j] = src[j * 4 + 1] - 32768;
       }
       break;
     case 1:
       for (j = 0; j < frame->width; j++) {
-        dest[j] = src[j * 4 + 2];
+        dest[j] = src[j * 4 + 2] - 32768;
       }
       break;
     case 2:
       for (j = 0; j < frame->width; j++) {
-        dest[j] = src[j * 4 + 3];
+        dest[j] = src[j * 4 + 3] - 32768;
       }
       break;
     default:
@@ -879,7 +879,7 @@ schro_virt_frame_new_unpack (SchroFrame * vf)
       render_line = unpack_v216;
       break;
     case SCHRO_FRAME_FORMAT_AY64:
-      format = SCHRO_FRAME_FORMAT_S16_444;
+      format = SCHRO_FRAME_FORMAT_S32_444;
       render_line = unpack_AY64;
       break;
     default:
@@ -1219,9 +1219,9 @@ static void
 pack_ayuv64 (SchroFrame * frame, void *_dest, int component, int i)
 {
   uint16_t *dest = _dest;
-  int16_t *src_y;
-  int16_t *src_u;
-  int16_t *src_v;
+  int32_t *src_y;
+  int32_t *src_u;
+  int32_t *src_v;
   int j;
 
   src_y = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
@@ -1756,6 +1756,16 @@ crop_s16 (SchroFrame * frame, void *_dest, int component, int i)
   orc_memcpy (dest, src, frame->components[component].width * sizeof (int16_t));
 }
 
+static void
+crop_s32 (SchroFrame * frame, void *_dest, int component, int i)
+{
+  int16_t *dest = _dest;
+  int16_t *src;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, component, i);
+  orc_memcpy (dest, src, frame->components[component].width * sizeof (int32_t));
+}
+
 SchroFrame *
 schro_virt_frame_new_crop (SchroFrame * vf, int width, int height)
 {
@@ -1777,7 +1787,7 @@ schro_virt_frame_new_crop (SchroFrame * vf, int width, int height)
       virt_frame->render_line = crop_s16;
       break;
     default:
-      SCHRO_ASSERT (0);
+      virt_frame->render_line = crop_s32;
       break;
   }
 

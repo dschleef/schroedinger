@@ -855,7 +855,7 @@ schro_frame_convert (SchroFrame * dest, SchroFrame * src)
       dest_format = SCHRO_FRAME_FORMAT_S16_422;
       break;
     case SCHRO_FRAME_FORMAT_AY64:
-      dest_format = SCHRO_FRAME_FORMAT_S16_444;
+      dest_format = SCHRO_FRAME_FORMAT_S32_444;
       break;
     default:
       dest_format = dest->format;
