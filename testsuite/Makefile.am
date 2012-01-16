@@ -13,6 +13,7 @@ noinst_PROGRAMS = arith arith_encode \
 	 upsample \
 	 motion2 sort fft \
 	 wavelet_noise_gain \
+	 wavelet_max_gain \
 	 downsample taps ramp \
 	 colorspace filter_coeff utils extension
 
@@ -96,6 +97,8 @@ wavelet_gain_curve_SOURCES = wavelet_gain_curve.c
 #wavelet_2d_CFLAGS = $(SCHRO_CFLAGS)
 #wavelet_2d_LDADD = $(SCHRO_LIBS)
 wavelet_2d_SOURCES = wavelet_2d.c $(top_srcdir)/schroedinger/tmp-orc.c
+
+wavelet_max_gain_SOURCES = wavelet_max_gain.c
 
 wavelet_noise_2d_SOURCES = wavelet_noise_2d.c
 

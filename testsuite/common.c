@@ -98,12 +98,20 @@ gen_random (SchroFrameData *fd, int type)
       data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
       orc_random_bits (&context, data, fd->width);
     }
-  } else {
+  } else if (SCHRO_FRAME_FORMAT_DEPTH(fd->format) == SCHRO_FRAME_FORMAT_DEPTH_S16) {
     int16_t *data;
     for(j=0;j<fd->height;j++){
       data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
       for(i=0;i<fd->width;i++) {
-        data[i] = orc_random(&context)&0xff;
+        data[i] = orc_random(&context)&0xfff;
+      }
+    }
+  } else {
+    int32_t *data;
+    for(j=0;j<fd->height;j++){
+      data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
+      for(i=0;i<fd->width;i++) {
+        data[i] = orc_random(&context)&0xffff;
       }
     }
   }
