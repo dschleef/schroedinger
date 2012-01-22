@@ -1,0 +1,303 @@
+#!/bin/sh
+
+set -e
+
+#export SCHRO_DUMP=1
+#export SCHRO_DEBUG=5
+#export G_SLICE=always_malloc
+export SCHRO_MOTION_REF=1
+export SCHRO_THREADS=1
+
+encode() {
+  echo "ENCODING $testname with $schroopts"
+  gst-launch-0.10 \
+    videotestsrc num-buffers=30 pattern=smpte kx2=10 ky2=10 kt=10 ! \
+    colorspace ! \
+    video/x-raw-yuv,format=\(fourcc\)"$format",width=$width,height=$height,framerate=30/1 ! \
+    schroenc au_distance=30 $schroopts ! \
+    filesink location=vts.$testname.drc
+}
+#    timeoverlay ! \
+#    textoverlay text=$testname halignment=center font-desc="sans 20" deltay=-100 ! \
+
+width=640
+height=360
+format=UYVY
+
+format=v210
+for i in 0 1 2 3 4 5 6 ; do
+  testname="10bit-intra-wavelet-$i"
+  schroopts="queue-depth=1 gop-structure=1 intra-wavelet=$i force-profile=vc2_simple rate-control=constant_noise_threshold noise-threshold=30"
+  encode
+done
+
+format=AY64
+for i in 0 1 2 3 4 5 6 ; do
+  testname="16bit-intra-wavelet-$i"
+  schroopts="queue-depth=1 transform-depth=6 gop-structure=1 intra-wavelet=$i force-profile=vc2_simple rate-control=constant_noise_threshold noise-threshold=50"
+  encode
+done
+exit
+
+#testname="test"
+#schroopts="rate-control=4 magic-lambda=0.01 enable-phasecorr-estimation=1"
+#encode
+#exit 0
+
+testname="default"
+schroopts="rate-control=0"
+encode
+#exit 0
+
+
+
+
+# gop structure
+
+testname="intra-only"
+schroopts="gop-structure=1"
+encode
+
+testname="backref"
+schroopts="gop-structure=2"
+encode
+
+testname="biref"
+schroopts="gop-structure=4"
+encode
+
+# noarith
+
+testname="noarith"
+schroopts="gop-structure=1 enable-noarith=1"
+encode
+
+# rate control
+
+testname="CBR-250kb"
+schroopts="rate-control=1 bitrate=250000"
+encode
+
+testname="CBR-500kb"
+schroopts="rate-control=1 bitrate=500000"
+encode
+
+testname="CBR-1Mb"
+schroopts="rate-control=1 bitrate=1000000"
+encode
+
+testname="CBR-2Mb"
+schroopts="rate-control=1 bitrate=2000000"
+encode
+
+testname="LD-2Mb"
+schroopts="rate-control=2 bitrate=2000000"
+encode
+
+testname="LD-4Mb"
+schroopts="rate-control=2 bitrate=4000000"
+encode
+
+testname="LD-8Mb"
+schroopts="rate-control=2 bitrate=8000000"
+encode
+
+testname="lossless"
+schroopts="rate-control=3"
+encode
+
+testname="constant-lambda"
+schroopts="rate-control=4"
+encode
+
+testname="constant-error"
+schroopts="rate-control=5"
+encode
+
+# noise threshold
+
+testname="10dB"
+schroopts="rate-control=0 noise-threshold=10"
+encode
+
+testname="20dB"
+schroopts="rate-control=0 noise-threshold=20"
+encode
+
+testname="30dB"
+schroopts="rate-control=0 noise-threshold=30"
+encode
+
+testname="40dB"
+schroopts="rate-control=0 noise-threshold=40"
+encode
+
+# perceptual weighting
+
+testname="percep-none"
+schroopts="perceptual-weighting=1"
+encode
+
+testname="percep-ccir959"
+schroopts="perceptual-weighting=1"
+encode
+
+testname="percep-moo"
+schroopts="perceptual-weighting=2"
+encode
+
+testname="percep-manos-sakrison"
+schroopts="perceptual-weighting=3"
+encode
+
+# filtering
+
+testname="cwm"
+schroopts="filtering=1 filter-value=4"
+encode
+
+testname="gaussian"
+schroopts="filtering=2 filter-value=5"
+encode
+
+testname="add-noise"
+schroopts="filtering=3 filter-value=10"
+encode
+
+testname="adaptive-gaussian"
+schroopts="filtering=4"
+encode
+
+# transform depth
+
+testname="transform-0"
+schroopts="transform-depth=0"
+encode
+
+testname="transform-1"
+schroopts="transform-depth=1"
+encode
+
+testname="transform-2"
+schroopts="transform-depth=2"
+encode
+
+testname="transform-3"
+schroopts="transform-depth=3"
+encode
+
+testname="transform-4"
+schroopts="transform-depth=4"
+encode
+
+# intra wavelet
+
+for i in 0 1 2 3 4 5 6 ; do
+  testname="intra-wavelet-$i"
+  schroopts="gop-structure=1 intra-wavelet=$i"
+  encode
+done
+
+for i in 0 1 2 3 4 5 6 ; do
+  testname="inter-wavelet-$i"
+  schroopts="inter-wavelet=$i"
+  encode
+done
+ 
+for i in 0 1 2 3 ; do
+  testname="mv-precision-$i"
+  schroopts="mv-precision=$i"
+  encode
+done
+
+for i in 1 2 3 ; do
+  for j in 1 2 3 ; do
+    testname="MB-size-$i-overlap-$j"
+    schroopts="motion-block-size=$i motion-block-overlap=$j"
+    encode
+  done
+done
+
+# codeblocks
+
+testname="no-multiquant"
+schroopts="enable-multiquant=false"
+encode
+
+testname="dc-multiquant"
+schroopts="enable-dc-multiquant=TRUE"
+encode
+
+for i in 1 2 3 4
+do
+  testname="codeblock-$i"
+  schroopts="codeblock-size=$i"
+  encode
+done
+
+# various tools
+
+testname="phasecorr"
+schroopts="enable-phasecorr-estimation=true"
+encode
+
+#testname="global-motion"
+#schroopts="enable-global-motion=true"
+#encode
+
+# Broken
+#testname="interlaced-coding"
+#schroopts="interlaced-coding=true"
+#encode
+
+testname="old-scene-change-detection"
+schroopts="enable-scene-change-detection=false"
+encode
+
+testname="scene-change-detection"
+schroopts="enable-scene-change-detection=true"
+encode
+
+testname="hierarchical-estimation"
+schroopts="enable-hierarchical-estimation=true"
+encode
+
+testname="deep-estimation"
+schroopts="mv-precision=2 enable-hierarchical-estimation=true enable-deep-estimation=true"
+encode
+
+testname="rdo-cbr"
+schroopts="rate-control=1 bitrate=2000000 enable-rdo-cbr=true"
+encode
+
+
+# profiles
+
+testname="profile-vc2-low-delay"
+schroopts="force-profile=vc2_low_delay"
+encode
+
+testname="profile-vc2-simple"
+schroopts="force-profile=vc2_simple"
+encode
+
+testname="profile-vc2-main"
+schroopts="force-profile=vc2_main"
+encode
+
+testname="profile-main"
+schroopts="force-profile=main"
+encode
+
+testname="profile-vc2-simple-lossless"
+schroopts="force-profile=vc2_simple rate-control=lossless"
+encode
+
+testname="profile-vc2-main-lossless"
+schroopts="force-profile=vc2_main rate-control=lossless"
+encode
+
+testname="profile-main-lossless"
+schroopts="force-profile=main rate-control=lossless"
+encode
+
