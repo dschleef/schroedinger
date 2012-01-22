@@ -2495,6 +2495,9 @@ schro_frame_get_reference_subdata (SchroFrame * frame, SchroFrameData * fd,
 
 int schro_frame_get_bit_depth (SchroFrame *frame)
 {
+  if (frame->format == SCHRO_FRAME_FORMAT_v210) {
+    return 10;
+  }
   switch (SCHRO_FRAME_FORMAT_DEPTH(frame->format)) {
     case SCHRO_FRAME_FORMAT_DEPTH_U8:
       return 8;
