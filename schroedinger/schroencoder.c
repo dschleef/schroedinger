@@ -2690,8 +2690,6 @@ void
 schro_encoder_reconstruct_picture (SchroAsyncStage * stage)
 {
   SchroEncoderFrame *encoder_frame = (SchroEncoderFrame *) stage->priv;
-  SchroFrameFormat frame_format;
-  SchroFrame *frame;
 
   schro_encoder_inverse_iwt_transform (encoder_frame->iwt_frame,
       &encoder_frame->params);
@@ -2700,15 +2698,21 @@ schro_encoder_reconstruct_picture (SchroAsyncStage * stage)
     schro_frame_add (encoder_frame->iwt_frame, encoder_frame->prediction_frame);
   }
 
-  frame_format = schro_params_get_frame_format (8,
-      encoder_frame->encoder->video_format.chroma_format);
-  frame = schro_frame_new_and_alloc_full (NULL, frame_format,
-      encoder_frame->encoder->video_format.width,
-      schro_video_format_get_picture_height (&encoder_frame->
-          encoder->video_format), 32, TRUE);
-  schro_frame_convert (frame, encoder_frame->iwt_frame);
-  schro_frame_mc_edgeextend (frame);
-  encoder_frame->reconstructed_frame = schro_upsampled_frame_new (frame);
+  if (encoder_frame->encoder->enable_md5 || (encoder_frame->is_ref &&
+      encoder_frame->encoder->gop_structure != SCHRO_ENCODER_GOP_INTRA_ONLY)) {
+    SchroFrameFormat frame_format;
+    SchroFrame *frame;
+
+    frame_format = schro_params_get_frame_format (encoder_frame->encoder->input_frame_depth,
+        encoder_frame->encoder->video_format.chroma_format);
+    frame = schro_frame_new_and_alloc_full (NULL, frame_format,
+        encoder_frame->encoder->video_format.width,
+        schro_video_format_get_picture_height (&encoder_frame->
+            encoder->video_format), 32, TRUE);
+    schro_frame_convert (frame, encoder_frame->iwt_frame);
+    schro_frame_mc_edgeextend (frame);
+    encoder_frame->reconstructed_frame = schro_upsampled_frame_new (frame);
+  }
 
   if (encoder_frame->encoder->enable_md5) {
     schro_encoder_encode_md5_checksum (encoder_frame);
