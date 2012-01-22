@@ -773,30 +773,12 @@ schro_encoder_choose_quantisers_rdo_lambda (SchroEncoderFrame * frame)
 void
 schro_encoder_choose_quantisers_rdo_cbr (SchroEncoderFrame * frame)
 {
-  //SchroEncoder *encoder = frame->encoder;
-
   schro_encoder_generate_subband_histograms (frame);
   schro_encoder_calc_estimates (frame);
 
   SCHRO_ASSERT (frame->have_estimate_tables);
 
-#if 0
-  est_bits =
-      (int) (schro_encoder_lambda_to_entropy (frame, frame->frame_lambda));
-
-  // SCHRO_ERROR("Estimated bits for frame %d residual : %d", frame>frame_number, est_bits);
-
-  // Check that we're within reasonable bounds of the allocation
-
-  if (frame->num_refs == 0) {
-    alloc_bits = encoder->I_frame_alloc;
-  } else if (schro_encoder_frame_is_B_frame (frame) == TRUE) {
-    alloc_bits = encoder->B_frame_alloc;
-  } else {
-    alloc_bits = encoder->P_frame_alloc;
-  }
-#endif
-
+  schro_encoder_lambda_to_entropy (frame, frame->frame_lambda);
 }
 
 void
