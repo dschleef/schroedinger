@@ -103,7 +103,7 @@ gen_random (SchroFrameData *fd, int type)
     for(j=0;j<fd->height;j++){
       data = SCHRO_FRAME_DATA_GET_LINE(fd, j);
       for(i=0;i<fd->width;i++) {
-        data[i] = orc_random(&context)&0xfff;
+        data[i] = orc_random(&context)&0xff;
       }
     }
   } else {
