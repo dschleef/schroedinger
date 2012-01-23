@@ -13119,7 +13119,7 @@ schro_orc_init (void)
   {
     /* orc_add2_rshift_add_s16_22_op */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_add2_rshift_add_s16_22_op");
       orc_program_set_backup_function (p, _backup_orc_add2_rshift_add_s16_22_op);
@@ -13135,7 +13135,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add2_rshift_add_s16_22_op = orc_program_take_code (p);
     orc_program_free (p);
@@ -13143,7 +13143,7 @@ schro_orc_init (void)
   {
     /* orc_add2_rshift_add_s16_22 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_add2_rshift_add_s16_22");
       orc_program_set_backup_function (p, _backup_orc_add2_rshift_add_s16_22);
@@ -13158,7 +13158,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add2_rshift_add_s16_22 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13166,7 +13166,7 @@ schro_orc_init (void)
   {
     /* orc_add2_rshift_sub_s16_22_op */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_add2_rshift_sub_s16_22_op");
       orc_program_set_backup_function (p, _backup_orc_add2_rshift_sub_s16_22_op);
@@ -13182,7 +13182,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add2_rshift_sub_s16_22_op = orc_program_take_code (p);
     orc_program_free (p);
@@ -13190,7 +13190,7 @@ schro_orc_init (void)
   {
     /* orc_add2_rshift_sub_s16_22 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_add2_rshift_sub_s16_22");
       orc_program_set_backup_function (p, _backup_orc_add2_rshift_sub_s16_22);
@@ -13205,7 +13205,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add2_rshift_sub_s16_22 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13213,7 +13213,7 @@ schro_orc_init (void)
   {
     /* orc_add2_rshift_add_s16_11_op */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_add2_rshift_add_s16_11_op");
       orc_program_set_backup_function (p, _backup_orc_add2_rshift_add_s16_11_op);
@@ -13226,7 +13226,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T1, ORC_VAR_S2, ORC_VAR_S3, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add2_rshift_add_s16_11_op = orc_program_take_code (p);
     orc_program_free (p);
@@ -13234,7 +13234,7 @@ schro_orc_init (void)
   {
     /* orc_add2_rshift_add_s16_11 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_add2_rshift_add_s16_11");
       orc_program_set_backup_function (p, _backup_orc_add2_rshift_add_s16_11);
@@ -13246,7 +13246,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add2_rshift_add_s16_11 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13254,7 +13254,7 @@ schro_orc_init (void)
   {
     /* orc_add2_rshift_sub_s16_11_op */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_add2_rshift_sub_s16_11_op");
       orc_program_set_backup_function (p, _backup_orc_add2_rshift_sub_s16_11_op);
@@ -13267,7 +13267,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T1, ORC_VAR_S2, ORC_VAR_S3, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add2_rshift_sub_s16_11_op = orc_program_take_code (p);
     orc_program_free (p);
@@ -13275,7 +13275,7 @@ schro_orc_init (void)
   {
     /* orc_add2_rshift_sub_s16_11 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_add2_rshift_sub_s16_11");
       orc_program_set_backup_function (p, _backup_orc_add2_rshift_sub_s16_11);
@@ -13287,7 +13287,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add2_rshift_sub_s16_11 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13295,7 +13295,7 @@ schro_orc_init (void)
   {
     /* orc_add_const_rshift_s16_11 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_add_const_rshift_s16_11");
       orc_program_set_backup_function (p, _backup_orc_add_const_rshift_s16_11);
@@ -13307,7 +13307,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "addw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add_const_rshift_s16_11 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13315,7 +13315,7 @@ schro_orc_init (void)
   {
     /* orc_add_const_rshift_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_add_const_rshift_s16");
       orc_program_set_backup_function (p, _backup_orc_add_const_rshift_s16);
@@ -13327,7 +13327,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "addw", 0, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_P1, ORC_VAR_D1);
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_P2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add_const_rshift_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13335,7 +13335,7 @@ schro_orc_init (void)
   {
     /* orc_add_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_add_s16");
       orc_program_set_backup_function (p, _backup_orc_add_s16);
@@ -13345,7 +13345,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13353,7 +13353,7 @@ schro_orc_init (void)
   {
     /* orc_add_s16_2d */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_2d (p);
       orc_program_set_name (p, "orc_add_s16_2d");
@@ -13363,7 +13363,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add_s16_2d = orc_program_take_code (p);
     orc_program_free (p);
@@ -13371,7 +13371,7 @@ schro_orc_init (void)
   {
     /* orc_addc_rshift_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_addc_rshift_s16");
       orc_program_set_backup_function (p, _backup_orc_addc_rshift_s16);
@@ -13384,7 +13384,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "addw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_P1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_addc_rshift_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13392,7 +13392,7 @@ schro_orc_init (void)
   {
     /* orc_lshift1_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_lshift1_s16");
       orc_program_set_backup_function (p, _backup_orc_lshift1_s16);
@@ -13402,7 +13402,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "shlw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_C1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_lshift1_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13410,7 +13410,7 @@ schro_orc_init (void)
   {
     /* orc_lshift2_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_lshift2_s16");
       orc_program_set_backup_function (p, _backup_orc_lshift2_s16);
@@ -13420,7 +13420,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "shlw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_C1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_lshift2_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13428,7 +13428,7 @@ schro_orc_init (void)
   {
     /* orc_lshift_s16_ip */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_lshift_s16_ip");
       orc_program_set_backup_function (p, _backup_orc_lshift_s16_ip);
@@ -13437,7 +13437,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "shlw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_P1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_lshift_s16_ip = orc_program_take_code (p);
     orc_program_free (p);
@@ -13445,7 +13445,7 @@ schro_orc_init (void)
   {
     /* orc_mas2_add_s16_op */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_mas2_add_s16_op");
       orc_program_set_backup_function (p, _backup_orc_mas2_add_s16_op);
@@ -13466,7 +13466,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convlw", 0, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_mas2_add_s16_op = orc_program_take_code (p);
     orc_program_free (p);
@@ -13474,7 +13474,7 @@ schro_orc_init (void)
   {
     /* orc_mas2_add_s16_ip */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_mas2_add_s16_ip");
       orc_program_set_backup_function (p, _backup_orc_mas2_add_s16_ip);
@@ -13494,7 +13494,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convlw", 0, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_mas2_add_s16_ip = orc_program_take_code (p);
     orc_program_free (p);
@@ -13502,7 +13502,7 @@ schro_orc_init (void)
   {
     /* orc_mas2_sub_s16_op */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_mas2_sub_s16_op");
       orc_program_set_backup_function (p, _backup_orc_mas2_sub_s16_op);
@@ -13523,7 +13523,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convlw", 0, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_mas2_sub_s16_op = orc_program_take_code (p);
     orc_program_free (p);
@@ -13531,7 +13531,7 @@ schro_orc_init (void)
   {
     /* orc_mas2_sub_s16_ip */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_mas2_sub_s16_ip");
       orc_program_set_backup_function (p, _backup_orc_mas2_sub_s16_ip);
@@ -13551,7 +13551,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convlw", 0, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_mas2_sub_s16_ip = orc_program_take_code (p);
     orc_program_free (p);
@@ -13559,7 +13559,7 @@ schro_orc_init (void)
   {
     /* orc_mas4_across_add_s16_1991_op */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_mas4_across_add_s16_1991_op");
       orc_program_set_backup_function (p, _backup_orc_mas4_across_add_s16_1991_op);
@@ -13587,7 +13587,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convlw", 0, ORC_VAR_T1, ORC_VAR_T3, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_mas4_across_add_s16_1991_op = orc_program_take_code (p);
     orc_program_free (p);
@@ -13595,7 +13595,7 @@ schro_orc_init (void)
   {
     /* orc_mas4_across_add_s16_1991_ip */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_mas4_across_add_s16_1991_ip");
       orc_program_set_backup_function (p, _backup_orc_mas4_across_add_s16_1991_ip);
@@ -13626,7 +13626,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convlw", 0, ORC_VAR_T1, ORC_VAR_T3, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_mas4_across_add_s16_1991_ip = orc_program_take_code (p);
     orc_program_free (p);
@@ -13634,7 +13634,7 @@ schro_orc_init (void)
   {
     /* orc_mas4_across_sub_s16_1991_op */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_mas4_across_sub_s16_1991_op");
       orc_program_set_backup_function (p, _backup_orc_mas4_across_sub_s16_1991_op);
@@ -13662,7 +13662,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convlw", 0, ORC_VAR_T1, ORC_VAR_T3, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_mas4_across_sub_s16_1991_op = orc_program_take_code (p);
     orc_program_free (p);
@@ -13670,7 +13670,7 @@ schro_orc_init (void)
   {
     /* orc_mas4_across_sub_s16_1991_ip */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_mas4_across_sub_s16_1991_ip");
       orc_program_set_backup_function (p, _backup_orc_mas4_across_sub_s16_1991_ip);
@@ -13701,7 +13701,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convlw", 0, ORC_VAR_T1, ORC_VAR_T3, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_mas4_across_sub_s16_1991_ip = orc_program_take_code (p);
     orc_program_free (p);
@@ -13709,7 +13709,7 @@ schro_orc_init (void)
   {
     /* orc_subtract_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_subtract_s16");
       orc_program_set_backup_function (p, _backup_orc_subtract_s16);
@@ -13719,7 +13719,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_subtract_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13727,7 +13727,7 @@ schro_orc_init (void)
   {
     /* orc_add_s16_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_add_s16_u8");
       orc_program_set_backup_function (p, _backup_orc_add_s16_u8);
@@ -13739,7 +13739,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convubw", 0, ORC_VAR_T1, ORC_VAR_S2, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add_s16_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13747,7 +13747,7 @@ schro_orc_init (void)
   {
     /* orc_add_s16_u8_2d */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_2d (p);
       orc_program_set_name (p, "orc_add_s16_u8_2d");
@@ -13759,7 +13759,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convubw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_add_s16_u8_2d = orc_program_take_code (p);
     orc_program_free (p);
@@ -13767,7 +13767,7 @@ schro_orc_init (void)
   {
     /* orc_convert_s16_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_convert_s16_u8");
       orc_program_set_backup_function (p, _backup_orc_convert_s16_u8);
@@ -13776,7 +13776,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "convubw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_convert_s16_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13784,7 +13784,7 @@ schro_orc_init (void)
   {
     /* orc_convert_u8_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_convert_u8_s16");
       orc_program_set_backup_function (p, _backup_orc_convert_u8_s16);
@@ -13793,7 +13793,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_convert_u8_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13801,7 +13801,7 @@ schro_orc_init (void)
   {
     /* orc_offsetconvert_u8_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_offsetconvert_u8_s16");
       orc_program_set_backup_function (p, _backup_orc_offsetconvert_u8_s16);
@@ -13813,7 +13813,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "addw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_offsetconvert_u8_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13821,7 +13821,7 @@ schro_orc_init (void)
   {
     /* orc_offsetconvert_s16_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_offsetconvert_s16_u8");
       orc_program_set_backup_function (p, _backup_orc_offsetconvert_s16_u8);
@@ -13833,7 +13833,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convubw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_offsetconvert_s16_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13841,7 +13841,7 @@ schro_orc_init (void)
   {
     /* orc_subtract_s16_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_subtract_s16_u8");
       orc_program_set_backup_function (p, _backup_orc_subtract_s16_u8);
@@ -13853,7 +13853,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convubw", 0, ORC_VAR_T1, ORC_VAR_S2, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_subtract_s16_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13861,7 +13861,7 @@ schro_orc_init (void)
   {
     /* orc_multiply_and_add_s16_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_multiply_and_add_s16_u8");
       orc_program_set_backup_function (p, _backup_orc_multiply_and_add_s16_u8);
@@ -13874,7 +13874,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_multiply_and_add_s16_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -13882,7 +13882,7 @@ schro_orc_init (void)
   {
     /* orc_splat_s16_ns */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_splat_s16_ns");
       orc_program_set_backup_function (p, _backup_orc_splat_s16_ns);
@@ -13891,7 +13891,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "copyw", 0, ORC_VAR_D1, ORC_VAR_P1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_splat_s16_ns = orc_program_take_code (p);
     orc_program_free (p);
@@ -13899,7 +13899,7 @@ schro_orc_init (void)
   {
     /* orc_splat_s16_2d_4xn */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 4);
       orc_program_set_2d (p);
@@ -13910,7 +13910,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "copyw", 0, ORC_VAR_D1, ORC_VAR_P1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_splat_s16_2d_4xn = orc_program_take_code (p);
     orc_program_free (p);
@@ -13918,7 +13918,7 @@ schro_orc_init (void)
   {
     /* orc_splat_s16_2d_8xn */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 8);
       orc_program_set_2d (p);
@@ -13929,7 +13929,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "copyw", 0, ORC_VAR_D1, ORC_VAR_P1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_splat_s16_2d_8xn = orc_program_take_code (p);
     orc_program_free (p);
@@ -13937,7 +13937,7 @@ schro_orc_init (void)
   {
     /* orc_splat_s16_2d */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_2d (p);
       orc_program_set_name (p, "orc_splat_s16_2d");
@@ -13947,7 +13947,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "copyw", 0, ORC_VAR_D1, ORC_VAR_P1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_splat_s16_2d = orc_program_take_code (p);
     orc_program_free (p);
@@ -13955,7 +13955,7 @@ schro_orc_init (void)
   {
     /* orc_splat_u8_ns */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_splat_u8_ns");
       orc_program_set_backup_function (p, _backup_orc_splat_u8_ns);
@@ -13964,7 +13964,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "copyb", 0, ORC_VAR_D1, ORC_VAR_P1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_splat_u8_ns = orc_program_take_code (p);
     orc_program_free (p);
@@ -13972,7 +13972,7 @@ schro_orc_init (void)
   {
     /* orc_splat_u8_2d */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_2d (p);
       orc_program_set_name (p, "orc_splat_u8_2d");
@@ -13982,7 +13982,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "copyb", 0, ORC_VAR_D1, ORC_VAR_P1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_splat_u8_2d = orc_program_take_code (p);
     orc_program_free (p);
@@ -13990,7 +13990,7 @@ schro_orc_init (void)
   {
     /* orc_average_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_average_u8");
       orc_program_set_backup_function (p, _backup_orc_average_u8);
@@ -14000,7 +14000,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "avgub", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_average_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14008,7 +14008,7 @@ schro_orc_init (void)
   {
     /* orc_rrshift6_add_s16_2d */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_2d (p);
       orc_program_set_name (p, "orc_rrshift6_add_s16_2d");
@@ -14025,7 +14025,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "addw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_T1, ORC_VAR_D1);
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_rrshift6_add_s16_2d = orc_program_take_code (p);
     orc_program_free (p);
@@ -14033,7 +14033,7 @@ schro_orc_init (void)
   {
     /* orc_rrshift6_sub_s16_2d */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_2d (p);
       orc_program_set_name (p, "orc_rrshift6_sub_s16_2d");
@@ -14049,7 +14049,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "copyw", 0, ORC_VAR_D2, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_rrshift6_sub_s16_2d = orc_program_take_code (p);
     orc_program_free (p);
@@ -14057,7 +14057,7 @@ schro_orc_init (void)
   {
     /* orc_rrshift6_s16_ip_2d */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_2d (p);
       orc_program_set_name (p, "orc_rrshift6_s16_ip_2d");
@@ -14070,7 +14070,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "subw", 0, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_C2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_rrshift6_s16_ip_2d = orc_program_take_code (p);
     orc_program_free (p);
@@ -14078,7 +14078,7 @@ schro_orc_init (void)
   {
     /* orc_rrshift6_s16_ip */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_rrshift6_s16_ip");
       orc_program_set_backup_function (p, _backup_orc_rrshift6_s16_ip);
@@ -14090,7 +14090,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "subw", 0, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_C2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_rrshift6_s16_ip = orc_program_take_code (p);
     orc_program_free (p);
@@ -14098,7 +14098,7 @@ schro_orc_init (void)
   {
     /* orc_unpack_yuyv_y */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_unpack_yuyv_y");
       orc_program_set_backup_function (p, _backup_orc_unpack_yuyv_y);
@@ -14107,7 +14107,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "select0wb", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_unpack_yuyv_y = orc_program_take_code (p);
     orc_program_free (p);
@@ -14115,7 +14115,7 @@ schro_orc_init (void)
   {
     /* orc_unpack_yuyv_u */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_unpack_yuyv_u");
       orc_program_set_backup_function (p, _backup_orc_unpack_yuyv_u);
@@ -14126,7 +14126,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "select0lw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "select1wb", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_unpack_yuyv_u = orc_program_take_code (p);
     orc_program_free (p);
@@ -14134,7 +14134,7 @@ schro_orc_init (void)
   {
     /* orc_unpack_yuyv_v */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_unpack_yuyv_v");
       orc_program_set_backup_function (p, _backup_orc_unpack_yuyv_v);
@@ -14145,7 +14145,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "select1lw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "select1wb", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_unpack_yuyv_v = orc_program_take_code (p);
     orc_program_free (p);
@@ -14153,7 +14153,7 @@ schro_orc_init (void)
   {
     /* orc_packyuyv */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_packyuyv");
       orc_program_set_backup_function (p, _backup_orc_packyuyv);
@@ -14174,7 +14174,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "mergebw", 0, ORC_VAR_T4, ORC_VAR_T2, ORC_VAR_S3, ORC_VAR_D1);
       orc_program_append_2 (p, "mergewl", 0, ORC_VAR_D1, ORC_VAR_T3, ORC_VAR_T4, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_packyuyv = orc_program_take_code (p);
     orc_program_free (p);
@@ -14182,7 +14182,7 @@ schro_orc_init (void)
   {
     /* orc_unpack_uyvy_y */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_unpack_uyvy_y");
       orc_program_set_backup_function (p, _backup_orc_unpack_uyvy_y);
@@ -14191,7 +14191,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "select1wb", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_unpack_uyvy_y = orc_program_take_code (p);
     orc_program_free (p);
@@ -14199,7 +14199,7 @@ schro_orc_init (void)
   {
     /* orc_unpack_uyvy_u */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_unpack_uyvy_u");
       orc_program_set_backup_function (p, _backup_orc_unpack_uyvy_u);
@@ -14210,7 +14210,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "select0lw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "select0wb", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_unpack_uyvy_u = orc_program_take_code (p);
     orc_program_free (p);
@@ -14218,7 +14218,7 @@ schro_orc_init (void)
   {
     /* orc_unpack_uyvy_v */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_unpack_uyvy_v");
       orc_program_set_backup_function (p, _backup_orc_unpack_uyvy_v);
@@ -14229,7 +14229,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "select1lw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "select0wb", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_unpack_uyvy_v = orc_program_take_code (p);
     orc_program_free (p);
@@ -14237,7 +14237,7 @@ schro_orc_init (void)
   {
     /* orc_interleave2_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_interleave2_s16");
       orc_program_set_backup_function (p, _backup_orc_interleave2_s16);
@@ -14247,7 +14247,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "mergewl", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_interleave2_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14255,7 +14255,7 @@ schro_orc_init (void)
   {
     /* orc_interleave2_rrshift1_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_interleave2_rrshift1_s16");
       orc_program_set_backup_function (p, _backup_orc_interleave2_rrshift1_s16);
@@ -14272,7 +14272,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "mergewl", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_interleave2_rrshift1_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14280,7 +14280,7 @@ schro_orc_init (void)
   {
     /* orc_deinterleave2_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_deinterleave2_s16");
       orc_program_set_backup_function (p, _backup_orc_deinterleave2_s16);
@@ -14293,7 +14293,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "select0lw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "select1lw", 0, ORC_VAR_D2, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_deinterleave2_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14301,7 +14301,7 @@ schro_orc_init (void)
   {
     /* orc_deinterleave2_lshift1_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_deinterleave2_lshift1_s16");
       orc_program_set_backup_function (p, _backup_orc_deinterleave2_lshift1_s16);
@@ -14319,7 +14319,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "select1lw", 0, ORC_VAR_T3, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "shlw", 0, ORC_VAR_D2, ORC_VAR_T3, ORC_VAR_C1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_deinterleave2_lshift1_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14327,7 +14327,7 @@ schro_orc_init (void)
   {
     /* orc_haar_deint_lshift1_split_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_deint_lshift1_split_s16");
       orc_program_set_backup_function (p, _backup_orc_haar_deint_lshift1_split_s16);
@@ -14350,7 +14350,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C2, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_deint_lshift1_split_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14358,7 +14358,7 @@ schro_orc_init (void)
   {
     /* orc_haar_deint_split_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_deint_split_s16");
       orc_program_set_backup_function (p, _backup_orc_haar_deint_split_s16);
@@ -14378,7 +14378,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_deint_split_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14386,7 +14386,7 @@ schro_orc_init (void)
   {
     /* orc_haar_split_s16_lo */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_split_s16_lo");
       orc_program_set_backup_function (p, _backup_orc_haar_split_s16_lo);
@@ -14402,7 +14402,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_split_s16_lo = orc_program_take_code (p);
     orc_program_free (p);
@@ -14410,7 +14410,7 @@ schro_orc_init (void)
   {
     /* orc_haar_split_s16_hi */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_split_s16_hi");
       orc_program_set_backup_function (p, _backup_orc_haar_split_s16_hi);
@@ -14420,7 +14420,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_S2, ORC_VAR_S1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_split_s16_hi = orc_program_take_code (p);
     orc_program_free (p);
@@ -14428,7 +14428,7 @@ schro_orc_init (void)
   {
     /* orc_haar_split_s16_op */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_split_s16_op");
       orc_program_set_backup_function (p, _backup_orc_haar_split_s16_op);
@@ -14446,7 +14446,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_split_s16_op = orc_program_take_code (p);
     orc_program_free (p);
@@ -14454,7 +14454,7 @@ schro_orc_init (void)
   {
     /* orc_haar_split_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_split_s16");
       orc_program_set_backup_function (p, _backup_orc_haar_split_s16);
@@ -14471,7 +14471,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_split_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14479,7 +14479,7 @@ schro_orc_init (void)
   {
     /* orc_haar_synth_s16_lo */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_synth_s16_lo");
       orc_program_set_backup_function (p, _backup_orc_haar_synth_s16_lo);
@@ -14492,7 +14492,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T1, ORC_VAR_S2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_synth_s16_lo = orc_program_take_code (p);
     orc_program_free (p);
@@ -14500,7 +14500,7 @@ schro_orc_init (void)
   {
     /* orc_haar_synth_s16_hi */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_synth_s16_hi");
       orc_program_set_backup_function (p, _backup_orc_haar_synth_s16_hi);
@@ -14517,7 +14517,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "subw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_T3, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_synth_s16_hi = orc_program_take_code (p);
     orc_program_free (p);
@@ -14525,7 +14525,7 @@ schro_orc_init (void)
   {
     /* orc_haar_synth_s16_op */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_synth_s16_op");
       orc_program_set_backup_function (p, _backup_orc_haar_synth_s16_op);
@@ -14544,7 +14544,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "copyw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D2, ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_synth_s16_op = orc_program_take_code (p);
     orc_program_free (p);
@@ -14552,7 +14552,7 @@ schro_orc_init (void)
   {
     /* orc_haar_synth_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_synth_s16");
       orc_program_set_backup_function (p, _backup_orc_haar_synth_s16);
@@ -14570,7 +14570,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "copyw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D2, ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_synth_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14578,7 +14578,7 @@ schro_orc_init (void)
   {
     /* orc_haar_synth_rrshift1_int_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_synth_rrshift1_int_s16");
       orc_program_set_backup_function (p, _backup_orc_haar_synth_rrshift1_int_s16);
@@ -14597,7 +14597,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "mergewl", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_synth_rrshift1_int_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14605,7 +14605,7 @@ schro_orc_init (void)
   {
     /* orc_haar_synth_int_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_synth_int_s16");
       orc_program_set_backup_function (p, _backup_orc_haar_synth_int_s16);
@@ -14622,7 +14622,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "addw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1);
       orc_program_append_2 (p, "mergewl", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_synth_int_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14630,7 +14630,7 @@ schro_orc_init (void)
   {
     /* orc_haar_sub_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_sub_s16");
       orc_program_set_backup_function (p, _backup_orc_haar_sub_s16);
@@ -14639,7 +14639,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_sub_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14647,7 +14647,7 @@ schro_orc_init (void)
   {
     /* orc_haar_add_half_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_add_half_s16");
       orc_program_set_backup_function (p, _backup_orc_haar_add_half_s16);
@@ -14659,7 +14659,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_add_half_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14667,7 +14667,7 @@ schro_orc_init (void)
   {
     /* orc_haar_add_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_add_s16");
       orc_program_set_backup_function (p, _backup_orc_haar_add_s16);
@@ -14676,7 +14676,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "addw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_add_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14684,7 +14684,7 @@ schro_orc_init (void)
   {
     /* orc_haar_sub_half_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_haar_sub_half_s16");
       orc_program_set_backup_function (p, _backup_orc_haar_sub_half_s16);
@@ -14696,7 +14696,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "avgsw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "subw", 0, ORC_VAR_D1, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_haar_sub_half_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14704,7 +14704,7 @@ schro_orc_init (void)
   {
     /* orc_sum_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_sum_u8");
       orc_program_set_backup_function (p, _backup_orc_sum_u8);
@@ -14717,7 +14717,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convuwl", 0, ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "accl", 0, ORC_VAR_A1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_sum_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14725,7 +14725,7 @@ schro_orc_init (void)
   {
     /* orc_sum_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_sum_s16");
       orc_program_set_backup_function (p, _backup_orc_sum_s16);
@@ -14736,7 +14736,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convswl", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "accl", 0, ORC_VAR_A1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_sum_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14744,7 +14744,7 @@ schro_orc_init (void)
   {
     /* orc_sum_square_diff_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_sum_square_diff_u8");
       orc_program_set_backup_function (p, _backup_orc_sum_square_diff_u8);
@@ -14762,7 +14762,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convuwl", 0, ORC_VAR_T3, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "accl", 0, ORC_VAR_A1, ORC_VAR_T3, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_sum_square_diff_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14770,7 +14770,7 @@ schro_orc_init (void)
   {
     /* orc_dequantise_s16_2d_4xn */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 4);
       orc_program_set_2d (p);
@@ -14792,7 +14792,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_dequantise_s16_2d_4xn = orc_program_take_code (p);
     orc_program_free (p);
@@ -14800,7 +14800,7 @@ schro_orc_init (void)
   {
     /* orc_dequantise_s16_2d_8xn */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 8);
       orc_program_set_2d (p);
@@ -14822,7 +14822,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_dequantise_s16_2d_8xn = orc_program_take_code (p);
     orc_program_free (p);
@@ -14830,7 +14830,7 @@ schro_orc_init (void)
   {
     /* orc_dequantise_s16_ip_2d_8xn */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 8);
       orc_program_set_2d (p);
@@ -14851,7 +14851,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_dequantise_s16_ip_2d_8xn = orc_program_take_code (p);
     orc_program_free (p);
@@ -14859,7 +14859,7 @@ schro_orc_init (void)
   {
     /* orc_dequantise_s16_ip_2d */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_2d (p);
       orc_program_set_name (p, "orc_dequantise_s16_ip_2d");
@@ -14879,7 +14879,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_dequantise_s16_ip_2d = orc_program_take_code (p);
     orc_program_free (p);
@@ -14887,7 +14887,7 @@ schro_orc_init (void)
   {
     /* orc_dequantise_s16_ip */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_dequantise_s16_ip");
       orc_program_set_backup_function (p, _backup_orc_dequantise_s16_ip);
@@ -14906,7 +14906,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_dequantise_s16_ip = orc_program_take_code (p);
     orc_program_free (p);
@@ -14914,7 +14914,7 @@ schro_orc_init (void)
   {
     /* orc_dequantise_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_dequantise_s16");
       orc_program_set_backup_function (p, _backup_orc_dequantise_s16);
@@ -14934,7 +14934,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_dequantise_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14942,7 +14942,7 @@ schro_orc_init (void)
   {
     /* orc_dequantise_var_s16_ip */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_dequantise_var_s16_ip");
       orc_program_set_backup_function (p, _backup_orc_dequantise_var_s16_ip);
@@ -14961,7 +14961,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_dequantise_var_s16_ip = orc_program_take_code (p);
     orc_program_free (p);
@@ -14969,7 +14969,7 @@ schro_orc_init (void)
   {
     /* orc_quantise1_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_quantise1_s16");
       orc_program_set_backup_function (p, _backup_orc_quantise1_s16);
@@ -14991,7 +14991,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shruw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_P3, ORC_VAR_D1);
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_quantise1_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -14999,7 +14999,7 @@ schro_orc_init (void)
   {
     /* orc_quantise2_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_quantise2_s16");
       orc_program_set_backup_function (p, _backup_orc_quantise2_s16);
@@ -15019,7 +15019,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shruw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_P1, ORC_VAR_D1);
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_quantise2_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15027,7 +15027,7 @@ schro_orc_init (void)
   {
     /* orc_quantdequant1_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_quantdequant1_s16");
       orc_program_set_backup_function (p, _backup_orc_quantdequant1_s16);
@@ -15057,7 +15057,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_D2, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_quantdequant1_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15065,7 +15065,7 @@ schro_orc_init (void)
   {
     /* orc_quantdequant3_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_quantdequant3_s16");
       orc_program_set_backup_function (p, _backup_orc_quantdequant3_s16);
@@ -15099,7 +15099,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_D2, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_quantdequant3_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15107,7 +15107,7 @@ schro_orc_init (void)
   {
     /* orc_quantdequant2_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_quantdequant2_s16");
       orc_program_set_backup_function (p, _backup_orc_quantdequant2_s16);
@@ -15135,7 +15135,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "mullw", 0, ORC_VAR_D2, ORC_VAR_T1, ORC_VAR_T2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_quantdequant2_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15143,7 +15143,7 @@ schro_orc_init (void)
   {
     /* orc_downsample_vert_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_downsample_vert_u8");
       orc_program_set_backup_function (p, _backup_orc_downsample_vert_u8);
@@ -15172,7 +15172,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shruw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "convwb", 0, ORC_VAR_D1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_downsample_vert_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15180,7 +15180,7 @@ schro_orc_init (void)
   {
     /* orc_downsample_horiz_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_downsample_horiz_u8");
       orc_program_set_backup_function (p, _backup_orc_downsample_horiz_u8);
@@ -15216,7 +15216,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shruw", 0, ORC_VAR_T4, ORC_VAR_T4, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "convwb", 0, ORC_VAR_D1, ORC_VAR_T4, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_downsample_horiz_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15224,7 +15224,7 @@ schro_orc_init (void)
   {
     /* orc_stats_moment_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_stats_moment_s16");
       orc_program_set_backup_function (p, _backup_orc_stats_moment_s16);
@@ -15241,7 +15241,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convuwl", 0, ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "accl", 0, ORC_VAR_A1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_stats_moment_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15249,7 +15249,7 @@ schro_orc_init (void)
   {
     /* orc_stats_above_s16 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_stats_above_s16");
       orc_program_set_backup_function (p, _backup_orc_stats_above_s16);
@@ -15267,7 +15267,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "convuwl", 0, ORC_VAR_T2, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "accl", 0, ORC_VAR_A1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_stats_above_s16 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15275,7 +15275,7 @@ schro_orc_init (void)
   {
     /* orc_accw */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_name (p, "orc_accw");
       orc_program_set_backup_function (p, _backup_orc_accw);
@@ -15286,7 +15286,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "absw", 0, ORC_VAR_T1, ORC_VAR_S1, ORC_VAR_D1, ORC_VAR_D1);
       orc_program_append_2 (p, "accw", 0, ORC_VAR_A1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_accw = orc_program_take_code (p);
     orc_program_free (p);
@@ -15294,7 +15294,7 @@ schro_orc_init (void)
   {
     /* orc_avg2_8xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 8);
       orc_program_set_2d (p);
@@ -15306,7 +15306,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "avgub", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_avg2_8xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15314,7 +15314,7 @@ schro_orc_init (void)
   {
     /* orc_avg2_12xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 12);
       orc_program_set_2d (p);
@@ -15326,7 +15326,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "avgub", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_avg2_12xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15334,7 +15334,7 @@ schro_orc_init (void)
   {
     /* orc_avg2_16xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 16);
       orc_program_set_2d (p);
@@ -15346,7 +15346,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "avgub", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_avg2_16xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15354,7 +15354,7 @@ schro_orc_init (void)
   {
     /* orc_avg2_32xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 32);
       orc_program_set_2d (p);
@@ -15366,7 +15366,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "avgub", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_avg2_32xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15374,7 +15374,7 @@ schro_orc_init (void)
   {
     /* orc_avg2_nxm_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_2d (p);
       orc_program_set_name (p, "orc_avg2_nxm_u8");
@@ -15385,7 +15385,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "avgub", 0, ORC_VAR_D1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_avg2_nxm_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15393,7 +15393,7 @@ schro_orc_init (void)
   {
     /* orc_combine4_8xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 8);
       orc_program_set_2d (p);
@@ -15426,7 +15426,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "addw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_combine4_8xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15434,7 +15434,7 @@ schro_orc_init (void)
   {
     /* orc_combine4_12xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 12);
       orc_program_set_2d (p);
@@ -15467,7 +15467,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "addw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_combine4_12xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15475,7 +15475,7 @@ schro_orc_init (void)
   {
     /* orc_combine4_16xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 16);
       orc_program_set_2d (p);
@@ -15508,7 +15508,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "addw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_combine4_16xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15516,7 +15516,7 @@ schro_orc_init (void)
   {
     /* orc_combine4_24xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 24);
       orc_program_set_2d (p);
@@ -15549,7 +15549,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "addw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_combine4_24xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15557,7 +15557,7 @@ schro_orc_init (void)
   {
     /* orc_combine4_32xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 32);
       orc_program_set_2d (p);
@@ -15590,7 +15590,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "addw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C1, ORC_VAR_D1);
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_combine4_32xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15598,7 +15598,7 @@ schro_orc_init (void)
   {
     /* orc_combine4_nxm_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_2d (p);
       orc_program_set_name (p, "orc_combine4_nxm_u8");
@@ -15632,7 +15632,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T2, ORC_VAR_T2, ORC_VAR_C2, ORC_VAR_D1);
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_T2, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_combine4_nxm_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15640,7 +15640,7 @@ schro_orc_init (void)
   {
     /* orc_combine2_8xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 8);
       orc_program_set_2d (p);
@@ -15665,7 +15665,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_P4, ORC_VAR_D1);
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_combine2_8xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15673,7 +15673,7 @@ schro_orc_init (void)
   {
     /* orc_combine2_12xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 12);
       orc_program_set_2d (p);
@@ -15698,7 +15698,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_P4, ORC_VAR_D1);
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_combine2_12xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15706,7 +15706,7 @@ schro_orc_init (void)
   {
     /* orc_combine2_16xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 16);
       orc_program_set_2d (p);
@@ -15731,7 +15731,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_P4, ORC_VAR_D1);
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_combine2_16xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15739,7 +15739,7 @@ schro_orc_init (void)
   {
     /* orc_combine2_nxm_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_2d (p);
       orc_program_set_name (p, "orc_combine2_nxm_u8");
@@ -15763,7 +15763,7 @@ schro_orc_init (void)
       orc_program_append_2 (p, "shrsw", 0, ORC_VAR_T1, ORC_VAR_T1, ORC_VAR_P4, ORC_VAR_D1);
       orc_program_append_2 (p, "convsuswb", 0, ORC_VAR_D1, ORC_VAR_T1, ORC_VAR_D1, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_combine2_nxm_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15771,7 +15771,7 @@ schro_orc_init (void)
   {
     /* orc_sad_nxm_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_2d (p);
       orc_program_set_name (p, "orc_sad_nxm_u8");
@@ -15782,7 +15782,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "accsadubl", 0, ORC_VAR_A1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_sad_nxm_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15790,7 +15790,7 @@ schro_orc_init (void)
   {
     /* orc_sad_8x8_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 8);
       orc_program_set_2d (p);
@@ -15803,7 +15803,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "accsadubl", 0, ORC_VAR_A1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_sad_8x8_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15811,7 +15811,7 @@ schro_orc_init (void)
   {
     /* orc_sad_12x12_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 12);
       orc_program_set_2d (p);
@@ -15824,7 +15824,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "accsadubl", 0, ORC_VAR_A1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_sad_12x12_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15832,7 +15832,7 @@ schro_orc_init (void)
   {
     /* orc_sad_16xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 16);
       orc_program_set_2d (p);
@@ -15844,7 +15844,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "accsadubl", 0, ORC_VAR_A1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_sad_16xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
@@ -15852,7 +15852,7 @@ schro_orc_init (void)
   {
     /* orc_sad_32xn_u8 */
     OrcProgram *p;
-    
+
       p = orc_program_new ();
       orc_program_set_constant_n (p, 32);
       orc_program_set_2d (p);
@@ -15864,7 +15864,7 @@ schro_orc_init (void)
 
       orc_program_append_2 (p, "accsadubl", 0, ORC_VAR_A1, ORC_VAR_S1, ORC_VAR_S2, ORC_VAR_D1);
 
-      orc_program_compile (p);
+    orc_program_compile (p);
 
     _orc_code_orc_sad_32xn_u8 = orc_program_take_code (p);
     orc_program_free (p);
