@@ -1,5 +1,5 @@
 
-Schroedinger 1.0.10
+Schroedinger 1.0.11
 ===================
 
 A new release of Schrödinger is available. Schrödinger (or “schro”
@@ -10,7 +10,7 @@ to encode and decode Dirac video.
 
 Information: http://diracvideo.org/
 Download:
-http://diracvideo.org/download/schroedinger/schroedinger-1.0.10.tar.gz
+http://diracvideo.org/download/schroedinger/schroedinger-1.0.11.tar.gz
 
 The Dirac project maintains two encoder implementations: dirac-research,
 a research encoder, and Schrödinger, which is meant for user applications.
@@ -31,13 +31,10 @@ Information about Orc:
   http://code.entropywave.com/projects/orc/
 
 
-New in 1.0.10
+New in 1.0.11
 =============
 
- - Build fixes on various platforms
- - Speed increases for low-delay syntax
- - Fix unaligned access in orc code, which was uncovered by a recent
-   Orc bug fix.  Bump orc requirement to 0.4.10, which makes sure
-   everyone works right.
- - No encoder changes
+ - Added 10-bit and 16-bit support to both the encoder and decoder.
+   Only works in intra mode.  Tested formats are 16-bit 4:4:4 and
+   10-bit 4:2:2.
 
