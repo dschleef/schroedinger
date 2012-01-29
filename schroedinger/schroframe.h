@@ -113,6 +113,7 @@ SchroFrame * schro_frame_new_from_data_YUY2 (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_UYVY (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_UYVY_full (void *data, int width, int height, int stride);
 SchroFrame * schro_frame_new_from_data_AYUV (void *data, int width, int height);
+SchroFrame * schro_frame_new_from_data_ARGB (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_v216 (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_v210 (void *data, int width, int height);
 SchroFrame * schro_frame_new_from_data_AY64 (void *data, int width, int height);

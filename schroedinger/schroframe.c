@@ -84,7 +84,8 @@ schro_frame_new_and_alloc_full (SchroMemoryDomain * domain,
     frame->components[0].format = format;
     frame->components[0].width = width;
     frame->components[0].height = height;
-    if (format == SCHRO_FRAME_FORMAT_AYUV) {
+    if (format == SCHRO_FRAME_FORMAT_AYUV ||
+        format == SCHRO_FRAME_FORMAT_ARGB) {
       frame->components[0].stride = width * 4;
     } else {
       frame->components[0].stride = ROUND_UP_POW2 (width, 1) * 2;
@@ -290,6 +291,39 @@ schro_frame_new_from_data_UYVY_full (void *data, int width, int height,
   frame->components[0].width = width;
   frame->components[0].height = height;
   frame->components[0].stride = stride;
+  frame->components[0].data = data;
+  frame->components[0].length = frame->components[0].stride * height;
+  frame->components[0].v_shift = 0;
+  frame->components[0].h_shift = 0;
+
+  return frame;
+}
+
+/**
+ * schro_frame_new_from_data_ARGB:
+ *
+ * Creates a new SchroFrame object with the requested size using
+ * the data pointed to by @data.  The data must be in ARGB format.
+ * The data must remain for the lifetime of the SchroFrame object.
+ * It is recommended to use schro_frame_set_free_callback() for
+ * notification when the data is no longer needed.
+ *
+ * Returns: a new SchroFrame object
+ */
+SchroFrame *
+schro_frame_new_from_data_ARGB (void *data, int width, int height)
+{
+  SchroFrame *frame = schro_frame_new ();
+
+  frame->format = SCHRO_FRAME_FORMAT_ARGB;
+
+  frame->width = width;
+  frame->height = height;
+
+  frame->components[0].format = frame->format;
+  frame->components[0].width = width;
+  frame->components[0].height = height;
+  frame->components[0].stride = width * 4;
   frame->components[0].data = data;
   frame->components[0].length = frame->components[0].stride * height;
   frame->components[0].v_shift = 0;
@@ -847,8 +881,10 @@ schro_frame_convert (SchroFrame * dest, SchroFrame * src)
       dest_format = SCHRO_FRAME_FORMAT_U8_422;
       break;
     case SCHRO_FRAME_FORMAT_AYUV:
-    case SCHRO_FRAME_FORMAT_ARGB:
       dest_format = SCHRO_FRAME_FORMAT_U8_444;
+      break;
+    case SCHRO_FRAME_FORMAT_ARGB:
+      dest_format = SCHRO_FRAME_FORMAT_S16_444;
       break;
     case SCHRO_FRAME_FORMAT_v210:
     case SCHRO_FRAME_FORMAT_v216:
@@ -916,6 +952,10 @@ schro_frame_convert (SchroFrame * dest, SchroFrame * src)
     case SCHRO_FRAME_FORMAT_AYUV:
       frame = schro_virt_frame_new_pack_AYUV (frame);
       SCHRO_DEBUG ("pack_AYUV %p", frame);
+      break;
+    case SCHRO_FRAME_FORMAT_ARGB:
+      frame = schro_virt_frame_new_pack_ARGB (frame);
+      SCHRO_DEBUG ("pack_ARGB %p", frame);
       break;
     case SCHRO_FRAME_FORMAT_v210:
       frame = schro_virt_frame_new_pack_v210 (frame);

@@ -690,6 +690,48 @@ unpack_ayuv (SchroFrame * frame, void *_dest, int component, int i)
 }
 
 static void
+unpack_argb (SchroFrame * frame, void *_dest, int component, int i)
+{
+  int16_t *dest = _dest;
+  uint8_t *src;
+  int j;
+  int r,g,b;
+  int t;
+
+  src = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+
+  switch (component) {
+    case 0:
+      for (j = 0; j < frame->width; j++) {
+        r = src[j * 4 + 1];
+        g = src[j * 4 + 2];
+        b = src[j * 4 + 3];
+        t = b - ((r - b)>>1);
+        dest[j] = t + (g >> 1);
+      }
+      break;
+    case 1:
+      for (j = 0; j < frame->width; j++) {
+        r = src[j * 4 + 1];
+        b = src[j * 4 + 3];
+        dest[j] = r - b;
+      }
+      break;
+    case 2:
+      for (j = 0; j < frame->width; j++) {
+        r = src[j * 4 + 1];
+        g = src[j * 4 + 2];
+        b = src[j * 4 + 3];
+        t = b - ((r - b)>>1);
+        dest[j] = g - t;
+      }
+      break;
+    default:
+      SCHRO_ASSERT (0);
+  }
+}
+
+static void
 unpack_AY64 (SchroFrame * frame, void *_dest, int component, int i)
 {
   int32_t *dest = _dest;
@@ -881,6 +923,10 @@ schro_virt_frame_new_unpack (SchroFrame * vf)
     case SCHRO_FRAME_FORMAT_AY64:
       format = SCHRO_FRAME_FORMAT_S32_444;
       render_line = unpack_AY64;
+      break;
+    case SCHRO_FRAME_FORMAT_ARGB:
+      format = SCHRO_FRAME_FORMAT_U8_444;
+      render_line = unpack_argb;
       break;
     default:
       return vf;
@@ -1211,6 +1257,44 @@ schro_virt_frame_new_pack_AYUV (SchroFrame * vf)
       vf->width, vf->height);
   virt_frame->virt_frame1 = vf;
   virt_frame->render_line = pack_ayuv;
+
+  return virt_frame;
+}
+
+static void
+pack_argb (SchroFrame * frame, void *_dest, int component, int i)
+{
+  uint8_t *dest = _dest;
+  int16_t *src_y;
+  int16_t *src_co;
+  int16_t *src_cg;
+  int j;
+  int t;
+  int b;
+
+  src_y = schro_virt_frame_get_line (frame->virt_frame1, 0, i);
+  src_co = schro_virt_frame_get_line (frame->virt_frame1, 1, i);
+  src_cg = schro_virt_frame_get_line (frame->virt_frame1, 2, i);
+
+  for (j = 0; j < frame->width; j++) {
+    dest[j * 4 + 0] = 0xff;
+    t = src_y[j] + (src_cg[j]>>1);
+    b = t - (src_co[j]>>1);
+    dest[j * 4 + 1] = b + src_co[j];
+    dest[j * 4 + 2] = t + src_cg[j];
+    dest[j * 4 + 3] = b;
+  }
+}
+
+SchroFrame *
+schro_virt_frame_new_pack_ARGB (SchroFrame * vf)
+{
+  SchroFrame *virt_frame;
+
+  virt_frame = schro_frame_new_virtual (NULL, SCHRO_FRAME_FORMAT_ARGB,
+      vf->width, vf->height);
+  virt_frame->virt_frame1 = vf;
+  virt_frame->render_line = pack_argb;
 
   return virt_frame;
 }
