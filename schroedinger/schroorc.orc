@@ -517,7 +517,7 @@ convsuswb d1, t1
 .temp 2 t2
 
 addl t1, s1, 128
-convsuslw t2, t1
+convssslw t2, t1
 convsuswb d1, t2
 
 
