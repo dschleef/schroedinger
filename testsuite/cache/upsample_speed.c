@@ -35,7 +35,6 @@ void
 upsample_speed (int filter, int width, int height)
 {
   SchroFrame *frame1;
-  SchroUpsampledFrame *upframe;
   SchroMemoryDomain *mem;
   int i;
 
@@ -43,9 +42,7 @@ upsample_speed (int filter, int width, int height)
   frame1 = schro_frame_new_and_alloc (mem, SCHRO_FRAME_FORMAT_U8_444, width, height);
 
   for(i=0;i<100;i++){
-    upframe = schro_upsampled_frame_new (schro_frame_ref(frame1));
-    schro_upsampled_frame_upsample (upframe);
-    schro_upsampled_frame_free (upframe);
+    schro_upsampled_frame_upsample (frame1);
   }
 
   schro_frame_unref (frame1);

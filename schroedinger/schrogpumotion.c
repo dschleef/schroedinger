@@ -164,8 +164,8 @@ schro_gpumotion_render (SchroGPUMotion * self, SchroMotion * motion,
     SchroFrame * gdest)
 {
   CudaMotion *cm = self->cm;
-  SchroUpsampledFrame *ref1 = (SchroUpsampledFrame *) motion->src1;
-  SchroUpsampledFrame *ref2 = (SchroUpsampledFrame *) motion->src2;
+  SchroFrame *ref1 = (SchroFrame *) motion->src1;
+  SchroFrame *ref2 = (SchroFrame *) motion->src2;
   int fwidth;
   int fheight;
   int hshift;

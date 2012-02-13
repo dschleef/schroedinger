@@ -41,13 +41,12 @@ main (int argc, char *argv[])
 }
 
 void
-schro_upsampled_frame_get_subdata_prec1 (SchroUpsampledFrame *upframe,
+schro_upsampled_frame_get_subdata_prec1 (SchroFrame *frame,
     int component, int x, int y, SchroFrameData *fd);
 
 void test (int width, int height)
 {
   SchroFrame *frame;
-  SchroUpsampledFrame *upframe;
   char name[TEST_PATTERN_NAME_SIZE];
   SchroFrameData fd_ref;
   SchroFrameData fd;
@@ -71,8 +70,7 @@ void test (int width, int height)
 
   schro_frame_mc_edgeextend (frame);
 
-  upframe = schro_upsampled_frame_new (schro_frame_ref(frame));
-  schro_upsampled_frame_upsample (upframe);
+  schro_upsampled_frame_upsample (frame);
 
 #if 0
   /* just the corners */
@@ -80,8 +78,8 @@ void test (int width, int height)
     for(x=-10;x<-8;x++){
       printf ("%d,%d\n", x, y);
 
-      schro_upsampled_frame_get_block_precN (upframe, 0, x, y, 1, &fd_ref);
-      schro_upsampled_frame_get_subdata_prec1 (upframe, 0, x, y, &fd);
+      schro_upsampled_frame_get_block_precN (frame, 0, x, y, 1, &fd_ref);
+      schro_upsampled_frame_get_subdata_prec1 (frame, 0, x, y, &fd);
       frame_data_dump_full (&fd, &fd_ref, &fd_ref);
     }
   }
@@ -90,8 +88,8 @@ void test (int width, int height)
     for(x=184;x<186;x++){
       printf ("%d,%d\n", x, y);
 
-      schro_upsampled_frame_get_block_precN (upframe, 0, x, y, 1, &fd_ref);
-      schro_upsampled_frame_get_subdata_prec1 (upframe, 0, x, y, &fd);
+      schro_upsampled_frame_get_block_precN (frame, 0, x, y, 1, &fd_ref);
+      schro_upsampled_frame_get_subdata_prec1 (frame, 0, x, y, &fd);
       frame_data_dump_full (&fd, &fd_ref, &fd_ref);
     }
   }
@@ -100,8 +98,8 @@ void test (int width, int height)
     for(x=184;x<186;x++){
       printf ("%d,%d\n", x, y);
 
-      schro_upsampled_frame_get_block_precN (upframe, 0, x, y, 1, &fd_ref);
-      schro_upsampled_frame_get_subdata_prec1 (upframe, 0, x, y, &fd);
+      schro_upsampled_frame_get_block_precN (frame, 0, x, y, 1, &fd_ref);
+      schro_upsampled_frame_get_subdata_prec1 (frame, 0, x, y, &fd);
       frame_data_dump_full (&fd, &fd_ref, &fd_ref);
     }
   }
@@ -110,8 +108,8 @@ void test (int width, int height)
     for(x=-10;x<-8;x++){
       printf ("%d,%d\n", x, y);
 
-      schro_upsampled_frame_get_block_precN (upframe, 0, x, y, 1, &fd_ref);
-      schro_upsampled_frame_get_subdata_prec1 (upframe, 0, x, y, &fd);
+      schro_upsampled_frame_get_block_precN (frame, 0, x, y, 1, &fd_ref);
+      schro_upsampled_frame_get_subdata_prec1 (frame, 0, x, y, &fd);
       frame_data_dump_full (&fd, &fd_ref, &fd_ref);
     }
   }
@@ -119,8 +117,8 @@ void test (int width, int height)
 
   for(y=-32*2;y<100+32*2-16*2;y++) {
     for(x=-32*2;x<100+32*2-16*2;x++) {
-      schro_upsampled_frame_get_block_fast_precN (upframe, 0, x, y, 1, &fd_ref, &fd_ref);
-      schro_upsampled_frame_get_subdata_prec1 (upframe, 0, x, y, &fd);
+      schro_upsampled_frame_get_block_fast_precN (frame, 0, x, y, 1, &fd_ref, &fd_ref);
+      schro_upsampled_frame_get_subdata_prec1 (frame, 0, x, y, &fd);
       ok = frame_data_compare (&fd, &fd_ref);
       if (dump_all || !ok) {
         printf ("%d,%d\n", x, y);

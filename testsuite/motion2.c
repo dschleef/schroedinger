@@ -86,7 +86,6 @@ main (int argc, char *argv[])
   SchroFrame *dest_u8;
   SchroFrame *ref;
   SchroFrame *addframe;
-  SchroUpsampledFrame *uref;
   SchroParams params;
   SchroVideoFormat video_format;
   SchroMotionVector *motion_vectors;
@@ -153,12 +152,10 @@ main (int argc, char *argv[])
     }
   }
 
-  uref = schro_upsampled_frame_new (ref);
-
   {
     SchroMotion motion;
 
-    motion.src1 = uref;
+    motion.src1 = ref;
     motion.src2 = NULL;
     motion.motion_vectors = motion_vectors;
     motion.params = &params;
@@ -169,7 +166,7 @@ main (int argc, char *argv[])
   schro_frame_dump (dest_u8);
   //schro_frame_compare (ref, dest_u8);
 
-  schro_upsampled_frame_free (uref);
+  schro_frame_unref (ref);
   schro_frame_unref (dest);
   schro_frame_unref (dest_u8);
   free (motion_vectors);

@@ -305,7 +305,7 @@ get_block (SchroMotion * motion, int k, int ref, int i, int j, int dx, int dy)
 {
   int px, py;
   int x, y;
-  SchroUpsampledFrame *upframe;
+  SchroFrame *upframe;
   int exp;
 
   if (k > 0) {

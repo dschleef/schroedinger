@@ -8,7 +8,7 @@
 int _schro_motion_ref = FALSE;
 
 static int
-get_pixel (SchroMotion * motion, int k, SchroUpsampledFrame * upframe,
+get_pixel (SchroMotion * motion, int k, SchroFrame * upframe,
     int x, int y, int dx, int dy);
 
 int
@@ -137,7 +137,7 @@ get_biref_pixel (SchroMotion * motion, int i, int j, int k, int x, int y)
 }
 
 static int
-get_pixel (SchroMotion * motion, int k, SchroUpsampledFrame * upframe,
+get_pixel (SchroMotion * motion, int k, SchroFrame * upframe,
     int x, int y, int dx, int dy)
 {
   int px, py;

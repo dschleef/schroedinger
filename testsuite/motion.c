@@ -18,7 +18,6 @@ main (int argc, char *argv[])
   SchroFrame *dest;
   SchroFrame *ref;
   SchroFrame *addframe;
-  SchroUpsampledFrame *uref;
   SchroParams params;
   SchroVideoFormat video_format;
   SchroMotionVector *motion_vectors;
@@ -59,9 +58,7 @@ main (int argc, char *argv[])
       video_format.width, video_format.height);
   schro_frame_clear(addframe);
 
-  uref = schro_upsampled_frame_new (ref);
-
-  schro_upsampled_frame_upsample (uref);
+  schro_upsampled_frame_upsample (ref);
 
   motion_vectors = malloc(sizeof(SchroMotionVector) *
       params.x_num_blocks * params.y_num_blocks);
@@ -83,7 +80,7 @@ main (int argc, char *argv[])
       SchroMotion *motion;
       void *mv_save;
 
-      motion = schro_motion_new (&params, uref, NULL);
+      motion = schro_motion_new (&params, ref, NULL);
       mv_save = motion->motion_vectors;
       motion->motion_vectors = motion_vectors;
       orc_profile_start(&prof);
@@ -96,9 +93,7 @@ main (int argc, char *argv[])
     printf("cycles %g %g\n", ave, std);
   }
 
-
-
-  schro_upsampled_frame_free (uref);
+  schro_frame_unref (ref);
   schro_frame_unref (dest);
   free (motion_vectors);
 

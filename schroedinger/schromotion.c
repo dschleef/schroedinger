@@ -12,8 +12,8 @@ extern int _schro_motion_ref;
 
 
 SchroMotion *
-schro_motion_new (SchroParams * params, SchroUpsampledFrame * ref1,
-    SchroUpsampledFrame * ref2)
+schro_motion_new (SchroParams * params, SchroFrame * ref1,
+    SchroFrame * ref2)
 {
   SchroMotion *motion;
 

@@ -52,7 +52,6 @@ void test (int width, int height)
   SchroFrame *frame_ref;
   SchroFrame *frame_1;
   SchroFrameData fd, *fd_test = &fd;
-  SchroUpsampledFrame *upframe;
   char name[TEST_PATTERN_NAME_SIZE];
   int i;
   int ok;
@@ -66,10 +65,9 @@ void test (int width, int height)
     test_pattern_generate (frame->components + 0, name, i);
 
     ref_h_upsample (frame_ref, frame);
-    upframe = schro_upsampled_frame_new (schro_frame_ref(frame));
-    schro_upsampled_frame_upsample (upframe);
+    schro_upsampled_frame_upsample (frame);
 
-    schro_upsampled_frame_get_framedata (upframe, fd_test, 1, 0);
+    schro_upsampled_frame_get_framedata (frame, fd_test, 1, 0);
     ok = frame_data_compare (frame_ref->components + 0, fd_test);
     printf("  pattern %s: %s\n", name, ok ? "OK" : "broken");
     if (dump_all || !ok) {
@@ -77,8 +75,6 @@ void test (int width, int height)
           frame_ref->components + 0, frame->components + 0);
       failed = TRUE;
     }
-
-    schro_upsampled_frame_free (upframe);
   }
 
   printf("VERTICAL %dx%d\n", width, height);
@@ -86,10 +82,9 @@ void test (int width, int height)
     test_pattern_generate (frame->components + 0, name, i);
 
     ref_v_upsample (frame_ref, frame);
-    upframe = schro_upsampled_frame_new (schro_frame_ref(frame));
-    schro_upsampled_frame_upsample (upframe);
+    schro_upsampled_frame_upsample (frame);
 
-    schro_upsampled_frame_get_framedata (upframe, fd_test, 2, 0);
+    schro_upsampled_frame_get_framedata (frame, fd_test, 2, 0);
     ok = frame_data_compare (frame_ref->components + 0, fd_test);
     printf("  pattern %s: %s\n", name, ok ? "OK" : "broken");
     if (dump_all || !ok) {
@@ -97,8 +92,6 @@ void test (int width, int height)
           frame_ref->components + 0, frame->components + 0);
       failed = TRUE;
     }
-
-    schro_upsampled_frame_free (upframe);
   }
 
   printf("HV %dx%d\n", width, height);
@@ -107,10 +100,9 @@ void test (int width, int height)
 
     ref_v_upsample (frame_1, frame);
     ref_h_upsample (frame_ref, frame_1);
-    upframe = schro_upsampled_frame_new (schro_frame_ref(frame));
-    schro_upsampled_frame_upsample (upframe);
+    schro_upsampled_frame_upsample (frame);
 
-    schro_upsampled_frame_get_framedata (upframe, fd_test, 3, 0);
+    schro_upsampled_frame_get_framedata (frame, fd_test, 3, 0);
     ok = frame_data_compare (frame_ref->components + 0, fd_test);
     printf("  pattern %s: %s\n", name, ok ? "OK" : "broken");
     if (dump_all || !ok) {
@@ -118,8 +110,6 @@ void test (int width, int height)
           frame_ref->components + 0, frame->components + 0);
       failed = TRUE;
     }
-
-    schro_upsampled_frame_free (upframe);
   }
 
   schro_frame_unref (frame);

@@ -2243,8 +2243,7 @@ schro_encoder_analyse_picture (SchroAsyncStage * stage)
     frame->have_downsampling = TRUE;
   }
   schro_frame_ref (frame->filtered_frame);
-  frame->upsampled_original_frame =
-      schro_upsampled_frame_new (frame->filtered_frame);
+  frame->upsampled_original_frame = frame->filtered_frame;
   if (frame->need_upsampling) {
     schro_upsampled_frame_upsample (frame->upsampled_original_frame);
     frame->have_upsampling = TRUE;
@@ -2714,7 +2713,7 @@ schro_encoder_reconstruct_picture (SchroAsyncStage * stage)
             encoder->video_format), 32, TRUE);
     schro_frame_convert (frame, encoder_frame->iwt_frame);
     schro_frame_mc_edgeextend (frame);
-    encoder_frame->reconstructed_frame = schro_upsampled_frame_new (frame);
+    encoder_frame->reconstructed_frame = frame;
   }
 
   if (encoder_frame->encoder->enable_md5) {
@@ -4262,11 +4261,11 @@ schro_encoder_frame_unref (SchroEncoderFrame * frame)
       schro_frame_unref (frame->filtered_frame);
     }
     if (frame->reconstructed_frame) {
-      schro_upsampled_frame_free (frame->reconstructed_frame);
+      schro_frame_unref (frame->reconstructed_frame);
     }
 
     if (frame->upsampled_original_frame) {
-      schro_upsampled_frame_free (frame->upsampled_original_frame);
+      schro_frame_unref (frame->upsampled_original_frame);
     }
 #if 0
     for (i = 0; i < 2; i++) {

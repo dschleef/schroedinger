@@ -31,7 +31,7 @@ void schro_opengl_frame_subtract (SchroFrame *dest, SchroFrame *src);
 void schro_opengl_frame_inverse_iwt_transform (SchroFrame *frame,
     SchroParams *params);
 
-void schro_opengl_upsampled_frame_upsample (SchroUpsampledFrame *upsampled_frame);
+void schro_opengl_upsampled_frame_upsample (SchroFrame *upsampled_frame);
 
 void schro_frame_print (SchroFrame *frame, const char* name);
 

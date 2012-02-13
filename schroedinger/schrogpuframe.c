@@ -713,20 +713,20 @@ schro_gpuframe_upsample (SchroFrame * dst, SchroFrame * src)
   }
 }
 
-SchroUpsampledFrame *
+SchroFrame *
 schro_upsampled_gpuframe_new (SchroVideoFormat * fmt)
 {
-  SchroUpsampledFrame *rv;
+  SchroFrame *rv;
 
   SCHRO_DEBUG ("schro_upsampled_gpuframe_new");
-  rv = schro_malloc0 (sizeof (SchroUpsampledFrame));
+  rv = schro_malloc0 (sizeof (SchroFrame));
 
 
   return rv;
 }
 
 void
-schro_upsampled_gpuframe_upsample (SchroUpsampledFrame * uf)
+schro_upsampled_gpuframe_upsample (SchroFrame * uf)
 {
   struct cudaChannelFormatDesc channelDesc =
       cudaCreateChannelDesc (8, 0, 0, 0, cudaChannelFormatKindUnsigned);
@@ -762,7 +762,7 @@ schro_upsampled_gpuframe_upsample (SchroUpsampledFrame * uf)
 }
 
 void
-schro_upsampled_gpuframe_free (SchroUpsampledFrame * x)
+schro_upsampled_gpuframe_free (SchroFrame * x)
 {
   int i;
 

@@ -140,7 +140,7 @@ struct _SchroPicture {
   SchroFrame *mc_tmp_frame;
   SchroMotion *motion;
   SchroFrame *output_picture;
-  SchroUpsampledFrame *upsampled_frame;
+  SchroFrame *upsampled_frame;
 
   int subband_length[3][SCHRO_LIMIT_SUBBANDS];
   int subband_quant_index[3][SCHRO_LIMIT_SUBBANDS];

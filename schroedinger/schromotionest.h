@@ -124,7 +124,7 @@ SchroMe *schro_me_new (SchroEncoderFrame* framer );
 void schro_me_free (SchroMe* me );
 
 SchroFrame* schro_me_src (SchroMe *me );
-SchroUpsampledFrame* schro_me_ref (SchroMe *me, int ref_number );
+SchroFrame* schro_me_ref (SchroMe *me, int ref_number );
 
 SchroMotionField* schro_me_subpel_mf ( SchroMe *me, int ref_number );
 void schro_me_set_subpel_mf ( SchroMe *me, SchroMotionField* mf, int ref_number );

@@ -131,8 +131,8 @@ struct _SchroEncoderFrame {
   SchroFrame *original_frame;
   SchroFrame *filtered_frame;
   SchroFrame *downsampled_frames[8];
-  SchroUpsampledFrame *reconstructed_frame;
-  SchroUpsampledFrame *upsampled_original_frame;
+  SchroFrame *reconstructed_frame;
+  SchroFrame *upsampled_original_frame;
 
   int sc_mad; /* shot change mean absolute difference */
   double sc_threshold; /* shot change threshold */

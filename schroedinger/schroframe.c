@@ -1914,14 +1914,8 @@ schro_frame_split_fields (SchroFrame * dest1, SchroFrame * dest2,
 
 /* upsampled frame */
 
-SchroUpsampledFrame *
-schro_upsampled_frame_new (SchroFrame * frame)
-{
-  return frame;
-}
-
 void
-schro_upsampled_frame_get_framedata (SchroUpsampledFrame *upframe,
+schro_upsampled_frame_get_framedata (SchroFrame *upframe,
     SchroFrameData *fd, int up_index, int component)
 {
   SCHRO_ASSERT (upframe->is_upsampled);
@@ -1931,14 +1925,14 @@ schro_upsampled_frame_get_framedata (SchroUpsampledFrame *upframe,
 }
 
 SchroFrame *
-schro_upsampled_frame_get_frame (SchroUpsampledFrame *upframe, int index)
+schro_upsampled_frame_get_frame (SchroFrame *upframe, int index)
 {
   SCHRO_ASSERT (index == 0);
   return upframe;
 }
 
 void
-schro_upsampled_frame_free (SchroUpsampledFrame * df)
+schro_upsampled_frame_free (SchroFrame * df)
 {
   schro_frame_unref (df);
 }
@@ -2004,7 +1998,7 @@ schro_frame_mc_edgeextend (SchroFrame * frame)
 
 
 void
-schro_upsampled_frame_upsample (SchroUpsampledFrame * df)
+schro_upsampled_frame_upsample (SchroFrame * df)
 {
   int i;
   int j;
@@ -2037,7 +2031,7 @@ schro_upsampled_frame_upsample (SchroUpsampledFrame * df)
 
 #ifdef ENABLE_MOTION_REF
 int
-schro_upsampled_frame_get_pixel_prec0 (SchroUpsampledFrame * upframe, int k,
+schro_upsampled_frame_get_pixel_prec0 (SchroFrame * upframe, int k,
     int x, int y)
 {
   SchroFrameData c, *comp = &c;
@@ -2079,7 +2073,7 @@ schro_frame_get_data (SchroFrame * frame, SchroFrameData * fd, int k, int x,
 
 #ifdef unused
 void
-schro_upsampled_frame_get_block_prec0 (SchroUpsampledFrame * upframe, int k,
+schro_upsampled_frame_get_block_prec0 (SchroFrame * upframe, int k,
     int x, int y, SchroFrameData * fd)
 {
   int i, j;
@@ -2098,7 +2092,7 @@ schro_upsampled_frame_get_block_prec0 (SchroUpsampledFrame * upframe, int k,
 
 #ifdef unused
 void
-schro_upsampled_frame_get_block_fast_prec0 (SchroUpsampledFrame * upframe,
+schro_upsampled_frame_get_block_fast_prec0 (SchroFrame * upframe,
     int k, int x, int y, SchroFrameData * fd)
 {
   SchroFrameData c, *comp = &c;
@@ -2116,7 +2110,7 @@ schro_upsampled_frame_get_block_fast_prec0 (SchroUpsampledFrame * upframe,
 #endif
 
 void
-schro_upsampled_frame_get_subdata_prec0 (SchroUpsampledFrame * upframe,
+schro_upsampled_frame_get_subdata_prec0 (SchroFrame * upframe,
     int component, int x, int y, SchroFrameData * fd)
 {
   SchroFrameData c, *comp = &c;
@@ -2129,7 +2123,7 @@ schro_upsampled_frame_get_subdata_prec0 (SchroUpsampledFrame * upframe,
 
 #ifdef ENABLE_MOTION_REF
 int
-schro_upsampled_frame_get_pixel_prec1 (SchroUpsampledFrame * upframe, int k,
+schro_upsampled_frame_get_pixel_prec1 (SchroFrame * upframe, int k,
     int x, int y)
 {
   SchroFrameData c, *comp = &c;
@@ -2152,7 +2146,7 @@ schro_upsampled_frame_get_pixel_prec1 (SchroUpsampledFrame * upframe, int k,
 
 #ifdef unused
 void
-schro_upsampled_frame_get_block_prec1 (SchroUpsampledFrame * upframe, int k,
+schro_upsampled_frame_get_block_prec1 (SchroFrame * upframe, int k,
     int x, int y, SchroFrameData * fd)
 {
   int i, j;
@@ -2170,7 +2164,7 @@ schro_upsampled_frame_get_block_prec1 (SchroUpsampledFrame * upframe, int k,
 #endif
 
 static void
-schro_upsampled_frame_get_block_fast_prec1 (SchroUpsampledFrame * upframe,
+schro_upsampled_frame_get_block_fast_prec1 (SchroFrame * upframe,
     int k, int x, int y, SchroFrameData * fd)
 {
   SchroFrameData c, *comp = &c;
@@ -2190,7 +2184,7 @@ schro_upsampled_frame_get_block_fast_prec1 (SchroUpsampledFrame * upframe,
 }
 
 static void
-__schro_upsampled_frame_get_subdata_prec1 (SchroUpsampledFrame * upframe,
+__schro_upsampled_frame_get_subdata_prec1 (SchroFrame * upframe,
     int k, int x, int y, SchroFrameData * fd)
 {
   SchroFrameData c, *comp = &c;
@@ -2206,7 +2200,7 @@ __schro_upsampled_frame_get_subdata_prec1 (SchroUpsampledFrame * upframe,
 }
 
 void
-schro_upsampled_frame_get_subdata_prec1 (SchroUpsampledFrame * upframe,
+schro_upsampled_frame_get_subdata_prec1 (SchroFrame * upframe,
     int k, int x, int y, SchroFrameData * fd)
 {
   __schro_upsampled_frame_get_subdata_prec1 (upframe, k, x, y, fd);
@@ -2214,7 +2208,7 @@ schro_upsampled_frame_get_subdata_prec1 (SchroUpsampledFrame * upframe,
 
 #ifdef ENABLE_MOTION_REF
 int
-schro_upsampled_frame_get_pixel_prec3 (SchroUpsampledFrame * upframe, int k,
+schro_upsampled_frame_get_pixel_prec3 (SchroFrame * upframe, int k,
     int x, int y)
 {
   SchroFrameData c, *comp = &c;
@@ -2274,7 +2268,7 @@ schro_upsampled_frame_get_pixel_prec3 (SchroUpsampledFrame * upframe, int k,
 
 #ifdef unused
 void
-schro_upsampled_frame_get_block_prec3 (SchroUpsampledFrame * upframe, int k,
+schro_upsampled_frame_get_block_prec3 (SchroFrame * upframe, int k,
     int x, int y, SchroFrameData * fd)
 {
   int i, j;
@@ -2292,7 +2286,7 @@ schro_upsampled_frame_get_block_prec3 (SchroUpsampledFrame * upframe, int k,
 #endif
 
 static void
-schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame * upframe,
+schro_upsampled_frame_get_block_fast_prec3 (SchroFrame * upframe,
     int k, int x, int y, SchroFrameData * fd)
 {
   int hx, hy;
@@ -2420,7 +2414,7 @@ schro_upsampled_frame_get_block_fast_prec3 (SchroUpsampledFrame * upframe,
 
 #ifdef ENABLE_MOTION_REF
 int
-schro_upsampled_frame_get_pixel_precN (SchroUpsampledFrame * upframe, int k,
+schro_upsampled_frame_get_pixel_precN (SchroFrame * upframe, int k,
     int x, int y, int prec)
 {
   switch (prec) {
@@ -2439,7 +2433,7 @@ schro_upsampled_frame_get_pixel_precN (SchroUpsampledFrame * upframe, int k,
 
 #ifdef unused
 void
-schro_upsampled_frame_get_block_precN (SchroUpsampledFrame * upframe, int k,
+schro_upsampled_frame_get_block_precN (SchroFrame * upframe, int k,
     int x, int y, int prec, SchroFrameData * fd)
 {
   switch (prec) {
@@ -2463,7 +2457,7 @@ schro_upsampled_frame_get_block_precN (SchroUpsampledFrame * upframe, int k,
 #endif
 
 void
-schro_upsampled_frame_get_block_fast_precN (SchroUpsampledFrame * upframe,
+schro_upsampled_frame_get_block_fast_precN (SchroFrame * upframe,
     int k, int x, int y, int prec, SchroFrameData * dest, SchroFrameData * fd)
 {
   switch (prec) {

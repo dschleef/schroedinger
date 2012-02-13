@@ -238,7 +238,7 @@ schro_opengl_upsampled_frame_render_quad (SchroOpenGLShader *shader, int x,
 }
 
 void
-schro_opengl_upsampled_frame_upsample (SchroUpsampledFrame *upsampled_frame)
+schro_opengl_upsampled_frame_upsample (SchroFrame *upsampled_frame)
 {
   int i;
   int width, height;

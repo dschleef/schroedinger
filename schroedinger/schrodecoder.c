@@ -446,7 +446,7 @@ schro_picture_unref (SchroPicture * picture)
     if (picture->input_buffer)
       schro_buffer_unref (picture->input_buffer);
     if (picture->upsampled_frame)
-      schro_upsampled_frame_free (picture->upsampled_frame);
+      schro_frame_unref (picture->upsampled_frame);
     if (picture->ref0)
       schro_picture_unref (picture->ref0);
     if (picture->ref1)
@@ -1366,7 +1366,7 @@ schro_decoder_iterate_picture (SchroDecoderInstance * instance,
           schro_video_format_get_picture_height (&instance->video_format), 32,
           TRUE);
       schro_frame_clear (ref);
-      picture->upsampled_frame = schro_upsampled_frame_new (ref);
+      picture->upsampled_frame = ref;
     }
 
     SCHRO_DEBUG ("adding %d to queue (skipped)", picture->picture_number);
@@ -2084,7 +2084,7 @@ schro_decoder_x_combine (SchroAsyncStage * stage)
     } else {
       schro_frame_mc_edgeextend (ref);
     }
-    picture->upsampled_frame = schro_upsampled_frame_new (ref);
+    picture->upsampled_frame = ref;
   }
 
   if (picture->has_md5) {

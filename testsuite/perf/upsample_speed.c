@@ -39,7 +39,6 @@ upsample_speed (int filter, int width, int height)
   int i;
   SchroFrame *frame1;
   SchroFrame *frame2;
-  SchroUpsampledFrame *upframe;
   SchroMemoryDomain *mem;
 
   mem = schro_memory_domain_new_local ();
@@ -48,15 +47,11 @@ upsample_speed (int filter, int width, int height)
 
   orc_profile_init (&prof1);
 
-  upframe = schro_upsampled_frame_new (schro_frame_ref(frame1));
-  schro_upsampled_frame_upsample (upframe);
-  schro_upsampled_frame_free (upframe);
+  schro_upsampled_frame_upsample (frame1);
   for(i=0;i<10;i++) {
-    upframe = schro_upsampled_frame_new (schro_frame_ref(frame1));
     orc_profile_start (&prof1);
-    schro_upsampled_frame_upsample (upframe);
+    schro_upsampled_frame_upsample (frame1);
     orc_profile_stop (&prof1);
-    schro_upsampled_frame_free (upframe);
   }
 
   ave = orc_profile_get_min (&prof1);

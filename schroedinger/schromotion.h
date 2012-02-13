@@ -51,8 +51,8 @@ struct _SchroMotionFuncs {
 };
 
 struct _SchroMotion {
-  SchroUpsampledFrame *src1;
-  SchroUpsampledFrame *src2;
+  SchroFrame *src1;
+  SchroFrame *src2;
   SchroMotionVector *motion_vectors;
   SchroParams *params;
 
@@ -91,7 +91,7 @@ struct _SchroMotion {
   ((motion)->motion_vectors+(y)*(motion)->params->x_num_blocks + (x))
 
 SchroMotion * schro_motion_new (SchroParams *params,
-    SchroUpsampledFrame *ref1, SchroUpsampledFrame *ref2);
+    SchroFrame *ref1, SchroFrame *ref2);
 void schro_motion_free (SchroMotion *motion);
 
 int schro_motion_verify (SchroMotion *mf);
