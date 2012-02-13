@@ -123,6 +123,7 @@ schro_motion_render (SchroMotion * motion, SchroFrame * dest,
 #endif
   }
 
+#if 0
   {
     int min_extension;
     int i;
@@ -151,6 +152,7 @@ schro_motion_render (SchroMotion * motion, SchroFrame * dest,
 #endif
     }
   }
+#endif
 
   schro_motion_render_u8 (motion, dest, addframe, add, output_frame);
 }

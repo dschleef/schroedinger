@@ -51,7 +51,7 @@ void test (int width, int height)
   SchroFrame *frame;
   SchroFrame *frame_ref;
   SchroFrame *frame_1;
-  SchroFrame *frame_test;
+  SchroFrameData fd, *fd_test = &fd;
   SchroUpsampledFrame *upframe;
   char name[TEST_PATTERN_NAME_SIZE];
   int i;
@@ -64,18 +64,16 @@ void test (int width, int height)
   printf("HORIZONTAL %dx%d\n", width, height);
   for(i=0;i<test_pattern_get_n_generators();i++){
     test_pattern_generate (frame->components + 0, name, i);
-    test_pattern_generate (frame->components + 1, name, i);
-    test_pattern_generate (frame->components + 2, name, i);
 
     ref_h_upsample (frame_ref, frame);
     upframe = schro_upsampled_frame_new (schro_frame_ref(frame));
     schro_upsampled_frame_upsample (upframe);
 
-    frame_test = upframe->frames[1];
-    ok = frame_compare (frame_ref, frame_test);
+    schro_upsampled_frame_get_framedata (upframe, fd_test, 1, 0);
+    ok = frame_data_compare (frame_ref->components + 0, fd_test);
     printf("  pattern %s: %s\n", name, ok ? "OK" : "broken");
     if (dump_all || !ok) {
-      frame_data_dump_full (frame_test->components + 0,
+      frame_data_dump_full (fd_test,
           frame_ref->components + 0, frame->components + 0);
       failed = TRUE;
     }
@@ -86,18 +84,16 @@ void test (int width, int height)
   printf("VERTICAL %dx%d\n", width, height);
   for(i=0;i<test_pattern_get_n_generators();i++){
     test_pattern_generate (frame->components + 0, name, i);
-    test_pattern_generate (frame->components + 1, name, i);
-    test_pattern_generate (frame->components + 2, name, i);
 
     ref_v_upsample (frame_ref, frame);
     upframe = schro_upsampled_frame_new (schro_frame_ref(frame));
     schro_upsampled_frame_upsample (upframe);
 
-    frame_test = upframe->frames[2];
-    ok = frame_compare (frame_ref, frame_test);
+    schro_upsampled_frame_get_framedata (upframe, fd_test, 2, 0);
+    ok = frame_data_compare (frame_ref->components + 0, fd_test);
     printf("  pattern %s: %s\n", name, ok ? "OK" : "broken");
     if (dump_all || !ok) {
-      frame_data_dump_full (frame_test->components + 0,
+      frame_data_dump_full (fd_test,
           frame_ref->components + 0, frame->components + 0);
       failed = TRUE;
     }
@@ -108,19 +104,17 @@ void test (int width, int height)
   printf("HV %dx%d\n", width, height);
   for(i=0;i<test_pattern_get_n_generators();i++){
     test_pattern_generate (frame->components + 0, name, i);
-    test_pattern_generate (frame->components + 1, name, i);
-    test_pattern_generate (frame->components + 2, name, i);
 
     ref_v_upsample (frame_1, frame);
     ref_h_upsample (frame_ref, frame_1);
     upframe = schro_upsampled_frame_new (schro_frame_ref(frame));
     schro_upsampled_frame_upsample (upframe);
 
-    frame_test = upframe->frames[3];
-    ok = frame_compare (frame_ref, frame_test);
+    schro_upsampled_frame_get_framedata (upframe, fd_test, 3, 0);
+    ok = frame_data_compare (frame_ref->components + 0, fd_test);
     printf("  pattern %s: %s\n", name, ok ? "OK" : "broken");
     if (dump_all || !ok) {
-      frame_data_dump_full (frame_test->components + 0,
+      frame_data_dump_full (fd_test,
           frame_ref->components + 0, frame->components + 0);
       failed = TRUE;
     }

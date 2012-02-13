@@ -158,6 +158,10 @@ void schro_frame_data_get_codeblock (SchroFrameData *dest, SchroFrameData *src,
         int x, int y, int horiz_codeblocks, int vert_codeblocks);
 
 SchroUpsampledFrame * schro_upsampled_frame_new (SchroFrame *frame);
+void schro_upsampled_frame_get_framedata (SchroUpsampledFrame *upframe,
+    SchroFrameData *fd, int up_index, int component);
+SchroFrame * schro_upsampled_frame_get_frame (SchroUpsampledFrame *upframe,
+    int index);
 void schro_upsampled_frame_free (SchroUpsampledFrame *df);
 void schro_upsampled_frame_upsample (SchroUpsampledFrame *df);
 #ifdef ENABLE_MOTION_REF

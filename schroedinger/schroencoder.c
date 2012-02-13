@@ -1507,16 +1507,19 @@ schro_encoder_encode_bitrate_comment (SchroEncoder * encoder,
 }
 
 static void
-schro_encoder_encode_md5_checksum (SchroEncoderFrame * frame)
+schro_encoder_encode_md5_checksum (SchroEncoderFrame * encoder_frame)
 {
   SchroBuffer *buffer;
   uint32_t checksum[4];
+  SchroFrame *frame;
 
-  schro_frame_md5 (frame->reconstructed_frame->frames[0], checksum);
-  buffer = schro_encoder_encode_auxiliary_data (frame->encoder,
+  frame = schro_upsampled_frame_get_frame (encoder_frame->reconstructed_frame, 0);
+
+  schro_frame_md5 (frame, checksum);
+  buffer = schro_encoder_encode_auxiliary_data (encoder_frame->encoder,
       SCHRO_AUX_DATA_MD5_CHECKSUM, checksum, 16);
 
-  schro_encoder_frame_insert_buffer (frame, buffer);
+  schro_encoder_frame_insert_buffer (encoder_frame, buffer);
 }
 
 /**
@@ -2733,7 +2736,7 @@ schro_encoder_postanalyse_picture (SchroAsyncStage * stage)
     double mse[3];
 
     schro_frame_mean_squared_error (frame->filtered_frame,
-        frame->reconstructed_frame->frames[0], mse);
+        schro_upsampled_frame_get_frame (frame->reconstructed_frame, 0), mse);
 
     frame->mean_squared_error_luma = mse[0] /
         (video_format->luma_excursion * video_format->luma_excursion);
@@ -2743,7 +2746,7 @@ schro_encoder_postanalyse_picture (SchroAsyncStage * stage)
 
   if (frame->encoder->enable_ssim) {
     frame->mssim = schro_frame_ssim (frame->original_frame,
-        frame->reconstructed_frame->frames[0]);
+        schro_upsampled_frame_get_frame (frame->reconstructed_frame, 0));
     schro_dump (SCHRO_DUMP_SSIM, "%d %g\n", frame->frame_number, frame->mssim);
   }
 }
