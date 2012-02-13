@@ -9,7 +9,7 @@ SCHRO_BEGIN_DECLS
 
 typedef struct _SchroFrame SchroFrame;
 typedef struct _SchroFrameData SchroFrameData;
-typedef struct _SchroUpsampledFrame SchroUpsampledFrame;
+typedef struct _SchroFrame SchroUpsampledFrame;
 
 typedef void (*SchroFrameFreeFunc)(SchroFrame *frame, void *priv);
 typedef void (*SchroFrameRenderFunc)(SchroFrame *frame, void *dest, int component, int i);
@@ -91,10 +91,7 @@ struct _SchroFrame {
   int extension;
   int cache_offset[3];
   int is_upsampled;
-};
-
-struct _SchroUpsampledFrame {
-  SchroFrame *frames[4];
+  schro_bool upsample_done;
 };
 
 #define SCHRO_FRAME_DATA_GET_LINE(fd,i) (SCHRO_OFFSET((fd)->data,(fd)->stride*(i)))
@@ -132,8 +129,8 @@ void schro_frame_shift_right (SchroFrame *frame, int shift);
 void schro_frame_clear (SchroFrame *frame);
 
 void schro_frame_downsample (SchroFrame *dest, SchroFrame *src);
-void schro_frame_upsample_horiz (SchroFrame *dest, SchroFrame *src);
-void schro_frame_upsample_vert (SchroFrame *dest, SchroFrame *src);
+void schro_frame_upsample_horiz (SchroFrameData *dest, SchroFrameData *src);
+void schro_frame_upsample_vert (SchroFrameData *dest, SchroFrameData *src);
 double schro_frame_calculate_average_luma (SchroFrame *frame);
 
 SchroFrame * schro_frame_convert_to_444 (SchroFrame *frame);

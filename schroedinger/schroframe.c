@@ -1555,11 +1555,10 @@ mas8_u8_edgeextend (uint8_t * d, const uint8_t * s,
 }
 
 void
-schro_frame_upsample_horiz (SchroFrame * dest, SchroFrame * src)
+schro_frame_upsample_horiz (SchroFrameData *dest, SchroFrameData *src)
 {
-  int j, k;
-  SchroFrameData *dcomp;
-  SchroFrameData *scomp;
+  int j;
+  static const int16_t taps[8] = { -1, 3, -7, 21, 21, -7, 3, -1 };
 
   if (SCHRO_FRAME_FORMAT_DEPTH (dest->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
       SCHRO_FRAME_FORMAT_DEPTH (src->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
@@ -1568,16 +1567,9 @@ schro_frame_upsample_horiz (SchroFrame * dest, SchroFrame * src)
     return;
   }
 
-  for (k = 0; k < 3; k++) {
-    static const int16_t taps[8] = { -1, 3, -7, 21, 21, -7, 3, -1 };
-
-    dcomp = &dest->components[k];
-    scomp = &src->components[k];
-
-    for (j = 0; j < dcomp->height; j++) {
-      mas8_u8_edgeextend (SCHRO_FRAME_DATA_GET_LINE (dcomp, j),
-          SCHRO_FRAME_DATA_GET_LINE (scomp, j), taps, 16, 5, 3, scomp->width);
-    }
+  for (j = 0; j < dest->height; j++) {
+    mas8_u8_edgeextend (SCHRO_FRAME_DATA_GET_LINE (dest, j),
+        SCHRO_FRAME_DATA_GET_LINE (src, j), taps, 16, 5, 3, src->width);
   }
 }
 
@@ -1618,46 +1610,38 @@ mas8_across_u8_slow (uint8_t * d, uint8_t ** s1_a8,
 }
 
 void
-schro_frame_upsample_vert (SchroFrame * dest, SchroFrame * src)
+schro_frame_upsample_vert (SchroFrameData * dcomp, SchroFrameData * scomp)
 {
-  int i, j, k;
-  SchroFrameData *dcomp;
-  SchroFrameData *scomp;
+  static const int16_t taps[8] = { -1, 3, -7, 21, 21, -7, 3, -1 };
+  int i, j;
+  uint8_t *list[8];
 
-  if (SCHRO_FRAME_FORMAT_DEPTH (dest->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
-      SCHRO_FRAME_FORMAT_DEPTH (src->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
-      src->format != dest->format) {
+  if (SCHRO_FRAME_FORMAT_DEPTH (dcomp->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
+      SCHRO_FRAME_FORMAT_DEPTH (scomp->format) != SCHRO_FRAME_FORMAT_DEPTH_U8 ||
+      scomp->format != dcomp->format) {
     SCHRO_ERROR ("unimplemented");
     return;
   }
 
-  for (k = 0; k < 3; k++) {
-    static const int16_t taps[8] = { -1, 3, -7, 21, 21, -7, 3, -1 };
-    uint8_t *list[8];
-
-    dcomp = &dest->components[k];
-    scomp = &src->components[k];
-
-    for (j = 0; j < dcomp->height - 1; j++) {
-      if (j < 3 || j >= scomp->height - 4) {
-        for (i = 0; i < 8; i++) {
-          list[i] = SCHRO_FRAME_DATA_GET_LINE (scomp,
-              CLAMP (i + j - 3, 0, scomp->height - 1));
-        }
-        mas8_across_u8_slow (SCHRO_FRAME_DATA_GET_LINE (dcomp, j), list,
-            taps, 16, 5, scomp->width);
-      } else {
-        SCHRO_ASSERT (j - 3 >= 0);
-        SCHRO_ASSERT (j - 3 + 7 < scomp->height);
-        mas8_across_u8 (SCHRO_FRAME_DATA_GET_LINE (dcomp, j),
-            SCHRO_FRAME_DATA_GET_LINE (scomp, j - 3), scomp->stride,
-            taps, 16, 5, scomp->width);
+  for (j = 0; j < dcomp->height - 1; j++) {
+    if (j < 3 || j >= scomp->height - 4) {
+      for (i = 0; i < 8; i++) {
+        list[i] = SCHRO_FRAME_DATA_GET_LINE (scomp,
+            CLAMP (i + j - 3, 0, scomp->height - 1));
       }
+      mas8_across_u8_slow (SCHRO_FRAME_DATA_GET_LINE (dcomp, j), list,
+          taps, 16, 5, scomp->width);
+    } else {
+      SCHRO_ASSERT (j - 3 >= 0);
+      SCHRO_ASSERT (j - 3 + 7 < scomp->height);
+      mas8_across_u8 (SCHRO_FRAME_DATA_GET_LINE (dcomp, j),
+          SCHRO_FRAME_DATA_GET_LINE (scomp, j - 3), scomp->stride,
+          taps, 16, 5, scomp->width);
     }
-    j = dcomp->height - 1;
-    orc_memcpy (SCHRO_FRAME_DATA_GET_LINE (dcomp, j),
-        SCHRO_FRAME_DATA_GET_LINE (scomp, j), dcomp->width);
   }
+  j = dcomp->height - 1;
+  orc_memcpy (SCHRO_FRAME_DATA_GET_LINE (dcomp, j),
+      SCHRO_FRAME_DATA_GET_LINE (scomp, j), dcomp->width);
 }
 
 double
@@ -1933,101 +1917,89 @@ schro_frame_split_fields (SchroFrame * dest1, SchroFrame * dest2,
 SchroUpsampledFrame *
 schro_upsampled_frame_new (SchroFrame * frame)
 {
-  SchroUpsampledFrame *df;
-
-  df = schro_malloc0 (sizeof (SchroUpsampledFrame));
-
-  SCHRO_ASSERT (frame->is_upsampled);
-  df->frames[0] = frame;
-
-  return df;
+  return frame;
 }
 
 void
 schro_upsampled_frame_get_framedata (SchroUpsampledFrame *upframe,
     SchroFrameData *fd, int up_index, int component)
 {
-  memcpy (fd, upframe->frames[up_index]->components + component,
-      sizeof (SchroFrameData));
+  SCHRO_ASSERT (upframe->is_upsampled);
+
+  memcpy (fd, upframe->components + component, sizeof (SchroFrameData));
+  fd->data = SCHRO_OFFSET (fd->data, (fd->stride >> 2) * up_index);
 }
 
 SchroFrame *
 schro_upsampled_frame_get_frame (SchroUpsampledFrame *upframe, int index)
 {
-  return upframe->frames[index];
+  SCHRO_ASSERT (index == 0);
+  return upframe;
 }
 
 void
 schro_upsampled_frame_free (SchroUpsampledFrame * df)
 {
-  int i;
-  for (i = 0; i < 4; i++) {
-    if (df->frames[i]) {
-      schro_frame_unref (df->frames[i]);
-    }
-  }
-  schro_free (df);
+  schro_frame_unref (df);
 }
 
 static void
-schro_frame_mc_edgeextend_horiz (SchroFrame * frame, SchroFrame * src)
+schro_frame_mc_edgeextend_horiz (SchroFrameData * frame, SchroFrameData * src,
+    int extension)
 {
-  int k;
   int j;
+  int width = frame->width;
 
-  for (k = 0; k < 3; k++) {
-    int width = frame->components[k].width;
+  for (j = 0; j < frame->height; j++) {
+    uint8_t *line = SCHRO_FRAME_DATA_GET_LINE (frame, j);
+    uint8_t *src_line = SCHRO_FRAME_DATA_GET_LINE (src, j);
 
-    for (j = 0; j < frame->components[k].height; j++) {
-      uint8_t *line = SCHRO_FRAME_DATA_GET_LINE (frame->components + k, j);
-      uint8_t *src_line = SCHRO_FRAME_DATA_GET_LINE (src->components + k, j);
-
-      memset (line - frame->extension, src_line[0], frame->extension);
-      /* A picture of size (w,h) is upconverted to (2*w-1,2*h-1)
-       * However, schroedinger's effective upconverted size is (2*w,2*h)
-       * Remember to overwrite the last horizontal pel */
-      memset (line + width - 1, src_line[width - 1], frame->extension + 1);
-    }
-  }
-}
-
-static void
-schro_frame_mc_edgeextend_vert (SchroFrame * frame, SchroFrame * src)
-{
-  int k;
-  int j;
-
-  for (k = 0; k < 3; k++) {
-    int height = frame->components[k].height;
-    int width = frame->components[k].width;
-
-    for (j = 0; j < frame->extension; j++) {
-      orc_memcpy (SCHRO_OFFSET (SCHRO_FRAME_DATA_GET_LINE (frame->components +
-                  k, -j - 1), -frame->extension),
-          SCHRO_OFFSET (SCHRO_FRAME_DATA_GET_LINE (src->components + k, 0),
-              -frame->extension), width + frame->extension * 2);
-      orc_memcpy (SCHRO_OFFSET (SCHRO_FRAME_DATA_GET_LINE (frame->components +
-                  k, height + j), -frame->extension),
-          SCHRO_OFFSET (SCHRO_FRAME_DATA_GET_LINE (src->components + k,
-                  height - 1), -frame->extension),
-          width + frame->extension * 2);
-    }
+    memset (line - extension, src_line[0], extension);
     /* A picture of size (w,h) is upconverted to (2*w-1,2*h-1)
      * However, schroedinger's effective upconverted size is (2*w,2*h)
-     * Copy the src into the bottom line of frame.
-     * NB, this assumes that orc_memcpy is safe when src == dest */
-    orc_memcpy (SCHRO_OFFSET (SCHRO_FRAME_DATA_GET_LINE (frame->components + k,
-                height - 1), -frame->extension),
-        SCHRO_OFFSET (SCHRO_FRAME_DATA_GET_LINE (src->components + k,
-                height - 1), -frame->extension), width + frame->extension * 2);
+     * Remember to overwrite the last horizontal pel */
+    memset (line + width - 1, src_line[width - 1], extension + 1);
   }
+}
+
+static void
+schro_frame_mc_edgeextend_vert (SchroFrameData * frame, SchroFrameData * src, int extension)
+{
+  int j;
+  int height = frame->height;
+  int width = frame->width;
+
+  for (j = 0; j < extension; j++) {
+    orc_memcpy (SCHRO_OFFSET (SCHRO_FRAME_DATA_GET_LINE (frame, -j - 1),
+          -extension),
+        SCHRO_OFFSET (SCHRO_FRAME_DATA_GET_LINE (src, 0),
+            -extension), width + extension * 2);
+    orc_memcpy (SCHRO_OFFSET (SCHRO_FRAME_DATA_GET_LINE (frame, height + j),
+          -extension),
+        SCHRO_OFFSET (SCHRO_FRAME_DATA_GET_LINE (src,
+                height - 1), -extension),
+        width + extension * 2);
+  }
+  /* A picture of size (w,h) is upconverted to (2*w-1,2*h-1)
+   * However, schroedinger's effective upconverted size is (2*w,2*h)
+   * Copy the src into the bottom line of frame.
+   * NB, this assumes that orc_memcpy is safe when src == dest */
+  orc_memcpy (SCHRO_OFFSET (SCHRO_FRAME_DATA_GET_LINE (frame,
+              height - 1), -extension),
+      SCHRO_OFFSET (SCHRO_FRAME_DATA_GET_LINE (src,
+              height - 1), -extension), width + extension * 2);
 }
 
 void
 schro_frame_mc_edgeextend (SchroFrame * frame)
 {
-  schro_frame_mc_edgeextend_horiz (frame, frame);
-  schro_frame_mc_edgeextend_vert (frame, frame);
+  int k;
+  for(k=0;k<3;k++){
+    schro_frame_mc_edgeextend_horiz (frame->components + k,
+        frame->components + k, frame->extension);
+    schro_frame_mc_edgeextend_vert (frame->components + k,
+        frame->components + k, frame->extension);
+  }
 }
 
 
@@ -2035,37 +2007,32 @@ void
 schro_upsampled_frame_upsample (SchroUpsampledFrame * df)
 {
   int i;
+  int j;
 
-  if (df->frames[1])
+  if (df->upsample_done)
     return;
 
-  for (i=1;i<4;i++){
-    df->frames[i] = schro_frame_new();
-    df->frames[i]->format = df->frames[0]->format;
-    df->frames[i]->width = df->frames[0]->width;
-    df->frames[i]->height = df->frames[0]->height;
-    df->frames[i]->extension = df->frames[0]->extension;
-    memcpy (df->frames[i]->components, df->frames[0]->components,
-        sizeof (SchroFrameData) * 3);
-    df->frames[i]->components[0].data +=
-      (df->frames[i]->components[0].stride >> 2) * i;
-    df->frames[i]->components[1].data +=
-      (df->frames[i]->components[1].stride >> 2) * i;
-    df->frames[i]->components[2].data +=
-      (df->frames[i]->components[2].stride >> 2) * i;
+  df->upsample_done = TRUE;
+
+  for(i=0;i<3;i++) {
+    SchroFrameData fd[4];
+
+    for(j=0;j<4;j++){
+      schro_upsampled_frame_get_framedata (df, fd + j, j, i);
+    }
+
+    schro_frame_upsample_vert (fd + 2, fd + 0);
+    schro_frame_mc_edgeextend_horiz (fd + 2, fd + 2, df->extension);
+    schro_frame_mc_edgeextend_vert (fd + 2, fd + 0, df->extension);
+
+    schro_frame_upsample_horiz (fd + 1, fd + 0);
+    schro_frame_mc_edgeextend_horiz (fd + 1, fd + 0, df->extension);
+    schro_frame_mc_edgeextend_vert (fd + 1, fd + 1, df->extension);
+
+    schro_frame_upsample_horiz (fd + 3, fd + 2);
+    schro_frame_mc_edgeextend_horiz (fd + 3, fd + 2, df->extension);
+    schro_frame_mc_edgeextend_vert (fd + 3, fd + 1, df->extension);
   }
-
-  schro_frame_upsample_vert (df->frames[2], df->frames[0]);
-  schro_frame_mc_edgeextend_horiz (df->frames[2], df->frames[2]);
-  schro_frame_mc_edgeextend_vert (df->frames[2], df->frames[0]);
-
-  schro_frame_upsample_horiz (df->frames[1], df->frames[0]);
-  schro_frame_mc_edgeextend_horiz (df->frames[1], df->frames[0]);
-  schro_frame_mc_edgeextend_vert (df->frames[1], df->frames[1]);
-
-  schro_frame_upsample_horiz (df->frames[3], df->frames[2]);
-  schro_frame_mc_edgeextend_horiz (df->frames[3], df->frames[2]);
-  schro_frame_mc_edgeextend_vert (df->frames[3], df->frames[1]);
 }
 
 #ifdef ENABLE_MOTION_REF
