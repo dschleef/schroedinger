@@ -27,15 +27,12 @@ schro_motion_new (SchroParams * params, SchroFrame * ref1,
       schro_malloc0 (sizeof (SchroMotionVector) * params->x_num_blocks *
       params->y_num_blocks);
 
-  motion->tmpdata = schro_malloc (64 * 64 * 3);
-
   return motion;
 }
 
 void
 schro_motion_free (SchroMotion * motion)
 {
-  schro_free (motion->tmpdata);
   schro_free (motion->motion_vectors);
   schro_free (motion);
 }

@@ -56,8 +56,6 @@ struct _SchroMotion {
   SchroMotionVector *motion_vectors;
   SchroParams *params;
 
-  uint8_t *tmpdata;
-
   int ref_weight_precision;
   int ref1_weight;
   int ref2_weight;
