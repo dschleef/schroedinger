@@ -97,7 +97,7 @@ wavelet_gain_curve_SOURCES = wavelet_gain_curve.c
 #wavelet_2d_CFLAGS = $(SCHRO_CFLAGS)
 #wavelet_2d_LDADD = $(SCHRO_LIBS)
 wavelet_2d_SOURCES = wavelet_2d.c
-nodist_wavelet_2d_SOURCES = $(top_srcdir)/schroedinger/tmp-orc.c
+nodist_wavelet_2d_SOURCES = $(top_builddir)/schroedinger/tmp-orc.c
 
 wavelet_max_gain_SOURCES = wavelet_max_gain.c
 
@@ -118,7 +118,7 @@ motion2_SOURCES = motion2.c
 #quant_CFLAGS = 
 #quant_LDADD = -lm
 quant_SOURCES = quant.c
-nodist_quant_SOURCES = $(top_srcdir)/schroedinger/tmp-orc.c
+nodist_quant_SOURCES = $(top_builddir)/schroedinger/tmp-orc.c
 
 #sort_CFLAGS = $(SCHRO_CFLAGS)
 #sort_LDADD = $(SCHRO_LIBS)
