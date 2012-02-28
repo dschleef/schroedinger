@@ -100,6 +100,7 @@ wavelet_2d_SOURCES = wavelet_2d.c
 nodist_wavelet_2d_SOURCES = $(top_builddir)/schroedinger/tmp-orc.c
 
 wavelet_max_gain_SOURCES = wavelet_max_gain.c
+nodist_wavelet_max_gain_SOURCES = $(top_builddir)/schroedinger/tmp-orc.c
 
 wavelet_noise_2d_SOURCES = wavelet_noise_2d.c
 
