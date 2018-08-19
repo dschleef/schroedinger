@@ -145,6 +145,22 @@ AS_COMPILER_FLAG(-O3, CFLAGS=`echo $CFLAGS | sed s/O2/O3/`)
 SCHRO_CFLAGS="$SCHRO_CFLAGS -I\$(top_srcdir)"
 AC_SUBST(SCHRO_CFLAGS)
 
+GST_MAJORMINOR=1.0
+
+dnl *** check for arguments to configure ***
+
+PKG_CHECK_MODULES(GST, gstreamer-1.0 gstreamer-base-1.0 gstreamer-video-1.0,
+    HAVE_GST=yes, HAVE_GST=no)
+if test "$HAVE_GST" != yes ; then
+  echo GStreamer is needed
+  exit 1
+fi
+
+AM_CONDITIONAL(HAVE_GST, test "x$HAVE_GST" = "xyes")
+AC_SUBST(GST_CFLAGS)
+AC_SUBST(GST_LIBS)
+
+
 
 ########################
 # Check for CUDA
@@ -230,6 +246,7 @@ AC_SUBST(pkgconfigdir)
 AC_CONFIG_FILES([
 Makefile 
 doc/Makefile
+gst/Makefile
 schroedinger/Makefile
 schroedinger/cuda/Makefile
 schroedinger/opengl/Makefile

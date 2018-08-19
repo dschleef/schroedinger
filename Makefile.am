@@ -1,10 +1,10 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = schroedinger doc tools testsuite
+SUBDIRS = schroedinger doc tools testsuite gst
 
 DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc
 
-DIST_SUBDIRS = schroedinger doc tools testsuite
+DIST_SUBDIRS = schroedinger doc tools testsuite gst
 
 EXTRA_DIST = COPYING COPYING.GPL COPYING.LGPL COPYING.MIT COPYING.MPL \
 	     autogen.sh schroedinger.spec TODO NEWS orc.mak
